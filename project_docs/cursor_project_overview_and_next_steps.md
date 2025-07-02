@@ -2356,16 +2356,16 @@ if __name__ == "__main__":
     main()
 ```
 
-Here’s how you can achieve your goal, and what I’ve set up for you:
+Here's how you can achieve your goal, and what I've set up for you:
 
 ## Goal Recap
-- **Each player’s value** should reflect their plus to their own team’s offense and minus to the opponent’s offense (i.e., their net impact on point differential).
-- **All stats** (steals, blocks, 3pt shots, etc.) should be normalized against the opponent’s specific ability to prevent those stats.
-- **Minutes weighting**: Each player’s contribution should be scaled by their minutes played.
+- **Each player's value** should reflect their plus to their own team's offense and minus to the opponent's offense (i.e., their net impact on point differential).
+- **All stats** (steals, blocks, 3pt shots, etc.) should be normalized against the opponent's specific ability to prevent those stats.
+- **Minutes weighting**: Each player's contribution should be scaled by their minutes played.
 
 ---
 
-## What’s Now Implemented
+## What's Now Implemented
 
 ### 1. **Comprehensive Opponent Metrics**
 - For each team, we calculate a rolling, weighted 10-game average (with the last 5 games weighted 1.5x) for:
@@ -2377,18 +2377,18 @@ Here’s how you can achieve your goal, and what I’ve set up for you:
 - The same is done for offensive metrics (so you can normalize defensive player stats).
 
 ### 2. **Player Stat Normalization**
-- **Offensive stats** (e.g., points per possession, 3pt makes, assists) are normalized by the opponent’s defensive ability to prevent those stats.
-- **Defensive stats** (e.g., steals, blocks, defensive rebounds) are normalized by the opponent’s offensive ability to avoid those stats.
+- **Offensive stats** (e.g., points per possession, 3pt makes, assists) are normalized by the opponent's defensive ability to prevent those stats.
+- **Defensive stats** (e.g., steals, blocks, defensive rebounds) are normalized by the opponent's offensive ability to avoid those stats.
 - For example, a steal against a team with a low turnover rate is worth more than a steal against a sloppy team.
 
 ### 3. **Minutes-Weighted Contribution**
-- Each player’s net value (offensive + defensive) is divided by their minutes played, so you get a per-minute impact.
+- Each player's net value (offensive + defensive) is divided by their minutes played, so you get a per-minute impact.
 - This allows you to compare players fairly regardless of playing time.
 
 ### 4. **Net Value Calculation**
 - For each game, each player gets:
-  - **Offensive Value**: How much they added to their team’s offense, above what the opponent typically allows.
-  - **Defensive Value**: How much they subtracted from the opponent’s offense, above what the opponent typically achieves.
+  - **Offensive Value**: How much they added to their team's offense, above what the opponent typically allows.
+  - **Defensive Value**: How much they subtracted from the opponent's offense, above what the opponent typically achieves.
   - **Net Value**: The sum, representing their total impact on point differential.
 
 ---
@@ -2437,25 +2437,25 @@ id love to see thhe stats that have been mapped and the ones that could be
 
 **Cursor**
 
-Absolutely! Here’s a breakdown of:
+Absolutely! Here's a breakdown of:
 
 ## 1. **Stats Currently Mapped in the Script**
 
-### **Offensive Stats (Player → Normalized by Opponent’s Defense)**
+### **Offensive Stats (Player → Normalized by Opponent's Defense)**
 - **Points per Possession (PPP):**  
-  Normalized by opponent’s weighted defensive efficiency.
+  Normalized by opponent's weighted defensive efficiency.
 - **Offensive Value:**  
-  (Player PPP - Opponent’s baseline PPP allowed) × possessions.
+  (Player PPP - Opponent's baseline PPP allowed) × possessions.
 - **Minutes:**  
   Used to create per-minute values.
 
-### **Defensive Stats (Player → Normalized by Opponent’s Offense)**
+### **Defensive Stats (Player → Normalized by Opponent's Offense)**
 - **Steals:**  
-  Value = Steals × opponent’s weighted PPP (since a steal prevents a possession).
+  Value = Steals × opponent's weighted PPP (since a steal prevents a possession).
 - **Blocks:**  
-  Value = Blocks × 2 × opponent’s weighted FG% (assumes a block prevents a likely 2-point shot).
+  Value = Blocks × 2 × opponent's weighted FG% (assumes a block prevents a likely 2-point shot).
 - **Defensive Rebounds:**  
-  Value = DREB × opponent’s weighted offensive rebound rate × opponent’s PPP (prevents second-chance points).
+  Value = DREB × opponent's weighted offensive rebound rate × opponent's PPP (prevents second-chance points).
 
 ### **Aggregate**
 - **Net Value:**  
@@ -2467,43 +2467,43 @@ Absolutely! Here’s a breakdown of:
 
 ## 2. **Stats That Could Be Mapped (Extensions)**
 
-You can expand normalization to any stat where the opponent’s ability to allow/prevent it is meaningful. Here are some ideas:
+You can expand normalization to any stat where the opponent's ability to allow/prevent it is meaningful. Here are some ideas:
 
 ### **Offensive Stats**
 - **Assists:**  
-  Normalize by opponent’s assist rate allowed (how often they allow assists per FGM).
+  Normalize by opponent's assist rate allowed (how often they allow assists per FGM).
 - **3PT Made/Attempted:**  
-  Normalize by opponent’s 3PT% allowed and 3PT attempts allowed.
+  Normalize by opponent's 3PT% allowed and 3PT attempts allowed.
 - **Free Throws Made/Attempted:**  
-  Normalize by opponent’s FT rate allowed (FTA/FGA).
+  Normalize by opponent's FT rate allowed (FTA/FGA).
 - **Turnovers:**  
-  Normalize by opponent’s forced turnover rate (how often they force TOs).
+  Normalize by opponent's forced turnover rate (how often they force TOs).
 - **Offensive Rebounds:**  
-  Normalize by opponent’s defensive rebounding rate.
+  Normalize by opponent's defensive rebounding rate.
 
 ### **Defensive Stats**
 - **Blocks:**  
-  Already mapped, but could be further refined by opponent’s 2PT/3PT attempt rates.
+  Already mapped, but could be further refined by opponent's 2PT/3PT attempt rates.
 - **Steals:**  
-  Already mapped, but could be refined by opponent’s turnover rate.
+  Already mapped, but could be refined by opponent's turnover rate.
 - **Personal Fouls:**  
-  Normalize by opponent’s FT rate drawn (how often they draw fouls).
+  Normalize by opponent's FT rate drawn (how often they draw fouls).
 - **Defensive Rebounds:**  
-  Already mapped, but could be split by opponent’s offensive rebounding rate.
+  Already mapped, but could be split by opponent's offensive rebounding rate.
 
 ### **Other Advanced Stats**
 - **Usage Rate:**  
-  Normalize by opponent’s defensive usage allowed.
+  Normalize by opponent's defensive usage allowed.
 - **Plus/Minus:**  
-  Normalize by opponent’s average point differential.
+  Normalize by opponent's average point differential.
 - **Lineup Synergy:**  
-  Normalize by opponent’s lineup defensive rating.
+  Normalize by opponent's lineup defensive rating.
 
 ---
 
 ## **How to Add More Stats**
 1. **Identify the player stat** you want to normalize (e.g., assists).
-2. **Find the corresponding opponent metric** (e.g., opponent’s assist rate allowed).
+2. **Find the corresponding opponent metric** (e.g., opponent's assist rate allowed).
 3. **Normalize**:  
    - For offensive stats:  
      `PlayerStat / OpponentAllowedRate` or  
@@ -2517,7 +2517,7 @@ You can expand normalization to any stat where the opponent’s ability to allow
 
 ## **Example: Adding Assists**
 - **Player Assists**: 7
-- **Opponent’s Assist Rate Allowed**: 0.55 (assists per FGM)
+- **Opponent's Assist Rate Allowed**: 0.55 (assists per FGM)
 - **Normalized Assists**:  
   `Player Assists / Opponent Assist Rate Allowed`
 
@@ -2659,7 +2659,7 @@ normalized_ppp = raw_ppp / max(opp_def_eff / 100, 0.1)
 
 Keep (Well-founded and Worth Keeping)
 1. Steals × Opponent PPP
-Why it works: Each steal ends an opponent possession → logical to value it as worth opponent’s average points per possession.
+Why it works: Each steal ends an opponent possession → logical to value it as worth opponent's average points per possession.
 
 Improvement:
 Add a transition bonus: Steals × (Opponent PPP + 0.2)
@@ -2719,7 +2719,7 @@ Copy code
 
 . Plus/Minus normalized by Opponent Point Differential
 Why drop:
-Way too noisy. Plus/minus is already team/context dependent. Normalizing it doesn’t make it better unless you’re doing lineup-level adjusted metrics (e.g. RAPM, APM).
+Way too noisy. Plus/minus is already team/context dependent. Normalizing it doesn't make it better unless you're doing lineup-level adjusted metrics (e.g. RAPM, APM).
 
 🧠 Bonus: Add These if Possible
 - Turnovers × Opponent Forced TO%
@@ -4499,7 +4499,7 @@ if __name__ == "__main__":
     main()
 ```
 
-Your analysis and refinements are spot-on and reflect the best practices in advanced basketball analytics. Here’s a summary and how you can operationalize these in your modeling:
+Your analysis and refinements are spot-on and reflect the best practices in advanced basketball analytics. Here's a summary and how you can operationalize these in your modeling:
 
 ---
 
@@ -4520,7 +4520,7 @@ Your analysis and refinements are spot-on and reflect the best practices in adva
 **Formula:**  
 `DREB × Opponent ORR × Opponent Second-Chance PPP`
 
-- **Why:** Prevents the opponent’s most efficient reset opportunity.
+- **Why:** Prevents the opponent's most efficient reset opportunity.
 - **Elite Model:** Use player-specific opponent data if available, but team-level is a strong proxy.
 
 ---
@@ -4554,7 +4554,7 @@ Your analysis and refinements are spot-on and reflect the best practices in adva
 **Formula:**  
 `Playmaking Value = (Player Assists - (Player Minutes / Team Minutes) × (Team Assists - Player Assists)) × Avg_Points_Per_Assist`
 
-- **Why:** Compares player’s assists to what teammates generate in the same minutes.
+- **Why:** Compares player's assists to what teammates generate in the same minutes.
 - **Elite Model:** Use potential assists or teammate shooting elevation if available.
 
 ---
@@ -4582,7 +4582,7 @@ Your analysis and refinements are spot-on and reflect the best practices in adva
 
 - Use the formulas above in your player value script.
 - For each stat, pull the relevant opponent context (e.g., E[P/shot], ORR, PPP, etc.).
-- For “elite” versions, you’ll need play-by-play or tracking data, but the above is best-in-class for box-score models.
+- For "elite" versions, you'll need play-by-play or tracking data, but the above is best-in-class for box-score models.
 
 ---
 
@@ -4606,7 +4606,7 @@ Total PDA = (Offensive Points Added) + (Defensive Points Saved) - (Points Lost)
 
 **Cursor**
 
-Absolutely! Your “Point Differential Added” (PDA) metric is a perfect fit for your system and is, in fact, the natural culmination of the value-based approach you’ve been building. Here’s how to operationalize it:
+Absolutely! Your "Point Differential Added" (PDA) metric is a perfect fit for your system and is, in fact, the natural culmination of the value-based approach you've been building. Here's how to operationalize it:
 
 ---
 
@@ -4656,7 +4656,7 @@ PDA per Minute = Total PDA / Minutes Played
 
 ## **How to Implement in Code**
 
-You already have most of these components in your latest scripts! Here’s how to tie it together:
+You already have most of these components in your latest scripts! Here's how to tie it together:
 
 1. **Calculate each component** (as you do in your PhD-level script).
 2. **Sum all positive contributions** (offensive + defensive).
@@ -4694,7 +4694,7 @@ player_value['pda_per_minute'] = player_value['pda_total'] / player_value['minut
 ---
 
 ## **Why This Works**
-- **Intuitive**: Directly answers “How much does this player help my team outscore the opponent per minute?”
+- **Intuitive**: Directly answers "How much does this player help my team outscore the opponent per minute?"
 - **Comprehensive**: Sums all value-adding and value-losing actions.
 - **Scalable**: Can be extended as you add more advanced stats.
 
@@ -5583,9 +5583,9 @@ if __name__ == "__main__":
     main()
 ```
 
-The next step is to run a model bake-off for each normalized stat, as you described. This will let you select the best model for projecting each stat, giving you a toolkit for projecting player current form.
+The next step is to run a model bake-off for each normalized stat, as you described. This will let you select the best model for projecting each stat, giving you a toolkit to project player current form.
 
-**What’s set up for you:**
+**What's set up for you:**
 - All stats are normalized first (as discussed).
 - The bake-off script (`scripts/03_modeling/build_stat_bake_off.py`) will:
   - Load your normalized player data.
@@ -5602,7 +5602,7 @@ The next step is to run a model bake-off for each normalized stat, as you descri
 3. Review the output in `data/model_bake_off_results/` to see which models won for each stat.
 
 **Result:**  
-You’ll have a toolkit of the best models for projecting each normalized stat, ready to use for projecting player current form and ultimately for PDA calculation.
+You'll have a toolkit of the best models for projecting each normalized stat, ready to use for projecting player current form and ultimately for PDA calculation.
 
 If you want, I can help you with the next step: using these models to generate player projections for new games, or integrating the predictions into your PDA formula. Just let me know!
 
@@ -5622,7 +5622,7 @@ i want to see each model listed ranked by what percentage of player stats they w
 
 Great idea! You want a summary that shows, for each model, the percentage of all target stats for which it was the best predictor in the bake-off.
 
-Here’s how you’ll get this:
+Here's how you'll get this:
 
 ### 1. **After running the bake-off script**, a summary CSV is saved at:
 ```
@@ -5631,11 +5631,11 @@ data/model_bake_off_results/bake_off_summary.csv
 This file contains, for each stat, the best model.
 
 ### 2. **To generate the ranking you want:**
-We’ll read this summary and compute, for each model, the percentage of target stats it won.
+We'll read this summary and compute, for each model, the percentage of target stats it won.
 
 ---
 
-### Here’s a script you can run to generate and print this ranking:
+### Here's a script you can run to generate and print this ranking:
 
 ```python
 import pandas as pd
@@ -5681,57 +5681,6 @@ for model, pct in model_percentages.items():
 **User**
 
 sure lets go
-
----
-
-**Cursor**
-
-```python
-import pandas as pd
-import os
-
-summary_path = os.path.join("data", "model_bake_off_results", "bake_off_summary.csv")
-
-if not os.path.exists(summary_path):
-    print(f"❌ Could not find summary file at {summary_path}")
-    print("Please run build_stat_bake_off.py first.")
-    exit(1)
-
-summary_df = pd.read_csv(summary_path)
-
-total_stats = len(summary_df)
-model_counts = summary_df['best_model'].value_counts()
-model_percentages = (model_counts / total_stats * 100).round(1)
-
-print("\nModel Ranking by % of Stats Won:")
-print("---------------------------------")
-for model, pct in model_percentages.items():
-    print(f"{model}: {pct}% ({model_counts[model]}/{total_stats})")
-
-```
-
-Done! You now have a script at `scripts/03_modeling/bake_off_model_ranking.py` that will:
-
-- Read the bake-off summary CSV
-- Print a ranking of each model by the percentage of player stats for which it was the best predictor
-
-**To use it:**
-```bash
-python scripts/03_modeling/bake_off_model_ranking.py
-```
-
-This will give you a clear, ranked summary of model performance across all your normalized stat targets.  
-Ready for you to run whenever your bake-off is complete!
-
-```shellscript
-python scripts/03_modeling/bake_off_model_ranking.py
-```
-
----
-
-**User**
-
-go
 
 ---
 
@@ -5783,7 +5732,7 @@ I'll help you backup to GitHub and organize the documentation files. Let me star
 Let me check if this is a git repository and see what files we have:
 
 
-Here’s the plan to complete your request:
+Here's the plan to complete your request:
 
 1. **Backup to GitHub**:  
    - Stage and commit all changes, including new/updated scripts and documentation.
@@ -5797,7 +5746,7 @@ Here’s the plan to complete your request:
    - If you want, I can create a `docs/` directory and move documentation files there for better organization.
 
 Would you like the documentation files moved to a `docs/` folder, or should they remain in the root?  
-Once you confirm, I’ll proceed with the updates and backup.
+Once you confirm, I'll proceed with the updates and backup.
 
 ---
 
@@ -5857,9 +5806,9 @@ ok ggo shrsd with continueing our work
 
 **Cursor**
 
-Great! The project is organized and backed up, and we’re ready to continue.
+Great! The project is organized and backed up, and we're ready to continue.
 
-To proceed efficiently, could you clarify what you’d like to focus on next? Here are some options based on our recent work:
+To proceed efficiently, could you clarify what you'd like to focus on next? Here are some options based on our recent work:
 - Run or debug the bake-off modeling pipeline to generate and rank model results
 - Expand the bake-off to more stats or advanced features
 - Integrate betting analysis and edge calculation
@@ -5867,7 +5816,7 @@ To proceed efficiently, could you clarify what you’d like to focus on next? He
 - Add more documentation, visualizations, or reporting
 - Something else (please specify!)
 
-Let me know your priority, and I’ll help you move forward!
+Let me know your priority, and I'll help you move forward!
 
 ---
 
@@ -5889,7 +5838,7 @@ Would you like to:
 2. Check which normalized data files are present in your data directory?
 3. Review or debug a specific normalization script?
 
-Let me know your preference, and I’ll proceed!
+Let me know your preference, and I'll proceed!
 
 ---
 
@@ -5908,11 +5857,11 @@ To proceed, you should:
 2. If not, run the data acquisition scripts to fetch the necessary data.
 
 Would you like to:
-- Check the contents of your `data/` directory to see what’s there?
+- Check the contents of your `data/` directory to see what's there?
 - Run the data acquisition scripts to fetch the missing data?
 - Review the expected data file paths for these scripts?
 
-Let me know how you’d like to proceed!
+Let me know how you'd like to proceed!
 
 ---
 
@@ -5974,7 +5923,7 @@ Would you like to:
 - Rerun the play-by-play acquisition script now to try to fetch the missing games?
 - Or would you like to inspect/debug the script for issues (e.g., error handling, skipping, or rate limits)?
 
-Let me know how you’d like to proceed!
+Let me know how you'd like to proceed!
 
 ---
 

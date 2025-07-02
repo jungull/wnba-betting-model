@@ -10,7 +10,7 @@
 
 ### 2. Install Dependencies
 ```bash
-pip install -r requirements.txt
+pip install -r setup_scripts/requirements.txt
 ```
 
 ### 3. Test the Integration
