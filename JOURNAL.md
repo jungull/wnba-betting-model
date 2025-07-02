@@ -4,6 +4,33 @@ A running log of progress, experiments, decisions, and reflections for the WNBA 
 
 ---
 
+## [2024-07-01] Advanced Normalization, Player Value, PDA, and Modeling Bake-Off
+
+**Progress:**
+- Implemented advanced opponent strength normalization using multi-metric, weighted 10-game lookback
+- Developed comprehensive player value and PhD-level PDA (Point Differential Added) metrics
+- Built and ran bake-off modeling framework for stat prediction, including model ranking script
+- Organized all documentation into a new `docs/` directory for clarity
+
+**Experiments/Findings:**
+- Found that multi-metric normalization improves context for player stats
+- PDA metric provides an intuitive, all-in-one measure of player impact
+- Model bake-off reveals strengths/weaknesses of different algorithms for each stat
+
+**Decisions:**
+- Use advanced normalization and PDA as core features for future modeling
+- Maintain modular documentation in `docs/` for easier navigation
+
+**Next Steps:**
+- Expand bake-off to more stats and advanced features
+- Integrate betting analysis and edge calculation
+- Continue refining player value and normalization formulas
+
+**Notes:**
+- Documentation and journal now organized for easier project tracking
+
+---
+
 ## [YYYY-MM-DD] Title or Summary
 
 **Progress:**
