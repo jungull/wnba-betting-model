@@ -14,7 +14,7 @@
 ```bash
 # Check current status
 cd wnba_odds_system
-./scripts/check_wnba_status.sh
+/root_scripts/check_wnba_status.sh
 
 # Live monitoring
 python3 scripts/monitor_wnba_collection.py --watch
@@ -52,7 +52,7 @@ wnba_odds_system/
 ### **1. Monitor Collection** (5 minutes)
 ```bash
 cd wnba_odds_system
-./scripts/check_wnba_status.sh
+/root_scripts/check_wnba_status.sh
 ```
 
 ### **2. Verify Process Running**

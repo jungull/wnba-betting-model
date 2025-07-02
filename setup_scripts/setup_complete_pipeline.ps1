@@ -74,7 +74,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "Installing required packages..." -ForegroundColor Green
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r setup_scripts/requirements.txt
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Failed to install dependencies" -ForegroundColor Red
     Read-Host "Press Enter to exit"

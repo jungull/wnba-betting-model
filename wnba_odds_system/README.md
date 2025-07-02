@@ -31,7 +31,7 @@ wnba_odds_system/
 │   ├── wnba_sustainable_collection.log # Current collection
 │   └── wnba_*/                       # Historical logs
 └── examples/                         # Sample data and usage
-    └── sample_wnba_odds_data.csv     # Example output format
+    └── misc_files/sample_wnba_odds_data.csv     # Example output format
 ```
 
 ## 🚀 **Quick Start**
@@ -71,7 +71,7 @@ Each game record contains:
 - **sportsbook**: Specific sportsbook (FanDuel, DraftKings, etc.)
 
 ### **Sample Data**
-See `examples/sample_wnba_odds_data.csv` for format example.
+See `misc_files/sample_wnba_odds_data.csv` for format example.
 
 ## 🛠️ **Core Scripts Explained**
 

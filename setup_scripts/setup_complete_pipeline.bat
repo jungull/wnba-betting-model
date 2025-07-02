@@ -63,7 +63,7 @@ if errorlevel 1 (
 
 echo Installing required packages...
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r setup_scripts/requirements.txt
 if errorlevel 1 (
     echo ERROR: Failed to install dependencies
     pause

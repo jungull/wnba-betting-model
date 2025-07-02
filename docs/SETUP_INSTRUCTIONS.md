@@ -5,7 +5,7 @@
 To completely reproduce the WNBA prediction engine environment on a new Windows computer:
 
 ### Option 1: Batch Script (Recommended)
-1. Download `setup_complete_pipeline.bat` to your desired directory
+1. Download `setup_scripts/setup_complete_pipeline.bat` to your desired directory
 2. Double-click the file or run it from Command Prompt
 3. The script will automatically:
    - Clone the repository from GitHub
@@ -16,7 +16,7 @@ To completely reproduce the WNBA prediction engine environment on a new Windows 
    - Validate the data
 
 ### Option 2: PowerShell Script
-1. Download `setup_complete_pipeline.ps1` to your desired directory
+1. Download `setup_scripts/setup_complete_pipeline.ps1` to your desired directory
 2. Right-click the file and select "Run with PowerShell" or run it from PowerShell
 3. Same functionality as the batch script but with colored output
 
@@ -32,7 +32,7 @@ The setup scripts will:
 
 1. **Clone Repository**: Download the complete project from GitHub
 2. **Create Virtual Environment**: Set up an isolated Python environment
-3. **Install Dependencies**: Install all required packages from `requirements.txt`
+3. **Install Dependencies**: Install all required packages from `setup_scripts/requirements.txt`
 4. **Create Directories**: Set up data, models, and plots folders
 5. **Fetch Data**: Download all WNBA data (boxscores, play-by-play, team gamelogs)
 6. **Validate Data**: Check data completeness and coverage
@@ -60,7 +60,7 @@ After running the script, you'll have:
 1. Clone repository: `git clone https://github.com/gallagjj/wnba-prediction-engine.git`
 2. Create virtual environment: `python -m venv venv`
 3. Activate environment: `venv\Scripts\activate.bat` (or `venv\Scripts\Activate.ps1`)
-4. Install dependencies: `pip install -r requirements.txt`
+4. Install dependencies: `pip install -r setup_scripts/requirements.txt`
 5. Run scripts manually in order (see script order in the setup files)
 
 ## After Setup

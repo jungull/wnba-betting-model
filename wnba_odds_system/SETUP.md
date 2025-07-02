@@ -16,7 +16,7 @@ python3 -c "import requests, pandas, bs4; print('✅ Dependencies installed')"
 cd wnba_odds_system
 
 # Quick status check
-./scripts/check_wnba_status.sh
+/root_scripts/check_wnba_status.sh
 
 # Live monitoring dashboard
 python3 scripts/monitor_wnba_collection.py
