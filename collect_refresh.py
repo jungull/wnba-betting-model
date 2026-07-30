@@ -4,12 +4,16 @@ WNBA data refresh & repair — one-shot, resumable collection run.
 Fills every gap found in the July 2026 completeness audit:
 
   Phase A: 2021 postseason gamelogs (player+team) + play-by-play
+  Phase A2: real TEAM gamelogs for 2021/2022/2023 regular seasons (master-rebuild
+           repair -- data/masters/REBUILD_VALIDATION.md found only player-sum
+           team rows there; player sums cannot carry TEAM turnovers)
   Phase B: 2023 misc-stats REPAIR (paint / PFD / fastbreak / 2nd-chance / pts-off-TOV, per game)
   Phase C: 2025 catch-up — everything after 2025-07-03 (regular + postseason)
   Phase D: 2026 season to date (15 teams incl. Toronto Tempo, Portland Fire)
   Phase E: validation report
 
 Run from the repo root (wnba-betting-model/):   python collect_refresh.py
+Just the team-gamelog backfill (3 API calls):   python collect_refresh.py --teams-only
 Requires:  pip install nba_api pandas pyarrow
 Resumable: every per-game fetch is checkpointed to disk; re-running skips completed work.
 Outputs:   data/refresh_2026/   (never overwrites existing data files)
@@ -115,6 +119,55 @@ def season_games(season, types=("Regular Season", "Playoffs")):
         ids |= set(t.GAME_ID.unique()) if len(t) else set()
     return out, sorted(ids)
 
+def phase_team_backfill(report=None):
+    """Phase A2: real TEAM gamelogs for the 2021-2023 regular seasons.
+
+    The July-2026 master rebuild (data/masters/REBUILD_VALIDATION.md) found no
+    real team gamelog files for these season-kinds locally; master_team derives
+    those 1,296 rows from player sums, which cannot contain TEAM turnovers
+    (shot-clock / 5-sec / 8-sec, credited to no player) -- 758 team-games differ
+    from true team tov by 1-5. One LeagueGameLog T call per season writes
+    gamelog_team_{year}_regular_season.parquet in the same schema as the other
+    gamelog_team_* files; the next build_masters.py run then upgrades those rows
+    to box_source='team_gamelog' in place.
+    Resumable: the seasons are final, so an existing non-empty file is skipped.
+    """
+    report = {} if report is None else report
+    print("\n== Phase A2: 2021-2023 regular-season TEAM gamelogs ==")
+    for season in ("2021", "2022", "2023"):
+        path = OUT / f"gamelog_team_{season}_regular_season.parquet"
+        if path.exists():
+            n = pd.read_parquet(path, columns=["GAME_ID"]).GAME_ID.nunique()
+            print(f"  {season}: exists ({n} games) — skip")
+            report[f"team_gamelog_{season}_rs_games"] = int(n)
+            continue
+        t = get_gamelog(season, "Regular Season", "T")
+        if not len(t):
+            print(f"  {season}: EMPTY response — not saved")
+            report[f"team_gamelog_{season}_rs_games"] = 0
+            continue
+        t["season_type"] = "Regular Season"
+        # honesty checks before saving: every game has exactly 2 team rows, and
+        # the game-id set matches the old-era player season file (same universe)
+        notes = []
+        rows_per_game = t.GAME_ID.value_counts()
+        if (rows_per_game != 2).any():
+            notes.append(f"{int((rows_per_game != 2).sum())} games without exactly 2 team rows")
+        old_players = Path("data") / f"wnba_gamelog_{season}.parquet"
+        if old_players.exists():
+            pg = set(pd.read_parquet(old_players, columns=["GAME_ID"]).GAME_ID.astype(str))
+            tg = set(t.GAME_ID.astype(str))
+            if tg != pg:
+                notes.append(f"game-id set differs from {old_players.name}: "
+                             f"{len(tg - pg)} only-in-pull, {len(pg - tg)} only-in-local")
+        save(t, path)
+        print(f"  {season}: {t.GAME_ID.nunique()} games, {len(t)} rows -> {path.name}"
+              f"  [{'; '.join(notes) if notes else 'clean'}]")
+        report[f"team_gamelog_{season}_rs_games"] = int(t.GAME_ID.nunique())
+        if notes:
+            report[f"team_gamelog_{season}_rs_anomalies"] = notes
+    return report
+
 def main():
     report = {}
 
@@ -126,6 +179,9 @@ def main():
     if len(t): save(t, OUT / "gamelog_team_2021_playoffs.parquet")
     per_game(ids, "pbp"); per_game(ids, "misc"); per_game(ids, "advanced")
     report["2021_postseason_games"] = len(ids)
+
+    # ---------- Phase A2: 2021-2023 regular-season TEAM gamelogs ----------
+    phase_team_backfill(report)
 
     # ---------- Phase B: 2023 misc repair ----------
     print("\n== Phase B: 2023 misc-stats repair ==")
@@ -180,4 +236,18 @@ def main():
           "&& git push -u origin data-refresh-2026")
 
 if __name__ == "__main__":
-    main()
+    if "--teams-only" in sys.argv[1:]:
+        rep = phase_team_backfill()
+        # fold the results into the existing collection report so provenance
+        # of the backfill survives alongside the original run's entries
+        rp = OUT / "collection_report.json"
+        merged = json.loads(rp.read_text()) if rp.exists() else {}
+        merged.update(rep)
+        if FAILURES:
+            merged["team_backfill_failures"] = FAILURES
+        rp.write_text(json.dumps(merged, indent=2))
+        print(json.dumps(rep, indent=2))
+        if FAILURES:
+            sys.exit(f"team backfill had failures: {FAILURES}")
+    else:
+        main()

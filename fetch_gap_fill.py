@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from collect_refresh import get_gamelog, per_game, save, OUT, FAILURES
+from collect_refresh import get_gamelog, per_game, save, OUT, FAILURES, phase_team_backfill
 
 def main():
     # 1 - missing 2025 advanced
@@ -29,21 +29,18 @@ def main():
     print(f"2025 advanced: {len(missing)} games missing")
     per_game(missing, "advanced")
 
-    # 2 - real team gamelogs 2021-2023 regular seasons
-    for season in ("2021", "2022", "2023"):
-        f = OUT / f"gamelog_team_{season}_regular_season.parquet"
-        if f.exists():
-            print(f"{season} team gamelog: exists, skip")
-            continue
-        df = get_gamelog(season, "Regular Season", "T")
-        if len(df):
-            df["season_type"] = "Regular Season"
-            save(df, f)
-        print(f"{season} regular team gamelog: {len(df)} rows")
+    # 2 - real team gamelogs 2021-2023 regular seasons (now a collect_refresh
+    # phase -- single implementation, same output paths; skips existing files)
+    phase_team_backfill()
 
-    # 3 - refreshed player gamelogs for the two pbp-contradicted seasons
+    # 3 - refreshed player gamelogs for the two pbp-contradicted seasons.
+    # NOTE: written to a refetch/ SUBFOLDER on purpose -- build_masters.py loads
+    # every refresh_2026/gamelog_player_*.parquet, so a refetch file at the top
+    # level would collide with the old-era season files as ~9k duplicate
+    # (game_id, player_id) rows. These are reference pulls, not master inputs
+    # (the master repair is repair_gamelog_two_games.py).
     for season in ("2022", "2023"):
-        f = OUT / f"gamelog_player_{season}_regular_season_refetch.parquet"
+        f = OUT / "refetch" / f"gamelog_player_{season}_regular_season_refetch.parquet"
         if f.exists():
             print(f"{season} player refetch: exists, skip")
             continue
