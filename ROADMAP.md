@@ -1,144 +1,220 @@
 # ROADMAP — WNBA Prediction Engine
 
-*Created 2026-07-30. This is the living plan; it supersedes the phase outline in
-`project_docs/HANDOFF.md` §6 (kept unchanged as the historical record). The constitution in
-HANDOFF.md §3 governs every item below: walk-forward always, every trend feature shifted,
-leakage audit before believing any result, isolated experiments, composites replace their
-ingredients, odds are benchmarks never features, no imputation — go get the real data.*
+*Created 2026-07-30; revised same day after John's methodology review. Supersedes the phase
+outline in `project_docs/HANDOFF.md` §6 (kept unchanged as historical record). The HANDOFF §3
+constitution remains binding with two amendments recorded below (odds rule, no-imputation rule).*
 
-**Status stamps reflect 2026-07-30.** Six AI-era workstreams (W1–W6) are integrated into the
-standing phase plan. Statuses: **build-in** (on the critical path, ships into the model after
-passing its gate) vs **quarantined experiment** (isolated; must beat the incumbent baseline on
-walk-forward error before promotion; result reported on the leaderboard either way).
+## The three systems
+
+This project is **three separate systems** sharing data infrastructure but with separate
+targets, separate gates, and separate leaderboards. A model may never "win" through timestamp
+ambiguity, metric choice, or repeated experimentation.
+
+1. **Basketball forecasting model** — predicts game outcomes from basketball information only.
+2. **Market / closing-line model** — predicts market behavior from market information.
+3. **Betting decision & bankroll system** — combines 1 and 2 into risk-controlled decisions.
+
+### Amended constitution rules
+- **Odds rule (amends HANDOFF §3.7):** odds and market-derived variables are **prohibited in
+  the basketball outcome model**. They are **permitted in the separately trained market model
+  and the betting decision layer**. Benchmarking against the market remains universal.
+- **No-imputation rule (amends HANDOFF §3.8):** never fabricate or silently fill historical
+  truth. At prediction time, missing information must produce an explicit missing state, a
+  validated fallback model, or **no prediction / no bet**. ("Go get the real data" governs
+  historical collection; live systems degrade explicitly, never silently.)
 
 ---
 
-## Phase 0 — Dataset completion & certification — ✅ effectively DONE (tonight)
+## The prediction contract (governs everything downstream)
 
-| Item | Status 2026-07-30 |
-|---|---|
-| 2021 postseason + 2023 misc repair + 2025 completion + 2026 to date (`collect_refresh.py`, V3 endpoints) | ✅ done — 0 permanent failures; 2023 paint 50/50 nonzero |
-| Per-game misc/advanced for 2021R/2022/2024 + 2023 advanced (`collect_misc_backfill.py`) | 🔄 running tonight |
-| Odds: July 2025→now backfilled (292 snapshots), live capture 2×/day (`WNBA_OddsCapture`) | ✅ done / live |
-| Injury report capture 2×/day, official PDF + ESPN fallback (`WNBA_InjuryCapture`) | ✅ live since today |
-| Historical injury/absence archive 2021→now (`scrape_injury_history.py`) | 🔄 finishing tonight |
-| Starters / stints / minutes from all 1,424 PBP games (`derive_lineups.py`) | ✅ done — median error 0.00 min vs box |
-| Playoff player-gamelog season files (2022–24) + V3 refetch of 17 stray files | queued behind backfill |
-| Full certification (`audit_completeness.py` → AUDIT_REPORT.md) | queued last |
+Every forecast is made at a named **decision time** and may use only information observably
+available before its cutoff. Every model is compared against the **market line available at
+the same cutoff** — the close is a separate, later benchmark and the CLV outcome measure.
 
-## Phase 1 — Foundation rebuild & channel re-validation (next session)
+| Forecast | Decision time | Outputs | Market comparison |
+|---|---|---|---|
+| Early | T−24h | home & away score distributions, margin/total distributions | line at T−24h |
+| Morning | T−8h | same | contemporaneous line |
+| Pregame | T−90m | same | contemporaneous line |
+| Final | T−30m | same | contemporaneous line |
 
-1. **V2/V3 normalizer module** — shape already decided by the stint work: two thin schema
-   parsers feeding one shared event/column model. One module, tested on games in both eras.
-2. **Master rebuild from raw** (all seasons uniform) + row-level diff vs the July-15 Drive
-   masters on the overlap span. Unexplained mismatch stops the line.
-3. **Channel re-validation**: regenerate `channel_base.csv`; re-run the structural-chain
-   experiment with repaired 2023; walk-forward test on 2024, 2025, 2026 separately;
-   league-prior fallback for expansion teams' first games (GSV '25, TOR/PDX '26).
-   - **Gate:** structural sum ≤ raw-trend sum and ≤ monolithic on all three test seasons;
-     paint channel promoted from provisional (or demoted, with the evidence written down).
-   - Deliverable: refreshed leaderboard MD with bookie rows on the enlarged odds sample.
+**Provenance fields required on every feature row:** `event_time`, `published_time`,
+`observed_time`, `forecast_cutoff`, `source`, `source_version`. Applies with special force to
+injury designations, starters, referee assignments, news items, and corrected/refetched PBP
+files. A feature whose availability time cannot be established is not a feature.
+
+---
+
+## Phase 0 — Continuous data certification (never "done")
+
+Collection status 2026-07-30: gamelogs/pbp/misc/advanced complete or completing tonight
+(2023 paint repaired 50/50; granular backfill running); odds 2022→now continuous (July-2025
+gap backfilled, 292 snapshots); official injury designations captured live (2×/day → hourly
+as of tonight); 202,987 shot locations (all seasons); starters/stints derived from all 1,424
+PBP games (median minutes error 0.00); historical injury archive crawling; officials crawl
+queued; full audit + data commit tonight.
+
+**Standing daily certification** (`daily_certify.py`, scheduled; failures alert, never
+auto-fix): schema drift; duplicate games/players; game-ID reconciliation across sources;
+point-in-time availability of every capture; coverage by season × source; **PBP score
+reconciliation** (running score vs final, FT sequences, technicals, OREB chains, OT);
+**lineup possession reconciliation** (not just boxscore minutes — RAPM needs correct score
+changes, substitutions, and stint boundaries); odds freshness & stale-book detection;
+injury/news feed freshness; expansion-team identity mapping; postponements & changed tip
+times (tip time known-at-capture is stored with every odds snapshot).
+
+## Phase 0.5 — Point-in-time & evaluation certification (before any channel testing)
+
+The **evaluation harness, in code, before any model is rebuilt** (`evalharness/`):
+- Outer walk-forward evaluation; inner walk-forward tuning strictly inside the training
+  period; a separate calibration window disjoint from model fitting; a **locked final holdout
+  touched once** (declared in the registry the day it is first used).
+- **Experiment registry:** every experiment registered (id, hypothesis, features, gate
+  thresholds) in `experiments/registry.jsonl` and committed **before** execution. Unregistered
+  results are void.
+- **Paired, game-level residual comparison** against the incumbent; bootstrap confidence
+  intervals **clustered by game date** (and by team as sensitivity).
+- **Minimum practical improvement** preregistered per experiment; automatic rejection if
+  prediction coverage materially declines.
+- **Frozen reference baselines** pinned permanently in the harness: home-advantage-only
+  (11.22), raw-trend channel sum (10.53), incumbent structural chains (9.54), minutes
+  carry-forward (5.42) and expanding-mean (5.12), and "market at cutoff" rows.
+
+### Standard promotion gate (template — thresholds preregistered per experiment)
+Promote a challenger only when ALL hold on pooled walk-forward results:
+1. Pooled MAE (or the registered primary metric) improves by ≥ the preregistered meaningful
+   amount (default 0.10 points for game-margin models);
+2. The 90% paired-bootstrap CI excludes degradation worse than 0.05;
+3. **Non-inferior in every individual season** (no season degrades by more than 0.15);
+4. The **final joint forecast** (home score, away score, margin, total) does not degrade;
+5. Coverage and operational reliability maintained.
+Never "must win all three seasons" (one bad season vetoing a real gain) and never "three tiny
+point wins" (promoting noise).
+
+### Metrics (probability quality is first-class)
+- Score/margin/total MAE and RMSE; pinball loss on forecast quantiles; CRPS (distributional);
+  cover-probability Brier; log loss; reliability/calibration plots.
+- Betting-facing: ROI after vig; CLV **by decision time**; max drawdown; bankroll volatility;
+  bet count / effective sample size.
+- Calibration method is an open competition on past data only: Platt/sigmoid vs isotonic vs
+  hierarchical — isotonic is NOT the presumed winner at WNBA sample sizes.
+
+### Leaderboards (replaces the single MAE leaderboard)
+`leaderboards/FORECASTING.md` (score/margin/total point error, by decision time) ·
+`leaderboards/PROBABILISTIC.md` (CRPS, log loss, Brier, calibration) ·
+`leaderboards/MARKET.md` (close-prediction error, line-path models) ·
+`leaderboards/BETTING.md` (simulated ROI, CLV, drawdown — decision policies).
+Market rows appear as benchmarks in all four. Quarantined experiments post win or lose.
+
+## Phase 1 — Uniform master rebuild & channel re-validation
+
+1. V2/V3 normalizer (in flight tonight) → uniform masters with provenance fields → row-level
+   diff vs the July-15 Drive masters; unexplained mismatch stops the line.
+2. **Channel re-validation under the harness** with repaired 2023: walk-forward 2024/2025/2026
+   under the standard gate (pooled + non-inferiority — not all-seasons-must-win).
+3. **Joint-forecast coherence:** channels are promoted only as part of a coherent joint
+   forecast. Track the **residual covariance matrix between channels** — a channel that
+   improves alone but breaks error cancellation in the sum is rejected by gate #4.
+   "Structural sum" means a coherent joint forecast, not an arithmetic sum of independently
+   optimized parts.
 
 ## Phase 2 — Player layer
 
-### 2a. W1 — News → Availability Engine (build-in; highest priority)
-- **Purpose:** close the documented ~0.8 MAE gap vs average bookie, which is tonight-specific
-  lineup/minutes information. Feeds the two-stage minutes model (`project_docs/MINUTES_MODEL_SPEC.md`).
-- **Data:** `data/injury_capture/` (live since today — official designations 2×/day with
-  designation-progression history), plus daily news text: beat-reporter feeds, team sites,
-  coach pressers. Every raw text and every extraction logged for audit.
-- **Build sketch:** daily LLM extraction job → structured per-player rows: `P(plays)`,
-  expected-minutes delta, rotation-change flags, confidence, source citations. Backfill-test
-  on the historical injury archive where dates allow.
-- **Validation gate:** extracted signals must improve walk-forward minutes MAE over the
-  shifted minutes-EWMA × active-flag baseline. Measured floors to beat (2024, played rows):
-  carry-forward 5.42, expanding-mean 5.12. No gate pass → no entry into the main model.
-- **Slot / status:** Phase 2a / build-in.
+### 2a. W1 — News → Availability (build-in, highest priority)
+- **LLM = auditable extraction layer only** — it never invents minutes. Extraction schema:
+  exact quoted evidence, source tier (player/coach/team/league/reporter), publication time,
+  body part, designation, reported limitation.
+- **Three separate targets:** `P(active)` (Brier, log loss) · `E[minutes | active]` (MAE) ·
+  uncertainty interval on conditional minutes. Combined `E[min] = P(active) × E[min|active]`
+  evaluated separately, then downstream game-model impact (gate #4).
+- **Point-in-time honesty:** the historical injury archive records what was *eventually*
+  known, not what was knowable at a historical cutoff. W1 backtests include only records with
+  trustworthy contemporary timestamps; the live capture (designation revisions preserved,
+  hourly on game days) is the gold-standard training set as it accumulates.
+- Gate baseline: shifted minutes-EWMA × active-flag (5.42 / 5.12 floors), under the harness.
 
-### 2b. W2 — Zone Capability Maps (build-in)
-- **Purpose:** upgrade each channel chain to zone-tendency × opponent-zone-defense ×
-  conversion; matchup overlays (our O-map minus their D-allowed map) become channel inputs.
-- **Data:** `shotchartdetail` (stats API, LeagueID 10), all seasons — one more per-game/per-season
-  crawl to add to the collection scripts (endpoint unaffected by the V2 boxscore retirement;
-  verify on one game before the full pull, per today's V3 lesson).
-- **Build sketch:** per-team and per-player zone efficiency (O and D-allowed); overlay
-  differentials per matchup; split player scoring into shot-quality-created vs shot-making
-  (xP model) — quality persists, making regresses.
-- **Validation gate:** per-channel walk-forward MAE vs the current structural chains; swap in
-  only the channels that improve. Composites replace ingredients — never stack.
-- **Slot / status:** Phase 2b / build-in.
+### 2b. RAPM (build-in; before W2 per revised critical path)
+- Inputs ready: 116,317 validated stints. Prerequisite: possession attribution passes the
+  Phase-0 possession reconciliation (score changes, FT sequences, OREB chains, OT).
+- **Gates:** predictive stint error on future games; future on/off & lineup performance
+  prediction; year-over-year stability; stability across reasonable ridge penalties;
+  sensitivity to garbage-time/low-leverage possessions; sane replacement-level behavior for
+  rookies and low-minute players. "Known stars rank sensibly" is a **smoke test for broken
+  data only — never a promotion criterion** (reputation hand-tuning risk).
 
-### 2c. RAPM — the player Elo (build-in)
-- **Data: ready today** — `data/derived/stints.parquet` (116,317 stints, all 1,424 games,
-  exact to the boxscore) awaits possession attribution from the normalizer.
-- Ridge regression on possession stints, offense/defense split, within-era priors.
-- **Gates:** face validity (known stars rank sensibly), year-over-year stability, and the
-  minute-weighted aggregation must beat/tie team chains before replacing them.
+### 2c. W2 — Location-and-context expected points (build-in)
+- Renamed from "shot quality": without defender distance/contest/pass/movement data this is
+  **location-based** xP, and claims stay sized accordingly.
+- Five separated components: shot-location tendency · location-based conversion expectation ·
+  shooter over/under-performance vs location xP · opponent allowed-location distribution ·
+  opponent conversion-allowed (shrunken).
+- **Heavy empirical-Bayes/hierarchical shrinkage** on player-zone cells; player maps activate
+  only at sufficient attempts, else back off to team/position/league priors.
+- Gates: per-channel improvement AND joint-forecast improvement (residual-covariance rule).
 
-### W3 — NBA Transfer Learning (QUARANTINED experiment; after 2c exists)
-- **Hypothesis:** pretrain player/lineup embeddings or possession-sequence models on NBA PBP,
-  fine-tune on WNBA to beat small-sample limits.
-- **Documented concern (John):** playstyle divergence (e.g., dunking changes interior
-  dynamics) may import drift, not signal. Hence quarantine.
-- **Validation gate:** must beat the WNBA-only equivalent (classic RAPM / WNBA-only
-  embeddings) on walk-forward MAE. Comparison reported on the leaderboard **either way**.
-- **Slot / status:** experiment queue, low priority until RAPM baseline exists / quarantined.
+### W3 — NBA transfer learning (QUARANTINED; after RAPM exists)
+Unchanged: must beat WNBA-only equivalents under the harness; result posted win or lose.
+John's documented concern (playstyle drift, e.g. interior dynamics) stands.
 
-### W4 — Referee Model (Phase 2 sidecar; build-in)
-- **Purpose:** refs have persistent foul/FTA-rate tendencies and assignments publish pre-game;
-  the FT chain already reserves the slot (drawn-rate × committed-rate × **ref adjustment**).
-- **Data:** officials per game from the boxscore-summary endpoint (verify V3-era health on one
-  game first; ~1,500-game crawl, same checkpoint pattern) + daily assignments page going forward.
-- **Build sketch:** per-ref shrunken foul/FTA priors (league-mean prior, games-reffed weight).
-- **Validation gate:** FT-channel walk-forward MAE improves vs current FT chain.
-- **Slot / status:** Phase 2 sidecar / build-in (small, cheap, bounded).
+### W4 — Referee model (cheap isolated sidecar)
+- **Assignments are timestamped data:** usable only if public before the forecast cutoff.
+  Historical officials crawl (queued) supplies priors; a daily assignments capture feeds live
+  point-in-time features.
+- Partial pooling across officials and seasons; three-official crew aggregation.
+- Evaluate: foul rate, shooting-foul rate, FTA per relevant attempt, home/away differential,
+  pace effects. Stays isolated until it passes both FT-channel and joint gates — small effect
+  expected; never auto-included.
 
-### W6 — Playing-Through-It Detector (experiment queue)
-- **Purpose:** flag degraded-but-active players before official news.
-- **Data: inputs exist today** — rolling FT%, stint-length trends (`stints.parquet`),
-  rim-attempt share (W2 zones once pulled), vs the historical injury archive as ground truth.
-- **Validation gate (retroactive first):** historical flags must precede documented injury
-  news at better-than-chance rates. Promote to a live minutes-model input only if yes.
-- **Slot / status:** experiment queue / worth a try, after W1's plumbing exists.
+### W6 — Playing-through-it detector (experiment queue)
+- Precursors are rare → raw accuracy is meaningless. Registered metrics: precision & recall,
+  **false alerts per 100 player-games**, median lead time (days before documented news),
+  incremental value beyond schedule/rest/minutes baselines, minutes-model improvement,
+  game-model improvement. Must work **prospectively** before promotion — a retrospective
+  correlation is a leaderboard footnote, not a feature.
 
-## Phase 3 — Betting & sizing engine
+## Phase 3 — Market model & betting system
 
-### W5 — Closing-Line Model (build-in; the Phase 3 foundation)
-- **Purpose:** the engine bets only when the game model disagrees with the **predicted close**
-  — a CLV filter, not just a vs-current-line edge.
-- **Data: trainable now** — snapshot sequences in `data/drive_masters/master_odds.csv`
-  (2022–Jul 2025, ~5-min cadence) + `data/odds_capture/historical/` (Jul 2025–now, 2/day)
-  + live 2×/day capture forward.
-- **Build sketch:** predict close from open + line path + elapsed news flow (W1 outputs);
-  evaluate close-prediction error by book; then edge = model line vs predicted close.
-- **Validation gate:** beats "close = current line" and "close = open" naive baselines on
-  held-out seasons; then positive simulated CLV on walk-forward bets.
-- Then: calibration (isotonic) → fractional Kelly → **paper-trade the rest of 2026**.
-- **Gate to real money (John's call):** beat avg-bookie MAE out-of-sample AND sustained
-  positive paper CLV.
+### W5 — Market / closing-line model (separate system #2)
+- **Capture > modeling for now**: line-path modeling waits for Phase 3, but the capture is
+  immediate (hourly as of tonight) because line paths cannot be recreated. Stored per
+  snapshot: book, spread/total, price/juice, timestamp, **tip time known at capture**,
+  open/current/final-available-pre-tip, suspensions & reopenings, stale-line status, best
+  executable vs consensus price (derivable from per-book rows; raw JSON always archived).
+- Old master (5-min cadence, 2022–25) supports line-path research now (baseline study in
+  flight); the new 2/day→hourly era is analyzed at its own cadence — findings that don't
+  transfer across cadences are labeled as such.
+
+### Betting decision layer (separate system #3)
+- **Three decision policies compared under the harness — none presumed:**
+  (1) basketball model vs current market; (2) basketball model vs predicted close;
+  (3) basketball model blended with current market.
+- **Real-money gate (replaces "beat avg bookie MAE + paper CLV"):** on a **preregistered
+  prospective sample**: calibrated edge probabilities (conditional edge calibration), positive
+  CLV after vig-aware normalization, acceptable drawdown, adequate bet count, and performance
+  **not explained by one period/team/book**. Global bookie MAE is diagnostic, never a
+  necessary condition — a model can lose globally and win in a calibrated subset.
+- **Kelly with explicit uncertainty discounting:** conservative probability shrinkage toward
+  the market; uncertainty haircut on estimated edge; max stake per game; max correlated
+  exposure per slate; daily/weekly loss limits; no-bet zone around zero edge; overconfidence
+  sensitivity tests. Fractional Kelly alone is not a risk system.
 
 ---
 
-## Leaderboard conventions (extended)
+## Immediate parallel captures (cannot be recreated later — running/starting now)
+- Hourly odds snapshots 10:00–23:00 (paid month; free-tier fallback design: 2-hourly on game
+  days only, fits 500 credits/mo)
+- Injury designation revisions, hourly on game days (raw PDF always archived)
+- News raw-text capture (feed inventory in flight tonight)
+- Referee assignments daily capture (to build once assignments-page format is pinned)
+- Exact forecast-time feature snapshots (begins when daily forecasts begin)
 
-Single `LEADERBOARD.md` ranked by MAE with bookie rows always present (existing rule), plus:
-- **Minutes section:** baselines pinned (carry-forward 5.42, expanding-mean 5.12 on 2024);
-  every W1 variant posts here before touching the main model.
-- **Per-channel section:** current structural chains are the incumbents; W2/W4 variants post
-  per-channel MAE next to them.
-- **Quarantine section:** W3 and W6 results reported win or lose — negative results are
-  results (the astrology rule).
-- **W5 section:** close-prediction error vs the two naive baselines + simulated CLV.
-- Per model: feature-importance CSV + feature-dictionary entries (existing rules).
+## Explicitly rejected (unchanged)
+Social sentiment · streak/momentum narratives · broadcast-video CV (parked moonshot) ·
+astrology.
 
-## Explicitly rejected (do not add)
-- Social sentiment features
-- Streak/momentum narrative features
-- Broadcast-video CV tracking — parked as moonshot; revisit only if the engine consistently
-  beats the close
-- Astrology (the `astro-sports` experiment stays retired)
-
-## Critical path
-**Data refresh ✅ (2026-07-30) → channel re-validation → W1 + expected-minutes model → W2
-zones → RAPM (then W3 quarantine test) → W4 refs → W5 closing-line → Kelly sizing engine →
-paper-trade 2026.**
+## Revised critical path
+Continuous certification → point-in-time prediction contract → **evaluation/calibration
+harness** → frozen simple baselines → uniform master rebuild → channel revalidation → W1
+extraction + conditional-minutes model → RAPM → W2 zones → coherent full-model rebuild → W4
+referee experiment → calibrated outcome distributions → betting simulator → W5 market model →
+shadow/paper trading → risk-controlled sizing.
