@@ -673,7 +673,7 @@ def test_c_registry_regime_required_and_validated():
     A/B/C/D; anything else refuses; lowercase input normalizes; the field is
     stored on the ledger record."""
     import tempfile
-    from evalharness.registry import RegistryError
+    from evalharness.registry import RegistryError, get_registration
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
         # missing regime -> TypeError (required positional)
