@@ -192,7 +192,7 @@ def test_c_registry_refuses_unregistered():
 def test_c_registry_refuses_late_registration():
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
-        register("exp_late", "h", "f", "margin_mae", TH, "incumbent",
+        register("exp_late", "h", "f", "margin_mae", TH, "incumbent", "A",
                  registry_path=reg)
         past = datetime.now(timezone.utc) - timedelta(hours=1)
         _raises(LateRegistrationError, begin_evaluation, "exp_late",
@@ -206,15 +206,15 @@ def test_c_registry_refuses_late_registration():
 def test_c_registry_duplicate_registration_raises():
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
-        register("exp_dup", "h", "f", "margin_mae", TH, "inc", registry_path=reg)
+        register("exp_dup", "h", "f", "margin_mae", TH, "inc", "A", registry_path=reg)
         _raises(DuplicateRegistrationError, register, "exp_dup", "h2", "f2",
-                "margin_mae", TH, "inc", registry_path=reg)
+                "margin_mae", TH, "inc", "A", registry_path=reg)
 
 
 def test_c_registry_run_numbers_visible():
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
-        register("exp_runs", "h", "f", "margin_mae", TH, "inc", registry_path=reg)
+        register("exp_runs", "h", "f", "margin_mae", TH, "inc", "A", registry_path=reg)
         r1 = record_evaluation("exp_runs", {"metric": 9.5}, registry_path=reg)
         r2 = record_evaluation("exp_runs", {"metric": 9.4}, registry_path=reg)
         assert r1["run_number"] == 1 and r2["run_number"] == 2
@@ -231,7 +231,7 @@ def _holdout_setup(reg):
     df = make_games()
     declare_holdout("final_2024", seasons=[2024],
                     description="locked final season", registry_path=reg)
-    register("exp_hold", "h", "f", "margin_mae", TH, "inc", registry_path=reg)
+    register("exp_hold", "h", "f", "margin_mae", TH, "inc", "A", registry_path=reg)
     return df
 
 
@@ -252,7 +252,7 @@ def test_d_holdout_refuses_second_claim():
         claim_holdout("final_2024", "exp_hold", registry_path=reg)
         rows = expose_holdout(df, "final_2024", "exp_hold", registry_path=reg)
         assert set(rows["season"]) == {2024}
-        register("exp_hold2", "h", "f", "margin_mae", TH, "inc", registry_path=reg)
+        register("exp_hold2", "h", "f", "margin_mae", TH, "inc", "A", registry_path=reg)
         _raises(HoldoutAlreadyClaimedError, claim_holdout, "final_2024",
                 "exp_hold2", registry_path=reg)
         _raises(HoldoutAlreadyClaimedError, claim_holdout, "final_2024",
@@ -266,7 +266,7 @@ def test_d_holdout_expose_only_for_claimant():
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
         df = _holdout_setup(reg)
-        register("exp_other", "h", "f", "margin_mae", TH, "inc", registry_path=reg)
+        register("exp_other", "h", "f", "margin_mae", TH, "inc", "A", registry_path=reg)
         claim_holdout("final_2024", "exp_hold", registry_path=reg)
         _raises(HoldoutNotClaimedError, expose_holdout, df, "final_2024",
                 "exp_other", registry_path=reg)
@@ -309,7 +309,7 @@ def test_e_bootstrap_seed_reproducible_and_cluster_counts():
 def test_e_compare_seed_reproducible_and_team_sensitivity():
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
-        register("exp_seed", "h", "f", "margin_mae", TH, "inc", registry_path=reg)
+        register("exp_seed", "h", "f", "margin_mae", TH, "inc", "A", registry_path=reg)
         ch, inc = _gate_frames(_deltas_constant(0.3, jitter=0.2))
         r1 = compare_to_incumbent(ch, inc, experiment_id="exp_seed",
                                   registry_path=reg, seed=42, n_boot=400,
@@ -365,7 +365,7 @@ def _run_gate_case(date_deltas, *, coverage=(0.95, 0.95), joint=None, tag="case"
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
         register(f"exp_{tag}", "gate truth-table case", "synthetic",
-                 "margin_mae", TH, "incumbent_structural_chains",
+                 "margin_mae", TH, "incumbent_structural_chains", "A",
                  registry_path=reg)
         ch, inc = _gate_frames(date_deltas)
         res = compare_to_incumbent(
@@ -473,7 +473,7 @@ def _tiny_compare_frames():
 def test_compare_hand_computed_numbers():
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
-        register("exp_hand", "h", "f", "margin_mae", TH, "inc", registry_path=reg)
+        register("exp_hand", "h", "f", "margin_mae", TH, "inc", "A", registry_path=reg)
         ch, inc = _tiny_compare_frames()
         res = compare_to_incumbent(ch, inc, experiment_id="exp_hand",
                                    registry_path=reg, coverage=(1.0, 1.0),
@@ -493,7 +493,7 @@ def test_compare_hand_computed_numbers():
 def test_compare_refuses_truth_mismatch():
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
-        register("exp_truth", "h", "f", "margin_mae", TH, "inc", registry_path=reg)
+        register("exp_truth", "h", "f", "margin_mae", TH, "inc", "A", registry_path=reg)
         ch, inc = _tiny_compare_frames()
         inc.loc[2, "y_true"] = 4.0
         _raises(ComparisonError, compare_to_incumbent, ch, inc,
@@ -503,7 +503,7 @@ def test_compare_refuses_truth_mismatch():
 def test_compare_refuses_duplicate_games_and_partial_overlap():
     with tempfile.TemporaryDirectory() as tmp:
         reg = Path(tmp) / "registry.jsonl"
-        register("exp_guard", "h", "f", "margin_mae", TH, "inc", registry_path=reg)
+        register("exp_guard", "h", "f", "margin_mae", TH, "inc", "A", registry_path=reg)
         ch, inc = _tiny_compare_frames()
         dup = pd.concat([ch, ch.iloc[[0]]], ignore_index=True)
         _raises(ComparisonError, compare_to_incumbent, dup, inc,
@@ -635,7 +635,7 @@ def test_leaderboards_render():
         out = Path(tmp) / "boards"
         # a forecasting experiment, evaluated through the full compare path
         register("exp_board", "beats incumbent", "synthetic", "margin_mae", TH,
-                 "incumbent_structural_chains", registry_path=reg,
+                 "incumbent_structural_chains", "A", registry_path=reg,
                  decision_time="T-24h")
         ch, inc = _gate_frames(_deltas_constant(0.3, jitter=0.05))
         compare_to_incumbent(ch, inc, experiment_id="exp_board",
@@ -643,7 +643,7 @@ def test_leaderboards_render():
                              joint_check=lambda: True, seed=5, n_boot=300)
         # a quarantined probabilistic experiment via plain evaluate()
         register("exp_w3_transfer", "NBA transfer", "quarantined", "crps", TH,
-                 "incumbent_structural_chains", registry_path=reg,
+                 "incumbent_structural_chains", "A", registry_path=reg,
                  quarantined=True)
         record_evaluation("exp_w3_transfer",
                           {"metric_challenger": 7.7, "verdict": "FAIL",
@@ -667,6 +667,28 @@ def test_leaderboards_render():
 # ===========================================================================
 # plain runner
 # ===========================================================================
+
+def test_c_registry_regime_required_and_validated():
+    """ROADMAP four-regimes rule: every registration declares exactly one of
+    A/B/C/D; anything else refuses; lowercase input normalizes; the field is
+    stored on the ledger record."""
+    import tempfile
+    from evalharness.registry import RegistryError
+    with tempfile.TemporaryDirectory() as tmp:
+        reg = Path(tmp) / "registry.jsonl"
+        # missing regime -> TypeError (required positional)
+        _raises(TypeError, register, "exp_noregime", "h", "f", "margin_mae",
+                TH, "inc", registry_path=reg)
+        # invalid regime -> RegistryError
+        _raises(RegistryError, register, "exp_badregime", "h", "f",
+                "margin_mae", TH, "inc", "X", registry_path=reg)
+        # lowercase normalizes and is stored
+        rec = register("exp_regime_d", "h", "f", "margin_mae", TH, "inc",
+                       "d", registry_path=reg)
+        assert rec["regime"] == "D", rec
+        stored = get_registration("exp_regime_d", registry_path=reg)
+        assert stored["regime"] == "D", stored
+
 
 def _run_all():
     tests = [(n, f) for n, f in sorted(globals().items())

@@ -38,6 +38,11 @@ SCHEMA = "evalharness/1"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REGISTRY = REPO_ROOT / "experiments" / "registry.jsonl"
 
+#: ROADMAP "The four evaluation regimes (every registered experiment declares one)":
+#: A historical core · B audited historical availability subset · C oracle
+#: sensitivity analysis · D prospective full-system (frozen model, immutable log).
+REGIMES = ("A", "B", "C", "D")
+
 
 # ---------------------------------------------------------------------------
 # errors
@@ -188,6 +193,7 @@ def register(
     primary_metric: str,
     thresholds: "GateThresholds | dict",
     incumbent_id: str,
+    regime: str,
     *,
     registry_path: "Path | str | None" = None,
     board: Optional[str] = None,
@@ -198,7 +204,10 @@ def register(
     """Preregister an experiment. MUST run (and hit disk) before evaluation.
 
     Records id, hypothesis, feature description, primary metric, the full gate
-    thresholds and the incumbent it challenges (ROADMAP Phase 0.5). Optional:
+    thresholds, the incumbent it challenges, and the evaluation ``regime``
+    (ROADMAP "The four evaluation regimes" — 'A' historical core, 'B' audited
+    availability subset, 'C' oracle sensitivity, 'D' prospective full-system;
+    every registered experiment declares exactly one). Optional:
     ``board`` (FORECASTING/PROBABILISTIC/MARKET/BETTING — else inferred from
     primary_metric by leaderboards.py), ``decision_time`` (e.g. "T-24h", per
     the prediction contract), ``quarantined`` (e.g. W3 NBA-transfer — results
@@ -211,6 +220,14 @@ def register(
     """
     if not experiment_id or not str(experiment_id).strip():
         raise RegistryError("experiment_id must be a non-empty string")
+    regime_norm = str(regime).strip().upper()
+    if regime_norm not in REGIMES:
+        raise RegistryError(
+            f"regime {regime!r} is not one of {REGIMES}. ROADMAP 'The four "
+            "evaluation regimes': every registered experiment declares exactly "
+            "one — A historical core / B audited availability subset / "
+            "C oracle sensitivity / D prospective full-system."
+        )
     th = GateThresholds.from_mapping(thresholds)
     existing = [
         r for r in read_records(registry_path)
@@ -230,6 +247,7 @@ def register(
         "primary_metric": str(primary_metric),
         "thresholds": th.to_dict(),
         "incumbent_id": str(incumbent_id),
+        "regime": regime_norm,
         "board": board,
         "decision_time": decision_time,
         "quarantined": bool(quarantined),

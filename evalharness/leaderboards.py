@@ -157,10 +157,10 @@ def render_leaderboards(
             lines.append("*No registered evaluations on this board yet.*")
         else:
             lines += [
-                "| rank | experiment (run) | decision time | primary metric | "
+                "| rank | experiment (run) | regime | decision time | primary metric | "
                 "challenger | incumbent | Δ pooled | 90% CI (date-cluster) | "
                 "gates 1-5 | verdict | n | evaluated |",
-                "|---|---|---|---|---|---|---|---|---|---|---|---|",
+                "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
             ]
             for rank, (reg, ev, res) in enumerate(rows, start=1):
                 exp_id = ev.get("experiment_id")
@@ -173,6 +173,7 @@ def render_leaderboards(
                 verdict_cell = f"**{verdict}**" if verdict == "PASS" else verdict
                 lines.append(
                     f"| {rank} | `{exp_id}`{quarantine} (run {ev.get('run_number')}) "
+                    f"| {reg.get('regime') or '—'} "
                     f"| {reg.get('decision_time') or '—'} "
                     f"| {reg.get('primary_metric', '—')} "
                     f"| {_fmt(res.get('metric_challenger'))} "
