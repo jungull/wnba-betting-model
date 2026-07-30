@@ -20,11 +20,13 @@ Implemented now:
      in data/certify/schema_fingerprints.json; drift WARNS and is never
      auto-accepted (rerun with --accept-schema after a reviewed change)
 
+  6. possession reconciliation (Phase 0 / RAPM prerequisite): re-derives the
+     N most recent games from raw pbp via build_possessions.process_game and
+     checks possession point sums against master_team final scores exactly
+
 TODO hooks (log-only, per Phase 0 spec — no NotImplementedError):
   * PBP score reconciliation (running score vs final, FT sequences,
     technicals, OREB chains, OT)
-  * lineup possession reconciliation (score changes, substitutions, stint
-    boundaries — RAPM prerequisite)
   * odds stale-book detection (per-book last_update lag inside a snapshot)
   * postponement / changed-tip-time detection (tip time known-at-capture vs
     schedule)
@@ -331,6 +333,7 @@ def _fingerprint_targets() -> dict:
         ("odds_capture_log", DATA / "odds_capture" / "capture_log.csv"),
         ("derived_stints", DATA / "derived" / "stints.parquet"),
         ("derived_starters", DATA / "derived" / "starters.csv"),
+        ("derived_possessions", DATA / "possessions" / "possessions.parquet"),
     ]:
         if p.exists():
             targets[key] = p
@@ -398,21 +401,63 @@ def check_schema_drift(accept: bool = False):
 
 
 # ---------------------------------------------------------------------------
+# check 6 — possession reconciliation (Phase 0 / RAPM prerequisite)
+# ---------------------------------------------------------------------------
+
+POSS_SAMPLE_N = 8            # most recent games, re-derived from raw pbp
+POSS_FAIL_BAD = 3            # > this many non-exact games in the sample = FAIL
+
+
+def check_possession_reconciliation():
+    """Re-derive the POSS_SAMPLE_N most recent games' possessions from raw pbp
+    (build_possessions.reconcile_sample) and require the per-team possession
+    point sums to match master_team final scores exactly. Fast (~seconds) —
+    the full-history reconciliation lives in build_possessions.py's main run
+    (report: data/possessions/reconciliation.csv)."""
+    try:
+        import build_possessions as bp
+    except Exception as exc:
+        return "FAIL", [f"cannot import build_possessions: {type(exc).__name__}: {exc}"]
+    reports = bp.reconcile_sample(n=POSS_SAMPLE_N)
+    if not reports:
+        return "FAIL", ["no games available to reconcile (pbp + master_team empty?)"]
+    lines, n_bad, n_err = [], 0, 0
+    for r in reports:
+        if r.get("status") != "ok":
+            n_err += 1
+            lines.append(f"FAIL {r['game_id']}: {r.get('status')}")
+        elif r.get("exact"):
+            lines.append(f"ok   {r['game_id']} ({r['season']}): exact "
+                         f"{r['model_home_pts']}-{r['model_away_pts']}, "
+                         f"{r['n_real_possessions']} possessions")
+        else:
+            n_bad += 1
+            lines.append(f"BAD  {r['game_id']} ({r['season']}): residual "
+                         f"home {r['resid_home']:+d} away {r['resid_away']:+d} "
+                         f"dominant={r.get('dominant_failure') or 'n/a'}")
+    lines.insert(0, f"re-derived the {len(reports)} most recent games from raw pbp; "
+                    f"{len(reports) - n_bad - n_err} exact, {n_bad} non-exact, "
+                    f"{n_err} errored")
+    if n_err or n_bad > POSS_FAIL_BAD:
+        return "FAIL", lines
+    if n_bad:
+        return "WARN", lines
+    return "PASS", lines
+
+
+# ---------------------------------------------------------------------------
 # TODO hooks — Phase 0 items not yet implemented (log-only, never raise)
 # ---------------------------------------------------------------------------
 
 def todo_hooks():
     # TODO(Phase 0): PBP score reconciliation — running score vs final, FT
     #   sequences, technicals, OREB chains, OT (ROADMAP Phase 0).
-    # TODO(Phase 0): lineup possession reconciliation — score changes,
-    #   substitutions, stint boundaries; RAPM prerequisite (ROADMAP Phase 0/2b).
     # TODO(Phase 0): odds stale-book detection — per-book last_update lag
     #   within a snapshot (ROADMAP Phase 0 "odds freshness & stale-book").
     # TODO(Phase 0): postponement & changed tip time detection — tip time
     #   known-at-capture vs schedule (ROADMAP Phase 0).
     hooks = [
         "PBP score reconciliation",
-        "lineup possession reconciliation",
         "odds stale-book detection",
         "postponement / changed tip-time detection",
     ]
@@ -436,6 +481,8 @@ def main(argv=None) -> int:
         ("injury capture freshness", lambda: check_injury_freshness()),
         ("schema fingerprint drift",
          lambda: check_schema_drift(accept=args.accept_schema)),
+        ("possession reconciliation (recent-game sample)",
+         check_possession_reconciliation),
         ("phase-0 reconciliation hooks", todo_hooks),
     ]
     print(f"daily_certify - {datetime.now().astimezone().isoformat(timespec='seconds')}")
