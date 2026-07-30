@@ -24,12 +24,28 @@ Implemented now:
      N most recent games from raw pbp via build_possessions.process_game and
      checks possession point sums against master_team final scores exactly
 
-TODO hooks (log-only, per Phase 0 spec — no NotImplementedError):
-  * PBP score reconciliation (running score vs final, FT sequences,
-    technicals, OREB chains, OT)
-  * odds stale-book detection (per-book last_update lag inside a snapshot)
-  * postponement / changed-tip-time detection (tip time known-at-capture vs
-    schedule)
+  7. PBP score reconciliation (Phase 0): recompute every sampled game's final
+     score from raw pbp event semantics (both eras: data/playbyplay V2,
+     data/refresh_2026/pbp V3) and reconcile against (a) the pbp's own posted
+     running score at every scoring checkpoint and (b) master_team finals.
+     FT sequences, technicals and OREB putback chains all move the recomputed
+     score, so a mis-scored event surfaces as a checkpoint divergence or a
+     final mismatch; OT is handled by accumulation and reported. Daily runs
+     are sampled + incremental (newest games + a deterministic day-rotating
+     block that sweeps the full history every ~5 weeks); `--full` runs every
+     game and writes experiments/odds_audit_ext/pbp_full_reconciliation.csv.
+  8. odds stale-book detection (Phase 0): inside each recent live odds
+     snapshot, flag bookmakers whose freshest last_update lags the capture
+     time beyond STALE_BOOK_LAG_MIN on not-yet-commenced events; per-book
+     summary over the scanned window.
+  9. postponement / changed-tip-time detection (Phase 0): track each
+     api event's commence_time across recent live snapshots; report every
+     before -> after change and any event that vanishes pregame (the
+     postpone-then-relist pattern documented in build_odds_master_extension).
+
+Checks 7-9 run in WARN mode this session: they report and count, but a
+would-be FAIL is downgraded to WARN so they never flip the overall exit code.
+Promote each one later by flipping its *_FAIL_MODE switch below (one line).
 
 Exit code: nonzero only when at least one check FAILs. WARNs alert in the
 summary but do not fail the run.
@@ -62,6 +78,29 @@ ODDS_WARN_LAG_MIN = 240
 INJ_GAMEDAY_PASS_H = 3          # hourly on game days (began 2026-07-30)
 INJ_BASE_PASS_H = 14            # 2x/day baseline otherwise
 INJ_FAIL_H = 26                 # a fully missed day always fails
+
+# --- Phase-0 hook parameters (checks 7-9) -----------------------------------
+PBP_RECENT_N = 8                # newest games re-reconciled every daily run
+PBP_ROTATE_N = 40               # day-rotating incremental block (history swept ~37 days)
+PBP_FULL_OUT = ROOT / "experiments" / "odds_audit_ext" / "pbp_full_reconciliation.csv"
+STALE_BOOK_LAG_MIN = 90         # book quote older than this at capture = stale.
+                                # Rationale: captures are hourly (check 3); a book
+                                # >90 min behind predates the PREVIOUS snapshot
+                                # entirely, so its quote is not contemporaneous at
+                                # any decision cutoff (pregame events only —
+                                # books legitimately suspend in-play).
+STALE_PERSIST_MIN_SIGHT = 4     # persistent-stale needs >= this many sightings
+STALE_SNAPSHOTS_N = 14          # newest live snapshots scanned (~one capture day)
+TIP_SNAPSHOTS_N = 200           # newest live snapshots scanned for tip changes
+TIP_VANISH_GRACE_MIN = 30       # pregame margin before a vanished listing alarms
+
+# --- FAIL-mode switches for the Phase-0 hooks (checks 7-9) ------------------
+# Each hook runs in WARN mode until promoted: it reports and counts, but a
+# would-be FAIL is downgraded to WARN and never flips the exit code.
+# To promote a hook to FAIL mode later, flip its switch to True (one line).
+PBP_RECON_FAIL_MODE = False     # promote check 7 (PBP score reconciliation)
+STALE_BOOK_FAIL_MODE = False    # promote check 8 (odds stale-book detection)
+TIP_CHANGE_FAIL_MODE = False    # promote check 9 (postponement / tip changes)
 
 STATUS_ORDER = {"PASS": 0, "SKIP": 0, "WARN": 1, "FAIL": 2}
 
@@ -446,22 +485,370 @@ def check_possession_reconciliation():
 
 
 # ---------------------------------------------------------------------------
-# TODO hooks — Phase 0 items not yet implemented (log-only, never raise)
+# checks 7-9 — Phase-0 hooks (WARN mode until promoted via *_FAIL_MODE)
 # ---------------------------------------------------------------------------
 
-def todo_hooks():
-    # TODO(Phase 0): PBP score reconciliation — running score vs final, FT
-    #   sequences, technicals, OREB chains, OT (ROADMAP Phase 0).
-    # TODO(Phase 0): odds stale-book detection — per-book last_update lag
-    #   within a snapshot (ROADMAP Phase 0 "odds freshness & stale-book").
-    # TODO(Phase 0): postponement & changed tip time detection — tip time
-    #   known-at-capture vs schedule (ROADMAP Phase 0).
-    hooks = [
-        "PBP score reconciliation",
-        "odds stale-book detection",
-        "postponement / changed tip-time detection",
-    ]
-    return "SKIP", [f"{h}: not yet implemented" for h in hooks]
+def _apply_mode(status, fail_mode, lines):
+    """WARN-mode governor for the Phase-0 hooks: report the would-be FAIL,
+    downgrade it to WARN until the hook's *_FAIL_MODE switch is flipped."""
+    if status == "FAIL" and not fail_mode:
+        lines.append("WARN mode: this hook would FAIL once promoted "
+                     "(flip its *_FAIL_MODE switch at the top of the file)")
+        return "WARN", lines
+    return status, lines
+
+
+def _iso_utc(s):
+    try:
+        dt = datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+# ---- check 7: PBP score reconciliation -------------------------------------
+
+_V2_SCORE_RE = re.compile(r"^\s*(\d+)\s*-\s*(\d+)\s*$")   # V2 SCORE = "away - home"
+
+
+def _master_finals() -> dict:
+    """game_id -> home/away final points + team ids (from master_team)."""
+    mt = pd.read_parquet(DATA / "masters" / "master_team.parquet",
+                         columns=["game_id", "team_id", "is_home", "pts",
+                                  "season", "game_date"])
+    out = {}
+    for gid, grp in mt.groupby("game_id"):
+        h, a = grp[grp.is_home == 1], grp[grp.is_home == 0]
+        if len(h) != 1 or len(a) != 1:
+            continue     # malformed pairing is check 1's job; skip here
+        out[str(gid)] = {
+            "home_pts": int(h["pts"].iloc[0]), "away_pts": int(a["pts"].iloc[0]),
+            "home_id": int(h["team_id"].iloc[0]), "away_id": int(a["team_id"].iloc[0]),
+            "season": str(h["season"].iloc[0]), "game_date": str(h["game_date"].iloc[0]),
+        }
+    return out
+
+
+def _pbp_inventory() -> dict:
+    """game_id -> (path, era). V3 wins if a game id somehow exists in both."""
+    inv = {}
+    for p in sorted((DATA / "playbyplay").glob("pbp_*.parquet")):
+        inv[p.stem.split("_", 1)[1]] = (p, "v2")
+    for p in sorted((DATA / "refresh_2026" / "pbp").glob("pbp_*.parquet")):
+        inv[p.stem.split("_", 1)[1]] = (p, "v3")
+    return inv
+
+
+def reconcile_pbp_game(gid: str, path: Path, era: str, m: dict) -> dict:
+    """Recompute one game's final score from raw pbp event semantics and
+    reconcile it against the posted running score at every scoring checkpoint
+    and against master_team's final. Fully identical duplicated event rows
+    (a real defect seen in the wild: 1022300238) are dropped and counted;
+    same-event-key rows with different content are counted as conflicts."""
+    rec = {"game_id": gid, "era": era, "season": m["season"] if m else "",
+           "game_date": m["game_date"] if m else "", "status": "ok",
+           "n_events": 0, "n_dup_rows_dropped": 0, "n_conflicting_dup_keys": 0,
+           "n_unattributed_pts": 0, "ot_periods": 0,
+           "rec_home": None, "rec_away": None,
+           "posted_home": None, "posted_away": None,
+           "master_home": m["home_pts"] if m else None,
+           "master_away": m["away_pts"] if m else None,
+           "n_checkpoints": 0, "n_checkpoint_mismatch": 0,
+           "first_mismatch_event": "",
+           "exact_vs_master": None, "posted_matches_master": None}
+    if m is None:
+        rec["status"] = "no_master_row"
+        return rec
+    try:
+        df = pd.read_parquet(path)
+    except Exception as exc:
+        rec["status"] = f"read_error:{type(exc).__name__}"
+        return rec
+    try:
+        # Event order: FILE ORDER for both eras, exactly like build_possessions
+        # (1,489/1,489 exact on it). V2 EVENTNUM is NOT chronological — scorer
+        # corrections are renumbered high but placed correctly in the file
+        # (seen: 1022400002 events 438-440, 1022400017 event 602); V3
+        # actionId is strictly file-sequential (actionNumber is shared by
+        # paired actions like turnover+steal, so it is not even unique).
+        key = "EVENTNUM" if era == "v2" else "actionId"
+        if era == "v3":
+            df = df.sort_values(key, kind="stable")   # == file order, verified
+        n0 = len(df)
+        df = df[~df.duplicated()]
+        rec["n_dup_rows_dropped"] = n0 - len(df)
+        rec["n_conflicting_dup_keys"] = int(df.duplicated(subset=[key]).sum())
+        pts = pd.Series(0, index=df.index)
+        side = pd.Series("", index=df.index)          # 'h' / 'a'
+        if era == "v2":
+            desc = (df["HOMEDESCRIPTION"].fillna("") + "|" +
+                    df["NEUTRALDESCRIPTION"].fillna("") + "|" +
+                    df["VISITORDESCRIPTION"].fillna(""))
+            made_fg = df["EVENTMSGTYPE"] == 1
+            pts[made_fg] = 2
+            pts[made_fg & desc.str.contains("3PT", regex=False)] = 3
+            pts[(df["EVENTMSGTYPE"] == 3) &
+                ~desc.str.contains("MISS", regex=False)] = 1     # made FTs (incl. technicals)
+            side[df["PLAYER1_TEAM_ID"] == m["home_id"]] = "h"
+            side[df["PLAYER1_TEAM_ID"] == m["away_id"]] = "a"
+            fb = (pts > 0) & (side == "")             # rare: attribute by desc column
+            side[fb & df["HOMEDESCRIPTION"].notna() & df["VISITORDESCRIPTION"].isna()] = "h"
+            side[fb & df["VISITORDESCRIPTION"].notna() & df["HOMEDESCRIPTION"].isna()] = "a"
+            sc = df["SCORE"].astype(str)
+            parsed = sc.str.extract(_V2_SCORE_RE)     # away, home
+            posted = parsed[0].notna()
+            post_h = parsed.loc[posted, 1].astype(int)
+            post_a = parsed.loc[posted, 0].astype(int)
+            period = df["PERIOD"]
+        else:                                          # v3
+            desc = df["description"].fillna("").astype(str)
+            made_fg = df["actionType"] == "Made Shot"
+            pts[made_fg] = df.loc[made_fg, "shotValue"].fillna(0).astype(int).clip(lower=2)
+            pts[(df["actionType"] == "Free Throw") &
+                ~desc.str.contains("MISS", regex=False)] = 1     # FT shotValue is 0 in V3
+            side[df["location"] == "h"] = "h"
+            side[df["location"] == "v"] = "a"
+            fb = (pts > 0) & (side == "")
+            side[fb & (df["teamId"] == m["home_id"])] = "h"
+            side[fb & (df["teamId"] == m["away_id"])] = "a"
+            sh = df["scoreHome"].astype(str).str.strip()
+            sa = df["scoreAway"].astype(str).str.strip()
+            posted = sh.str.fullmatch(r"\d+") & sa.str.fullmatch(r"\d+")
+            post_h = sh[posted].astype(int)
+            post_a = sa[posted].astype(int)
+            period = df["period"]
+        rec["n_unattributed_pts"] = int(pts[(pts > 0) & (side == "")].sum())
+        run_h = (pts * (side == "h")).cumsum()
+        run_a = (pts * (side == "a")).cumsum()
+        # Checkpoints: compare on SCORING rows only — non-scoring rows that
+        # carry a score (period ends, timeouts, replays) are snapshots whose
+        # feed position is occasionally wrong; a scoring row's posted score
+        # must equal the recomputed running score at that exact event.
+        chk = posted & (pts > 0)
+        mism = post_h[chk].ne(run_h[chk]) | post_a[chk].ne(run_a[chk])
+        rec["n_events"] = int(len(df))
+        rec["ot_periods"] = max(int(period.max()) - 4, 0) if len(df) else 0
+        rec["n_checkpoints"] = int(chk.sum())
+        rec["n_checkpoint_mismatch"] = int(mism.sum())
+        if mism.any():
+            i = mism[mism].index[0]
+            rec["first_mismatch_event"] = (
+                f"{key}={df.loc[i, key]} posted {post_a[i]}-{post_h[i]} (a-h) "
+                f"recomputed {int(run_a[i])}-{int(run_h[i])}")
+        if len(df):
+            rec["rec_home"], rec["rec_away"] = int(run_h.iloc[-1]), int(run_a.iloc[-1])
+        if posted.any():
+            # Posted final = the max-total posted score: cumulative scores are
+            # monotonic, so this is order-robust against misplaced feed rows.
+            imax = (post_h + post_a).idxmax()
+            rec["posted_home"], rec["posted_away"] = int(post_h[imax]), int(post_a[imax])
+        rec["exact_vs_master"] = (rec["rec_home"] == m["home_pts"] and
+                                  rec["rec_away"] == m["away_pts"])
+        if rec["posted_home"] is not None:
+            rec["posted_matches_master"] = (rec["posted_home"] == m["home_pts"] and
+                                            rec["posted_away"] == m["away_pts"])
+    except Exception as exc:
+        rec["status"] = f"parse_error:{type(exc).__name__}:{exc}"
+    return rec
+
+
+def _pbp_sample_ids(master: dict, inv: dict) -> "tuple[list, int]":
+    """Newest PBP_RECENT_N games + a deterministic day-rotating block of
+    PBP_ROTATE_N: consecutive daily runs sweep adjacent blocks, so the full
+    history is re-reconciled every ceil(n / PBP_ROTATE_N) days."""
+    ids = sorted((g for g in inv if g in master),
+                 key=lambda g: (master[g]["game_date"], g))
+    n = len(ids)
+    if n == 0:
+        return [], 0
+    recent = ids[-PBP_RECENT_N:]
+    start = (datetime.now().astimezone().date().toordinal() * PBP_ROTATE_N) % n
+    block = [ids[(start + i) % n] for i in range(min(PBP_ROTATE_N, n))]
+    seen, out = set(), []
+    for g in recent + block:
+        if g not in seen:
+            seen.add(g)
+            out.append(g)
+    return out, n
+
+
+def check_pbp_reconciliation(full: bool = False):
+    master = _master_finals()
+    inv = _pbp_inventory()
+    if not inv or not master:
+        return _apply_mode("FAIL", PBP_RECON_FAIL_MODE,
+                           ["no pbp files or master_team rows readable"])
+    no_master = sorted(g for g in inv if g not in master)
+    if full:
+        ids, n_uni = sorted(g for g in inv if g in master), len(inv)
+    else:
+        ids, n_uni = _pbp_sample_ids(master, inv)
+    rows = [reconcile_pbp_game(g, *inv[g], master.get(g)) for g in ids]
+    errs = [r for r in rows if r["status"] != "ok"]
+    nonexact = [r for r in rows if r["status"] == "ok" and not r["exact_vs_master"]]
+    posted_bad = [r for r in rows if r["status"] == "ok" and r["exact_vs_master"]
+                  and r["posted_matches_master"] is False]
+    quirks = [r for r in rows if r["status"] == "ok" and r["exact_vs_master"]
+              and (r["n_checkpoint_mismatch"] or r["n_dup_rows_dropped"]
+                   or r["n_conflicting_dup_keys"] or r["n_unattributed_pts"])]
+    by_era = pd.Series([r["era"] for r in rows]).value_counts().to_dict()
+    scope = (f"FULL history: {len(rows)} games" if full
+             else f"sample: {len(rows)} of {n_uni} games "
+                  f"(newest {PBP_RECENT_N} + rotating block {PBP_ROTATE_N})")
+    lines = [f"{scope} | eras {by_era} | "
+             f"{len(rows) - len(nonexact) - len(errs)} exact, "
+             f"{len(nonexact)} non-exact, {len(errs)} errored"
+             + (f" | {len(no_master)} pbp games lack a master_team row "
+                f"(e.g. {no_master[:3]})" if no_master else "")]
+    cap = len(rows) if full else 15
+    for r in nonexact[:cap]:
+        lines.append(
+            f"BAD  {r['game_id']} ({r['era']} {r['season']}): recomputed "
+            f"{r['rec_home']}-{r['rec_away']} (h-a) vs master "
+            f"{r['master_home']}-{r['master_away']} | posted "
+            f"{r['posted_home']}-{r['posted_away']} | "
+            f"{r['n_checkpoint_mismatch']}/{r['n_checkpoints']} checkpoints off | "
+            f"first: {r['first_mismatch_event'] or 'n/a'}")
+    for r in posted_bad[:5]:
+        lines.append(f"BAD  {r['game_id']}: pbp posted final "
+                     f"{r['posted_home']}-{r['posted_away']} != master "
+                     f"{r['master_home']}-{r['master_away']} (truncated feed?)")
+    for r in errs[:5]:
+        lines.append(f"ERR  {r['game_id']} ({r['era']}): {r['status']}")
+    for r in quirks[:5]:
+        lines.append(
+            f"note {r['game_id']} ({r['era']} {r['season']}): final exact but "
+            f"{r['n_dup_rows_dropped']} duplicated row(s) dropped, "
+            f"{r['n_conflicting_dup_keys']} conflicting key(s), "
+            f"{r['n_checkpoint_mismatch']} checkpoint mismatch(es), "
+            f"{r['n_unattributed_pts']} unattributed pts")
+    if full:
+        PBP_FULL_OUT.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(rows).to_csv(PBP_FULL_OUT, index=False)
+        lines.append(f"full per-game table -> {PBP_FULL_OUT.relative_to(ROOT)}")
+    if errs or nonexact or posted_bad:
+        status = "FAIL"     # non-exact games are data bugs, never auto-fixed
+    elif quirks or no_master:
+        status = "WARN"
+    else:
+        status = "PASS"
+    return _apply_mode(status, PBP_RECON_FAIL_MODE, lines)
+
+
+# ---- check 8: odds stale-book detection ------------------------------------
+
+def _live_snapshots(n: "int | None" = None) -> list:
+    """[(path, snap_utc, events-or-None), ...] oldest -> newest."""
+    files = sorted((DATA / "odds_capture").glob("live_*.json"),
+                   key=lambda p: p.name)
+    if n:
+        files = files[-n:]
+    out = []
+    for p in files:
+        t = parse_stamp(p.name)
+        if t is None:
+            continue
+        try:
+            out.append((p, t, json.loads(p.read_text(encoding="utf-8"))))
+        except (json.JSONDecodeError, OSError):
+            out.append((p, t, None))
+    return out
+
+
+def check_stale_books():
+    snaps = _live_snapshots(STALE_SNAPSHOTS_N)
+    if not snaps:
+        return _apply_mode("FAIL", STALE_BOOK_FAIL_MODE,
+                           ["no live_*.json snapshots to scan"])
+    unreadable = [p.name for p, _, ev in snaps if ev is None]
+    per_book = {}          # book -> dict(sight, stale, max_lag)
+    stale_rows = []
+    for p, snap_t, events in snaps:
+        if events is None:
+            continue
+        for ev in events:
+            commence = _iso_utc(ev.get("commence_time"))
+            if commence is None or commence <= snap_t:
+                continue                       # pregame events only
+            for bm in ev.get("bookmakers", []):
+                upds = [_iso_utc(mk.get("last_update"))
+                        for mk in bm.get("markets", [])]
+                upds = [u for u in upds if u is not None] or \
+                       [u for u in [_iso_utc(bm.get("last_update"))] if u is not None]
+                if not upds:
+                    continue
+                lag_min = max((snap_t - max(upds)).total_seconds() / 60.0, 0.0)
+                d = per_book.setdefault(bm.get("key", "?"),
+                                        {"sight": 0, "stale": 0, "max_lag": 0.0})
+                d["sight"] += 1
+                d["max_lag"] = max(d["max_lag"], lag_min)
+                if lag_min > STALE_BOOK_LAG_MIN:
+                    d["stale"] += 1
+                    stale_rows.append((p.name, f"{ev.get('away_team')} @ "
+                                       f"{ev.get('home_team')}", bm.get("key"), lag_min))
+    lines = [f"scanned {len(snaps)} live snapshots "
+             f"({snaps[0][0].name} .. {snaps[-1][0].name}); threshold "
+             f"{STALE_BOOK_LAG_MIN} min on pregame events"]
+    if unreadable:
+        lines.append(f"unreadable snapshots: {unreadable}")
+    persistent = []
+    for bk in sorted(per_book, key=lambda b: (-per_book[b]["stale"], b)):
+        d = per_book[bk]
+        flag = ""
+        if d["sight"] >= STALE_PERSIST_MIN_SIGHT and d["stale"] > d["sight"] / 2:
+            persistent.append(bk)
+            flag = "  <- PERSISTENTLY STALE"
+        lines.append(f"{bk:<16} sightings {d['sight']:3d} | stale {d['stale']:3d} "
+                     f"| max lag {d['max_lag']:6.0f} min{flag}")
+    for name, matchup, bk, lag in stale_rows[:8]:
+        lines.append(f"  stale: {bk} {lag:.0f} min behind in {name} ({matchup})")
+    if len(stale_rows) > 8:
+        lines.append(f"  ... and {len(stale_rows) - 8} more stale sightings")
+    if persistent or unreadable:
+        status = "FAIL"
+    elif stale_rows:
+        status = "WARN"
+    else:
+        status = "PASS"
+    return _apply_mode(status, STALE_BOOK_FAIL_MODE, lines)
+
+
+# ---- check 9: postponement / changed-tip-time detection --------------------
+
+def check_tip_changes():
+    snaps = [(p, t, ev) for p, t, ev in _live_snapshots(TIP_SNAPSHOTS_N)
+             if ev is not None]
+    if not snaps:
+        return _apply_mode("FAIL", TIP_CHANGE_FAIL_MODE,
+                           ["no readable live_*.json snapshots to scan"])
+    sightings = {}          # eid -> list of (snap_idx, commence_str, home, away)
+    for idx, (p, snap_t, events) in enumerate(snaps):
+        for ev in events:
+            sightings.setdefault(ev.get("id"), []).append(
+                (idx, ev.get("commence_time"), ev.get("home_team"),
+                 ev.get("away_team")))
+    changes, vanished = [], []
+    for eid, seen in sightings.items():
+        for (i0, c0, h, a), (i1, c1, _, _) in zip(seen, seen[1:]):
+            if c0 != c1:
+                changes.append((eid, a, h, c0, c1, snaps[i1][0].name))
+        last_idx, last_c, h, a = seen[-1][0], seen[-1][1], seen[-1][2], seen[-1][3]
+        if last_idx < len(snaps) - 1:            # absent from a later snapshot
+            nxt_t = snaps[last_idx + 1][1]
+            c = _iso_utc(last_c)
+            if c and c > nxt_t + timedelta(minutes=TIP_VANISH_GRACE_MIN):
+                vanished.append((eid, a, h, last_c, snaps[last_idx][0].name))
+    lines = [f"scanned {len(snaps)} live snapshots, {len(sightings)} events; "
+             f"{len(changes)} commence_time change(s), "
+             f"{len(vanished)} pregame vanish(es)"]
+    for eid, a, h, c0, c1, fname in changes[:12]:
+        lines.append(f"TIP CHANGE {a} @ {h}: {c0} -> {c1} "
+                     f"(first seen {fname}; event {eid[:8]})")
+    for eid, a, h, c, fname in vanished[:8]:
+        lines.append(f"VANISHED pregame: {a} @ {h} commence {c} last seen "
+                     f"{fname} (event {eid[:8]}) — postponement/relist pattern")
+    status = "FAIL" if (changes or vanished) else "PASS"
+    return _apply_mode(status, TIP_CHANGE_FAIL_MODE, lines)
 
 
 # ---------------------------------------------------------------------------
@@ -472,6 +859,10 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--accept-schema", action="store_true",
                     help="accept current schemas as the new fingerprint baseline")
+    ap.add_argument("--full", action="store_true",
+                    help="exhaustive PBP score reconciliation over every game "
+                         "(writes experiments/odds_audit_ext/"
+                         "pbp_full_reconciliation.csv; takes a few minutes)")
     args = ap.parse_args(argv)
 
     checks = [
@@ -483,7 +874,11 @@ def main(argv=None) -> int:
          lambda: check_schema_drift(accept=args.accept_schema)),
         ("possession reconciliation (recent-game sample)",
          check_possession_reconciliation),
-        ("phase-0 reconciliation hooks", todo_hooks),
+        ("pbp score reconciliation "
+         + ("(full history)" if args.full else "(sampled+incremental)"),
+         lambda: check_pbp_reconciliation(full=args.full)),
+        ("odds stale-book detection", check_stale_books),
+        ("postponement / tip-time change detection", check_tip_changes),
     ]
     print(f"daily_certify - {datetime.now().astimezone().isoformat(timespec='seconds')}")
     print("=" * 72)
