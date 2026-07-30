@@ -1,6 +1,6 @@
 # Forecasting leaderboard — score/margin/total point error, by decision time
 
-*Rendered 2026-07-30T18:06:28+00:00 from `C:\Users\jgallagher\wnba-betting-model\experiments\registry.jsonl` by evalharness.leaderboards (ROADMAP §Leaderboards). Every registered evaluation posts here — win or lose, every run. Unregistered results are void and cannot appear.*
+*Rendered 2026-07-30T18:20:41+00:00 from `C:\Users\jgallagher\wnba-betting-model\experiments\registry.jsonl` by evalharness.leaderboards (ROADMAP §Leaderboards). Every registered evaluation posts here — win or lose, every run. Unregistered results are void and cannot appear.*
 
 ## Frozen reference baselines (pinned permanently — never re-run, never removed)
 
@@ -20,5 +20,7 @@
 | rank | experiment (run) | regime | decision time | primary metric | challenger | incumbent | Δ pooled | 90% CI (date-cluster) | gates 1-5 | verdict | n | evaluated |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 | `minutes_ewma_vs_carryforward_v1` (run 1) | A | T-24h | minutes_mae | 4.6428 | 5.3913 | 0.7485 | [0.6899, 0.8029] | 1:P 2:P 3:P 4:· 5:P | **PASS** | 13501 | 2026-07-30 |
+| 2 | `chanreval_2026_structural_repaired` (run 1) | A | T-24h | margin_mae | 10.0860 | 10.7159 | 0.6299 | [0.3939, 0.8661] | 1:P 2:P 3:P 4:P 5:P | **PASS** | 673 | 2026-07-30 |
+| 3 | `w6_microsignal_retrospective_v1` **[QUARANTINED]** (run 1) | B | T-24h | absence_auc | — | — | 0.0278 | [0.0036, 0.0520] | 1:P 2:P 3:P 4:· 5:P | **PASS** | — | 2026-07-30 |
 
 Gate legend (ROADMAP §Standard promotion gate): 1 pooled improvement ≥ registered minimum · 2 90% clustered-bootstrap CI excludes harm beyond bound · 3 per-season non-inferiority · 4 joint forecast non-degradation · 5 coverage maintained. P=pass F=fail ·=not provided (visible, not hidden).
