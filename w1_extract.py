@@ -35,6 +35,7 @@ ROOT = Path(__file__).resolve().parent
 NEWS_CSV = ROOT / "data" / "news_capture" / "news_items.csv"
 OUTDIR = ROOT / "data" / "w1_extractions"
 RAWDIR = OUTDIR / "raw"
+RAWDIR.mkdir(parents=True, exist_ok=True)
 JSONL = OUTDIR / "extractions.jsonl"
 FLAT_CSV = OUTDIR / "extractions.csv"
 
@@ -146,14 +147,62 @@ def item_prompt(row) -> str:
 
 
 def build_params(row, model):
+    # Extraction is a scoped structured task: thinking off + low effort is the
+    # efficient path on Sonnet 5 (John's efficiency mandate, 2026-07-30).
     return {
         "model": model,
         "max_tokens": 2000,
+        "thinking": {"type": "disabled"},
+        "output_config": {"format": {"type": "json_schema", "schema": OUTPUT_SCHEMA},
+                          "effort": "low"},
         "system": [{"type": "text", "text": SYSTEM_PROMPT,
                     "cache_control": {"type": "ephemeral"}}],
-        "output_config": {"format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}},
         "messages": [{"role": "user", "content": item_prompt(row)}],
     }
+
+
+# --- efficiency pre-filter (auditable, never silent) -------------------------
+# Items with neither a team mention nor an availability keyword are skipped
+# and logged with a skip reason; near-duplicate titles across outlets are
+# extracted once. --no-prefilter disables both.
+AVAIL_KEYWORDS = (
+    "injur", "out ", " out", "questionable", "doubtful", "probable", "return",
+    "miss", "sidelin", "absen", "protocol", "surgery", "sprain", "strain",
+    "tear", "acl", "mcl", "achilles", "ankle", "knee", "hamstring", "concussion",
+    "illness", "rest", "suspend", "waiv", "roster", "day-to-day", "dnp",
+    "status", "available", "activat", "ruled", "hurt", "pain", "limp",
+    "scratch", "lineup", "sign", "release", "hardship",
+)
+
+
+def norm_title(t) -> str:
+    return "".join(ch for ch in str(t).lower() if ch.isalnum())
+
+
+def prefilter(todo):
+    """Return (keep, skips) where skips are records with a skip reason."""
+    keep, skips, seen_titles = [], [], {}
+    for key, row in todo:
+        text = f"{row.title} {row.summary_text}".lower()
+        teams = str(getattr(row, "teams_mentioned", "") or "")
+        has_team = bool(teams.strip())
+        has_kw = any(k in text for k in AVAIL_KEYWORDS)
+        if not has_team and not has_kw:
+            skips.append({"item_key": key, "skip_reason": "no_signal",
+                          "source": row.source, "url": row.url, "title": row.title,
+                          "extracted_utc": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+            continue
+        nt = norm_title(row.title)
+        if nt and nt in seen_titles:
+            skips.append({"item_key": key, "skip_reason": "duplicate_title",
+                          "duplicate_of": seen_titles[nt],
+                          "source": row.source, "url": row.url, "title": row.title,
+                          "extracted_utc": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+            continue
+        if nt:
+            seen_titles[nt] = key
+        keep.append((key, row))
+    return keep, skips
 
 
 def record_from(row, key, payload, model, raw_text):
@@ -293,7 +342,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--backlog", action="store_true", help="use the Batches API for all unextracted items")
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--model", default="claude-opus-5")
+    ap.add_argument("--model", default="claude-sonnet-5")
+    ap.add_argument("--no-prefilter", action="store_true",
+                    help="extract every item (skip relevance/dedupe pre-filter)")
     args = ap.parse_args()
 
     if not NEWS_CSV.exists():
@@ -305,10 +356,18 @@ def main():
         key = item_key(row)
         if key not in done:
             todo.append((key, row))
+    skips = []
+    if not args.no_prefilter:
+        todo, skips = prefilter(todo)
     if args.limit:
         todo = todo[:args.limit]
-    print(f"{len(news)} items in log; {len(done)} already extracted; {len(todo)} to do "
+    print(f"{len(news)} items in log; {len(done)} already handled; "
+          f"{len(skips)} pre-filtered (no_signal/duplicate); {len(todo)} to extract "
           f"(model {args.model}, prompt {PROMPT_VERSION})")
+    if skips:
+        with open(JSONL, "a", encoding="utf-8") as f:
+            for s in skips:
+                f.write(json.dumps(s) + "\n")
     if not todo:
         return
 
