@@ -43,6 +43,12 @@ the same cutoff** — the close is a separate, later benchmark and the CLV outco
 injury designations, starters, referee assignments, news items, and corrected/refetched PBP
 files. A feature whose availability time cannot be established is not a feature.
 
+**Information-parity caveat:** the contemporaneous line is the correct benchmark for
+decision-time fairness, but the market at T−24h may already hold availability information
+absent from any historical reconstruction (practice participation, travel/rest decisions,
+minutes restrictions already priced in). Historical model-vs-market comparisons carry that
+residual disadvantage; it is acknowledged in reports, never assumed away.
+
 ---
 
 ## Phase 0 — Continuous data certification (never "done")
@@ -91,6 +97,41 @@ Promote a challenger only when ALL hold on pooled walk-forward results:
 Never "must win all three seasons" (one bad season vetoing a real gain) and never "three tiny
 point wins" (promoting noise).
 
+### The four evaluation regimes (every registered experiment declares one)
+
+**A. Historical core evaluation** — full walk-forward legitimacy: team channels, shifted
+trends, zones, RAPM, refs-at-cutoff, boxscore-derived rotation features. Certifies the
+no-news basketball model. This is the only regime that proves anything on its own.
+
+**B. Audited historical availability subset** — injury/news records used ONLY where
+contemporary publication times are trustworthy. Every B result reports: games covered, teams
+covered, source coverage, time-of-day coverage, and whether missingness is systematic.
+Results apply to the covered subset, nothing wider.
+
+**C. Oracle sensitivity analysis** — brackets W1's potential value without claiming to
+isolate it. Four runs: (1) no availability info; (2) reconstructed availability (regime-B
+data); (3) **pregame oracle** = final active/DNP status + confirmed starters — the
+meaningful upper bound for perfect pregame availability knowledge; (4) **omniscient minutes
+oracle** = actual realized minutes — a diagnostic ceiling ONLY, contaminated by in-game
+information nobody had at tip (foul trouble, in-game injury, overtime, blowouts, coaching
+reactions). Actual minutes are never described as what perfect news extraction could achieve.
+
+**D. Prospective full-system evaluation** — the only regime that validates the news-aware
+system. **Two distinct dates, never conflated:** *capture start* (2026-07-30 — point-in-time
+raw data begins accumulating; creates a replay corpus, proves nothing) and *prospective
+evaluation start* (unset — begins only when a FROZEN model version issues timestamped,
+immutably logged predictions before each game). Tuning on captured months and then
+"replaying" them is retrospective development, not prospective validation. At every cutoff
+the logger records: model/version hash, data snapshot hash, W1 extraction, core-only
+prediction, core+W1 prediction, available market line and price, predicted close, intended
+bet decision, paper stake. Core-only and core+W1 run simultaneously on the same future games
+— the cleanest measurement of W1's incremental contribution.
+
+**Verdict readiness is sample-defined, not calendar-defined.** No "decision-grade by season
+X" promises: the real sample size is the number of independent eligible betting decisions,
+not games. Preregister minimum prediction count, minimum bet count, confidence-interval
+width requirement, and calibration threshold; the verdict is ready when they are met.
+
 ### Metrics (probability quality is first-class)
 - Score/margin/total MAE and RMSE; pinball loss on forecast quantiles; CRPS (distributional);
   cover-probability Brier; log loss; reliability/calibration plots.
@@ -128,10 +169,17 @@ Market rows appear as benchmarks in all four. Quarantined experiments post win o
   uncertainty interval on conditional minutes. Combined `E[min] = P(active) × E[min|active]`
   evaluated separately, then downstream game-model impact (gate #4).
 - **Point-in-time honesty:** the historical injury archive records what was *eventually*
-  known, not what was knowable at a historical cutoff. W1 backtests include only records with
-  trustworthy contemporary timestamps; the live capture (designation revisions preserved,
+  known, not what was knowable at a historical cutoff. W1 backtests are regime-B only
+  (trustworthy contemporary timestamps); the live capture (designation revisions preserved,
   hourly on game days) is the gold-standard training set as it accumulates.
-- Gate baseline: shifted minutes-EWMA × active-flag (5.42 / 5.12 floors), under the harness.
+- **W1 is graded against:** subsequent official active/DNP status; confirmed starters;
+  minutes conditional on playing; improvement of frozen pregame game forecasts; improvement
+  of betting decisions at the same timestamp. **Line movement is a secondary relevance
+  signal only** — movement also reflects price discovery, sharp action, book copying, model
+  corrections, and liability management, so it can suggest W1 is looking at real information
+  but can never grade whether an extraction was correct.
+- Gate baseline: shifted minutes-EWMA × active-flag (5.42 / 5.12 floors), under the harness,
+  regime declared per experiment (A for past-games-only features; B/C/D as defined above).
 
 ### 2b. RAPM (build-in; before W2 per revised critical path)
 - Inputs ready: 116,317 validated stints. Prerequisite: possession attribution passes the
