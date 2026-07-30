@@ -1,6 +1,6 @@
 # Probabilistic leaderboard — CRPS, log loss, Brier, calibration
 
-*Rendered 2026-07-30T21:37:57+00:00 from `C:\Users\jgallagher\wnba-betting-model\experiments\registry.jsonl` by evalharness.leaderboards (ROADMAP §Leaderboards). Every registered evaluation posts here — win or lose, every run. Unregistered results are void and cannot appear.*
+*Rendered 2026-07-30T21:38:58+00:00 from `C:\Users\jgallagher\wnba-betting-model\experiments\registry.jsonl` by evalharness.leaderboards (ROADMAP §Leaderboards). Every registered evaluation posts here — win or lose, every run. Unregistered results are void and cannot appear.*
 
 ## Frozen reference baselines (pinned permanently — never re-run, never removed)
 
