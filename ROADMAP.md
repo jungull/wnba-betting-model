@@ -180,9 +180,15 @@ John's documented concern (playstyle drift, e.g. interior dynamics) stands.
   snapshot: book, spread/total, price/juice, timestamp, **tip time known at capture**,
   open/current/final-available-pre-tip, suspensions & reopenings, stale-line status, best
   executable vs consensus price (derivable from per-book rows; raw JSON always archived).
-- Old master (5-min cadence, 2022–25) supports line-path research now (baseline study in
-  flight); the new 2/day→hourly era is analyzed at its own cadence — findings that don't
-  transfer across cadences are labeled as such.
+- **Cadence correction (2026-07-30 finding):** the old master on disk holds a **single
+  T≈−64min snapshot per (game, book)** — a near-tip benchmark line for 813 games 2022–25,
+  not line paths (the handoff's "hourly snapshots" described the upstream archive). The raw
+  multi-snapshot JSONs exist in Drive `historical_odds/` — recovery = John downloads the
+  folder into data/drive_masters/. New-era line-path research runs on the 2/day backfill and
+  the hourly live capture. First registered negative result: line-path-only ridge (current
+  line, hours-to-tip, movement) scores 1.007 MAE vs 0.980 for "close = current line" — the
+  path to the W5 gate is exogenous W1 news features plus true near-tip lines (hourly capture
+  now provides them); findings that don't transfer across cadences are labeled as such.
 
 ### Betting decision layer (separate system #3)
 - **Three decision policies compared under the harness — none presumed:**
