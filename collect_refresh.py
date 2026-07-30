@@ -14,6 +14,11 @@ Requires:  pip install nba_api pandas pyarrow
 Resumable: every per-game fetch is checkpointed to disk; re-running skips completed work.
 Outputs:   data/refresh_2026/   (never overwrites existing data files)
 Runtime:   roughly 60-120 min with polite rate limiting. Safe to interrupt and re-run.
+
+NOTE (July 2026): stats.nba.com retired the V2 per-game endpoints (PlayByPlayV2 returns
+empty JSON — nba_api issue #591; BoxScoreMiscV2 returns empty datasets). This script uses
+the V3 endpoints. V3 schemas are camelCase (pointsPaint, foulsDrawn, ...) and differ from
+the V2-schema files in data/playbyplay/ — downstream code needs a V2/V3 normalizer.
 """
 import json, time, random, sys
 from pathlib import Path
@@ -21,7 +26,7 @@ from pathlib import Path
 import pandas as pd
 
 try:
-    from nba_api.stats.endpoints import leaguegamelog, boxscoremiscv2, playbyplayv2, boxscoreadvancedv2
+    from nba_api.stats.endpoints import leaguegamelog, boxscoremiscv3, playbyplayv3, boxscoreadvancedv3
 except ImportError:
     sys.exit("Run first:  pip install nba_api pandas pyarrow")
 
@@ -47,7 +52,26 @@ def fetch(fn, tag, retries=5):
             print(f"    retry {i+1}/{retries} for {tag}: {str(e)[:90]}")
             time.sleep(delay); delay = min(delay * 2, 240)
     print(f"    FAILED permanently: {tag}")
+    FAILURES.append(tag)
     return None
+
+FAILURES = []
+
+def extract(r, kind, tag):
+    """Pull the dataframe out of a V3 response; empty/malformed responses -> None, never a crash."""
+    if r is None:
+        return None
+    try:
+        df = r.get_data_frames()[0] if kind == "pbp" else r.player_stats.get_data_frame()
+        if df is None or not len(df):
+            print(f"    empty response: {tag}")
+            FAILURES.append(f"empty {tag}")
+            return None
+        return df
+    except Exception as e:
+        print(f"    extract failed for {tag}: {str(e)[:70]}")
+        FAILURES.append(f"extract {tag}")
+        return None
 
 def save(df, path):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -66,15 +90,16 @@ def per_game(game_ids, kind):
     print(f"  {kind}: {len(todo)} to fetch ({len(game_ids)-len(todo)} already done)")
     for n, gid in enumerate(todo, 1):
         if kind == "misc":
-            r = fetch(lambda: boxscoremiscv2.BoxScoreMiscV2(game_id=gid, timeout=60), f"misc {gid}")
-            df = r.player_stats.get_data_frame() if r else None
+            tag = f"misc {gid}"
+            r = fetch(lambda: boxscoremiscv3.BoxScoreMiscV3(game_id=gid, timeout=60), tag)
         elif kind == "advanced":
-            r = fetch(lambda: boxscoreadvancedv2.BoxScoreAdvancedV2(game_id=gid, timeout=60), f"adv {gid}")
-            df = r.player_stats.get_data_frame() if r else None
+            tag = f"adv {gid}"
+            r = fetch(lambda: boxscoreadvancedv3.BoxScoreAdvancedV3(game_id=gid, timeout=60), tag)
         else:
-            r = fetch(lambda: playbyplayv2.PlayByPlayV2(game_id=gid, timeout=60), f"pbp {gid}")
-            df = r.get_data_frames()[0] if r else None
-        if df is not None and len(df):
+            tag = f"pbp {gid}"
+            r = fetch(lambda: playbyplayv3.PlayByPlayV3(game_id=gid, timeout=60), tag)
+        df = extract(r, kind, tag)
+        if df is not None:
             save(df, folder / f"{kind}_{gid}.parquet")
         if n % 25 == 0:
             print(f"    …{n}/{len(todo)}  (cooldown)"); time.sleep(20)
@@ -138,11 +163,14 @@ def main():
     ok = 0
     for f in m23[:50]:
         d = pd.read_parquet(f)
-        if "PTS_PAINT" in d.columns and d.PTS_PAINT.fillna(0).sum() > 0:
+        paint_col = "PTS_PAINT" if "PTS_PAINT" in d.columns else ("pointsPaint" if "pointsPaint" in d.columns else None)
+        if paint_col and d[paint_col].fillna(0).sum() > 0:
             ok += 1
     report["2023_misc_files"] = len(m23)
     report["2023_misc_sample_nonzero_paint"] = f"{ok}/{min(len(m23),50)}"
     report["pbp_files_total_new"] = len(list((OUT / "pbp").glob("pbp_*.parquet")))
+    report["pbp_schema_new_files"] = "v3 (camelCase; differs from data/playbyplay v2 files)"
+    report["permanent_failures"] = FAILURES
 
     print(json.dumps(report, indent=2))
     (OUT / "collection_report.json").write_text(json.dumps(report, indent=2))
