@@ -397,7 +397,11 @@ def run_dual_era(seconds_tol: float = 1e-6, near_tol: float = 2.0) -> bool:
             n_fail += 1
             continue
 
-        # 1 - per-player seconds via identical stint replay
+        # 1 - per-player seconds via identical stint replay.
+        # V2 clocks are whole seconds ("9:45"); V3 carries tenths ("PT09M45.30S"),
+        # so sub-second disagreement at stint boundaries is the floor of achievable
+        # precision, not an error. Pass bound = near_tol (2s clock-precision bound);
+        # only diffs BEYOND it are failures. The exact/near split is still reported.
         s2, s3 = per_player_seconds(ev2), per_player_seconds(ev3)
         keys = set(s2) | set(s3)
         diffs = {k: abs(s2.get(k, 0.0) - s3.get(k, 0.0)) for k in keys}
@@ -405,17 +409,18 @@ def run_dual_era(seconds_tol: float = 1e-6, near_tol: float = 2.0) -> bool:
         n_exact = sum(1 for d in diffs.values() if d <= seconds_tol)
         n_near = sum(1 for d in diffs.values() if seconds_tol < d <= near_tol)
         n_far = len(diffs) - n_exact - n_near
-        if n_far or n_near:
+        if n_far:
             offenders = sorted(diffs.items(), key=lambda kv: -kv[1])[:6]
             problems.append(f"seconds: {n_exact} exact / {n_near} within {near_tol}s / "
-                            f"{n_far} beyond; worst={worst:.1f}s {offenders}")
+                            f"{n_far} BEYOND; worst={worst:.1f}s {offenders}")
 
         # 2 - strict event-count reconciliation between the eras
         c2, c3 = strict_counts(ev2), strict_counts(ev3)
         count_diffs = {k: (c2.get(k, 0), c3.get(k, 0))
                        for k in set(c2) | set(c3) if c2.get(k, 0) != c3.get(k, 0)}
         if count_diffs:
-            sample_d = dict(list(sorted(count_diffs.items()))[:8])
+            # keys may contain None (nulled person ids) - sort None-safe by string
+            sample_d = dict(sorted(count_diffs.items(), key=lambda kv: str(kv[0]))[:8])
             problems.append(f"counts: {len(count_diffs)} (team,person,type) keys differ "
                             f"(v2,v3): {sample_d}")
 
@@ -445,8 +450,8 @@ def run_dual_era(seconds_tol: float = 1e-6, near_tol: float = 2.0) -> bool:
                 print(f"      {p}")
         else:
             n_pass += 1
-            print(f"  {gid}: PASS ({len(s2)} players, worst seconds diff "
-                  f"{worst:.3f}s){anom_note}")
+            print(f"  {gid}: PASS ({len(s2)} players, {n_exact} exact / {n_near} "
+                  f"within {near_tol}s clock precision, worst {worst:.3f}s){anom_note}")
     print(f"\nDual-era result: {n_pass} pass / {n_fail} fail / {n_skip} skipped")
     return n_fail == 0
 

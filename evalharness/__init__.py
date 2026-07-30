@@ -64,3 +64,4 @@ from .baselines import (
 from .leaderboards import render_leaderboards
 
 __version__ = "0.1.0"
+from .forecast_log import log_forecast, verify_chain, prospective_start, hash_model_config, hash_dataframe  # regime-D prospective forecast log (forecasts/forecast_log.jsonl)

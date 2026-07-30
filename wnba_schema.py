@@ -423,6 +423,47 @@ class _RosterIndex:
             hit = mp.get((team, key), set())
             if len(hit) == 1:
                 return next(iter(hit))
+        # Last resort — hyphen/married-name/truncation tolerant token matching,
+        # unique-only. Real cases the dual-era check caught: V3 "SUB: Laney" vs
+        # roster "Laney-Hamilton" (hyphen), and "Kat. Samuelson" vs "Katie Lou
+        # Samuelson" with sister "Karlie Samuelson" on the SAME roster — the
+        # league truncates first names to disambiguate, so tokens match by
+        # >=3-char prefix ("kat"->"katie" but not "karlie"). Never guesses:
+        # any ambiguity (two candidates) returns None.
+        def _tok(a, b):
+            return a == b or (len(a) >= 3 and b.startswith(a)) or \
+                   (len(b) >= 3 and a.startswith(b))
+
+        def _covers(small, big):
+            return bool(small) and all(any(_tok(s, b) for b in big) for s in small)
+
+        # Two tiers: FORWARD (query tokens all match into a fuller candidate
+        # name — "kat samuelson" into "katie lou samuelson") beats REVERSE
+        # (candidate is the shorter form — roster "laney" vs query "laney
+        # hamilton"). Reverse alone is ambiguous when a bare family name is
+        # shared (both Samuelsons), so it only decides when no forward match
+        # exists. Unique-only within the winning tier.
+        qt = key.replace("-", " ").split()
+        qc = key.replace("-", " ").replace(" ", "")
+        fwd, rev = set(), set()
+
+        def _scan(nm, pids):
+            ct = nm.replace("-", " ").split()
+            if _covers(qt, ct) or qc == nm.replace("-", " ").replace(" ", ""):
+                fwd.update(pids)
+            elif _covers(ct, qt):
+                rev.update(pids)
+
+        for nm, pids in self.obs[team].items():
+            _scan(nm, pids)
+        for mp in self.maps:
+            for (t, nm), pids in mp.items():
+                if t == team:
+                    _scan(nm, pids)
+        if len(fwd) == 1:
+            return next(iter(fwd))
+        if not fwd and len(rev) == 1:
+            return next(iter(rev))
         return None
 
     def resolve_gamewide(self, name):
