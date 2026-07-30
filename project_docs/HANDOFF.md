@@ -1,5 +1,10 @@
 # WNBA Prediction Engine — Full Project Handoff
 
+> **Note (2026-07-30):** this is the historical handoff snapshot. The living plan — including
+> the six AI-era workstreams (news/availability engine, zone maps, NBA transfer quarantine,
+> ref model, closing-line model, playing-through-it detector) — is **[../ROADMAP.md](../ROADMAP.md)**.
+> The §3 constitution below remains binding.
+
 *Written July 29, 2026, by the Claude (Cowork) session that recovered and restarted this project. Audience: the Claude Code session (and John) picking it up. Everything below is verified against primary sources, not recalled.*
 
 ---
