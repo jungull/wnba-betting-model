@@ -53,6 +53,35 @@ granularity, kept because most of this repo's leakage rules are season-shaped.
 ``content_sha256`` binds the manifest to the bytes it describes, so a refit that
 forgets to update the manifest is detected instead of trusted.
 
+WALK-FORWARD ARTIFACTS
+----------------------
+A single ``fit_through_date`` is the right contract for a STATIC artifact, where
+every fitted value saw the same evidence.  It is too blunt for a WALK-FORWARD
+artifact such as ``rapm_walkforward.csv``, whose 2023 rows were fit on 2021–2022
+and whose 2026 rows were fit on 2021–2025.  Attesting that file with one date —
+necessarily the latest, 2025 — would correctly refuse to score 2026 with the 2023
+rows and then *also* refuse the 2026 rows, which are clean.  An invariant that
+fails on clean rows gets switched off, so it needs the finer contract.
+
+Two optional fields carry it::
+
+    "asof_granularity": "artifact" | "season" | "row",
+    "fit_through_by_season": {"2023": "2022-09-19T12:00:00+00:00", …}
+
+``fit_through_by_season[s]`` is the latest source observation behind the rows
+FOR season ``s``.  Consumers scoring a particular season call
+:func:`assert_asof_for_season`, which uses that entry when present and falls back
+to the artifact-level date when it is absent.  The fallback direction is load
+bearing: the artifact-level date is the maximum over all seasons, so a missing
+entry makes the check STRICTER, never laxer.  ``asof_granularity: "row"`` means
+even the per-season bound is coarse (the artifact's row for game ``g`` saw only
+games before ``g``); such an artifact is safe to consume only through its own
+date column, and the manifest says so rather than implying a promise the file
+cannot keep.
+
+The artifact-level ``fit_through_date`` remains the conservative bound in every
+case, so a consumer that ignores all of this is still refused correctly.
+
 USAGE
 -----
 Producer (at the end of a build)::
@@ -120,6 +149,11 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     "experiments/dist_margin_cover/residual_pool.csv",
     "experiments/rapm_multiseason/rapm_v1_*.csv",
     "evalharness/frozen_baselines.json",
+    # Derived rather than fitted — no parameter is estimated — but tracked here
+    # anyway: a consumer joining the truth set onto a scored row still needs to
+    # know the latest game it can contain, and a STALE truth set is the failure
+    # mode that would otherwise pass unnoticed.
+    "data/w1_truth/*.csv",
 )
 
 # Directories never worth walking.
@@ -183,6 +217,41 @@ def _now() -> str:
     return _dt.datetime.now(_dt.timezone.utc).isoformat()
 
 
+def bound_from_dates(dates: Iterable[Any]) -> _dt.datetime:
+    """The conservative ``fit_through_date`` for a set of source GAME DATES.
+
+    ``max(date) + 1 day at 12:00 UTC``.  The offset is not padding, it is a
+    correction: ``game_date`` is a DATE, and :func:`to_utc` reads a bare date as
+    MIDNIGHT UTC, which sits BEFORE the games played on it.  An artifact fit
+    through 2024-10-20 and stamped 2024-10-20T00:00Z would pass an as-of check
+    against a forecast committed at noon that day, while actually containing the
+    result of a game that tipped that evening — the invariant would be
+    anti-conservative in exactly the case it exists to catch.
+
+    Next-day 12:00 UTC (08:00 ET) strictly bounds any WNBA game played on the
+    date, including a late tip that runs long.  Producers whose sources carry
+    real timestamps rather than dates should pass those instead; this helper is
+    for the common case where the finest available evidence is a game date.
+
+    Passing an already tz-aware datetime that is not midnight still rounds UP to
+    the next day's noon, which is conservative and never wrong in the unsafe
+    direction.
+    """
+    latest: _dt.datetime | None = None
+    for d in dates:
+        if d is None:
+            continue
+        t = to_utc(d)
+        if latest is None or t > latest:
+            latest = t
+    if latest is None:
+        raise ManifestError(
+            "bound_from_dates() received no usable dates; a fit_through_date "
+            "cannot be derived from an empty source slice")
+    return (latest + _dt.timedelta(days=1)).replace(
+        hour=12, minute=0, second=0, microsecond=0)
+
+
 # --------------------------------------------------------------------------- #
 # content hashing + manifest paths
 # --------------------------------------------------------------------------- #
@@ -217,6 +286,9 @@ def _rel(path: Path, root: Path | None = None) -> str:
 # write / read
 # --------------------------------------------------------------------------- #
 
+GRANULARITIES = ("artifact", "season", "row")
+
+
 def write_manifest(
     artifact: str | os.PathLike,
     *,
@@ -225,6 +297,8 @@ def write_manifest(
     fit_through_season: int,
     fit_seasons: Sequence[int] | None = None,
     notes: str = "",
+    asof_granularity: str = "artifact",
+    fit_through_by_season: Mapping[Any, Any] | None = None,
     extra: Mapping[str, Any] | None = None,
 ) -> Path:
     """Write the sidecar manifest for ``artifact`` and return its path.
@@ -233,23 +307,52 @@ def write_manifest(
     any fitted value in the artifact — not the build time.  Callers that pass a
     build time are silently defeating the invariant, so producers should derive
     it from the data (e.g. ``max(game_date)`` over the fit slice).
+
+    ``asof_granularity`` / ``fit_through_by_season`` describe walk-forward
+    artifacts (see the module docstring).  The per-season map is CHECKED against
+    ``fit_through_date``: no season may claim evidence later than the artifact's
+    own bound, since that bound is defined as the maximum.  A producer that gets
+    this backwards is caught here rather than at score time.
     """
     ap = Path(artifact)
     if not ap.exists():
         raise ManifestError(f"cannot manifest a nonexistent artifact: {ap}")
+    if asof_granularity not in GRANULARITIES:
+        raise ManifestError(
+            f"asof_granularity {asof_granularity!r} not in {GRANULARITIES}")
     fts = int(fit_through_season)
+    ftd = to_utc(fit_through_date)
+
+    by_season: dict[str, str] = {}
+    if fit_through_by_season:
+        for season, when in fit_through_by_season.items():
+            w = to_utc(when)
+            if w > ftd:
+                raise ManifestError(
+                    f"season {season} claims fit_through {w.isoformat()} which is "
+                    f"LATER than the artifact-level bound {ftd.isoformat()}. The "
+                    "artifact-level date must be the maximum over all seasons, or "
+                    "consumers that ignore the per-season map are under-protected.")
+            by_season[str(int(season))] = w.isoformat()
+    if asof_granularity == "season" and not by_season:
+        raise ManifestError(
+            "asof_granularity='season' requires a non-empty fit_through_by_season")
+
     doc: dict[str, Any] = {
         "schema": SCHEMA,
         "artifact": _rel(ap),
         "producer": str(producer),
-        "fit_through_date": to_utc(fit_through_date).isoformat(),
+        "fit_through_date": ftd.isoformat(),
         "fit_through_season": fts,
         "fit_seasons": [int(s) for s in (fit_seasons if fit_seasons is not None else [fts])],
+        "asof_granularity": asof_granularity,
         "content_sha256": content_hash(ap),
         "content_bytes": ap.stat().st_size,
         "created_at": _now(),
         "notes": str(notes),
     }
+    if by_season:
+        doc["fit_through_by_season"] = by_season
     if extra:
         for k, v in extra.items():
             if k in doc:
@@ -373,6 +476,57 @@ def assert_asof(
     if verify_hash:
         verify_content(m, artifact)
     return assert_asof_metadata(m, forecast_time, label=label)
+
+
+def assert_asof_for_season(
+    artifact_manifest: Mapping[str, Any] | str | os.PathLike,
+    season: int,
+    decision_cutoff: Any,
+    *,
+    label: str = "",
+) -> dict:
+    """Per-season form of :func:`assert_asof_metadata`, for walk-forward artifacts.
+
+    Uses ``fit_through_by_season[season]`` when the manifest carries it, and the
+    artifact-level ``fit_through_date`` when it does not.  The fallback is the
+    STRICTER of the two by construction (the artifact-level date is the maximum
+    over seasons), so an artifact that never declared a per-season map is treated
+    exactly as before — this function can only refuse more, never less.
+
+    Refuses outright for ``asof_granularity == "row"``: a row-walk-forward
+    artifact makes no per-season promise, and letting a caller pretend otherwise
+    is precisely the class of quiet approximation this module exists to stop.
+    Such artifacts must be filtered by their own date column.
+    """
+    m = (artifact_manifest if isinstance(artifact_manifest, Mapping)
+         else read_manifest(artifact_manifest))
+    who = label or m.get("artifact", "<artifact>")
+
+    if m.get("asof_granularity") == "row":
+        raise ManifestError(
+            f"{who} is declared asof_granularity='row': its rows carry "
+            "per-game evidence windows, so no season-level bound is meaningful. "
+            "Filter the artifact by its own date column against the decision "
+            "cutoff instead of asserting at season granularity.")
+
+    by_season = m.get("fit_through_by_season") or {}
+    key = str(int(season))
+    if key in by_season:
+        bound = to_utc(by_season[key])
+        source = f"fit_through_by_season[{key}]"
+    else:
+        bound = to_utc(m["fit_through_date"])
+        source = "fit_through_date (no per-season entry; conservative fallback)"
+
+    ft = to_utc(decision_cutoff)
+    if not (bound < ft):
+        raise AsOfViolation(
+            f"AS-OF VIOLATION: {who} (producer {m.get('producer', '?')}) season "
+            f"{season} has {source} = {bound.isoformat()}, which is NOT strictly "
+            f"before decision_cutoff {ft.isoformat()}. The rows being used for "
+            f"season {season} include — or are simultaneous with — the row being "
+            f"scored.")
+    return dict(m)
 
 
 def assert_scored_seasons_clean(

@@ -130,6 +130,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
+import asof_invariant as aoi
 import build_rapm as v0  # v0 protocol functions - file NOT modified
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -755,6 +756,47 @@ def main() -> int:
     assert set(V0_SCHEMA).issubset(wf.columns), "rapm_v0 schema identity broken"
     wf.to_csv(OUT_CSV, index=False, encoding="utf-8")
     meta.to_csv(OUT_SEASONS_CSV, index=False, encoding="utf-8")
+
+    # ---------------- attestation (amendment v5 C3) -------------------------
+    # SEASON granularity: the whole point of this artifact is that its 2026 rows
+    # saw only 2021-2025 while its 2023 rows saw only 2021-2022. A single
+    # artifact-level date would refuse the 2026 rows along with the 2023 ones,
+    # and an invariant that refuses clean rows is an invariant that gets turned
+    # off. The per-season bounds come from the artifact's own fit_through_season
+    # column, so the manifest and the data cannot drift apart.
+    mt_dates = pd.read_parquet(v0.MASTER_TEAM_PATH, columns=["season", "game_date"])
+    mt_dates["season"] = mt_dates["season"].astype(int)
+    season_bound = {
+        int(s): aoi.bound_from_dates(sub["game_date"])
+        for s, sub in mt_dates.groupby("season")
+    }
+    by_season = {
+        int(s): season_bound[int(sub["fit_through_season"].max())]
+        for s, sub in wf.groupby(wf["season"].astype(int))
+    }
+    fit_seasons = sorted({int(x) for x in wf["fit_through_season"].unique()})
+    for path, what in [
+        (OUT_CSV, "per-season player ratings"),
+        (OUT_SEASONS_CSV, "per-season fit metadata (lambda, sample sizes, diagnostics)"),
+    ]:
+        aoi.write_manifest(
+            path,
+            producer="build_rapm_walkforward.py",
+            fit_through_date=max(by_season.values()),
+            fit_through_season=max(fit_seasons),
+            fit_seasons=fit_seasons,
+            asof_granularity="season",
+            fit_through_by_season=by_season,
+            notes=(
+                f"Walk-forward RAPM, {what}. Rows for season s were fit on seasons "
+                "strictly before s; use assert_asof_for_season(manifest, s, cutoff) "
+                "rather than the artifact-level date, which is the maximum over all "
+                "seasons and will refuse clean rows. This artifact is the leak-free "
+                "replacement for the static data/rapm/rapm_v0.csv."),
+            extra={"emit_seasons": sorted({int(s) for s in wf['season'].unique()})},
+        )
+    log(f"manifests written for both walk-forward artifacts "
+        f"(season granularity, {len(by_season)} emit seasons)")
     diag.to_csv(os.path.join(EXP_DIR, "margin_corr_diagnostic.csv"), index=False,
                 encoding="utf-8")
     pd.DataFrame(stint_rows).round(4).to_csv(

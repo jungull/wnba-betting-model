@@ -851,6 +851,51 @@ def check_tip_changes():
     return _apply_mode(status, TIP_CHANGE_FAIL_MODE, lines)
 
 
+def check_artifact_manifests():
+    """Every fitted artifact is attested and its manifest still matches its bytes.
+
+    screening_protocol_amendment_v5 C3-BLOCKING: no result may support a
+    promotion, nomination or freeze decision until every fitted artifact it
+    consumes carries a manifest recording fit_through as WHEN THE SOURCE
+    INFORMATION BECAME AVAILABLE. That bar is only real if something checks it
+    every day -- a one-time backfill decays the moment somebody reruns a builder.
+
+    HASH DRIFT IS THE CHECK THAT EARNS ITS KEEP. A rebuilt artifact whose
+    manifest was not rewritten still claims the old fit window, so it would pass
+    every as-of assertion while containing newer evidence. That is the rapm_v0
+    failure with extra steps, and it is a FAIL here rather than a warning.
+    """
+    import asof_invariant as aoi
+
+    rows = aoi.scan_artifacts(ROOT)
+    missing = [r for r in rows if r["exists"] and not r["has_manifest"]]
+    invalid = [r for r in rows if r["has_manifest"] and not r["manifest_valid"]]
+    drifted = [r for r in rows if r["hash_ok"] == "no"]
+    absent = [r for r in rows if not r["exists"]]
+    attested = [r for r in rows
+                if r["manifest_valid"] and r["hash_ok"] == "yes"]
+
+    lines = [f"{len(attested)}/{len(rows) - len(absent)} fitted artifacts attested; "
+             f"{len(missing)} unattested, {len(invalid)} invalid, "
+             f"{len(drifted)} hash-drifted, {len(absent)} absent"]
+    for r in missing[:8]:
+        lines.append(f"UNATTESTED {r['artifact']} — consumers cannot assert as-of "
+                     f"against it (run: python backfill_manifests.py --write)")
+    for r in invalid[:8]:
+        lines.append(f"INVALID MANIFEST {r['artifact']}: {r['problem']}")
+    for r in drifted[:8]:
+        lines.append(f"HASH DRIFT {r['artifact']} — rebuilt without rewriting its "
+                     f"manifest, so its fit_through claim is unverified")
+    for r in absent[:4]:
+        lines.append(f"absent: {r['artifact']} (glob matched no file)")
+
+    if missing or invalid or drifted:
+        return "FAIL", lines
+    if absent:
+        return "WARN", lines
+    return "PASS", lines
+
+
 # ---------------------------------------------------------------------------
 # runner
 # ---------------------------------------------------------------------------
@@ -879,6 +924,7 @@ def main(argv=None) -> int:
          lambda: check_pbp_reconciliation(full=args.full)),
         ("odds stale-book detection", check_stale_books),
         ("postponement / tip-time change detection", check_tip_changes),
+        ("fitted-artifact manifests (amendment v5 C3)", check_artifact_manifests),
     ]
     print(f"daily_certify - {datetime.now().astimezone().isoformat(timespec='seconds')}")
     print("=" * 72)

@@ -40,6 +40,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+import asof_invariant as aoi
+
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
@@ -604,6 +606,43 @@ def main() -> None:
     report = write_report(R, la, ktab, player, df, spot, notes,
                           n_off=len(off), n_def=len(dfn), n_lg=len(lg))
     (OUT / "RECONCILIATION.md").write_text(report, encoding="utf-8")
+
+    # ---------------- attestation (amendment v5 C3) -------------------------
+    # ARTIFACT granularity for all five, including the ones carrying a `season`
+    # column. That column invites declaring season granularity, and doing so
+    # would be false: every shrunk column (fg_pct_shrunk, share_shrunk,
+    # pps_shrunk) applies K values from shrinkage_priors.csv, which is estimated
+    # by pooling EVERY season in the build. A 2021 row's shrunk value has
+    # therefore seen 2026 games. Bounding each file by the latest season present
+    # is the only claim these files actually support.
+    bound = aoi.bound_from_dates(df["game_date"])
+    seasons = sorted({int(s) for s in df["season"].unique()})
+    pooled_note = (
+        "Shrinkage K is estimated by POOLING ALL SEASONS in the build, so the "
+        "shrunk columns of every per-season row depend on the whole date range. "
+        "Season granularity is deliberately NOT declared. Severity of the "
+        "resulting contamination is argued but NOT MEASURED "
+        "(HANDOFF_2026-07-31 section 3, open item 7); until it is measured, "
+        "consumers must treat these maps as fit through the latest season present. "
+        "maps_before() in this module is the leak-free path for point-in-time use.")
+    for fname, what in [
+        ("shrinkage_priors.csv", "method-of-moments K table, pooled across all seasons by construction"),
+        ("team_zone_offense.csv", "per-season team offensive zone rates with shrunk columns"),
+        ("team_zone_defense.csv", "per-season team defensive zone rates with shrunk columns"),
+        ("league_zone_averages.csv", "per-season league zone baselines"),
+        ("player_zone_offense.csv", "empirical-Bayes player zone rates"),
+    ]:
+        aoi.write_manifest(
+            OUT / fname,
+            producer="build_zone_maps.py",
+            fit_through_date=bound,
+            fit_through_season=max(seasons),
+            fit_seasons=seasons,
+            asof_granularity="artifact",
+            notes=f"{what}. {pooled_note}",
+            extra={"n_shots": int(len(df))},
+        )
+    print(f"manifests written for 5 zone artifacts (fit through {bound.date()})")
 
     print(f"\nFGA exact {R['fga_exact_n']}/{R['n_team_games']} | FGM exact {R['fgm_exact_n']} | "
           f"FG-pts exact {R['fgpts_exact_n']} | paint exact {R['paint_exact_n']} | "

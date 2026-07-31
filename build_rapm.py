@@ -61,6 +61,8 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 
+import asof_invariant as aoi
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 POSS_PATH = os.path.join(DATA, "possessions", "possessions.parquet")
@@ -403,6 +405,38 @@ def main() -> int:
         out[f"net_100_lam{lam}"] = ratings[f"net_100_lam{lam}"].round(3)
     out = out.sort_values("net_100", ascending=False)
     out.to_csv(RAPM_CSV, index=False, encoding="utf-8")
+
+    # ---------------- attestation (amendment v5 C3) -------------------------
+    # Derived from the games ACTUALLY FIT, not from TRAIN_SEASONS: if the season
+    # filter ever changes, or a season is only partly present in possessions, the
+    # constant would still read 2024 while the artifact had seen something later.
+    # The data is the evidence; the constant is only a description of it.
+    mt = pd.read_parquet(MASTER_TEAM_PATH, columns=["game_id", "season", "game_date"])
+    train_ids = set(train["game_id"].astype(str))
+    fit_rows = mt[mt["game_id"].astype(str).isin(train_ids)]
+    if fit_rows.empty:
+        raise RuntimeError(
+            "no master_team rows matched the training game_ids, so the artifact's "
+            "fit_through_date cannot be evidenced. Refusing to write an unattested "
+            "rapm_v0.csv (screening_protocol_amendment_v5 C3-BLOCKING).")
+    fit_seasons = sorted({int(s) for s in fit_rows["season"]})
+    aoi.write_manifest(
+        RAPM_CSV,
+        producer="build_rapm.py",
+        fit_through_date=aoi.bound_from_dates(fit_rows["game_date"]),
+        fit_through_season=max(fit_seasons),
+        fit_seasons=fit_seasons,
+        notes=(
+            "Static single-table RAPM. Every fitted value saw the same evidence, so "
+            "artifact granularity is exact rather than conservative. This is the "
+            "artifact whose misuse motivated asof_invariant_audit_v1: it must never "
+            f"score a season in {fit_seasons}. Use rapm_walkforward.csv for those."),
+        extra={"n_train_possessions": int(len(train)),
+               "n_train_games": int(len(train_ids)),
+               "lambda_chosen": int(lam_star)},
+    )
+    log(f"manifest written for {os.path.basename(RAPM_CSV)} "
+        f"(fit through {max(fit_seasons)}, {len(train_ids)} games)")
 
     by_season = pd.concat(season_frames.values(), ignore_index=True)
     by_season["player_name"] = by_season["player_id"].map(names).fillna("")

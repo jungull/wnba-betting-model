@@ -20,6 +20,13 @@ Coverage map:
   (i) REGRESSION: a walk-forward artifact family (per-season tables) satisfies
       the invariant for every row it is allowed to score and violates it for
       every row it is not — the acceptance test for build_rapm_walkforward_v1
+  (j) bound_from_dates() lands STRICTLY AFTER any game played on the last fit
+      date — the anti-conservative bare-date bug it exists to prevent
+  (k) assert_asof_for_season() uses the per-season bound when present, falls
+      back to the STRICTER artifact-level bound when absent, and refuses
+      outright for row-granular artifacts
+  (l) write_manifest() rejects a per-season map that claims evidence later than
+      the artifact-level bound
 """
 
 from __future__ import annotations
@@ -358,6 +365,168 @@ def test_walkforward_family_satisfies_invariant():
     # yet it is legitimately clean for 2025 and 2026 rows
     aoi.assert_asof_metadata(static, season_start[2025] + "T19:30:00+00:00")
     aoi.assert_scored_seasons_clean(static, [2025, 2026])
+
+
+# --------------------------------------------------------------------------- #
+# (j) the date->instant bound
+# --------------------------------------------------------------------------- #
+
+def test_bound_from_dates_is_strictly_after_the_last_game():
+    """A bare game date read as midnight UTC sits BEFORE that date's games.
+
+    This is the anti-conservative failure the helper exists to prevent: an
+    artifact fit through 2024-10-20 and stamped 2024-10-20T00:00Z would pass an
+    as-of check against a forecast committed at noon that day, while actually
+    containing the result of a game that tipped that evening.
+    """
+    bound = aoi.bound_from_dates(["2024-05-14", "2024-10-20", "2024-08-01"])
+    assert bound == _dt.datetime(2024, 10, 21, 12, 0, tzinfo=UTC), bound
+
+    # the naive reading would NOT refuse a same-evening forecast; the bound does
+    naive = aoi.to_utc("2024-10-20")
+    tipoff = _dt.datetime(2024, 10, 20, 23, 30, tzinfo=UTC)
+    assert naive < tipoff, "precondition: the naive stamp is the permissive one"
+    assert bound > tipoff, "the bound must refuse a forecast made at that tip"
+
+    # mixed date and datetime inputs, and an empty slice is a refusal not a guess
+    assert aoi.bound_from_dates([_dt.date(2023, 10, 18)]) == \
+        _dt.datetime(2023, 10, 19, 12, 0, tzinfo=UTC)
+    _expect(aoi.ManifestError, aoi.bound_from_dates, [])
+    _expect(aoi.ManifestError, aoi.bound_from_dates, [None, None])
+
+
+# --------------------------------------------------------------------------- #
+# (k) per-season assertions on walk-forward artifacts
+# --------------------------------------------------------------------------- #
+
+def test_assert_asof_for_season_prefers_per_season_bound():
+    """The walk-forward case: 2026 rows are clean, 2023 rows are not.
+
+    The artifact-level date is the maximum over seasons, so asserting with it
+    would refuse the 2026 rows too. An invariant that refuses clean rows is an
+    invariant that gets switched off, which is why the per-season bound exists.
+    """
+    m = {
+        "schema": aoi.SCHEMA, "artifact": "data/rapm/rapm_walkforward.csv",
+        "producer": "build_rapm_walkforward.py",
+        "fit_through_date": "2025-10-11T12:00:00+00:00",
+        "fit_through_season": 2025, "content_sha256": "x" * 64,
+        "asof_granularity": "season",
+        "fit_through_by_season": {
+            "2023": "2022-09-19T12:00:00+00:00",
+            "2026": "2025-10-11T12:00:00+00:00",
+        },
+    }
+    cutoff = "2026-07-31T14:00:00+00:00"
+
+    # season 2026 rows: fit through 2025, clean against a 2026 forecast
+    aoi.assert_asof_for_season(m, 2026, cutoff)
+    # season 2023 rows: fit through 2022, also clean against the same forecast
+    aoi.assert_asof_for_season(m, 2023, cutoff)
+
+    # but the 2026 rows are NOT clean against a forecast made during 2025
+    _expect(aoi.AsOfViolation, aoi.assert_asof_for_season, m, 2026,
+            "2025-09-01T19:30:00+00:00")
+    # while the 2023 rows still are
+    aoi.assert_asof_for_season(m, 2023, "2025-09-01T19:30:00+00:00")
+
+    # the artifact-level assertion refuses BOTH, which is why it is too blunt
+    _expect(aoi.AsOfViolation, aoi.assert_asof_metadata, m,
+            "2025-09-01T19:30:00+00:00")
+
+
+def test_assert_asof_for_season_falls_back_to_the_stricter_bound():
+    """A season missing from the map falls back to the artifact-level date.
+
+    That direction is load bearing: the artifact-level date is the maximum over
+    seasons, so the fallback can only REFUSE MORE. A fallback that guessed a
+    per-season value would be the failure mode this module exists to stop.
+    """
+    m = {
+        "schema": aoi.SCHEMA, "artifact": "wf.csv", "producer": "p",
+        "fit_through_date": "2025-10-11T12:00:00+00:00",
+        "fit_through_season": 2025, "content_sha256": "x" * 64,
+        "asof_granularity": "season",
+        "fit_through_by_season": {"2023": "2022-09-19T12:00:00+00:00"},
+    }
+    # 2024 is absent from the map; the strict artifact bound applies
+    aoi.assert_asof_for_season(m, 2024, "2026-07-31T14:00:00+00:00")
+    _expect(aoi.AsOfViolation, aoi.assert_asof_for_season, m, 2024,
+            "2025-10-01T00:00:00+00:00")
+    # the mapped season is unaffected by the fallback and stays permissive
+    aoi.assert_asof_for_season(m, 2023, "2025-10-01T00:00:00+00:00")
+
+    # a manifest with no map at all behaves exactly like assert_asof_metadata
+    plain = {k: v for k, v in m.items()
+             if k not in ("fit_through_by_season", "asof_granularity")}
+    aoi.assert_asof_for_season(plain, 2024, "2026-07-31T14:00:00+00:00")
+    _expect(aoi.AsOfViolation, aoi.assert_asof_for_season, plain, 2024,
+            "2025-10-01T00:00:00+00:00")
+
+
+def test_row_granular_artifacts_refuse_season_assertions():
+    """crew_factors.csv is row-walk-forward; no season bound describes it.
+
+    Priors for a mid-season game already include that season's earlier games, so
+    answering a season-level question about it would be a quiet approximation.
+    The module refuses instead.
+    """
+    m = {
+        "schema": aoi.SCHEMA, "artifact": "experiments/w4_refs/crew_factors.csv",
+        "producer": "w4_refs.py", "fit_through_date": "2026-07-31T12:00:00+00:00",
+        "fit_through_season": 2026, "content_sha256": "x" * 64,
+        "asof_granularity": "row",
+    }
+    e = _expect(aoi.ManifestError, aoi.assert_asof_for_season, m, 2024,
+                "2026-07-31T14:00:00+00:00")
+    assert "row" in str(e), e
+    # the blunt artifact-level check still works and still refuses a forecast
+    # committed before the artifact's last source observation
+    _expect(aoi.AsOfViolation, aoi.assert_asof_metadata, m,
+            "2026-07-31T10:00:00+00:00")
+
+
+# --------------------------------------------------------------------------- #
+# (l) the per-season map cannot outrun its own artifact bound
+# --------------------------------------------------------------------------- #
+
+def test_write_manifest_rejects_a_season_later_than_the_artifact_bound():
+    """The artifact-level date is DEFINED as the maximum over seasons.
+
+    A producer that writes a per-season entry past it would leave every consumer
+    that ignores the map under-protected, so this is caught at write time rather
+    than at score time.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        art = _artifact(tmp)
+        _expect(aoi.ManifestError, aoi.write_manifest, art,
+                producer="p", fit_through_date="2024-01-01T00:00:00+00:00",
+                fit_through_season=2024, asof_granularity="season",
+                fit_through_by_season={2025: "2025-06-01T00:00:00+00:00"})
+
+        # season granularity with no map is also refused: it promises a contract
+        # the manifest does not carry
+        _expect(aoi.ManifestError, aoi.write_manifest, art,
+                producer="p", fit_through_date="2024-01-01T00:00:00+00:00",
+                fit_through_season=2024, asof_granularity="season")
+
+        # an unknown granularity is a typo, not a new policy
+        _expect(aoi.ManifestError, aoi.write_manifest, art,
+                producer="p", fit_through_date="2024-01-01T00:00:00+00:00",
+                fit_through_season=2024, asof_granularity="per-season")
+
+        # the valid form round-trips, and the map survives read_manifest
+        aoi.write_manifest(art, producer="p",
+                           fit_through_date="2024-10-21T12:00:00+00:00",
+                           fit_through_season=2024, fit_seasons=[2023, 2024],
+                           asof_granularity="season",
+                           fit_through_by_season={2024: "2023-10-19T12:00:00+00:00",
+                                                  2025: "2024-10-21T12:00:00+00:00"})
+        back = aoi.read_manifest(art)
+        assert back["asof_granularity"] == "season"
+        assert set(back["fit_through_by_season"]) == {"2024", "2025"}
+        aoi.assert_asof_for_season(back, 2024, "2024-01-01T00:00:00+00:00")
 
 
 def _run_all():
