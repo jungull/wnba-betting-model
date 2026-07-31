@@ -119,8 +119,10 @@ reactions). Actual minutes are never described as what perfect news extraction c
 **D. Prospective full-system evaluation** — the only regime that validates the news-aware
 system. **Two distinct dates, never conflated:** *capture start* (2026-07-30 — point-in-time
 raw data begins accumulating; creates a replay corpus, proves nothing) and *prospective
-evaluation start* (unset — begins only when a FROZEN model version issues timestamped,
-immutably logged predictions before each game). Tuning on captured months and then
+evaluation start* — **freeze-v0 approved by John 2026-07-31 ("freeze v0 approved");
+registered as `prospective_v0`; the start is the timestamp of record #1 in
+`forecasts/forecast_log.jsonl` (WNBA_DailyForecast_AM task, first fire 2026-07-31 10:20 ET;
+protocol in `project_docs/FREEZE_PROPOSAL_v0.md`)**. Tuning on captured months and then
 "replaying" them is retrospective development, not prospective validation. At every cutoff
 the logger records: model/version hash, data snapshot hash, W1 extraction, core-only
 prediction, core+W1 prediction, available market line and price, predicted close, intended
