@@ -1,6 +1,6 @@
 # Forecasting leaderboard — score/margin/total point error, by decision time
 
-*Rendered 2026-07-31T00:19:00+00:00 from `C:\Users\jgallagher\wnba-betting-model\experiments\registry.jsonl` by evalharness.leaderboards (ROADMAP §Leaderboards). Every registered evaluation posts here — win or lose, every run. Unregistered results are void and cannot appear.*
+*Rendered 2026-07-31T15:59:24+00:00 from `C:\Users\jgallagher\wnba-betting-model\experiments\registry.jsonl` by evalharness.leaderboards (ROADMAP §Leaderboards). Every registered evaluation posts here — win or lose, every run. Unregistered results are void and cannot appear.*
 
 ## Frozen reference baselines (pinned permanently — never re-run, never removed)
 
@@ -33,5 +33,6 @@
 | 12 | `minutes_twostage_availability_v1` (run 2) | B | T-24h | minutes_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-30 |
 | 13 | `oracle_availability_bracket_v2` (run 2) | C | T-24h | margin_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-30 |
 | 14 | `clv_transfer_v1` (run 2) | A | T-24h | margin_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-30 |
+| 15 | `oracle_availability_bracket_v2` (run 3) | C | T-24h | margin_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-31 |
 
 Gate legend (ROADMAP §Standard promotion gate): 1 pooled improvement ≥ registered minimum · 2 90% clustered-bootstrap CI excludes harm beyond bound · 3 per-season non-inferiority · 4 joint forecast non-degradation · 5 coverage maintained. P=pass F=fail ·=not provided (visible, not hidden).

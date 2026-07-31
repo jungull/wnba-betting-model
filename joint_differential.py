@@ -70,6 +70,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import re
 import shutil
 import sys
 from datetime import datetime, timezone
@@ -107,16 +108,22 @@ DEFAULT_OUTDIR = REPO / "experiments" / "joint_differential"
 ALPHAS_COMMITTED = {"ft": 0.10, "3pt": 0.05, "paint": 0.05, "np2": 0.05}
 EWMA_ALPHA_MIN = 0.30            # frozen minutes-system constant (mts EWMA_ALPHA)
 REPLACEMENT_COMMITTED = -0.890   # committed p25 of rapm_v0 net_100
+# rapm_v0 net_100 is a STATIC player-value table fit by build_rapm.py on these
+# seasons. Any test season inside this window has its player values estimated
+# partly from its OWN possessions -> contemporaneous information, not
+# walk-forward. Verified against build_rapm.py at runtime (audit 4).
+RAPM_FIT_SEASONS = [2021, 2022, 2023, 2024]
 INC_POOLED_LEDGER = 10.0860      # ledgered incumbent pooled margin MAE (673 games)
 N_TRAIN_LEDGER = 610             # ledgered incumbent calibration train games
+N_TEST_LEDGER = 673              # ledgered incumbent scored test games
 
 LAMBDAS = [0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0]
 AUDIT_SEED = 20260731
 SHIFT_AUDIT_PER_SEASON = 6       # 18 games total (>= 15 required)
 RAPM_AUDIT_GAMES = 10            # x2 sides = 20 independent recomputes
-PERM_K = 5
-PERM_NEAR_NAIVE_TOL = 0.35       # permuted MAE must sit within this of naive
-PERM_MIN_GAP = 0.50              # ... and at least this worse than the real model
+PERM_K = 30                      # permutation null draws (p <= 1/(K+1) = 0.032)
+PERM_NEAR_NAIVE_TOL = 0.35       # MEAN permuted MAE must not beat naive by more
+PERM_MAX_P = 0.05                # real model must sit outside the null
 REPRO_TOL_PER_GAME = 1e-9
 ATOL = 1e-9
 
@@ -251,6 +258,17 @@ def rapm_strengths(P: pd.DataFrame, queries: pd.DataFrame,
     return G[["season", "game_date", "team_id", "strength", "n_roster", "repl_wshare"]]
 
 
+def rapm_fit_seasons_from_source() -> list:
+    """Read build_rapm.py's TRAIN_SEASONS so the fit window is verified from the
+    code that produced rapm_v0.csv, not asserted from memory."""
+    src = (REPO / "build_rapm.py").read_text(encoding="utf-8")
+    m = re.search(r"^TRAIN_SEASONS\s*=\s*\{([^}]*)\}", src, re.M)
+    if not m:
+        raise RuntimeError("cannot read TRAIN_SEASONS from build_rapm.py - "
+                           "RAPM provenance unverifiable; stopping")
+    return sorted(int(x) for x in re.findall(r"\d{4}", m.group(1)))
+
+
 def ewma_manual(x: np.ndarray, alpha: float) -> float:
     w = (1.0 - alpha) ** np.arange(len(x) - 1, -1, -1)
     return float((w * x).sum() / w.sum())
@@ -297,18 +315,22 @@ def build_game_frame(D: pd.DataFrame, F: pd.DataFrame, games: pd.DataFrame,
     rest differential + RAPM lineup differential. One row per game."""
     ing_cols = sorted({c for tpl in ING.values() for c in tpl if c})
     keep = ["GAME_ID"] + ing_cols
-    h = F.loc[F["is_home"] == 1, keep].add_suffix("_h") \
-        .rename(columns={"GAME_ID_h": "GAME_ID"})
-    a = F.loc[F["is_home"] == 0, keep].add_suffix("_a") \
-        .rename(columns={"GAME_ID_a": "GAME_ID"})
+    # distinct `ing_` prefix: make_games already exports raw_paint_h / raw_np2_h
+    # etc., and a bare _h/_a suffix would silently collide with them.
+    h = F.loc[F["is_home"] == 1, keep].rename(
+        columns={c: f"ing_{c}_h" for c in ing_cols})
+    a = F.loc[F["is_home"] == 0, keep].rename(
+        columns={c: f"ing_{c}_a" for c in ing_cols})
     g = games.merge(h, on="GAME_ID", validate="one_to_one") \
              .merge(a, on="GAME_ID", validate="one_to_one")
+    assert not [c for c in g.columns if c.endswith(("_x", "_y"))], \
+        "column collision in the ingredient merge"
 
     for ch, (own, allow, conv) in ING.items():
-        g[f"d_own_{ch}"] = g[f"{own}_h"] - g[f"{own}_a"]
-        g[f"d_allow_{ch}"] = g[f"{allow}_h"] - g[f"{allow}_a"]
+        g[f"d_own_{ch}"] = g[f"ing_{own}_h"] - g[f"ing_{own}_a"]
+        g[f"d_allow_{ch}"] = g[f"ing_{allow}_h"] - g[f"ing_{allow}_a"]
         if conv:
-            g[f"d_conv_{ch}"] = g[f"{conv}_h"] - g[f"{conv}_a"]
+            g[f"d_conv_{ch}"] = g[f"ing_{conv}_h"] - g[f"ing_{conv}_a"]
         # targets + incumbent-implied channel differentials
         act = rr.CH_ACTUAL[ch]
         g[f"t_d_{ch}"] = g[f"{act}_h"] - g[f"{act}_a"]
@@ -463,11 +485,38 @@ def main(argv=None) -> int:
 
     test_ids = {s: set(D.loc[by_name[f"season:{s}"].test_idx, "GAME_ID"])
                 for s in TEST_YEARS}
-    et_mask = games["eligible"] & games["GAME_ID"].isin(set().union(*test_ids.values()))
-    n_total_test_games = int(D[D["season"].isin(TEST_YEARS)]["GAME_ID"].nunique())
+    all_test_ids = set().union(*test_ids.values())
 
     # -- AUDIT 0: incumbent reproduction (hard assert BEFORE anything else) --
     committed = pd.read_csv(CHAN_PRED)
+
+    # THE UNIVERSE IS THE INCUMBENT'S COMMITTED BOOK, NOT TODAY'S DATA.
+    # channel_base_v2.csv has since gained games played after the incumbent run
+    # was committed (2026-07-30 rows). The registration binds this comparison to
+    # "the 673 chanreval test games"; scoring a larger universe would make the
+    # paired comparison against the committed predictions_v2.csv impossible.
+    # Those post-commit games are disclosed and reported as a sensitivity only.
+    ledger_ids = set(committed["GAME_ID"])
+    et_mask_current = games["eligible"] & games["GAME_ID"].isin(all_test_ids)
+    et_mask = games["eligible"] & games["GAME_ID"].isin(ledger_ids)
+    post_commit_ids = sorted(
+        set(games.loc[et_mask_current, "GAME_ID"]) - ledger_ids)
+    assert not (ledger_ids - set(games.loc[et_mask_current, "GAME_ID"])), \
+        "committed test games missing from the rebuild - universe drift, stop"
+    assert int(et_mask.sum()) == len(committed) == N_TEST_LEDGER, \
+        (int(et_mask.sum()), len(committed))
+    # coverage denominator on the SAME frozen basis as the incumbent's run
+    n_total_test_games = int(summ["n_total_test_games"])
+    n_total_test_games_current = int(
+        D[D["season"].isin(TEST_YEARS)]["GAME_ID"].nunique())
+    if post_commit_ids:
+        pc = games[games["GAME_ID"].isin(post_commit_ids)]
+        print(f"[universe] {len(post_commit_ids)} eligible test games postdate the "
+              f"committed incumbent book and are EXCLUDED from the registered "
+              f"comparison (dates {sorted(pd.to_datetime(pc['GAME_DATE_h']).dt.date.unique())}, "
+              f"ids {post_commit_ids}); scored universe frozen at "
+              f"{int(et_mask.sum())} games; test-season game count is now "
+              f"{n_total_test_games_current} vs {n_total_test_games} at commit time")
     j = games.loc[et_mask, ["GAME_ID", "margin_true", "inc_margin_cal"]].merge(
         committed[["GAME_ID", "margin_true", "str_margin_cal", "naive_margin_pred"]],
         on="GAME_ID", validate="one_to_one", suffixes=("", "_c"))
@@ -515,7 +564,7 @@ def main(argv=None) -> int:
     feat_ok = g2[ALL_DIFF_FEATURES].notna().all(axis=1)
     model_ok = g2["eligible"] & feat_ok
     tg2 = g2["GAME_ID"].isin(train_ids) & g2["eligible"]
-    et2 = g2["eligible"] & g2["GAME_ID"].isin(set().union(*test_ids.values()))
+    et2 = g2["eligible"] & g2["GAME_ID"].isin(ledger_ids)   # frozen ledger book
     n_train_gap = int((tg2 & ~feat_ok).sum())
     n_test_gap = int((et2 & ~feat_ok).sum())
     print(f"[cover] train eligible {int(tg2.sum())} (feature gaps {n_train_gap}); "
@@ -651,9 +700,17 @@ def main(argv=None) -> int:
           f"{'PASS' if audit2['passed'] else 'FAIL'}")
 
     # -- AUDIT 3: permutation probe (shuffled train targets must collapse) ---
-    perm_maes = []
+    # The FAITHFUL null refits the WHOLE pipeline on shuffled targets: the
+    # channel ridges AND the margin calibration (whose target, the margin, is by
+    # identity the sum of the channel targets and is therefore shuffled too).
+    # A second, partial null recalibrates on the TRUE train margins instead --
+    # that hands the null one genuinely-fitted degree of freedom, so it does NOT
+    # fully collapse; it is reported as a diagnostic, not as the pass criterion.
+    perm_maes, perm_maes_truecal = [], []
     ycols = [f"t_d_{c}" for c in CHANNELS]
     tr_frame = g2.loc[train_lab]
+    y_true_tr = tr_frame["margin_true"].to_numpy(float)
+    y_true_te = g2.loc[test_lab, "margin_true"].to_numpy(float)
     for k in range(PERM_K):
         prng = np.random.default_rng(AUDIT_SEED + 1 + k)
         Yperm = tr_frame[ycols].copy()
@@ -661,6 +718,7 @@ def main(argv=None) -> int:
             m = (tr_frame["season_h"] == s).to_numpy()
             idx = np.flatnonzero(m)
             Yperm.iloc[idx] = Yperm.iloc[prng.permutation(idx)].to_numpy()
+        perm_margin_tr = Yperm.sum(axis=1).to_numpy(float)
         pred_sum_tr = np.zeros(len(tr_frame))
         pred_sum_te = np.zeros(len(test_lab))
         for ch in CHANNELS:
@@ -669,21 +727,74 @@ def main(argv=None) -> int:
                                Yperm[f"t_d_{ch}"].to_numpy(float), lambdas[ch])
             pred_sum_tr += ridge_predict(std.transform(tr_frame[feats]), beta_p)
             pred_sum_te += ridge_predict(std.transform(g2.loc[test_lab, feats]), beta_p)
-        a_p, b_p = rr.linfit(pred_sum_tr, tr_frame["margin_true"].to_numpy(float))
-        perm_maes.append(mae(a_p + b_p * pred_sum_te
-                             - g2.loc[test_lab, "margin_true"].to_numpy(float)))
+        a_p, b_p = rr.linfit(pred_sum_tr, perm_margin_tr)      # faithful null
+        perm_maes.append(mae(a_p + b_p * pred_sum_te - y_true_te))
+        a_t, b_t = rr.linfit(pred_sum_tr, y_true_tr)           # partial null
+        perm_maes_truecal.append(mae(a_t + b_t * pred_sum_te - y_true_te))
     jd_pooled = mae(g2.loc[test_lab, "jd_margin_cal"]
                     - g2.loc[test_lab, "margin_true"])
+    n_le = int(sum(v <= jd_pooled for v in perm_maes))
+    p_value = (1 + n_le) / (PERM_K + 1)
+    mean_perm = float(np.mean(perm_maes))
     audit3 = {
-        "n_permutations": PERM_K, "perm_maes": [round(v, 4) for v in perm_maes],
+        "n_permutations": PERM_K,
+        "perm_maes": [round(v, 4) for v in perm_maes],
+        "perm_mae_mean": mean_perm,
+        "perm_mae_min": float(np.min(perm_maes)),
+        "perm_mae_max": float(np.max(perm_maes)),
+        "perm_maes_truecal_diagnostic": [round(v, 4) for v in perm_maes_truecal],
+        "perm_mae_truecal_mean": float(np.mean(perm_maes_truecal)),
         "naive_mae": naive_mae, "real_mae": jd_pooled,
-        "near_naive_tol": PERM_NEAR_NAIVE_TOL, "min_gap": PERM_MIN_GAP,
-        "passed": all(abs(v - naive_mae) <= PERM_NEAR_NAIVE_TOL
-                      and v - jd_pooled >= PERM_MIN_GAP for v in perm_maes),
+        "n_perm_le_real": n_le, "p_value": p_value, "max_p": PERM_MAX_P,
+        "mean_perm_minus_naive": mean_perm - naive_mae,
+        "near_naive_tol": PERM_NEAR_NAIVE_TOL,
+        "passed": bool(p_value <= PERM_MAX_P
+                       and (mean_perm - naive_mae) >= -PERM_NEAR_NAIVE_TOL),
     }
-    print(f"[audit3] permutation probe: perm MAEs {audit3['perm_maes']} "
-          f"(naive {naive_mae:.4f}, real {jd_pooled:.4f}) -> "
+    print(f"[audit3] permutation probe ({PERM_K} draws): perm MAE mean "
+          f"{mean_perm:.4f} [min {audit3['perm_mae_min']:.4f}, max "
+          f"{audit3['perm_mae_max']:.4f}] vs naive {naive_mae:.4f} "
+          f"(mean-naive {mean_perm - naive_mae:+.4f}); real {jd_pooled:.4f}; "
+          f"perms <= real: {n_le}/{PERM_K} (p={p_value:.4f}); "
+          f"true-cal diagnostic mean {audit3['perm_mae_truecal_mean']:.4f} -> "
           f"{'PASS (collapsed)' if audit3['passed'] else 'FAIL'}")
+
+    # -- AUDIT 4: RAPM VALUE provenance (audits 1-2 cover the WEIGHTS only) ---
+    # The minutes-EWMA weights are walk-forward (audits 1 and 2 prove it), but
+    # the VALUES they weight are a static table fit on RAPM_FIT_SEASONS. Any
+    # test season inside that window has its player values informed by its own
+    # possessions. That is upstream contamination of a committed artifact the
+    # registration names explicitly - so this does not abort the registered run;
+    # it forces the clean-season analysis below to be the honest headline.
+    fit_seasons = rapm_fit_seasons_from_source()
+    assert fit_seasons == RAPM_FIT_SEASONS, \
+        f"build_rapm.py fit window changed: {fit_seasons} vs {RAPM_FIT_SEASONS}"
+    contaminated = [s for s in TEST_YEARS if s in fit_seasons]
+    clean_seasons = [s for s in TEST_YEARS if s not in fit_seasons]
+    te_season_counts = g2.loc[test_lab, "season_h"].value_counts()
+    n_contam = int(te_season_counts.reindex(contaminated).fillna(0).sum())
+    audit4 = {
+        "rapm_value_fit_seasons": fit_seasons,
+        "test_seasons": TEST_YEARS,
+        "contaminated_test_seasons": contaminated,
+        "rapm_clean_test_seasons": clean_seasons,
+        "n_contaminated_test_games": n_contam,
+        "n_clean_test_games": int(len(test_lab) - n_contam),
+        "train_seasons_inside_fit_window": [s for s in TRAIN_YEARS if s in fit_seasons],
+        "verdict": ("CONTAMINATED - rapm_v0 net_100 is fit on "
+                    f"{fit_seasons}, which overlaps test season(s) {contaminated}; "
+                    "d_rapm on those games carries contemporaneous information. "
+                    "The registered pooled number is reported as registered, but "
+                    f"the RAPM-clean seasons {clean_seasons} are the honest read."
+                    if contaminated else "clean - no overlap"),
+        "is_contaminated": bool(contaminated),
+        "passed": True,   # disclosure audit: never silently fails the run
+    }
+    print(f"[audit4] RAPM VALUE provenance: net_100 fit on {fit_seasons}; test "
+          f"seasons {TEST_YEARS} -> contaminated {contaminated} "
+          f"({n_contam} games), clean {clean_seasons} "
+          f"({audit4['n_clean_test_games']} games). "
+          f"{'*** the pooled result is NOT walk-forward clean ***' if contaminated else 'OK'}")
 
     audits = {"audit0_incumbent_reproduction": {
                   "per_game_max_dev": repro_dev, "pooled": inc_pooled,
@@ -691,7 +802,8 @@ def main(argv=None) -> int:
                   "passed": True},
               "audit1_shift_truncate_recompute": audit1,
               "audit2_rapm_walk_forward": audit2,
-              "audit3_permutation_probe": audit3}
+              "audit3_permutation_probe": audit3,
+              "audit4_rapm_value_provenance": audit4}
     if not (audit1["passed"] and audit2["passed"] and audit3["passed"]):
         (outdir / "audit_results.json").write_text(
             json.dumps(audits, indent=2, default=str), encoding="utf-8")
@@ -718,6 +830,67 @@ def main(argv=None) -> int:
             "abl_delta": mae(sub_inc) - mae(sub_abl)})
     season_tbl = pd.DataFrame(season_rows)
     print(fmt_table(season_tbl))
+
+    # -- RAPM-CLEAN SEASONS: the honest read (audit 4) ------------------------
+    # Restrict to test seasons OUTSIDE rapm_v0's fit window, where d_rapm is
+    # genuinely out-of-sample player value rather than contemporaneous.
+    dates_all = pd.to_datetime(te["GAME_DATE_h"]).dt.normalize().to_numpy()
+    cmask = te["season_h"].isin(clean_seasons).to_numpy()
+    a_jd, a_abl, a_inc = (np.abs(err_jd.to_numpy()), np.abs(err_abl.to_numpy()),
+                          np.abs(err_inc.to_numpy()))
+    ci_cl = eh.cluster_bootstrap_ci((a_inc - a_jd)[cmask], dates_all[cmask])
+    ci_cl_abl = eh.cluster_bootstrap_ci((a_inc - a_abl)[cmask], dates_all[cmask])
+    ci_cl_inc = eh.cluster_bootstrap_ci((a_abl - a_jd)[cmask], dates_all[cmask])
+    var_jd_cl = float(err_jd[cmask].var(ddof=1))
+    var_inc_cl = float(err_inc[cmask].var(ddof=1))
+    clean_block = {
+        "rapm_clean_seasons": clean_seasons,
+        "n_games": int(cmask.sum()),
+        "incumbent_mae": mae(err_inc[cmask]),
+        "challenger_mae": mae(err_jd[cmask]),
+        "ablation_mae": mae(err_abl[cmask]),
+        "challenger_delta": float((a_inc - a_jd)[cmask].mean()),
+        "challenger_ci90": [ci_cl["low"], ci_cl["high"]],
+        "ablation_delta": float((a_inc - a_abl)[cmask].mean()),
+        "ablation_ci90": [ci_cl_abl["low"], ci_cl_abl["high"]],
+        "rapm_increment_delta": float((a_abl - a_jd)[cmask].mean()),
+        "rapm_increment_ci90": [ci_cl_inc["low"], ci_cl_inc["high"]],
+        "margin_err_var_challenger": var_jd_cl,
+        "margin_err_var_incumbent": var_inc_cl,
+        "implied_var_u_challenger": var_jd_cl / 4.0,
+        "implied_var_u_incumbent": var_inc_cl / 4.0,
+        "min_improvement_threshold": float(reg["thresholds"]["min_improvement"]),
+        "clears_threshold": bool(
+            (a_inc - a_jd)[cmask].mean() >= float(reg["thresholds"]["min_improvement"])),
+    }
+    # Independent corroboration of audit 4 that does not go through any model:
+    # the raw correlation between the d_rapm FEATURE and the realized margin,
+    # by season. A pregame player-value feature should decay gently with roster
+    # turnover; a step down on leaving the RAPM fit window is contamination.
+    corr_by_season = {
+        int(s): float(np.corrcoef(te.loc[te["season_h"] == s, "d_rapm"],
+                                  te.loc[te["season_h"] == s, "margin_true"])[0, 1])
+        for s in TEST_YEARS}
+    clean_block["corr_d_rapm_margin_by_season"] = corr_by_season
+    clean_block["corr_d_rapm_margin_pooled"] = float(
+        np.corrcoef(te["d_rapm"], te["margin_true"])[0, 1])
+    audit4["corr_d_rapm_margin_by_season"] = corr_by_season
+    print("[audit4] corr(d_rapm, margin_true) by season: "
+          + ", ".join(f"{s}={corr_by_season[s]:+.3f}"
+                      f"{' [in fit window]' if s in contaminated else ''}"
+                      for s in TEST_YEARS))
+
+    print(f"[clean] RAPM-clean seasons {clean_seasons} (n={int(cmask.sum())}): "
+          f"incumbent {clean_block['incumbent_mae']:.4f}, challenger "
+          f"{clean_block['challenger_mae']:.4f} "
+          f"({clean_block['challenger_delta']:+.4f} "
+          f"[{ci_cl['low']:+.4f}, {ci_cl['high']:+.4f}]), ablation "
+          f"{clean_block['ablation_mae']:.4f} "
+          f"({clean_block['ablation_delta']:+.4f}); RAPM increment "
+          f"{clean_block['rapm_increment_delta']:+.4f} "
+          f"[{ci_cl_inc['low']:+.4f}, {ci_cl_inc['high']:+.4f}] -> "
+          f"{'clears' if clean_block['clears_threshold'] else 'BELOW'} the "
+          f"{clean_block['min_improvement_threshold']} gate threshold")
 
     # error-variance split (margin error = 2u; var(c) untouched by design)
     coh = json.loads(COHERENCE_SUMMARY.read_text(encoding="utf-8"))
@@ -868,6 +1041,20 @@ def main(argv=None) -> int:
         "section3b_attribution": attribution,
         "error_variance_split": varu,
         "ablation": ablation,
+        "rapm_clean_seasons_analysis": clean_block,
+        "rapm_value_provenance": audit4,
+        "universe": {
+            "scored_games": int(len(te)),
+            "ledger_games": N_TEST_LEDGER,
+            "post_commit_games_excluded": [int(x) for x in post_commit_ids],
+            "post_commit_note": (
+                "channel_base_v2.csv has gained games played after the incumbent "
+                "book (predictions_v2.csv) was committed; the registered universe "
+                "is the incumbent's 673 games, so these are excluded from the "
+                "gated comparison and reported as a sensitivity only"),
+            "n_total_test_games_at_commit": n_total_test_games,
+            "n_total_test_games_today": n_total_test_games_current,
+        },
         "coverage": {"n_test_games": int(len(te)),
                      "n_total_test_games": n_total_test_games,
                      "coverage": cov, "train_feature_gaps": n_train_gap,
@@ -888,11 +1075,14 @@ def main(argv=None) -> int:
     # -- REPORT.md -----------------------------------------------------------
     verdict_line = ("BEAT" if varu["beat_incumbent_head_var_u"] else "did NOT beat")
     rapm_carries = ablation["rapm_increment_delta_full_vs_ablation"]
+    smoke_note = (
+        "; gate verdict recorded on a scratch registry COPY - the real ledger was "
+        "NOT touched, and this run never called register/record_evaluation or "
+        "rendered leaderboards; the --real run is the orchestrator's"
+        if args.smoke else "")
     md = f"""# Joint differential margin system (`{EXPERIMENT_ID}`)
 
-*Generated by `joint_differential.py` on {run_time} ({mode_s} run{"; gate verdict
-recorded on a scratch registry copy - the ledger was NOT touched; the --real run
-is the orchestrator's" if args.smoke else ""}). Regime A. Incumbent:
+*Generated by `joint_differential.py` on {run_time} ({mode_s} run{smoke_note}). Regime A. Incumbent:
 `{reg["incumbent_id"]}` (pooled margin MAE {inc_pooled:.4f} on the identical
 {len(te)} games, reproduced per game to {repro_dev:.1e} before comparison).*
 
@@ -920,23 +1110,96 @@ route's ceiling with current player values.
   {reg["thresholds"]["min_improvement"]}; 90% date-clustered CI
   [{result.ci_low:+.4f}, {result.ci_high:+.4f}], {result.n_clusters} clusters;
   failed gates: {result.failed_gates or "none"}; team-clustered sensitivity CI
-  {result.ci_sensitivity_team}).
+  [{result.ci_sensitivity_team[0]:+.4f}, {result.ci_sensitivity_team[1]:+.4f}]
+  over {result.ci_sensitivity_team[2]} team clusters). The failing gate is
+  per-season non-inferiority: 2026 degrades by
+  {-[r for r in season_rows if r["season"] == 2026][0]["delta"]:.4f}, past the
+  registered tolerance of {reg["thresholds"]["per_season_tolerance"]}.
 - Coverage {cov:.4f} for both models ({len(te)}/{n_total_test_games} test-season
-  games; feature gaps: train {n_train_gap}, test {n_test_gap}).
+  games; feature gaps: train {n_train_gap}, test {n_test_gap}). The RAPM lineup
+  differential is defined on **all {len(te)}** games - zero coverage gaps, as the
+  registration expected of a regime-A, played-history-only construction.
+- **Universe disclosure:** `channel_base_v2.csv` has since gained
+  {len(post_commit_ids)} eligible test games played after the incumbent book was
+  committed (ids {post_commit_ids}). The registered universe is the incumbent's
+  {N_TEST_LEDGER} games, so they are EXCLUDED from the gated comparison; scoring
+  them would break the paired comparison against the committed
+  `predictions_v2.csv`. Test-season games today: {n_total_test_games_current}
+  (was {n_total_test_games} at commit time).
 - Gate 4: the model replaces ONLY the margin head - no side-score or total
   columns are emitted (asserted); home/away/total remain the incumbent's
   committed artifacts, deltas identically 0.
 
+## READ THIS BEFORE THE POOLED NUMBER: the RAPM values are not walk-forward (audit 4)
+
+`data/rapm/rapm_v0.csv` `net_100` is a **static** player-value table fit by
+`build_rapm.py` on seasons **{fit_seasons}** (verified from that file's
+`TRAIN_SEASONS` at runtime, not from memory). Test season(s) **{contaminated}**
+sit INSIDE that fit window, so on those {n_contam} games each player's value was
+estimated partly from the possessions of the very games being predicted.
+
+Audits 1 and 2 prove the minutes-EWMA **weights** are strictly walk-forward.
+They say nothing about the **values** those weights multiply - that is what this
+audit adds, and it is the load-bearing caveat of the whole run. The season
+pattern is the signature:
+
+| test season | in RAPM fit window | delta vs incumbent |
+|---|---|---|
+{chr(10).join(f"| {r['season']} | {'YES - contaminated' if r['season'] in contaminated else 'no - clean'} | {r['delta']:+.4f} |" for r in season_rows if r['season'] != 'pooled')}
+
+Corroborated model-free, straight from the feature: the raw correlation between
+`d_rapm` and the realized margin steps down as the fit window recedes -
+{", ".join(f"**{s}: {corr_by_season[s]:+.3f}**" + (" (in fit window)" if s in contaminated else "") for s in TEST_YEARS)}.
+Genuine player value should decay gently with roster turnover; +0.58 in the
+season whose own possessions built the ratings, against +0.15 two seasons out,
+is not gentle decay.
+
+The gain is monotone in contamination. The pooled {result.pooled_improvement:+.4f}
+is therefore **inflated** and is reported only because the registration named
+this artifact. **The RAPM-clean seasons {clean_seasons} are the honest read:**
+
+| scope (RAPM-clean, n={clean_block["n_games"]}) | MAE | delta vs incumbent |
+|---|---|---|
+| incumbent | {clean_block["incumbent_mae"]:.4f} | - |
+| ablation (reframing only) | {clean_block["ablation_mae"]:.4f} | {clean_block["ablation_delta"]:+.4f} [{ci_cl_abl["low"]:+.4f}, {ci_cl_abl["high"]:+.4f}] |
+| full challenger | {clean_block["challenger_mae"]:.4f} | {clean_block["challenger_delta"]:+.4f} [{ci_cl["low"]:+.4f}, {ci_cl["high"]:+.4f}] |
+
+On clean seasons the challenger gains **{clean_block["challenger_delta"]:+.4f}**,
+which **{"clears" if clean_block["clears_threshold"] else "does NOT clear"}** the
+registered min_improvement of {clean_block["min_improvement_threshold"]}.
+Implied var(u) on clean seasons: challenger
+{clean_block["implied_var_u_challenger"]:.2f} vs incumbent
+{clean_block["implied_var_u_incumbent"]:.2f}.
+
+**What this costs the R2 program:** the honest measurement of "does a lineup-value
+differential move the margin" is the clean-season number, not the pooled one. The
+fix is not to this script - it is a RAPM refit that is walk-forward by season
+(values for season s estimated from possessions before s), which does not exist
+yet. Until it does, this route cannot be measured on 2024 at all.
+
 ## Does the RAPM lineup differential carry the gain? (preregistered ablation)
 
-| variant | pooled MAE | delta vs incumbent |
-|---|---|---|
-| incumbent | {mae(err_inc):.4f} | - |
-| ablation (differential reframing only, no d_rapm) | {mae(err_abl):.4f} | {d_abl.mean():+.4f} [{ci_abl["low"]:+.4f}, {ci_abl["high"]:+.4f}] |
-| full challenger (reframing + d_rapm) | {mae(err_jd):.4f} | {result.pooled_improvement:+.4f} [{result.ci_low:+.4f}, {result.ci_high:+.4f}] |
+| variant | pooled MAE | delta vs incumbent | RAPM-clean MAE | RAPM-clean delta |
+|---|---|---|---|---|
+| incumbent | {mae(err_inc):.4f} | - | {clean_block["incumbent_mae"]:.4f} | - |
+| ablation (differential reframing only, no d_rapm) | {mae(err_abl):.4f} | {d_abl.mean():+.4f} [{ci_abl["low"]:+.4f}, {ci_abl["high"]:+.4f}] | {clean_block["ablation_mae"]:.4f} | {clean_block["ablation_delta"]:+.4f} |
+| full challenger (reframing + d_rapm) | {mae(err_jd):.4f} | {result.pooled_improvement:+.4f} [{result.ci_low:+.4f}, {result.ci_high:+.4f}] | {clean_block["challenger_mae"]:.4f} | {clean_block["challenger_delta"]:+.4f} |
 
-RAPM increment (full minus ablation, paired per game): **{rapm_carries:+.4f}**
-[{ci_incr["low"]:+.4f}, {ci_incr["high"]:+.4f}].
+RAPM increment (full minus ablation, paired per game): pooled
+**{rapm_carries:+.4f}** [{ci_incr["low"]:+.4f}, {ci_incr["high"]:+.4f}];
+RAPM-clean **{clean_block["rapm_increment_delta"]:+.4f}**
+[{ci_cl_inc["low"]:+.4f}, {ci_cl_inc["high"]:+.4f}].
+
+**The answer: the differential REFRAMING carries nothing** - the ablation, which
+is the reframing with every differential feature except `d_rapm`, lands at
+{d_abl.mean():+.4f} pooled and {clean_block["ablation_delta"]:+.4f} on clean
+seasons, i.e. indistinguishable from the incumbent. Whatever moves is the new
+player-value information in `d_rapm`, and on clean seasons that is worth
+{clean_block["rapm_increment_delta"]:+.4f}, not the pooled
+{rapm_carries:+.4f}. This directly confirms the coherence study's R2 claim that
+recombining existing predictions is dead and only new differential information
+moves the margin - while showing the new information available today is worth
+less than the gate demands.
 
 ## Error-variance split (what the coherence study said to watch)
 
@@ -951,6 +1214,22 @@ here by construction (var(c) stays {var_c_study:.2f}).
 The challenger {verdict_line} the incumbent margin head's error variance
 (and {"beat" if varu["beat_study_var_u"] else "did not beat"} the study's
 side-head var(u) = {var_u_study:.2f}).
+
+**But that win does not survive audit 4.** On the RAPM-clean seasons only, the
+challenger's implied var(u) is {clean_block["implied_var_u_challenger"]:.2f} vs
+the incumbent's {clean_block["implied_var_u_incumbent"]:.2f} - i.e. **{"WORSE"
+if clean_block["implied_var_u_challenger"] > clean_block["implied_var_u_incumbent"]
+else "better"}** by {abs(clean_block["implied_var_u_challenger"] - clean_block["implied_var_u_incumbent"]):.2f}.
+The entire pooled var(u) improvement comes from the contaminated 2024 season.
+Answering the registration's question directly: **var(u) = {var_u_study:.2f} was
+NOT beaten by walk-forward-clean information** - only by contaminated
+information. (Clean-season var(u) sits higher than the study's 40.71 for both
+models because 2025/2026 are simply higher-variance seasons than the 2024-26
+pooled book; the like-for-like comparison is challenger-vs-incumbent within the
+same scope, not against the pooled 40.71.) Note the
+study's 40.71 comes from the SIDE-head decomposition while the incumbent margin
+head's own error variance implies {var_inc_head / 4:.2f}; the margin head is the
+like-for-like comparison.
 
 ## Per-channel differential MAE (secondary, uncalibrated both sides)
 
@@ -996,10 +1275,24 @@ side-head var(u) = {var_u_study:.2f}).
 - **RAPM walk-forward audit:** {audit2["n_recomputes"]} team-strengths recomputed
   by an independent hand-loop from strictly-prior played games; max|dev|
   {audit2["max_abs_dev"]:.1e}.
-- **Permutation probe:** train channel targets shuffled within season, refit at
-  frozen lambdas x{PERM_K}: test MAEs {audit3["perm_maes"]} vs naive
-  {naive_mae:.4f} - the model collapses to no-skill; the fitted signal is not
-  leakage plumbing.
+- **Permutation probe:** train channel targets shuffled within season and the
+  WHOLE pipeline refit at frozen lambdas (ridges + margin calibration), x{PERM_K}:
+  permuted test MAE mean {mean_perm:.4f} [{audit3["perm_mae_min"]:.4f},
+  {audit3["perm_mae_max"]:.4f}] vs naive {naive_mae:.4f}
+  ({mean_perm - naive_mae:+.4f}) - the model collapses to no-skill. The real
+  model at {jd_pooled:.4f} is beaten by {audit3["n_perm_le_real"]}/{PERM_K}
+  permutations (p={p_value:.4f}); the fitted signal is not leakage plumbing.
+  Diagnostic variant that recalibrates on TRUE train margins instead of permuted
+  ones does not fully collapse (mean {audit3["perm_mae_truecal_mean"]:.4f}) -
+  that null keeps one honestly-fitted degree of freedom, which is why the
+  faithful null is the pass criterion.
+- **RAPM value provenance (audit 4):** `net_100` fit on {fit_seasons}; test
+  seasons {TEST_YEARS} -> contaminated {contaminated} ({n_contam} games), clean
+  {clean_seasons} ({audit4["n_clean_test_games"]} games). Audits 1-2 clear the
+  minutes-EWMA WEIGHTS; this one shows the VALUES they multiply are not
+  walk-forward for 2024. Disclosure audit - it does not fail the run (the
+  registration names this artifact), it relocates the honest headline to the
+  clean seasons.
 
 ## Files
 
