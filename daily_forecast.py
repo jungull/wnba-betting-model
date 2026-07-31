@@ -1055,13 +1055,53 @@ def main() -> int:
         chain_note = "chain writes skipped (--no-log)"
     else:
         for r in rows:
-            if r["forecast"] is None:
-                gaps.add("INFO", "chain", f"{r['away']} @ {r['home']}: not "
-                         f"logged ({r['skip_reason']})")
-                continue
-            if r["tip_utc"] is None:
-                gaps.add("INFO", "chain", f"{r['away']} @ {r['home']}: not "
-                         "logged (no event_time — provenance incomplete)")
+            # COMPLETENESS RULE (frozen 2026-07-31): every slate game gets a
+            # chain record, including ones we cannot forecast. Logging only
+            # successful forecasts would make the chain a filtered sample of
+            # its own slate; graded later, that is survivorship selection.
+            # A no-forecast record carries status + reason and null predictions.
+            if r["forecast"] is None or r["tip_utc"] is None:
+                reason = (r["skip_reason"] if r["forecast"] is None
+                          else "no event_time — provenance incomplete")
+                gaps.add("INFO", "chain", f"{r['away']} @ {r['home']}: logged as "
+                         f"NO_FORECAST ({reason})")
+                try:
+                    log_forecast(
+                        game_id=str(r["game_id"]),
+                        forecast_cutoff=cutoff,
+                        decision_time_label=r["label"],
+                        model_version_hash=model_hash,
+                        data_snapshot_hash=snapshot_hash,
+                        core_only_prediction={
+                            "model": "structural_channels_v2_daily_v0",
+                            "status": "NO_FORECAST",
+                            "no_forecast_reason": reason,
+                            "home_team": r["home"], "away_team": r["away"],
+                            "margin": None, "total": None,
+                            "home_score": None, "away_score": None,
+                            "p_home_cover_gauss_at_cutoff": None,
+                            "market_total_median_at_cutoff":
+                                r["market"]["total_median"],
+                            "game_id_provisional": r["game_id_provisional"],
+                            "provenance": {
+                                "event_time": r["tip_utc"],
+                                "published_time": generated_at,
+                                "observed_time": observed_time,
+                                "forecast_cutoff": cutoff.isoformat(),
+                                "source": SOURCE_NAME_LIVE if args.live else SOURCE_NAME,
+                                "source_version": f"git:{git_head}",
+                                "data_snapshot": snapshot_desc,
+                            },
+                        },
+                        w1_extraction=None,
+                        market_line=(r["market"]["home_spread_median"]
+                                     if r["market"]["home_spread_median"] is not None
+                                     else None),
+                        log_path=log_path,
+                    )
+                    n_logged += 1
+                except DuplicateForecastError:
+                    n_skipped += 1
                 continue
             f, mk = r["forecast"], r["market"]
             pl_home = players.get(r["home"], {})

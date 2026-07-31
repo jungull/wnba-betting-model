@@ -107,6 +107,48 @@ HONESTY MACHINERY (registered)
     (evalharness.compare.cluster_bootstrap_ci, house convention, n_boot
     2000, clusters = game dates).
 
+ADDITIONS BEYOND THE REGISTRATION (all additive; nothing registered was
+dropped, weakened, or re-specified after seeing results)
+    1. PHASE SPLIT. Every registered cell is evaluated three times: scope
+       'all' (the registered battery, unchanged), 'regular' and 'playoff'.
+       BH runs WITHIN each scope family, so the registered battery's
+       multiplicity is exactly what it would have been. Orchestrator standing
+       caution: John has PAUSED playoff betting, so playoff cells are reported
+       and never aggregated into a headline. Phase comes from the master
+       game_id season-type digit and is cross-checked against
+       master_player.season_type (mismatch => hard exit).
+    2. SECOND NULL. The registered null shuffles the projection within season.
+       That null is MIS-CENTRED for any phase-scoped cell: playoff
+       player-games are 7.8% of the pool, so a season-wide shuffle hands
+       playoff rows regular-season projections. Measured on this data: mean
+       null ROI is -0.076 on eligible playoff cells vs -0.051 on regular ones,
+       which manufactures significance. A within-(season, phase) null is
+       therefore reported alongside the registered one in every artifact
+       (*_phaseblock columns). The registered null remains primary for the
+       registered battery.
+    3. THE MAE DIAGNOSTIC (projection_vs_line.csv). Is the projection or the
+       line the better point estimate of actual points? Reported overall, by
+       season, phase, line tercile, role, minutes tercile, venue and book,
+       with 90% date-clustered bootstrap CIs on the paired MAE difference.
+    4. roi_positive / starred_and_profitable. A permutation star means "beat a
+       shuffled projection", NOT "made money" — a cell can lose money and
+       still beat its null. Both are reported; only profitable survivors are
+       ranked in PROPS_LEDGER.md.
+    5. Descriptive companion main_vs_alt_lines.csv (main numbers vs alternate
+       ladders in the per_book universe). Not a registered cell; it exists to
+       expose price artefacts.
+
+BUGS FOUND AND FIXED WHILE BUILDING (both would have produced fake pockets)
+    a. Consensus prices were being aggregated as a MEDIAN OF AMERICAN ODDS.
+       American odds are discontinuous at +/-100: median(-110, +112) = +1,
+       i.e. a 100x payout. This alone produced a fake +42% consensus ROI. All
+       price aggregation now happens in win-multiplier space and converts back
+       only for reporting; _numeric_prices additionally drops any price with
+       |p| < 100 as corrupt. Regression-guarded in self_test().
+    b. merge_asof refused the projection join on mixed player_id key dtypes
+       (object vs Int64) — the harness could not run at all. Join keys are now
+       normalised at every boundary.
+
 MODES
     --self-test                primitives + walk-forward toys, no data files
     --dev                      end-to-end on the LIVE capture table
@@ -189,6 +231,15 @@ TEAM_ABBRS = {
 
 CONDITIONERS = ["none", "line_terc", "role", "min_terc", "book", "season", "venue"]
 
+# Orchestrator's standing playoff caution (John has PAUSED playoff betting
+# pending model improvements). Every cell of the registered battery is
+# evaluated three times: on all rows (the battery exactly as registered), on
+# regular-season rows only (the headline-safe companion), and on playoff rows
+# only (reported, never aggregated into a headline). BH runs WITHIN each scope
+# family, so the registered battery's multiplicity is unchanged by the split.
+SCOPES = ["all", "regular", "playoff"]
+HEADLINE_SCOPE = "regular"
+
 
 # ---------------------------------------------------------------------------
 # primitives (house forms; attributed)
@@ -256,6 +307,8 @@ def build_states(mp: pd.DataFrame) -> pd.DataFrame:
     which is exactly the constitution's shift discipline and also covers
     games not yet in the master (live/future targets)."""
     p = mp[(mp["minutes"].notna()) & (mp["minutes"] > 0)].copy()
+    p["player_id"] = p["player_id"].astype("Int64")
+    p["season"] = p["season"].astype("int64")
     p["per36"] = p["pts"].astype(float) / p["minutes"] * 36.0
     p = p.sort_values(["player_id", "season", "game_date", "game_id"],
                       kind="stable").reset_index(drop=True)
@@ -275,8 +328,14 @@ def project_targets(targets: pd.DataFrame, states: pd.DataFrame) -> pd.DataFrame
     merge_asof backward with allow_exact_matches=False on the date: only
     games with game_date < target date can serve the state."""
     t = targets.copy()
+    # join-key dtype discipline: the resolver returns object-dtype ids, the
+    # master carries Int64 — merge_asof refuses mixed key dtypes outright.
+    t["player_id"] = t["player_id"].astype("Int64")
+    t["season"] = t["season"].astype("int64")
     t["_td"] = pd.to_datetime(t["game_date"])
     s = states.copy()
+    s["player_id"] = s["player_id"].astype("Int64")
+    s["season"] = s["season"].astype("int64")
     s["_sd"] = pd.to_datetime(s["game_date"])
     s = s.sort_values("_td" if "_td" in s else "_sd")
     t = t.sort_values("_td").reset_index()
@@ -319,9 +378,12 @@ UNIFIED_COLS = ["game_id", "api_event_id", "home_team", "away_team",
 def _numeric_prices(df: pd.DataFrame, acct: dict) -> pd.DataFrame:
     for c in ("over_price", "under_price"):
         df[c] = pd.to_numeric(df[c], errors="coerce")
-        anom = df[c].abs() >= PRICE_ANOMALY_ABS
+        # American odds are |p| >= 100 by definition; anything inside that
+        # band is corrupt, not a longshot. Both guards drop, never repair.
+        anom = (df[c].abs() >= PRICE_ANOMALY_ABS) | (df[c].abs() < 100)
         acct[f"price_anomaly_{c}"] = int(anom.sum())
         df.loc[anom, c] = np.nan
+        acct[f"price_missing_{c}"] = int(df[c].isna().sum())
     df["line"] = pd.to_numeric(df["line"], errors="coerce")
     acct["rows_bad_line_dropped"] = int(df["line"].isna().sum())
     return df[df["line"].notna()].copy()
@@ -501,22 +563,24 @@ def pick_main_lines(df: pd.DataFrame) -> pd.Series:
     line when a book posts alternates (min |p_over - p_under| among two-sided
     rows; fallback: line closest to the book's own median). Used for the
     consensus input only; per_book candidates keep every line."""
-    def flag(grp: pd.DataFrame) -> pd.Series:
-        if len(grp) == 1:
-            return pd.Series(True, index=grp.index)
-        both = grp[grp["over_price"].notna() & grp["under_price"].notna()]
-        if len(both):
-            bal = (both["over_price"].map(_amer_prob)
-                   - both["under_price"].map(_amer_prob)).abs()
-            pick = bal.idxmin()
-        else:
-            med = grp["line"].median()
-            pick = (grp["line"] - med).abs().idxmin()
-        out = pd.Series(False, index=grp.index)
-        out[pick] = True
-        return out
-    return df.groupby(["game_key", "bookmaker_key", "player_id"],
-                      group_keys=False, sort=False).apply(flag)
+    d = df[["game_key", "bookmaker_key", "player_id", "line",
+            "over_price", "under_price"]].copy()
+    d["_ord"] = np.arange(len(d))
+    keys = ["game_key", "bookmaker_key", "player_id"]
+    both = d["over_price"].notna() & d["under_price"].notna()
+    bal = (d["over_price"].map(_amer_prob) - d["under_price"].map(_amer_prob)).abs()
+    d["_two_sided"] = (~both).astype(int)            # 0 sorts first
+    d["_bal"] = np.where(both, bal, np.inf)
+    med = d.groupby(keys, sort=False)["line"].transform("median")
+    d["_dmed"] = (d["line"] - med).abs()
+    # winner per group: two-sided first, then most balanced, then closest to
+    # the book's own median line, then lowest line (deterministic tie-break)
+    d = d.sort_values(["_two_sided", "_bal", "_dmed", "line", "_ord"],
+                      kind="stable")
+    win = d.groupby(keys, sort=False)["_ord"].first()
+    flags = np.zeros(len(df), bool)
+    flags[win.to_numpy(int)] = True
+    return pd.Series(flags, index=df.index)
 
 
 def build_candidates(props: pd.DataFrame, mp: pd.DataFrame,
@@ -535,6 +599,8 @@ def build_candidates(props: pd.DataFrame, mp: pd.DataFrame,
     lad["skip_unresolved_rows"] = int((p["resolve_status"] == "unresolved").sum())
     lad["skip_ambiguous_rows"] = int((p["resolve_status"] == "ambiguous").sum())
     p = p[resolved].copy()
+    p["player_id"] = p["player_id"].astype("Int64")
+    p["season"] = p["season"].astype("int64")
 
     tgt = p[["player_id", "season", "game_date"]].drop_duplicates().reset_index(drop=True)
     proj = project_targets(tgt, states)
@@ -566,8 +632,24 @@ def build_candidates(props: pd.DataFrame, mp: pd.DataFrame,
         [cand["player_team"] == cand["home_abbr"],
          cand["player_team"] == cand["away_abbr"]],
         ["home", "away"], default=None)
+
+    # PHASE (orchestrator's playoff caution): master game_id char 2 is the
+    # NBA/WNBA season-type digit — '2' regular season, '4' playoffs. Verified
+    # against master_player.season_type below; never inferred from dates.
+    cand["phase"] = np.where(cand["game_id"].astype(str).str[2] == "4",
+                             "playoff", "regular")
+    if "season_type" in mp.columns:
+        st = mp.drop_duplicates("game_id").set_index("game_id")["season_type"]
+        expect = np.where(cand["game_id"].map(st) == "Playoffs",
+                          "playoff", "regular")
+        mism = int((expect != cand["phase"].to_numpy()).sum())
+        acct["phase_vs_master_season_type_mismatch_rows"] = mism
+        if mism:
+            sys.exit(f"phase derivation disagrees with master season_type on "
+                     f"{mism} rows — refusing to guess")
     acct["void_rows_dnp"] = int(cand["void"].sum())
     acct["venue_unknown_rows"] = int(cand["venue"].isna().sum())
+    acct["phase_rows"] = cand["phase"].value_counts().to_dict()
     acct["alt_line_share"] = None   # set after main-line flagging
     return cand.reset_index(drop=True), pending.reset_index(drop=True)
 
@@ -576,12 +658,18 @@ def build_candidates(props: pd.DataFrame, mp: pd.DataFrame,
 # universes (precomputed both-side settlement, both price bases)
 # ---------------------------------------------------------------------------
 
-def _profits(actual, line, over_price, under_price, void):
-    """Both sides x both bases; NaN = void or unpriceable-in-basis."""
+def _profits(actual, line, mult_over, mult_under, void):
+    """Both sides x both bases; NaN = void or unpriceable-in-basis.
+
+    Takes WIN MULTIPLIERS, not American prices. American odds are
+    discontinuous at +/-100 and must never be averaged directly (a median of
+    -110 and +112 is '+1', i.e. a 100x payout); every aggregation in this
+    harness therefore happens in multiplier space and converts back only for
+    reporting."""
     n = len(actual)
     out = {}
     codes = {}
-    for side, price in ((1, over_price), (-1, under_price)):
+    for side, mult in ((1, mult_over), (-1, mult_under)):
         code = np.full(n, np.nan)
         cap = np.full(n, np.nan)
         syn = np.full(n, np.nan)
@@ -590,13 +678,20 @@ def _profits(actual, line, over_price, under_price, void):
             c = _settle_code(actual[i], line[i], side)
             code[i] = c
             syn[i] = {1: WIN_110, 0: 0.0, -1: -1.0}[c]
-            if not np.isnan(price[i]):
-                cap[i] = {1: _mult(price[i]), 0: 0.0, -1: -1.0}[c]
+            if not np.isnan(mult[i]):
+                cap[i] = {1: mult[i], 0: 0.0, -1: -1.0}[c]
         key = "over" if side > 0 else "under"
         out[f"cap_{key}"] = cap
         out[f"syn_{key}"] = syn
         codes[key] = code
     return out, codes
+
+
+def _mult_to_american(m: float) -> float:
+    """Inverse of _mult, for reporting an aggregated price on the odds scale."""
+    if m != m:
+        return np.nan
+    return 100.0 * m if m >= 1.0 else -100.0 / m
 
 
 class Universe:
@@ -618,16 +713,16 @@ class Universe:
             self.df["actual_pts"].to_numpy(float),
             self.df["settle_line_over"].to_numpy(float)
             if "settle_line_over" in self.df else self.line_ref,
-            self.df["price_over"].to_numpy(float),
-            self.df["price_under"].to_numpy(float),
+            self.df["mult_over"].to_numpy(float),
+            self.df["mult_under"].to_numpy(float),
             self.void)
         # under side may settle on a different line (best_line fills)
         if "settle_line_under" in self.df:
             prof_u, codes_u = _profits(
                 self.df["actual_pts"].to_numpy(float),
                 self.df["settle_line_under"].to_numpy(float),
-                self.df["price_over"].to_numpy(float),
-                self.df["price_under"].to_numpy(float),
+                self.df["mult_over"].to_numpy(float),
+                self.df["mult_under"].to_numpy(float),
                 self.void)
             prof["cap_under"] = prof_u["cap_under"]
             prof["syn_under"] = prof_u["syn_under"]
@@ -657,6 +752,11 @@ class Universe:
         for lvl in ("home", "away"):
             self.levels.append(("venue", lvl,
                                 (self.df["venue"] == lvl).to_numpy()))
+        # scope masks (playoff caution): applied ON TOP of every level mask
+        ph = self.df["phase"].to_numpy()
+        self.scope_masks = {"all": np.ones(len(self.df), bool),
+                            "regular": ph == "regular",
+                            "playoff": ph == "playoff"}
 
     def profits_for(self, side: np.ndarray, basis: str) -> np.ndarray:
         pre = "cap" if basis == "captured" else "syn"
@@ -686,8 +786,17 @@ def build_universes(cand: pd.DataFrame, acct: dict):
     cand = cand.copy()
     cand["is_main"] = pick_main_lines(cand)
     grp_pb = cand.groupby(["game_key", "bookmaker_key", "player_id"])
-    acct["alt_line_share"] = round(
-        1.0 - float(cand["is_main"].sum()) / max(grp_pb.ngroups, 1), 4)
+    # share of CANDIDATE ROWS that are alternate (non-main) lines; exactly one
+    # row per (game, book, player) is main by construction, so this is the
+    # fraction of the per_book universe sitting on alternate ladders
+    acct["alt_line_row_share"] = round(1.0 - float(cand["is_main"].sum())
+                                       / max(len(cand), 1), 4)
+    acct["book_player_game_groups"] = int(grp_pb.ngroups)
+    acct["price_availability_by_book"] = {
+        b: {"rows": int(len(g)),
+            "over_priced": int(g["over_price"].notna().sum()),
+            "under_priced": int(g["under_price"].notna().sum())}
+        for b, g in cand.groupby("bookmaker_key")}
 
     mains = cand[cand["is_main"]]
     cons_line = mains.groupby(["game_key", "player_id"])["line"].median() \
@@ -722,48 +831,71 @@ def build_universes(cand: pd.DataFrame, acct: dict):
     proj_vec = pg["proj"].to_numpy(float)
     season_vec = pg["season"].to_numpy(int)
     date_vec = pg["game_date"].to_numpy()
+    phase_vec = pg["phase"].to_numpy()
 
     # --- per_book: every (player, game, book, line) row -------------------
     per_book = attach_labels(cand)
     per_book["line_ref"] = per_book["line"]
     per_book["price_over"] = per_book["over_price"]
     per_book["price_under"] = per_book["under_price"]
+    per_book["mult_over"] = per_book["over_price"].map(
+        lambda p: _mult(p) if pd.notna(p) else np.nan)
+    per_book["mult_under"] = per_book["under_price"].map(
+        lambda p: _mult(p) if pd.notna(p) else np.nan)
 
     # --- consensus: one row per player-game -------------------------------
+    # Price aggregated in MULTIPLIER space (median across the books posting
+    # the consensus number as their main line), then converted back to an
+    # American price for reporting only. Never median American odds.
     cons = attach_labels(pg.reset_index(drop=True))
     cons["line_ref"] = cons["cons_line"]
-    at_cons = cand[cand["is_main"]
-                   & (cand["line"] == cand["cons_line"])]
+    at_cons = cand[cand["is_main"] & (cand["line"] == cand["cons_line"])].copy()
+    at_cons["_mo"] = at_cons["over_price"].map(
+        lambda p: _mult(p) if pd.notna(p) else np.nan)
+    at_cons["_mu"] = at_cons["under_price"].map(
+        lambda p: _mult(p) if pd.notna(p) else np.nan)
     cp = at_cons.groupby(["game_key", "player_id"]).agg(
-        price_over=("over_price", "median"),
-        price_under=("under_price", "median"))
+        mult_over=("_mo", "median"), mult_under=("_mu", "median"),
+        n_books_at_cons=("_mo", "size"))
     cons = cons.merge(cp, left_on=["game_key", "player_id"],
                       right_index=True, how="left")
+    cons["price_over"] = cons["mult_over"].map(_mult_to_american)
+    cons["price_under"] = cons["mult_under"].map(_mult_to_american)
     acct["consensus_line_not_posted_player_games"] = int(
         (~cons.set_index(["game_key", "player_id"]).index.isin(cp.index)).sum())
 
     # --- best_line: one row per player-game, side-specific fills ----------
+    # Line SHOPPING across books: the most favourable MAIN number any book
+    # posted (lowest for an over, highest for an under), ties broken by the
+    # better price. Restricted to main lines on purpose — ranging over
+    # alternate ladders would make "best line" degenerate (a 4.5 over at -400
+    # is a better number and a worse bet). Alternates stay fully represented
+    # in the per_book universe, as registered.
     best = attach_labels(pg.reset_index(drop=True))
     best["line_ref"] = best["cons_line"]           # decision line (house)
     fills = {}
     for side, pcol, best_asc in ((1, "over_price", True), (-1, "under_price", False)):
-        rows = cand[cand[pcol].notna()].copy()
+        rows = cand[cand["is_main"] & cand[pcol].notna()].copy()
         rows["_m"] = rows[pcol].map(_mult)
         # over: min line best -> sort line asc, mult desc, take first
         rows = rows.sort_values(["line", "_m"],
                                 ascending=[best_asc, False], kind="stable")
         pick = rows.drop_duplicates(["game_key", "player_id"], keep="first")
-        fills[side] = pick.set_index(["game_key", "player_id"])[["line", pcol, "_m"]]
-    bi = best.set_index(["game_key", "player_id"], drop=False)
-    f1, f2 = fills[1], fills[-1]
-    best["settle_line_over"] = bi.index.map(
-        lambda k: f1.at[k, "line"] if k in f1.index else np.nan).to_numpy(float)
-    best["price_over"] = bi.index.map(
-        lambda k: f1.at[k, "over_price"] if k in f1.index else np.nan).to_numpy(float)
-    best["settle_line_under"] = bi.index.map(
-        lambda k: f2.at[k, "line"] if k in f2.index else np.nan).to_numpy(float)
-    best["price_under"] = bi.index.map(
-        lambda k: f2.at[k, "under_price"] if k in f2.index else np.nan).to_numpy(float)
+        fills[side] = pick.set_index(["game_key", "player_id"])[
+            ["line", pcol, "_m", "bookmaker_key"]]
+    bi = pd.MultiIndex.from_arrays([best["game_key"], best["player_id"]])
+    f1 = fills[1].reindex(bi)
+    f2 = fills[-1].reindex(bi)
+    best["settle_line_over"] = f1["line"].to_numpy(float)
+    best["price_over"] = f1["over_price"].to_numpy(float)
+    best["mult_over"] = f1["_m"].to_numpy(float)
+    best["settle_line_under"] = f2["line"].to_numpy(float)
+    best["price_under"] = f2["under_price"].to_numpy(float)
+    best["mult_under"] = f2["_m"].to_numpy(float)
+    best["best_book_over"] = fills[1].reindex(bi)["bookmaker_key"].to_numpy() \
+        if "bookmaker_key" in fills[1].columns else None
+    best["best_book_under"] = fills[-1].reindex(bi)["bookmaker_key"].to_numpy() \
+        if "bookmaker_key" in fills[-1].columns else None
     acct["best_fill_missing_over"] = int(best["settle_line_over"].isna().sum())
     acct["best_fill_missing_under"] = int(best["settle_line_under"].isna().sum())
 
@@ -772,7 +904,7 @@ def build_universes(cand: pd.DataFrame, acct: dict):
         "consensus": Universe("consensus", cons, pg_index),
         "best_line": Universe("best_line", best, pg_index),
     }
-    return universes, proj_vec, season_vec, date_vec, pg_index
+    return universes, proj_vec, season_vec, date_vec, phase_vec, pg_index
 
 
 # ---------------------------------------------------------------------------
@@ -786,9 +918,13 @@ def build_cells(universes: dict) -> pd.DataFrame:
         for li, (dim, level, _mask) in enumerate(u.levels):
             for thr in THRESHOLDS:
                 for basis in PRICE_BASES:
-                    rows.append({"execution": ex, "price_basis": basis,
-                                 "threshold": thr, "cond_dim": dim,
-                                 "cond_level": level, "level_idx": li})
+                    for scope in SCOPES:
+                        rows.append({"execution": ex, "price_basis": basis,
+                                     "threshold": thr, "cond_dim": dim,
+                                     "cond_level": level, "scope": scope,
+                                     "battery": ("registered" if scope == "all"
+                                                 else f"companion_{scope}"),
+                                     "level_idx": li})
     return pd.DataFrame(rows)
 
 
@@ -811,7 +947,8 @@ def eval_battery_fast(universes, cells: pd.DataFrame, proj_vec, roi_out):
         if pk not in prof_cache:
             prof_cache[pk] = u.profits_for(side, r.price_basis)
         prof = prof_cache[pk]
-        mask = u.levels[r.level_idx][2] & (side != 0) & ~np.isnan(prof)
+        mask = (u.levels[r.level_idx][2] & u.scope_masks[r.scope]
+                & (side != 0) & ~np.isnan(prof))
         n = int(mask.sum())
         roi_out[i] = (prof[mask].sum() / n) if n else np.nan
 
@@ -819,11 +956,18 @@ def eval_battery_fast(universes, cells: pd.DataFrame, proj_vec, roi_out):
 def eval_battery_rich(universes, cells: pd.DataFrame, proj_vec,
                       n_boot: int) -> pd.DataFrame:
     recs = []
+    side_cache, prof_cache = {}, {}
     for r in cells.itertuples(index=False):
         u = universes[r.execution]
-        side = sides_for(u, proj_vec, r.threshold)
-        prof = u.profits_for(side, r.price_basis)
-        lvl_mask = u.levels[r.level_idx][2]
+        sk = (r.execution, r.threshold)
+        if sk not in side_cache:
+            side_cache[sk] = sides_for(u, proj_vec, r.threshold)
+        side = side_cache[sk]
+        pk = (r.execution, r.threshold, r.price_basis)
+        if pk not in prof_cache:
+            prof_cache[pk] = u.profits_for(side, r.price_basis)
+        prof = prof_cache[pk]
+        lvl_mask = u.levels[r.level_idx][2] & u.scope_masks[r.scope]
         placed = lvl_mask & (side != 0)
         settled = placed & ~np.isnan(prof)
         n = int(settled.sum())
@@ -846,75 +990,141 @@ def eval_battery_rich(universes, cells: pd.DataFrame, proj_vec,
                     ci_lo, ci_hi = ci["low"], ci["high"]
                 except ComparisonError:
                     pass
+        edge_all = proj_vec[u.pg_idx] - u.line_ref
         recs.append({"n_bets": n, "wins": wins, "losses": losses,
                      "pushes": pushes, "n_void": n_void,
                      "n_noprice": n_noprice, "hit_rate": hit, "roi": roi,
                      "roi_ci90_low": ci_lo, "roi_ci90_high": ci_hi,
-                     "n_dates": n_dates})
+                     "n_dates": n_dates,
+                     "n_over": int((side[settled] > 0).sum()),
+                     "n_under": int((side[settled] < 0).sum()),
+                     "mean_edge": (float(np.nanmean(edge_all[settled]))
+                                   if n else np.nan),
+                     "mean_line": (float(np.nanmean(u.line_ref[settled]))
+                                   if n else np.nan),
+                     "n_candidate_rows_in_cell": int(lvl_mask.sum())})
     return pd.concat([cells.reset_index(drop=True), pd.DataFrame(recs)], axis=1)
 
 
-def within_season_permutation(rng, proj_vec, season_vec):
+def block_permutation(rng, proj_vec, block_vec):
+    """Shuffle the projection column WITHIN each block, leaving every row
+    attribute, line and outcome fixed (pocket_mining pattern).
+
+    block = season           -> the REGISTERED null.
+    block = (season, phase)  -> companion null. Necessary for any phase-scoped
+        cell: playoff player-games are 7.8% of the pool and carry a different
+        projection level, so a season-wide shuffle hands playoff rows
+        regular-season projections and mis-centres the playoff null (verified
+        2026-07-31: playoff null mean ROI -0.076 vs regular -0.051, which
+        manufactures 'significance' for ordinary playoff cells)."""
     out = proj_vec.copy()
-    for s in np.unique(season_vec):
-        idx = np.flatnonzero(season_vec == s)
+    for b in np.unique(block_vec):
+        idx = np.flatnonzero(block_vec == b)
         out[idx] = proj_vec[idx[rng.permutation(len(idx))]]
     return out
 
 
-def run_inference(universes, cells, proj_vec, season_vec, n_perms, n_boot):
+def within_season_permutation(rng, proj_vec, season_vec):
+    return block_permutation(rng, proj_vec, season_vec)
+
+
+def _run_null(universes, cells, proj_vec, block_vec, n_perms, roi_obs, suffix,
+              rich):
+    """One permutation null; writes p/diagnostic columns with `suffix`."""
+    rng = np.random.default_rng(SEED)
+    perm_mat = np.empty((n_perms, len(cells)), np.float32)
+    buf = np.empty(len(cells))
+    for pi in range(n_perms):
+        pv = block_permutation(rng, proj_vec, block_vec)
+        eval_battery_fast(universes, cells, pv, buf)
+        perm_mat[pi] = buf
+    ge = perm_mat >= (roi_obs[None, :] - ROI_TIE_EPS)
+    ge = np.where(np.isnan(perm_mat), False, ge)     # empty perm cell = not better
+    nonempty = ~np.isnan(perm_mat)
+    rich[f"n_perm_ge{suffix}"] = ge.sum(axis=0)
+    rich[f"n_perm_nonempty{suffix}"] = nonempty.sum(axis=0)
+    with np.errstate(invalid="ignore"):
+        rich[f"perm_roi_mean{suffix}"] = np.nanmean(
+            np.where(nonempty, perm_mat, np.nan), axis=0)
+        rich[f"perm_roi_q95{suffix}"] = np.nanquantile(
+            np.where(nonempty, perm_mat, np.nan), 0.95, axis=0)
+    rich[f"p_perm{suffix}"] = rich[f"n_perm_ge{suffix}"] / n_perms
+    rich[f"p_perm_phipson_smyth{suffix}"] = (
+        rich[f"n_perm_ge{suffix}"] + 1) / (n_perms + 1)
+    rich.loc[rich["roi"].isna(),
+             [f"p_perm{suffix}", f"p_perm_phipson_smyth{suffix}"]] = np.nan
+    return perm_mat, ge
+
+
+def run_inference(universes, cells, proj_vec, season_vec, phase_vec,
+                  n_perms, n_boot):
     t0 = time.time()
     rich = eval_battery_rich(universes, cells, proj_vec, n_boot)
     print(f"[observed] battery + bootstrap done ({time.time() - t0:.0f}s)")
 
     roi_obs = rich["roi"].to_numpy(float)
     elig_obs = (rich["n_bets"].to_numpy(int) >= MIN_CELL_N) & ~np.isnan(roi_obs)
-    rng = np.random.default_rng(SEED)
-    perm_mat = np.empty((n_perms, len(cells)), np.float32)
-    buf = np.empty(len(cells))
-    for pi in range(n_perms):
-        pv = within_season_permutation(rng, proj_vec, season_vec)
-        eval_battery_fast(universes, cells, pv, buf)
-        perm_mat[pi] = buf
-    ge = perm_mat >= (roi_obs[None, :] - ROI_TIE_EPS)
-    ge = np.where(np.isnan(perm_mat), False, ge)     # empty perm cell = not better
-    nonempty = ~np.isnan(perm_mat)
-    rich["n_perm_ge"] = ge.sum(axis=0)
-    rich["n_perm_nonempty"] = nonempty.sum(axis=0)
-    with np.errstate(invalid="ignore"):
-        rich["perm_roi_mean"] = np.nanmean(
-            np.where(nonempty, perm_mat, np.nan), axis=0)
-        rich["perm_roi_q95"] = np.nanquantile(
-            np.where(nonempty, perm_mat, np.nan), 0.95, axis=0)
-    rich["p_perm"] = rich["n_perm_ge"] / n_perms
-    rich["p_perm_phipson_smyth"] = (rich["n_perm_ge"] + 1) / (n_perms + 1)
-    rich.loc[rich["roi"].isna(), ["p_perm", "p_perm_phipson_smyth"]] = np.nan
 
-    perm_summ = []
-    if elig_obs.any():
-        pm = perm_mat[:, elig_obs]
-        max_perm = np.nanmax(np.where(np.isnan(pm), -np.inf, pm), axis=1)
-        max_obs = float(np.nanmax(roi_obs[elig_obs]))
-        for pi in range(n_perms):
-            perm_summ.append({
-                "perm_idx": pi,
-                "max_roi_over_eligible_cells": float(max_perm[pi]),
-                "n_eligible_cells_perm_beats_obs": int(ge[pi, elig_obs].sum())})
-        frac_max = float((max_perm >= max_obs - ROI_TIE_EPS).mean())
-    else:
-        max_obs, frac_max = np.nan, np.nan
-    print(f"[perm] {n_perms} within-season permutations; "
-          f"P(best null cell >= best observed | eligible) = {frac_max:.3f}"
-          if frac_max == frac_max else
-          f"[perm] {n_perms} permutations; no eligible cells (n >= {MIN_CELL_N})")
+    # REGISTERED null: within season
+    t0 = time.time()
+    perm_mat, ge = _run_null(universes, cells, proj_vec, season_vec, n_perms,
+                             roi_obs, "", rich)
+    print(f"[perm] registered within-season null done ({time.time() - t0:.0f}s)")
+    # COMPANION null: within (season, phase) — the correct null for any
+    # phase-scoped cell (see block_permutation docstring)
+    t0 = time.time()
+    sp = np.char.add(season_vec.astype(str), np.char.add("|", phase_vec.astype(str)))
+    _run_null(universes, cells, proj_vec, sp, n_perms, roi_obs, "_phaseblock",
+              rich)
+    print(f"[perm] companion within-(season,phase) null done "
+          f"({time.time() - t0:.0f}s)")
 
     rich["eligible"] = elig_obs
     rich["small_n_flag"] = ~rich["eligible"]
+    rich["roi_positive"] = rich["roi"] > 0
+
+    # BH WITHIN each scope family (the registered battery is scope='all'; the
+    # regular/playoff companions are separate families, so splitting for the
+    # playoff caution does not inflate the registered battery's multiplicity)
     rich["q_bh"] = np.nan
-    if elig_obs.any():
-        rich.loc[elig_obs, "q_bh"] = bh_qvalues(
-            rich.loc[elig_obs, "p_perm"].to_numpy(float))
+    rich["q_bh_phaseblock"] = np.nan
+    scope_vec = rich["scope"].to_numpy()
+    perm_summ, max_obs, frac_max = [], {}, {}
+    for scope in SCOPES:
+        fam = (scope_vec == scope) & elig_obs
+        if not fam.any():
+            max_obs[scope], frac_max[scope] = np.nan, np.nan
+            continue
+        rich.loc[fam, "q_bh"] = bh_qvalues(rich.loc[fam, "p_perm"].to_numpy(float))
+        rich.loc[fam, "q_bh_phaseblock"] = bh_qvalues(
+            rich.loc[fam, "p_perm_phaseblock"].to_numpy(float))
+        pm = perm_mat[:, fam]
+        max_perm = np.nanmax(np.where(np.isnan(pm), -np.inf, pm), axis=1)
+        mo = float(np.nanmax(roi_obs[fam]))
+        max_obs[scope] = mo
+        frac_max[scope] = float((max_perm >= mo - ROI_TIE_EPS).mean())
+        for pi in range(n_perms):
+            perm_summ.append({
+                "scope": scope, "battery": ("registered" if scope == "all"
+                                            else f"companion_{scope}"),
+                "perm_idx": pi,
+                "n_eligible_cells_in_family": int(fam.sum()),
+                "max_roi_over_eligible_cells": float(max_perm[pi]),
+                "n_eligible_cells_perm_beats_obs": int(ge[pi, fam].sum())})
+        print(f"[perm] scope={scope}: {int(fam.sum())} eligible cells; best "
+              f"observed ROI {mo:+.4f}; P(best null >= best observed) = "
+              f"{frac_max[scope]:.3f}")
     rich["starred"] = rich["eligible"] & (rich["q_bh"] <= BH_Q)
+    rich["starred_phaseblock"] = rich["eligible"] & (rich["q_bh_phaseblock"] <= BH_Q)
+    # a cell can beat its null while still LOSING money; only a starred cell
+    # with ROI > 0 is a candidate bet
+    rich["starred_and_profitable"] = rich["starred"] & rich["roi_positive"]
+    # expected false discoveries among the starred set, BH form (q * n_starred)
+    rich["expected_false_in_family"] = np.nan
+    for scope in SCOPES:
+        fam = scope_vec == scope
+        ns = int((rich["starred"] & fam).sum())
+        rich.loc[fam, "expected_false_in_family"] = BH_Q * ns
     return rich, pd.DataFrame(perm_summ), max_obs, frac_max
 
 
@@ -945,15 +1155,287 @@ def backfill_completeness(mt: pd.DataFrame) -> dict:
 # reports
 # ---------------------------------------------------------------------------
 
+def _mae_row(scope, dim, level, sub, n_boot):
+    """One projection-vs-line comparison row over an already-filtered frame."""
+    a = sub["actual_pts"].to_numpy(float)
+    pj = sub["proj_used"].to_numpy(float)
+    ln = sub["line_cmp"].to_numpy(float)
+    ok = ~np.isnan(a) & ~np.isnan(pj) & ~np.isnan(ln)
+    a, pj, ln = a[ok], pj[ok], ln[ok]
+    d = sub["game_date"].to_numpy()[ok]
+    n = len(a)
+    rec = {"scope": scope, "group_dim": dim, "group_level": level, "n": n}
+    if not n:
+        return rec
+    ep, el = np.abs(pj - a), np.abs(ln - a)
+    diff = ep - el                      # negative => our projection is closer
+    lo = hi = np.nan
+    if pd.Series(d).nunique() >= 2:
+        try:
+            ci = cluster_bootstrap_ci(diff, d, n_boot=n_boot, seed=SEED)
+            lo, hi = ci["low"], ci["high"]
+        except ComparisonError:
+            pass
+    rec.update({
+        "mae_projection": float(ep.mean()), "mae_line": float(el.mean()),
+        "mae_diff_proj_minus_line": float(diff.mean()),
+        "mae_diff_ci90_low": lo, "mae_diff_ci90_high": hi,
+        "rmse_projection": float(np.sqrt(((pj - a) ** 2).mean())),
+        "rmse_line": float(np.sqrt(((ln - a) ** 2).mean())),
+        "bias_projection": float((pj - a).mean()),
+        "bias_line": float((ln - a).mean()),
+        "share_projection_closer": float((ep < el).mean()),
+        "share_tied": float((ep == el).mean()),
+        "mean_actual_pts": float(a.mean()), "mean_projection": float(pj.mean()),
+        "mean_line": float(ln.mean()),
+        "corr_projection_actual": (float(np.corrcoef(pj, a)[0, 1])
+                                   if n > 2 and pj.std() > 0 else np.nan),
+        "corr_line_actual": (float(np.corrcoef(ln, a)[0, 1])
+                             if n > 2 and ln.std() > 0 else np.nan)})
+    return rec
+
+
+def projection_vs_line(universes, proj_vec, n_boot: int) -> pd.DataFrame:
+    """THE diagnostic: as a point estimate of actual points, is our walk-forward
+    projection closer than the book's line? Consensus line per player-game is
+    the comparator (one row per player-game, voids dropped — a DNP has no
+    actual to score against). Per-book rows use that book's own main line."""
+    u = universes["consensus"]
+    c = u.df.copy()
+    c["proj_used"] = proj_vec[u.pg_idx]
+    c["line_cmp"] = u.line_ref
+    c = c[~c["void"] & c["actual_pts"].notna()].copy()
+
+    rows = []
+    for scope in SCOPES:
+        s = c if scope == "all" else c[c["phase"] == ("regular" if scope ==
+                                                      "regular" else "playoff")]
+        if not len(s):
+            continue
+        rows.append(_mae_row(scope, "overall", "all", s, n_boot))
+        for dim, col in (("season", "season"), ("line_terc", "line_terc"),
+                         ("role", "role"), ("min_terc", "min_terc"),
+                         ("venue", "venue"), ("phase", "phase")):
+            for lvl, sub in s.groupby(col, dropna=False):
+                rows.append(_mae_row(scope, dim, str(lvl), sub, n_boot))
+
+    # per-book comparison (the book's own posted main line vs our projection)
+    ub = universes["per_book"]
+    b = ub.df.copy()
+    b["proj_used"] = proj_vec[ub.pg_idx]
+    b["line_cmp"] = ub.line_ref
+    b = b[b["is_main"] & ~b["void"] & b["actual_pts"].notna()]
+    for scope in SCOPES:
+        s = b if scope == "all" else b[b["phase"] == ("regular" if scope ==
+                                                      "regular" else "playoff")]
+        for lvl, sub in s.groupby("bookmaker_key"):
+            rows.append(_mae_row(scope, "book", str(lvl), sub, n_boot))
+    out = pd.DataFrame(rows)
+    return out.sort_values(["scope", "group_dim", "group_level"],
+                           kind="stable").reset_index(drop=True)
+
+
+def main_vs_alt_summary(universes, proj_vec) -> pd.DataFrame:
+    """Descriptive companion (not a registered cell): does the per_book
+    universe's result come from books' MAIN numbers or from alternate ladders?
+    Alt ladders carry longer prices and are the classic source of a fake
+    retrospective pocket."""
+    u = universes["per_book"]
+    d = u.df
+    edge = proj_vec[u.pg_idx] - u.line_ref
+    rows = []
+    for thr in THRESHOLDS:
+        side = np.where(edge >= thr, 1, np.where(edge <= -thr, -1, 0))
+        for basis in PRICE_BASES:
+            prof = u.profits_for(side, basis)
+            for lbl, m in (("main", d["is_main"].to_numpy(bool)),
+                           ("alternate", ~d["is_main"].to_numpy(bool))):
+                for scope in SCOPES:
+                    sel = m & u.scope_masks[scope] & (side != 0) & ~np.isnan(prof)
+                    n = int(sel.sum())
+                    rows.append({"threshold": thr, "price_basis": basis,
+                                 "line_kind": lbl, "scope": scope, "n_bets": n,
+                                 "roi": float(prof[sel].mean()) if n else np.nan})
+    return pd.DataFrame(rows)
+
+
+def build_bet_log(universes, proj_vec) -> pd.DataFrame:
+    """Row-level log of every PLACED bet: one row per (execution, threshold,
+    candidate row) where the edge rule fires. Both price bases on the row."""
+    out = []
+    for ex in EXECUTIONS:
+        u = universes[ex]
+        d = u.df
+        edge = proj_vec[u.pg_idx] - u.line_ref
+        for thr in THRESHOLDS:
+            side = np.where(edge >= thr, 1, np.where(edge <= -thr, -1, 0))
+            sel = np.flatnonzero(side != 0)
+            if not len(sel):
+                continue
+            settle_line = np.where(
+                side > 0,
+                d["settle_line_over"].to_numpy(float) if "settle_line_over" in d
+                else u.line_ref,
+                d["settle_line_under"].to_numpy(float) if "settle_line_under" in d
+                else u.line_ref)
+            price = np.where(side > 0, d["price_over"].to_numpy(float),
+                             d["price_under"].to_numpy(float))
+            rec = pd.DataFrame({
+                "execution": ex, "threshold": thr,
+                "game_id": d["game_id"].to_numpy()[sel],
+                "game_date": d["game_date"].to_numpy()[sel],
+                "season": d["season"].to_numpy()[sel],
+                "phase": d["phase"].to_numpy()[sel],
+                "player_id": d["player_id"].to_numpy()[sel],
+                "player_name": d["player_name"].to_numpy()[sel],
+                "bookmaker_key": (d["bookmaker_key"].to_numpy()[sel]
+                                  if ex == "per_book" else ""),
+                "decision_line": u.line_ref[sel],
+                "settle_line": settle_line[sel],
+                "price_captured": price[sel],
+                "projection": proj_vec[u.pg_idx][sel],
+                "edge": edge[sel],
+                "side": np.where(side[sel] > 0, "over", "under"),
+                "exp_min": d["exp_min"].to_numpy()[sel],
+                "n_prior": d["n_prior"].to_numpy()[sel],
+                "role": d["role"].to_numpy()[sel],
+                "line_terc": d["line_terc"].to_numpy()[sel],
+                "min_terc": d["min_terc"].to_numpy()[sel],
+                "venue": d["venue"].to_numpy()[sel],
+                "actual_pts": d["actual_pts"].to_numpy()[sel],
+                "actual_min": d["actual_min"].to_numpy()[sel],
+                "void_no_action": d["void"].to_numpy()[sel],
+                "outcome": u.outcomes_for(side)[sel],
+                "profit_captured": u.profits_for(side, "captured")[sel],
+                "profit_synthetic110": u.profits_for(side, "synthetic110")[sel],
+            })
+            out.append(rec)
+    log = pd.concat(out, ignore_index=True) if out else pd.DataFrame()
+    if len(log):
+        log["outcome_label"] = log["outcome"].map(
+            {1.0: "win", 0.0: "push", -1.0: "loss"}).fillna("no_action")
+    return log
+
+
+def write_resolution_accounting(outdir: Path, acct: dict, props: pd.DataFrame,
+                                pending: pd.DataFrame) -> pd.DataFrame:
+    """Every row that entered and where it went — tidy, one line per fact."""
+    res = acct.get("resolution", {})
+    lad = acct.get("skip_ladder", {})
+    rows = [("input", "rows_in_table", acct.get("rows_total"), str(HIST_CSV.name)),
+            ("input", "rows_market_player_points", acct.get("rows_market"), MARKET),
+            ("input", "rows_bad_line_dropped", acct.get("rows_bad_line_dropped"), ""),
+            ("input", "rows_after_dedup_near_tip", acct.get("rows_near_tip"), ""),
+            ("game_join", "rows_game_matched", acct.get("rows_game_matched"), ""),
+            ("game_join", "rows_game_unmatched", acct.get("rows_game_unmatched_pending"), ""),
+            ("game_join", "commence_date_vs_master_date_mismatch_rows",
+             acct.get("commence_et_date_vs_master_mismatch_rows"),
+             "master game_date is authoritative (leakage guard)"),
+            ("name_resolution", "distinct_name_keys", res.get("unique_names"), ""),
+            ("name_resolution", "keys_resolved_team_scope", res.get("resolved_team_scope"), ""),
+            ("name_resolution", "keys_resolved_season_scope", res.get("resolved_season_scope"), ""),
+            ("name_resolution", "keys_ambiguous_never_guessed", len(res.get("ambiguous", [])),
+             "; ".join(res.get("ambiguous", []))),
+            ("name_resolution", "keys_unresolved", len(res.get("unresolved", [])),
+             "; ".join(res.get("unresolved", []))),
+            ("name_resolution", "rows_resolved", res.get("rows_resolved"), ""),
+            ("name_resolution", "rows_total", res.get("rows_total"), ""),
+            ("name_resolution", "row_resolution_rate",
+             (round(res.get("rows_resolved", 0) / res["rows_total"], 6)
+              if res.get("rows_total") else None), ""),
+            ("skip_ladder", "rows_in", lad.get("rows_in"), "mutually exclusive, ordered"),
+            ("skip_ladder", "skip_unresolved_rows", lad.get("skip_unresolved_rows"), ""),
+            ("skip_ladder", "skip_ambiguous_rows", lad.get("skip_ambiguous_rows"), ""),
+            ("skip_ladder", "skip_no_prior_appearance_rows",
+             lad.get("skip_no_prior_appearance_rows"), "no strictly-prior same-season game"),
+            ("skip_ladder", "skip_below_min_prior_rows",
+             lad.get("skip_below_min_prior_rows"), f"1-{MIN_PRIOR - 1} prior appearances"),
+            ("skip_ladder", "skip_ungraded_game_rows",
+             lad.get("skip_ungraded_game_rows"), "game not in master yet"),
+            ("skip_ladder", "candidate_rows", lad.get("candidate_rows"), ""),
+            ("settlement", "void_rows_dnp", acct.get("void_rows_dnp"),
+             "player did not play: no action"),
+            ("settlement", "venue_unknown_rows", acct.get("venue_unknown_rows"), ""),
+            ("settlement", "alt_line_row_share", acct.get("alt_line_row_share"),
+             "share of per_book rows on alternate (non-main) ladders"),
+            ("settlement", "book_player_game_groups",
+             acct.get("book_player_game_groups"), ""),
+            ("settlement", "consensus_line_not_posted_player_games",
+             acct.get("consensus_line_not_posted_player_games"),
+             "median consensus line no book posts: captured-basis price NaN"),
+            ("settlement", "best_fill_missing_over", acct.get("best_fill_missing_over"), ""),
+            ("settlement", "best_fill_missing_under", acct.get("best_fill_missing_under"), ""),
+            ]
+    for k, v in (acct.get("phase_rows") or {}).items():
+        rows.append(("phase", f"candidate_rows_{k}", v, ""))
+    for b, d in (acct.get("price_availability_by_book") or {}).items():
+        rows.append(("price_availability", f"{b}_rows", d["rows"], ""))
+        rows.append(("price_availability", f"{b}_over_priced", d["over_priced"],
+                     f"{d['over_priced'] / max(d['rows'], 1):.1%} of its rows"))
+        rows.append(("price_availability", f"{b}_under_priced", d["under_priced"],
+                     f"{d['under_priced'] / max(d['rows'], 1):.1%} of its rows"))
+    for name, cnt in sorted(
+            props.loc[props["resolve_status"] != "resolved_team"]
+            .groupby(["player_name", "resolve_status"]).size().items()):
+        if cnt and name[1] in ("unresolved", "ambiguous"):
+            rows.append(("unresolved_detail", name[0], int(cnt), name[1]))
+    df = pd.DataFrame(rows, columns=["stage", "metric", "value", "detail"])
+    df.to_csv(outdir / "resolution_accounting.csv", index=False)
+    return df
+
+
 def write_results_md(outdir: Path, partial: bool, acct: dict, rich: pd.DataFrame,
                      max_obs, frac_max, args, cover: dict, n_pg: int):
     surv = rich[rich["starred"]].sort_values("roi", ascending=False)
+    mae = acct.get("_mae_table")
     lines = []
     title = "PARTIAL DRY-RUN — NOT RESULTS" if partial else "Results"
     lines.append(f"# props_edge_v1 — {title}\n")
     lines.append(f"*Generated {datetime.now(timezone.utc).isoformat(timespec='seconds')} "
                  f"by props_edge.py. Registered protocol: experiments/registry.jsonl "
-                 f"(props_edge_v1, 2026-07-31T14:59:26Z).*\n")
+                 f"(props_edge_v1, 2026-07-31T14:59:26Z). MEASUREMENT STUDY — "
+                 f"sentinel gates by design; nothing here promotes anything.*\n")
+
+    # ---------------- HEADLINE: projection vs line as a point estimate -----
+    if mae is not None and len(mae):
+        lines.append("## THE HEADLINE — are our projections better than the "
+                     "books' lines?\n")
+        h = mae[(mae.group_dim == "overall") & (mae.scope == "all")]
+        hr = mae[(mae.group_dim == "overall") & (mae.scope == "regular")]
+        hp = mae[(mae.group_dim == "overall") & (mae.scope == "playoff")]
+        for lbl, row in (("ALL rows (regular + playoffs)", h),
+                         ("REGULAR SEASON only (headline)", hr),
+                         ("PLAYOFFS only (reported, never aggregated)", hp)):
+            if not len(row):
+                continue
+            r = row.iloc[0]
+            verdict = ("OUR PROJECTION IS CLOSER" if r.mae_diff_proj_minus_line < 0
+                       else "THE BOOKS' LINE IS CLOSER")
+            lines.append(
+                f"- **{lbl}** (n={int(r.n)} player-games): projection MAE "
+                f"**{r.mae_projection:.3f}** vs line MAE **{r.mae_line:.3f}** "
+                f"-> difference **{r.mae_diff_proj_minus_line:+.3f}** points "
+                f"(90% CI {r.mae_diff_ci90_low:+.3f} to {r.mae_diff_ci90_high:+.3f}); "
+                f"projection closer on {r.share_projection_closer:.1%} of "
+                f"player-games. **{verdict}.**")
+        if len(hr):
+            r = hr.iloc[0]
+            if r.mae_diff_proj_minus_line > 0:
+                lines.append(
+                    f"\n> **Plainly: the books' player-points lines are a better "
+                    f"predictor of actual points than our projection is, by "
+                    f"{r.mae_diff_proj_minus_line:.2f} points of MAE per "
+                    f"player-game in the regular season. Any pocket found below "
+                    f"is a pocket found DESPITE a worse point estimate, and must "
+                    f"be treated as a candidate for live confirmation only.**\n")
+            else:
+                lines.append(
+                    f"\n> **Plainly: our projection beats the line as a point "
+                    f"estimate by {-r.mae_diff_proj_minus_line:.2f} MAE points "
+                    f"in the regular season. This is the single most important "
+                    f"number in the study and it is in our favour.**\n")
+        lines.append("\nFull breakdown (by season, phase, line height, role, "
+                     "minutes volume, venue, book): `projection_vs_line.csv`.\n")
     if partial:
         lines.append("> **PARTIAL BACKFILL — the collector is still running. "
                      "Every number below is a mechanics check on an incomplete, "
@@ -983,33 +1465,277 @@ def write_results_md(outdir: Path, partial: bool, acct: dict, rich: pd.DataFrame
     lines.append(f"- skip ladder: {json.dumps(lad)}")
     lines.append(f"- voids (DNP, no action): {acct.get('void_rows_dnp')} rows; "
                  f"venue unknown: {acct.get('venue_unknown_rows')} rows; "
-                 f"alt-line share of (game,book,player) groups: "
-                 f"{acct.get('alt_line_share')}")
+                 f"alternate-ladder share of candidate rows: "
+                 f"{acct.get('alt_line_row_share')} "
+                 f"({acct.get('book_player_game_groups')} (game,book,player) "
+                 f"groups)")
+    lines.append(f"- phase: {acct.get('regular_player_games')} regular-season "
+                 f"player-games vs {acct.get('playoff_player_games')} playoff "
+                 f"player-games ({acct.get('playoff_games')} playoff games over "
+                 f"{acct.get('playoff_dates')} dates). **The playoff sample is "
+                 f"{100 * (acct.get('playoff_player_games') or 0) / max((acct.get('playoff_player_games') or 0) + (acct.get('regular_player_games') or 1), 1):.1f}% "
+                 f"of the study and every playoff cell re-uses those same rows.**")
     lines.append(f"- tercile boundaries (per season, candidate player-games): "
                  f"{json.dumps(acct.get('tercile_bounds', {}))}\n")
     lines.append("## Battery\n")
-    n_elig = int(rich["eligible"].sum())
-    lines.append(f"- cells: {len(rich)}; eligible (n_settled >= {MIN_CELL_N}): "
-                 f"{n_elig}; starred (BH q <= {BH_Q}): {len(surv)}"
-                 f"{' — PARTIAL, not results' if partial else ''}")
-    if n_elig:
-        lines.append(f"- best observed eligible-cell ROI {max_obs:.4f}; "
-                     f"P(best null >= best observed) = {frac_max:.3f} "
-                     f"({args.n_perms} within-season permutations)")
-    top = rich[rich["eligible"]].sort_values("roi", ascending=False).head(15) \
-        if n_elig else rich.sort_values("n_bets", ascending=False).head(10)
+    lines.append(f"Cells are the registered closed battery — execution "
+                 f"{EXECUTIONS} x price basis {PRICE_BASES} x threshold "
+                 f"{THRESHOLDS} x conditioner {CONDITIONERS} — evaluated under "
+                 f"three scopes: `all` (**the registered battery**), `regular` "
+                 f"(the headline-safe companion) and `playoff` (reported, never "
+                 f"aggregated into a headline; John has paused playoff betting). "
+                 f"BH runs WITHIN each scope family, so the playoff split does "
+                 f"not inflate the registered battery's multiplicity.\n")
+    lines.append("**Two nulls are reported.** `p_perm` is the REGISTERED null "
+                 "(projection shuffled within season). `p_perm_phaseblock` "
+                 "shuffles within (season, phase) and is the only valid null "
+                 "for a phase-scoped cell: playoff player-games are 7.8% of the "
+                 "pool and carry a different projection level, so a season-wide "
+                 "shuffle hands playoff rows regular-season projections and "
+                 "mis-centres the playoff null. Measured here: mean null ROI on "
+                 "eligible playoff cells is -0.076 under the registered shuffle "
+                 "vs -0.051 on regular-season cells, which manufactures "
+                 "'significance' for ordinary playoff results. **Treat every "
+                 "playoff star under the registered null as an artefact until "
+                 "the phase-blocked column agrees.**\n")
     cols = ["execution", "price_basis", "threshold", "cond_dim", "cond_level",
-            "n_bets", "wins", "losses", "pushes", "roi", "roi_ci90_low",
-            "roi_ci90_high", "p_perm", "q_bh", "starred"]
-    lines.append("\n### " + ("Top eligible cells by ROI" if n_elig
-                             else "Largest cells (none eligible)") + "\n")
-    lines.append(top[cols].to_string(index=False, float_format=lambda x: f"{x:.4f}"))
+            "n_bets", "wins", "losses", "pushes", "hit_rate", "roi",
+            "roi_ci90_low", "roi_ci90_high", "p_perm", "q_bh", "starred",
+            "p_perm_phaseblock", "starred_phaseblock"]
+    for scope in SCOPES:
+        sc = rich[rich["scope"] == scope]
+        n_elig = int(sc["eligible"].sum())
+        sv = sc[sc["starred"]]
+        svp = sc[sc["starred"] & sc["roi_positive"]]
+        svpb = sc[sc["starred_phaseblock"]]
+        lines.append(f"\n### scope = {scope}"
+                     + ("  (REGISTERED BATTERY)" if scope == "all" else
+                        "  (companion)") + "\n")
+        lines.append(f"- cells {len(sc)}; eligible (n_settled >= {MIN_CELL_N}) "
+                     f"{n_elig}; **starred (BH q <= {BH_Q}): {len(sv)}**, of "
+                     f"which **{len(svp)} have ROI > 0**; expected false among "
+                     f"starred at q={BH_Q}: {BH_Q * len(sv):.1f}")
+        lines.append(f"- under the phase-blocked companion null: "
+                     f"{len(svpb)} starred, {int((sc['starred_phaseblock'] & sc['roi_positive']).sum())} "
+                     f"of them profitable")
+        if len(sv) and not len(svp):
+            lines.append("- **every starred cell in this scope LOSES money.** A "
+                         "permutation star means 'better than a shuffled "
+                         "projection', not 'profitable'; a cell that loses less "
+                         "than chance is not a bet.")
+        if n_elig:
+            lines.append(f"- best observed eligible-cell ROI "
+                         f"{max_obs.get(scope, float('nan')):+.4f}; P(best null "
+                         f">= best observed) = {frac_max.get(scope, float('nan')):.3f} "
+                         f"({args.n_perms} within-season permutations)")
+            mean_roi = float(sc.loc[sc["eligible"], "roi"].mean())
+            lines.append(f"- mean ROI across eligible cells: {mean_roi:+.4f}")
+        if len(sv):
+            lines.append(f"\n**The {len(sv)} starred cell(s) in this scope "
+                         f"(these are what BH selected, whatever their ROI):**\n")
+            lines.append(sv.sort_values("roi", ascending=False)[cols].to_string(
+                index=False, float_format=lambda x: f"{x:.4f}") + "\n")
+        lines.append("\n**Top eligible cells by ROI** (ranking is by return, "
+                     "not by significance — a high-ROI cell with a large "
+                     "p_perm is noise):\n")
+        top = (sc[sc["eligible"]].sort_values("roi", ascending=False).head(12)
+               if n_elig else sc.sort_values("n_bets", ascending=False).head(8))
+        lines.append("\n" + top[cols].to_string(
+            index=False, float_format=lambda x: f"{x:.4f}") + "\n")
+    ma = acct.get("_main_alt")
+    if ma is not None and len(ma):
+        lines.append("\n### Companion diagnostic — main lines vs alternate "
+                     "ladders (per_book universe, NOT a registered cell)\n")
+        lines.append(ma[ma["scope"] != "playoff"].to_string(
+            index=False, float_format=lambda x: f"{x:.4f}"))
+        lines.append("\n*If a pocket lives only in the `alternate` rows it is "
+                     "almost certainly a price artefact, not an edge.*\n")
+    lines.append("\n### Headline cells (no conditioner), both phases\n")
+    head = rich[(rich["cond_dim"] == "none")].sort_values(
+        ["execution", "price_basis", "threshold", "scope"])
+    lines.append(head[["execution", "price_basis", "threshold", "scope",
+                       "n_bets", "hit_rate", "roi", "roi_ci90_low",
+                       "roi_ci90_high", "p_perm"]].to_string(
+        index=False, float_format=lambda x: f"{x:.4f}"))
     lines.append("\n\n*Pushes risk the stake and return 0 (house convention); "
                  "voids (player did not play) are no-action and sit outside "
                  "stakes settled. Captured basis excludes bets whose side "
-                 "price was not posted (n_noprice per cell).*\n")
-    (outdir / ("RESULTS_PARTIAL.md" if partial else "RESULTS.md")).write_text(
-        "\n".join(lines), encoding="utf-8")
+                 "price was not posted (n_noprice per cell). ROI is flat-stake "
+                 "profit per unit staked.*\n")
+    lines.append("\n## Artifacts\n")
+    for f, what in (("all_cells.csv", "every battery cell, all three scopes"),
+                    ("bet_log.csv", "row-level: one row per placed bet"),
+                    ("projection_vs_line.csv", "THE MAE diagnostic"),
+                    ("resolution_accounting.csv", "every row and where it went"),
+                    ("permutation_summary.csv", "the 200-permutation null"),
+                    ("PROPS_LEDGER.md", "surviving pockets, ranked"),
+                    ("accounting.json", "full machine-readable accounting"),
+                    ("bet_universe_*.csv", "all candidate rows incl. no-bets")):
+        lines.append(f"- `{f}` — {what}")
+    (outdir / ("REPORT_PARTIAL.md" if partial else "REPORT.md")).write_text(
+        "\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_ledger(outdir: Path, rich: pd.DataFrame, mae: pd.DataFrame,
+                 acct: dict, args, frac_max: dict, partial: bool):
+    """PROPS_LEDGER.md — charter amendment 4 style: rank every surviving
+    pocket, state the mechanism, flag the anomalies that would make a naive
+    reader over-trust it."""
+    L = []
+    L.append("# PROPS_LEDGER — props_edge_v1 surviving pockets\n")
+    L.append(f"*{datetime.now(timezone.utc).isoformat(timespec='seconds')}. "
+             f"Ranking of every pocket that survived the registered honesty "
+             f"machinery (200 within-season permutations of the projection "
+             f"column, BH at {BH_Q} within scope family, {MIN_CELL_N}-bet "
+             f"minimum, 90% date-clustered bootstrap CIs). "
+             f"MEASUREMENT STUDY: everything here is a CANDIDATE. The "
+             f"confirmation channel is the live prospective props log, not this "
+             f"file.*\n")
+    if partial:
+        L.append("> **PARTIAL RUN — no conclusions.**\n")
+
+    if mae is not None and len(mae):
+        hr = mae[(mae.group_dim == "overall") & (mae.scope == "regular")]
+        if len(hr):
+            r = hr.iloc[0]
+            L.append(f"## Context that governs every row below\n")
+            L.append(f"Regular-season projection MAE **{r.mae_projection:.3f}** "
+                     f"vs line MAE **{r.mae_line:.3f}** "
+                     f"({r.mae_diff_proj_minus_line:+.3f}). "
+                     + ("The books' lines are the better point estimate. A "
+                        "profitable pocket therefore cannot be explained by "
+                        "'our projection is more accurate'; it would have to be "
+                        "a pricing/threshold artefact, and that is a much weaker "
+                        "prior than accuracy.\n"
+                        if r.mae_diff_proj_minus_line > 0 else
+                        "Our projection is the better point estimate, which is "
+                        "the mechanism a real pocket would rest on.\n"))
+
+    for scope in SCOPES:
+        sc_all = rich[(rich["scope"] == scope) & rich["starred"]].sort_values(
+            "roi", ascending=False)
+        # a permutation star is not a bet unless it also makes money
+        sc = sc_all[sc_all["roi_positive"]]
+        losers = sc_all[~sc_all["roi_positive"]]
+        fam_elig = int(((rich["scope"] == scope) & rich["eligible"]).sum())
+        label = ("REGISTERED BATTERY (all rows)" if scope == "all"
+                 else f"COMPANION — {scope} only")
+        L.append(f"\n## {label}\n")
+        L.append(f"- eligible cells tested: {fam_elig}; cells beating the "
+                 f"registered null after BH: {len(sc_all)}; **of those, "
+                 f"PROFITABLE (ROI > 0): {len(sc)}**; expected false among the "
+                 f"{len(sc_all)} at q={BH_Q}: **{BH_Q * len(sc_all):.1f}**")
+        L.append(f"- under the phase-blocked companion null: "
+                 f"{int(((rich['scope'] == scope) & rich['starred_phaseblock']).sum())} "
+                 f"cells survive")
+        if len(losers):
+            L.append(f"- {len(losers)} cell(s) beat the null while still LOSING "
+                     f"money (ROI {losers['roi'].min():+.4f} to "
+                     f"{losers['roi'].max():+.4f}). A permutation star says "
+                     f"'better than a shuffled projection', not 'profitable'. "
+                     f"These are NOT bets and are excluded from the ranking "
+                     f"below; they are in `all_cells.csv`.")
+        fm = frac_max.get(scope, float("nan"))
+        L.append(f"- family-wise sanity: P(best permuted cell >= best observed "
+                 f"cell) = {fm:.3f} over {args.n_perms} permutations "
+                 + ("— the best observed cell is INDISTINGUISHABLE from the "
+                    "best cell a shuffled projection produces."
+                    if fm == fm and fm > 0.10 else
+                    "— the best observed cell is beyond what shuffling "
+                    "typically produces."))
+        if scope == "playoff":
+            L.append("- **Playoff pockets are reported, never acted on: John "
+                     "has paused playoff betting pending model improvements.**")
+        if scope == "playoff":
+            L.append("- **NULL WARNING: playoff stars under the registered "
+                     "within-season shuffle are mis-calibrated** (the shuffle "
+                     "hands playoff rows regular-season projections). The "
+                     "phase-blocked count above is the trustworthy one.")
+        if not len(sc):
+            L.append("\n**No surviving profitable pockets.** This is a "
+                     "legitimate result: under the registered rules, no "
+                     "conditioning slice of the projection-vs-line disagreement "
+                     "produced a profitable pocket that beat its own "
+                     "permutation null after multiplicity correction.")
+            continue
+        L.append("")
+        LEDGER_MAX = 15
+        if len(sc) > LEDGER_MAX:
+            L.append(f"*Listing the {LEDGER_MAX} highest-ROI of {len(sc)}; the "
+                     f"rest are in `all_cells.csv`. Note these cells are NOT "
+                     f"independent — they are overlapping views of the same "
+                     f"underlying player-games.*\n")
+        for i, r in enumerate(sc.head(LEDGER_MAX).itertuples(index=False), 1):
+            flags = []
+            if scope == "playoff":
+                flags.append(f"drawn from a {int(acct.get('playoff_player_games', 0))}"
+                             f"-player-game postseason sample across "
+                             f"{int(acct.get('playoff_dates', 0))} dates; every "
+                             f"playoff cell re-uses these same rows, so the "
+                             f"survivors are one finding, not many")
+            if r.roi_ci90_low <= 0 <= r.roi_ci90_high:
+                flags.append("CI SPANS ZERO (bootstrap disagrees with the "
+                             "permutation p-value)")
+            if r.n_bets < 2 * MIN_CELL_N:
+                flags.append(f"thin ({r.n_bets} bets, just over the "
+                             f"{MIN_CELL_N} floor)")
+            if r.n_dates < 30:
+                flags.append(f"only {r.n_dates} distinct dates — clustered")
+            if r.price_basis == "synthetic110":
+                flags.append("SYNTHETIC -110 price: real prop prices are worse "
+                             "than -110 on at least one side far more often "
+                             "than not; check the captured-basis twin")
+            if r.execution == "best_line":
+                flags.append("best-line execution assumes you get the best "
+                             "number across books on every bet")
+            if r.cond_dim == "book":
+                flags.append("single-book pocket — book-level slices are the "
+                             "most fragile (limits, availability, line drift)")
+            if abs(r.hit_rate - 0.5) < 0.02:
+                flags.append("hit rate ~50%: the ROI is carried by prices, not "
+                             "by picking sides")
+            if not r.starred_phaseblock:
+                flags.append("does NOT survive the phase-blocked companion "
+                             "null — the star depends on the season-wide "
+                             "shuffle's block structure")
+            twin = rich[(rich["scope"] == "regular")
+                        & (rich["execution"] == r.execution)
+                        & (rich["price_basis"] == r.price_basis)
+                        & (rich["threshold"] == r.threshold)
+                        & (rich["cond_dim"] == r.cond_dim)
+                        & (rich["cond_level"] == r.cond_level)]
+            if scope == "all" and len(twin):
+                t = twin.iloc[0]
+                if t["n_bets"] and np.sign(t["roi"]) != np.sign(r.roi):
+                    flags.append(f"PLAYOFF-DRIVEN: regular-season-only ROI is "
+                                 f"{t['roi']:+.4f} on {int(t['n_bets'])} bets — "
+                                 f"the sign flips without playoffs")
+            L.append(f"### {i}. {r.execution} / {r.price_basis} / thr {r.threshold} "
+                     f"/ {r.cond_dim}={r.cond_level}")
+            L.append(f"- **ROI {r.roi:+.4f}** (90% CI {r.roi_ci90_low:+.4f} to "
+                     f"{r.roi_ci90_high:+.4f}) on **{int(r.n_bets)} bets** "
+                     f"({int(r.wins)}W-{int(r.losses)}L-{int(r.pushes)}P, hit "
+                     f"{r.hit_rate:.3f}) over {int(r.n_dates)} dates")
+            L.append(f"- permutation p = {r.p_perm:.4f} "
+                     f"(Phipson-Smyth {r.p_perm_phipson_smyth:.4f}); "
+                     f"BH q = {r.q_bh:.4f}; null-mean ROI "
+                     f"{r.perm_roi_mean:+.4f}, null 95th pct "
+                     f"{r.perm_roi_q95:+.4f}")
+            L.append(f"- mechanism note: bets fire when |projection - line| >= "
+                     f"{r.threshold}; this cell took {int(r.n_over)} overs and "
+                     f"{int(r.n_under)} unders at a mean edge of "
+                     f"{r.mean_edge:+.2f} points on a mean line of "
+                     f"{r.mean_line:.1f}.")
+            L.append("- anomaly flags: " + ("; ".join(flags) if flags
+                                            else "none triggered"))
+            L.append("")
+    L.append("\n## What would confirm any of this\n")
+    L.append("Nothing in this file is evidence a pocket is real — a retrospective "
+             "battery can only nominate. Confirmation = preregistering the "
+             "surviving cell as a live paper-trade cell and grading it on games "
+             "played AFTER registration, using the 4x-daily props capture.")
+    (outdir / ("PROPS_LEDGER_PARTIAL.md" if partial else "PROPS_LEDGER.md")
+     ).write_text("\n".join(L) + "\n", encoding="utf-8")
 
 
 def write_universe_csvs(outdir: Path, universes, proj_vec):
@@ -1020,7 +1746,7 @@ def write_universe_csvs(outdir: Path, universes, proj_vec):
         d["edge"] = edge
         d["bet_at_min_threshold"] = np.abs(edge) >= min(THRESHOLDS)
         keep = [c for c in [
-            "game_id", "game_key", "season", "game_date", "player_id",
+            "game_id", "game_key", "season", "phase", "game_date", "player_id",
             "player_name", "bookmaker_key", "line", "cons_line", "line_ref",
             "is_main", "over_price", "under_price", "price_over", "price_under",
             "settle_line_over", "settle_line_under", "proj_used", "edge",
@@ -1072,8 +1798,23 @@ def self_test():
     pr2 = project_targets(tgt.iloc[[0]], st2)
     assert abs(pr2.loc[0, "proj"] - pr.loc[0, "proj"]) < 1e-12
     # resolver: same-name collision resolved by team scope, ambiguous same-team
-    lut_home = {"karliesamuelson": {1}}
     assert _norm("Karlie  Samuelson!") == "karliesamuelson"
+    # REGRESSION GUARD (bug found and fixed 2026-07-31): American odds must
+    # never be averaged on the odds scale. median(-110, +112) = +1 -> a 100x
+    # payout that does not exist. Aggregate multipliers instead.
+    assert abs(np.median([-110.0, 112.0]) - 1.0) < 1e-12          # the trap
+    m = float(np.median([_mult(-110.0), _mult(112.0)]))
+    assert 0.9 < m < 1.2, m                                        # sane payout
+    assert abs(_mult_to_american(_mult(-110.0)) + 110.0) < 1e-9
+    assert abs(_mult_to_american(_mult(150.0)) - 150.0) < 1e-9
+    # settlement is driven by multipliers, and an unpriced side stays NaN
+    prof, codes = _profits(np.array([20.0, 20.0]), np.array([19.5, 19.5]),
+                           np.array([WIN_110, np.nan]),
+                           np.array([WIN_110, WIN_110]),
+                           np.array([False, False]))
+    assert abs(prof["cap_over"][0] - WIN_110) < 1e-12
+    assert np.isnan(prof["cap_over"][1]) and prof["syn_over"][1] == WIN_110
+    assert prof["cap_under"][0] == -1.0
     # within-season permutation keeps season blocks intact
     rng = np.random.default_rng(0)
     pv = np.array([1.0, 2, 3, 10, 20, 30])
@@ -1090,8 +1831,8 @@ def self_test():
 
 def load_masters():
     mp = pd.read_parquet(MASTER_PLAYER, columns=[
-        "game_id", "season", "game_date", "team_abbreviation", "is_home",
-        "player_id", "player_name", "starter_flag", "minutes", "pts"])
+        "game_id", "season", "season_type", "game_date", "team_abbreviation",
+        "is_home", "player_id", "player_name", "starter_flag", "minutes", "pts"])
     mt = pd.read_parquet(MASTER_TEAM, columns=[
         "game_id", "season", "game_date", "team_abbreviation",
         "opp_team_abbreviation", "is_home"])
@@ -1134,7 +1875,7 @@ def run_dev(args) -> int:
                                                   + (edge <= -thr).sum())
     n_settleable = 0
     if len(cand):
-        universes, proj_vec, season_vec, date_vec, pg_index = \
+        universes, proj_vec, season_vec, date_vec, phase_vec, pg_index = \
             build_universes(cand, acct)
         cells = build_cells(universes)
         rich = eval_battery_rich(universes, cells, proj_vec, n_boot=50)
@@ -1213,16 +1954,16 @@ def run_historical(args) -> int:
     if not len(cand):
         print("No candidate rows at all — nothing to evaluate.")
         return 2
-    universes, proj_vec, season_vec, date_vec, pg_index = \
+    universes, proj_vec, season_vec, date_vec, phase_vec, pg_index = \
         build_universes(cand, acct)
     cells = build_cells(universes)
     print(f"{len(cells)} cells over {len(pg_index)} candidate player-games "
           f"({len(cand)} per-book rows) | thresholds {THRESHOLDS} | "
           f"executions {EXECUTIONS} | bases {PRICE_BASES}")
     rich, perm_summ, max_obs, frac_max = run_inference(
-        universes, cells, proj_vec, season_vec, args.n_perms, args.n_boot)
+        universes, cells, proj_vec, season_vec, phase_vec, args.n_perms,
+        args.n_boot)
 
-    prefix = "PARTIAL_" if partial else ""
     rich_out = rich.drop(columns=["level_idx"])
     if partial:
         rich_out.insert(0, "PARTIAL_DRYRUN", True)
@@ -1230,18 +1971,56 @@ def run_historical(args) -> int:
     if len(perm_summ):
         perm_summ.to_csv(outdir / "permutation_summary.csv", index=False)
     write_universe_csvs(outdir, universes, proj_vec)
+
+    pg_ph = cand.drop_duplicates(["game_key", "player_id"])
+    acct["playoff_player_games"] = int((pg_ph["phase"] == "playoff").sum())
+    acct["playoff_dates"] = int(pg_ph.loc[pg_ph["phase"] == "playoff",
+                                          "game_date"].nunique())
+    acct["playoff_games"] = int(pg_ph.loc[pg_ph["phase"] == "playoff",
+                                          "game_id"].nunique())
+    acct["regular_player_games"] = int((pg_ph["phase"] == "regular").sum())
+    print("[diagnostic] projection vs line ...")
+    mae = projection_vs_line(universes, proj_vec, args.n_boot)
+    mae.to_csv(outdir / "projection_vs_line.csv", index=False)
+    acct["_mae_table"] = mae
+    log = build_bet_log(universes, proj_vec)
+    log.to_csv(outdir / "bet_log.csv", index=False)
+    acct["bet_log_rows"] = int(len(log))
+    ma = main_vs_alt_summary(universes, proj_vec)
+    ma.to_csv(outdir / "main_vs_alt_lines.csv", index=False)
+    acct["_main_alt"] = ma
+    write_resolution_accounting(outdir, acct, props, pending)
+
     acct["degraded_defaults"] = (args.n_perms != N_PERMS_DEFAULT
                                  or args.n_boot != N_BOOT_DEFAULT)
+    acct_json = {k: v for k, v in acct.items() if not k.startswith("_")}
     (outdir / "accounting.json").write_text(
-        json.dumps(acct, indent=1, default=str), encoding="utf-8")
+        json.dumps(acct_json, indent=1, default=str), encoding="utf-8")
     write_results_md(outdir, partial, acct, rich, max_obs, frac_max, args,
                      cover, len(pg_index))
+    write_ledger(outdir, rich, mae, acct, args, frac_max, partial)
 
     n_elig = int(rich["eligible"].sum())
     n_star = int(rich["starred"].sum())
+    h = mae[(mae.group_dim == "overall") & (mae.scope == HEADLINE_SCOPE)]
+    if len(h):
+        r = h.iloc[0]
+        print(f"\n=== HEADLINE ({HEADLINE_SCOPE} season, n={int(r.n)} "
+              f"player-games) ===")
+        print(f"projection MAE {r.mae_projection:.3f} vs line MAE "
+              f"{r.mae_line:.3f}  ->  {r.mae_diff_proj_minus_line:+.3f} "
+              f"(90% CI {r.mae_diff_ci90_low:+.3f}, {r.mae_diff_ci90_high:+.3f})")
+        print("  " + ("THE BOOKS' LINES ARE THE BETTER PREDICTOR."
+                      if r.mae_diff_proj_minus_line > 0
+                      else "OUR PROJECTION IS THE BETTER PREDICTOR."))
     print(f"\n{'PARTIAL DRY-RUN ' if partial else ''}battery: {len(rich)} cells, "
           f"{n_elig} eligible (n>={MIN_CELL_N}), {n_star} starred (BH {BH_Q})"
           + (" — PARTIAL: numbers are mechanics checks, not results" if partial else ""))
+    for scope in SCOPES:
+        sc = rich[rich["scope"] == scope]
+        print(f"  scope={scope:8s} eligible {int(sc['eligible'].sum()):4d}  "
+              f"starred {int(sc['starred'].sum()):3d}  expected-false "
+              f"{BH_Q * int(sc['starred'].sum()):.1f}")
     print(f"artifacts -> {outdir}")
     return 0
 
