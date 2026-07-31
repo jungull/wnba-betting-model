@@ -198,6 +198,17 @@ predictive beyond the trend baseline?** The screen answers all three mechanicall
 - **Heights/weights/age/draft**: one small collection closes candidates #7, 9, 17, 18,
   27–31, 33, 80, 86 — in flight now.
 
+## Candidate #101 — per-player alpha (John, 2026-07-31)
+
+**Personalized memory speed**: today the EWMA alpha is tuned per stat league-wide; some
+players are plausibly form-driven (fast alpha — recent games dominate) while others are
+identity-driven (slow alpha — long averages win). Candidate: per-player alpha chosen on
+that player's own 2021–2023 history with shrinkage toward the league alpha (the same
+individual-vs-pool dial as everything else), against the global-alpha baseline in the
+three-encoding confirmation bake-off. Status: HAVE. This personalizes the *baseline
+itself*, so it enters at the confirmation stage (it changes what every other feature is
+measured against), not the screening stage.
+
 ## Lab charter amendments (John, 2026-07-31 — binding on all screens and confirmations)
 
 1. **The blind year is the supreme court.** A pattern identified on the screening years
