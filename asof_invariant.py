@@ -149,6 +149,11 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     "experiments/dist_margin_cover/residual_pool.csv",
     "experiments/rapm_multiseason/rapm_v1_*.csv",
     "evalharness/frozen_baselines.json",
+    # Derived rather than fitted — no parameter is estimated — but tracked here
+    # anyway: a consumer joining the truth set onto a scored row still needs to
+    # know the latest game it can contain, and a STALE truth set is the failure
+    # mode that would otherwise pass unnoticed.
+    "data/w1_truth/*.csv",
 )
 
 # Directories never worth walking.
