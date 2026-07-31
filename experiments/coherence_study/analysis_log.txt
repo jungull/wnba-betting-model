@@ -1,0 +1,161 @@
+==============================================================================
+0. LOAD + REPRODUCE LEDGERED NUMBERS (hard gate before analysis)
+==============================================================================
+  ASSERT incumbent margin MAE (chanreval ledger 10.0860): got 10.085992 want 10.086000 tol 0.0005 -> OK
+  ASSERT incumbent home MAE (gate-4 8.7928): got 8.792752 want 8.792800 tol 0.0005 -> OK
+  ASSERT incumbent away MAE (gate-4 8.6163): got 8.616265 want 8.616300 tol 0.0005 -> OK
+  ASSERT incumbent total MAE (gate-4 14.2236): got 14.223624 want 14.223600 tol 0.0005 -> OK
+  ASSERT rebuild str_home_cal from channels (max|diff|): got 0.000000 want 0.000000 tol 1e-08 -> OK
+  ASSERT rebuild str_away_cal from channels (max|diff|): got 0.000000 want 0.000000 tol 1e-08 -> OK
+  ASSERT rebuild str_margin_cal from channels (max|diff|): got 0.000000 want 0.000000 tol 1e-08 -> OK
+  ASSERT channel identity home (max|diff|): got 0.000000 want 0.000000 tol 1e-09 -> OK
+  bottom-up rows: 1270 team-games -> 627 games with BOTH sides covered (16 single-side rows dropped, registered gate-4 protocol)
+  ASSERT BU incumbent 3pt == w2 str_3pt, home (max|diff|): got 0.000000 want 0.000000 tol 1e-06 -> OK
+  ASSERT BU incumbent 3pt == w2 str_3pt, away (max|diff|): got 0.000000 want 0.000000 tol 1e-06 -> OK
+  ASSERT BU actual 3pt == channel actual, home (max|diff|): got 0.000000 want 0.000000 tol 1e-06 -> OK
+  substitution universe: 627 RS games (bottomup REPORT gate-4 used 627)
+  ASSERT substituted margin MAE (bottomup gate-4 10.3569): got 10.356874 want 10.356900 tol 0.0005 -> OK
+  ASSERT incumbent margin MAE on same 627 (bottomup gate-4 10.1753): got 10.175266 want 10.175300 tol 0.0005 -> OK
+
+==============================================================================
+1. SHARED-SHOCK DECOMPOSITION  (e = pred - truth; c=(e_h+e_a)/2, u=(e_h-e_a)/2)
+==============================================================================
+
+INCUMBENT calibrated, 673 games:
+  var(e_h)=124.14  var(e_a)=120.31  cov=40.82  corr=+0.3340
+  var(c)=81.52  var(u)=40.71  COMMON SHARE var(c)/(var(c)+var(u)) = 0.6670
+  margin err var 4var(u)=162.82; total err var 4var(c)=326.09
+  (common error mass cancels in margins, DOUBLES in totals: 4var(c)/4var(u) = 2.00x)
+
+SUBSTITUTED (challenger 3pt) vs incumbent on identical 627 RS games (calibrated):
+  corr(e_h,e_a): inc +0.3332 -> sub +0.3158
+  var(c): 82.95 -> 81.80 (-1.14)
+  var(u): 41.48 -> 42.53 (+1.05)
+  common share: 0.6666 -> 0.6579 (-0.0087)
+  per-side error variance (avg): 124.43 -> 124.34
+
+==============================================================================
+1b. CHANNEL DECOMPOSITION OF c AND u (incumbent uncal chains, 673 games)
+==============================================================================
+  ASSERT channel c-parts sum to c_unc (max|diff|): got 0.000000 want 0.000000 tol 1e-09 -> OK
+  c: total var 80.99; beta-shares (cov(part,total)/var(total)): ft +0.212  3pt +0.396  paint +0.344  np2 +0.048
+  u: total var 41.10; beta-shares (cov(part,total)/var(total)): ft +0.079  3pt +0.469  paint +0.385  np2 +0.068
+  (beta-shares sum to 1; own-variance and cross-channel covariances in channel_shock_decomposition.csv)
+
+==============================================================================
+2. DRIVERS OF c  (walk-forward observables vs ORACLE context)
+==============================================================================
+  crew factors merged for 673/673 games (w4 caveat: ACTUAL crew as proxy for pregame announcement)
+  ASSERT identity total_true - str_total_cal == -2c (max|diff|): got 0.000000 want 0.000000 tol 1e-09 -> OK
+
+  correlations with c (walk-forward observables):
+    crew_factor          r=-0.1522  spearman=-0.1428  r(|c|)=+0.0660  r(u)=+0.0147  n=673
+    crew_prior_mean      r=-0.1522  spearman=-0.1428  r(|c|)=+0.0660  r(u)=+0.0147  n=673
+    env_total_season     r=-0.1033  spearman=-0.0173  r(|c|)=+0.1672  r(u)=+0.0132  n=673
+    season               r=-0.0970  spearman=-0.0785  r(|c|)=+0.1338  r(u)=-0.0208  n=673
+    env_total_30d        r=-0.0819  spearman=-0.0267  r(|c|)=+0.1597  r(u)=+0.0304  n=673
+    env_total_14d        r=-0.0816  spearman=-0.0249  r(|c|)=+0.1733  r(u)=-0.0173  n=673
+    rest_a               r=-0.0617  spearman=-0.0707  r(|c|)=-0.0226  r(u)=+0.0389  n=673
+    pace_prior_sum       r=-0.0598  spearman=-0.0723  r(|c|)=+0.0294  r(u)=+0.0322  n=673
+    month                r=+0.0502  spearman=+0.0536  r(|c|)=-0.0622  r(u)=+0.0436  n=673
+    rest_min             r=-0.0370  spearman=-0.0081  r(|c|)=+0.0102  r(u)=+0.0179  n=673
+    rest_sum             r=-0.0311  spearman=-0.0350  r(|c|)=-0.0049  r(u)=+0.0431  n=673
+    fg3a_prior_sum       r=-0.0192  spearman=-0.0028  r(|c|)=+0.0340  r(u)=-0.0352  n=673
+    days_into_season     r=+0.0172  spearman=+0.0098  r(|c|)=-0.0352  r(u)=+0.0491  n=673
+    rest_h               r=+0.0068  spearman=+0.0041  r(|c|)=+0.0129  r(u)=+0.0335  n=673
+  ORACLE context (uses realized outcomes; decomposition context ONLY, never features):
+    ORACLE_hot_cold_vs_env     r=-0.9657  n=673
+    ORACLE_c_3pt               r=+0.5442  n=673
+    ORACLE_pace_realized_sum   r=-0.5432  n=673
+    ORACLE_pace_shock          r=-0.5323  n=673
+    ORACLE_c_paint             r=+0.5001  n=673
+    ORACLE_c_ft                r=+0.4479  n=673
+    ORACLE_c_np2               r=+0.1403  n=673
+
+  c predictability: in-sample OLS R^2 = 0.0448 (12 walk-forward features + season dummies, n=673)
+  honest split (fit 2024+2025 -> predict 2026): out-of-sample R^2 = -2.8449 (n_test=168)
+  sd(c) = 9.029 points; mean(c) = -0.568
+  u predictability (same features): in-sample R^2 = 0.0212
+
+==============================================================================
+3. RECOMBINATION SIMULATION (margin MAE on identical games)
+==============================================================================
+  [673] (a) calibrated margin head (incumbent)       margin MAE 10.0860  total MAE 14.2236  (observable)
+  [673] (b) score-head difference home_cal - away_cal margin MAE 10.1603  total MAE 14.2236  (observable)
+  [673] (c) ORACLE sides minus common shock, then diff margin MAE 10.1603  total MAE 0.0000  (ORACLE)
+  ASSERT (c) == (b) margin (max|diff|): got 0.000000 want 0.000000 tol 1e-09 -> OK
+      ORACLE side MAE after removing c: home 5.0801 vs actual 8.7928 (side error becomes pure u)
+  [673] (c') ORACLE sides minus idiosyncratic u, then diff margin MAE 0.0000  total MAE 14.2236  (ORACLE)
+  [673] ANALYTIC-NORMAL if corr(e_h,e_a)=0 at unchanged side accuracy: margin MAE ~12.490 (vs 10.160 actual sidediff), total MAE ~12.508 (vs 14.224)
+        -> the +0.334 correlation is worth ~+2.33 margin MAE and costs ~-1.72 total MAE vs independence (pure transfer)
+
+  co-movement trade curve (ANALYTIC-NORMAL, side accuracy fixed at incumbent):
+    corr      margin_MAE   total_MAE
+    +0.000      12.490      12.508
+    +0.100      11.851      13.115
+    +0.200      11.175      13.696
+    +0.334      10.199      14.437
+    +0.400       9.683      14.788
+    +0.500       8.843      15.305
+
+  [rs627] (a) incumbent margin head                    margin MAE 10.1753  total MAE 14.3225  (observable)
+  [rs627] (b) incumbent side-head difference           margin MAE 10.2549  total MAE 14.3225  (observable)
+  [rs627] full substitution (challenger 3pt both sides) margin MAE 10.3569  total MAE 14.2172  (observable)
+  [rs627] (d2) blend: inc 3pt COMMON + chal 3pt DIFF   margin MAE 10.3569  total MAE 14.3203  (observable)
+  ASSERT (d2) margin == full substitution margin (max|diff|): got 0.000000 want 0.000000 tol 1e-09 -> OK
+  [rs627] (d3) blend: chal 3pt COMMON + inc 3pt DIFF   margin MAE 10.1753  total MAE 14.2198  (observable)
+  ASSERT (d3) margin == incumbent margin head (max|diff|): got 0.000000 want 0.000000 tol 1e-09 -> OK
+  [rs627] (d4) ORACLE error blend c_inc+u_sub: margin err = 2*u_sub -> MAE 10.4171 == full-substitution side-diff MAE 10.4171 BY IDENTITY (margin never sees c)
+
+  DIRECT CHANNEL TEST (3pt, per-game, rs627; halves so units = side points):
+    3pt DIFFERENTIAL MAE: incumbent 4.9884  challenger 4.9059  (delta +0.0825, + = chal better)
+    3pt COMMON/SUM  MAE: incumbent 5.2665  challenger 5.2060  (delta +0.0605)
+    3pt per-side MAE (context, matches bottomup primary): incumbent 7.1259  challenger 7.0796
+
+  ORACLE gain ceilings: margin MAE after shrinking one channel's differential error by lambda (673 games, incumbent chains + margin head):
+    ft     lam 0.25 -> 9.9663   lam 0.5 -> 9.9719   lam 1.0 (full oracle) -> 10.3713   (baseline 10.0860)
+    3pt    lam 0.25 -> 9.3380   lam 0.5 -> 8.9568   lam 1.0 (full oracle) -> 9.4232   (baseline 10.0860)
+    paint  lam 0.25 -> 9.5188   lam 0.5 -> 9.2535   lam 1.0 (full oracle) -> 9.7560   (baseline 10.0860)
+    np2    lam 0.25 -> 9.9321   lam 0.5 -> 9.8911   lam 1.0 (full oracle) -> 10.1144   (baseline 10.0860)
+
+==============================================================================
+3b. VARIANCE ATTRIBUTION OF THE SUBSTITUTION DAMAGE (uncal, rs627)
+==============================================================================
+  incumbent  var(e3_dif)= 156.426  cov(e3_dif, e_rest_dif)= -77.195  corr=-0.4798  var(margin_unc_err)= 167.537
+  challenger var(e3_dif)= 153.881  cov(e3_dif, e_rest_dif)= -74.001  corr=-0.4637  var(margin_unc_err)= 171.380
+  DELTA var(margin err) = +3.843  = own-variance term -2.545 + cross-channel covariance term +6.388
+  -> the challenger's 3pt differential is MORE accurate alone but LESS anti-correlated with the paint/ft/np2 differential errors; the lost cross-channel cancellation, not the channel itself, is what degrades the margin.
+  totals direction: var(e3_sum) inc 175.319 -> chal 171.350; cov with rest_sum -46.409 -> -48.737; var(total_unc_err) 329.382 -> 320.759
+
+==============================================================================
+3d. WALK-FORWARD c LEVEL TRACKER (e) — trailing league-wide mean of realized c,
+    strictly prior games; subtracting c_hat from BOTH sides is margin-neutral
+    by construction and moves only totals. Grid reported honestly; a registered
+    run must preregister (or train-year-tune) the window.
+==============================================================================
+  W=14d: corrected games 629/673, corr(c_hat,c)=+0.0672; total MAE 14.2236 -> 14.3630 (delta -0.1394); 2026 total bias -4.970 -> -2.248; margin unchanged BY CONSTRUCTION
+         damped x0.25: total MAE 14.2073 (delta +0.0164); 2026 bias -4.289  [grid line, damping must be preregistered]
+         damped x0.5: total MAE 14.2259 (delta -0.0022); 2026 bias -3.609  [grid line, damping must be preregistered]
+  W=30d: corrected games 632/673, corr(c_hat,c)=+0.0584; total MAE 14.2236 -> 14.3243 (delta -0.1007); 2026 total bias -4.970 -> -2.853; margin unchanged BY CONSTRUCTION
+  W=60d: corrected games 641/673, corr(c_hat,c)=+0.0692; total MAE 14.2236 -> 14.2854 (delta -0.0618); 2026 total bias -4.970 -> -3.836; margin unchanged BY CONSTRUCTION
+
+==============================================================================
+3c. (d3) TOTALS GAIN — date-clustered bootstrap CI (DESIGN-MEMO POWER ESTIMATE,
+    computed with evalharness bootstrap math but NOT a registered evaluation)
+==============================================================================
+  pooled totals improvement (d3 - incumbent): +0.1027 (inc 14.3225 -> d3 14.2198)
+  90% date-clustered bootstrap CI: [-0.0174, +0.2293]  (223 date clusters, n_boot=2000, seed 20260730)
+    season 2024: delta +0.2918 (n=207)
+    season 2025: delta +0.0870 (n=252)
+    season 2026: delta -0.1068 (n=168)
+
+==============================================================================
+3e. (d3) FULL GATE-4 COMPONENTS + per-channel diff-weight margin-head ceiling
+==============================================================================
+  incumbent: home 8.8510  away 8.7000  margin(head) 10.1753  total 14.3225
+  d3_blend : home 8.7690  away 8.6561  margin(head) 10.1753  total 14.2198
+
+  per-channel differential weights, fit on 673 TEST games (IN-SAMPLE BOUND):
+    weights: intercept +2.342; ft +0.7744  3pt +0.8454  paint +0.6619  np2 +0.7184   (incumbent constrains all four to b_m=0.7786)
+    margin MAE: 9.9991 vs incumbent 10.0860 -> in-sample ceiling +0.0869
+    fit 2024+2025 -> 2026: weighted 10.4102 vs incumbent-2026 10.2439 (delta -0.1663) [diagnostic split, NOT the registered protocol (weights would fit on 2021-23)]
