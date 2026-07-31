@@ -1,10 +1,25 @@
 # PLAN — W1 audit/hardening and the four-model bake-off
 
-*Written 2026-07-31. **This is a proposal awaiting John's freeze.** Nothing in §2 is
-registered yet and no model work begins until it is. Governed by `HANDOFF.md` §3,
-`ROADMAP.md`, `PROGRAM_FIREWALL.md`, and the registry amendment chain
-(`screening_protocol_amendment_v2`…`v5`, `conditional_edge_design_freeze_v2`), later
-amendments controlling.*
+*Written 2026-07-31. **FROZEN 2026-07-31 by John's authorisation**, recorded as
+`plan_freeze_2026_07_31` in `experiments/registry.jsonl`. §2 is now registered as
+`player_model_bakeoff_v1`; the §1 audit is registered as `w1_extraction_quality_audit_v1`
+(regime B). Governed by `HANDOFF.md` §3, `ROADMAP.md`, `PROGRAM_FIREWALL.md`, and the
+registry amendment chain (`screening_protocol_amendment_v2`…`v5`,
+`conditional_edge_design_freeze_v2`), later amendments controlling.*
+
+> **What the freeze changed.** Three decisions were taken at freeze and live in the registry,
+> not here — this document is the design, the registry is the authority:
+>
+> 1. **Margins demoted.** Game margin versus market is a **monitored diagnostic, not a
+>    decision variable** (§7's proposal, adopted; `plan_freeze_2026_07_31` F2). It is still
+>    computed and reported, with its MDE. It may no longer justify promoting, freezing,
+>    nominating or abandoning anything. Decision surfaces are player-level quantities and props.
+> 2. **Body-fetch pilot approved, bounded.** W1-I runs at a **hard ceiling of 300 URLs**,
+>    robots-respecting, rate-limited, cached, with the **extraction prompt unchanged** between
+>    arms (F4). Exceeding any of those needs a new record.
+> 3. **ROI never promotes on this sample** (F5).
+>
+> Editing this file does not change what was frozen. Amendments go to the registry.
 
 ---
 
@@ -333,7 +348,7 @@ Ordered so that each step unblocks the next and nothing computes before it is re
 
 | # | step | gate to clear before starting |
 |---|---|---|
-| 0 | **John freezes this plan.** | — |
+| 0 | ~~**John freezes this plan.**~~ **DONE 2026-07-31** — `plan_freeze_2026_07_31` | — |
 | 1 | Fix `WNBA_PropsCapture_1..4` `-StartWhenAvailable`; confirm tonight's 18:45 run appended and tomorrow's 10:20 fired. | none — operational |
 | 2 | **C3 provenance migration** — `assert_asof_metadata` split, `assert_asof` defaults `verify_hash=True` and fails closed, builders emit manifests. | none — infrastructure |
 | 3 | **W1-A/B truth set + as-of roster resolution.** | step 2 (emit with manifests) |
