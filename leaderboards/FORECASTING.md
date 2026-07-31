@@ -1,6 +1,6 @@
 # Forecasting leaderboard — score/margin/total point error, by decision time
 
-*Rendered 2026-07-30T21:52:20+00:00 from `C:\Users\jgallagher\wnba-betting-model\experiments\registry.jsonl` by evalharness.leaderboards (ROADMAP §Leaderboards). Every registered evaluation posts here — win or lose, every run. Unregistered results are void and cannot appear.*
+*Rendered 2026-07-31T00:19:00+00:00 from `C:\Users\jgallagher\wnba-betting-model\experiments\registry.jsonl` by evalharness.leaderboards (ROADMAP §Leaderboards). Every registered evaluation posts here — win or lose, every run. Unregistered results are void and cannot appear.*
 
 ## Frozen reference baselines (pinned permanently — never re-run, never removed)
 
@@ -27,10 +27,11 @@
 | 6 | `oracle_availability_bracket_v2` (run 1) | C | T-24h | margin_mae | 10.1555 | 10.1753 | 0.0198 | [-0.0241, 0.0625] | 1:F 2:P 3:P 4:· 5:P | FAIL | 627 | 2026-07-30 |
 | 7 | `w2_zone_channel_integration_v1` (run 1) | A | T-24h | margin_mae | 10.2233 | 10.0860 | -0.1373 | [-0.2886, 0.0093] | 1:F 2:F 3:F 4:F 5:P | FAIL | 673 | 2026-07-30 |
 | 8 | `clv_transfer_v1` (run 1) | A | T-24h | margin_mae | 10.8163 | 10.4713 | -0.3451 | [-0.7056, 0.0067] | 1:F 2:F 3:F 4:· 5:F | FAIL | 297 | 2026-07-30 |
-| 9 | `totals_head_v1` (run 1) | A | T-24h | total_mae | 14.3877 | 14.2236 | -0.1641 | [-0.2727, -0.0572] | 1:F 2:F 3:F 4:P 5:P | FAIL | 673 | 2026-07-30 |
-| 10 | `w6_microsignal_retrospective_v1` **[QUARANTINED]** (run 1) | B | T-24h | absence_auc | — | — | 0.0278 | [0.0036, 0.0520] | 1:P 2:P 3:P 4:· 5:P | **PASS** | — | 2026-07-30 |
-| 11 | `minutes_twostage_availability_v1` (run 2) | B | T-24h | minutes_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-30 |
-| 12 | `oracle_availability_bracket_v2` (run 2) | C | T-24h | margin_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-30 |
-| 13 | `clv_transfer_v1` (run 2) | A | T-24h | margin_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-30 |
+| 9 | `totals_online_correction_v1` (run 1) | A | T-24h | total_mae | 14.2208 | 14.2236 | 0.0029 | [-0.1065, 0.1174] | 1:F 2:F 3:P 4:P 5:P | FAIL | 673 | 2026-07-31 |
+| 10 | `totals_head_v1` (run 1) | A | T-24h | total_mae | 14.3877 | 14.2236 | -0.1641 | [-0.2727, -0.0572] | 1:F 2:F 3:F 4:P 5:P | FAIL | 673 | 2026-07-30 |
+| 11 | `w6_microsignal_retrospective_v1` **[QUARANTINED]** (run 1) | B | T-24h | absence_auc | — | — | 0.0278 | [0.0036, 0.0520] | 1:P 2:P 3:P 4:· 5:P | **PASS** | — | 2026-07-30 |
+| 12 | `minutes_twostage_availability_v1` (run 2) | B | T-24h | minutes_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-30 |
+| 13 | `oracle_availability_bracket_v2` (run 2) | C | T-24h | margin_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-30 |
+| 14 | `clv_transfer_v1` (run 2) | A | T-24h | margin_mae | — | — | — | — | 1:· 2:· 3:· 4:· 5:· | — | — | 2026-07-30 |
 
 Gate legend (ROADMAP §Standard promotion gate): 1 pooled improvement ≥ registered minimum · 2 90% clustered-bootstrap CI excludes harm beyond bound · 3 per-season non-inferiority · 4 joint forecast non-degradation · 5 coverage maintained. P=pass F=fail ·=not provided (visible, not hidden).
