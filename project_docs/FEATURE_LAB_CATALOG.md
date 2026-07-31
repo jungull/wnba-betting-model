@@ -198,6 +198,26 @@ predictive beyond the trend baseline?** The screen answers all three mechanicall
 - **Heights/weights/age/draft**: one small collection closes candidates #7, 9, 17, 18,
   27–31, 33, 80, 86 — in flight now.
 
+## Lab charter amendments (John, 2026-07-31 — binding on all screens and confirmations)
+
+1. **The blind year is the supreme court.** A pattern identified on the screening years
+   is "real" if and only if it adds predictive value on the sealed 2025–2026 walk-forward.
+   No prior about stability may veto a pattern from taking that test.
+2. **Individual-first, three-encoding bake-off.** Every surviving pattern is confirmed in
+   three encodings head-to-head on the blind years: raw individual trend, shrunken
+   individual trend (per-player dial, NOT clustering — a player's own sample size sets how
+   much individuality survives), and type-level only. Best blind performance ships. Trait/
+   type predictions serve as the starting point for players without history (cold start).
+3. **Opponent archetypes are the preferred granularity for matchup patterns** (player X vs
+   tall outside-shooting teams — individual response, conditioned on opponent type),
+   because single-opponent samples are structurally tiny. Archetype composites enter via a
+   registered battery extension, never ad hoc.
+4. **The deliverable is a ranked trend ledger**: effect size, blind-year value, mechanism
+   hypothesis, anomaly flag. Flagged-but-working patterns are KEPT and monitored — dropped
+   only by blind-year or live failure, never for sounding strange. "Makes sense" is
+   commentary, not a gate; "left-handed on Tuesdays" dies by multiplicity control and
+   blind failure, not by taste.
+
 ## What happens next (the lab loop)
 
 1. Screen all HAVE-status candidates under `player_feature_screen_v1` (registered):
