@@ -161,13 +161,18 @@ def test_content_hash_detects_silent_refit():
         e = _expect(aoi.ManifestError, aoi.verify_content, m, art)
         assert "drift" in str(e).lower(), e
 
-        # and assert_asof with verify_hash=True refuses to certify it
+        # the PRODUCTION entry point now refuses to certify it BY DEFAULT —
+        # no verify_hash= argument needed (amendment v5 C3(b): fail closed)
         _expect(aoi.ManifestError, aoi.assert_asof, m,
-                "2026-07-31T00:00:00+00:00", artifact=art, verify_hash=True)
+                "2026-07-31T00:00:00+00:00", artifact=art)
 
-        # without the hash check the stale claim would sail through — which is
-        # precisely why producers must rewrite the manifest on every refit
-        aoi.assert_asof(m, "2026-07-31T00:00:00+00:00")
+        # explicitly opting out still reproduces the old unsafe behaviour, and
+        # so does the pure-metadata path: both let the stale claim sail through.
+        # That is exactly why the default was flipped — a caller who never asks
+        # for integrity is the caller who most needs it.
+        aoi.assert_asof(m, "2026-07-31T00:00:00+00:00", artifact=art,
+                        verify_hash=False)
+        aoi.assert_asof_metadata(m, "2026-07-31T00:00:00+00:00")
 
 
 # --------------------------------------------------------------------------- #
@@ -180,19 +185,19 @@ def test_assert_asof_strict_ordering():
          "fit_through_season": 2024, "content_sha256": "x" * 64}
 
     # strictly after -> ok, and the manifest comes back for chaining
-    out = aoi.assert_asof(m, "2025-05-16T23:00:00+00:00")
+    out = aoi.assert_asof_metadata(m, "2025-05-16T23:00:00+00:00")
     assert out["producer"] == "p"
 
     # one microsecond after -> still ok
-    aoi.assert_asof(m, "2024-09-19T00:00:00.000001+00:00")
+    aoi.assert_asof_metadata(m, "2024-09-19T00:00:00.000001+00:00")
 
     # EQUAL -> violation. This is the whole point: an artifact whose last
     # source observation IS the row being scored is the rapm_v0 failure.
-    e = _expect(aoi.AsOfViolation, aoi.assert_asof, m, "2024-09-19T00:00:00+00:00")
+    e = _expect(aoi.AsOfViolation, aoi.assert_asof_metadata, m, "2024-09-19T00:00:00+00:00")
     assert "NOT strictly before" in str(e), e
 
     # before -> violation
-    _expect(aoi.AsOfViolation, aoi.assert_asof, m, "2024-06-01T00:00:00+00:00")
+    _expect(aoi.AsOfViolation, aoi.assert_asof_metadata, m, "2024-06-01T00:00:00+00:00")
 
     # non-raising form agrees with the raising form
     ok, why = aoi.check_asof(m, "2025-05-16T23:00:00+00:00")
@@ -226,7 +231,7 @@ def test_timezone_normalisation():
     m = {"schema": aoi.SCHEMA, "artifact": "a.csv", "producer": "p",
          "fit_through_date": "2024-09-19", "fit_through_season": 2024,
          "content_sha256": "x" * 64}
-    aoi.assert_asof(m, "2024-09-19T19:30:00+00:00")
+    aoi.assert_asof_metadata(m, "2024-09-19T19:30:00+00:00")
 
     _expect(aoi.ManifestError, aoi.to_utc, "")
     _expect(aoi.ManifestError, aoi.to_utc, object())
@@ -332,7 +337,7 @@ def test_walkforward_family_satisfies_invariant():
 
     for s, m in family.items():
         # the table for season s clears both rules on its own season's opener
-        aoi.assert_asof(m, season_start[s] + "T19:30:00+00:00", label=f"wf_{s}")
+        aoi.assert_asof_metadata(m, season_start[s] + "T19:30:00+00:00", label=f"wf_{s}")
         aoi.assert_scored_seasons_clean(m, [s], label=f"wf_{s}")
         # and on every later season too
         for later in [y for y in family if y > s]:
@@ -348,10 +353,10 @@ def test_walkforward_family_satisfies_invariant():
               "fit_through_season": 2024, "fit_seasons": [2021, 2022, 2023, 2024],
               "content_sha256": "x" * 64}
     _expect(aoi.AsOfViolation, aoi.assert_scored_seasons_clean, static, [2024])
-    _expect(aoi.AsOfViolation, aoi.assert_asof, static,
+    _expect(aoi.AsOfViolation, aoi.assert_asof_metadata, static,
             season_start[2024] + "T19:30:00+00:00")
     # yet it is legitimately clean for 2025 and 2026 rows
-    aoi.assert_asof(static, season_start[2025] + "T19:30:00+00:00")
+    aoi.assert_asof_metadata(static, season_start[2025] + "T19:30:00+00:00")
     aoi.assert_scored_seasons_clean(static, [2025, 2026])
 
 

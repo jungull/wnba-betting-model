@@ -311,41 +311,60 @@ def verify_content(
 # the invariant
 # --------------------------------------------------------------------------- #
 
+def assert_asof_metadata(
+    artifact_manifest: Mapping[str, Any] | str | os.PathLike,
+    decision_cutoff: Any,
+    *,
+    label: str = "",
+) -> dict:
+    """PURE METADATA comparison — no file access, no hashing.
+
+    Raises ``AsOfViolation`` unless the manifest's latest source observation
+    STRICTLY predates ``decision_cutoff``.  This is the date-logic half of the
+    invariant, split out so unit tests can exercise it against synthetic
+    manifests without materialising an artifact — and so the production entry
+    point below can fail closed without those tests forcing a weaker default
+    (screening_protocol_amendment_v5 C3(a)).
+
+    ``decision_cutoff`` is the moment the forecast was COMMITTED, never the tip
+    time and never the game date: tip time would credit information that
+    arrived after the decision was made.
+    """
+    m = (artifact_manifest if isinstance(artifact_manifest, Mapping)
+         else read_manifest(artifact_manifest))
+    fit_through = to_utc(m["fit_through_date"])
+    ft = to_utc(decision_cutoff)
+    who = label or m.get("artifact", "<artifact>")
+    if not (fit_through < ft):
+        raise AsOfViolation(
+            f"AS-OF VIOLATION: {who} (producer {m.get('producer', '?')}) has "
+            f"fit_through_date {fit_through.isoformat()} which is NOT strictly "
+            f"before decision_cutoff {ft.isoformat()}. The artifact's evidence "
+            f"includes — or is simultaneous with — the row being scored.")
+    return dict(m)
+
+
 def assert_asof(
     artifact_manifest: Mapping[str, Any] | str | os.PathLike,
     forecast_time: Any,
     *,
     artifact: str | os.PathLike | None = None,
-    verify_hash: bool = False,
+    verify_hash: bool = True,
     label: str = "",
 ) -> dict:
-    """Raise ``AsOfViolation`` unless the artifact's latest source observation
-    STRICTLY predates ``forecast_time``.
+    """PRODUCTION entry point — FAILS CLOSED.
 
-    Parameters
-    ----------
-    artifact_manifest : a manifest dict, or a path to an artifact/manifest.
-    forecast_time     : the timestamp at which the forecast was DECIDED (the
-                        decision cutoff), NOT the tip time and NOT the game
-                        date.  Using tip time credits information that arrived
-                        after the decision was committed.  (Recorded as a
-                        required correction, John review 2026-07-31 point 4;
-                        callers are not yet migrated.)
-    verify_hash       : re-hash the artifact and refuse on drift.
+    Raises unless (a) the artifact's content hash still matches its manifest and
+    (b) its latest source observation STRICTLY predates ``forecast_time``.
 
-    KNOWN GAP — this module is DECLARED, NOT OPERATIONAL (John review
-    2026-07-31, point 4).  ``verify_hash`` still defaults to False, so the
-    integrity check only fires for consumers who opt in — i.e. the ones who
-    did not need reminding.  Flipping it to True was attempted 2026-07-31 and
-    reverted: it fails three of this module's own tests, because two exercise
-    date logic against synthetic manifests with no artifact on disk and the
-    drift test's baseline call begins hashing too.  That is the correct
-    fail-closed behaviour meeting un-migrated callers, and it demonstrates the
-    point: making this operational is a migration (builders emit manifests,
-    consumers fail closed, hashing mandatory once per run, manifests carrying
-    dependency/config/commit/snapshot hashes, availability timestamps rather
-    than game dates), not a default change.  Tracked under
-    screening_protocol_amendment_v4 extra.provenance_enforcement_gap_point4.
+    ``verify_hash`` DEFAULTS TO TRUE (screening_protocol_amendment_v5 C3(b)).
+    An opt-in integrity check only fires for the consumers who did not need
+    reminding; the earlier False default is exactly how a rebuilt artifact could
+    have kept an unchanged manifest.  Pass ``verify_hash=False`` explicitly ONLY
+    inside a per-row loop that has already verified once for that run — and
+    prefer :func:`assert_asof_metadata`, which says so in its name.
+
+    ``forecast_time`` must be the DECISION CUTOFF, not tip time.
 
     Returns the manifest on success, so callers can chain.
     """
@@ -353,16 +372,7 @@ def assert_asof(
          else read_manifest(artifact_manifest))
     if verify_hash:
         verify_content(m, artifact)
-    fit_through = to_utc(m["fit_through_date"])
-    ft = to_utc(forecast_time)
-    who = label or m.get("artifact", "<artifact>")
-    if not (fit_through < ft):
-        raise AsOfViolation(
-            f"AS-OF VIOLATION: {who} (producer {m.get('producer', '?')}) has "
-            f"fit_through_date {fit_through.isoformat()} which is NOT strictly "
-            f"before forecast_time {ft.isoformat()}. The artifact's evidence "
-            f"includes — or is simultaneous with — the row being scored.")
-    return dict(m)
+    return assert_asof_metadata(m, forecast_time, label=label)
 
 
 def assert_scored_seasons_clean(
@@ -398,9 +408,22 @@ def check_asof(
     forecast_time: Any,
     **kwargs: Any,
 ) -> tuple[bool, str]:
-    """Non-raising form: ``(ok, reason)``. For reporting loops and scanners."""
+    """Non-raising form: ``(ok, reason)``. For reporting loops and scanners.
+
+    Delegates to :func:`assert_asof_metadata` — the DATE comparison only.
+    Integrity is deliberately not folded in here: a scanner sweeping many
+    artifacts should report as-of violations without a missing file turning
+    into an indistinguishable failure, and the production path that must fail
+    closed on both is :func:`assert_asof`.  Pass ``verify_hash``/``artifact``
+    via ``kwargs`` to opt into hashing.
+    """
     try:
-        assert_asof(artifact_manifest, forecast_time, **kwargs)
+        if kwargs.get("verify_hash"):
+            assert_asof(artifact_manifest, forecast_time, **kwargs)
+        else:
+            kwargs.pop("verify_hash", None)
+            kwargs.pop("artifact", None)
+            assert_asof_metadata(artifact_manifest, forecast_time, **kwargs)
         return True, ""
     except AsOfError as exc:
         return False, str(exc)
