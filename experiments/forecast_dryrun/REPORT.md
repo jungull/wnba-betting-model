@@ -1,6 +1,6 @@
 # Daily forecast — DRY RUN (scratch chain; NOT the regime-D log)
 
-*Generated 2026-07-31T10:35:38.966139+00:00 by `daily_forecast.py` (v0). Slate date 2026-07-31 (ET); forecast cutoff 2026-07-31T10:35:37.637645+00:00. Model hash `a48f59e2774ca7a0…`; data snapshot hash `1ae3008a050fc984…`; code `git:9d4c8efb07dd`. Team model: promoted structural channels (chanreval_2026_structural_repaired/run1); player layer informational only — it does not modify the team forecast.*
+*Generated 2026-07-31T14:28:25.926835+00:00 by `daily_forecast.py` (v0). Slate date 2026-07-31 (ET); forecast cutoff 2026-07-31T14:28:20.747902+00:00. Model hash `6763e411f032ca99…`; data snapshot hash `9ceeb29fc6d7fec8…`; code `git:f7f9a1892026`. Team model: promoted structural channels (chanreval_2026_structural_repaired/run1); player layer informational only — it does not modify the team forecast.*
 
 **This file is engineering output. The records behind it were written ONLY to `experiments/forecast_dryrun/scratch_chain.jsonl`. The official regime-D clock starts with the first record of `forecasts/forecast_log.jsonl`, which this job refuses to touch.**
 
@@ -28,16 +28,16 @@
 
 ## Degradations & notes (no-imputation rule: explicit, never silent)
 
-- **WARN** [odds] nearest prior snapshot live_20260731T030001Z.json is 456 min before the cutoff (capture is hourly; > 75 min = stale) — lines may be off
+- **WARN** [odds] nearest prior snapshot live_20260731T030001Z.json is 688 min before the cutoff (capture is hourly; > 75 min = stale) — lines may be off
 - **WARN** [refs] no ref assignments captured for 2026-07-31 at or before the cutoff — game ids degrade to provisional
 - **WARN** [refs] SEA @ ATL: no ref-assignment row — official game_id unavailable; provisional id in use (a real run must resolve official ids before logging)
 - **WARN** [refs] DAL @ WAS: no ref-assignment row — official game_id unavailable; provisional id in use (a real run must resolve official ids before logging)
 - **WARN** [refs] IND @ PDX: no ref-assignment row — official game_id unavailable; provisional id in use (a real run must resolve official ids before logging)
-- **WARN** [injuries] latest injury capture is 7.6 h before the cutoff (game-day cadence is hourly) — stale
+- **WARN** [injuries] latest injury capture is 11.5 h before the cutoff (game-day cadence is hourly) — stale
 - **INFO** [player-layer] ATL: Indya Nivar (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-07-11) — long-term absentee, already excluded from the availability estimate
 - **INFO** [player-layer] IND: Bree Hall (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-07-09) — long-term absentee, already excluded from the availability estimate
 - **INFO** [player-layer] PDX: Sania Feagin (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-07-16) — long-term absentee, already excluded from the availability estimate
 
 ## Chain
 
-- chain writes skipped (--no-log)
+- scratch chain verified: ok=True, n_records=3, tip_sha256=35a220c9434a389213e498bf39776a943d6b966e85a99f6825551bd571c50887 — record these two values out of band; tail truncation is only detectable against an external anchor
