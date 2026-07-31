@@ -325,10 +325,27 @@ def assert_asof(
     Parameters
     ----------
     artifact_manifest : a manifest dict, or a path to an artifact/manifest.
-    forecast_time     : the timestamp of the row being scored (tip time, decision
-                        time, or the game date if that is all that exists).
-    verify_hash       : also re-hash the artifact and refuse on drift.  Cheap
-                        enough for a per-run check, too slow for a per-row loop.
+    forecast_time     : the timestamp at which the forecast was DECIDED (the
+                        decision cutoff), NOT the tip time and NOT the game
+                        date.  Using tip time credits information that arrived
+                        after the decision was committed.  (Recorded as a
+                        required correction, John review 2026-07-31 point 4;
+                        callers are not yet migrated.)
+    verify_hash       : re-hash the artifact and refuse on drift.
+
+    KNOWN GAP — this module is DECLARED, NOT OPERATIONAL (John review
+    2026-07-31, point 4).  ``verify_hash`` still defaults to False, so the
+    integrity check only fires for consumers who opt in — i.e. the ones who
+    did not need reminding.  Flipping it to True was attempted 2026-07-31 and
+    reverted: it fails three of this module's own tests, because two exercise
+    date logic against synthetic manifests with no artifact on disk and the
+    drift test's baseline call begins hashing too.  That is the correct
+    fail-closed behaviour meeting un-migrated callers, and it demonstrates the
+    point: making this operational is a migration (builders emit manifests,
+    consumers fail closed, hashing mandatory once per run, manifests carrying
+    dependency/config/commit/snapshot hashes, availability timestamps rather
+    than game dates), not a default change.  Tracked under
+    screening_protocol_amendment_v4 extra.provenance_enforcement_gap_point4.
 
     Returns the manifest on success, so callers can chain.
     """
