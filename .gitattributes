@@ -1,0 +1,37 @@
+# Line-ending policy — load-bearing for the manifest system.
+#
+# asof_invariant.py binds every fitted artifact to its manifest with a SHA-256
+# over the FILE'S BYTES (screening_protocol_amendment_v5 C3). That check is only
+# meaningful if the bytes on disk are the same bytes everywhere. Without this
+# file, they are not: with no .gitattributes, EOL handling falls back to each
+# machine's core.autocrlf, which Git for Windows sets to `true` by default. A
+# checkout on such a machine rewrites LF to CRLF in the working tree, every
+# manifest hash computed on a LF machine stops matching, and
+# `python asof_invariant.py --scan` reports HASH DRIFT on artifacts nobody
+# touched.
+#
+# That failure is worse than noisy. HASH DRIFT is supposed to mean "an artifact
+# was rebuilt without rewriting its manifest" — the rapm_v0 class of defect the
+# invariant exists to catch. A check that cries wolf on a fresh clone is a check
+# that gets switched off, and then the real drift goes unnoticed too.
+#
+# So: no EOL conversion on any artifact that carries a manifest or feeds one.
+# The repository's blobs are already LF (verified 2026-07-31), so `-text` keeps
+# every checkout byte-identical to them.
+
+* -text
+
+# Genuinely binary, marked so git never diffs or converts them.
+*.parquet binary
+*.pdf      binary
+*.png      binary
+*.jpg      binary
+*.xlsx     binary
+*.zip      binary
+*.bundle   binary
+
+# PowerShell is the exception that wants CRLF: some Windows PowerShell 5.1 hosts
+# mis-parse LF-only scripts. These carry no manifest and hash nothing, so
+# converting them costs nothing.
+*.ps1  text eol=crlf
+*.bat  text eol=crlf
