@@ -130,35 +130,52 @@ PERM_CHUNK = 250                        # permutations evaluated per BLAS batch
 class BlockLayout:
     """Row layout for BLOCK-permutation by (player, season).
 
-    Rows are re-ordered so every (player, season) block is contiguous and in
-    its original temporal order. A permutation relabels whole blocks WITHIN a
-    season: target block b takes source block sigma[b]'s value sequence, read
-    positionally with wrap-around when the source is shorter. The identity
-    relabelling reproduces the observed data exactly, so the observed statistic
-    is a member of the permutation distribution (which is what validity of the
-    add-one p-value requires).
+    Rows are re-ordered by (season, player_id), stably, so that (a) every
+    season occupies a contiguous range and (b) inside it every (player, season)
+    block is contiguous and in its original temporal order.
+
+    A draw permutes the ORDER OF WHOLE BLOCKS within a season and re-cuts the
+    concatenated result at the original block boundaries. Two properties matter:
+
+      * it is an EXACT permutation of the feature vector — every source row is
+        used exactly once — so the marginal distribution, including the
+        missing-state rate, is preserved to the value and the identity draw
+        reproduces the observed data. The add-one p-value is therefore exactly
+        valid, not approximately valid;
+      * a block's values stay contiguous in the permuted vector, so the
+        within-player autocorrelation that makes these features slow-moving
+        survives the shuffle instead of being averaged away.
+
+    Wrap-around relabelling (target block b takes source block sigma[b] read
+    cyclically) was rejected: it duplicates rows of short blocks into long
+    targets, which inflates the null's variance and makes the test silently
+    conservative.
     """
 
     def __init__(self, player_id: np.ndarray, season: np.ndarray):
         n = len(player_id)
-        key = player_id.astype(np.int64) * 100 + (season.astype(np.int64) - 2000)
-        codes, uniq = pd.factorize(key)                       # block id per row
-        self.order = np.lexsort((np.arange(n), codes))        # stable: keeps time order
-        blk_sorted = codes[self.order]
+        season = season.astype(np.int64)
+        player_id = player_id.astype(np.int64)
+        # primary key LAST in lexsort: season, then player, then original order
+        self.order = np.lexsort((np.arange(n), player_id, season))
+        ps = player_id[self.order]
+        ss = season[self.order]
         starts_mask = np.ones(n, dtype=bool)
-        starts_mask[1:] = blk_sorted[1:] != blk_sorted[:-1]
+        starts_mask[1:] = (ps[1:] != ps[:-1]) | (ss[1:] != ss[:-1])
         block_start = np.flatnonzero(starts_mask)
         self.n_blocks = len(block_start)
-        # renumber blocks 0..n_blocks-1 in sorted order
         self.blk_sorted = np.cumsum(starts_mask) - 1
         self.starts = block_start.astype(np.int64)
         self.lens = np.diff(np.append(block_start, n)).astype(np.int64)
-        self.pos_in = (np.arange(n) - self.starts[self.blk_sorted]).astype(np.int64)
-        self.season_of_block = season[self.order][block_start]
+        self.season_of_block = ss[block_start]
         self.n = n
+        self._ar = np.arange(n, dtype=np.int64)
+        # season block-ranges must be contiguous for the re-cut arithmetic
+        if not np.all(np.diff(self.season_of_block) >= 0):
+            raise RuntimeError("block layout: seasons are not contiguous after sort")
 
     def sigma(self, K: int, rng) -> np.ndarray:
-        """K block relabellings, restricted WITHIN season."""
+        """K block orderings, permuted only WITHIN each season."""
         out = np.empty((K, self.n_blocks), dtype=np.int64)
         for s in np.unique(self.season_of_block):
             b = np.flatnonzero(self.season_of_block == s)
@@ -167,10 +184,50 @@ class BlockLayout:
         return out
 
     def apply(self, x_sorted: np.ndarray, sigma: np.ndarray) -> np.ndarray:
-        """(K, n) block-permuted copies of `x_sorted` (already in block order)."""
-        src = sigma[:, self.blk_sorted]                       # (K, n)
-        idx = self.starts[src] + (self.pos_in[None, :] % self.lens[src])
+        """(K, n) exact block-permuted copies of `x_sorted` (already sorted).
+
+        Because sigma only reorders blocks inside a season, the running length
+        total at each season's first slot equals that season's row offset, so a
+        single global cumulative sum gives the correct target positions.
+        """
+        K = sigma.shape[0]
+        Lall = self.lens[sigma]                                # (K, n_blocks)
+        base = self.starts[sigma] - (np.cumsum(Lall, axis=1) - Lall)
+        idx = np.repeat(base.ravel(), Lall.ravel()).reshape(K, self.n) + self._ar
         return x_sorted[idx]
+
+
+class PermBank:
+    """The 2,000 block relabellings, drawn ONCE and shared by every test.
+
+    The permutation indices do not depend on the feature, so drawing them once
+    is not only ~4x cheaper, it is the better design: every test is evaluated
+    against the SAME resampled worlds, so the joint dependence between
+    correlated tests is carried through the null (the Westfall-Young
+    convention). Per-test seeds would make near-duplicate specifications look
+    more independent than they are — exactly the illusion this registration is
+    trying to remove.
+    """
+
+    def __init__(self, lay_tr: BlockLayout, lay_va: BlockLayout, n_perm: int,
+                 seed: int = SEED_BASE):
+        rng = np.random.default_rng(seed)
+        self.n_perm = n_perm
+        self.idx_tr = np.empty((n_perm, lay_tr.n), dtype=np.int32)
+        self.idx_va = np.empty((n_perm, lay_va.n), dtype=np.int32)
+        done = 0
+        ar_tr = np.arange(lay_tr.n)
+        ar_va = np.arange(lay_va.n)
+        while done < n_perm:
+            K = min(PERM_CHUNK, n_perm - done)
+            for lay, dst, ar in ((lay_tr, self.idx_tr, ar_tr),
+                                 (lay_va, self.idx_va, ar_va)):
+                sg = lay.sigma(K, rng)
+                L = lay.lens[sg]
+                base = lay.starts[sg] - (np.cumsum(L, axis=1) - L)
+                dst[done:done + K] = (
+                    np.repeat(base.ravel(), L.ravel()).reshape(K, lay.n) + ar)
+            done += K
 
 
 # ===========================================================================
@@ -190,9 +247,19 @@ def design_with_intercept(Z: np.ndarray) -> np.ndarray:
 
 
 def fit_predict_base(B_fit: np.ndarray, y_fit: np.ndarray, B_val: np.ndarray):
-    """Ridge on the frozen baseline block alone. B_* are already standardized."""
-    beta = ridge_fit(B_fit, y_fit, RIDGE_LAMBDA)
-    return ridge_predict(B_val, beta), beta
+    """Ridge on the frozen baseline block alone.
+
+    `B_*` are standardized AND carry the intercept in column 0, but
+    `feature_lab.ridge_fit` prepends its own unpenalized intercept — so the
+    intercept column is dropped here before fitting. Passing it through would
+    give the design a duplicate ones column: numerically inert (the penalized
+    copy takes an exactly-zero coefficient and predictions are unchanged to
+    1e-15) but it shifts every coefficient index by one, which silently
+    mislabels the reported baseline betas. Returned beta is
+    [intercept, ewma, blend, has_prior_season].
+    """
+    beta = ridge_fit(B_fit[:, 1:], y_fit, RIDGE_LAMBDA)
+    return ridge_predict(B_val[:, 1:], beta), beta
 
 
 # ===========================================================================
@@ -289,8 +356,7 @@ def freeze_baseline(ctx, U, folds, prev, cur):
 # ===========================================================================
 
 def perm_null_block(B1_tr_s, y_tr_s, B1_va_s, y_va_s, x_tr_s, x_va_s,
-                    lay_tr: BlockLayout, lay_va: BlockLayout, n_perm, rng,
-                    m_base, chunk=PERM_CHUNK):
+                    bank: PermBank, m_base, chunk=PERM_CHUNK):
     """Null improvements under BLOCK-permutation by (player, season).
 
     All inputs are ALREADY in block-sorted order. `B1_*` carry the intercept and
@@ -306,12 +372,13 @@ def perm_null_block(B1_tr_s, y_tr_s, B1_va_s, y_va_s, x_tr_s, x_va_s,
     A = B1_tr_s.T @ B1_tr_s
     A[1:, 1:] += lam * np.eye(B1_tr_s.shape[1] - 1)     # intercept unpenalized
     By = B1_tr_s.T @ y_tr_s
+    n_perm = bank.n_perm
     out = np.empty(n_perm)
     done = 0
     while done < n_perm:
         K = min(chunk, n_perm - done)
-        Xtr = lay_tr.apply(x_tr_s, lay_tr.sigma(K, rng))          # (K, n_tr)
-        Xva = lay_va.apply(x_va_s, lay_va.sigma(K, rng))          # (K, n_va)
+        Xtr = x_tr_s[bank.idx_tr[done:done + K]]                  # (K, n_tr)
+        Xva = x_va_s[bank.idx_va[done:done + K]]                  # (K, n_va)
         mx = Xtr.mean(axis=1)
         sx = Xtr.std(axis=1)
         sx = np.where(sx > 1e-12, sx, 1.0)
@@ -339,6 +406,45 @@ def perm_null_block(B1_tr_s, y_tr_s, B1_va_s, y_va_s, x_tr_s, x_va_s,
 # ===========================================================================
 # 4.  cluster-aware MDE
 # ===========================================================================
+
+def perm_null_row(B1_tr, y_tr, B1_va, y_va, x_tr, x_va, season_tr, n_perm, rng,
+                  m_base):
+    """Run 1's ROW-exchangeable within-season null. Used ONLY by the null
+    calibration diagnostic, to show empirically what the block scheme fixes."""
+    lam = RIDGE_LAMBDA
+    A = B1_tr.T @ B1_tr
+    A[1:, 1:] += lam * np.eye(B1_tr.shape[1] - 1)
+    By = B1_tr.T @ y_tr
+    p = B1_tr.shape[1]
+    blocks = [np.flatnonzero(season_tr == s) for s in np.unique(season_tr)]
+    out = np.empty(n_perm)
+    done = 0
+    while done < n_perm:
+        K = min(PERM_CHUNK, n_perm - done)
+        Xtr = np.tile(x_tr, (K, 1))
+        for idx in blocks:
+            for k in range(K):
+                Xtr[k, idx] = x_tr[rng.permutation(idx)]
+        Xva = np.stack([x_va[rng.permutation(len(x_va))] for _ in range(K)])
+        mx, sx = Xtr.mean(axis=1), Xtr.std(axis=1)
+        sx = np.where(sx > 1e-12, sx, 1.0)
+        Ztr = (Xtr - mx[:, None]) / sx[:, None]
+        Zva = (Xva - mx[:, None]) / sx[:, None]
+        Bx = B1_tr.T @ Ztr.T
+        G = np.empty((K, p + 1, p + 1))
+        G[:, :p, :p] = A
+        G[:, :p, p] = Bx.T
+        G[:, p, :p] = Bx.T
+        G[:, p, p] = np.einsum("kn,kn->k", Ztr, Ztr) + lam
+        rhs = np.empty((K, p + 1))
+        rhs[:, :p] = By
+        rhs[:, p] = Ztr @ y_tr
+        beta = np.linalg.solve(G, rhs[:, :, None])[:, :, 0]
+        pred = (B1_va @ beta[:, :p].T).T + Zva * beta[:, p][:, None]
+        out[done:done + K] = m_base - np.abs(y_va[None, :] - pred).mean(axis=1)
+        done += K
+    return out
+
 
 def _r6(v):
     """Round for CSV, propagating NaN rather than inventing a zero."""
@@ -433,6 +539,146 @@ def collapse_groups(inc: dict, keys: list, r_thresh=CORR_COLLAPSE):
 
 
 # ===========================================================================
+# 6b. the anchor-family collapse demonstration
+# ===========================================================================
+
+def anchor_family_demo(ctx, U, prev, cur, tr_pos, va_pos, Y, chosen, base_M,
+                       B1_tr, B1_va, base_pred, m_base_ch):
+    """The demonstration the registration names by example.
+
+    The cross-season screen reported #87 (pure prev-season anchor) and #92
+    (two-season blend at w=0.9) as SIX separate survivors. They are three.
+    This block proves it on the evidence, in both baselines:
+
+      OLD  — against the within-season-EWMA-only baseline that the cross-season
+             screen used, where both specifications were discoveries. Their
+             incremental prediction vectors are compared directly.
+      NEW  — against this run's frozen baseline, where the anchor is already
+             the incumbent and both specifications should be inert.
+    """
+    rows = []
+    for ch in CHANNELS:
+        a = chosen[ch]["alpha"]
+        y = Y[ch]
+        ew = base_M[ch][:, 0]
+        # ---- OLD baseline: within-season ratio-EWMA only ----
+        m, s = float(ew[tr_pos].mean()), float(ew[tr_pos].std())
+        Bo_tr = design_with_intercept(((ew[tr_pos] - m) / s)[:, None])
+        Bo_va = design_with_intercept(((ew[va_pos] - m) / s)[:, None])
+        pred_o, _ = fit_predict_base(Bo_tr, y[tr_pos], Bo_va)
+        mae_o = mae(y[va_pos], pred_o)
+        specs = {
+            "#87 prev_season_anchor": prev[ch],
+            "#92 two_season_blend @w=0.9": 0.9 * prev[ch] + 0.1 * cur[ch],
+            "#92 two_season_blend @w=0.5": 0.5 * prev[ch] + 0.5 * cur[ch],
+        }
+        inc_old, inc_new, meta = {}, {}, {}
+        for label, raw in specs.items():
+            r = raw.loc[U.index]
+            x = r.fillna(0.0).to_numpy(float)
+            has = r.notna().astype(float).to_numpy()
+            for tag, (Btr, Bva, pred0, m0) in {
+                    "old": (Bo_tr, Bo_va, pred_o, mae_o),
+                    "new": (B1_tr[ch], B1_va[ch], base_pred[ch], m_base_ch[ch])}.items():
+                M = np.column_stack([x, has])
+                mm, ss, _ = _std_cols(M[tr_pos])
+                Ztr = np.hstack([Btr[:, 1:], (M[tr_pos] - mm) / ss])
+                Zva = np.hstack([Bva[:, 1:], (M[va_pos] - mm) / ss])
+                beta = ridge_fit(Ztr, y[tr_pos], RIDGE_LAMBDA)
+                pr = ridge_predict(Zva, beta)
+                (inc_old if tag == "old" else inc_new)[label] = pr - pred0
+                meta[(label, tag)] = m0 - mae(y[va_pos], pr)
+        labels = list(specs)
+        for i in range(len(labels)):
+            for j in range(i + 1, len(labels)):
+                for tag, inc in (("old_ewma_only_baseline", inc_old),
+                                 ("new_frozen_baseline", inc_new)):
+                    u, v = inc[labels[i]], inc[labels[j]]
+                    u, v = u - u.mean(), v - v.mean()
+                    den = np.sqrt((u ** 2).sum() * (v ** 2).sum())
+                    r = float(u @ v / den) if den > 1e-18 else np.nan
+                    rows.append({
+                        "baseline": tag, "channel": ch,
+                        "spec_a": labels[i], "spec_b": labels[j],
+                        "corr_incremental_prediction": _r6(r),
+                        "improvement_a": _r6(meta[(labels[i], tag.split("_")[0])]),
+                        "improvement_b": _r6(meta[(labels[j], tag.split("_")[0])]),
+                        "collapses_at_0.9": bool(np.isfinite(r) and abs(r) > CORR_COLLAPSE),
+                    })
+    return pd.DataFrame(rows)
+
+
+# ===========================================================================
+# 6c. null calibration — does the block scheme actually fix anything?
+# ===========================================================================
+
+def null_calibration(B1_tr_s, Y_tr_s, B1_va_s, Y_va_s, B1_tr, Y_tr, B1_va, Y_va,
+                     lay_tr, lay_va, bank, season_tr, m_base_ch, seed=7):
+    """Feed the machinery features that are null BY CONSTRUCTION and read off
+    the p-values under both schemes.
+
+    `iid_noise` is exchangeable at the row level, so both nulls should be
+    calibrated on it. `player_season_constant` and `ar1_within_player` are null
+    but heavily clustered — exactly the shape of a slow-moving player attribute.
+    If the row-exchangeable scheme is anti-conservative for clustered features,
+    it shows up here as small p-values for a feature that carries no signal.
+    """
+    rng = np.random.default_rng(seed)
+    rows = []
+    n_row = min(bank.n_perm, 400)          # row-exchangeable comparison is O(n_perm)
+    n_tr, n_va = B1_tr[CHANNELS[0]].shape[0], B1_va[CHANNELS[0]].shape[0]
+
+    def clustered(lay, kind):
+        v = np.empty(lay.n)
+        blk_val = rng.normal(size=lay.n_blocks)
+        for b in range(lay.n_blocks):
+            s, L = lay.starts[b], lay.lens[b]
+            if kind == "const":
+                v[s:s + L] = blk_val[b]
+            else:                                   # AR(1), rho=0.9, per block
+                e = rng.normal(size=L)
+                x = np.empty(L)
+                x[0] = blk_val[b]
+                for t in range(1, L):
+                    x[t] = 0.9 * x[t - 1] + 0.436 * e[t]
+                v[s:s + L] = x
+        out = np.empty(lay.n)
+        out[lay.order] = v
+        return out
+
+    feats = {
+        "iid_noise": (rng.normal(size=n_tr), rng.normal(size=n_va)),
+        "player_season_constant": (clustered(lay_tr, "const"), clustered(lay_va, "const")),
+        "ar1_within_player": (clustered(lay_tr, "ar1"), clustered(lay_va, "ar1")),
+    }
+    for name, (xt, xv) in feats.items():
+        for ch in CHANNELS:
+            mx, sx = xt.mean(), xt.std()
+            zt, zv = (xt - mx) / sx, (xv - mx) / sx
+            beta = ridge_fit(np.hstack([B1_tr[ch][:, 1:], zt[:, None]]), Y_tr[ch],
+                             RIDGE_LAMBDA)
+            pred = ridge_predict(np.hstack([B1_va[ch][:, 1:], zv[:, None]]), beta)
+            obs = m_base_ch[ch] - mae(Y_va[ch], pred)
+            nb = perm_null_block(B1_tr_s[ch], Y_tr_s[ch], B1_va_s[ch], Y_va_s[ch],
+                                 xt[lay_tr.order], xv[lay_va.order], bank,
+                                 m_base_ch[ch])
+            nr = perm_null_row(B1_tr[ch], Y_tr[ch], B1_va[ch], Y_va[ch], xt, xv,
+                               season_tr, n_row,
+                               np.random.default_rng(seed + 2), m_base_ch[ch])
+            rows.append({
+                "synthetic_feature": name, "channel": ch,
+                "observed_improvement": _r6(obs),
+                "p_block_by_player_season": _r6((1 + np.sum(nb >= obs)) / (1 + bank.n_perm)),
+                "p_row_exchangeable_run1": _r6((1 + np.sum(nr >= obs)) / (1 + n_row)),
+                "null_sd_block": _r6(float(np.std(nb, ddof=1))),
+                "null_sd_row": _r6(float(np.std(nr, ddof=1))),
+                "null_sd_ratio_block_over_row": _r6(float(np.std(nb, ddof=1) /
+                                                          max(np.std(nr, ddof=1), 1e-15))),
+            })
+    return pd.DataFrame(rows)
+
+
+# ===========================================================================
 # 7.  main
 # ===========================================================================
 
@@ -474,6 +720,15 @@ def main(argv=None) -> int:
     base_M, base_ref, B1_tr, B1_va, m_base_ch, base_pred = {}, {}, {}, {}, {}, {}
     for ch in CHANNELS:
         a, w = chosen[ch]["alpha"], chosen[ch]["w"]
+        # Seven candidates (#6, #10 fam+bios, #12, #16, #49, #100) are built as
+        # deviations from `ctx.baselines` — the per-channel as-of trend that
+        # feature_lab.tune_baselines installs on the context. Install the SAME
+        # object here, at the frozen alpha, so those features keep run 1's
+        # construction exactly and only the ridge baseline they are tested
+        # against changes. Must happen before any candidate is built.
+        ctx.baselines[ch] = (sratio_ew(ctx.P, ctx.P[f"cp_{ch}"],
+                                       ctx.P["minutes"], a) * 36.0)
+        ctx.baseline_alphas[ch] = a
         M = baseline_columns(ctx, U, prev, cur, ch, a, w)
         base_M[ch] = M
         y = U[f"y_{ch}"].to_numpy(float)
@@ -554,15 +809,18 @@ def main(argv=None) -> int:
                          U.iloc[tr_pos]["season"].to_numpy())
     lay_va = BlockLayout(U.iloc[va_pos]["player_id"].to_numpy(),
                          U.iloc[va_pos]["season"].to_numpy())
+    bank = PermBank(lay_tr, lay_va, args.perms)
     print(f"[null] block layout: {lay_tr.n_blocks} (player, season) fit blocks "
           f"(median {int(np.median(lay_tr.lens))} rows), {lay_va.n_blocks} "
           f"validation blocks (median {int(np.median(lay_va.lens))} rows)")
 
     # per-channel pre-sorted arrays for the vectorized null
     Y, Y_tr_s, Y_va_s, B1_tr_s, B1_va_s = {}, {}, {}, {}, {}
+    Y_tr_o, Y_va_o = {}, {}
     for ch in CHANNELS:
         y = U[f"y_{ch}"].to_numpy(float)
         Y[ch] = y
+        Y_tr_o[ch], Y_va_o[ch] = y[tr_pos], y[va_pos]
         Y_tr_s[ch] = y[tr_pos][lay_tr.order]
         Y_va_s[ch] = y[va_pos][lay_va.order]
         B1_tr_s[ch] = np.ascontiguousarray(B1_tr[ch][lay_tr.order])
@@ -610,6 +868,13 @@ def main(argv=None) -> int:
         grid = (cand.sweep_grid or ALPHA_GRID) if cand.alpha_swept else [None]
         try:
             built = {a: cand.build(ctx, a) for a in grid}
+            for a, b in built.items():          # fail loudly, never silently
+                if isinstance(b, dict):
+                    missing = [c for c in cand.channels if c not in b]
+                    if missing:
+                        raise RuntimeError(
+                            f"build returned no series for declared channel(s) "
+                            f"{missing} (got keys {sorted(b)})")
         except Exception as e:
             print(f"  !! #{cand.num} {cand.name} BUILD FAILED: {type(e).__name__}: {e}")
             for ch in cand.channels:
@@ -659,12 +924,10 @@ def main(argv=None) -> int:
                 beta_x = r["beta_x"]
                 inc = r["pred"] - base_pred[ch]
                 d_row = np.abs(Y[ch][va_pos] - r["pred"]) - base_loss[ch]
-                rng = np.random.default_rng(SEED_BASE * 100 + cand.num * 10
-                                            + CH_INDEX[ch] + 13)
                 null = perm_null_block(
                     B1_tr_s[ch], Y_tr_s[ch], B1_va_s[ch], Y_va_s[ch],
                     r["xt"][lay_tr.order], r["xv"][lay_va.order],
-                    lay_tr, lay_va, args.perms, rng, m_base_ch[ch])
+                    bank, m_base_ch[ch])
                 p_perm = float((1 + np.sum(null >= -delta)) / (1 + args.perms))
             improvement = -delta
 
@@ -736,6 +999,7 @@ def main(argv=None) -> int:
         res["bh_pass"] & res["practical"], "significant_and_practical",
         np.where(res["bh_pass"], "significant_only", "neither"))
     res["survives"] = res["bh_pass"] & res["sign_consistent"] & res["practical"]
+    res["survives_under_by"] = res["by_pass"] & res["sign_consistent"] & res["practical"]
     res = res.sort_values(["survives", "q_bh", "delta_mae"],
                           ascending=[False, True, True]).reset_index(drop=True)
 
@@ -771,14 +1035,47 @@ def main(argv=None) -> int:
                 "practical": bool(key_meta[k].practical),
                 "sign_consistent": bool(key_meta[k].sign_consistent),
             })
-    groups = pd.DataFrame(grp_rows).sort_values(
+    GRP_COLS = ["group_id", "channel", "catalog_number", "name",
+                "is_nominated_carrier", "carrier", "group_size", "improvement",
+                "q_bh", "bh_pass", "practical", "sign_consistent"]
+    groups = (pd.DataFrame(grp_rows).sort_values(
         ["group_size", "group_id", "is_nominated_carrier"],
-        ascending=[False, True, False]) if grp_rows else pd.DataFrame(
-        columns=["group_id", "channel", "catalog_number", "name",
-                 "is_nominated_carrier", "carrier", "group_size", "improvement",
-                 "q_bh", "bh_pass", "practical", "sign_consistent"])
-    groups.to_csv(OUTDIR / "correlation_groups.csv", index=False)
-    pd.DataFrame(pairs).to_csv(DIAG / "correlation_pairs.csv", index=False)
+        ascending=[False, True, False]) if grp_rows
+        else pd.DataFrame(columns=GRP_COLS))
+    groups = groups.reindex(columns=GRP_COLS)
+    groups.insert(1, "scope", "screen_finding")
+
+    # ---- the anchor-family collapse demonstration --------------------------
+    print("[collapse] anchor-family specification-variant demonstration ...")
+    demo = anchor_family_demo(ctx, U, prev, cur, tr_pos, va_pos, Y, chosen,
+                              base_M, B1_tr, B1_va, base_pred, m_base_ch)
+    demo.to_csv(DIAG / "anchor_family_collapse.csv", index=False)
+    demo_rows = []
+    for (ch, tag), sub in demo.groupby(["channel", "baseline"]):
+        for _, d in sub.iterrows():
+            demo_rows.append({
+                "group_id": f"demo-{tag}-{ch}", "scope": "anchor_family_demonstration",
+                "channel": ch, "catalog_number": np.nan,
+                "name": f"{d['spec_a']} vs {d['spec_b']}",
+                "is_nominated_carrier": False,
+                "carrier": "#87 prev_season_anchor (parsimonious: one term, no weight)",
+                "group_size": 2, "improvement": d["improvement_a"],
+                "q_bh": np.nan, "bh_pass": np.nan,
+                "practical": np.nan, "sign_consistent": np.nan,
+                "corr_incremental_prediction": d["corr_incremental_prediction"],
+                "collapses": d["collapses_at_0.9"]})
+    groups_out = pd.concat([groups, pd.DataFrame(demo_rows)], ignore_index=True)
+    groups_out.to_csv(OUTDIR / "correlation_groups.csv", index=False)
+    pd.DataFrame(pairs, columns=["channel", "test_a", "test_b", "catalog_a",
+                                 "catalog_b", "corr_incremental_prediction"]
+                 ).to_csv(DIAG / "correlation_pairs.csv", index=False)
+
+    # ---- null calibration --------------------------------------------------
+    print("[null] calibration on synthetic null features (block vs row) ...")
+    calib = null_calibration(B1_tr_s, Y_tr_s, B1_va_s, Y_va_s, B1_tr, Y_tr_o,
+                             B1_va, Y_va_o, lay_tr, lay_va, bank,
+                             U.iloc[tr_pos]["season"].to_numpy(), m_base_ch)
+    calib.to_csv(DIAG / "null_calibration.csv", index=False)
 
     res["collapse_group"] = [
         (f"#{carrier_of[(int(r.catalog_number), r.channel, r['name'])][0]} "
@@ -806,7 +1103,28 @@ def main(argv=None) -> int:
         "BH q<=0.10 but improvement below the 0.20% practical floor",
         "did not clear BH q<=0.10",
     ]
+    nulls = res[~res["bh_pass"]]
+    bhp = res[res["bh_pass"]]
     extra = pd.DataFrame([
+        {"practical_tier": "UNDERPOWERED nulls (mde80 > practical floor)",
+         "n_tests": int(nulls["underpowered_for_floor"].sum()),
+         "n_unique_features": int(nulls[nulls["underpowered_for_floor"]]
+                                  ["catalog_number"].nunique()),
+         "definition": "did NOT clear BH and could not have detected a floor-sized "
+                       "effect at 80% power — absence of evidence, not evidence of "
+                       "absence"},
+        {"practical_tier": "ADEQUATELY POWERED nulls",
+         "n_tests": int((~nulls["underpowered_for_floor"]).sum()),
+         "n_unique_features": int(nulls[~nulls["underpowered_for_floor"]]
+                                  ["catalog_number"].nunique()),
+         "definition": "did NOT clear BH and WAS powered to detect a floor-sized "
+                       "effect — these are genuine nulls"},
+        {"practical_tier": "UNDERPOWERED among BH-passers",
+         "n_tests": int(bhp["underpowered_for_floor"].sum()),
+         "n_unique_features": int(bhp[bhp["underpowered_for_floor"]]
+                                  ["catalog_number"].nunique()),
+         "definition": "significant, but the effect estimate is wider than the "
+                       "floor — direction supported, magnitude not pinned down"},
         {"practical_tier": "COUNT unique confirmed FEATURES", "n_tests": n_features,
          "n_unique_features": n_features,
          "definition": "distinct catalog numbers among survivors "
@@ -830,8 +1148,8 @@ def main(argv=None) -> int:
                    "n_matrices": len(ctx.audit),
                    "matrices": ctx.audit}, f, indent=2)
 
-    write_report(res, surv, groups, pairs, base_ref, base_curves, frozen, folds,
-                 outer, U, U_full, battery, uniq_nums, args, ctx,
+    write_report(res, surv, groups, pairs, demo, calib, base_ref, base_curves,
+                 frozen, folds, outer, U, U_full, battery, uniq_nums, args, ctx,
                  (n_features, n_tests_passed, n_specs), time.time() - t0)
 
     print(f"\n[done] {len(res)} tests | BH-pass {int(res['bh_pass'].sum())} | "
@@ -863,8 +1181,9 @@ def _failed_row(cand, ch, m_base, e):
 # 8.  report
 # ===========================================================================
 
-def write_report(res, surv, groups, pairs, base_ref, base_curves, frozen, folds,
-                 outer, U, U_full, battery, uniq_nums, args, ctx, counts, runtime):
+def write_report(res, surv, groups, pairs, demo, calib, base_ref, base_curves,
+                 frozen, folds, outer, U, U_full, battery, uniq_nums, args, ctx,
+                 counts, runtime):
     n_features, n_tests_passed, n_specs = counts
     n_tests = len(res)
     n_bh = int(res["bh_pass"].sum())
@@ -952,8 +1271,29 @@ def write_report(res, surv, groups, pairs, base_ref, base_curves, frozen, folds,
         sub = base_curves[(base_curves["channel"] == ch)
                           & (base_curves["alpha"] == r["alpha"])].set_index("w")
         g = lambda w: (f"{sub.loc[w, 'inner_mae']:.5f}" if w in sub.index else "")  # noqa: E731
-        A(f"| {ch} | {r['w']} | {'YES' if r['w_interior_on_extended_grid'] else 'NO — genuine boundary'} | "
+        A(f"| {ch} | {r['w']} | {'YES — interior' if r['w_interior_on_extended_grid'] else 'NO — at the endpoint w=1'} | "
           f"{g(0.9)} | {g(0.95)} | {g(0.98)} | {g(1.0)} |")
+    A("")
+    n_int = sum(1 for r in base_ref.values() if r["w_interior_on_extended_grid"])
+    A(f"**{n_int} of {len(base_ref)} channels put w in the interior; "
+      f"{len(base_ref) - n_int} run to w = 1.00.** Extending the grid did not "
+      "rescue an interior optimum for those channels — it relocated the boundary "
+      "to w = 1, which is the natural end of the parameter's range (w > 1 would "
+      "put a negative weight on the season-to-date term). So this is a **genuine "
+      "boundary, not a truncated grid**, and it says something specific: at the "
+      "optimum the blend has NO season-to-date component, i.e. it degenerates to "
+      "the pure previous-season anchor. The season-to-date expanding rate earns "
+      "nothing because the within-season ratio-EWMA sitting next to it in the "
+      "same design already carries current-season form. The two-parameter blend "
+      "does not pay for its second parameter — which is the correlated-"
+      "specification collapse the registration predicted, occurring inside the "
+      "baseline itself.")
+    A("")
+    A("The plateau is also flat: on fg3 the entire 0.9 -> 1.0 stretch is worth "
+      "0.0018 inner MAE. The choice between 'anchor' and 'anchor with a 10% "
+      "shrink' is not a choice the data is making strongly; it is the same "
+      "specification twice. `ft` is the one channel with a real interior turn "
+      "(its curve rises again after 0.90).")
     A("")
     A("## 2. Protocol")
     A("")
@@ -1019,6 +1359,30 @@ def write_report(res, surv, groups, pairs, base_ref, base_curves, frozen, folds,
       "member of the permutation distribution and the add-one p-value "
       "`(1 + #{null >= obs}) / (1 + n_perm)` is valid.")
     A("")
+    A("**The scheme is checked, not asserted.** Three synthetic features that "
+      "are null by construction were pushed through the same machinery under "
+      "both schemes (`diagnostics/null_calibration.csv`): `iid_noise` "
+      "(exchangeable at the row level, so both schemes should be calibrated), "
+      "`player_season_constant` (one draw per player-season — maximal "
+      "clustering) and `ar1_within_player` (rho=0.9 inside each player-season). "
+      "A calibrated null returns p-values scattered over (0,1) for all three.")
+    A("")
+    A("| synthetic null feature | p under BLOCK (this run) | p under ROW-exchangeable (run 1) | null SD ratio block/row |")
+    A("|---|---|---|---|")
+    for name, sub in calib.groupby("synthetic_feature", sort=False):
+        A(f"| {name} | " +
+          ", ".join(f"{r['channel']} {r['p_block_by_player_season']:.3f}"
+                    for _, r in sub.iterrows()) + " | " +
+          ", ".join(f"{r['channel']} {r['p_row_exchangeable_run1']:.3f}"
+                    for _, r in sub.iterrows()) + " | " +
+          f"{sub['null_sd_ratio_block_over_row'].mean():.2f} |")
+    A("")
+    A("The **null SD ratio** is the diagnostic that matters: a ratio above 1 "
+      "means the row-exchangeable null was too narrow, so any feature with "
+      "within-player structure was being compared against a null that could "
+      "not reproduce that structure — the mechanism by which run 1 could hand "
+      "out p=0.00498 to a whole page of slow-moving player attributes.")
+    A("")
     A("### FDR: BH primary, BY alongside")
     A("")
     A(f"Benjamini-Hochberg at q={FDR_Q:.2f} across all {n_tests} tests is the "
@@ -1051,11 +1415,29 @@ def write_report(res, surv, groups, pairs, base_ref, base_curves, frozen, folds,
     A("2. `mde80_permutation` — from the SD of the block-permutation null, which "
       "is cluster-aware by construction.")
     A("")
-    A(f"**{n_under} of {n_tests} tests ({n_under / max(n_tests,1):.0%}) are "
-      "underpowered for the preregistered practical floor**: their `mde80` "
-      "exceeds the 0.20% threshold, so a null result there means 'this design "
-      "could not have seen an effect that size', not 'there is no effect'. No "
-      "null in this report is presented without that limit attached.")
+    n_null = int((~res["bh_pass"]).sum())
+    n_null_under = int(res.loc[~res["bh_pass"], "underpowered_for_floor"].sum())
+    n_bh_under = int(res.loc[res["bh_pass"], "underpowered_for_floor"].sum())
+    A(f"**{n_under} of {n_tests} tests ({n_under / max(n_tests, 1):.0%}) carry an "
+      "`mde80` above the 0.20% practical floor.** The flag means different things "
+      "on the two sides of the significance line, and the report keeps them apart:")
+    A("")
+    A(f"- **{n_null_under} of the {n_null} non-significant tests are "
+      "underpowered.** For these, a null result means *this design could not "
+      "have seen a floor-sized effect*, not *there is no effect*. They are "
+      f"absence of evidence. The remaining {n_null - n_null_under} non-significant "
+      "tests WERE powered to the floor and are genuine nulls.")
+    A(f"- **{n_bh_under} of the {n_bh} BH-passing tests are underpowered.** A "
+      "significant test can still have an effect estimate wider than the floor: "
+      "the permutation null says the alignment is real, while the cluster-robust "
+      "SE says the magnitude is not pinned down at this sample size. Direction "
+      "supported, size not.")
+    A("")
+    A("The driver is cluster count, not row count. 2024 supplies ~3,300 scored "
+      "rows but only ~150 player-season clusters, and it is the clusters that "
+      "carry independent information. A row-level SE would have made almost "
+      "every test look adequately powered; that is precisely the overstatement "
+      "the registration asked to remove.")
     A("")
     A("### Correlated-specification collapsing")
     A("")
@@ -1080,7 +1462,8 @@ def write_report(res, surv, groups, pairs, base_ref, base_curves, frozen, folds,
       f"{int((res['practical_tier'] == 'significant_only').sum())} significant "
       f"only / {int((res['practical_tier'] == 'neither').sum())} neither.")
     A(f"- **Survivors** (BH + sign-consistency across all 3 inner folds and 2024 "
-      f"+ practical floor): **{n_tests_passed} tests**.")
+      f"+ practical floor): **{n_tests_passed} tests**. Under the conservative "
+      f"BY correction instead of BH: {int(res['survives_under_by'].sum())} tests.")
     A("")
     A("### The three counts, kept distinct")
     A("")
@@ -1164,6 +1547,32 @@ def write_report(res, surv, groups, pairs, base_ref, base_curves, frozen, folds,
         A("No group had two members above the threshold among the tests "
           "considered.")
     A("")
+    A("### The demonstration the registration names: the anchor and the blend")
+    A("")
+    A("`player_feature_crossseason_v1` reported **six survivors** — #87 "
+      "`prev_season_anchor` and #92 `two_season_blend` on fg3, np2 and paint. "
+      "Its own report already suspected they were one effect measured twice. "
+      "Here that is settled on the evidence: the incremental prediction vectors "
+      "of the two specifications are correlated directly, first against the "
+      "within-season-EWMA-only baseline the cross-season screen actually used "
+      "(where both were discoveries), then against this run's frozen baseline "
+      "(where the anchor is the incumbent and neither should have anything "
+      "left to add). Full table in `diagnostics/anchor_family_collapse.csv`.")
+    A("")
+    A("| baseline | channel | specification pair | corr(incremental prediction) | collapses at 0.9? |")
+    A("|---|---|---|---|---|")
+    for _, d in demo[demo["spec_b"] == "#92 two_season_blend @w=0.9"].iterrows():
+        A(f"| {d['baseline']} | {d['channel']} | {d['spec_a']} vs {d['spec_b']} | "
+          f"{d['corr_incremental_prediction']:.5f} | "
+          f"{'**YES — one finding**' if d['collapses_at_0.9'] else 'no'} |")
+    A("")
+    A("The parsimonious carrier is **#87 `prev_season_anchor`**: one term, no "
+      "tuned weight. #92 at w=0.9 is #87 shrunk 10% toward the season-to-date "
+      "rate and should never be promoted alongside it. The inner folds reach "
+      "the same conclusion independently — three of four channels drove the "
+      "baseline's own blend weight all the way to w=1.00, which IS the pure "
+      "anchor.")
+    A("")
     A("## 8. What this run did NOT do")
     A("")
     A("- **No git.** No registry write. `registry.register` / `evaluate` / "
@@ -1181,7 +1590,51 @@ def write_report(res, surv, groups, pairs, base_ref, base_curves, frozen, folds,
       "not part of this registration's deliverables and the permutation budget "
       "went to resolution instead.")
     A("")
-    A("## 9. Files")
+    A("## 9. A LATER REGISTRATION AMENDS THIS ONE — read before acting on the results")
+    A("")
+    A("`screening_protocol_amendment_v2` was registered at **2026-07-31T16:17:53Z**, "
+      "*after* `player_feature_rebaselined_v1` (16:01:50Z) and after this run's "
+      "brief was written. It names this experiment in its `amends` list and "
+      "states that where the two conflict, the amendment controls. This run "
+      "implements the ORIGINAL registration. The differences are listed here "
+      "rather than silently resolved, because changing a preregistered protocol "
+      "mid-run on the strength of a document found in the ledger is exactly the "
+      "move this program forbids. **The orchestrator, not this run, decides "
+      "which protocol governs.**")
+    A("")
+    A("| amendment clause | this run | conflict? |")
+    A("|---|---|---|")
+    A("| P2 three-way split: 2022 inner tuning, 2023 baseline SELECTION, 2024 "
+      "measurement only | (alpha, w) selected on three inner walk-forward folds "
+      "spanning 2022-2023 jointly; 2024 never used for selection | **partial** — "
+      "no baseline parameter touches 2024, but selection is not isolated to 2023 |")
+    A("| P3 second null blocked by GAME-DATE, plus a two-way (player-season x "
+      "game-date) cluster-robust CI; decide on the most conservative of the "
+      "three | one null only: block-permutation by (player, season) | **yes** — "
+      "the game-date null is not computed |")
+    A("| P4 adaptive escalation to 20,000 permutations for any test reaching "
+      "p<0.01 before a decision is read | flat 2,000 for every test | **yes** — "
+      "p-values at or near the 1/2001 floor are not resolved further |")
+    A("| P4 BH q=0.10 decides; BY is sensitivity only | `survives` uses BH; "
+      "`survives_under_by` is reported and decides nothing | no conflict |")
+    A("| P5 correlation grouping is presentational and never reduces the FDR "
+      f"denominator | BH and BY are computed over all {n_tests} attempted tests; "
+      "grouping only collapses the reported specification count | no conflict |")
+    A("| P6 the 0.20% practical floor is WITHDRAWN as a gate | the floor is "
+      "applied as a gate in `survives` | **yes** — but every component is a "
+      "separate column (`bh_pass`, `sign_consistent`, `practical`), so the "
+      "floor-free count is recoverable without re-running |")
+    A("")
+    A(f"**Under the amendment's P6 (no practical gate), the survivor count would "
+      f"be {int((res['bh_pass'] & res['sign_consistent']).sum())} tests over "
+      f"{int(res[res['bh_pass'] & res['sign_consistent']]['catalog_number'].nunique())} "
+      f"unique features**, instead of the {n_tests_passed} tests over "
+      f"{n_features} features reported above. Both numbers are in "
+      "`three_tier_counts.csv` and both are recoverable from "
+      "`screen_results.csv`; nothing here needs re-running to switch between "
+      "them. The P3 and P4 items DO require a re-run.")
+    A("")
+    A("## 10. Files")
     A("")
     A("- `frozen_baseline.json` — the baseline, written before the first test")
     A("- `screen_results.csv` — one row per (feature, channel): observed effect, "
@@ -1191,7 +1644,11 @@ def write_report(res, surv, groups, pairs, base_ref, base_curves, frozen, folds,
     A("- `three_tier_counts.csv` — the tier table and the three distinct counts")
     A("- `baseline_grid_curves.csv` — the full (alpha, w) inner-fold surface")
     A("- `quarantine_audit.json` — per-matrix date audit")
-    A("- `diagnostics/null_quantiles.csv`, `diagnostics/correlation_pairs.csv`")
+    A("- `diagnostics/null_quantiles.csv` — null quantiles per test")
+    A("- `diagnostics/correlation_pairs.csv` — pairwise |r| > 0.9 among findings")
+    A("- `diagnostics/anchor_family_collapse.csv` — the anchor/blend demonstration")
+    A("- `diagnostics/null_calibration.csv` — block vs row-exchangeable null on "
+      "synthetic null features")
     (OUTDIR / "REPORT.md").write_text("\n".join(L), encoding="utf-8")
 
 
