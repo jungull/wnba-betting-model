@@ -71,6 +71,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 import unicodedata
@@ -106,8 +107,15 @@ MASTER_TEAM = REPO / "data" / "masters" / "master_team.parquet"
 MASTER_PLAYER = REPO / "data" / "masters" / "master_player.parquet"
 
 SOURCE_NAME = "daily_forecast.py v0 dry-run"
+SOURCE_NAME_LIVE = "daily_forecast.py v0 FROZEN (freeze-v0)"
 SOURCE_EXPERIMENT = "chanreval_2026_structural_repaired/run1"
 MINUTES_ALPHA = 0.30          # promoted: minutes_ewma_vs_carryforward_v1
+SIGMA_V0 = 12.9022            # frozen margin sigma: dist_margin_cover_v1
+# Regime-D go-live authorization. The first record in the DEFAULT forecast log
+# is the official prospective start (ROADMAP regime D). John approved:
+# "freeze v0 approved" 2026-07-31; protocol in project_docs/FREEZE_PROPOSAL_v0.md
+# and the prospective_v0 registration. --live is refused unless this is True.
+FREEZE_V0_APPROVED = True
 MIN_PRIOR = 5                 # constitution rule 2 (same as run_reval.py)
 RECENCY_GAMES = 3             # MINUTES_MODEL_SPEC §5 recency roster window
 EXPANSION = {(2025, "GSV"), (2026, "TOR"), (2026, "PDX")}  # first-season teams
@@ -872,6 +880,11 @@ def main() -> int:
     ap.add_argument("--cutoff", default=None,
                     help="forecast cutoff ISO timestamp; default now (UTC). "
                     "Only data observed at/before this instant is used.")
+    ap.add_argument("--live", action="store_true",
+                    help="write to the OFFICIAL forecast log (forecasts/"
+                         "forecast_log.jsonl). Requires the freeze-v0 approval "
+                         "marker; the first record starts regime D. Scheduled "
+                         "tasks pass this; bare runs stay in the scratch chain.")
     ap.add_argument("--no-log", action="store_true",
                     help="compute + write CSV/report, skip scratch-chain writes")
     args = ap.parse_args()
@@ -890,14 +903,22 @@ def main() -> int:
                   if args.slate_date else now.astimezone(ET).date())
     season = slate_date.year
 
-    log_path = _guard_scratch_path(SCRATCH_CHAIN)
+    if args.live:
+        if not FREEZE_V0_APPROVED:
+            sys.exit("REFUSED: --live requires the freeze-v0 approval marker "
+                     "(FREEZE_V0_APPROVED). See project_docs/FREEZE_PROPOSAL_v0.md.")
+        log_path = DEFAULT_FORECAST_LOG
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        log_path = _guard_scratch_path(SCRATCH_CHAIN)
     DRYRUN_DIR.mkdir(parents=True, exist_ok=True)
 
     git_head = read_git_head(REPO, gaps)
     params = load_frozen_params()
 
     print(f"slate date {slate_date} (ET) | season {season} | cutoff "
-          f"{cutoff.isoformat()} | scratch chain {log_path}")
+          f"{cutoff.isoformat()} | {'OFFICIAL chain' if args.live else 'scratch chain'} "
+          f"{log_path}")
 
     # ---- inputs -----------------------------------------------------------
     d, masters_prov = build_channel_rows(season, slate_date, gaps)
@@ -1045,8 +1066,17 @@ def main() -> int:
             f, mk = r["forecast"], r["market"]
             pl_home = players.get(r["home"], {})
             pl_away = players.get(r["away"], {})
+            # frozen distribution (dist_margin_cover_v1): Gaussian(margin, SIGMA_V0);
+            # P(home covers) = P(margin_true > -spread) = Phi((margin + spread)/sigma)
+            sp = mk["home_spread_median"]
+            p_cover = (0.5 * (1.0 + math.erf(
+                (f["margin"] + sp) / (SIGMA_V0 * math.sqrt(2.0))))
+                if sp is not None else None)
             core = {
                 "model": "structural_channels_v2_daily_v0",
+                "margin_sigma": SIGMA_V0,
+                "p_home_cover_gauss_at_cutoff": (round(p_cover, 4)
+                                                 if p_cover is not None else None),
                 "home_team": r["home"], "away_team": r["away"],
                 "home_score": round(f["home_score"], 3),
                 "away_score": round(f["away_score"], 3),
@@ -1076,7 +1106,7 @@ def main() -> int:
                     "published_time": generated_at,
                     "observed_time": observed_time,
                     "forecast_cutoff": cutoff.isoformat(),
-                    "source": SOURCE_NAME,
+                    "source": SOURCE_NAME_LIVE if args.live else SOURCE_NAME,
                     "source_version": f"git:{git_head}",
                     "data_snapshot": snapshot_desc,
                 },
