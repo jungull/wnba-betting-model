@@ -1145,8 +1145,9 @@ def main() -> int:
                          "refused by the chain, skipped (re-logging a "
                          "prospective prediction is never a silent overwrite)")
         rep = verify_chain(log_path)
-        chain_note = (f"scratch chain verified: ok={rep.ok}, n_records="
-                      f"{rep.n_records}, tip_sha256={rep.tip_sha256} — record "
+        which = "OFFICIAL" if args.live else "scratch"
+        chain_note = (f"{which} chain verified ({log_path.name}): ok={rep.ok}, "
+                      f"n_records={rep.n_records}, tip_sha256={rep.tip_sha256} — record "
                       "these two values out of band; tail truncation is only "
                       "detectable against an external anchor")
         if not rep.ok:
