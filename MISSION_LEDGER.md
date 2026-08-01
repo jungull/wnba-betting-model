@@ -404,3 +404,26 @@ appearances; full C3 provenance (dependency hashes, producer commit, real snapsh
 fold-specific model hashes); an arm-level invariance suite wired into `verify_all.py`;
 regeneration to a NEW artifact directory with coverage cross-tabbed by `in_target_box` and
 later `appeared`.
+
+---
+
+## 15. Incumbent mapping audit (discovery only)
+
+`project_docs/INCUMBENT_MAPPING_AUDIT.md`, 2026-08-01. Bounded discovery of what registered
+control already exists per contract target. **No mapping registered, no model chosen, no
+prediction regenerated, no accuracy metric computed or inspected.**
+
+| contract target | classification |
+|---|---|
+| `p_active` | SEMANTIC_MISMATCH - live layer is a deterministic Out rule gate, not a probability; the only probabilistic P(plays) is two-stage Stage A, which **FAILED its gate** (`promote: false`), is regime B on the *dressed roster* at T-24h |
+| `e_minutes_given_active` | **EXACT_EXISTING_CONTROL** - minutes EWMA alpha=0.30, `minutes_ewma_vs_carryforward_v1` PASS/`promote: true`, live as `MINUTES_ALPHA` |
+| `attempts_usage` | NO_REGISTERED_CONTROL - nothing predicts attempts; `player_volume_heterogeneity_v1` is VOID |
+| `player_scoring_distribution` | SEMANTIC_MISMATCH - `props_edge_v1` gives a POINT projection at T-90m, and is a measurement study whose incumbent is the market |
+| `team_game_distribution` | SEMANTIC_MISMATCH - margin distribution exists (`dist_margin_cover_v1`, **FAILED** gate) and totals point exists; **team points distribution does not** |
+
+**One of five targets has an exact existing control.**
+
+Ambiguities recorded for the specification decision: live recency window is 3 games vs the
+contract's 5; the promoted minutes control is registered at T-24h vs contract T-90m; the live
+EWMA's shift semantics need confirming by reproduction; and `p_active` has no promoted
+probabilistic control at all.
