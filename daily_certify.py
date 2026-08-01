@@ -331,21 +331,39 @@ def _columns_of(path: Path) -> "list[str] | None":
         if path.suffix == ".csv":
             return list(pd.read_csv(path, nrows=0).columns)
         if path.suffix == ".json":   # odds snapshot: structural key census
+            # UNION across every event / bookmaker / market / outcome, not the
+            # first of each.  Sampling position [0] made this check FLAKY: an
+            # h2h market's outcomes carry no "point" while spreads and totals
+            # do, and the odds API returns markets in nondeterministic order, so
+            # the fingerprint flipped on "+['outcomes[].point']" at random. A
+            # check that cries wolf is worse than no check, because the next
+            # real drift gets waved off as "that flaky odds thing again".
+            # The union is order-independent: a key genuinely appearing or
+            # disappearing still moves the hash, but reshuffling does not.
             events = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(events, list) or not events:
                 return None
-            ev = events[0]
-            cols = sorted(ev.keys())
-            if ev.get("bookmakers"):
-                bm = ev["bookmakers"][0]
-                cols += [f"bookmakers[].{k}" for k in sorted(bm.keys())]
-                if bm.get("markets"):
-                    mk = bm["markets"][0]
-                    cols += [f"markets[].{k}" for k in sorted(mk.keys())]
-                    if mk.get("outcomes"):
-                        cols += [f"outcomes[].{k}"
-                                 for k in sorted(mk["outcomes"][0].keys())]
-            return cols
+            ev_k, bm_k, mk_k, oc_k, market_keys = set(), set(), set(), set(), set()
+            for ev in events:
+                if not isinstance(ev, dict):
+                    continue
+                ev_k |= set(ev.keys())
+                for bm in ev.get("bookmakers") or []:
+                    bm_k |= set(bm.keys())
+                    for mk in bm.get("markets") or []:
+                        mk_k |= set(mk.keys())
+                        if mk.get("key"):
+                            market_keys.add(str(mk["key"]))
+                        for oc in mk.get("outcomes") or []:
+                            oc_k |= set(oc.keys())
+            # The market census is part of the schema: a new market appearing
+            # (player props) or an existing one vanishing is exactly the kind of
+            # change downstream executability work must not silently inherit.
+            return (sorted(ev_k)
+                    + [f"bookmakers[].{k}" for k in sorted(bm_k)]
+                    + [f"markets[].{k}" for k in sorted(mk_k)]
+                    + [f"outcomes[].{k}" for k in sorted(oc_k)]
+                    + [f"market_key:{k}" for k in sorted(market_keys)])
     except (OSError, ValueError, KeyError, json.JSONDecodeError):
         return None
     return None
