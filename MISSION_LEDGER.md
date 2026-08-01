@@ -255,7 +255,7 @@ the calibration inversion.
 |---|---|---|
 | 1 | correct ledger + mechanism/permutation labels | **✅ done 2026-08-01** |
 | 2 | manifest-first player-game as-of PREDICTION CONTRACT | **DONE - `prediction_contract_v2`, fail-closed** |
-| 3 | chronological OOF per arm: incumbent, hierarchical, CatBoost, TabPFN, graph | **<- next (incumbent first, as reference)** |
+| 3 | chronological OOF per arm | **incumbent attempt `ac2e2f0` REJECTED** - see section 14; corrected reference required before any other arm |
 | 4 | compare individual models **before** any council weights | blocked on 3 |
 | 5 | residual diversity + leave-one-member-out value | blocked on 4 |
 | 6 | equal-weight and median councils | blocked on 5 |
@@ -365,3 +365,42 @@ Candidates per game: min 10, median 24, max 31. 15 teams, 3 absent from some sea
 DNPs; the defect is that **membership** was postgame-selected, not that all members appeared.
 And the added rows are **proxy candidates**, not players v1 "should have predicted"; 76.8% is
 the appearance rate *within this proxy universe*, not the WNBA availability rate.
+
+---
+
+## 14. REJECTED: incumbent arm attempt at `ac2e2f0`
+
+**Do not consume `experiments/arm_incumbent/predictions.parquet`.** Raised by the Codex
+supervisor 2026-08-01; every figure independently verified against the committed parquet
+before acceptance. Full detail in `experiments/arm_incumbent/REJECTED.md`.
+
+**Blocking defect.** The arm built features from `master_player` and joined to contract
+candidates on `(game_id, player_id)`, so a feature row existed **only when the player also had
+a target-game box row**. Dropping label columns removed the *values*, not the *membership* -
+the v1 selection channel was reintroduced after contract construction.
+
+| verified | |
+|---|---|
+| exclusions with `in_target_box == False` | **3,154 / 3,154** |
+| target-box rows excluded | 0 |
+| excluded rows with >=1 strictly prior appearance | **2,697** |
+| excluded rows that later appeared | **0 / 3,154** |
+| `n_prior_games` != strictly-prior appearances | **16,102 / 32,461** |
+
+So `no_strictly_prior_observation` was **false for all 3,154**.
+
+**The misread that matters.** I reported conditional `scoreable_coverage = 1.0000` as "exactly
+as the contract intends." It was the opposite: coverage was 1.0 *because* no excluded row ever
+appeared, so exclusion perfectly predicted non-appearance. An outcome-selection alarm reported
+as a success.
+
+**No accuracy result was computed or inspected** from this artifact; nothing downstream used
+it. Evidence labels unchanged.
+
+**Required before any other arm** (Codex, accepted): new registration for a target-specific
+incumbent mapping; features built FROM CANDIDATE ROWS with availability-based history filters
+(discard, never clamp); genuine as-of cold-start fallback; `n_prior_games` = strictly-prior
+appearances; full C3 provenance (dependency hashes, producer commit, real snapshot hash,
+fold-specific model hashes); an arm-level invariance suite wired into `verify_all.py`;
+regeneration to a NEW artifact directory with coverage cross-tabbed by `in_target_box` and
+later `appeared`.

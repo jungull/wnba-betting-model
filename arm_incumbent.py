@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
-"""arm_incumbent.py -- the INCUMBENT arm's chronological OOF predictions.
+"""arm_incumbent.py -- REJECTED at commit ac2e2f0. DO NOT CONSUME ITS OUTPUT.
+
+See experiments/arm_incumbent/REJECTED.md. Blocking defect: the feature frame was built
+from master_player and joined on (game_id, player_id), so a feature row existed ONLY when
+the player also had a row in the TARGET GAME box. Dropping label columns removed the
+values, not the MEMBERSHIP, so the v1 selection channel was reintroduced after contract
+construction. All 3,154 exclusions were in_target_box==False; 2,697 had strictly prior
+appearances, so "no_strictly_prior_observation" was false for every one. 0 of 3,154
+excluded rows later appeared, which is why conditional scoreable coverage was 1.0000 --
+an outcome-selection alarm I reported as success.
+
+Retained for audit. A corrected reference must build features FROM CANDIDATE ROWS and
+emit to a NEW artifact directory under a new registration.
+
+Original docstring follows.
+
+arm_incumbent.py -- the INCUMBENT arm's chronological OOF predictions.
 
 council_scope_v2 S9 step 3, first arm.  This is the REFERENCE IMPLEMENTATION: the other four
 arms (dynamic hierarchical, CatBoost, TabPFN, lineup graph) are checked against it for
