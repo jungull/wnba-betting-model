@@ -766,7 +766,13 @@ is **not** begun. `arm_incumbent` remains **rejected and unconsumed**.
 
 ---
 
-## 20. `contract_baseline_suite_v5` — the implementation corrected to match the spec
+## 20. `contract_baseline_suite_v5` — corrected primitives — **SUPERSEDED, see §21**
+
+> **SUPERSEDED 2026-08-01 by `contract_baseline_suite_v6` (§21).** v5 corrected the primitives but
+> shipped **no end-to-end runner**, so none of its corrections reached a generated contract row.
+> v5's registry record and document are **not mutated**; the erratum is in
+> `project_docs/SPEC_ERRATA.md`.
+
 
 `project_docs/CONTRACT_BASELINE_SUITE_V5.md`, registered 2026-08-01. Registry append **1
 insertion, 0 deletions** (82 → 83); the 82-line registry is the exact byte prefix of the 83-line
@@ -823,3 +829,49 @@ exactly as registered.
 directory awaits supervisory review; validation, provenance, obligation coverage and exclusion
 cross-tabs must pass **before any accuracy metric is inspected**. The hierarchical arm is **not**
 begun.
+
+---
+
+## 21. `contract_baseline_suite_v6` — the runner that was missing
+
+`project_docs/CONTRACT_BASELINE_SUITE_V6.md`, registered 2026-08-01. Registry append **1 insertion,
+0 deletions** (83 → 84); prefix byte-identical, **v1–v5 records unchanged**. `config_hash`
+**`4857907f8f338bd9bafbcf22847da56f3f22785159a7d65b4f1381e2a02ec0f7`** verifies by recomputation.
+**No real contract row read; no OOF, accuracy or coverage figure exists.**
+
+**Why.** v5 corrected the primitives and stopped there: `cbs_v5.py` ended at
+`resolve_feature_asof`, with no fold runner, emission path, fitted-state constructor, validation
+composition or call site outside its own tests. **So none of v5's corrections reached a generated
+contract row** — the only executable runners were still v4's, with v4's defects and v4's arm
+identity. v5's "corrected implementation" label was too strong; the erratum is in
+`project_docs/SPEC_ERRATA.md` and v5's document is untouched.
+
+**What v6 adds.** `run_player_fold` / `run_team_fold` over the corrected primitives; all five
+targets emitted for every obligation; a versioned **`cbs_history_audit/1` sidecar** persisting
+`n_prior_candidate_games` and `n_prior_appearances` per row (v5 computed them and dropped them, yet
+they are the evidence that 0-of-k was treated as evidence); target-specific cold/fallback **bound
+into the emitted rows**; an explicit **`FittedState`** per fold and target so `model_hash` covers
+the real fitted objects; strict real-boundary identity; and **one composite fail-closed receipt**
+(historical validator AND strict validator) with `scoring_permitted` gated on it.
+
+**Validator hardened to `contract_v2_strict/2`**: the four expected identities are now
+**mandatory** (they defaulted to `None`, making identity binding optional); the universe must carry
+`fold_id` and `forecast_cutoff`; points and quantiles must be **finite**; `p_active.pred_sd` must
+be *actually* null rather than non-numeric coerced; flags must be genuine booleans, not numeric
+0/1; excluded rows must carry **null values and full identity lineage**; and a malformed frame
+returns a verdict instead of raising.
+
+**Operational provenance corrected.** `OPERATIONAL_INPUTS_…T2032Z.json` attested
+`operational_input_manifest.py = c1231b…`, the **parent** version — code that could not have
+written the `producer_tree` structure it was attesting, because `producer_tree_identity` hashed
+`root/<name>` while the executing code lived in the worktree. The generating file is now hashed via
+`__file__` with a self-check, root copies are recorded separately with an explicit
+`producer_code_mismatches` list, untracked files are hashed by **name and content** (names alone
+collided), and the "iff the tree agreed" claim is **narrowed** to a declared `identity_scope`.
+
+`tests/test_cbs_v6.py` — **104 runner-level assertions, synthetic only**. Four assertions in
+`tests/test_cbs_v5.py` had begun passing for the wrong reason once identity became mandatory; they
+were corrected to bind identity and assert *which* problem was raised (75 → 79).
+
+**Status: definition plus complete synthetic runner.** Real-contract execution awaits supervisory
+review. The hierarchical arm is **not** begun.

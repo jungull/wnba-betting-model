@@ -375,7 +375,8 @@ ok_pred = pd.DataFrame({
     "model_hash": H, "config_hash": H, "data_snapshot_hash": H,
     "exclusion_reason": pd.NA,
 })
-base_v = validate_strict(ok_pred, uni, "attempts_usage", expected_fold_id="season:2099",
+base_v = validate_strict(ok_pred.assign(arm_id=v5.ARM_ID), uni, "attempts_usage",
+                         expected_fold_id="season:2099",
                          expected_arm_id=v5.ARM_ID, expected_config_hash=H,
                          expected_snapshot_hash=H)
 check("V10 a clean frame passes the strict validator", base_v["ok"], str(base_v["problems"]))
@@ -396,7 +397,7 @@ cases = [
     ("a negative n_prior_games", lambda d: d.assign(n_prior_games=-2)),
 ]
 for label, mutate in cases:
-    bad = mutate(ok_pred.copy())
+    bad = mutate(ok_pred.assign(arm_id=v5.ARM_ID).copy())
     sv = validate_strict(bad, uni, "attempts_usage", expected_fold_id="season:2099",
                          expected_arm_id=v5.ARM_ID, expected_config_hash=H,
                          expected_snapshot_hash=H)
@@ -404,22 +405,36 @@ for label, mutate in cases:
 
 missed = 0
 for label, mutate in cases:
-    bad = mutate(ok_pred.copy())
+    bad = mutate(ok_pred.assign(arm_id=v5.ARM_ID).copy())
     if validate_predictions(bad, uni, "attempts_usage")["ok"]:
         missed += 1
 check("V10 the historical validator misses most of these (hence a second one)",
       missed >= 6, f"historical validator caught all but {missed}")
 
-sv_sd = validate_strict(ok_pred.assign(pred_sd=0.0), uni, "attempts_usage")
-check("V10 strict validator rejects pred_sd == 0", not sv_sd["ok"])
-sv_q = validate_strict(ok_pred.assign(pred_q05=99.0), uni, "attempts_usage")
+# Identity is now MANDATORY, so these must supply it -- otherwise they would
+# "pass" by failing on missing identity rather than on the defect they name.
+IDK = dict(expected_arm_id=v5.ARM_ID, expected_fold_id="season:2099",
+           expected_config_hash=H, expected_snapshot_hash=H)
+ok_pred_v5 = ok_pred.assign(arm_id=v5.ARM_ID)
+sv_sd = validate_strict(ok_pred_v5.assign(pred_sd=0.0), uni, "attempts_usage", **IDK)
+check("V10 strict validator rejects pred_sd == 0", not sv_sd["ok"],
+      str(sv_sd["problems"]))
+check("V10 ... and it is the SD that is rejected",
+      any("pred_sd" in p for p in sv_sd["problems"]), str(sv_sd["problems"]))
+sv_q = validate_strict(ok_pred_v5.assign(pred_q05=99.0), uni, "attempts_usage", **IDK)
 check("V10 strict validator rejects non-monotone quantiles", not sv_q["ok"])
-sv_missing = validate_strict(ok_pred.iloc[3:], uni, "attempts_usage")
+check("V10 ... and it is the quantiles that are rejected",
+      any("quantile" in p for p in sv_q["problems"]), str(sv_q["problems"]))
+sv_missing = validate_strict(ok_pred_v5.iloc[3:], uni, "attempts_usage", **IDK)
 check("V10 strict validator rejects missing obligation rows", not sv_missing["ok"])
-sv_pa = validate_strict(ok_pred.assign(target_key="p_active", pred_point=0.5,
-                                       pred_sd=np.nan), uni, "p_active")
+check("V10 ... and it is the coverage that is rejected",
+      any("REQUIRED" in p for p in sv_missing["problems"]), str(sv_missing["problems"]))
+sv_pa = validate_strict(ok_pred_v5.assign(target_key="p_active", pred_point=0.5,
+                                          pred_sd=np.nan), uni, "p_active", **IDK)
 check("V10 strict validator requires null quantiles for p_active", not sv_pa["ok"],
       str(sv_pa["problems"]))
+check("V10 identity is MANDATORY -- omitting it is itself a rejection",
+      not validate_strict(ok_pred_v5, uni, "attempts_usage")["ok"])
 
 print(f"{PASSED}/{PASSED + len(FAILED)} tests passed")
 for f in FAILED:

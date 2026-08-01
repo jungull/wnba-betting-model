@@ -82,3 +82,39 @@ coefficients; cold-start ignored the target; and Stage-A features were silently 
 The v4 document records "**123 assertions**" for `tests/test_cbs_generator.py`, which was correct
 at registration and remains correct. No correction needed; noted here so the two suites are not
 confused — `tests/test_cbs_v5.py` is a separate 75-assertion suite for v5.
+
+
+---
+
+## `CONTRACT_BASELINE_SUITE_V5.md` — 2026-08-01
+
+### E-V5-1 · "corrected implementation" was too strong
+
+The v5 document is titled *"frozen estimator, corrected implementation"* and §9 lists `cbs_v5.py`
+under **implementation**. That label overstates what v5 shipped.
+
+v5 corrected the **primitives**. It shipped **no end-to-end runner**: `cbs_v5.py` ends at
+`resolve_feature_asof`, and there is no v5 `run_player_fold`, `run_team_fold`, emission path,
+fitted-state constructor, validation composition, or call site outside its own isolated tests.
+The only executable fold runners at v5 were still **v4's**, carrying v4's defects and v4's arm
+identity — so **none of v5's corrections reached a generated contract row**.
+
+The corrections themselves are sound and are carried into
+`contract_baseline_suite_v6`, which supplies the missing pipeline. v5's registry record and
+document are **unchanged**; this erratum is the correction.
+
+### E-V5-2 · superseded by v6
+
+`contract_baseline_suite_v6` (`project_docs/CONTRACT_BASELINE_SUITE_V6.md`) supersedes v5.
+
+### E-V5-3 · strict validator superseded in place
+
+`contract_validator_v2_strict.py` advanced from `contract_v2_strict/1` to `/2` and its
+`validate_strict` signature changed: the four `expected_*` identities are now **mandatory**. The
+module is a shared tool rather than a frozen spec artifact, so it is versioned by its
+`VALIDATOR_ID` rather than duplicated.
+
+Consequence worth recording: four assertions in `tests/test_cbs_v5.py` began passing for the
+wrong reason — they omitted the identities, so they failed on *missing identity* rather than on
+the defect each names. They were corrected to supply identity and to assert **which** problem was
+raised, and the suite grew 75 → 79 assertions.

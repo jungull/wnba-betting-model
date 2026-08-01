@@ -233,33 +233,60 @@ def producer_tree_identity(root: Path) -> dict:
     """Identify the tree that PRODUCED this manifest, without self-reference.
 
     `root_commit` alone is misleading: the manifest is captured from a WORKING
-    TREE, which is normally dirty relative to HEAD and whose changes are about to
-    become the *next* commit. Recording only HEAD invites the reading "certified
-    at commit X" when the certified tree was not commit X.
+    TREE, normally dirty relative to HEAD, whose changes become the *next*
+    commit. Recording only HEAD invites the reading "certified at commit X" when
+    the certified tree was not commit X. A commit also cannot embed its own final
+    hash, so the producing tree is identified by CONTENT.
 
-    A commit also cannot embed its own final hash, so the producing tree is
-    identified by content instead: the HEAD it descends from, the digests of the
-    operational code actually executed, and a digest of the full tracked diff plus
-    the sorted untracked-file list. Two runs agree iff the producing tree agreed.
+    Two corrections, both from a real failure:
+
+    * **The generating file is hashed by `__file__`, not by name under `root`.**
+      An earlier manifest attested `operational_input_manifest.py = c1231b…` —
+      the *parent commit's* version — because it hashed `root/<name>` while the
+      code actually executing lived in a worktree. The attested code could not
+      have emitted the structure it was attesting. Both are now recorded, with
+      an explicit mismatch flag, and the generator self-checks its own bytes.
+    * **Untracked files are hashed by CONTENT, not just by name.** Equal names
+      with different bytes previously collided, so the old "agree iff the tree
+      agreed" claim was not supported by its own domain.
     """
     head = (_lines(_git(root, ["rev-parse", "HEAD"]).stdout) or ["UNKNOWN"])[0]
 
-    code = {}
+    # (a) the file that is actually running, self-checked
+    me = Path(__file__).resolve()
+    generator = {"path": str(me), "sha256": sha256_of(me)[0]}
+    recheck = sha256_of(me)[0]
+    generator["self_check_ok"] = (recheck == generator["sha256"])
+
+    # (b) the same-named files under the audited root -- what daily_certify ran
+    code_in_root, mismatches = {}, []
     for rel in PRODUCER_CODE:
         p = root / rel
-        code[rel] = sha256_of(p)[0] if p.exists() else "ABSENT"
+        code_in_root[rel] = sha256_of(p)[0] if p.exists() else "ABSENT"
+    if code_in_root.get(me.name) not in (None, generator["sha256"]):
+        mismatches.append(
+            f"{me.name}: generator bytes {generator['sha256'][:12]}… differ from "
+            f"the copy under root {code_in_root[me.name][:12]}… — the run used the "
+            f"GENERATOR bytes")
 
-    diff = _git(root, ["diff", "HEAD"]).stdout                      # bytes
+    diff = _git(root, ["diff", "HEAD"]).stdout
     diff_sha = hashlib.sha256(diff).hexdigest()
+
     untracked = sorted(_unquote(x) for x in
                        _lines(_git(root, ["ls-files", "--others",
                                           "--exclude-standard"]).stdout))
-    untracked_sha = hashlib.sha256("\n".join(untracked).encode()).hexdigest()
+    uh = hashlib.sha256()
+    for rel in untracked:                              # NAME **and** CONTENT
+        p = root / rel
+        digest = sha256_of(p)[0] if p.is_file() else "ABSENT"
+        uh.update(f"{rel}\0{digest}\n".encode())
+    untracked_sha = uh.hexdigest()
 
     agg = hashlib.sha256()
     agg.update(head.encode())
+    agg.update(f"\0generator\0{generator['sha256']}".encode())
     for rel in PRODUCER_CODE:
-        agg.update(f"\0{rel}\0{code[rel]}".encode())
+        agg.update(f"\0{rel}\0{code_in_root[rel]}".encode())
     agg.update(f"\0diff\0{diff_sha}\0untracked\0{untracked_sha}".encode())
 
     return {
@@ -268,13 +295,22 @@ def producer_tree_identity(root: Path) -> dict:
                      "normally dirty relative to it, so this is NOT a claim that "
                      "the certification was run at this commit.",
         "working_tree_clean_vs_head": diff == b"" and not untracked,
-        "producer_code_sha256": code,
+        "generating_file": generator,
+        "producer_code_sha256_in_root": code_in_root,
+        "producer_code_mismatches": mismatches,
         "tracked_diff_sha256": diff_sha,
-        "untracked_files_sha256": untracked_sha,
+        "untracked_sha256": untracked_sha,
         "n_untracked_files": len(untracked),
         "producer_tree_identity_sha256": agg.hexdigest(),
-        "identity_domain": "sha256 over head, then each producer file's digest, "
-                           "then the tracked-diff and untracked-list digests",
+        "identity_domain": "sha256 over head, the GENERATING FILE's own bytes, each "
+                           "producer file's bytes under root, the tracked-diff digest, "
+                           "and the untracked NAME+CONTENT digest",
+        "identity_scope": "This identifies the declared producer dependency set "
+                          "(HEAD, the generating file, the listed producer code, the "
+                          "tracked diff, and untracked name+content) together with the "
+                          "exact operational inputs hashed below. It is NOT an "
+                          "if-and-only-if claim about the whole tree: files outside "
+                          "that declared set are not covered.",
     }
 
 
