@@ -45,10 +45,21 @@
 [CmdletBinding()]
 param(
     [switch]$Apply,
-    [string]$RepoRoot = (Split-Path -Parent $PSScriptRoot)
+    [string]$RepoRoot
 )
 
 $ErrorActionPreference = 'Stop'
+
+# $PSScriptRoot is not reliably populated inside a param() default under Windows
+# PowerShell 5.1 (it came back empty when invoked as `powershell -File ...`,
+# and Split-Path then threw on an empty Path before the script could start).
+# Resolve it in the body instead, where $PSCommandPath is dependable.
+if (-not $RepoRoot) {
+    $scriptDir = $PSScriptRoot
+    if (-not $scriptDir -and $PSCommandPath) { $scriptDir = Split-Path -Parent $PSCommandPath }
+    if (-not $scriptDir) { $scriptDir = (Get-Location).Path }
+    $RepoRoot = Split-Path -Parent $scriptDir
+}
 
 # The full expected inventory. Six capture/refresh tasks plus the two forecast
 # runs; StartWhenAvailable matters for every one of them, because each is a
@@ -168,17 +179,34 @@ if (-not (Test-Path $logPath)) {
 
     # forecast_cutoff is the decision moment -- the field that says when the
     # forecast was COMMITTED. logged_at_utc is when the line was written.
-    $today = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
+    #
+    # Compare against the LOCAL operating day, not the UTC one. The forecast
+    # tasks fire at 10:20 and 18:45 ET; the evening run stamps a cutoff around
+    # 22:45Z, so from 20:00 ET until midnight the UTC date has already rolled
+    # over and a UTC-keyed comparison reports zero records for "today" on a day
+    # that ran perfectly. That false alarm fires nightly, and a check that cries
+    # wolf is a check that gets ignored -- the same failure mode .gitattributes
+    # was added to prevent.
+    $today = (Get-Date).ToString('yyyy-MM-dd')
     $todayCount = 0
     $lastCutoff = ''
     foreach ($line in $lines) {
         try { $rec = $line | ConvertFrom-Json } catch { continue }
         if ($rec.forecast_cutoff) {
             $lastCutoff = $rec.forecast_cutoff
-            if ($rec.forecast_cutoff.StartsWith($today)) { $todayCount++ }
+            try {
+                $cut = [datetimeoffset]::Parse(
+                    $rec.forecast_cutoff, [cultureinfo]::InvariantCulture,
+                    [System.Globalization.DateTimeStyles]::RoundtripKind)
+                if ($cut.ToLocalTime().ToString('yyyy-MM-dd') -eq $today) { $todayCount++ }
+            } catch {
+                # Unparseable timestamp: fall back to the raw prefix rather than
+                # silently dropping the record from the count.
+                if ($rec.forecast_cutoff.StartsWith($today)) { $todayCount++ }
+            }
         }
     }
-    Write-Host ("records with forecast_cutoff today (UTC {0}): {1}" -f $today, $todayCount)
+    Write-Host ("records with forecast_cutoff today (local {0}): {1}" -f $today, $todayCount)
     if ($lastCutoff) { Write-Host ("last forecast_cutoff: {0}" -f $lastCutoff) }
 
     if ($todayCount -eq 0) {
