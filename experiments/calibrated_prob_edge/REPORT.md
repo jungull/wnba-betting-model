@@ -33,40 +33,43 @@ Three things in that table matter more than the ROI figures:
 
 ## Why it failed — the mechanism
 
-> **Corrected 2026-08-01 after John's review.** This section originally argued from a
-> marginal correlation, `corr(p_over, disagree) = +0.007`. That was **stronger than the
-> artifact supported**: a marginal correlation cannot measure *incremental* information
-> conditional on market probability, and a collinear predictor inside a penalised model can
-> be shrunk toward zero while still carrying conditional signal. The claim is now settled by
-> `prob_edge_mechanism_ablation_v1` — six nested specifications on identical chronological
-> folds — rather than by that correlation.
+> **Corrected twice after John's reviews.** Originally this argued from a marginal
+> `corr(p_over, disagree) = +0.007`, which cannot measure *incremental* information
+> conditional on market probability. The replacement ablation's market arm then turned out to
+> use a **vig-inclusive, one-sided** price. Both are fixed: the claim now rests on
+> `prob_edge_mechanism_ablation_v2`, which uses a genuine de-vigged market
+> `p = q_over / (q_over + q_under)` from the same book and simultaneous snapshot.
 
-**The projection adds no incremental information.** The decisive contrast, full model minus
-market-plus-all-other-controls, spans zero on every slice with deltas of order 2×10⁻⁴:
+**Primary result — no detectable incremental projection information.** Full model minus
+de-vigged-market-plus-all-other-controls spans zero on every slice:
 
-| contrast | 2024 fit | 2025 dev | 2026 desc |
+| PRIMARY (8) − (7) | 2024 fit | 2025 dev | 2026 desc |
 |---|---|---|---|
-| **(6) − (5)** projection's incremental value | −0.000047 | −0.000213 | +0.000195 |
-| | spans 0 | spans 0 | spans 0 |
-| **(3) − (1)** projection *alone* vs a constant | −0.000000 | −0.000009 | +0.000028 |
-| **(2) − (1)** market vs a constant | −0.001387 | **−0.003497 excl. 0** | −0.000986 |
-| **(5) − (2)** other controls, given market | −0.002398 | **+0.004127 excl. 0** | **+0.009170 excl. 0** |
+| delta | −0.000053 | −0.000211 | +0.000207 |
+| 90% CI | spans 0 | spans 0 | spans 0 |
 
-Paired per-row log-loss deltas, negative = better, 90% CI bootstrapped over game dates.
+The projection alone against a constant is likewise indistinguishable from zero
+(−0.000000 `[−0.000041, +0.000040]`).
 
-Three readings, and the third was invisible before the ablation:
+**The de-vig correction mattered.** `(3) − (2)` — de-vigged versus raw vig-inclusive, both
+unfitted — is −0.0055 / −0.0045 / −0.0043 and **excludes zero on all three slices**. The raw
+vig-inclusive one-sided probability is in fact **worse than a constant** out of sample (2025
+0.69309 vs 0.69217; 2026 0.69659 vs 0.69316). And `(4) − (3)` spans zero everywhere: the
+de-vigged market needs no fitted recalibration.
 
-1. **The projection is not informative at all** — not merely non-incremental. Alone against a
-   constant it is −0.000000 `[−0.000041, +0.000040]`.
-2. **The market carries the only real signal** (−0.0035, CI excludes zero on 2025).
-3. **The non-projection controls are *actively harmful* out of sample.** `(5) − (2)` is
-   **positive** and excludes zero on both 2025 and 2026: seven features fitted on 2024 make
-   out-of-sample log loss **worse** than using the market's implied probability alone.
+**Softened accordingly.** An earlier draft said "the market carries the only real signal."
+Against the fairer representation that is too strong: `(3) − (1)`, de-vigged market over a
+constant, excludes zero **only on 2025** (−0.0036 `[−0.0066, −0.0005]`) and spans zero on 2024
+and 2026. The accurate statement is that the de-vigged market is the best available
+representation and beats a constant detectably on 2025 only.
 
-That third point is the mechanism behind the calibration inversion (+1.144 → +0.445 →
-−0.263). The controls fit 2024 noise, and that noise anti-generalises. The model contributes
-no independent information, degrades the one signal it has, and then pays vig to bet against
-the real line. Losing ~10% per unit staked is what that predicts.
+**A diagnostic lead, explicitly not a mechanism.** `(7) − (4)` is +0.0042 `[+0.0008, +0.0076]`
+on 2025 and +0.0091 `[+0.0034, +0.0151]` on 2026 — i.e. **non-projection controls appear
+harmful in the 2025 development and 2026 descriptive slices, consistent with 2024
+noise-fitting.** These intervals are **not** corrected for the full registered comparison
+family, and this contrast is one of several secondary lines across multiple specifications
+and slices. It is a strong lead for why calibration degrades; it is **not** independent
+evidence of a confirmed general anti-generalisation mechanism, and is not claimed as one.
 
 ## What this result is *not*
 
@@ -75,8 +78,9 @@ was maximised by *agreeing* with the line — it rewarded abstention, and 88.4% 
 predicted-edge variance was the disagreement term inverted. This design defused that: the
 target is `P(points > line)`, a well-posed binary label; the minimum-disagreement band was
 fixed in advance at 1.0 points; overs and unders were scored separately; the disagreement
-term was included deliberately so its dominance could be measured. It *was* measured, and
-it is +0.007.
+term was included deliberately so its dominance could be measured. It *was* measured — and,
+after two corrections, measured properly: the registered primary contrast in
+`prob_edge_mechanism_ablation_v2` spans zero on every slice.
 
 So the objective was sound this time and the answer is simply **no edge**. That is a cleaner
 and more informative null than the predecessor's, and it costs the registration honestly.
@@ -96,10 +100,10 @@ selection, model fitting, probabilities and bet selection are all held fixed ins
 permutation. John flagged this on 2026-08-01 and was right. The two estimands are now named
 and separated:
 
-| estimand | what varies | correct for |
+| estimand | what varies | status |
 |---|---|---|
-| **frozen-policy conditional** | outcomes only; model and selection fixed | **2025, 2026** — the policy genuinely *is* frozen there |
-| **pipeline refit** | model refit **and bets re-selected** inside every draw | **2024** — its model was fit to the labels being permuted |
+| **`frozen_policy_conditional`** | outcomes only; model and selection fixed | correct and sufficient for **2025, 2026**, where the policy genuinely *is* frozen |
+| **`pipeline_refit_fixed_lambda_sensitivity`** | coefficients refit, bets re-selected; **lambda held fixed** | a **partial-refit SENSITIVITY** for 2024 — *not* a complete pipeline null and **not** amendment v2 P3 compliant |
 
 The distinction matters, and running the correct one on 2024 changed the reading:
 
@@ -108,16 +112,26 @@ OVER   observed ROI +0.1076 | refit-null mean +0.1915  sd 0.1599 | MDE 0.4480 ->
 UNDER  observed ROI +0.0244 | refit-null mean +0.0628  sd 0.0188 | MDE 0.0526 -> WITHIN NOISE
 ```
 
-**The refit-null mean is higher than the observed ROI on both sides.** A pipeline handed
-*shuffled* labels achieves better in-sample ROI on average than the real one did. So the
-fitting slice's apparently-positive return is not merely "within noise" — it is *below what
-label-free noise-fitting produces*. That is a considerably stronger statement than the frozen
-null could make, and it only became visible once the estimand was correct.
+The refit-null mean is higher than the observed ROI on both sides: a pipeline handed
+*shuffled* labels achieves better in-sample ROI on average than the real one did.
 
-One departure is recorded rather than glossed: lambda is not re-selected by leave-one-date-out
-CV inside each draw (2,000 draws × 8 lambdas × 94 folds is unaffordable). Lambda depends only
-weakly on a label permutation, and the omission makes this null slightly *narrower*, so the
-MDE is a mild under-estimate — conservative in the direction that matters here.
+**What that is, and is not.** It is an **overfitting diagnostic** on the fitting slice — it
+says the 2024 return is not merely inside noise but below what label-free noise-fitting
+produces. It is **not** additional out-of-sample evidence, and is not offered as any. The
+out-of-sample case rests entirely on the 2025 and 2026 frozen-policy results.
+
+**Labelling, corrected.** The real pipeline selected lambda *from the labels*; this null does
+not. It refits coefficients and re-selects bets, but it does **not** reproduce the complete
+registered fitting procedure, so it is named `pipeline_refit_fixed_lambda_sensitivity` and is
+**not** described as a complete pipeline-refitting null nor as satisfying
+`screening_protocol_amendment_v2` P3.
+
+An earlier draft claimed the omission makes the null "only slightly narrower." **That is
+withdrawn** — neither the direction nor the magnitude of holding lambda fixed has been
+demonstrated. Accordingly this MDE is retained as a clearly labelled partial-refit
+sensitivity and is **not used as a formally amendment-compliant inference result**. Since
+2024 is the fitting slice and the out-of-sample results are already negative, no substantive
+claim rests on it; a full nested permutation is therefore not run and is not blocking.
 
 Both defects were mine, and both are the class of error this project's discipline exists to
 catch. The headline conclusion is unchanged by either; the second fix strengthened it.

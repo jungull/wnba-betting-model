@@ -302,19 +302,24 @@ def perm_mde(g: pd.DataFrame, side: str, rng: np.random.Generator) -> dict:
 
 def perm_mde_refit(fit: pd.DataFrame, lam: float, mu, sd,
                    rng: np.random.Generator) -> dict:
-    """PIPELINE-REFITTING null for the FITTING slice (amendment v2 P3).
+    """PARTIAL-REFIT SENSITIVITY for the FITTING slice -- NOT amendment v2 P3 compliant.
 
     Inside every draw the permuted labels are refit end to end: the L2 logistic is refit on
     the shuffled labels, probabilities are recomputed, and the EV rule RE-SELECTS its bets
     before ROI is measured.  So the null reflects a procedure that gets to optimise against
     each permuted label set, which is what the real procedure did on 2024.
 
-    HELD FIXED, and stated rather than glossed: lambda is not re-selected by leave-one-date-out
-    CV inside each draw (2000 draws x 8 lambdas x 94 folds is not affordable).  Lambda is
-    chosen by log loss and depends only weakly on a label permutation, but this is a
-    departure from a literally complete pipeline permutation and is recorded as such.  Its
-    effect is to make the null slightly NARROWER than a fully complete one, so the resulting
-    MDE is a mild under-estimate rather than an over-estimate.
+    HELD FIXED: lambda is NOT re-selected inside each draw (2000 draws x 8 lambdas x 94 folds
+    is unaffordable), even though the real registered pipeline DID select lambda from the
+    labels.  This is therefore a PARTIAL refit, not a complete pipeline permutation, and it
+    does NOT satisfy screening_protocol_amendment_v2 P3.
+
+    An earlier version of this docstring asserted the omission makes the null "slightly
+    narrower".  That claim is WITHDRAWN: neither the direction nor the magnitude of the
+    fixed-lambda omission has been demonstrated.  The output is retained as a clearly
+    labelled sensitivity and its MDE is NOT used as a formally amendment-compliant inference
+    result.  Nothing substantive rests on it -- 2024 is the fitting slice and the
+    out-of-sample results are already negative.
     """
     X, _, _ = standardise(fit[FEATURES], mu, sd)
     y = fit.y_over.to_numpy()
@@ -344,7 +349,7 @@ def perm_mde_refit(fit: pd.DataFrame, lam: float, mu, sd,
     for side in ("over", "under"):
         v = out[side][np.isfinite(out[side])]
         res[side] = {
-            "estimand": "pipeline_refit_within_date_permutation",
+            "estimand": "pipeline_refit_fixed_lambda_sensitivity",
             "n_perm_valid": int(len(v)),
             "null_sd": float(v.std(ddof=1)) if len(v) > 1 else float("nan"),
             "null_mean": float(v.mean()) if len(v) else float("nan"),
@@ -492,8 +497,8 @@ def main() -> int:
 
     # The fitting slice needs the PIPELINE-REFITTING null: its model was fit to the very
     # labels being permuted, so a frozen-policy null understates the reachable ROI.
-    print("\npipeline-refitting null on the FITTING slice (model refit and bets re-selected "
-          "inside every draw):")
+    print("\npartial-refit SENSITIVITY on the FITTING slice (coefficients refit and bets "
+          "re-selected inside every draw; LAMBDA HELD FIXED -- not a complete pipeline null):")
     refit_null = perm_mde_refit(fit, lam, mu, sd, rng)
     for side in ("over", "under"):
         r = refit_null[side]
@@ -537,11 +542,13 @@ def main() -> int:
                 "model, probabilities and bet selection HELD FIXED; only outcomes permuted "
                 "within game date. Correct for 2025/2026, where the policy genuinely is a "
                 "frozen object being scored."),
-            "pipeline_refit": (
-                "model refit and bets RE-SELECTED inside every draw. Required for the 2024 "
-                "fitting slice, whose model was fit to the labels being permuted. Lambda "
-                "re-selection is held fixed for cost, which makes this null slightly narrow; "
-                "recorded rather than glossed."),
+            "pipeline_refit_fixed_lambda_sensitivity": (
+                "PARTIAL refit: coefficients refit and bets RE-SELECTED inside every "
+                "draw, but LAMBDA IS HELD FIXED although the real pipeline selected it from "
+                "the labels. Therefore NOT a complete pipeline null and NOT amendment v2 P3 "
+                "compliant. The direction and magnitude of the fixed-lambda omission have "
+                "NOT been demonstrated, so this is a labelled sensitivity only and its MDE "
+                "is not used as a formal inference result."),
         },
         "disagreement_dominance": dom,
         "slice_labels": {
