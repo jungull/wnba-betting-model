@@ -83,11 +83,12 @@ def _run_main(argv: list[str], stub_results: dict[str, dict]) -> tuple[str, int]
 repo_names = [n for n, _ in va.REPOSITORY_CHECKS]
 op_names = [n for n, _ in va.OPERATIONAL_CHECKS]
 
-# Layer A was 8 checks when the split was specified; it is 10 now because this
-# suite and tests/test_cbs_builders.py were wired in. The cardinality is not the
-# invariant -- the MEMBERSHIP is. What must never change is that every check in
-# layer A reads only committed files, and that daily_certify is not among them.
-check("layer A has 10 checks", len(va.REPOSITORY_CHECKS) == 10,
+# Layer A was 8 checks when the split was specified; it is 11 now, as the
+# synthetic suites (test_gate_layers, test_cbs_builders, test_cbs_generator)
+# were wired in. The cardinality is not the invariant -- the MEMBERSHIP is. What
+# must never change is that every check in layer A reads only committed files,
+# and that daily_certify is not among them.
+check("layer A has 11 checks", len(va.REPOSITORY_CHECKS) == 11,
       f"got {len(va.REPOSITORY_CHECKS)}: {repo_names}")
 check("layer A is all committed-file checks (no capture-data reader)",
       all("daily_certify" not in n for n in repo_names), str(repo_names))

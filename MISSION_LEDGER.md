@@ -318,13 +318,16 @@ positive one would have been provisional.
 
 ## 12. Standing operational state
 
-- Gate: **`python verify_all.py`** — runs 9 checks, exit non-zero on any failure.
-  `--install-hook` refuses pushes unless green. **But the 9 are not one kind of evidence**, and
-  since 2026-08-01 they are reported as two layers:
-  - **Layer A — reproducible repository gate, 10 checks.** The 8 test suites (**229 tests** =
-    36+22+8+13+5+45+34+66), `asof_manifest_scan`, `forecast_chain`. Reads only committed files;
-    **reproduces from a clean checkout of the commit and nothing else.** *(Was 8 checks / 129
-    tests; `tests/test_gate_layers.py` and `tests/test_cbs_builders.py` were added and wired in.)*
+- Gate: **`python verify_all.py`** — runs **12** checks, exit non-zero on any failure.
+  **But they are not one kind of evidence**, and since 2026-08-01 they are reported as two layers
+  that are never added together:
+  - **Layer A — reproducible repository gate, 11 checks.** The 9 test suites (**352 tests** =
+    36+22+8+13+5+45+34+66+123), `asof_manifest_scan`, `forecast_chain`. Reads only committed
+    files; **reproduces from a clean checkout of the commit and nothing else.** *(Was 8 checks /
+    129 tests when the split was introduced; `tests/test_gate_layers.py`,
+    `tests/test_cbs_builders.py` and `tests/test_cbs_generator.py` were added and wired in. The
+    cardinality is not the invariant — the membership is: every layer-A check reads only
+    committed files.)*
   - **Layer B — operational certification, 1 check** — the **ninth** `verify_all` check as
     originally numbered, not a tenth; the number ten belongs to the **ten hooks `daily_certify`
     runs internally**. It reads **git-ignored, untracked and dirty** live capture data, so it is
@@ -335,14 +338,25 @@ positive one would have been provisional.
     supposed to contain. Layer B is run separately on the capture machine, always with
     `operational_input_manifest.py`. `tests/test_gate_layers.py` enforces the split, the hook's
     flag, and the absence of any cross-layer aggregate.
-- Last gate — **layer A: PASS, 8/8, 129 tests, 29/29 artifacts attested, forecast chain
-  `ok=True` (8 records)**, reproduced in a clean checkout at commit `db9f011`.
-  **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, bound to input manifest
-  `6959e057989c4c5a642cfddac431d0fadab2ec4b7752897f6a6de7d1c134f68f` (34 ignored inputs,
-  5,512,675 bytes). Verbatim evidence and both run windows at
+- Last gate — **layer A: PASS, 11/11, 352 tests, 29/29 artifacts attested, forecast chain
+  `ok=True` (8 records)**, 2026-08-01T19:52:50Z–19:53:53Z, exit 0, reproduced in a clean checkout
+  holding no git-ignored capture data.
+  **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, 2026-08-01T19:54:08Z–19:54:46Z, exit 0, bound
+  to input manifest **`7965c304f6c64014ccd1fdb9c75f6eaf90f3de46c4ed6200c6458e14c0a74014`** —
+  **4,647 inputs audited across all ten `daily_certify` hooks, 4,608 committed-clean (bound by the
+  commit, not hashed), 39 non-committed hashed** (35 ignored, 3 untracked injury PDFs, 1 dirty
+  `injury_log.csv`), 5,881,249 bytes. The manifest was regenerated immediately before and after the
+  run with an identical aggregate. Verbatim evidence and every run window at
   **`project_docs/GATE_LOG_2026-08-01.md`**; the bound input set at
-  **`project_docs/OPERATIONAL_INPUTS_2026-08-01T1823Z.json`**, regenerable with
-  `python operational_input_manifest.py`.
+  **`project_docs/OPERATIONAL_INPUTS_2026-08-01T1954Z.json`**, regenerable with
+  `python operational_input_manifest.py`. Earlier manifests (`…T1823Z`, `…T1915Z`) are **retained**
+  as the bindings for their own runs, never replaced.
+  > **Completeness correction 2026-08-01.** An earlier manifest claimed to bind every operational
+  > input while omitting the ten `data/wnba_gamelog_*.parquet` files that `daily_certify` reads in
+  > its duplicate, coverage and schema checks (`daily_certify.py:156, :189, :375`). They are all
+  > tracked-clean today, so the aggregate hash is unchanged — but a future dirty copy would have
+  > escaped hashing while the manifest still said "complete". Declared now; audited unique paths
+  > rose 4,637 → **4,647**.
   > **CORRECTED 2026-08-01.** This entry previously read *"9/9 green … run at commit `40b87c0`"*.
   > That number is **retired**: it silently added layer B to layer A and was **not reproducible
   > from any commit** — an isolated run at exact `db9f011` fails `daily_certify` because
@@ -620,7 +634,13 @@ hierarchical arm is **not** begun. `arm_incumbent` remains **rejected and uncons
 
 ---
 
-## 18. `contract_baseline_suite_v3` — registered, definition only, **pipeline-honest**
+## 18. `contract_baseline_suite_v3` — registered, definition only — **SUPERSEDED, see §19**
+
+> **SUPERSEDED 2026-08-01 by `contract_baseline_suite_v4` (§19).** v3 froze the right ideas but
+> its helpers were **useful primitives rather than the registered pipeline**, and five points let
+> contamination back in. v3's registry record is **not mutated** and its document is **not
+> edited**; the erratum lives in `project_docs/SPEC_ERRATA.md`.
+
 
 `project_docs/CONTRACT_BASELINE_SUITE_V3.md`, registered 2026-08-01 **before any output**.
 Registry append **1 insertion, 0 deletions** (80 → 81); `computed_nothing: true`; `config_hash`
@@ -673,3 +693,57 @@ gate.
 Generation into a new v3 artifact directory awaits supervisory review; validation, provenance,
 obligation coverage and the exclusion cross-tabs must all pass **before any accuracy metric is
 inspected**. The dynamic hierarchical arm is **not** begun.
+
+---
+
+## 19. `contract_baseline_suite_v4` — registered **and implemented** on synthetic data
+
+`project_docs/CONTRACT_BASELINE_SUITE_V4.md`, registered 2026-08-01. Registry append **1
+insertion, 0 deletions** (81 → 82); the 81-line registry is the exact byte prefix of the 82-line
+registry and **the v1, v2 and v3 records are all unchanged**. `config_hash`
+**`190b9e26c0de3ccdecce87297a762bc57367792eb9314e7ded3d14763e59bcef`** verifies by recomputation.
+**No real contract row has been read, and no historical OOF, accuracy or coverage figure exists.**
+
+**Why v4.** v3's helpers proved *useful primitives*, not the registered pipeline, and five points
+let contamination back in through the side door:
+
+1. the team **T1/T2/T3 split cut on team-game rows**, so one game's two rows — and two games on a
+   date — could land in different segments, putting one team's outcome in the segment fitting the
+   other's calibration map. v4 cuts on **distinct dates**, with frozen floor rounding
+   (`n_t3 = n_t2 = floor(n·0.25)`, T1 takes the remainder), minimums 8/4/4, and an explicit
+   degenerate fallback that empties T2 and T3 rather than borrowing;
+2. **selection took bare frames.** Returning disjoint arrays does not make contamination
+   *unrepresentable*. Every v4 selection API takes a `SplitContext` and raises `SelectionLeakage`
+   on any calibration or test index; an overlapping context cannot be constructed. **The guard
+   rejected this pipeline's own first run twice** — whole-frame masks for the `p_active` base rate
+   and for team channel-α — each of which would otherwise have returned a plausible number
+   computed partly on calibration rows;
+3. **obligation ordering was unpinned.** Now `(player_id, season, forecast_cutoff, game_id)`,
+   stable sort, **failing closed** on indistinguishable duplicates or a missing key;
+4. **a constant residual pool yields `sd = 0`** — finite, so v3 accepted it, but the contract
+   requires `pred_sd > 0`. Nonfinite *or* nonpositive sd is now **insufficient** and routes to the
+   declared fallback;
+5. **base rates and fallback means** are computed only from tuning indices, through the same guard.
+
+A sixth defect surfaced while implementing and is fixed rather than left latent: **conditional
+history ran the EWMA over every obligation**, so a DNP row's recorded zero moved the estimate and
+therefore the selected conditional α — defeating the target-specific masks by another route.
+Conditional history is now the **active subsequence only**, strictly as-of, never reading an
+inactive outcome. `p_active` is deliberately unaffected: inactive rows are what it exists to
+predict, and they still move its base rate.
+
+**Implemented and demonstrated.** `cbs_generator.py` (guarded primitives) and `cbs_pipeline.py`
+(the end-to-end fold runners) contain **no file I/O whatsoever** — no path argument exists — so the
+pipeline cannot reach real data even by mistake. `tests/test_cbs_generator.py` drives every stage
+on **synthetic frames only** with **123 assertions**, including all eight required negative /
+invariance tests (N1 calibration- and test-outcome invariance; N2 contaminated calls rejected;
+N3 inactive rows move `p_active` but not conditional tuning; N4 game- and date-integrity of the
+team segments; N5 zero-candidate and excluded obligations visible plus the outcome-selection alarm;
+N6 constant/degenerate pools fail closed; N7 duplicate obligations fail closed; N8 validation,
+provenance, coverage and quantile monotonicity gate any scoring path). Output is checked with the
+**real** `prediction_contract_v2.validate_predictions()`, not a stand-in.
+
+**Status: definition plus synthetic implementation only.** Generation into a new v4 artifact
+directory awaits supervisory review; validation, provenance, obligation coverage and the exclusion
+cross-tabs must all pass **before any accuracy metric is inspected**. The dynamic hierarchical arm
+is **not** begun. `arm_incumbent` remains **rejected and unconsumed**.

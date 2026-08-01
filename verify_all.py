@@ -19,12 +19,16 @@ TWO LAYERS, NEVER ONE NUMBER
 These checks are not one kind of evidence, and adding them up produced a claim
 that was true of a *machine* rather than of a *commit*:
 
-  * **REPOSITORY GATE** — 8 checks.  Reads only committed files, so it
-    reproduces from a clean checkout of a commit and nothing else.
-  * **OPERATIONAL CERTIFICATION** — 1 check (`daily_certify`, the 9th).  Reads
-    live capture data that is git-ignored, untracked or dirty.  It therefore
+  * **REPOSITORY GATE** — currently **10** checks (see `REPOSITORY_CHECKS`,
+    which is the authority; it was 8 when the split was introduced).  Reads only
+    committed files, so it reproduces from a clean checkout of a commit and
+    nothing else.
+  * **OPERATIONAL CERTIFICATION** — 1 check (`daily_certify`).  Reads live
+    capture data that is git-ignored, untracked or dirty.  It therefore
     **cannot** be reproduced from a commit, and a clean worktree legitimately
-    cannot satisfy it.
+    cannot satisfy it.  Note the number ten elsewhere in this project refers to
+    the ten hooks `daily_certify` runs *internally*, which all live inside this
+    single check — do not confuse the two counts.
 
 So this script reports the two separately and **never** prints an aggregate
 "all N checks green".  The installed pre-push hook runs the repository gate
@@ -77,6 +81,7 @@ REPOSITORY_CHECKS = [
     ("test_prediction_contract_v2",[sys.executable, "tests/test_prediction_contract_v2.py"]),
     ("test_gate_layers",           [sys.executable, "tests/test_gate_layers.py"]),
     ("test_cbs_builders",          [sys.executable, "tests/test_cbs_builders.py"]),
+    ("test_cbs_generator",         [sys.executable, "tests/test_cbs_generator.py"]),
     ("asof_manifest_scan",         [sys.executable, "asof_invariant.py", "--scan"]),
     ("forecast_chain",             [sys.executable, "-c",
                                     "import sys;from evalharness import verify_chain;"

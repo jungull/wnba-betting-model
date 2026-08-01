@@ -5,11 +5,13 @@ WHY THIS EXISTS
 ---------------
 `verify_all.py` reports two different kinds of evidence:
 
-  * the **repository gate** (8 checks) — passes from a clean checkout of a commit
-    and nothing else;
-  * the **operational certification** (`daily_certify`, the 9th check) — reads
-    live capture files that are git-ignored, untracked, or dirty, and therefore
-    cannot travel with a commit.
+  * the **repository gate** (currently 10 checks; `verify_all.REPOSITORY_CHECKS`
+    is the authority) — passes from a clean checkout of a commit and nothing
+    else;
+  * the **operational certification** (`daily_certify`) — reads live capture
+    files that are git-ignored, untracked, or dirty, and therefore cannot travel
+    with a commit. It is one check that internally runs ten hooks; this script
+    audits the inputs of all ten.
 
 A "green" operational result is only meaningful if a reviewer can tell *what it
 was run against*. A filename in a dirty-file list is **not** a content binding —
@@ -50,11 +52,17 @@ from pathlib import Path
 # here either -- but if they DO exist and are non-committed, they are hashed.
 # ---------------------------------------------------------------------------
 CHECK_INPUTS: list[dict] = [
+    # NOTE: data/wnba_gamelog_*.parquet is read by THREE checks
+    # (daily_certify.py:156, :189, :375). Omitting it from these declarations
+    # made the completeness claim false: a future dirty copy would have escaped
+    # hashing while the manifest still reported "every input bound".
     {"check": "duplicate game/player rows",
-     "globs": ["data/refresh_2026/gamelog_*.parquet"], "required": True},
+     "globs": ["data/wnba_gamelog_*.parquet",
+               "data/refresh_2026/gamelog_*.parquet"], "required": True},
 
     {"check": "coverage by season (pbp/misc/advanced)",
-     "globs": ["data/refresh_2026/gamelog_*.parquet",
+     "globs": ["data/wnba_gamelog_*.parquet",
+               "data/refresh_2026/gamelog_*.parquet",
                "data/refresh_2026/misc/misc_*.parquet",
                "data/refresh_2026/advanced/advanced_*.parquet",
                "data/refresh_2026/pbp/pbp_*.parquet",
@@ -72,7 +80,8 @@ CHECK_INPUTS: list[dict] = [
                "data/odds_capture/live_*.json"], "required": True},
 
     {"check": "schema fingerprint drift",
-     "globs": ["data/refresh_2026/gamelog_*.parquet",
+     "globs": ["data/wnba_gamelog_*.parquet",
+               "data/refresh_2026/gamelog_*.parquet",
                "data/refresh_2026/misc/misc_*.parquet",
                "data/refresh_2026/advanced/advanced_*.parquet",
                "data/refresh_2026/pbp/pbp_*.parquet",
