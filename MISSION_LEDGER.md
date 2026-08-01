@@ -178,19 +178,23 @@ Steps 0–3 of `PLAN_2026-07-31_W1_AUDIT_AND_BAKEOFF.md` are **done**. Remaining
 
 ## 10. Highest-value next action
 
-**Run `base_predictions_oof_2022_2023_v1` first.** The council amendment promoted this from a
-mid-priority item to the single highest-leverage one, because it now unblocks two things at
-once: council ladder rungs 3–6 (G2), and the conditional-edge/props fitting sample, which it
-enlarges from ~229 games to ~730.
+**✅ DONE 2026-08-01 — `base_predictions_oof_2022_2023_v1`.** Reproduction gate passed at
+**2.842e-14** (registered tolerance 1e-12) on the 229 registered 2024 rows *and* on the full
+673-row committed intersection, so the estimator is provably identical and only the training
+window differs. Emitted **435 new OOF rows**: 2022 (207 games, trained on 2021 alone —
+**thin history**, flagged in the manifest) and 2023 (228 games, trained on 2021–2022).
+Leakage audits PASS for both. **Fitting sample 229 → 664 games.** Artifact carries a
+`asof_granularity="season"` manifest with per-season source-observation bounds and is now in
+`FITTED_ARTIFACT_GLOBS` (scan 24/24 attested).
 
-**This re-orders `calibrated_prob_edge_v1`, and deliberately so.** That experiment could run
-today on 229 fitting games — but its own registration says a redesign after seeing results is
-a new id that consumes its evaluation slice. Running it on 229 games when 730 is achievable
-would spend a frozen, well-designed registration on a third of the available data, with no
-legitimate way to re-run it afterwards. Extend the OOF span first, then run it once, properly.
+Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared), and
+`calibrated_prob_edge_v1` can now run on ~2.9× the fitting data.
 
-Order: (1) `base_predictions_oof_2022_2023_v1`; (2) `calibrated_prob_edge_v1`; (3) step 8
-shared as-of feature matrix; (4) bake-off arms under the council design.
+**Next: run `calibrated_prob_edge_v1`.** Registered in full, design frozen, no new data or
+authorization needed. It must run **once, without redesign** — a post-hoc change is a new id
+that consumes its evaluation slice. Its props clustered-SE / MDE computation lands with it.
+
+Then: (2) step 8 shared as-of feature matrix; (3) bake-off arms under the council design.
 
 ## 11. Evidence required before the next decision
 
