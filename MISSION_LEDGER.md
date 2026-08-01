@@ -51,7 +51,8 @@ and is a prerequisite of `calibrated_prob_edge_v1`, not an afterthought.
 |---|---|---|---|
 | `player_model_bakeoff_v1` | is EWMA/ridge underfitting? 4 arms: incumbent, dynamic hierarchical player profiles, CatBoost, TabPFN | A | registered, **not started** — now **amended by `council_design_v1`** |
 | `council_design_v1` | does a diverse weighted council beat every individual member? | A | **registered 2026-07-31**, computes nothing yet |
-| `calibrated_prob_edge_v1` | calibrated P(over) × executable odds ⇒ EV-thresholded frozen policy | A | registered in full, **not started** — must run without redesign |
+| `calibrated_prob_edge_v1` | calibrated P(over) × executable odds ⇒ EV-thresholded frozen policy | A | **RUN 2026-08-01 — NEGATIVE.** See §4 |
+| `executability_fixed_notional_v1` | replaces the unsatisfiable book-limits clause | A | registered, applied |
 | `w1_extraction_quality_audit_v1` | what actionable pre-cutoff signal does W1 actually carry? | B | registered, **not started** |
 
 ### The council amendment changed the sequencing
@@ -82,8 +83,21 @@ orchestrator-added guards are recorded in it; three change what happens next:
 
 - **Comparative-error target — DEFECTIVE BY CONSTRUCTION.** `|edge| ≤ |model − market|`, so
   the target is maximised by *agreeing* with the line; it rewards abstention, not skill.
-  Formalised permanently in `tests/test_edge_target_identity.py`. Successor is
-  `calibrated_prob_edge_v1`.
+  Formalised permanently in `tests/test_edge_target_identity.py`. Successor was
+  `calibrated_prob_edge_v1` — now also retired, below.
+- **`calibrated_prob_edge_v1` — NEGATIVE, 2026-08-01.** The successor's objective was *sound*
+  (binary `P(points > line)`, not comparative error) and the answer is simply **no edge**.
+  Frozen policy loses ≈10% per unit staked out of sample. 2026 log loss **0.70154 > log(2) =
+  0.69315** — worse than a constant 50% predictor. Calibration slope **inverts**: +1.144 →
+  +0.445 → −0.263. Even in the fitting slice both ROIs span zero.
+  **Mechanism:** `corr(p_over, disagree) = +0.007` vs `corr(p_over, market implied) = +0.612`.
+  The projection carries essentially no information; the fitted probability is a degraded echo
+  of the line, and the policy pays vig to bet against the real one.
+  **Erratum, self-reported:** the first run's MDEs were anti-conservative ~20× (permutation
+  shuffled only among selected bets). Corrected per v2 P3; conclusion unchanged.
+  **This retires the "tune the betting policy" family.** Re-tuning EV thresholds, widening the
+  band or searching bookmaker subsets are specification-searching against a signal-free input
+  and are barred.
 - **`player_volume_heterogeneity_v1`** — VOID (permutation resolution, B < m/q).
 - **`joint_differential_v1`** — VOID in full (contaminated ratings).
 - **Absence-load proxy** — relabelled **proxy failure** (r = 0.092 vs the post-hoc count),
@@ -187,12 +201,34 @@ Leakage audits PASS for both. **Fitting sample 229 → 664 games.** Artifact car
 `asof_granularity="season"` manifest with per-season source-observation bounds and is now in
 `FITTED_ARTIFACT_GLOBS` (scan 24/24 attested).
 
-Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared), and
-`calibrated_prob_edge_v1` can now run on ~2.9× the fitting data.
+Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared).
 
-**Next: `calibrated_prob_edge_v1` — READINESS CHECKED 2026-08-01, one mandatory defence is
-not currently satisfiable.** It must run **once, without redesign**, so it was audited before
-launch rather than after.
+> **Correction to an earlier claim in this file.** I wrote that the OOF extension would
+> enlarge the *props* fitting sample from ~229 to ~730 games. That was wrong. Props history
+> begins **2024-05-14**, so no amount of backward game-level extension adds props rows;
+> `calibrated_prob_edge_v1` fit on 2024 props regardless (6,320 rows / 246 games). The
+> extension enlarges the **game-level** conditional-edge sample and the **council weighting**
+> basis, which is real value — but it did not help the props experiment, and I said it would.
+
+**✅ DONE 2026-08-01 — `calibrated_prob_edge_v1`, verdict NEGATIVE** (registry run 1, report
+at `experiments/calibrated_prob_edge/REPORT.md`). Details in §4.
+
+**Next: the player-model bake-off under `council_design_v1`.** This is not a default choice —
+it is what the negative result *points at*. The failure was upstream of the decision layer:
+`projection − line` carries no information (`corr = +0.007`), so no betting policy built on
+that projection can work, however it is tuned. The projection itself is the thing that must
+improve. Prerequisite is step 8, the shared as-of feature matrix, built manifest-first.
+
+Still open before the council can use rungs 3–6 honestly: the **scope decision** in §9 (#6).
+Four tabular arms on one feature matrix risk correlated residuals, which is the one thing
+that makes a council pointless.
+
+---
+
+### Historical note — the readiness audit that preceded the run
+
+Recorded because the process mattered: `calibrated_prob_edge_v1` was audited *before* launch,
+since it can only run once.
 
 *What is ready.* `experiments/props_edge/bet_universe_per_book.csv` is the row-level input:
 **33,610 rows, 2024–2026**, per book, carrying `line`, `over_price`/`under_price`,
@@ -215,12 +251,12 @@ returns, so a loss under flattering assumptions is robust). A **positive** resul
 experiment now therefore risks spending its one registration on a result we could not act on
 if it came out well.
 
-**Recommended:** fix sub-blocker 1, then run with the limits gap **declared in the results
-file** and any positive finding explicitly labelled provisional pending an executability
-source. That preserves the registration's value without weakening the standard of proof.
-Alternative, needing John: an odds tier or data source exposing limits (see §9).
-
-Then: (2) step 8 shared as-of feature matrix; (3) bake-off arms under the council design.
+**Resolution:** John authorised the fixed-notional path on 2026-08-01;
+`executability_fixed_notional_v1` was registered before the run. Sub-blocker 1 was fixed (the
+join is one-to-one, so it cannot change which price row is used; **0 rows** were missing
+`last_update`). Sub-blocker 2 stands — limits remain unobtainable — but the result came out
+**negative**, and a negative measured under assumptions that *flatter* returns is robust. A
+positive one would have been provisional.
 
 ## 11. Evidence required before the next decision
 
