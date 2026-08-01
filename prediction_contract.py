@@ -1,40 +1,16 @@
 #!/usr/bin/env python3
-"""prediction_contract.py -- the player-game as-of PREDICTION CONTRACT.
+"""SUPERSEDED by prediction_contract_v2.py -- DO NOT CONSUME.
 
-Step 2 of council_scope_v2 S9.  This is the artifact every council arm must satisfy before
-any of them runs, and it is deliberately NOT a feature matrix.
-
-WHY A CONTRACT AND NOT A FEATURE TABLE
-    council_design_v1 said every arm gets an "identical as-of feature matrix".  Taken
-    literally that would exclude exactly the representational diversity council_scope_v2
-    exists to admit: a lineup GRAPH arm consumes an adjacency/lineup structure and a SEQUENCE
-    arm consumes ordered histories, neither of which is a row in a tabular matrix.
-
-    council_scope_v2 S7 resolves it: what must be shared is the PREDICTION CONTRACT and the
-    EVALUATION UNIVERSE -- the rows, the cutoff, the target definition and the output schema
-    -- not one physical feature table.  Arms may read whatever internal inputs they like, so
-    long as every input is available strictly before the cutoff and every prediction lands on
-    the canonical row index defined here.
-
-WHAT THIS MODULE DEFINES (council_scope_v2 S9 step 2, and John's enumerated list)
-    canonical player-game row id   -- row_uid, stable and reproducible
-    forecast cutoff                -- per row, explicit, timezone-aware
-    target-specific eligibility    -- five targets, each with its own rule
-    training boundary              -- which rows an arm may fit on for a given fold
-    feature-availability timestamps-- the latest source observation an arm may read
-    prediction schema              -- the columns every arm must emit
-    point + uncertainty fields     -- both required; a point estimate alone is not compliant
-    fallback / cold-start flags    -- declared, never silently imputed
-    model/config/data hashes       -- provenance per prediction
-    exact OOF fold identity        -- fold_id on every row, so alignment is checkable
-    coverage and exclusion reasons -- every excluded row keeps a reason
-    clustering units               -- the unit inference must cluster on
-
-THE FIVE TARGET-SPECIFIC COUNCILS (council_scope_v2 S6).  Predictions for different targets
-may NOT share a weight vector.  Each target gets its own council, its own eligibility and its
-own evaluation.
-
-FILE BOUNDARY: reads repo data read-only; writes ONLY experiments/prediction_contract/.
+Retained as a superseded artifact per prediction_contract_v2. Three foundational defects,
+all conceded:
+  D1 the candidate universe was built from TARGET-GAME boxscore rows, so a player absent
+     from the target box never entered it and p_active was conditioned on appearing;
+  D2 prediction obligation was conflated with scoring eligibility, letting an arm buy
+     coverage by dropping everyone later inactive;
+  D3 the cutoff game_date + 22:30 UTC was fabricated and labelled T-90m -- for the 199 of
+     784 games tipping 15:00-22:00 UTC it fell AFTER TIP.
+Plus D4: the team target was duplicated once per player row.
+Its VALIDATOR was sound; the universe it validated was not.
 """
 from __future__ import annotations
 

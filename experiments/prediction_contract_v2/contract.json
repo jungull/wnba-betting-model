@@ -1,0 +1,123 @@
+{
+ "contract_version": "player_game_contract/2",
+ "supersedes": "player_game_contract/1 -- postgame-selected universe, fabricated cutoff, conflated obligation/scoring, duplicated team rows",
+ "universe_kind": "RECENCY-ROSTER, not the complete slate",
+ "universe_limitations": [
+  "candidacy is inferred from appearance in the team's previous 5 games because exact historical rosters, transactions and inactive lists are not reconstructable for every season",
+  "a player who missed the entire lookback window is NOT a candidate even if rostered -- this understates the true slate",
+  "a debut or new signing with no prior appearance cannot be a candidate at all",
+  "the first game of each team-season has no prior game and yields no candidates"
+ ],
+ "central_invariant": "deleting every target-game player row before constructing the candidate roster does not change the candidate set; candidacy reads only games strictly before the target",
+ "cutoff_policies": {
+  "exact_tip_T-90m": "forecast_cutoff = scheduled_tip_time - 90 minutes; the ONLY rows usable for exact-cutoff market comparisons",
+  "date_only_prior_day_cutoff": "18:00 UTC on the day BEFORE the game. Conservative, reported separately, and NEVER described as T-90m"
+ },
+ "tip_time_resolution": "two-pass: provisional tip = earliest observed; final = the most recent observation made strictly before (provisional tip - 90m). A correction learned after the cutoff is deliberately not used.",
+ "targets": {
+  "p_active": {
+   "key": "p_active",
+   "description": "Probability the candidate appears in the game.",
+   "prediction_required": "every candidate_at_cutoff",
+   "outcome_scoreable": "every candidate_at_cutoff",
+   "uncertainty": "the probability IS the uncertainty; calibration is scored",
+   "clustering": "game_date",
+   "table": "player_game"
+  },
+  "e_minutes_given_active": {
+   "key": "e_minutes_given_active",
+   "description": "Expected minutes CONDITIONAL on appearing.",
+   "prediction_required": "EVERY candidate_at_cutoff, including eventual DNPs -- at the cutoff we do not know who appears, and E[minutes] = P(active) x E[minutes|active] needs the conditional term for everyone",
+   "outcome_scoreable": "only rows where the player appeared (minutes > 0)",
+   "uncertainty": "predictive sd of minutes, strictly > 0",
+   "clustering": "game_date",
+   "table": "player_game"
+  },
+  "attempts_usage": {
+   "key": "attempts_usage",
+   "description": "Field-goal attempts conditional on appearing.",
+   "prediction_required": "every candidate_at_cutoff",
+   "outcome_scoreable": "only rows where the player appeared and fga is resolved",
+   "uncertainty": "predictive sd of attempts, strictly > 0",
+   "clustering": "game_date",
+   "table": "player_game"
+  },
+  "player_scoring_distribution": {
+   "key": "player_scoring_distribution",
+   "description": "Predictive distribution of player points, conditional on appearing.",
+   "prediction_required": "every candidate_at_cutoff",
+   "outcome_scoreable": "only rows where the player appeared and pts is resolved",
+   "uncertainty": "predictive sd PLUS the named quantiles",
+   "clustering": "game_date",
+   "table": "player_game"
+  },
+  "team_game_distribution": {
+   "key": "team_game_distribution",
+   "description": "Team points distribution.",
+   "prediction_required": "every team-game row",
+   "outcome_scoreable": "every team-game row with a resolved final score",
+   "uncertainty": "predictive sd of team points",
+   "clustering": "game_date",
+   "table": "team_game"
+  }
+ },
+ "quantiles": [
+  0.05,
+  0.25,
+  0.5,
+  0.75,
+  0.95
+ ],
+ "prediction_schema": {
+  "row_uid": "pg_/tg_/g_ id from this module; the join key",
+  "target_key": "one of TARGETS",
+  "arm_id": "stable arm name",
+  "fold_id": "exact OOF fold identity; must match the contract fold map",
+  "forecast_cutoff": "tz-aware ISO8601, from the row's cutoff policy",
+  "pred_point": "point prediction on the target's support",
+  "pred_sd": "predictive sd; > 0 except where the target says otherwise",
+  "pred_q05": "5th percentile (distribution targets; else null)",
+  "pred_q25": "25th percentile",
+  "pred_q50": "median",
+  "pred_q75": "75th percentile",
+  "pred_q95": "95th percentile",
+  "is_fallback": "bool: a fallback path produced this",
+  "is_cold_start": "bool: insufficient prior history at this cutoff",
+  "n_prior_games": "int: strictly-prior appearances readable at the cutoff",
+  "feature_asof": "tz-aware ISO8601; MUST be strictly < forecast_cutoff",
+  "model_hash": "hash of fitted parameters",
+  "config_hash": "hash of the arm's configuration",
+  "data_snapshot_hash": "hash of the input snapshot",
+  "exclusion_reason": "null if predicted; else why. A silently missing row is a violation"
+ },
+ "tables": {
+  "player_game": "pg_ -- one row per pregame candidate x game",
+  "team_game": "tg_ -- one row per team x game",
+  "game": "g_ -- one row per game"
+ },
+ "obligation_vs_scoring": "prediction_required and outcome_scoreable are INDEPENDENT. E[minutes|active] is required for every candidate including eventual DNPs, and scored only where the player appeared, so an arm cannot buy coverage by dropping the inactive.",
+ "accounting": {
+  "master_rows": 33712,
+  "candidate_rows": 37792,
+  "candidate_games": 1489,
+  "roster_lookback_games": 5,
+  "games_total": 1495,
+  "games_exact_tip": 784,
+  "games_date_only": 711,
+  "games_with_tip_revisions": 40,
+  "candidates_not_in_target_box": 10110,
+  "candidates_appeared": 27676,
+  "candidates_dnp_or_absent": 10116,
+  "required__p_active": 37792,
+  "scoreable__p_active": 37792,
+  "required__e_minutes_given_active": 37792,
+  "scoreable__e_minutes_given_active": 27676,
+  "required__attempts_usage": 37792,
+  "scoreable__attempts_usage": 27676,
+  "required__player_scoring_distribution": 37792,
+  "scoreable__player_scoring_distribution": 27676,
+  "team_game_rows": 2990,
+  "team_game_unique": 2990,
+  "game_rows": 1495
+ }
+}

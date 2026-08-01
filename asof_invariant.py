@@ -169,7 +169,10 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     "experiments/prob_edge_ablation/specification_table.csv",
     # The player-game prediction contract universe. Nothing is fitted in it, but a STALE
     # universe would silently misalign every council arm, which is worse than a stale fit.
+    # v1 universe: SUPERSEDED, retained for audit, not consumed.
     "experiments/prediction_contract/universe.parquet",
+    # v2: the pregame-selected candidate universe. A stale copy would misalign every arm.
+    "experiments/prediction_contract_v2/player_game.parquet",
 )
 
 # Directories never worth walking.
