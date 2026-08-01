@@ -5,9 +5,9 @@ WHY THIS EXISTS
 ---------------
 `verify_all.py` reports two different kinds of evidence:
 
-  * the **repository gate** (currently 10 checks; `verify_all.REPOSITORY_CHECKS`
-    is the authority) — passes from a clean checkout of a commit and nothing
-    else;
+  * the **repository gate** — the checks in `verify_all.REPOSITORY_CHECKS`, which
+    is the only source of truth for the count; it passes from a clean checkout of
+    a commit and nothing else;
   * the **operational certification** (`daily_certify`) — reads live capture
     files that are git-ignored, untracked, or dirty, and therefore cannot travel
     with a commit. It is one check that internally runs ten hooks; this script
@@ -225,6 +225,59 @@ def resolve(root: Path, spec: str) -> list[Path]:
     return sorted(out)
 
 
+#: Code whose behaviour determines what the operational certification reads.
+PRODUCER_CODE = ("daily_certify.py", "operational_input_manifest.py")
+
+
+def producer_tree_identity(root: Path) -> dict:
+    """Identify the tree that PRODUCED this manifest, without self-reference.
+
+    `root_commit` alone is misleading: the manifest is captured from a WORKING
+    TREE, which is normally dirty relative to HEAD and whose changes are about to
+    become the *next* commit. Recording only HEAD invites the reading "certified
+    at commit X" when the certified tree was not commit X.
+
+    A commit also cannot embed its own final hash, so the producing tree is
+    identified by content instead: the HEAD it descends from, the digests of the
+    operational code actually executed, and a digest of the full tracked diff plus
+    the sorted untracked-file list. Two runs agree iff the producing tree agreed.
+    """
+    head = (_lines(_git(root, ["rev-parse", "HEAD"]).stdout) or ["UNKNOWN"])[0]
+
+    code = {}
+    for rel in PRODUCER_CODE:
+        p = root / rel
+        code[rel] = sha256_of(p)[0] if p.exists() else "ABSENT"
+
+    diff = _git(root, ["diff", "HEAD"]).stdout                      # bytes
+    diff_sha = hashlib.sha256(diff).hexdigest()
+    untracked = sorted(_unquote(x) for x in
+                       _lines(_git(root, ["ls-files", "--others",
+                                          "--exclude-standard"]).stdout))
+    untracked_sha = hashlib.sha256("\n".join(untracked).encode()).hexdigest()
+
+    agg = hashlib.sha256()
+    agg.update(head.encode())
+    for rel in PRODUCER_CODE:
+        agg.update(f"\0{rel}\0{code[rel]}".encode())
+    agg.update(f"\0diff\0{diff_sha}\0untracked\0{untracked_sha}".encode())
+
+    return {
+        "head_commit_at_capture": head,
+        "head_note": "the commit the producing tree DESCENDS FROM. The tree was "
+                     "normally dirty relative to it, so this is NOT a claim that "
+                     "the certification was run at this commit.",
+        "working_tree_clean_vs_head": diff == b"" and not untracked,
+        "producer_code_sha256": code,
+        "tracked_diff_sha256": diff_sha,
+        "untracked_files_sha256": untracked_sha,
+        "n_untracked_files": len(untracked),
+        "producer_tree_identity_sha256": agg.hexdigest(),
+        "identity_domain": "sha256 over head, then each producer file's digest, "
+                           "then the tracked-diff and untracked-list digests",
+    }
+
+
 def build(root: Path) -> dict:
     # 1. resolve every declared input, remembering which checks consume it
     consumers: dict[str, set[str]] = {}
@@ -280,7 +333,7 @@ def build(root: Path) -> dict:
         "purpose": "bind every non-committed input daily_certify.py actually reads "
                    "(ignored, untracked, or dirty-tracked)",
         "generated_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "root_commit": (_lines(_git(root, ["rev-parse", "HEAD"]).stdout) or ["UNKNOWN"])[0],
+        "producer_tree": producer_tree_identity(root),
         "checks_audited": [e["check"] for e in CHECK_INPUTS],
         "n_inputs_resolved": len(rels),
         "n_committed_clean_not_hashed": committed_count,

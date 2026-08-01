@@ -19,8 +19,9 @@ TWO LAYERS, NEVER ONE NUMBER
 These checks are not one kind of evidence, and adding them up produced a claim
 that was true of a *machine* rather than of a *commit*:
 
-  * **REPOSITORY GATE** — currently **10** checks (see `REPOSITORY_CHECKS`,
-    which is the authority; it was 8 when the split was introduced).  Reads only
+  * **REPOSITORY GATE** — the checks in `REPOSITORY_CHECKS`.  **That list is the
+    only source of truth for the count**; no number is written down here,
+    because every hard-coded count in this project has gone stale.  Reads only
     committed files, so it reproduces from a clean checkout of a commit and
     nothing else.
   * **OPERATIONAL CERTIFICATION** — 1 check (`daily_certify`).  Reads live
@@ -82,6 +83,7 @@ REPOSITORY_CHECKS = [
     ("test_gate_layers",           [sys.executable, "tests/test_gate_layers.py"]),
     ("test_cbs_builders",          [sys.executable, "tests/test_cbs_builders.py"]),
     ("test_cbs_generator",         [sys.executable, "tests/test_cbs_generator.py"]),
+    ("test_cbs_v5",                [sys.executable, "tests/test_cbs_v5.py"]),
     ("asof_manifest_scan",         [sys.executable, "asof_invariant.py", "--scan"]),
     ("forecast_chain",             [sys.executable, "-c",
                                     "import sys;from evalharness import verify_chain;"

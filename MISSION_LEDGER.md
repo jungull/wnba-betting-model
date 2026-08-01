@@ -321,13 +321,14 @@ positive one would have been provisional.
 - Gate: **`python verify_all.py`** — runs **12** checks, exit non-zero on any failure.
   **But they are not one kind of evidence**, and since 2026-08-01 they are reported as two layers
   that are never added together:
-  - **Layer A — reproducible repository gate, 11 checks.** The 9 test suites (**352 tests** =
-    36+22+8+13+5+45+34+66+123), `asof_manifest_scan`, `forecast_chain`. Reads only committed
-    files; **reproduces from a clean checkout of the commit and nothing else.** *(Was 8 checks /
-    129 tests when the split was introduced; `tests/test_gate_layers.py`,
-    `tests/test_cbs_builders.py` and `tests/test_cbs_generator.py` were added and wired in. The
-    cardinality is not the invariant — the membership is: every layer-A check reads only
-    committed files.)*
+  - **Layer A — reproducible repository gate.** The test suites plus `asof_manifest_scan` and
+    `forecast_chain`. Reads only committed files; **reproduces from a clean checkout of the commit
+    and nothing else.** **`len(verify_all.REPOSITORY_CHECKS)` is the only source of truth for the
+    count** — no number is hard-coded in the code, the tests or this ledger, because every count
+    written down here has gone stale within a cycle. At the last run it was **12 checks / 427
+    tests** (36+22+8+13+5+45+35+66+123+75), up from 8 checks / 129 tests when the split was
+    introduced. The cardinality is not the invariant — the membership is: every layer-A check
+    reads only committed files, and `daily_certify` is never among them.
   - **Layer B — operational certification, 1 check** — the **ninth** `verify_all` check as
     originally numbered, not a tenth; the number ten belongs to the **ten hooks `daily_certify`
     runs internally**. It reads **git-ignored, untracked and dirty** live capture data, so it is
@@ -338,19 +339,28 @@ positive one would have been provisional.
     supposed to contain. Layer B is run separately on the capture machine, always with
     `operational_input_manifest.py`. `tests/test_gate_layers.py` enforces the split, the hook's
     flag, and the absence of any cross-layer aggregate.
-- Last gate — **layer A: PASS, 11/11, 352 tests, 29/29 artifacts attested, forecast chain
-  `ok=True` (8 records)**, 2026-08-01T19:52:50Z–19:53:53Z, exit 0, reproduced in a clean checkout
+- Last gate — **layer A: PASS, 12/12, 427 tests, 29/29 artifacts attested, forecast chain
+  `ok=True` (8 records)**, 2026-08-01T20:30:26Z–20:31:20Z, exit 0, reproduced in a clean checkout
   holding no git-ignored capture data.
-  **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, 2026-08-01T19:54:08Z–19:54:46Z, exit 0, bound
-  to input manifest **`7965c304f6c64014ccd1fdb9c75f6eaf90f3de46c4ed6200c6458e14c0a74014`** —
-  **4,647 inputs audited across all ten `daily_certify` hooks, 4,608 committed-clean (bound by the
-  commit, not hashed), 39 non-committed hashed** (35 ignored, 3 untracked injury PDFs, 1 dirty
-  `injury_log.csv`), 5,881,249 bytes. The manifest was regenerated immediately before and after the
-  run with an identical aggregate. Verbatim evidence and every run window at
-  **`project_docs/GATE_LOG_2026-08-01.md`**; the bound input set at
-  **`project_docs/OPERATIONAL_INPUTS_2026-08-01T1954Z.json`**, regenerable with
-  `python operational_input_manifest.py`. Earlier manifests (`…T1823Z`, `…T1915Z`) are **retained**
-  as the bindings for their own runs, never replaced.
+  **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, 2026-08-01T20:31:38Z–20:32:14Z, exit 0, bound
+  to input manifest **`aef07bc3b8a9a6c2441e1f0255776f4975d612a9e3062e654834ce4c750cf762`** —
+  **4,649 inputs audited across all ten `daily_certify` hooks, 4,608 committed-clean (bound by the
+  commit, not hashed), 41 non-committed hashed** (36 ignored, 4 untracked, 1 dirty), 6,026,677
+  bytes. The manifest was regenerated immediately before and after the run with an identical
+  aggregate **and an identical producer-tree identity**. Bound set at
+  **`project_docs/OPERATIONAL_INPUTS_2026-08-01T2032Z.json`**; every run window at
+  **`project_docs/GATE_LOG_2026-08-01.md`**. Earlier manifests (`…T1823Z`, `…T1915Z`, `…T1954Z`)
+  are **retained** as the bindings for their own runs, never replaced.
+  > **Provenance correction 2026-08-01.** Manifests previously recorded only `root_commit`, which
+  > was misleading: a manifest is captured from a **working tree**, normally dirty relative to
+  > HEAD, whose changes become the *next* commit — so `root_commit=3096c5d` sat in a manifest whose
+  > tree became `c742263`, inviting the false reading "certified at 3096c5d". A commit also cannot
+  > self-identify by embedding its own final hash. Manifests now carry a **producer-tree identity**
+  > — HEAD-descended-from, the digests of the operational code actually executed
+  > (`daily_certify.py`, `operational_input_manifest.py`), and digests of the tracked diff and the
+  > untracked-file list — plus an explicit `working_tree_clean_vs_head` flag. The last run's
+  > identity is `d8126ef34b2a42eaee740bd8fd0d8cf221299602725a79a9dadc64ac367d77d3`, descended from
+  > `c742263`, tree **not** clean. **No layer-B result is an exact-commit certification.**
   > **Completeness correction 2026-08-01.** An earlier manifest claimed to bind every operational
   > input while omitting the ten `data/wnba_gamelog_*.parquet` files that `daily_certify` reads in
   > its duplicate, coverage and schema checks (`daily_certify.py:156, :189, :375`). They are all
@@ -696,7 +706,13 @@ inspected**. The dynamic hierarchical arm is **not** begun.
 
 ---
 
-## 19. `contract_baseline_suite_v4` — registered **and implemented** on synthetic data
+## 19. `contract_baseline_suite_v4` — registered, implemented — **SUPERSEDED, see §20**
+
+> **SUPERSEDED 2026-08-01 by `contract_baseline_suite_v5` (§20).** v4's *specification* was sound;
+> its **implementation differed materially from it**. v4's registry record and document are
+> **not mutated**, and its implementation files (`cbs_generator.py`, `cbs_pipeline.py`) are left
+> exactly as registered.
+
 
 `project_docs/CONTRACT_BASELINE_SUITE_V4.md`, registered 2026-08-01. Registry append **1
 insertion, 0 deletions** (81 → 82); the 81-line registry is the exact byte prefix of the 82-line
@@ -747,3 +763,63 @@ provenance, coverage and quantile monotonicity gate any scoring path). Output is
 directory awaits supervisory review; validation, provenance, obligation coverage and the exclusion
 cross-tabs must all pass **before any accuracy metric is inspected**. The dynamic hierarchical arm
 is **not** begun. `arm_incumbent` remains **rejected and unconsumed**.
+
+---
+
+## 20. `contract_baseline_suite_v5` — the implementation corrected to match the spec
+
+`project_docs/CONTRACT_BASELINE_SUITE_V5.md`, registered 2026-08-01. Registry append **1
+insertion, 0 deletions** (82 → 83); the 82-line registry is the exact byte prefix of the 83-line
+registry and **v1-v4 records are all unchanged**. `config_hash`
+**`ea701817e5f87caf3fe1041037cd8bec430df95d9c25e6128fa4db4f9ec5afda`** verifies by recomputation.
+**No real contract row has been read; no historical OOF, accuracy or coverage figure exists.**
+
+**v4's specification was sound; its implementation was not.** Eight defects, each confirmed by
+direct reproduction before being fixed — all of which would have produced *confidently wrong
+numbers* rather than errors:
+
+1. **λ tuning was not chronological.** It sliced tuning *row indices* 75/25, and because
+   obligations are ordered by player the fit side held **P0-P5** while validation held **P6-P7**,
+   with **all 36 dates on both sides**. v5 cuts on distinct dates (floor 25% tail, minimums 6/2,
+   degenerate → declared default).
+2. **The team runner never ordered its rows**, so a later game could become history for an earlier
+   one. Shuffling identical frames moved predictions by **up to 5.9 points** here (16.1 in the
+   supervisor's reproduction) and dispersion **8.38 → 8.27**. v5 sorts explicitly on the
+   registered `run_reval` keys before every grouping, and shuffle-invariance is tested.
+3. **One pooled calibration map** where the spec requires **separate home/away** maps — and no
+   side indicator was required at all. Now both are required.
+4. **The residual sign was inverted**: residuals were `prediction - outcome` while offsets are
+   *added* to the point, so every asymmetric empirical quantile came out **mirrored**. Now
+   `outcome - prediction`, with the inverted convention reproduced in a test.
+5. **Missing channels were silently dropped**, quietly turning the registered four-channel
+   estimator into a different model. Now fail-closed.
+6. **Fitted hashes were incomplete** — only the coefficients — so fits differing in scaler, λ or
+   feature order could share one `model_hash`. Now the complete fitted state, with a fail-closed
+   real-adapter identity boundary.
+7. **Cold-start ignored the target.** A player with prior obligations but **zero prior
+   appearances** has no conditional history at all, yet was marked non-cold; team rows always
+   reported zero prior games. Now target-specific.
+8. **Stage-A silently zero-filled** absent features and trusted caller-supplied `feature_asof`.
+   Both now fail closed, with `feature_asof` derived from the maximum actual source timestamp.
+
+**Team history is taken from the registered family, not approximated**: sort
+`(team_id, game_date, game_id)`, group `(team_id, season)` so history **resets each season**,
+`prior_games = cumcount`, `MIN_PRIOR = 5`, channels `ft/3pt/paint/np2`
+(`run_reval.py:59-61, 86, 89, 102`).
+
+**A strict validator, alongside the unchanged historical one.**
+`contract_validator_v2_strict.py` (`contract_v2_strict/1`) validates the same v2 row universe and
+adds what the historical validator never checked: universe-joined `fold_id` and `forecast_cutoff`,
+target identity and support on point **and** quantiles, sd required-positive or required-null,
+boolean and prior-count types, hash format and expected hashes, strict feature-as-of. The
+historical validator is **not rewritten** — other registered artifacts were checked against it.
+**Passing it is necessary but not sufficient**, and the suite *measures* how many mutations it
+misses rather than asserting it.
+
+`tests/test_cbs_v5.py` — **75 assertions, synthetic only**. v4's implementation files are left
+exactly as registered.
+
+**Status: definition plus corrected synthetic implementation.** Generation into a v5 artifact
+directory awaits supervisory review; validation, provenance, obligation coverage and exclusion
+cross-tabs must pass **before any accuracy metric is inspected**. The hierarchical arm is **not**
+begun.

@@ -56,3 +56,29 @@ end-to-end pipeline, and five points needed tightening before any real generatio
 5. base rates and fallback means were not explicitly restricted to the fitting/tuning prefix.
 
 All five are frozen in v4.
+
+
+---
+
+## `CONTRACT_BASELINE_SUITE_V4.md` — 2026-08-01
+
+### E-V4-1 · superseded by v5
+
+`contract_baseline_suite_v4` is **superseded by `contract_baseline_suite_v5`**
+(`project_docs/CONTRACT_BASELINE_SUITE_V5.md`). v4's registry record and document are unchanged,
+and its implementation files (`cbs_generator.py`, `cbs_pipeline.py`) are left exactly as
+registered.
+
+v4's **specification** was sound. Its **implementation differed materially from it** in eight
+ways, each confirmed by direct reproduction: λ tuning cut by player rather than chronologically;
+team rows were never ordered, so input order could make a later game history for an earlier one;
+the calibration map was pooled rather than per side; the residual sign was inverted against
+additive offsets; missing channels were silently dropped; fitted hashes covered only the
+coefficients; cold-start ignored the target; and Stage-A features were silently zero-filled while
+`feature_asof` was trusted.
+
+### E-V4-2 · assertion count in the document
+
+The v4 document records "**123 assertions**" for `tests/test_cbs_generator.py`, which was correct
+at registration and remains correct. No correction needed; noted here so the two suites are not
+confused — `tests/test_cbs_v5.py` is a separate 75-assertion suite for v5.
