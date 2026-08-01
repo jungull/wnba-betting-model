@@ -161,6 +161,9 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     # ensemble weights on these rows MUST read that map rather than assume one
     # uniform fit window across the file.
     "experiments/oof_backfill/predictions_oof_2022_2023.csv",
+    # calibrated_prob_edge_v1 scored rows: fit ONCE on 2024, later seasons scored by
+    # the frozen object. Tracked so a silent refit or a stale rescore is caught.
+    "experiments/calibrated_prob_edge/scored_rows.csv",
 )
 
 # Directories never worth walking.

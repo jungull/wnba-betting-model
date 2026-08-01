@@ -245,32 +245,69 @@ def roi_of(g: pd.DataFrame, side: str) -> tuple[float, int, np.ndarray]:
 
 
 def perm_mde(g: pd.DataFrame, side: str, rng: np.random.Generator) -> dict:
-    """MDE from a permutation null BLOCKED BY GAME DATE.
+    """MDE from a permutation null BLOCKED BY GAME DATE, permuted over ALL eligible rows.
 
-    Outcomes are shuffled within a date, so the per-date common shock and the
-    within-date player/game dependence are preserved -- a row-exchangeable null would be
-    anti-conservative here (screening_protocol_amendment_v5 C1).
+    The blocking respects the per-date common shock and within-date player/game dependence;
+    a row-exchangeable null would be anti-conservative here (v5 C1).
+
+    CORRECTED 2026-08-01.  The first implementation permuted outcomes only among the
+    SELECTED bets.  That is far too narrow: within-date outcome variance (0.148) is well
+    below overall variance (0.249), so shuffling inside an already-chosen set barely moved
+    the mean and the null SD came out roughly 20x too small -- an MDE of 0.003 where the
+    naive SE alone implies 0.074.  An MDE that small would have let ordinary noise be read
+    as a real effect.  The permuted label must flow through the whole downstream path
+    (screening_protocol_amendment_v2 P3), so outcomes are now shuffled within a date across
+    EVERY eligible row and the fixed bet selection is then scored against them.  This makes
+    the null strictly wider, i.e. more conservative.
     """
-    sel = g[g.bet_over] if side == "over" else g[g.bet_under]
-    if len(sel) == 0:
+    mask = g.bet_over if side == "over" else g.bet_under
+    if not mask.any():
         return {"n_perm": 0, "null_sd": float("nan"), "mde_roi": float("nan")}
-    price = sel.over_price.to_numpy() if side == "over" else sel.under_price.to_numpy()
-    prof_win, y = _amer_profit(price), sel.y_over.to_numpy()
+    price = (g.over_price if side == "over" else g.under_price).to_numpy()
+    prof_win = _amer_profit(price)
+    y = g.y_over.to_numpy()
     target = 1 if side == "over" else 0
-    dates = sel.game_date.to_numpy()
+    sel = mask.to_numpy()
+
+    dates = g.game_date.to_numpy()
     order = np.argsort(dates, kind="stable")
-    blocks = np.split(order, np.unique(dates[order], return_index=True)[1][1:])
+    blocks = [b for b in np.split(order, np.unique(dates[order], return_index=True)[1][1:])
+              if len(b) > 1]
 
     stats = np.empty(N_PERM)
     for i in range(N_PERM):
         yp = y.copy()
         for b in blocks:
-            if len(b) > 1:
-                yp[b] = rng.permutation(y[b])
-        stats[i] = np.where(yp == target, prof_win, -1.0).mean()
+            yp[b] = rng.permutation(y[b])
+        stats[i] = np.where(yp[sel] == target, prof_win[sel], -1.0).mean()
     sd = float(stats.std(ddof=1))
     return {"n_perm": N_PERM, "null_sd": sd, "mde_roi": float(2.802 * sd),
             "null_mean": float(stats.mean())}
+
+
+def date_clustered_ci(g: pd.DataFrame, side: str, rng: np.random.Generator,
+                      n_boot: int = 2000, alpha: float = 0.10) -> dict:
+    """90% ROI interval from a bootstrap over GAME DATES, not rows.
+
+    Bets on the same slate share a common shock, so resampling rows would understate the
+    interval.  Dates are the resampling unit.
+    """
+    sel = g[g.bet_over] if side == "over" else g[g.bet_under]
+    if len(sel) == 0:
+        return {"roi_ci90_low": float("nan"), "roi_ci90_high": float("nan")}
+    price = (sel.over_price if side == "over" else sel.under_price).to_numpy()
+    win = (sel.y_over == (1 if side == "over" else 0)).to_numpy()
+    prof = np.where(win, _amer_profit(price), -1.0)
+    dates = sel.game_date.to_numpy()
+    uniq = np.unique(dates)
+    idx_by_date = {d: np.flatnonzero(dates == d) for d in uniq}
+
+    out = np.empty(n_boot)
+    for i in range(n_boot):
+        pick = rng.choice(uniq, size=len(uniq), replace=True)
+        out[i] = prof[np.concatenate([idx_by_date[d] for d in pick])].mean()
+    lo, hi = np.quantile(out, [alpha / 2, 1 - alpha / 2])
+    return {"roi_ci90_low": float(lo), "roi_ci90_high": float(hi)}
 
 
 def main() -> int:
@@ -350,6 +387,7 @@ def main() -> int:
         for side in ("over", "under"):
             roi, n, prof = roi_of(g, side)
             mde = perm_mde(g, side, rng)
+            ci = date_clustered_ci(g, side, rng)
             # independent opportunities, not quoted rows: one per player-game
             sel = g[g.bet_over] if side == "over" else g[g.bet_under]
             row[side] = {
@@ -360,6 +398,9 @@ def main() -> int:
                 "roi": roi, "notional": NOTIONAL,
                 "mde_roi": mde["mde_roi"], "null_sd": mde["null_sd"],
                 "exceeds_mde": bool(n and np.isfinite(roi) and abs(roi) > mde["mde_roi"]),
+                **ci,
+                "ci_excludes_zero": bool(n and np.isfinite(ci["roi_ci90_low"])
+                                         and (ci["roi_ci90_low"] > 0 or ci["roi_ci90_high"] < 0)),
             }
         results[label] = row
         per_slice[label] = g
@@ -372,9 +413,12 @@ def main() -> int:
         for side in ("over", "under"):
             r = row[side]
             print(f"  {side.upper():5s} bets {r['n_bets_rows']:5d} "
-                  f"({r['n_independent_opportunities']} independent, {r['n_dates']} dates) "
-                  f"ROI {r['roi']:+.4f}  MDE {r['mde_roi']:.4f}  "
-                  f"{'EXCEEDS MDE' if r['exceeds_mde'] else 'within noise'}")
+                  f"({r['n_independent_opportunities']} indep, {r['n_dates']} dates) "
+                  f"ROI {r['roi']:+.4f} "
+                  f"[90% {r['roi_ci90_low']:+.4f}, {r['roi_ci90_high']:+.4f}]  "
+                  f"MDE {r['mde_roi']:.4f}  "
+                  f"{'exceeds MDE' if r['exceeds_mde'] else 'within noise'}"
+                  f"{', CI excludes 0' if r['ci_excludes_zero'] else ''}")
 
     # Does the disagreement term dominate the decision? (mandatory defence 3)
     gfit = per_slice["fit_2024"]
