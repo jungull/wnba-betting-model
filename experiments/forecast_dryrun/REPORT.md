@@ -1,6 +1,6 @@
 # Daily forecast — DRY RUN (scratch chain; NOT the regime-D log)
 
-*Generated 2026-07-31T16:15:40.611703+00:00 by `daily_forecast.py` (v0). Slate date 2026-07-31 (ET); forecast cutoff 2026-07-31T16:15:38.411873+00:00. Model hash `9c267dcaf459d3ae…`; data snapshot hash `23955229845118f6…`; code `git:59d0249fc971`. Team model: promoted structural channels (chanreval_2026_structural_repaired/run1); player layer informational only — it does not modify the team forecast.*
+*Generated 2026-07-31T22:45:06.298577+00:00 by `daily_forecast.py` (v0). Slate date 2026-07-31 (ET); forecast cutoff 2026-07-31T22:45:04.663008+00:00. Model hash `797446cd8ce9a4ed…`; data snapshot hash `1254b03efa6c272b…`; code `git:6fc79daf15b6`. Team model: promoted structural channels (chanreval_2026_structural_repaired/run1); player layer informational only — it does not modify the team forecast.*
 
 **This file is engineering output. The records behind it were written ONLY to `experiments/forecast_dryrun/scratch_chain.jsonl`. The official regime-D clock starts with the first record of `forecasts/forecast_log.jsonl`, which this job refuses to touch.**
 
@@ -8,9 +8,9 @@
 
 | Game (away @ home) | Tip (ET) | Label | Model H | Model A | Model margin (H−A) | Market home spread | Model total | Market total | Edge vs spread | Edge vs total |
 |---|---|---|---|---|---|---|---|---|---|---|
-| SEA @ ATL | 2026-07-31 19:30 | T-8h | 89.2 | 82.1 | +7.9 | -12.5 (11 bks) | 171.3 | 178.5 | -4.6 | -7.2 |
-| DAL @ WAS | 2026-07-31 19:30 | T-8h | 83.3 | 86.3 | -4.2 | +3.0 (11 bks) | 169.5 | 167.0 | -1.2 | +2.5 |
-| IND @ PDX | 2026-07-31 22:00 | T-8h | 87.5 | 94.7 | -9.8 | +8.5 (11 bks) | 182.2 | 188.0 | -1.3 | -5.8 |
+| SEA @ ATL | 2026-07-31 19:30 | T-30m | 89.2 | 82.1 | +7.9 | -12.0 (11 bks) | 171.3 | 179.5 | -4.1 | -8.2 |
+| DAL @ WAS | 2026-07-31 19:30 | T-30m | 83.3 | 86.3 | -4.2 | +3.5 (11 bks) | 169.5 | 167.5 | -0.7 | +2.0 |
+| IND @ PDX | 2026-07-31 22:00 | T-90m | 87.5 | 94.7 | -9.8 | +8.0 (11 bks) | 182.2 | 187.5 | -1.8 | -5.3 |
 
 *Market home spread is quoted book-style (negative = home favored); market-implied margin = −spread. Edge vs spread = model margin − market-implied margin. Both edges are informational — no betting layer ran (`not_applicable`, stake 0).*
 
@@ -34,4 +34,4 @@
 
 ## Chain
 
-- scratch chain verified (scratch_chain.jsonl): ok=True, n_records=15, tip_sha256=a98013bfd9d672210b54ed2d8c9652ca127d2a20bd1b66505fc3717cf3aaa7ea — record these two values out of band; tail truncation is only detectable against an external anchor
+- OFFICIAL chain verified (forecast_log.jsonl): ok=True, n_records=6, tip_sha256=49e54654e1f1d3d1a7493940935cee407dae6866b51a18f0d7c86c3c01101683 — record these two values out of band; tail truncation is only detectable against an external anchor
