@@ -2,7 +2,9 @@
 
 *The continuing-mission record. Updated at the end of every working session so the next
 session resumes without reconstructing reasoning. Last updated **2026-08-01, after
-`calibrated_prob_edge_v1` (NEGATIVE) and `prob_edge_mechanism_ablation_v1` (label A).*
+`prediction_contract_v2` was patched fail-closed. Supersedes every earlier statement in this
+file about the calibrated-edge mechanism, council scope, and what the 2022-23 OOF extension
+unblocks.*
 
 **Success condition (only one):** a frozen, executable betting policy demonstrates
 profitability under its preregistered prospective gate. Everything below is interim state.
@@ -53,6 +55,9 @@ and is a prerequisite of `calibrated_prob_edge_v1`, not an afterthought.
 | `council_design_v1` | does a diverse weighted council beat every individual member? | A | **registered 2026-07-31**, computes nothing yet |
 | `calibrated_prob_edge_v1` | calibrated P(over) × executable odds ⇒ EV-thresholded frozen policy | A | **RUN 2026-08-01 — NEGATIVE.** See §4 |
 | `executability_fixed_notional_v1` | replaces the unsatisfiable book-limits clause | A | registered, applied |
+| `prob_edge_mechanism_ablation_v2` | de-vigged nested specs; supersedes v1's vig-inclusive market arm | A | **RUN - label A.** See section 4 |
+| `council_scope_v2` | graph arm admitted; market excluded; five target-specific councils | A | registered, binding |
+| `prediction_contract_v2` | pregame-selected universe, real tips, obligation != scoring | A | **BUILT + patched fail-closed** |
 | `w1_extraction_quality_audit_v1` | what actionable pre-cutoff signal does W1 actually carry? | B | registered, **not started** |
 
 ### Council scope — settled 2026-08-01 (`council_scope_v2`)
@@ -114,7 +119,7 @@ orchestrator-added guards are recorded in it; three change what happens next:
   Frozen policy loses ≈10% per unit staked out of sample. 2026 log loss **0.70154 > log(2) =
   0.69315** — worse than a constant 50% predictor. Calibration slope **inverts**: +1.144 →
   +0.445 → −0.263. Even in the fitting slice both ROIs span zero.
-  **Mechanism:** `corr(p_over, disagree) = +0.007` vs `corr(p_over, market implied) = +0.612`.
+  **Mechanism - settled by `prob_edge_mechanism_ablation_v2`, not by a correlation.** The marginal-correlation argument was too weak and the replacement's first market arm was vig-inclusive; both fixed. Primary contrast (full minus de-vigged-market-plus-controls) **spans zero on all three slices**. The de-vigged market beats a constant detectably **only on 2025**. Non-projection controls *appear* harmful on 2025/2026 - a diagnostic lead, uncorrected for the comparison family, **not** a confirmed mechanism.
   The projection carries essentially no information; the fitted probability is a degraded echo
   of the line, and the policy pays vig to bet against the real one.
   **Erratum, self-reported:** the first run's MDEs were anti-conservative ~20× (permutation
@@ -223,7 +228,7 @@ window differs. Emitted **435 new OOF rows**: 2022 (207 games, trained on 2021 a
 **thin history**, flagged in the manifest) and 2023 (228 games, trained on 2021–2022).
 Leakage audits PASS for both. **Fitting sample 229 → 664 games.** Artifact carries a
 `asof_granularity="season"` manifest with per-season source-observation bounds and is now in
-`FITTED_ARTIFACT_GLOBS` (scan was 24/24 at the time; now **26/26**).
+`FITTED_ARTIFACT_GLOBS` (scan was 24/24 at the time; now **28/28**).
 
 Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared).
 
@@ -237,7 +242,7 @@ Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared).
 **✅ DONE 2026-08-01 — `calibrated_prob_edge_v1`, verdict NEGATIVE** (registry run 1, report
 at `experiments/calibrated_prob_edge/REPORT.md`). Details in §4.
 
-**✅ DONE 2026-08-01 — `prob_edge_mechanism_ablation_v1`, label A supported.** Six nested
+**DONE - `prob_edge_mechanism_ablation_v2`, label A supported.** Nested specifications with a genuine de-vigged market comparator settled what a marginal correlation could not. Six
 specifications on identical folds settled what a marginal correlation could not. The
 projection adds **no incremental information** given market probability and every other
 control — and is not even marginally informative. It also surfaced something new: the
@@ -249,8 +254,8 @@ the calibration inversion.
 | # | step | state |
 |---|---|---|
 | 1 | correct ledger + mechanism/permutation labels | **✅ done 2026-08-01** |
-| 2 | **manifest-first player-game as-of PREDICTION CONTRACT** | **← next** |
-| 3 | chronological OOF per arm: incumbent, hierarchical, CatBoost, TabPFN, graph | blocked on 2 |
+| 2 | manifest-first player-game as-of PREDICTION CONTRACT | **DONE - `prediction_contract_v2`, fail-closed** |
+| 3 | chronological OOF per arm: incumbent, hierarchical, CatBoost, TabPFN, graph | **<- next (incumbent first, as reference)** |
 | 4 | compare individual models **before** any council weights | blocked on 3 |
 | 5 | residual diversity + leave-one-member-out value | blocked on 4 |
 | 6 | equal-weight and median councils | blocked on 5 |
@@ -314,6 +319,49 @@ positive one would have been provisional.
 
 - Gate: **`python verify_all.py`** — 8 checks, 35s, exit non-zero on any failure.
   `--quick` skips `daily_certify`; `--install-hook` refuses pushes unless green.
-- Last full gate: **PASS**, 8/8 green, **26/26 artifacts attested**, 84 tests.
+- Last full gate: **PASS**, **9/9 green, 28/28 artifacts attested, 129 tests**.
 - `.gitattributes` (`* -text`) is **load-bearing** — without it every manifest hash drifts on
   a Windows checkout.
+
+---
+
+## 13. The prediction contract (step 2) - current state
+
+`prediction_contract_v2`, built and then **patched fail-closed** after review. v1 is
+superseded and marked DO-NOT-CONSUME in its own file.
+
+| | |
+|---|---|
+| candidate rows | **35,615** over 1,458 games |
+| additional recency-roster-**proxy** candidates vs v1 | 8,260 |
+| appeared / not | 27,349 / 8,266 |
+| tables | `pg_` 35,615 - `tg_` 2,990 - `g_` 1,495 |
+
+**Exact-tip provenance now fails closed.** An observation supports an exact T-90m cutoff only
+if its *actual* `observed_at` is strictly earlier than that cutoff. Two unsafe paths were
+removed: imputing `observed_at` as `tip - 7 days`, and a fallback that accepted the earliest
+observation regardless of when it became available. Both manufactured availability.
+
+| | |
+|---|---|
+| observations total / rejected too late | 2,217 / **866** |
+| observations missing `observed_at` | 0 |
+| games exact / downgraded to date-only | **407 / 1,088** |
+| exact rows failing `observed_at < cutoff` | **0** (hard post-condition) |
+
+That is a large, deliberate loss: **377 of the 784 games previously labelled exact** had no
+observation recorded before tip-90. Those labels were not defensible and are withdrawn. Only
+`exact_cutoff_ok` rows may be used for exact-cutoff market comparisons.
+
+**Lookback cannot cross a season boundary** - it was grouped by team alone, so an opener
+inherited the prior season's roster. Now grouped by (team, season).
+
+**Coverage failures stay visible, never dropped:** 37 games and 76 team-games with zero
+candidates - exactly the 76 season openers, which legitimately have no in-season prior game.
+Candidates per game: min 10, median 24, max 31. 15 teams, 3 absent from some seasons
+(expansion GSV 2025, TOR/PDX 2026).
+
+**Two descriptions corrected.** v1's active rate was ~84%, not ~100% - it *did* include ~5,390
+DNPs; the defect is that **membership** was postgame-selected, not that all members appeared.
+And the added rows are **proxy candidates**, not players v1 "should have predicted"; 76.8% is
+the appearance rate *within this proxy universe*, not the WNBA availability rate.

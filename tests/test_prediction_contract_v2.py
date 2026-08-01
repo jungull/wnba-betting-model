@@ -152,7 +152,8 @@ def main() -> int:
         "observed_at": pd.to_datetime(["2024-05-25T00:00Z", "2024-05-25T00:00Z",
                                        "2024-06-01T22:50Z"], utc=True),
         "source": ["props", "props", "props"]})
-    g = apply_cutoff_policy(resolve_tip_times(games, obs).merge(games, on="game_id"))
+    _t, _a = resolve_tip_times(games, obs)
+    g = apply_cutoff_policy(_t.merge(games, on="game_id"))
     aft = g[g.game_id == "afternoon"].iloc[0]
     check("afternoon game gets a TRUE T-90m cutoff",
           aft.forecast_cutoff == pd.Timestamp("2024-06-01T15:30Z"),
@@ -168,6 +169,82 @@ def main() -> int:
           ev.scheduled_tip_time == pd.Timestamp("2024-06-01T23:00Z"),
           f"used {ev.scheduled_tip_time}, must be the 23:00 version knowable in advance")
     check("  ... and the revision is recorded", int(ev.tip_revisions_seen) == 2)
+
+    print("\n6b. exact-tip reconstruction FAILS CLOSED")
+    g2 = pd.DataFrame({"game_id": ["late_only", "no_ts", "postponed", "post_late", "multi"],
+                       "game_date": pd.to_datetime(["2024-06-01"] * 5),
+                       "season": [2024] * 5})
+    obs2 = pd.DataFrame({
+        "game_id": ["late_only", "no_ts", "postponed", "postponed",
+                    "post_late", "post_late", "multi", "multi", "multi"],
+        "tip": pd.to_datetime([
+            "2024-06-01T23:00Z",                      # observed only 10 min before tip
+            "2024-06-01T23:00Z",                      # observed_at missing entirely
+            "2024-06-01T23:00Z", "2024-06-03T23:00Z",  # postponed, revision learned IN TIME
+            "2024-06-01T23:00Z", "2024-06-03T23:00Z",  # postponed, revision learned TOO LATE
+            "2024-06-01T23:00Z", "2024-06-01T23:30Z", "2024-06-01T23:45Z"], utc=True),
+        "observed_at": pd.to_datetime([
+            "2024-06-01T22:50Z",
+            None,
+            "2024-05-20T00:00Z", "2024-06-02T00:00Z",
+            "2024-05-20T00:00Z", "2024-06-03T22:00Z",
+            "2024-05-20T00:00Z", "2024-05-25T00:00Z", "2024-06-01T23:40Z"], utc=True),
+        "source": ["s"] * 9})
+    res, audit = resolve_tip_times(g2, obs2)
+    res = res.merge(g2, on="game_id")
+    gg = apply_cutoff_policy(res)
+
+    r_late = gg[gg.game_id == "late_only"].iloc[0]
+    check("observation made after tip-90m cannot support an exact cutoff",
+          r_late.cutoff_policy == POLICY_DATE_ONLY, str(r_late.cutoff_policy))
+    check("  ... it is counted as rejected-too-late",
+          audit["observations_rejected_too_late"] >= 1)
+
+    r_no = gg[gg.game_id == "no_ts"].iloc[0]
+    check("missing observed_at is NEVER imputed from the tip",
+          r_no.cutoff_policy == POLICY_DATE_ONLY)
+    check("  ... and missing timestamps are counted",
+          audit["observations_missing_observed_at"] == 1)
+
+    # A postponement learned IN TIME must be used: at the rescheduled game's cutoff
+    # (06-03 21:30) a forecaster genuinely knew about the 06-02 revision. An earlier draft of
+    # this test asserted the opposite and was simply wrong about which cutoff applies.
+    r_p = gg[gg.game_id == "postponed"].iloc[0]
+    check("postponement learned BEFORE the new cutoff is used",
+          r_p.scheduled_tip_time == pd.Timestamp("2024-06-03T23:00Z"),
+          f"used {r_p.scheduled_tip_time}")
+
+    r_pl = gg[gg.game_id == "post_late"].iloc[0]
+    check("postponement learned AFTER the new cutoff is NOT used",
+          r_pl.scheduled_tip_time == pd.Timestamp("2024-06-01T23:00Z"),
+          f"used {r_pl.scheduled_tip_time}; the revision came 06-03 22:00, after tip-90")
+
+    r_m = gg[gg.game_id == "multi"].iloc[0]
+    check("with several revisions, the LATEST qualifying one wins",
+          r_m.scheduled_tip_time == pd.Timestamp("2024-06-01T23:30Z"),
+          f"used {r_m.scheduled_tip_time}; 23:45 was observed only 5 min before tip")
+    check("  ... revision count is recorded", int(r_m.tip_revisions_seen) == 3)
+
+    ex = gg[gg.exact_cutoff_ok]
+    check("EVERY exact row proves observed_at < its own cutoff",
+          bool((ex.tip_time_observed_at < ex.forecast_cutoff).all()))
+    check("audit reports downgrades", audit["games_downgraded_to_date_only"] >= 2)
+
+    print("\n3b. the candidate lookback cannot cross a season boundary")
+    two = synth_master()
+    nxt = synth_master().copy()
+    nxt["season"] = 2025
+    nxt["game_id"] = nxt.game_id + "_s25"
+    nxt["game_date"] = nxt.game_date + pd.Timedelta(days=365)
+    nxt = nxt[nxt.player_id != 99]                 # 99 is gone in 2025
+    both = pd.concat([two, nxt], ignore_index=True)
+    cb = build_candidates(both)
+    opener = "g0_s25"
+    check("season opener has NO candidates", opener not in set(cb.game_id),
+          "the lookback resets at the season boundary")
+    check("a player from the prior season cannot leak in",
+          pg_uid(99, "g1_s25") not in set(cb.row_uid))
+    check("in-season lookback still works", "g1_s25" in set(cb.game_id))
 
     print("\n9. team-game rows are per team-game, not per player")
     tg = mp[["game_id", "team_id"]].drop_duplicates()
@@ -208,7 +285,7 @@ def main() -> int:
     check("declared exclusions pass and are counted", r4["ok"] and r4["n_excluded"] == 4,
           str(r4.get("problems")))
 
-    n = 30
+    n = 45
     print(f"\n{n - len(FAILURES)}/{n} tests passed")
     if FAILURES:
         for f in FAILURES:

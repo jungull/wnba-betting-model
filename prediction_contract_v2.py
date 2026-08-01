@@ -6,10 +6,12 @@ preserved as a superseded artifact and MUST NOT be consumed.
 
 WHAT WAS WRONG WITH v1, conceded in full
     D1 THE UNIVERSE WAS POSTGAME-SELECTED.  v1 began from master_player rows FOR THE TARGET
-       GAME.  Including recorded DNPs was an improvement over "has a row means played", but a
-       player absent from the target box never entered the universe at all.  The target-game
-       boxscore is postgame information; it cannot define a pregame candidate roster.  v1's
-       p_active was therefore conditioned on appearing and was trivially near-1.
+       GAME.  STATED PRECISELY (an earlier draft of this note overstated it): v1 DID include
+       recorded DNPs -- about 5,390 rows, an active rate near 84%, NOT ~100% -- so the defect
+       is not that everyone in the universe had appeared.  The defect is that MEMBERSHIP was
+       selected using postgame knowledge: a player absent from the target box never entered
+       the universe at all.  The target-game boxscore cannot define a pregame candidate
+       roster.
     D2 OBLIGATION WAS CONFLATED WITH SCORING.  v1 required E[minutes|active] only for players
        who appeared, so an arm could buy perfect coverage by dropping everyone later inactive.
     D3 THE CUTOFF WAS FABRICATED.  game_date + 22:30 UTC labelled "T-90m" assumes every game
@@ -24,12 +26,17 @@ THE CENTRAL INVARIANT OF v2
     LABELS, and never as membership.
 
 WHAT THIS UNIVERSE IS, honestly named
-    A RECENCY-ROSTER universe.  Exact historical rosters, transactions and inactive lists are
-    not reconstructable for every season from what the project holds, so candidacy is inferred
+    A RECENCY-ROSTER PROXY.  Exact historical rosters, transactions and inactive lists are not
+    reconstructable for every season from what the project holds, so candidacy is inferred
     from appearance in the team's previous ROSTER_LOOKBACK games.  It is NOT the complete
-    slate and is not described as one.  Its two known biases are recorded in the report: a
-    player who missed the whole lookback window is not a candidate even if he was rostered,
-    and a debut/signing with no prior appearance cannot be a candidate at all.
+    slate and is not described as one.  Known biases, recorded rather than assumed away:
+      * a player who missed the whole lookback window is not a candidate even if rostered;
+      * a debut or new signing with no prior appearance cannot be a candidate at all;
+      * conversely, rows v2 has that v1 lacked are ADDITIONAL PROXY CANDIDATES, not players
+        v1 "should have predicted" -- some were traded, waived or otherwise no longer
+        rostered by the target game.
+    Consequently the appearance rate below is the rate WITHIN THIS PROXY UNIVERSE, and is not
+    the WNBA's player-availability rate.
 """
 from __future__ import annotations
 
@@ -172,47 +179,85 @@ def load_tip_observations() -> pd.DataFrame:
     if not obs:
         return pd.DataFrame(columns=["game_id", "tip", "observed_at", "source"])
     d = pd.concat(obs, ignore_index=True).dropna(subset=["tip"])
-    # An observation with no observed_at cannot be revision-checked; keep it but mark it.
-    d["observed_at"] = d.observed_at.fillna(d.tip - pd.Timedelta(days=7))
+    # NO IMPUTATION.  An earlier version filled a missing observed_at with (tip - 7 days),
+    # which MANUFACTURES information availability that was never demonstrated: it asserts we
+    # knew the tip a week ahead purely because we know the tip now.  Observations with no
+    # real observed_at are retained ONLY so they can be counted and rejected downstream.
+    d["observed_at_missing"] = d.observed_at.isna()
     return d.drop_duplicates(["game_id", "tip", "observed_at", "source"])
 
 
-def resolve_tip_times(games: pd.DataFrame, obs: pd.DataFrame) -> pd.DataFrame:
-    """Per game: the tip time KNOWABLE AT THE CUTOFF, not the final corrected one.
+def resolve_tip_times(games: pd.DataFrame, obs: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+    """Per game: the tip KNOWABLE IN TIME, or nothing.  FAIL CLOSED.
 
-    Two-pass, because the cutoff depends on the tip and the tip depends on the cutoff:
-      pass 1 -- provisional tip = the EARLIEST observed value (knowable furthest ahead);
-      pass 2 -- among observations made strictly BEFORE (provisional tip - 90m), take the
-                most recent.  That is the version a forecaster could actually have held.
-    A later correction learned after the cutoff is deliberately NOT used.
+    THE RULE, single pass and self-consistent:
+        an observation qualifies iff  observed_at < (its own reported tip) - 90 minutes.
+        Among qualifying observations take the LATEST observed_at -- the most current version
+        a forecaster could actually have held at the cutoff.
+        If NO observation qualifies, exact reconstruction is UNAVAILABLE and the game is
+        downgraded to the date-only policy.
+
+    Using each observation's OWN reported tip removes the circularity (cutoff depends on tip,
+    tip depends on cutoff) without a provisional pass, and it is strictly conservative: an
+    observation recorded after its own tip-minus-90 cannot support a T-90 cutoff no matter
+    what any other observation says.
+
+    WHAT WAS REMOVED, and why it mattered:
+      * imputing observed_at as (tip - 7 days) -- asserted week-ahead knowledge purely
+        because the tip is known NOW.  Pure manufacture of availability.
+      * the earliest-observation fallback -- it accepted an observation regardless of when it
+        became available, so a tip first seen minutes before tip-off, or even after the game,
+        could back a "T-90m" label.
+    Both could certify point-in-time knowledge that was never demonstrated.
     """
-    if obs.empty:
-        out = games[["game_id"]].copy()
-        for c in ("scheduled_tip_time", "tip_time_observed_at", "tip_time_source"):
-            out[c] = pd.NaT if "time" in c else None
-        out["tip_time_quality"] = "none"
-        out["tip_revisions_seen"] = 0
-        return out
+    audit = {"observations_total": int(len(obs)),
+             "observations_missing_observed_at": 0,
+             "observations_rejected_too_late": 0,
+             "games_with_any_observation": 0,
+             "games_exact_available": 0,
+             "games_downgraded_to_date_only": 0}
 
-    prov = obs.groupby("game_id").tip.min().rename("prov_tip")
-    o = obs.merge(prov, left_on="game_id", right_index=True)
-    cut = o.prov_tip - pd.Timedelta(minutes=CUTOFF_MINUTES_BEFORE_TIP)
-    known = o[o.observed_at < cut]
-    # if nothing was observed before the provisional cutoff, fall back to the earliest
-    pick = (known.sort_values("observed_at").groupby("game_id").tail(1)
-            if len(known) else o.iloc[0:0])
-    fallback = o.sort_values("observed_at").groupby("game_id").head(1)
-    chosen = pd.concat([pick, fallback[~fallback.game_id.isin(pick.game_id)]])
+    empty = games[["game_id"]].copy()
+    empty["scheduled_tip_time"] = pd.NaT
+    empty["tip_time_observed_at"] = pd.NaT
+    empty["tip_time_source"] = None
+    empty["tip_time_quality"] = "none"
+    empty["tip_revisions_seen"] = 0
+    if obs.empty:
+        return empty, audit
+
+    o = obs.copy()
+    audit["observations_missing_observed_at"] = int(o.observed_at.isna().sum())
+    audit["games_with_any_observation"] = int(o.game_id.nunique())
+
+    # A missing observed_at can NEVER qualify -- it is not evidence of timing.
+    o = o[o.observed_at.notna()]
+    qualifies = o.observed_at < (o.tip - pd.Timedelta(minutes=CUTOFF_MINUTES_BEFORE_TIP))
+    audit["observations_rejected_too_late"] = int((~qualifies).sum())
+    q = o[qualifies]
 
     nrev = obs.groupby("game_id").tip.nunique().rename("tip_revisions_seen")
+    if q.empty:
+        out = empty.merge(nrev, on="game_id", how="left", suffixes=("", "_n"))
+        out["tip_revisions_seen"] = out.pop("tip_revisions_seen_n").fillna(0).astype(int) \
+            if "tip_revisions_seen_n" in out else 0
+        audit["games_downgraded_to_date_only"] = int(len(games))
+        return out, audit
+
+    chosen = q.sort_values(["game_id", "observed_at"]).groupby("game_id").tail(1)
     res = chosen[["game_id", "tip", "observed_at", "source"]].rename(columns={
         "tip": "scheduled_tip_time", "observed_at": "tip_time_observed_at",
-        "source": "tip_time_source"}).merge(nrev, on="game_id", how="left")
+        "source": "tip_time_source"})
+    res = res.merge(nrev, on="game_id", how="left")
     res["tip_time_quality"] = np.where(res.tip_revisions_seen > 1,
                                        "observed_revised", "observed_single")
-    return games[["game_id"]].merge(res, on="game_id", how="left").assign(
-        tip_time_quality=lambda x: x.tip_time_quality.fillna("none"),
-        tip_revisions_seen=lambda x: x.tip_revisions_seen.fillna(0).astype(int))
+
+    out = games[["game_id"]].merge(res, on="game_id", how="left")
+    out["tip_time_quality"] = out.tip_time_quality.fillna("none")
+    out["tip_revisions_seen"] = out.tip_revisions_seen.fillna(0).astype(int)
+    audit["games_exact_available"] = int(out.scheduled_tip_time.notna().sum())
+    audit["games_downgraded_to_date_only"] = int(out.scheduled_tip_time.isna().sum())
+    return out, audit
 
 
 def apply_cutoff_policy(games: pd.DataFrame) -> pd.DataFrame:
@@ -228,6 +273,16 @@ def apply_cutoff_policy(games: pd.DataFrame) -> pd.DataFrame:
                 - pd.Timedelta(days=1) + pd.Timedelta(hours=18))
     g["forecast_cutoff"] = exact.where(has, dateonly)
     g["exact_cutoff_ok"] = has          # only these may be used for market comparisons
+
+    # HARD POST-CONDITION.  Every exact row must prove its tip was observed before its own
+    # cutoff.  If this ever fires, an exact label is certifying knowledge we cannot show we
+    # had, which is the failure the fail-closed rule exists to prevent.
+    ex = g[g.exact_cutoff_ok]
+    bad = int((ex.tip_time_observed_at >= ex.forecast_cutoff).sum())
+    if bad:
+        raise SystemExit(f"{bad} exact rows have tip_time_observed_at >= forecast_cutoff -- "
+                         f"exact reconstruction is not defensible; refusing to emit")
+    g.attrs["exact_rows_failing_observed_before_cutoff"] = bad
     return g
 
 
@@ -248,25 +303,28 @@ def build_candidates(mp: pd.DataFrame, lookback: int = ROSTER_LOOKBACK) -> pd.Da
     d["game_id"] = d.game_id.astype(str)
 
     team_games = (d[["team_id", "game_id", "game_date", "season"]].drop_duplicates()
-                  .sort_values(["team_id", "game_date", "game_id"]).reset_index(drop=True))
+                  .sort_values(["team_id", "season", "game_date", "game_id"])
+                  .reset_index(drop=True))
     by_team_players = {k: v.player_id.unique()
                        for k, v in d.groupby(["team_id", "game_id"], sort=False)}
 
     rows = []
-    for team_id, grp in team_games.groupby("team_id", sort=False):
+    # Grouped by (team_id, SEASON), not team alone.  Grouping by team only would let a season
+    # opener inherit candidates from the previous season's final games -- players who may have
+    # been traded, waived or retired in the interim.  The lookback window therefore RESETS at
+    # every season boundary, and each season's opener legitimately yields zero candidates.
+    for (team_id, season), grp in team_games.groupby(["team_id", "season"], sort=False):
         gids = grp.game_id.tolist()
         dates = grp.game_date.tolist()
-        seasons = grp.season.tolist()
         for i, gid in enumerate(gids):
             if i == 0:
-                continue                      # no prior game -> no defensible candidacy
+                continue                      # season opener: no prior in-season game
             lo = max(0, i - lookback)
             pool: set = set()
-            for j in range(lo, i):            # STRICTLY prior; i is never included
+            for j in range(lo, i):            # STRICTLY prior, and strictly in-season
                 pool.update(by_team_players.get((team_id, gids[j]), ()))
             for pid in pool:
-                rows.append((gid, team_id, pid, dates[i], seasons[i],
-                             i - lo))
+                rows.append((gid, team_id, pid, dates[i], season, i - lo))
     c = pd.DataFrame(rows, columns=["game_id", "team_id", "player_id", "game_date",
                                     "season", "lookback_games_used"])
     c["row_uid"] = [pg_uid(p, g) for p, g in zip(c.player_id, c.game_id)]
@@ -358,13 +416,48 @@ def main() -> int:
     # ---- D3: real tip times and cutoff policies ------------------------------
     games = (mp[["game_id", "game_date", "season"]].drop_duplicates()
              .sort_values("game_date").reset_index(drop=True))
-    tips = resolve_tip_times(games, load_tip_observations())
+    tips, tip_audit = resolve_tip_times(games, load_tip_observations())
     games = games.merge(tips, on="game_id", how="left")
     games = apply_cutoff_policy(games)
     acct["games_total"] = int(len(games))
     acct["games_exact_tip"] = int(games.exact_cutoff_ok.sum())
     acct["games_date_only"] = int((~games.exact_cutoff_ok).sum())
     acct["games_with_tip_revisions"] = int((games.tip_revisions_seen > 1).sum())
+    acct["tip_provenance_audit"] = tip_audit
+    ex = games[games.exact_cutoff_ok]
+    acct["exact_rows_failing_observed_before_cutoff"] = int(
+        (ex.tip_time_observed_at >= ex.forecast_cutoff).sum())
+
+    # COVERAGE FAILURES STAY VISIBLE. A game with zero candidates is a coverage failure to be
+    # reported, never a row that quietly disappears from evaluation.
+    cand_per_game = cand.groupby("game_id").size()
+    all_gids = set(games.game_id)
+    acct["games_with_zero_candidates"] = int(len(all_gids - set(cand_per_game.index)))
+    tg_keys = mp[["game_id", "team_id"]].drop_duplicates()
+    cand_tg = set(map(tuple, cand[["game_id", "team_id"]].drop_duplicates().to_numpy()))
+    acct["team_games_with_zero_candidates"] = int(
+        sum(1 for t in map(tuple, tg_keys.to_numpy()) if t not in cand_tg))
+    acct["candidate_count_distribution"] = {
+        str(k): int(v) for k, v in
+        cand_per_game.describe(percentiles=[.05, .25, .5, .75, .95]).round(2).items()}
+    openers = (mp[["team_id", "season", "game_id", "game_date"]].drop_duplicates()
+               .sort_values(["team_id", "season", "game_date"])
+               .groupby(["team_id", "season"]).head(1))
+    acct["season_openers"] = int(len(openers))
+    acct["season_openers_with_candidates"] = int(
+        len(set(map(tuple, openers[["game_id", "team_id"]].to_numpy())) & cand_tg))
+    acct["season_opener_coverage_note"] = (
+        "season openers legitimately have ZERO candidates: the lookback resets at every "
+        "season boundary, so no in-season prior game exists. They are reported, not hidden.")
+    tt = mp[["team_id", "season"]].drop_duplicates().groupby("team_id").season.agg(
+        ["min", "max", "count"])
+    acct["teams_total"] = int(len(tt))
+    acct["teams_not_in_every_season"] = int((tt["count"] < mp.season.nunique()).sum())
+    acct["franchise_transition_note"] = (
+        "team_id is the join key, so a franchise that changes abbreviation keeps its "
+        "candidates; a franchise that changes team_id would present as a new team whose "
+        "first season has no prior games. Teams absent from some seasons are counted above "
+        "(expansion: GSV 2025, TOR/PDX 2026).")
 
     cand = cand.drop(columns=["game_date", "season"]).merge(
         games[["game_id", "game_date", "season", "scheduled_tip_time", "tip_time_source",
@@ -429,7 +522,8 @@ def main() -> int:
         "contract_version": CONTRACT_VERSION,
         "supersedes": "player_game_contract/1 -- postgame-selected universe, fabricated "
                       "cutoff, conflated obligation/scoring, duplicated team rows",
-        "universe_kind": "RECENCY-ROSTER, not the complete slate",
+        "universe_kind": "RECENCY-ROSTER PROXY, not the complete slate",
+        "added_rows_vs_v1": ("rows v2 has that v1 lacked are ADDITIONAL RECENCY-ROSTER-PROXY CANDIDATES, not players v1 should have predicted -- some were traded, waived or otherwise no longer rostered. The appearance rate is the rate WITHIN THIS PROXY UNIVERSE, not the WNBA player-availability rate."),
         "universe_limitations": [
             "candidacy is inferred from appearance in the team's previous "
             f"{ROSTER_LOOKBACK} games because exact historical rosters, transactions and "

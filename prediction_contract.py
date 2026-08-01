@@ -3,8 +3,11 @@
 
 Retained as a superseded artifact per prediction_contract_v2. Three foundational defects,
 all conceded:
-  D1 the candidate universe was built from TARGET-GAME boxscore rows, so a player absent
-     from the target box never entered it and p_active was conditioned on appearing;
+  D1 the candidate universe was built from TARGET-GAME boxscore rows: a player absent
+     from the target box never entered it at all. NOTE, corrected: v1 DID include
+     recorded DNPs (~5,390), so its active rate was ~84%, not ~100%. The defect is
+     that MEMBERSHIP was selected with postgame knowledge, not that everyone in it
+     had appeared;
   D2 prediction obligation was conflated with scoring eligibility, letting an arm buy
      coverage by dropping everyone later inactive;
   D3 the cutoff game_date + 22:30 UTC was fabricated and labelled T-90m -- for the 199 of
