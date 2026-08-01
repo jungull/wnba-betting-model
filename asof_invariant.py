@@ -173,6 +173,9 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     "experiments/prediction_contract/universe.parquet",
     # v2: the pregame-selected candidate universe. A stale copy would misalign every arm.
     "experiments/prediction_contract_v2/player_game.parquet",
+    # Incumbent arm OOF predictions -- the reference implementation every other council
+    # arm is checked against. A stale copy would silently misalign the whole comparison.
+    "experiments/arm_incumbent/predictions.parquet",
 )
 
 # Directories never worth walking.
