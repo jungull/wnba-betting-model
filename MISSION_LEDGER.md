@@ -228,7 +228,8 @@ window differs. Emitted **435 new OOF rows**: 2022 (207 games, trained on 2021 a
 **thin history**, flagged in the manifest) and 2023 (228 games, trained on 2021–2022).
 Leakage audits PASS for both. **Fitting sample 229 → 664 games.** Artifact carries a
 `asof_granularity="season"` manifest with per-season source-observation bounds and is now in
-`FITTED_ARTIFACT_GLOBS` (scan was 24/24 at the time; now **28/28**).
+`FITTED_ARTIFACT_GLOBS` (scan was 24/24 at the time; **29/29** as of 2026-08-01 — see
+`project_docs/GATE_LOG_2026-08-01.md`).
 
 Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared).
 
@@ -317,9 +318,14 @@ positive one would have been provisional.
 
 ## 12. Standing operational state
 
-- Gate: **`python verify_all.py`** — 8 checks, 35s, exit non-zero on any failure.
-  `--quick` skips `daily_certify`; `--install-hook` refuses pushes unless green.
-- Last full gate: **PASS**, **9/9 green, 28/28 artifacts attested, 129 tests**.
+- Gate: **`python verify_all.py`** — **9 checks** full, **8 with `--quick`** (which skips
+  `daily_certify`), exit non-zero on any failure. `--install-hook` refuses pushes unless green.
+- Last full gate: **PASS**, **9/9 green, 29/29 artifacts attested, 129 tests**, forecast chain
+  `ok=True` (8 records), daily certification **WARN with 0 failures**. Verbatim evidence at
+  **`project_docs/GATE_LOG_2026-08-01.md`**, run at commit `40b87c0`.
+  *(Was "8 checks / 28/28" — the check count conflated `--quick` with the full gate, and the
+  artifact count was stale; the 29th is `experiments/arm_incumbent/predictions.parquet`, added
+  to `FITTED_ARTIFACT_GLOBS` at `ac2e2f0` and attested-but-REJECTED.)*
 - `.gitattributes` (`* -text`) is **load-bearing** — without it every manifest hash drifts on
   a Windows checkout.
 
@@ -413,17 +419,112 @@ later `appeared`.
 control already exists per contract target. **No mapping registered, no model chosen, no
 prediction regenerated, no accuracy metric computed or inspected.**
 
-| contract target | classification |
-|---|---|
-| `p_active` | SEMANTIC_MISMATCH - live layer is a deterministic Out rule gate, not a probability; the only probabilistic P(plays) is two-stage Stage A, which **FAILED its gate** (`promote: false`), is regime B on the *dressed roster* at T-24h |
-| `e_minutes_given_active` | **EXACT_EXISTING_CONTROL** - minutes EWMA alpha=0.30, `minutes_ewma_vs_carryforward_v1` PASS/`promote: true`, live as `MINUTES_ALPHA` |
-| `attempts_usage` | NO_REGISTERED_CONTROL - nothing predicts attempts; `player_volume_heterogeneity_v1` is VOID |
-| `player_scoring_distribution` | SEMANTIC_MISMATCH - `props_edge_v1` gives a POINT projection at T-90m, and is a measurement study whose incumbent is the market |
-| `team_game_distribution` | SEMANTIC_MISMATCH - margin distribution exists (`dist_margin_cover_v1`, **FAILED** gate) and totals point exists; **team points distribution does not** |
+> **CORRECTED 2026-08-01 after supervisory review of `40b87c0`.** The original table classified
+> targets on **estimand shape alone** and was too permissive. Under the **full contract**
+> (prediction obligation, target support, uncertainty, cutoff policy, candidate universe,
+> cold-start coverage) the count is **zero exact controls and five semantic mismatches**.
 
-**One of five targets has an exact existing control.**
+| contract target | corrected classification | reusable ingredient |
+|---|---|---|
+| `p_active` | **SEMANTIC_MISMATCH** | registered Stage-A logistic comparator + live Out gate as a *separately named* comparator |
+| `e_minutes_given_active` | **SEMANTIC_MISMATCH** | promoted shifted minutes EWMA α=0.30 — a point-estimator **ingredient**, not a control |
+| `attempts_usage` | **SEMANTIC_MISMATCH** | the volume screen's FGA/36 baseline (named in a field, not separately registered) |
+| `player_scoring_distribution` | **SEMANTIC_MISMATCH** | points/36 EWMA α=0.30 × expected-minutes point projection |
+| `team_game_distribution` | **SEMANTIC_MISMATCH** | promoted calibrated home/away centers + frozen live Gaussian **margin** distribution |
 
-Ambiguities recorded for the specification decision: live recency window is 3 games vs the
-contract's 5; the promoted minutes control is registered at T-24h vs contract T-90m; the live
-EWMA's shift semantics need confirming by reproduction; and `p_active` has no promoted
-probabilistic control at all.
+~~One of five targets has an exact existing control.~~
+**Zero of five targets has an exact full-contract control. All five need a contract
+wrapper/specification** — which is what `contract_baseline_suite_v1` (§16) freezes.
+
+Four corrections of record, each matched to a committed artifact:
+
+1. **`p_active`.** Stage A did **not** "fail its gate" — it was **never gated**. It is
+   registered as *"SECONDARY, **recorded not gated**"* and run with `record=False`, and it
+   **met** its preregistered secondary Brier bar (0.07963 vs 0.10845, +0.02882, 90% CI
+   [+0.02667, +0.03120]). The **parent** experiment failed its **primary** minutes-MAE gate
+   (+0.0370 vs a required +0.10) and carries `promote: false`. Stage A is a reproducible
+   **non-promoted comparator**, not an incumbent. It scored **16,323** rows of which
+   **5,892** are availability-covered; it did not apply "only to the covered subset".
+2. **`e_minutes_given_active`.** α=0.30 is promoted and reusable, but the registered artifact
+   predicts only **regular-season played rows with >= 1 prior same-season played appearance**
+   (13,501 rows vs the contract's 35,615 required), emits **no predictive sd**, is registered at
+   **T-24h**, and satisfies neither the every-candidate obligation nor a cold-start path. Its
+   gate-5 coverage of 1.0 is **circular** — computed over the already-filtered frame.
+3. **`attempts_usage`.** The VOID verdict voids the screen's **null**, not the baseline — but
+   `player_volume_ewma_baseline` has **no registration record of its own** (it is only the
+   experiment-level `incumbent_id` string), the report selected **`ratio_ewma`** rather than
+   EWMA-of-rate, and α=0.05 sits on a **monotone curve at the grid floor**, so the minimising α
+   is unidentified. Still a mismatch: FGA/36 is a rate, not the contract's raw conditional
+   count, with no sd and coverage of only 11,948 rows (2021-2024, minutes >= 8, >= 5 prior).
+4. **`team_game_distribution`.** The claim that a **total distribution** exists is **withdrawn**
+   — the total is a **point** forecast with no sigma anywhere. What exists is the promoted
+   calibrated home/away **point centers** and a frozen live Gaussian **margin** sigma (12.9022,
+   `daily_forecast.py:113`). Neither is a team-points distribution with per-team sd, and no
+   committed artifact emits one.
+
+Additionally, `props_edge_v1`'s **T-90m label is unenforced**: no cutoff logic exists in the
+module, its line vintage is median **T-69.4m**, its projection gate is **date-level**, and under
+the contract's fail-closed rule only **2 of 784** props observations qualify — with **0 of 262**
+2024 games certifiable.
+
+Ambiguities remaining for the specification decision: live recency window is 3 games vs the
+contract's 5; cutoff disagreements throughout; the live EWMA's shift semantics need confirming
+by reproduction; and `p_active` has no promoted probabilistic control at all.
+
+### Commit-scope contamination in `40b87c0` — labelled, not erased
+
+`40b87c0` was staged with a broad `git add data/ logs/` and swept in concurrent capture output
+unrelated to the mapping conclusion: **83** `data/news_capture/news_items.csv` rows (all batch
+`20260801T154504Z`) and **27** `data/w1_extractions/extractions.jsonl` records (all
+`extracted_utc 2026-08-01T15:46:10Z`, **all carrying `skip_reason: duplicate_title`**). The
+commit is timestamped 15:50:22Z. These are genuine prospective capture records: they are
+**preserved**, the pushed commit is **not** rewritten, and **no conclusion depends on them**.
+
+**Process correction, effective now:** stage explicit paths; capture artifacts get their own
+named commit. `.claude/` is **not** gitignored and now contains worktrees, so `git add -A` from
+the repo root would commit them — explicit-path staging is load-bearing.
+
+---
+
+## 16. `contract_baseline_suite_v1` — registered, definition only
+
+`project_docs/CONTRACT_BASELINE_SUITE_V1.md`, registered 2026-08-01 **before any output**.
+**Nothing has been computed**: no prediction, fitted parameter, accuracy figure, coverage score
+or prediction file exists for this suite, and none was inspected. The registry record carries
+`computed_nothing: true`, and `register()` touches no data and fits nothing.
+
+This replaces the inaccurate phrase *"the current EWMA/ridge player layer, unchanged"* used when
+`arm_incumbent` was attempted at `ac2e2f0`. §15 establishes there is no such unchanged layer.
+It is a **registered baseline suite** — the reference later council members must beat — and
+**not** a previously promoted incumbent arm, not a promotion candidate, and not evidence. Its
+registry thresholds are **sentinels**.
+
+Frozen before any output: the common contract-v2 layer (35,615 pg / 2,990 tg rows, two cutoff
+classes reported separately, `season:<YYYY>` chronological folds, the obligation/scoring split,
+per-row provenance, and the fail-closed `validate_predictions()` check), plus per target:
+
+| target | component id | note |
+|---|---|---|
+| `p_active` | `cbs1_pactive_logistic_histonly` | history-only Stage-A logistic, **refit within each training fold**; Out gate reported as `cbs1_pactive_rulegate_comparator`, never relabelled a probability |
+| `e_minutes_given_active` | `cbs1_eminutes_ewma_a030` | promoted shifted minutes EWMA α=0.30 as a point-estimator ingredient |
+| `attempts_usage` | `cbs1_attempts_fga36_x_minutes` | shifted FGA/36 EWMA α=0.05 × minutes/36 — **NEW COMPOSITION** |
+| `player_scoring_distribution` | `cbs1_points_pts36_x_minutes` | shifted points/36 EWMA α=0.30 × minutes/36 — **NEW COMPOSITION** |
+| `team_game_distribution` | `cbs1_teampoints_structural_cal` | promoted calibrated structural home/away centers; margin Gaussian kept distinct as `cbs1_margin_gaussian_comparator` |
+
+Also frozen: **strictly training-fold** residual sd/quantiles with truncation, support rules and
+monotone quantiles; **deterministic training-only fallbacks** so every required row is predicted,
+with `is_fallback` / `is_cold_start` flags and the fallback stratum always broken out; the 76
+zero-candidate team-games kept **visible**; and a standing obligation to cross-tab every
+exclusion by `in_target_box` and `appeared` — the `ac2e2f0` outcome-selection trap.
+
+**`season:2021` has an empty training set** (`seasons < 2021`), so the entire fold takes the
+fallback path and is reported as its own stratum, never pooled silently.
+
+**Three open questions are frozen with it, awaiting a supervisory ruling before any OOF is
+generated:** (1) the instructed *"shifted FGA/36 EWMA"* differs from the artifact's selected
+`ratio_ewma`; (2) α=0.05 is a grid-boundary corner on a monotone curve, so the minimising α is
+unidentified; (3) the inherited α=0.30 values were tuned on 2021-2023, which overlaps predicted
+folds, so they are frozen as fixed constants and must not be called fold-honest.
+
+**Status: no chronological OOF predictions generated. The dynamic hierarchical arm is not
+begun.**
