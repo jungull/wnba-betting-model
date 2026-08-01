@@ -167,6 +167,9 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     # prob_edge_mechanism_ablation_v1 specification table: diagnostic only, but it is a
     # fitted artifact and a stale copy would misstate a mechanism label.
     "experiments/prob_edge_ablation/specification_table.csv",
+    # The player-game prediction contract universe. Nothing is fitted in it, but a STALE
+    # universe would silently misalign every council arm, which is worse than a stale fit.
+    "experiments/prediction_contract/universe.parquet",
 )
 
 # Directories never worth walking.

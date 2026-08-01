@@ -1,0 +1,110 @@
+{
+ "contract_version": "player_game_contract/1",
+ "purpose": "Shared PREDICTION CONTRACT and evaluation universe for the target-specific councils (council_scope_v2 S6/S7). Arms may use different internal inputs; they must share rows, cutoff, target definition and output schema -- NOT one physical feature table.",
+ "row_uid": "pg_ + sha256(player_id, game_id)[:16]. Derived from ids ONLY, never from date/team/season, so a later correction to a team abbreviation cannot silently move the join key.",
+ "cutoff_policy": {
+  "value": "T-90m",
+  "derivation": "tip time is absent from master_player, so the cutoff is game_date + 22:30 UTC, applied uniformly and recorded. It is deliberately conservative; an arm may read nothing at or after it. When true tip times are captured this becomes a new contract version, not an edit."
+ },
+ "targets": {
+  "p_active": {
+   "key": "p_active",
+   "description": "Probability the player appears in the game at all.",
+   "support": "probability in [0, 1]",
+   "eligibility": "every row on a slate the player's team plays, INCLUDING players who do not appear -- excluding them is the selection bias this target exists to measure",
+   "uncertainty": "the probability IS the uncertainty; calibration is scored, not a variance",
+   "clustering": "game_date"
+  },
+  "e_minutes_given_active": {
+   "key": "e_minutes_given_active",
+   "description": "Expected minutes CONDITIONAL on appearing.",
+   "support": "minutes >= 0",
+   "eligibility": "rows where the player actually appeared (min > 0); conditioning is explicit so it is never confused with unconditional expected minutes",
+   "uncertainty": "predictive sd of minutes, strictly > 0",
+   "clustering": "game_date"
+  },
+  "attempts_usage": {
+   "key": "attempts_usage",
+   "description": "Scoring opportunity: field-goal attempts per game (usage proxy).",
+   "support": "attempts >= 0",
+   "eligibility": "rows where the player appeared AND team possessions are reconciled",
+   "uncertainty": "predictive sd of attempts, strictly > 0",
+   "clustering": "game_date"
+  },
+  "player_scoring_distribution": {
+   "key": "player_scoring_distribution",
+   "description": "Full predictive distribution of player points.",
+   "support": "distribution over points >= 0",
+   "eligibility": "rows where the player appeared and points are resolved",
+   "uncertainty": "predictive sd PLUS the quantiles named in QUANTILES; a point estimate alone is NOT contract-compliant for this target",
+   "clustering": "game_date"
+  },
+  "team_game_distribution": {
+   "key": "team_game_distribution",
+   "description": "Team score / margin / total distribution.",
+   "support": "distribution over team points",
+   "eligibility": "one row per team-game with a resolved final score",
+   "uncertainty": "predictive sd of team points",
+   "clustering": "game_date"
+  }
+ },
+ "quantiles": [
+  0.05,
+  0.25,
+  0.5,
+  0.75,
+  0.95
+ ],
+ "prediction_schema": {
+  "row_uid": "canonical player-game id from this module; the join key",
+  "target_key": "one of TARGETS",
+  "arm_id": "stable arm name, e.g. incumbent_ewma_ridge",
+  "fold_id": "exact OOF fold identity; must match the contract's fold map",
+  "forecast_cutoff": "tz-aware ISO8601; the moment the prediction is committed",
+  "pred_point": "point prediction on the target's support",
+  "pred_sd": "predictive sd; > 0 except where the target says otherwise",
+  "pred_q05": "5th percentile (distribution targets; else null)",
+  "pred_q25": "25th percentile (else null)",
+  "pred_q50": "median (else null)",
+  "pred_q75": "75th percentile (else null)",
+  "pred_q95": "95th percentile (else null)",
+  "is_fallback": "bool: a fallback path produced this, not the arm's normal path",
+  "is_cold_start": "bool: insufficient prior history for this player at this cutoff",
+  "n_prior_games": "int: strictly-prior appearances the arm could read",
+  "feature_asof": "tz-aware ISO8601: LATEST source observation the arm read. MUST be strictly < forecast_cutoff",
+  "model_hash": "hash of fitted parameters",
+  "config_hash": "hash of the arm's configuration",
+  "data_snapshot_hash": "hash of the input snapshot",
+  "exclusion_reason": "null if predicted; otherwise why this eligible row has no prediction. A silently missing row is a violation"
+ },
+ "fold_identity": "fold_id = season:<S>; expanding walk-forward, train_boundary = seasons < S. Every prediction carries its fold so cross-arm alignment is checkable rather than assumed.",
+ "clustering_unit": "game_date -- the unit all inference must cluster on",
+ "compliance": "validate_predictions() REJECTS a non-compliant arm rather than repairing it. Repair would silently make incomparable things comparable, which is the failure this contract prevents.",
+ "accounting": {
+  "master_rows": 33712,
+  "after_keys_present": 33712,
+  "duplicate_row_uids": 0,
+  "eligible__p_active": 33712,
+  "excluded__p_active": 0,
+  "eligible__e_minutes_given_active": 28322,
+  "excluded__e_minutes_given_active": 5390,
+  "eligible__attempts_usage": 28322,
+  "excluded__attempts_usage": 5390,
+  "eligible__player_scoring_distribution": 28322,
+  "excluded__player_scoring_distribution": 5390,
+  "eligible__team_game_distribution": 33712,
+  "excluded__team_game_distribution": 0,
+  "rows": 33712,
+  "players": 386,
+  "games": 1495,
+  "dates": 575,
+  "seasons": [
+   2021,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ]
+ }
+}

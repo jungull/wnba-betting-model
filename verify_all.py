@@ -52,6 +52,7 @@ CHECKS = [
     ("test_permutation_integrity", [sys.executable, "tests/test_permutation_integrity.py"]),
     ("test_asof_invariant",        [sys.executable, "tests/test_asof_invariant.py"]),
     ("test_edge_target_identity",  [sys.executable, "tests/test_edge_target_identity.py"]),
+    ("test_prediction_contract",   [sys.executable, "tests/test_prediction_contract.py"]),
     ("asof_manifest_scan",         [sys.executable, "asof_invariant.py", "--scan"]),
     ("forecast_chain",             [sys.executable, "-c",
                                     "import sys;from evalharness import verify_chain;"
