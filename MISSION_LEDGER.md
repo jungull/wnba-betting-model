@@ -49,9 +49,34 @@ and is a prerequisite of `calibrated_prob_edge_v1`, not an afterthought.
 
 | id | what it tests | regime | state |
 |---|---|---|---|
-| `player_model_bakeoff_v1` | is EWMA/ridge underfitting? 4 arms: incumbent, dynamic hierarchical player profiles, CatBoost, TabPFN | A | registered, **not started** |
+| `player_model_bakeoff_v1` | is EWMA/ridge underfitting? 4 arms: incumbent, dynamic hierarchical player profiles, CatBoost, TabPFN | A | registered, **not started** — now **amended by `council_design_v1`** |
+| `council_design_v1` | does a diverse weighted council beat every individual member? | A | **registered 2026-07-31**, computes nothing yet |
 | `calibrated_prob_edge_v1` | calibrated P(over) × executable odds ⇒ EV-thresholded frozen policy | A | registered in full, **not started** — must run without redesign |
 | `w1_extraction_quality_audit_v1` | what actionable pre-cutoff signal does W1 actually carry? | B | registered, **not started** |
+
+### The council amendment changed the sequencing
+
+`council_design_v1` replaces "which single arm wins" with "does a weighted council beat every
+member". Registered **before** the bake-off ran, so it consumes no evaluation slice. Five
+orchestrator-added guards are recorded in it; three change what happens next:
+
+- **G2 — out-of-fold span is a blocking prerequisite.** The council must train weights on
+  chronological OOF predictions, but the only cross-model aligned OOF set is
+  `predictions_v2.csv`: **673 games — 2024 (229) / 2025 (276) / 2026 (168)**. Under the frozen
+  slice labels the legitimate weight-*fitting* slice is **2024 alone, 229 games over ~90
+  dates**. That cannot support up to nine members across six weighting methods, and gives
+  ~23 games per regime for the ten-regime gate. **Ladder rungs 1–2 (equal weight, median)
+  estimate no parameters and may proceed; rungs 3–6 are blocked** until
+  `base_predictions_oof_2022_2023_v1` extends OOF backwards toward ~730 games.
+- **G1 — market-as-member degeneracy guard.** Admitting the market as a *weighted* member
+  recreates the comparative-error trap: since the market beats us in every measured market,
+  an accuracy-optimising weight vector collapses onto it, and the council appears to win while
+  having learned nothing. The market also enters **twice** — as a forecast member and as the
+  price in the decision layer. The council is therefore fit and reported **both with and
+  without** it; weight collapse onto the market is recorded as a **NULL, not a win**.
+- **G3 — regime gating is development-only this season.** ~118 games / ~1,750 prop rows across
+  ten regimes is ~175 rows per regime. Developable retrospectively with per-regime MDEs; not
+  promotable on this season's prospective sample.
 
 ## 4. Failed and retired approaches (kept visible on purpose)
 
@@ -149,15 +174,23 @@ Steps 0–3 of `PLAN_2026-07-31_W1_AUDIT_AND_BAKEOFF.md` are **done**. Remaining
 | 3 | **Odds tier decision by ~Aug 30** | props require the paid tier — and props are where the statistical power is | subscription |
 | 4 | `historical_odds` drive pull | recovers old-era line paths, possibly old totals | credits |
 | 5 | 2024 totals backfill | only if historical totals work is wanted | ~7–8K credits |
+| 6 | **Council scope decision** — admit lineup graph / sequence model / possession simulation? | genuine representational diversity; without them the council is 4 tabular arms + availability + market, which risks correlated residuals | these are **SCOPE-ONLY** in `PLAN_2026-07-31` §3; admitting them is a scope expansion only John can authorize |
 
 ## 10. Highest-value next action
 
-**Run `calibrated_prob_edge_v1`.** It is registered in full, its design is frozen, it needs
-no new data, no new authorization, and nothing blocks it. It targets props — the surface
-that actually has power — and it is the one registered item that could produce a promotable
-frozen policy. Its props MDE computation lands with it.
+**Run `base_predictions_oof_2022_2023_v1` first.** The council amendment promoted this from a
+mid-priority item to the single highest-leverage one, because it now unblocks two things at
+once: council ladder rungs 3–6 (G2), and the conditional-edge/props fitting sample, which it
+enlarges from ~229 games to ~730.
 
-Second: **step 8** (shared as-of feature matrix), which unblocks the bake-off.
+**This re-orders `calibrated_prob_edge_v1`, and deliberately so.** That experiment could run
+today on 229 fitting games — but its own registration says a redesign after seeing results is
+a new id that consumes its evaluation slice. Running it on 229 games when 730 is achievable
+would spend a frozen, well-designed registration on a third of the available data, with no
+legitimate way to re-run it afterwards. Extend the OOF span first, then run it once, properly.
+
+Order: (1) `base_predictions_oof_2022_2023_v1`; (2) `calibrated_prob_edge_v1`; (3) step 8
+shared as-of feature matrix; (4) bake-off arms under the council design.
 
 ## 11. Evidence required before the next decision
 
