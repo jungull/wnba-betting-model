@@ -190,9 +190,35 @@ Leakage audits PASS for both. **Fitting sample 229 → 664 games.** Artifact car
 Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared), and
 `calibrated_prob_edge_v1` can now run on ~2.9× the fitting data.
 
-**Next: run `calibrated_prob_edge_v1`.** Registered in full, design frozen, no new data or
-authorization needed. It must run **once, without redesign** — a post-hoc change is a new id
-that consumes its evaluation slice. Its props clustered-SE / MDE computation lands with it.
+**Next: `calibrated_prob_edge_v1` — READINESS CHECKED 2026-08-01, one mandatory defence is
+not currently satisfiable.** It must run **once, without redesign**, so it was audited before
+launch rather than after.
+
+*What is ready.* `experiments/props_edge/bet_universe_per_book.csv` is the row-level input:
+**33,610 rows, 2024–2026**, per book, carrying `line`, `over_price`/`under_price`,
+`proj_used`, `actual_pts`, `exp_min`, `n_prior`, `role`, `venue` and `resolve_status`.
+`master_props_historical.csv` adds **36,946 rows over 784 games / 160 players** (player_points
+only, 9 books) with `last_update` **fully populated**.
+
+*Sub-blocker 1 — `last_update` absent from the bet universe. FIXABLE.* The registration
+requires prices "verified SIMULTANEOUSLY LIVE via `last_update`, staleness excluded". The
+field is missing from `bet_universe_per_book.csv` but present in the historical master, so it
+can be joined back. Engineering, not acquisition.
+
+*Sub-blocker 2 — book limits are captured NOWHERE. EXTERNAL BLOCKER.* The registration also
+requires "book limits applied". The Odds API does not expose limits on the current tier, so
+this cannot be satisfied with data we hold or can collect at present.
+
+**Consequence, stated plainly:** a **negative** result remains admissible (the gap *flatters*
+returns, so a loss under flattering assumptions is robust). A **positive** result would be
+**inadmissible** — the same defect that downgraded the earlier props study. Running the
+experiment now therefore risks spending its one registration on a result we could not act on
+if it came out well.
+
+**Recommended:** fix sub-blocker 1, then run with the limits gap **declared in the results
+file** and any positive finding explicitly labelled provisional pending an executability
+source. That preserves the registration's value without weakening the standard of proof.
+Alternative, needing John: an odds tier or data source exposing limits (see §9).
 
 Then: (2) step 8 shared as-of feature matrix; (3) bake-off arms under the council design.
 
