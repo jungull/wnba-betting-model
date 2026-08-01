@@ -318,14 +318,31 @@ positive one would have been provisional.
 
 ## 12. Standing operational state
 
-- Gate: **`python verify_all.py`** — **9 checks** full, **8 with `--quick`** (which skips
-  `daily_certify`), exit non-zero on any failure. `--install-hook` refuses pushes unless green.
-- Last full gate: **PASS**, **9/9 green, 29/29 artifacts attested, 129 tests**, forecast chain
-  `ok=True` (8 records), daily certification **WARN with 0 failures**. Verbatim evidence at
-  **`project_docs/GATE_LOG_2026-08-01.md`**, run at commit `40b87c0`.
-  *(Was "8 checks / 28/28" — the check count conflated `--quick` with the full gate, and the
-  artifact count was stale; the 29th is `experiments/arm_incumbent/predictions.parquet`, added
-  to `FITTED_ARTIFACT_GLOBS` at `ac2e2f0` and attested-but-REJECTED.)*
+- Gate: **`python verify_all.py`** — runs 9 checks, exit non-zero on any failure.
+  `--install-hook` refuses pushes unless green. **But the 9 are not one kind of evidence**, and
+  since 2026-08-01 they are reported as two layers:
+  - **Layer A — reproducible repository gate, 8 checks.** The 6 test suites (**129 tests**),
+    `asof_manifest_scan`, `forecast_chain`. Reads only committed files; **reproduces from a clean
+    checkout of the commit and nothing else.**
+  - **Layer B — operational certification, 1 check** (`daily_certify`, also what `--quick`
+    skips). Reads **git-ignored** live capture data, so it is **environment-dependent and cannot
+    be reproduced from a commit.** A layer-B result is only meaningful paired with the aggregate
+    hash of the manifest binding its inputs.
+- Last gate — **layer A: PASS, 8/8, 129 tests, 29/29 artifacts attested, forecast chain
+  `ok=True` (8 records)**, reproduced in a clean checkout at commit `db9f011`.
+  **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, bound to input manifest
+  `6959e057989c4c5a642cfddac431d0fadab2ec4b7752897f6a6de7d1c134f68f` (34 ignored inputs,
+  5,512,675 bytes). Verbatim evidence and both run windows at
+  **`project_docs/GATE_LOG_2026-08-01.md`**; the bound input set at
+  **`project_docs/OPERATIONAL_INPUTS_2026-08-01T1823Z.json`**, regenerable with
+  `python operational_input_manifest.py`.
+  > **CORRECTED 2026-08-01.** This entry previously read *"9/9 green … run at commit `40b87c0`"*.
+  > That number is **retired**: it silently added layer B to layer A and was **not reproducible
+  > from any commit** — an isolated run at exact `db9f011` fails `daily_certify` because
+  > `data/odds_capture/` is entirely git-ignored. The layer-A content was never wrong (129 tests
+  > and 29/29 both reproduce); the aggregation was. *(An earlier correction had already fixed
+  > "8 checks / 28/28": the 29th artifact is `experiments/arm_incumbent/predictions.parquet`,
+  > added to `FITTED_ARTIFACT_GLOBS` at `ac2e2f0`, attested-but-REJECTED.)*
 - `.gitattributes` (`* -text`) is **load-bearing** — without it every manifest hash drifts on
   a Windows checkout.
 
@@ -417,7 +434,14 @@ later `appeared`.
 
 `project_docs/INCUMBENT_MAPPING_AUDIT.md`, 2026-08-01. Bounded discovery of what registered
 control already exists per contract target. **No mapping registered, no model chosen, no
-prediction regenerated, no accuracy metric computed or inspected.**
+prediction regenerated, and no new accuracy metric computed.**
+
+> **WORDING CORRECTED 2026-08-01** (supervisory review of `db9f011`). This entry previously read
+> "no accuracy metric computed **or inspected**", which was false. A mapping audit *is* an
+> inspection of committed evidence: it read Stage A's preregistered secondary Brier figures, the
+> minutes-MAE gate verdicts, `props_edge_v1`'s projection-vs-line MAE table, and the already-
+> committed prediction artifacts. The accurate claim is **no new metric was computed; pre-
+> existing committed evidence was inspected.** Nothing was refit, rescored, or regenerated.
 
 > **CORRECTED 2026-08-01 after supervisory review of `40b87c0`.** The original table classified
 > targets on **estimand shape alone** and was too permissive. Under the **full contract**
@@ -434,7 +458,8 @@ prediction regenerated, no accuracy metric computed or inspected.**
 
 ~~One of five targets has an exact existing control.~~
 **Zero of five targets has an exact full-contract control. All five need a contract
-wrapper/specification** — which is what `contract_baseline_suite_v1` (§16) freezes.
+wrapper/specification** — which is what `contract_baseline_suite_v1` (§16) froze and
+`contract_baseline_suite_v2` (§17) makes executable.
 
 Four corrections of record, each matched to a committed artifact:
 
@@ -486,7 +511,12 @@ the repo root would commit them — explicit-path staging is load-bearing.
 
 ---
 
-## 16. `contract_baseline_suite_v1` — registered, definition only
+## 16. `contract_baseline_suite_v1` — registered, definition only — **SUPERSEDED, see §17**
+
+> **SUPERSEDED 2026-08-01 by `contract_baseline_suite_v2` (§17).** v1 was a genuine no-output
+> freeze but was **not executable** — five rules it named were never stated, and its claim that
+> points α = 0.30 was "tuned on 2021-2023" is **false** (that is the *minutes* provenance).
+> v1's registry record is **not mutated**; this section is retained as the historical record.
 
 `project_docs/CONTRACT_BASELINE_SUITE_V1.md`, registered 2026-08-01 **before any output**.
 **Nothing has been computed**: no prediction, fitted parameter, accuracy figure, coverage score
@@ -528,3 +558,49 @@ folds, so they are frozen as fixed constants and must not be called fold-honest.
 
 **Status: no chronological OOF predictions generated. The dynamic hierarchical arm is not
 begun.**
+
+---
+
+## 17. `contract_baseline_suite_v2` — registered, definition only, **executable**
+
+`project_docs/CONTRACT_BASELINE_SUITE_V2.md`, registered 2026-08-01 **before any output**.
+Registry append was **1 insertion, 0 deletions** (79 → 80 records); the record carries
+`computed_nothing: true` and `definition_only: true`, and `config_hash`
+**`7ad8c09742bcbe89e469c7647d5026f5444ec85660ee713f0a921c3c9abeadb9`** verifies under the same
+self-referential convention v1 used. **v1's record was not touched.** No new metric was computed;
+pre-existing committed evidence (feature lists, grids, promoted alphas, calibration coefficients)
+was inspected in order to *specify* the estimators.
+
+**Why v2 exists.** v1 was frozen but **not executable** — two engineers reading it could not have
+produced the same numbers. v2 states the five missing rules and rules on v1's three open
+questions.
+
+| v1 defect | v2 |
+|---|---|
+| `p_active`: no feature vector, standardisation, λ grid, tie-break, minimum-history or low-data rule | exact 14-feature history-only vector, `ddof=0` standardisation refit at every fit, 13-point log-λ grid, Brier selection, **ties → smallest λ**, no minimum-history requirement |
+| `season:2021` constants "declared here" — but none were | full numeric point/sd/quantile table, derived from **declared structural arithmetic**, never from a season's outcomes |
+| "training-fold residuals" — in-sample or out-of-sample? | **chronological inner-OOF (prequential) only**; residuals from the fit that produced the center are **forbidden**. Estimator, min sample (200 / 30), `ddof=1`, `numpy.quantile(method="linear")`, fold-global pooling and fallback all frozen |
+| team centers reused with no fold-honest refit rule | channel alphas **and** the two-parameter linear calibration maps **refit inside every outer training fold**; the fixed 2021-2023 fit becomes a named legacy sensitivity |
+| "points α = 0.30 was tuned on 2021-2023" | **false and corrected** — `props_edge.py:203` declares `ALPHA = 0.30  # registered frozen family` |
+
+**Supervisory rulings applied.** (1) `attempts_usage` uses the **artifact-selected**
+`ratio_ewma = EWMA(FGA)/EWMA(minutes) × 36`, not the EWMA of the FGA/36 rate v1 froze; the raw-
+attempts composition stays labelled **NEW**. (2) The attempts α grid is predeclared with a floor
+of **0.01** — the old sweep's floor was 0.05 on a monotone curve, so 0.05 was never an identified
+optimum; a boundary solution is **retained and reported**, never fixed by widening the grid after
+the fact. (3) Minutes-rate, points-rate and team channel alphas are all selected **inside each
+outer training fold**; fixed versions survive only as named legacy sensitivities with explicit
+contamination windows.
+
+One asymmetry is recorded rather than quietly enjoyed: the minutes legacy α=0.30 **is**
+outcome-contaminated on folds `season:2021-2023` (it was tuned against those outcomes), while the
+points legacy α=0.30 is **not** contaminated on any fold (it was *declared*, never tuned). The two
+legacies do not carry the same status.
+
+`season:2021` remains its own cold-start stratum — every row flagged, reported separately, and
+**excluded from every pooled headline score and every council/meta-weight fit**. If its declared
+constants prove poor, that is a finding to report, **not a licence to retune them**.
+
+**Status: no chronological OOF predictions generated.** v1's open-question block is lifted by this
+registration, but generation itself awaits supervisory review of this record. The dynamic
+hierarchical arm is **not** begun. `arm_incumbent` remains **rejected and unconsumed**.

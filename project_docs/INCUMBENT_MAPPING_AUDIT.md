@@ -167,10 +167,22 @@ Why it is nevertheless a mismatch:
   *"spec D5's >= 3-appearance cold-start tier is a model-phase rule, not part of this
   preregistered floor."*
 - **Obligation.** Because the universe is built from played rows, an eventual DNP can never be
-  predicted *or* scored. The contract requires prediction for *"EVERY candidate_at_cutoff,
-  including eventual DNPs"* and states that *"an arm cannot buy coverage by dropping the
-  inactive."* **This artifact buys coverage exactly that way.** Its scored universe is 13,501
-  rows against the contract's 35,615 required.
+  predicted *or* scored. Its scored universe is 13,501 rows against the contract's 35,615
+  required.
+
+  > **WORDING CORRECTED 2026-08-01** (supervisory review of `db9f011`). This bullet previously
+  > quoted the contract's warning that *"an arm cannot buy coverage by dropping the inactive"*
+  > and then asserted **"this artifact buys coverage exactly that way."** That sentence is
+  > **withdrawn.** The warning governs an arm answering the contract; `minutes_baselines` is not
+  > such an arm. It was registered against a **legitimate played-only estimand** — E[minutes] on
+  > rows where the player played — predates `player_game_contract/2`, and never claimed contract
+  > coverage. It did not evade an obligation it was never under.
+  >
+  > The accurate and narrower statement — the one that actually blocks reuse — is that its
+  > **coverage figure is conditional on an already-filtered frame and therefore cannot establish
+  > contract prediction coverage.** A coverage of 1.0 over played rows with >= 1 prior appearance
+  > is silent about the 22,114 contract rows outside that frame. See the gate-5 circularity
+  > bullet below, which makes the same point about the same number.
 - **Cold start.** `:169-175` asserts NaN features on every `prior_apps == 0` row and `:623`
   deletes them. Production has the same hole (`daily_forecast.py:678-683`: `min_ewma: None`,
   `cold_start: True`).
