@@ -250,15 +250,30 @@ def perm_mde(g: pd.DataFrame, side: str, rng: np.random.Generator) -> dict:
     The blocking respects the per-date common shock and within-date player/game dependence;
     a row-exchangeable null would be anti-conservative here (v5 C1).
 
-    CORRECTED 2026-08-01.  The first implementation permuted outcomes only among the
-    SELECTED bets.  That is far too narrow: within-date outcome variance (0.148) is well
-    below overall variance (0.249), so shuffling inside an already-chosen set barely moved
-    the mean and the null SD came out roughly 20x too small -- an MDE of 0.003 where the
-    naive SE alone implies 0.074.  An MDE that small would have let ordinary noise be read
-    as a real effect.  The permuted label must flow through the whole downstream path
-    (screening_protocol_amendment_v2 P3), so outcomes are now shuffled within a date across
-    EVERY eligible row and the fixed bet selection is then scored against them.  This makes
-    the null strictly wider, i.e. more conservative.
+    ESTIMAND, STATED PRECISELY (John's review 2026-08-01).  This is the CONDITIONAL MDE OF A
+    FROZEN POLICY: the fitted model, the probabilities and the bet selection are all held
+    FIXED, and only the outcomes are permuted.  It answers "given exactly these bets, how
+    large a mean return could outcome exchangeability within a date produce by chance?"
+
+    That is the RIGHT estimand for the 2025 and 2026 slices, where the model genuinely is
+    frozen and nothing is refit -- the policy there is a fixed object being scored.
+
+    It is the WRONG estimand for the 2024 FITTING slice, where the model was fit to the very
+    labels being permuted; holding the fit fixed there understates the null, because the
+    real procedure gets to re-optimise against each permuted label set.  ``perm_mde_refit``
+    supplies the pipeline-refitting null for that slice.
+
+    An earlier version of this docstring claimed the permuted label "flows through the whole
+    downstream path" per screening_protocol_amendment_v2 P3.  That was INACCURATE: lambda
+    selection, model fitting, probabilities and bet selection are not recomputed here.  The
+    description now matches what the code does.
+
+    CORRECTED 2026-08-01 (separate, earlier fix).  The first implementation permuted outcomes
+    only among the SELECTED bets.  Within-date outcome variance (0.148) is well below overall
+    variance (0.249), so shuffling inside an already-chosen set barely moved the mean and the
+    null SD came out roughly 20x too small -- an MDE of 0.003 where the naive SE alone implies
+    0.074.  Outcomes are now shuffled within a date across EVERY eligible row, which makes the
+    null strictly wider.
     """
     mask = g.bet_over if side == "over" else g.bet_under
     if not mask.any():
@@ -283,6 +298,60 @@ def perm_mde(g: pd.DataFrame, side: str, rng: np.random.Generator) -> dict:
     sd = float(stats.std(ddof=1))
     return {"n_perm": N_PERM, "null_sd": sd, "mde_roi": float(2.802 * sd),
             "null_mean": float(stats.mean())}
+
+
+def perm_mde_refit(fit: pd.DataFrame, lam: float, mu, sd,
+                   rng: np.random.Generator) -> dict:
+    """PIPELINE-REFITTING null for the FITTING slice (amendment v2 P3).
+
+    Inside every draw the permuted labels are refit end to end: the L2 logistic is refit on
+    the shuffled labels, probabilities are recomputed, and the EV rule RE-SELECTS its bets
+    before ROI is measured.  So the null reflects a procedure that gets to optimise against
+    each permuted label set, which is what the real procedure did on 2024.
+
+    HELD FIXED, and stated rather than glossed: lambda is not re-selected by leave-one-date-out
+    CV inside each draw (2000 draws x 8 lambdas x 94 folds is not affordable).  Lambda is
+    chosen by log loss and depends only weakly on a label permutation, but this is a
+    departure from a literally complete pipeline permutation and is recorded as such.  Its
+    effect is to make the null slightly NARROWER than a fully complete one, so the resulting
+    MDE is a mild under-estimate rather than an over-estimate.
+    """
+    X, _, _ = standardise(fit[FEATURES], mu, sd)
+    y = fit.y_over.to_numpy()
+    dates = fit.game_date.to_numpy()
+    order = np.argsort(dates, kind="stable")
+    blocks = [b for b in np.split(order, np.unique(dates[order], return_index=True)[1][1:])
+              if len(b) > 1]
+    prof_over = _amer_profit(fit.over_price.to_numpy())
+    prof_under = _amer_profit(fit.under_price.to_numpy())
+
+    out = {"over": np.full(N_PERM, np.nan), "under": np.full(N_PERM, np.nan)}
+    for i in range(N_PERM):
+        yp = y.copy()
+        for b in blocks:
+            yp[b] = rng.permutation(y[b])
+        wp = fit_logistic(X, yp, lam, iters=60)
+        p = predict(wp, X)
+        ev_o = p * prof_over - (1 - p)
+        ev_u = (1 - p) * prof_under - p
+        so, su = ev_o >= EV_THRESHOLD, ev_u >= EV_THRESHOLD
+        if so.any():
+            out["over"][i] = np.where(yp[so] == 1, prof_over[so], -1.0).mean()
+        if su.any():
+            out["under"][i] = np.where(yp[su] == 0, prof_under[su], -1.0).mean()
+
+    res = {}
+    for side in ("over", "under"):
+        v = out[side][np.isfinite(out[side])]
+        res[side] = {
+            "estimand": "pipeline_refit_within_date_permutation",
+            "n_perm_valid": int(len(v)),
+            "null_sd": float(v.std(ddof=1)) if len(v) > 1 else float("nan"),
+            "null_mean": float(v.mean()) if len(v) else float("nan"),
+            "mde_roi": float(2.802 * v.std(ddof=1)) if len(v) > 1 else float("nan"),
+            "lambda_reselection": "HELD FIXED -- see docstring",
+        }
+    return res
 
 
 def date_clustered_ci(g: pd.DataFrame, side: str, rng: np.random.Generator,
@@ -397,6 +466,7 @@ def main() -> int:
                 "n_dates": int(sel.game_date.nunique()) if n else 0,
                 "roi": roi, "notional": NOTIONAL,
                 "mde_roi": mde["mde_roi"], "null_sd": mde["null_sd"],
+                "mde_estimand": "frozen_policy_conditional",
                 "exceeds_mde": bool(n and np.isfinite(roi) and abs(roi) > mde["mde_roi"]),
                 **ci,
                 "ci_excludes_zero": bool(n and np.isfinite(ci["roi_ci90_low"])
@@ -419,6 +489,20 @@ def main() -> int:
                   f"MDE {r['mde_roi']:.4f}  "
                   f"{'exceeds MDE' if r['exceeds_mde'] else 'within noise'}"
                   f"{', CI excludes 0' if r['ci_excludes_zero'] else ''}")
+
+    # The fitting slice needs the PIPELINE-REFITTING null: its model was fit to the very
+    # labels being permuted, so a frozen-policy null understates the reachable ROI.
+    print("\npipeline-refitting null on the FITTING slice (model refit and bets re-selected "
+          "inside every draw):")
+    refit_null = perm_mde_refit(fit, lam, mu, sd, rng)
+    for side in ("over", "under"):
+        r = refit_null[side]
+        obs = results["fit_2024"][side]["roi"]
+        print(f"  {side.upper():5s} observed ROI {obs:+.4f} | refit-null mean "
+              f"{r['null_mean']:+.4f} sd {r['null_sd']:.4f} | MDE {r['mde_roi']:.4f} -> "
+              f"{'exceeds' if abs(obs) > r['mde_roi'] else 'WITHIN NOISE'}")
+        results["fit_2024"][side]["mde_roi_pipeline_refit"] = r["mde_roi"]
+        results["fit_2024"][side]["null_mean_pipeline_refit"] = r["null_mean"]
 
     # Does the disagreement term dominate the decision? (mandatory defence 3)
     gfit = per_slice["fit_2024"]
@@ -448,6 +532,17 @@ def main() -> int:
         "intercept": float(w[0]),
         "eligibility_ladder": acct,
         "slices": results,
+        "mde_estimands": {
+            "frozen_policy_conditional": (
+                "model, probabilities and bet selection HELD FIXED; only outcomes permuted "
+                "within game date. Correct for 2025/2026, where the policy genuinely is a "
+                "frozen object being scored."),
+            "pipeline_refit": (
+                "model refit and bets RE-SELECTED inside every draw. Required for the 2024 "
+                "fitting slice, whose model was fit to the labels being permuted. Lambda "
+                "re-selection is held fixed for cost, which makes this null slightly narrow; "
+                "recorded rather than glossed."),
+        },
         "disagreement_dominance": dom,
         "slice_labels": {
             "fit_2024": "FITTING", "dev_2025": "development check, NOT confirmation",

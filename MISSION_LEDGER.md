@@ -1,8 +1,8 @@
 # MISSION LEDGER
 
 *The continuing-mission record. Updated at the end of every working session so the next
-session resumes without reconstructing reasoning. Last updated **2026-08-01 ~01:40 UTC /
-2026-07-31 21:40 ET**.*
+session resumes without reconstructing reasoning. Last updated **2026-08-01, after
+`calibrated_prob_edge_v1` (NEGATIVE) and `prob_edge_mechanism_ablation_v1` (label A).*
 
 **Success condition (only one):** a frozen, executable betting policy demonstrates
 profitability under its preregistered prospective gate. Everything below is interim state.
@@ -45,7 +45,7 @@ and the decision surfaces are player-level quantities (33,636 player-games) and 
 (~1,750 prospective rows against a 0.31 effect). Props clustered SE is **not yet computed**
 and is a prerequisite of `calibrated_prob_edge_v1`, not an afterthought.
 
-## 3. Active challengers (all registered, none run)
+## 3. Challengers — registered, and what has actually run
 
 | id | what it tests | regime | state |
 |---|---|---|---|
@@ -55,26 +55,50 @@ and is a prerequisite of `calibrated_prob_edge_v1`, not an afterthought.
 | `executability_fixed_notional_v1` | replaces the unsatisfiable book-limits clause | A | registered, applied |
 | `w1_extraction_quality_audit_v1` | what actionable pre-cutoff signal does W1 actually carry? | B | registered, **not started** |
 
-### The council amendment changed the sequencing
+### Council scope — settled 2026-08-01 (`council_scope_v2`)
+
+**Five direct player-model arms:** incumbent EWMA/ridge · dynamic hierarchical · CatBoost ·
+TabPFN · **lineup graph** (admitted now — the best candidate for complementary rather than
+correlated residuals). It may use a different internal representation but must emit the same
+player-game rows, targets and cutoffs.
+
+**Staged, not blocking:** a *compact* sequence model after the first five-arm bake-off. If
+sample, sequence length or history coverage prove inadequate, the response is to improve the
+dataset or representation — **never** to tune a large network until it wins.
+
+**Modular, not a peer:** possession simulation consumes components (availability → minutes →
+usage → attempts → shot mix → conversion) and emits correlated distributions. It may not be
+averaged with CatBoost unless both emit the same target distribution from the same cutoff.
+
+**Five target-specific councils**, never one weight vector: `P(active)` ·
+`E[minutes|active]` · attempts/usage · player scoring distribution · team/game distribution.
+Predictions for different targets are not interchangeable votes.
+
+**The shared artifact is a prediction contract** — a common player-game row index, cutoff and
+manifest — **not** one literal feature matrix. That preserves the intent of
+`council_design_v1`'s identical-inputs clause while admitting the representational diversity
+this whole amendment exists to obtain.
+
+### Two of my own guards were corrected here
 
 `council_design_v1` replaces "which single arm wins" with "does a weighted council beat every
 member". Registered **before** the bake-off ran, so it consumes no evaluation slice. Five
 orchestrator-added guards are recorded in it; three change what happens next:
 
-- **G2 — out-of-fold span is a blocking prerequisite.** The council must train weights on
-  chronological OOF predictions, but the only cross-model aligned OOF set is
-  `predictions_v2.csv`: **673 games — 2024 (229) / 2025 (276) / 2026 (168)**. Under the frozen
-  slice labels the legitimate weight-*fitting* slice is **2024 alone, 229 games over ~90
-  dates**. That cannot support up to nine members across six weighting methods, and gives
-  ~23 games per regime for the ten-regime gate. **Ladder rungs 1–2 (equal weight, median)
-  estimate no parameters and may proceed; rungs 3–6 are blocked** until
-  `base_predictions_oof_2022_2023_v1` extends OOF backwards toward ~730 games.
-- **G1 — market-as-member degeneracy guard.** Admitting the market as a *weighted* member
-  recreates the comparative-error trap: since the market beats us in every measured market,
-  an accuracy-optimising weight vector collapses onto it, and the council appears to win while
-  having learned nothing. The market also enters **twice** — as a forecast member and as the
-  price in the decision layer. The council is therefore fit and reported **both with and
-  without** it; weight collapse onto the market is recorded as a **NULL, not a win**.
+- **G2 — WITHDRAWN AND REPLACED by `council_scope_v2` S5.** I claimed the OOF extension
+  would unblock council rungs 3–6. **That was wrong.** `predictions_v2.csv` and the 2022–23
+  extension are **game-level** margin/total predictions. The council now required is a
+  **player-level** council, whose weights must train on chronologically OOF **player-game**
+  predictions from each arm, aligned on the same player, game, target and cutoff. The
+  extension still helps the game-level conditional-edge line and a future team/game council —
+  but it does **not** unblock the player-level rungs, which stay blocked until the prediction
+  contract and per-arm player-game OOF exist.
+- **G1 — SUPERSEDED, and strengthened, by `council_scope_v2` S4.** I proposed fitting the
+  council both with and without the market. John's ruling goes further: **the market is not a
+  member of the basketball council at all.** It is a mandatory benchmark, a separately
+  reported blend, and the price in the decision layer — nothing else. A council that wins by
+  collapsing onto the market has not created a basketball edge. With-market remains
+  *diagnostic*; the **promotable** council must show independent value without it.
 - **G3 — regime gating is development-only this season.** ~118 games / ~1,750 prop rows across
   ten regimes is ~175 rows per regime. Developable retrospectively with per-regime MDEs; not
   promotable on this season's prospective sample.
@@ -177,7 +201,7 @@ Steps 0–3 of `PLAN_2026-07-31_W1_AUDIT_AND_BAKEOFF.md` are **done**. Remaining
 | 7 | W1-J actionable-yield answer; decide if W1 is a live input | 4–6 |
 | 8 | shared as-of feature matrix, manifest-first | nothing |
 | 9 | run `player_model_bakeoff_v1` arms 1→4 | step 8 |
-| 10 | run `calibrated_prob_edge_v1` (no redesign) | nothing — **can start now** |
+| ~~10~~ | ~~run `calibrated_prob_edge_v1`~~ | **DONE 2026-08-01 — NEGATIVE.** See §4 |
 
 ## 9. External requests awaiting John's decision
 
@@ -199,7 +223,7 @@ window differs. Emitted **435 new OOF rows**: 2022 (207 games, trained on 2021 a
 **thin history**, flagged in the manifest) and 2023 (228 games, trained on 2021–2022).
 Leakage audits PASS for both. **Fitting sample 229 → 664 games.** Artifact carries a
 `asof_granularity="season"` manifest with per-season source-observation bounds and is now in
-`FITTED_ARTIFACT_GLOBS` (scan 24/24 attested).
+`FITTED_ARTIFACT_GLOBS` (scan was 24/24 at the time; now **26/26**).
 
 Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared).
 
@@ -213,15 +237,30 @@ Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared).
 **✅ DONE 2026-08-01 — `calibrated_prob_edge_v1`, verdict NEGATIVE** (registry run 1, report
 at `experiments/calibrated_prob_edge/REPORT.md`). Details in §4.
 
-**Next: the player-model bake-off under `council_design_v1`.** This is not a default choice —
-it is what the negative result *points at*. The failure was upstream of the decision layer:
-`projection − line` carries no information (`corr = +0.007`), so no betting policy built on
-that projection can work, however it is tuned. The projection itself is the thing that must
-improve. Prerequisite is step 8, the shared as-of feature matrix, built manifest-first.
+**✅ DONE 2026-08-01 — `prob_edge_mechanism_ablation_v1`, label A supported.** Six nested
+specifications on identical folds settled what a marginal correlation could not. The
+projection adds **no incremental information** given market probability and every other
+control — and is not even marginally informative. It also surfaced something new: the
+**non-projection controls are actively harmful out of sample**, which is the mechanism behind
+the calibration inversion.
 
-Still open before the council can use rungs 3–6 honestly: the **scope decision** in §9 (#6).
-Four tabular arms on one feature matrix risk correlated residuals, which is the one thing
-that makes a council pointless.
+**NEXT — `council_scope_v2` S9, the approved execution order.** Steps 2–10 remain:
+
+| # | step | state |
+|---|---|---|
+| 1 | correct ledger + mechanism/permutation labels | **✅ done 2026-08-01** |
+| 2 | **manifest-first player-game as-of PREDICTION CONTRACT** | **← next** |
+| 3 | chronological OOF per arm: incumbent, hierarchical, CatBoost, TabPFN, graph | blocked on 2 |
+| 4 | compare individual models **before** any council weights | blocked on 3 |
+| 5 | residual diversity + leave-one-member-out value | blocked on 4 |
+| 6 | equal-weight and median councils | blocked on 5 |
+| 7 | **only then** constrained learned weights | blocked on 6 |
+| 8 | compact sequence challenger, staged | after 7 |
+| 9 | possession simulation, modular | after components calibrate |
+| 10 | keep logging prospective core-only, **freeze-v0 unaltered** | continuous, running |
+
+Step 2 is the real unblocker: the player-level council cannot begin until per-arm player-game
+OOF predictions exist on a shared row index, cutoff and manifest.
 
 ---
 
@@ -275,6 +314,6 @@ positive one would have been provisional.
 
 - Gate: **`python verify_all.py`** — 8 checks, 35s, exit non-zero on any failure.
   `--quick` skips `daily_certify`; `--install-hook` refuses pushes unless green.
-- Last full gate: **PASS**, 8/8 green, 23/23 artifacts attested, 84 tests.
+- Last full gate: **PASS**, 8/8 green, **26/26 artifacts attested**, 84 tests.
 - `.gitattributes` (`* -text`) is **load-bearing** — without it every manifest hash drifts on
   a Windows checkout.

@@ -31,20 +31,42 @@ Three things in that table matter more than the ROI figures:
    +0.0244 both span zero. A strategy that cannot demonstrate an edge on the data it was fit
    to has nothing to decay from.
 
-## Why it failed — the mechanism, not just the number
+## Why it failed — the mechanism
 
-```
-corr(p_over, disagree)         = +0.007
-corr(p_over, market implied)   = +0.612
-```
+> **Corrected 2026-08-01 after John's review.** This section originally argued from a
+> marginal correlation, `corr(p_over, disagree) = +0.007`. That was **stronger than the
+> artifact supported**: a marginal correlation cannot measure *incremental* information
+> conditional on market probability, and a collinear predictor inside a penalised model can
+> be shrunk toward zero while still carrying conditional signal. The claim is now settled by
+> `prob_edge_mechanism_ablation_v1` — six nested specifications on identical chronological
+> folds — rather than by that correlation.
 
-The `disagree` term — the model's own basketball opinion, `projection − line` — has
-**essentially zero relationship** to the calibrated probability. The fitted probability is
-mostly a noisy echo of the market's own implied price.
+**The projection adds no incremental information.** The decisive contrast, full model minus
+market-plus-all-other-controls, spans zero on every slice with deltas of order 2×10⁻⁴:
 
-That is the diagnosis. The model contributes no independent information; it re-derives a
-degraded version of the line and then pays vig to bet against the real one. Losing roughly
-10% per unit staked is what that predicts.
+| contrast | 2024 fit | 2025 dev | 2026 desc |
+|---|---|---|---|
+| **(6) − (5)** projection's incremental value | −0.000047 | −0.000213 | +0.000195 |
+| | spans 0 | spans 0 | spans 0 |
+| **(3) − (1)** projection *alone* vs a constant | −0.000000 | −0.000009 | +0.000028 |
+| **(2) − (1)** market vs a constant | −0.001387 | **−0.003497 excl. 0** | −0.000986 |
+| **(5) − (2)** other controls, given market | −0.002398 | **+0.004127 excl. 0** | **+0.009170 excl. 0** |
+
+Paired per-row log-loss deltas, negative = better, 90% CI bootstrapped over game dates.
+
+Three readings, and the third was invisible before the ablation:
+
+1. **The projection is not informative at all** — not merely non-incremental. Alone against a
+   constant it is −0.000000 `[−0.000041, +0.000040]`.
+2. **The market carries the only real signal** (−0.0035, CI excludes zero on 2025).
+3. **The non-projection controls are *actively harmful* out of sample.** `(5) − (2)` is
+   **positive** and excludes zero on both 2025 and 2026: seven features fitted on 2024 make
+   out-of-sample log loss **worse** than using the market's implied probability alone.
+
+That third point is the mechanism behind the calibration inversion (+1.144 → +0.445 →
+−0.263). The controls fit 2024 noise, and that noise anti-generalises. The model contributes
+no independent information, degrades the one signal it has, and then pays vig to bet against
+the real line. Losing ~10% per unit staked is what that predicts.
 
 ## What this result is *not*
 
@@ -59,26 +81,46 @@ it is +0.007.
 So the objective was sound this time and the answer is simply **no edge**. That is a cleaner
 and more informative null than the predecessor's, and it costs the registration honestly.
 
-## A defect I found in my own null, and fixed
+## Two defects in my own null, both found and fixed
 
-The first run reported MDEs of 0.003–0.007. That was wrong and **anti-conservative by roughly
-20×**.
+**First: the null was ~20× too narrow.** The original permutation shuffled outcomes only among
+the *already-selected* bets. Within-date outcome variance (0.148) sits well below overall
+variance (0.249), so reshuffling inside a fixed selection barely moved the mean and the null
+collapsed — MDEs of 0.003–0.007 where the naive SE alone implies ≈0.074. That would have made
+the fitting slice's +0.1076 look like a discovery. Outcomes are now shuffled within a date
+across **every eligible row**. Corrected MDEs 0.056–0.249.
 
-The permutation shuffled outcomes only among the *already-selected* bets. Within-date outcome
-variance (0.148) is well below overall variance (0.249), so reshuffling inside a fixed
-selection barely moved the mean and the null collapsed. The naive SE alone implies ≈0.074.
-An MDE of 0.003 would have let ordinary noise read as a real effect — in the fitting slice it
-would have made +0.1076 look like a discovery.
+**Second: I described the fix inaccurately.** I wrote that the permuted label "flows through
+the whole downstream path" per `screening_protocol_amendment_v2` P3. **It does not.** Lambda
+selection, model fitting, probabilities and bet selection are all held fixed inside that
+permutation. John flagged this on 2026-08-01 and was right. The two estimands are now named
+and separated:
 
-Per `screening_protocol_amendment_v2` P3 the permuted quantity must flow through the whole
-downstream path. Outcomes are now shuffled within a date across **every eligible row**, with
-the fixed bet selection scored against them. The null is strictly wider. Corrected MDEs are
-0.056–0.249.
+| estimand | what varies | correct for |
+|---|---|---|
+| **frozen-policy conditional** | outcomes only; model and selection fixed | **2025, 2026** — the policy genuinely *is* frozen there |
+| **pipeline refit** | model refit **and bets re-selected** inside every draw | **2024** — its model was fit to the labels being permuted |
 
-**The headline conclusion is unchanged** — the fix makes the test more conservative, and the
-losses were negative either way. But had the result been positive, the original null would
-have manufactured a discovery. Recorded because it is exactly the class of error the
-project's discipline exists to catch, and it was mine.
+The distinction matters, and running the correct one on 2024 changed the reading:
+
+```
+OVER   observed ROI +0.1076 | refit-null mean +0.1915  sd 0.1599 | MDE 0.4480 -> WITHIN NOISE
+UNDER  observed ROI +0.0244 | refit-null mean +0.0628  sd 0.0188 | MDE 0.0526 -> WITHIN NOISE
+```
+
+**The refit-null mean is higher than the observed ROI on both sides.** A pipeline handed
+*shuffled* labels achieves better in-sample ROI on average than the real one did. So the
+fitting slice's apparently-positive return is not merely "within noise" — it is *below what
+label-free noise-fitting produces*. That is a considerably stronger statement than the frozen
+null could make, and it only became visible once the estimand was correct.
+
+One departure is recorded rather than glossed: lambda is not re-selected by leave-one-date-out
+CV inside each draw (2,000 draws × 8 lambdas × 94 folds is unaffordable). Lambda depends only
+weakly on a label permutation, and the omission makes this null slightly *narrower*, so the
+MDE is a mild under-estimate — conservative in the direction that matters here.
+
+Both defects were mine, and both are the class of error this project's discipline exists to
+catch. The headline conclusion is unchanged by either; the second fix strengthened it.
 
 ## Sample and eligibility ladder
 

@@ -164,6 +164,9 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     # calibrated_prob_edge_v1 scored rows: fit ONCE on 2024, later seasons scored by
     # the frozen object. Tracked so a silent refit or a stale rescore is caught.
     "experiments/calibrated_prob_edge/scored_rows.csv",
+    # prob_edge_mechanism_ablation_v1 specification table: diagnostic only, but it is a
+    # fitted artifact and a stale copy would misstate a mechanism label.
+    "experiments/prob_edge_ablation/specification_table.csv",
 )
 
 # Directories never worth walking.
