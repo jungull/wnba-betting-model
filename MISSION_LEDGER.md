@@ -321,13 +321,20 @@ positive one would have been provisional.
 - Gate: **`python verify_all.py`** — runs 9 checks, exit non-zero on any failure.
   `--install-hook` refuses pushes unless green. **But the 9 are not one kind of evidence**, and
   since 2026-08-01 they are reported as two layers:
-  - **Layer A — reproducible repository gate, 8 checks.** The 6 test suites (**129 tests**),
-    `asof_manifest_scan`, `forecast_chain`. Reads only committed files; **reproduces from a clean
-    checkout of the commit and nothing else.**
-  - **Layer B — operational certification, 1 check** (`daily_certify`, also what `--quick`
-    skips). Reads **git-ignored** live capture data, so it is **environment-dependent and cannot
-    be reproduced from a commit.** A layer-B result is only meaningful paired with the aggregate
-    hash of the manifest binding its inputs.
+  - **Layer A — reproducible repository gate, 10 checks.** The 8 test suites (**229 tests** =
+    36+22+8+13+5+45+34+66), `asof_manifest_scan`, `forecast_chain`. Reads only committed files;
+    **reproduces from a clean checkout of the commit and nothing else.** *(Was 8 checks / 129
+    tests; `tests/test_gate_layers.py` and `tests/test_cbs_builders.py` were added and wired in.)*
+  - **Layer B — operational certification, 1 check** — the **ninth** `verify_all` check as
+    originally numbered, not a tenth; the number ten belongs to the **ten hooks `daily_certify`
+    runs internally**. It reads **git-ignored, untracked and dirty** live capture data, so it is
+    **environment-dependent and cannot be reproduced from a commit.** A layer-B result is only
+    meaningful paired with the aggregate hash of the manifest binding its inputs.
+  - **The pre-push hook runs Layer A only** (`verify_all.py --repository-gate`). A clean checkout
+    cannot supply layer-B inputs and must not be refused a push for lacking files it was never
+    supposed to contain. Layer B is run separately on the capture machine, always with
+    `operational_input_manifest.py`. `tests/test_gate_layers.py` enforces the split, the hook's
+    flag, and the absence of any cross-layer aggregate.
 - Last gate — **layer A: PASS, 8/8, 129 tests, 29/29 artifacts attested, forecast chain
   `ok=True` (8 records)**, reproduced in a clean checkout at commit `db9f011`.
   **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, bound to input manifest
@@ -561,7 +568,13 @@ begun.**
 
 ---
 
-## 17. `contract_baseline_suite_v2` — registered, definition only, **executable**
+## 17. `contract_baseline_suite_v2` — registered, definition only — **SUPERSEDED, see §18**
+
+> **SUPERSEDED 2026-08-01 by `contract_baseline_suite_v3` (§18).** v2 was executable but **not
+> pipeline-honest**: the same inner validation segments selected the hyperparameters *and* supplied
+> the dispersion residuals. v2's registry record is **not mutated**; this section is retained as
+> the historical record.
+
 
 `project_docs/CONTRACT_BASELINE_SUITE_V2.md`, registered 2026-08-01 **before any output**.
 Registry append was **1 insertion, 0 deletions** (79 → 80 records); the record carries
@@ -604,3 +617,59 @@ constants prove poor, that is a finding to report, **not a licence to retune the
 **Status: no chronological OOF predictions generated.** v1's open-question block is lifted by this
 registration, but generation itself awaits supervisory review of this record. The dynamic
 hierarchical arm is **not** begun. `arm_incumbent` remains **rejected and unconsumed**.
+
+---
+
+## 18. `contract_baseline_suite_v3` — registered, definition only, **pipeline-honest**
+
+`project_docs/CONTRACT_BASELINE_SUITE_V3.md`, registered 2026-08-01 **before any output**.
+Registry append **1 insertion, 0 deletions** (80 → 81); `computed_nothing: true`; `config_hash`
+**`b8d22ec8c3d4584a3bba97f9cc47ba64d369e0f91f29f0e38560b33da595733e`** verifies by recomputation.
+**Neither the v1 nor the v2 record was touched**, and the 80-line registry is the exact byte prefix
+of the 81-line registry.
+
+**The correction that forced v3.** v2 derived dispersion from "chronological inner-OOF residuals"
+— out-of-sample with respect to the *fit*, but the very same three validation segments had already
+chosen α and λ. The selected pipeline is the one that looked best on those rows, so its residuals
+there are biased small and **every prediction interval would have been too narrow** — a bias no
+single-arm check would surface. v3 freezes a **disjoint chronological calibration tail**:
+
+- **player targets** — training window cut on *distinct dates* (so no slate straddles the
+  boundary): first **75 %** tunes, last **25 %** calibrates, minimums 8 and 4 distinct dates;
+- **team points** — **three** disjoint segments, because the calibration map is itself fitted:
+  **T1** (50 %) channel α, **T2** (25 %) calibration-map fit, **T3** (25 %) dispersion;
+- **degenerate windows** are reported and fall back to declared constants. They may **not** reuse
+  tuning residuals, and the builder makes that unrepresentable by returning an empty calibration
+  index.
+
+**Four further corrections.** (1) Target-specific masks frozen: `p_active` tunes on **all**
+candidate obligations; the three conditional targets on **active, outcome-scoreable** rows only;
+team points on **resolved** team-games. (2) Stage-A history is built on prior **contract candidate
+obligations**, with `n_prior_candidate_games` and `n_prior_appearances` recorded separately — so
+**0 appearances across k>0 obligations is `0/k`, real evidence**, and the base-rate default is
+reserved for rows with *no prior obligation at all*. Conflating them would have overwritten
+evidence with a league average for exactly the players least likely to play. (3) The `p_active`
+feature order is canonical and positional, and a test asserts the document, the registry record and
+`cbs_builders.py` agree. (4) Tuning order is explicit: minutes α first, then attempts and points
+α **after composition with the minutes leg held fixed**, since a rate α chosen against a floating
+minutes leg would absorb minutes error.
+
+**A v2 over-claim withdrawn.** v2 reasoned that because no points-target tuning curve exists,
+points α = 0.30 must be outcome-independent, hence fold-honest and weight-eligible everywhere.
+**Absence of a record is not evidence of independence.** Provenance and contamination are now
+labelled **UNKNOWN** and the legacy is **sensitivity-only on all folds**. Neither α = 0.30 legacy
+is weight-fit eligible.
+
+Team-points positivity floor frozen numerically at **`1e-6`**.
+
+**Executable, and demonstrated so.** `cbs_builders.py` implements the split, the obligation
+history, the shifted estimators, the ordered masked α selection and the quantile emission;
+`tests/test_cbs_builders.py` exercises them on **synthetic toy data only** (66 assertions,
+including a deliberately corrupted split that must raise `SelectionLeakage`, and a leakage probe
+that perturbs one outcome and requires no feature to move). Both are wired into the repository
+gate.
+
+**Status: no historical OOF, fitted suite artifact, accuracy or coverage result generated.**
+Generation into a new v3 artifact directory awaits supervisory review; validation, provenance,
+obligation coverage and the exclusion cross-tabs must all pass **before any accuracy metric is
+inspected**. The dynamic hierarchical arm is **not** begun.

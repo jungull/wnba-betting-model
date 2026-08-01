@@ -1,20 +1,5 @@
 # `contract_baseline_suite_v1` — frozen specification (definition only)
 
-> ## SUPERSEDED 2026-08-01 by `contract_baseline_suite_v2`
->
-> See **`project_docs/CONTRACT_BASELINE_SUITE_V2.md`**. Supervisory review of `db9f011` found
-> this specification **frozen but not executable**: five rules it named were never stated (the
-> `p_active` feature vector/standardization/λ grid/tie-break/low-data rule; the `season:2021`
-> numeric constants; whether "training-fold residuals" are in-sample or out-of-sample; a
-> fold-honest refitting rule for the team centers), and **§2.4's claim that points α = 0.30 was
-> "tuned on 2021-2023" is false** — that provenance belongs to *minutes*;
-> `props_edge.py:203` declares points α = 0.30 a frozen family. The three open questions of §6
-> are ruled on in v2 §5.1, §5.2 and §2.
->
-> **This document is retained unchanged as the historical record**, and the v1 **registry record
-> is not mutated** — the registry is append-only. Nothing here was ever generated from: v1
-> produced no prediction, fitted parameter or score. Read v2 for the executable specification.
-
 *Registered 2026-08-01, before any output. **Nothing in this document has been computed.** No
 prediction, fitted parameter, accuracy figure, coverage score or prediction file exists for this
 suite, and none was inspected while writing it. The registry record is append-only and carries
