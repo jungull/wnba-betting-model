@@ -154,6 +154,13 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     # know the latest game it can contain, and a STALE truth set is the failure
     # mode that would otherwise pass unnoticed.
     "data/w1_truth/*.csv",
+    # Backward walk-forward extension of the channel base model
+    # (base_predictions_oof_2022_2023_v1).  Per-season fit windows, so its
+    # manifest carries asof_granularity="season" and a fit_through_by_season map:
+    # 2022 is fit on 2021 alone and is structurally thin.  A consumer training
+    # ensemble weights on these rows MUST read that map rather than assume one
+    # uniform fit window across the file.
+    "experiments/oof_backfill/predictions_oof_2022_2023.csv",
 )
 
 # Directories never worth walking.
