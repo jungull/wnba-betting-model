@@ -29,11 +29,11 @@ boundary — never applied backwards to earlier live records.
 
 | | |
 |---|---|
-| log | `forecasts/forecast_log.jsonl`, hash-chained, `verify_chain` **ok**, 6/6 verified |
+| log | `forecasts/forecast_log.jsonl`, hash-chained, `verify_chain` **ok**, 8/8 verified |
 | first record | 2026-07-31T14:28:20Z |
-| records | **6** — idx 0–2 manual (`PROV-` ids, T-8h), idx 3–5 **scheduled** (real ids 1022600213/214/215, T-30m and T-90m) |
+| records | **8** — idx 0–2 manual (`PROV-` ids, T-8h), idx 3–5 **scheduled** (real ids 1022600213/214/215, T-30m and T-90m), idx 6–7 **scheduled** (1022600216 LVA@CHI, 1022600217 NYL@PHX, both T-90m) |
 | automated path | **PROVEN 2026-07-31 18:45 ET**, task result 0, appended and chained |
-| AM task | has not yet had a trigger since registration; first firing 2026-08-01 10:20 ET |
+| AM task | **has now fired** — idx 6–7 were appended by the 2026-08-01 10:20 ET run. This row previously read "has not yet had a trigger since registration", which §12 already contradicted by reporting 8 chained records. |
 
 **Power (computed, not assumed).** From `experiments/clv_transfer/matched_gap_by_cutoff_and_season.csv`:
 2026 T-24h clustered SE = **0.254 pts** over 57 game-dates. ~118 regular-season games
@@ -318,15 +318,18 @@ positive one would have been provisional.
 
 ## 12. Standing operational state
 
-- Gate: **`python verify_all.py`** — runs **12** checks, exit non-zero on any failure.
+- Gate: **`python verify_all.py`** — runs **14** checks, exit non-zero on any failure.
   **But they are not one kind of evidence**, and since 2026-08-01 they are reported as two layers
   that are never added together:
   - **Layer A — reproducible repository gate.** The test suites plus `asof_manifest_scan` and
     `forecast_chain`. Reads only committed files; **reproduces from a clean checkout of the commit
     and nothing else.** **`len(verify_all.REPOSITORY_CHECKS)` is the only source of truth for the
     count** — no number is hard-coded in the code, the tests or this ledger, because every count
-    written down here has gone stale within a cycle. At the last run it was **12 checks / 427
-    tests** (36+22+8+13+5+45+35+66+123+75), up from 8 checks / 129 tests when the split was
+    written down here has gone stale within a cycle — and it had again: this entry read
+    "12 checks / 427 tests (36+22+8+13+5+45+35+66+123+75)", a sum with only ten addends that
+    omitted `test_cbs_v6` outright and carried the pre-v6 `test_cbs_v5` count of 75. At the
+    last run it was **14 checks / 771 tests**
+    (36+22+8+13+5+45+35+66+123+79+104+235), up from 8 checks / 129 tests when the split was
     introduced. The cardinality is not the invariant — the membership is: every layer-A check
     reads only committed files, and `daily_certify` is never among them.
   - **Layer B — operational certification, 1 check** — the **ninth** `verify_all` check as
@@ -339,18 +342,35 @@ positive one would have been provisional.
     supposed to contain. Layer B is run separately on the capture machine, always with
     `operational_input_manifest.py`. `tests/test_gate_layers.py` enforces the split, the hook's
     flag, and the absence of any cross-layer aggregate.
-- Last gate — **layer A: PASS, 12/12, 427 tests, 29/29 artifacts attested, forecast chain
-  `ok=True` (8 records)**, 2026-08-01T20:30:26Z–20:31:20Z, exit 0, reproduced in a clean checkout
-  holding no git-ignored capture data.
-  **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, 2026-08-01T20:31:38Z–20:32:14Z, exit 0, bound
-  to input manifest **`aef07bc3b8a9a6c2441e1f0255776f4975d612a9e3062e654834ce4c750cf762`** —
-  **4,649 inputs audited across all ten `daily_certify` hooks, 4,608 committed-clean (bound by the
-  commit, not hashed), 41 non-committed hashed** (36 ignored, 4 untracked, 1 dirty), 6,026,677
-  bytes. The manifest was regenerated immediately before and after the run with an identical
-  aggregate **and an identical producer-tree identity**. Bound set at
-  **`project_docs/OPERATIONAL_INPUTS_2026-08-01T2032Z.json`**; every run window at
-  **`project_docs/GATE_LOG_2026-08-01.md`**. Earlier manifests (`…T1823Z`, `…T1915Z`, `…T1954Z`)
-  are **retained** as the bindings for their own runs, never replaced.
+- Last gate — **layer A: PASS, 14/14, 771 tests, 29/29 artifacts attested, forecast chain
+  `ok=True` (8 records)**, run A8, 2026-08-01T22:50:24Z–22:51:41Z, exit 0. This entry previously
+  reported **A5**'s numbers (12/12, 427 tests, 20:30:26Z–20:31:20Z) as though they were the
+  latest, two layer-A runs after they stopped being so.
+  **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, run **B5**, 2026-08-01T21:30:18Z–21:31:03Z,
+  exit 0, bound to input manifest
+  **`cb8326b5a71fbbd2fd747f11e14171c8b47efd1d8ff96acb570a6c8961566619`** —
+  **4,651 inputs audited across all ten `daily_certify` hooks, 4,608 committed-clean (bound by the
+  commit, not hashed), 43 non-committed hashed** (37 ignored, 5 untracked, 1 dirty), 6,174,049
+  bytes. Bound set at **`project_docs/OPERATIONAL_INPUTS_2026-08-01T2131Z.json`**; every run
+  window at **`project_docs/GATE_LOG_2026-08-01.md`**. Earlier manifests (`…T1823Z`, `…T1915Z`,
+  `…T1954Z`, `…T2032Z`) are **retained** as the bindings for their own runs, never replaced.
+  This entry previously carried **B4**'s figures (aggregate `aef07bc3…`, 4,649/4,608/41,
+  6,026,677 bytes, the `…T2032Z` binding) under the label "last gate".
+  > **Manifest-pair correction 2026-08-01.** This entry previously asserted that "the manifest
+  > was regenerated immediately before and after the run with an identical aggregate **and an
+  > identical producer-tree identity**". **That claim is not substantiated by any retained
+  > artifact for B1, B2, B4 or B5.** All five retained manifests are **post-run** captures
+  > (each `generated_utc` falls 3–6 s after its run ended); **no pre-run capture survives for
+  > any run**, and `operational_input_manifest.py` had no comparison mode that could have
+  > produced evidence of the comparison. A `--compare/--receipt` mode
+  > (`operational_input_comparison/1`) now exists. Applied to the two retained files that
+  > genuinely bracket **B3**, it reports **inputs byte-identical (0 added, 0 removed, 0
+  > changed, aggregate `7965c304…`) but the producer identity moved** (`b3f024c` → `3096c5d`)
+  > — so for B3 the input half is now proven by artifact and the producer half is **refuted**.
+  > No retrospective pre-run manifest has been generated and back-labelled; a manifest written
+  > today and presented as a 21:30Z capture would be a fabricated timestamp. Full inventory,
+  > receipts and the required procedure for future runs:
+  > **`project_docs/OPERATIONAL_MANIFEST_PAIR_EVIDENCE.md`**.
   > **Provenance correction 2026-08-01.** Manifests previously recorded only `root_commit`, which
   > was misleading: a manifest is captured from a **working tree**, normally dirty relative to
   > HEAD, whose changes become the *next* commit — so `root_commit=3096c5d` sat in a manifest whose
@@ -359,8 +379,9 @@ positive one would have been provisional.
   > — HEAD-descended-from, the digests of the operational code actually executed
   > (`daily_certify.py`, `operational_input_manifest.py`), and digests of the tracked diff and the
   > untracked-file list — plus an explicit `working_tree_clean_vs_head` flag. The last run's
-  > identity is `d8126ef34b2a42eaee740bd8fd0d8cf221299602725a79a9dadc64ac367d77d3`, descended from
-  > `c742263`, tree **not** clean. **No layer-B result is an exact-commit certification.**
+  > identity is `59b6ce3a08c428e1e51c40b51e797e013ab35186659888453bea5060e24616ae`, descended from
+  > `30ff762`, tree **not** clean (this line previously carried B4's `d8126ef3…` / `c742263`).
+  > **No layer-B result is an exact-commit certification.**
   > **Completeness correction 2026-08-01.** An earlier manifest claimed to bind every operational
   > input while omitting the ten `data/wnba_gamelog_*.parquet` files that `daily_certify` reads in
   > its duplicate, coverage and schema checks (`daily_certify.py:156, :189, :375`). They are all
@@ -814,7 +835,8 @@ numbers* rather than errors:
 (`run_reval.py:59-61, 86, 89, 102`).
 
 **A strict validator, alongside the unchanged historical one.**
-`contract_validator_v2_strict.py` (`contract_v2_strict/1`) validates the same v2 row universe and
+`contract_validator_v2_strict.py` (`contract_v2_strict/1` **as registered at v5**; hardened to
+`/2` by v6 and superseded by `/3` in a separate module at v7 — see §21) validates the same v2 row universe and
 adds what the historical validator never checked: universe-joined `fold_id` and `forecast_cutoff`,
 target identity and support on point **and** quantiles, sd required-positive or required-null,
 boolean and prior-count types, hash format and expected hashes, strict feature-as-of. The
@@ -822,10 +844,15 @@ historical validator is **not rewritten** — other registered artifacts were ch
 **Passing it is necessary but not sufficient**, and the suite *measures* how many mutations it
 misses rather than asserting it.
 
-`tests/test_cbs_v5.py` — **75 assertions, synthetic only**. v4's implementation files are left
-exactly as registered.
+`tests/test_cbs_v5.py` — **79 assertions, synthetic only** (this line read 75 until four
+assertions were corrected; §21 records the change and this section had not followed). v4's
+implementation files are left exactly as registered.
 
-**Status: definition plus corrected synthetic implementation.** Generation into a v5 artifact
+**Status: definition plus corrected PRIMITIVES only — v5 never generated a contract row.**
+This line previously read "definition plus corrected synthetic implementation", which is the
+label §21 retracts: v5 ended at `resolve_feature_asof` with no fold runner, emission path,
+fitted-state constructor or validation composition, so the only executable runners remained
+v4's and none of v5's corrections reached an emitted row. Generation into a v5 artifact
 directory awaits supervisory review; validation, provenance, obligation coverage and exclusion
 cross-tabs must pass **before any accuracy metric is inspected**. The hierarchical arm is **not**
 begun.
@@ -875,3 +902,72 @@ were corrected to bind identity and assert *which* problem was raised (75 → 79
 
 **Status: definition plus complete synthetic runner.** Real-contract execution awaits supervisory
 review. The hierarchical arm is **not** begun.
+
+---
+
+## 22. `contract_baseline_suite_v7` — the boundaries v6 never checked
+
+`project_docs/CONTRACT_BASELINE_SUITE_V7.md`, registered 2026-08-01. Registry append **1
+insertion, 0 deletions** (84 → 85); prefix byte-identical, **v1–v6 records unchanged**.
+`config_hash` **`237b4c1815d3b9a5c0f7f1af09c9d143c186ff2bfc9244f73fd5c63c6a440fc4`** verifies by
+recomputation — and the runner now *requires* that recomputation to match before it will accept a
+real run. **No real contract row read; no OOF, accuracy or coverage figure exists.**
+
+**Why.** v6's runner works and its 104 assertions pass — but every one of them ran **inside a
+single season**, against a runner that never checked which season its rows were in. v6's own
+fixtures put train and test in the same season, so a contaminated frame could reach
+`scoring_permitted=True`. Alongside that: `require_identity` accepted any nonzero 64-hex string,
+emitted it, and then compared it to itself; `resolve_feature_asof` was written at v5 and **never
+called**, with `_emit` copying the caller's column and `allow_declared_defaults` still defaulting
+to `True` when `synthetic=False`; history used earlier test rows' outcomes because their row
+*order* was prior; the `TEAM_MIN_PRIOR = 5` frozen at v5 was **never read**; excluded rows bypassed
+every lineage check; and the history sidecar was unvalidated, unhashed and bound to nothing.
+
+**What v7 adds.** `require_outer_fold` proves season separation, row-id disjointness and boundary
+ordering, returning a `fold_boundary/1` receipt. A **walk-forward engine** admits a prior outcome
+only when its availability timestamp is **strictly earlier** than the current cutoff; admission is
+a function of timestamps alone, so no tuning choice can widen the history it is tuned on. Identity
+requires the **exact** registered digest and a snapshot identity **derived** from an independently
+supplied artifact manifest. `feature_asof` is derived from the sources actually read, and declared
+Stage-A defaults are **forbidden outright** on the real path. The player ladder marks 1–2 prior
+appearances level 2, zero-history level 3 and season 2021 level 4; `TEAM_MIN_PRIOR = 5` now binds
+channel-alpha selection, side-map fitting, the residual pool **and** emission. A
+**`cbs_provenance_history/1` sidecar** carries component id, fallback level, selected
+alpha/lambda, residual-pool count and the separate prior-history fields one-to-one with every
+prediction row, with its own SHA-256 in the run receipt. `scoring_permitted` is the **conjunction**
+of six receipts — identity, fold boundary, provenance history, prediction validation, exclusion
+cross-tab and coverage — and a run with no universe yields **no permission** rather than a vacuous
+pass.
+
+**Validator `contract_v2_strict/3`**, in the new `contract_validator_v3_strict.py`. `/2` is left
+untouched: v6 and its 104 assertions were checked against it. `/3` applies the hash-format,
+feature-as-of, boolean and prior-count checks to **every** row including excluded ones — `/2`
+scoped them to predicted rows, so an excluded row could carry a malformed hash, a late as-of, a
+numeric flag or a negative prior count and still pass. **Exclusion removes values, never lineage.**
+`/3` also requires `fallback_level` (0–4, with `is_fallback == level > 0` enforced) and
+`component_id`.
+
+**Availability is POLICY, and is labelled as such.** No observed outcome-availability timestamp
+exists anywhere in this repository, and no observed per-row source read-time exists for the
+Stage-A history. The real path must therefore run under a **policy-derived** timestamp — midnight
+UTC of the game date + 36 h, numerically **identical to `asof_invariant.bound_from_dates`**, which
+this repo already froze as its conservative date-derived bound. Every row records
+`outcome_availability_source ∈ {observed, policy}`, and the sidecar validator **rejects** a frame
+whose policy rows claim `observed`. This is a **reported gap, not a closed one**; the feasibility
+audit is §9 of the v7 document.
+
+A consequence worth stating: under this policy and the project's cutoff convention, a team's or
+player's **most recent game is not yet knowable at the next day's cutoff**, so prior counts lag
+positional counts by one on a daily cadence. That is the gate working, and it is the largest
+behavioural difference between v6's numbers and v7's.
+
+`tests/test_cbs_v7.py` — **235 runner-level assertions, synthetic only**, covering same-season and
+future-season contamination, train/test overlap, wrong-but-valid 64-hex identities, missing and
+late feature sources, declared defaults on the real path, player fallback levels 1–4, team prior
+games 0–4 versus 5+, excluded-row lineage, sidecar tampering and substitution, stable teams
+switching home/away, team **and** player causal walk-forward, and all five targets under the exact
+composite gate.
+
+**Status: definition plus complete synthetic implementation.** Real-contract execution, fitting,
+prediction, scoring and any accuracy or coverage inspection await supervisory review. The
+hierarchical arm is **not** begun.

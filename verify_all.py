@@ -85,6 +85,7 @@ REPOSITORY_CHECKS = [
     ("test_cbs_generator",         [sys.executable, "tests/test_cbs_generator.py"]),
     ("test_cbs_v5",                [sys.executable, "tests/test_cbs_v5.py"]),
     ("test_cbs_v6",                [sys.executable, "tests/test_cbs_v6.py"]),
+    ("test_cbs_v7",                [sys.executable, "tests/test_cbs_v7.py"]),
     ("asof_manifest_scan",         [sys.executable, "asof_invariant.py", "--scan"]),
     ("forecast_chain",             [sys.executable, "-c",
                                     "import sys;from evalharness import verify_chain;"

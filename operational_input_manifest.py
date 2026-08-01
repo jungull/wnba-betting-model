@@ -386,11 +386,117 @@ def build(root: Path) -> dict:
     }
 
 
+def compare_manifests(pre_path: Path, post_path: Path) -> dict:
+    """Compare a retained PRE-run and POST-run manifest and emit a receipt.
+
+    WHY THIS EXISTS
+    ---------------
+    Runs B1-B5 each claimed in prose that "the manifest was regenerated
+    immediately before and after the run with an identical aggregate", but only
+    ONE manifest per run was ever written to disk — the post-run one. A single
+    retained file plus a sentence cannot prove a pair was identical: the reader
+    has to take the claim on trust, which is exactly the kind of evidence this
+    project refuses everywhere else.
+
+    This produces the missing artifact. It reads two manifests, compares them
+    entry by entry, and writes a receipt that a later reader can re-derive from
+    the two files without trusting anybody's summary. It cannot manufacture
+    evidence for a capture that was never written — a pre-run manifest that does
+    not exist stays missing, and the receipt says so.
+    """
+    def load(p: Path, role: str) -> dict:
+        if not p.exists():
+            raise FileNotFoundError(f"{role}-run manifest not found at {p}")
+        return json.loads(p.read_text(encoding="utf-8"))
+
+    pre, post = load(pre_path, "pre"), load(post_path, "post")
+
+    def ident(m: dict) -> str:
+        pt = m.get("producer_tree")
+        return (pt or {}).get("producer_tree_identity_sha256") or m.get("root_commit") or ""
+
+    pre_e = {e["relative_path"]: e for e in pre.get("entries", [])}
+    post_e = {e["relative_path"]: e for e in post.get("entries", [])}
+    added = sorted(set(post_e) - set(pre_e))
+    removed = sorted(set(pre_e) - set(post_e))
+    changed = sorted(p for p in set(pre_e) & set(post_e)
+                     if (pre_e[p]["sha256"], pre_e[p]["bytes"])
+                     != (post_e[p]["sha256"], post_e[p]["bytes"]))
+
+    agg_match = (pre.get("aggregate_manifest_sha256")
+                 == post.get("aggregate_manifest_sha256"))
+    id_match = ident(pre) == ident(post)
+    identical = bool(agg_match and id_match and not (added or removed or changed))
+
+    return {
+        "schema": "operational_input_comparison/1",
+        "purpose": "independently substantiate that the input set did not move across a "
+                   "layer-B run, replacing a prose claim with a re-derivable artifact",
+        "generated_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "pre": {"path": str(pre_path), "generated_utc": pre.get("generated_utc"),
+                "aggregate_manifest_sha256": pre.get("aggregate_manifest_sha256"),
+                "producer_identity": ident(pre), "n_entries": pre.get("n_entries"),
+                "total_bytes": pre.get("total_bytes"),
+                "file_sha256": sha256_of(pre_path)[0]},
+        "post": {"path": str(post_path), "generated_utc": post.get("generated_utc"),
+                 "aggregate_manifest_sha256": post.get("aggregate_manifest_sha256"),
+                 "producer_identity": ident(post), "n_entries": post.get("n_entries"),
+                 "total_bytes": post.get("total_bytes"),
+                 "file_sha256": sha256_of(post_path)[0]},
+        "aggregate_identical": agg_match,
+        "producer_identity_identical": id_match,
+        "entries_added": added,
+        "entries_removed": removed,
+        "entries_changed": changed,
+        "identical": identical,
+        "verdict": _comparison_verdict(identical, agg_match, id_match,
+                                       added, removed, changed),
+    }
+
+
+def _comparison_verdict(identical, agg_match, id_match, added, removed, changed) -> str:
+    """Say which half moved. "DIFFERENT" alone would hide a real distinction.
+
+    An input set that is byte-identical while the producer tree moved is a
+    materially different situation from an input set that changed under the run,
+    and collapsing both into one word would be exactly the kind of summary that
+    outruns its own table.
+    """
+    if identical:
+        return ("IDENTICAL: the bound input set and the producer identity both held "
+                "across the run")
+    if agg_match and not (added or removed or changed):
+        return ("INPUTS IDENTICAL, PRODUCER MOVED: every bound input is byte-identical "
+                "(0 added, 0 removed, 0 changed) but the producer identity differs "
+                "between the two captures, so the pair does not bracket one unchanged "
+                "tree")
+    return (f"INPUTS MOVED: {len(added)} added, {len(removed)} removed, "
+            f"{len(changed)} changed; the layer-B result is not bound to a single "
+            f"stable input set"
+            + ("" if id_match else ", and the producer identity differs as well"))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=str(Path(__file__).resolve().parent))
     ap.add_argument("--out", default=None)
+    ap.add_argument("--compare", nargs=2, metavar=("PRE", "POST"), default=None,
+                    help="compare a retained pre-run and post-run manifest and emit a "
+                         "comparison receipt instead of building a new manifest")
+    ap.add_argument("--receipt", default=None,
+                    help="write the --compare receipt to this path")
     args = ap.parse_args()
+
+    if args.compare:
+        receipt = compare_manifests(Path(args.compare[0]), Path(args.compare[1]))
+        text = json.dumps(receipt, indent=2) + "\n"
+        if args.receipt:
+            Path(args.receipt).write_text(text, encoding="utf-8")
+            print(f"wrote {args.receipt}")
+        else:
+            sys.stdout.write(text)
+        print(f"\n{receipt['verdict']}", file=sys.stderr)
+        return 0 if receipt["identical"] else 1
 
     root = Path(args.root).resolve()
     manifest = build(root)
