@@ -1,0 +1,157 @@
+{
+  "schema": "cbs_real_input_audit/1",
+  "adapter": "cbs_real_adapter/1",
+  "generated_utc": "2026-08-01T23:37:02.899764Z",
+  "scope": "schema, provenance and identity only: no fitting, no prediction, no coverage or accuracy figure, no feature-outcome relationship",
+  "attestation": {
+    "experiments/prediction_contract_v2/player_game.parquet": {
+      "exists": true,
+      "must_be_attested": true,
+      "has_manifest": true,
+      "manifest_valid": true,
+      "hash_ok": true,
+      "fit_through_date": "2026-07-31T00:00:00+00:00",
+      "producer": "prediction_contract_v2.py",
+      "problem": null,
+      "sha256": "6a7f1959592e88182e3e93ee5e6c84e311665269700a5e6fd7ccba485b7b2a3f",
+      "bytes": 908908,
+      "asof_granularity": "row"
+    },
+    "experiments/prediction_contract_v2/team_game.parquet": {
+      "exists": true,
+      "must_be_attested": false,
+      "has_manifest": false,
+      "manifest_valid": false,
+      "hash_ok": null,
+      "fit_through_date": null,
+      "producer": null,
+      "problem": "no asof_invariant manifest sidecar",
+      "sha256": "f66d80a24be902b45263909c88cafce801715693381b503763245ee34ff2899e",
+      "bytes": 99614
+    },
+    "experiments/prediction_contract_v2/contract.json": {
+      "exists": true,
+      "must_be_attested": false,
+      "has_manifest": false,
+      "manifest_valid": false,
+      "hash_ok": null,
+      "fit_through_date": null,
+      "producer": null,
+      "problem": "no asof_invariant manifest sidecar",
+      "sha256": "3bd1e2edfd98072e444613fe45cadc4993fe735927b3d8c7f6b1bc482bfa09ed",
+      "bytes": 7540
+    },
+    "data/masters/master_player.parquet": {
+      "exists": true,
+      "must_be_attested": true,
+      "has_manifest": false,
+      "manifest_valid": false,
+      "hash_ok": null,
+      "fit_through_date": null,
+      "producer": null,
+      "problem": "no asof_invariant manifest sidecar",
+      "sha256": "52e084efaad5c08444b407c64c18d55b57ff5a1e13491cc908dfd960b8641dce",
+      "bytes": 2030633
+    },
+    "data/masters/master_team.parquet": {
+      "exists": true,
+      "must_be_attested": true,
+      "has_manifest": false,
+      "manifest_valid": false,
+      "hash_ok": null,
+      "fit_through_date": null,
+      "producer": null,
+      "problem": "no asof_invariant manifest sidecar",
+      "sha256": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528",
+      "bytes": 193903
+    }
+  },
+  "source_labels": {
+    "schema": "cbs_source_labels/1",
+    "adapter": "cbs_real_adapter/1",
+    "sources": {
+      "src_asof_gamelog": {
+        "label": "policy",
+        "backing": "data/masters/master_player.parquet",
+        "derivation": "asof_invariant.bound_from_dates over the row's own prior game_date; a date-derived conservative bound",
+        "why_not_observed": "master_player.observed_time is a local file mtime with 10 distinct values across 33,712 rows (build_masters.py); it records when this machine wrote the file, not when the box score was published"
+      },
+      "src_asof_roster": {
+        "label": "policy",
+        "backing": "experiments/prediction_contract_v2/player_game.parquet",
+        "derivation": "the contract's own candidate-at-cutoff determination, which is a pregame roster fact fixed by the contract build",
+        "why_not_observed": "the contract records no per-row roster read time"
+      },
+      "src_asof_schedule": {
+        "label": "policy",
+        "backing": "experiments/prediction_contract_v2/player_game.parquet",
+        "derivation": "forecast_cutoff itself is the schedule fact; the source bound is placed strictly before it",
+        "why_not_observed": "only 10,257 of 35,615 player rows have an observed tip (tip_time_observed_at); seasons 2021-2024 have none, so a single uniform observed schedule source does not exist"
+      },
+      "src_asof_team_gamelog": {
+        "label": "policy",
+        "backing": "data/masters/master_team.parquet",
+        "derivation": "asof_invariant.bound_from_dates over the row's own prior game_date",
+        "why_not_observed": "master_team.observed_time is the same build-time stamp"
+      }
+    },
+    "unknown_sources": [],
+    "n_observed": 0,
+    "n_policy": 4,
+    "any_observed": false,
+    "statement": "no observed per-row feature-source timestamp exists in this repository; every source below is POLICY-derived and is labelled as such on every emitted row"
+  },
+  "contract_schema": {
+    "player_game": {
+      "n_columns": 32,
+      "stage_a_features_present": [],
+      "stage_a_features_absent": [
+        "days_since_last_appearance",
+        "games_missed_streak",
+        "min_ewma",
+        "p_plays_prior",
+        "played_last_team_game",
+        "played_share_l10_team_games",
+        "player_gp_season",
+        "prev_dnp_cd",
+        "prev_dnp_inj",
+        "prev_dnp_nwt",
+        "returning_flag",
+        "start_share_l5",
+        "started_last",
+        "team_gp_season"
+      ],
+      "feature_source_columns_present": [],
+      "has_feature_asof": false,
+      "has_outcome_observed_at": false
+    },
+    "team_game": {
+      "n_columns": 13,
+      "channels_present": [],
+      "channels_absent": [
+        "ch_3pt",
+        "ch_ft",
+        "ch_np2",
+        "ch_paint"
+      ],
+      "has_side": false,
+      "has_team_points": false,
+      "feature_source_columns_present": [],
+      "has_outcome_observed_at": false
+    }
+  },
+  "verdicts": {
+    "stage_a_features_available_from_contract": false,
+    "team_channels_available_from_contract": false,
+    "observed_feature_asof_available": false,
+    "observed_outcome_availability_available": false,
+    "all_required_artifacts_attested": false
+  },
+  "blocking": [
+    "stage_a_features_available_from_contract",
+    "team_channels_available_from_contract",
+    "observed_feature_asof_available",
+    "observed_outcome_availability_available",
+    "all_required_artifacts_attested"
+  ]
+}

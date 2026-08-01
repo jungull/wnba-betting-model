@@ -378,8 +378,19 @@ check("F3 an outcome published far too late is admitted by NOBODY",
       f"{int(plan_late.n_admitted.sum())} admissions survived a 400-day lag")
 check("F3 the same rows under the normal policy DO build history",
       int(plan.n_admitted.sum()) > 0)
-check("F3 admitted history never exceeds the positionally prior rows",
-      bool((plan.n_admitted <= np.arange(len(plan.order))).all() or True))
+# ERRATUM 2026-08-01: this assertion read
+#   (plan.n_admitted <= np.arange(len(plan.order))).all() or True
+# The `or True` made it unconditionally true, and it was there because the
+# comparison itself was wrong: it measured each row's WITHIN-GROUP admitted count
+# against a GLOBAL ordered position. The real invariant is that the
+# availability-gated admissions are a subset of the rows that are prior by
+# cutoff within the same group — which is what an engine admitting a non-prior
+# row would violate.
+_prior_counts = np.asarray([len(p) for p in v7._prior_by_cutoff(plan)], dtype=int)
+check("F3 admitted history never exceeds the rows prior by cutoff in the same group",
+      bool((plan.n_admitted <= _prior_counts).all()),
+      f"max admitted {int(plan.n_admitted.max())} vs max prior "
+      f"{int(_prior_counts.max())}")
 
 
 # --------------------------------------------------------------------------

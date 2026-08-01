@@ -205,21 +205,37 @@ Steps 0–3 of `PLAN_2026-07-31_W1_AUDIT_AND_BAKEOFF.md` are **done**. Remaining
 | 6 | W1-I body-fetch pilot (300 URLs) | nothing — approved |
 | 7 | W1-J actionable-yield answer; decide if W1 is a live input | 4–6 |
 | 8 | shared as-of feature matrix, manifest-first | nothing |
-| 9 | run `player_model_bakeoff_v1` arms 1→4 | step 8 |
+| 9 | run `player_model_bakeoff_v1` arms 1→**5** (this read 1→4; `council_scope_v2` S1 admitted the lineup graph as the fifth arm) | step 8 |
 | ~~10~~ | ~~run `calibrated_prob_edge_v1`~~ | **DONE 2026-08-01 — NEGATIVE.** See §4 |
 
 ## 9. External requests awaiting John's decision
 
+**Rows 1 and 6 were RESOLVED on 2026-08-01 and are struck through below rather than deleted,
+so the record of what was asked survives.** Only rows 2–5 remain genuinely open.
+
 | # | request | benefit | cost |
 |---|---|---|---|
-| 1 | **`git push` permission in this session** — the local classifier now refuses it | 8 verified commits are stranded locally | none |
+| ~~1~~ | ~~**`git push` permission in this session** — the local classifier now refuses it~~ **RESOLVED.** Pushing works. `worktree-cbs-v2-gate-accounting` is published at `origin/worktree-cbs-v2-gate-accounting`, **0 commits unpushed**; the last remote-ref reflog entry is `update by push`. The branch is 130 commits ahead of `origin/main`, which is *unmerged*, not stranded. "8 verified commits are stranded locally" was false. | — | — |
 | 2 | **GitHub App → Contents: read and write** at `github.com/settings/installations` | ends the bundle hand-off for every cloud session | none |
 | 3 | **Odds tier decision by ~Aug 30** | props require the paid tier — and props are where the statistical power is | subscription |
 | 4 | `historical_odds` drive pull | recovers old-era line paths, possibly old totals | credits |
 | 5 | 2024 totals backfill | only if historical totals work is wanted | ~7–8K credits |
-| 6 | **Council scope decision** — admit lineup graph / sequence model / possession simulation? | genuine representational diversity; without them the council is 4 tabular arms + availability + market, which risks correlated residuals | these are **SCOPE-ONLY** in `PLAN_2026-07-31` §3; admitting them is a scope expansion only John can authorize |
+| ~~6~~ | ~~**Council scope decision** — admit lineup graph / sequence model / possession simulation?~~ **RESOLVED 2026-08-01** by `council_scope_v2` (registry line 73, `authorised_by: "John, council scope decision, 2026-08-01"`): the lineup graph is admitted **now** as the fifth arm (S1), the compact sequence model is **staged** after the five-arm bake-off (S2), possession simulation is a **modular downstream layer, not a weighted peer** (S3), and the market is **excluded** from the basketball council (S4). §3 and §10 of this file already relied on that ruling while this row still asked for it. | — | — |
 
 ## 10. Highest-value next action
+
+> **THE ACTUAL NEXT ACTION (corrected 2026-08-01).** Supervisory review of
+> **`contract_baseline_suite_v8`** (§23), which is the corrected reference `council_scope_v2`
+> S9 **step 3** requires. Nothing real has been read: no OOF, no fitting, no prediction, no
+> scoring, no accuracy or coverage figure. Five measured conditions currently block a real
+> run, three of them because `data/masters/master_player.parquet`,
+> `data/masters/master_team.parquet` and
+> `experiments/prediction_contract_v2/team_game.parquet` carry **no `asof_invariant`
+> manifest** — see `project_docs/CBS_REAL_INPUT_AUDIT_2026-08-01.json`.
+>
+> **This section previously opened with the three COMPLETED items below**, which made a
+> finished piece of work read as the highest-value next action. They are retained in place as
+> the record of what was done, but they are history, not the next step.
 
 **✅ DONE 2026-08-01 — `base_predictions_oof_2022_2023_v1`.** Reproduction gate passed at
 **2.842e-14** (registered tolerance 1e-12) on the 229 registered 2024 rows *and* on the full
@@ -231,7 +247,12 @@ Leakage audits PASS for both. **Fitting sample 229 → 664 games.** Artifact car
 `FITTED_ARTIFACT_GLOBS` (scan was 24/24 at the time; **29/29** as of 2026-08-01 — see
 `project_docs/GATE_LOG_2026-08-01.md`).
 
-Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared).
+~~Consequence: **council ladder rungs 3–6 are unblocked** (G2 cleared).~~
+**CORRECTED 2026-08-01.** That line was wrong and contradicted lines 93–100 of this same file.
+`base_predictions_oof_2022_2023_v1` is **game-level**, and `council_scope_v2` S5 explicitly
+withdraws the claim: it does **not** clear G2 for the **player-level** rungs 3–6, which stay
+blocked until the player-game prediction contract and per-arm player-game OOF exist. What it
+does do is enlarge the **game-level** conditional-edge fitting sample, 229 → 664 games.
 
 > **Correction to an earlier claim in this file.** I wrote that the OOF extension would
 > enlarge the *props* fitting sample from ~229 to ~730 games. That was wrong. Props history
@@ -250,13 +271,14 @@ control — and is not even marginally informative. It also surfaced something n
 **non-projection controls are actively harmful out of sample**, which is the mechanism behind
 the calibration inversion.
 
-**NEXT — `council_scope_v2` S9, the approved execution order.** Steps 2–10 remain:
+**NEXT — `council_scope_v2` S9, the approved execution order.** Steps **3**–10 remain (this
+line read "Steps 2–10" while the table below already marked step 2 DONE):
 
 | # | step | state |
 |---|---|---|
 | 1 | correct ledger + mechanism/permutation labels | **✅ done 2026-08-01** |
 | 2 | manifest-first player-game as-of PREDICTION CONTRACT | **DONE - `prediction_contract_v2`, fail-closed** |
-| 3 | chronological OOF per arm | **incumbent attempt `ac2e2f0` REJECTED** - see section 14; corrected reference required before any other arm |
+| 3 | chronological OOF per arm | **LIVE.** Incumbent attempt `ac2e2f0` REJECTED (§14); the corrected reference is `contract_baseline_suite_v1…v8` (§§16–23). v8 is registered, 132/132 synthetic, and **awaiting supervisory review**; no real contract row has been read |
 | 4 | compare individual models **before** any council weights | blocked on 3 |
 | 5 | residual diversity + leave-one-member-out value | blocked on 4 |
 | 6 | equal-weight and median councils | blocked on 5 |
@@ -265,8 +287,11 @@ the calibration inversion.
 | 9 | possession simulation, modular | after components calibrate |
 | 10 | keep logging prospective core-only, **freeze-v0 unaltered** | continuous, running |
 
-Step 2 is the real unblocker: the player-level council cannot begin until per-arm player-game
-OOF predictions exist on a shared row index, cutoff and manifest.
+Step **3** is the real unblocker (this read "Step 2", which the table above already marks
+DONE): the player-level council cannot begin until per-arm player-game OOF predictions exist
+on a shared row index, cutoff and manifest. Step 2 delivered the contract; step 3 must deliver
+a corrected reference arm against it, and that is what §§16–23 have been building. None of it
+has touched real data yet.
 
 ---
 
@@ -318,7 +343,7 @@ positive one would have been provisional.
 
 ## 12. Standing operational state
 
-- Gate: **`python verify_all.py`** — runs **14** checks, exit non-zero on any failure.
+- Gate: **`python verify_all.py`** — runs **15** checks, exit non-zero on any failure.
   **But they are not one kind of evidence**, and since 2026-08-01 they are reported as two layers
   that are never added together:
   - **Layer A — reproducible repository gate.** The test suites plus `asof_manifest_scan` and
@@ -328,8 +353,8 @@ positive one would have been provisional.
     written down here has gone stale within a cycle — and it had again: this entry read
     "12 checks / 427 tests (36+22+8+13+5+45+35+66+123+75)", a sum with only ten addends that
     omitted `test_cbs_v6` outright and carried the pre-v6 `test_cbs_v5` count of 75. At the
-    last run it was **14 checks / 771 tests**
-    (36+22+8+13+5+45+35+66+123+79+104+235), up from 8 checks / 129 tests when the split was
+    last run it was **15 checks / 903 tests**
+    (36+22+8+13+5+45+35+66+123+79+104+235+132), up from 8 checks / 129 tests when the split was
     introduced. The cardinality is not the invariant — the membership is: every layer-A check
     reads only committed files, and `daily_certify` is never among them.
   - **Layer B — operational certification, 1 check** — the **ninth** `verify_all` check as
@@ -342,10 +367,13 @@ positive one would have been provisional.
     supposed to contain. Layer B is run separately on the capture machine, always with
     `operational_input_manifest.py`. `tests/test_gate_layers.py` enforces the split, the hook's
     flag, and the absence of any cross-layer aggregate.
-- Last gate — **layer A: PASS, 14/14, 771 tests, 29/29 artifacts attested, forecast chain
-  `ok=True` (8 records)**, run A8, 2026-08-01T22:50:24Z–22:51:41Z, exit 0. This entry previously
-  reported **A5**'s numbers (12/12, 427 tests, 20:30:26Z–20:31:20Z) as though they were the
-  latest, two layer-A runs after they stopped being so.
+- Last gate — **layer A: PASS, 15/15, 903 tests, 29/29 artifacts attested, forecast chain
+  `ok=True` (8 records)**, run A10, 2026-08-01T23:46:18Z–23:48:23Z, exit 0. An earlier revision
+  of this entry reported **A5**'s numbers (12/12, 427 tests) as though they were the latest,
+  two layer-A runs after they stopped being so; the count now moves with every registration.
+  Note the 29/29 attestation figure covers only artifacts matched by
+  `asof_invariant.FITTED_ARTIFACT_GLOBS`; **`data/masters/*.parquet` matches no glob at all**,
+  so the masters are neither attested nor reported as missing — see §23.
   **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, run **B5**, 2026-08-01T21:30:18Z–21:31:03Z,
   exit 0, bound to input manifest
   **`cb8326b5a71fbbd2fd747f11e14171c8b47efd1d8ff96acb570a6c8961566619`** —
@@ -971,3 +999,89 @@ composite gate.
 **Status: definition plus complete synthetic implementation.** Real-contract execution, fitting,
 prediction, scoring and any accuracy or coverage inspection await supervisory review. The
 hierarchical arm is **not** begun.
+
+---
+
+## 23. `contract_baseline_suite_v8` — the training frame, and where the data came from
+
+`project_docs/CONTRACT_BASELINE_SUITE_V8.md`, registered 2026-08-01. Registry append **1
+insertion, 0 deletions** (85 → 86); prefix byte-identical, **v1–v7 records unchanged**.
+`config_hash` **`663058521c36fd5afc4baaab8fc0a29b6121bf5dc7685df3dc1e8afbc67e43e5`** recomputes
+from the registry, and the runner requires that match before accepting a real run.
+**v7's implementation files are byte-untouched**; every unchanged primitive is **imported**
+from `cbs_v7`, not copied, so the two cannot drift and a reader can diff exactly what moved.
+**No real contract row read; no OOF, accuracy or coverage figure exists.**
+
+**Why.** v7's outer-fold and as-of work is real and its 235 assertions pass. Its three
+remaining defects were the same shape: **v7 proved things about the frame it predicted, and
+trusted the frame it fitted on — and the artifacts both came from.**
+
+1. **Training provenance was never resolved.** `resolve_feature_asof_strict` ran on `test`
+   only (`cbs_v7.py:1212`, `:1467`). The fitted coefficients, selected alphas, calibration maps
+   and residual pool all come from the *training* frame, so training features assembled after
+   their own cutoffs would corrupt every one of them and leave no trace.
+2. **A team "current obligation" still required its own postgame outcome.**
+   `require_team_predict_inputs` reached `_require_team_common`, which demands all four `ch_*`
+   components — and those **reconstruct the target game's own final score**. v7 could not
+   predict a game without being handed the answer; removing `team_points` while keeping its
+   four addends closed nothing.
+3. **The snapshot manifest was bound to nothing.** `snapshot_identity` hashed whatever mapping
+   the caller passed. Nothing checked it against real artifact bytes, and nothing tied it to
+   the `train` / `test` / `universe` frames consumed, so one manifest could be reused across
+   mutated frames.
+
+**What v8 adds.** `resolve_fold_sources` derives and receipts `feature_asof` for **every**
+frame read, rejecting missing, null, unparseable, exactly-at-cutoff, late **and partial**
+source columns — a frame carrying some but not all registered sources may no longer fall back
+to a declared `feature_asof`. The `cbs_source_provenance/1` receipt reports
+**`frames_validated`**, which is the point: a reader must be able to see that `train` is in
+the list. `require_team_current_obligations` demands identity and schedule only;
+`require_team_history_inputs` demands complete outcomes of the **completed** games that may
+enter the availability-gated history; and `prior_games` counts only complete observations, so
+`MIN_PRIOR` cannot be satisfied by games that never reached the average. The same correction
+lands on the player side: the `n_prior_available_obligations` denominator now excludes
+schedule-only rows that can never enter the numerator, which v7 counted — biasing
+`p_plays_prior` downward. `cbs_snapshot_manifest/2` carries artifact digests **and** canonical
+frame digests; `verify_artifact_bytes` re-hashes the files on disk and `bind_frames` proves the
+manifest describes the frames supplied, both at the **top** of each runner. The suite asserts
+that **zero fits ran** before a mutated frame was rejected. `scoring_permitted` is now the
+conjunction of **eight** receipts.
+
+**`cbs_real_adapter/1` — and it fails closed.** A versioned provenance layer supplying artifact
+byte hashing, attestation status, observed-versus-policy source labels with reasons,
+missing/at-cutoff/late counts, manifest construction and `attest_master` (dry-run by default).
+It **fits, predicts and scores nothing**. `build_snapshot_manifest` **refuses** to describe an
+unattested artifact, which converts "the masters are unattested" from a sentence in a report
+into a condition that stops a run: no manifest → no snapshot identity → the runner will not
+start.
+
+**Measured real-input status** (schema, provenance and identity only — nothing fitted, no
+prediction, no coverage or accuracy figure, no target relationship inspected). Artifact:
+`project_docs/CBS_REAL_INPUT_AUDIT_2026-08-01.json`. All five verdicts are **False**:
+Stage-A features and team channels are absent from the contract, no observed `feature_asof`
+exists, no observed outcome-availability exists, and **three required artifacts are
+unattested** — `data/masters/master_player.parquet`, `data/masters/master_team.parquet` and
+`experiments/prediction_contract_v2/team_game.parquet` have no `asof_invariant` sidecar. **No
+entry in `FITTED_ARTIFACT_GLOBS` matches `data/masters/*.parquet`**, so `--scan` cannot even
+report them as missing. Adding such a glob and attesting the masters is a separate authorised
+act, not something this registration performs.
+
+**`observed_time` is deliberately unused.** Both masters' `observed_time` is a **local file
+mtime** with **10 distinct values** across 33,712 and 2,990 rows, spanning
+`2026-07-31T20:42Z` → `2026-08-01T13:01Z` while `game_date` spans `2021-05-14` →
+`2026-07-31`. It records when this machine wrote the file. `attest_master` derives its bound
+from `game_date` via `asof_invariant.bound_from_dates` and records in the manifest notes that
+it did so.
+
+**Erratum against v7's test file.** `tests/test_cbs_v7.py`'s F3 assertion read
+`(...).all() or True` — unconditionally true, and there because the comparison itself was
+wrong: it measured a **within-group** admitted count against a **global** ordered position. It
+now asserts the real invariant, that admissions are a subset of the rows prior by cutoff in
+the same group. Assertion count unchanged at **235**; v7's implementation files are
+byte-untouched. This follows the v5 `75 → 79` precedent.
+
+`tests/test_cbs_v8.py` — **132 runner-level assertions, synthetic only.**
+
+**Status: definition plus complete synthetic implementation plus a versioned real provenance
+layer.** Real-contract execution, fitting, prediction, scoring and any accuracy or coverage
+inspection await supervisory review. The hierarchical arm is **not** begun.
