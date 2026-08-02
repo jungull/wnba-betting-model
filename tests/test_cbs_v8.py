@@ -299,8 +299,37 @@ check("G2 those rows accumulated prior history from COMPLETED earlier games",
 check("G2 and once they clear MIN_PRIOR they are NOT fallbacks",
       bool((mixed_lv.loc[late][mixed_prior.loc[late] >= v8.TEAM_MIN_PRIOR] == 0).all()),
       "a current obligation with enough completed history must get a real prediction")
-check("G2 prior_games counts only COMPLETE observations",
-      bool((mixed_prior <= 10 * 1).all()) or True is not None)
+# ERRATUM 2026-08-02: this assertion read
+#   bool((mixed_prior <= 10 * 1).all()) or True is not None
+# `True is not None` is True, so `X or True` was unconditionally true — the
+# assertion tested nothing. Replaced with an INDEPENDENT exact recomputation of
+# every row's prior count, derived here from the fixture rather than from the
+# runner, so the two have to agree for the check to pass.
+def _expected_prior(frame, uid):
+    """Complete, availability-admitted, strictly-prior games for one row.
+
+    Rebuilt from the fixture alone: same team and season, a complete channel
+    observation, and a policy availability timestamp strictly before this row's
+    own cutoff.
+    """
+    row = frame.set_index("row_uid").loc[uid]
+    same = frame[(frame.team_id == row.team_id) & (frame.season == row.season)]
+    avail = (pd.to_datetime(same["game_date"], utc=True).dt.floor("D")
+             + pd.Timedelta(hours=v8.OUTCOME_AVAILABILITY_POLICY_LAG_HOURS))
+    complete = same["ch_ft"].notna() if "ch_ft" in same.columns else False
+    cut = pd.to_datetime(row["forecast_cutoff"], utc=True)
+    return int(((avail < cut) & complete).sum())
+
+
+_expected = {u: _expected_prior(T_TEST, u) for u in T_TEST.row_uid}
+_mismatch = {u: (int(mixed_prior.loc[u]), _expected[u]) for u in T_TEST.row_uid
+             if int(mixed_prior.loc[u]) != _expected[u]}
+check("G2 prior_games equals an independent exact count of complete admitted priors",
+      not _mismatch, f"{len(_mismatch)} rows disagree, e.g. "
+                     f"{list(_mismatch.items())[:3]} (runner, expected)")
+check("G2 that independent count is non-trivial and varies across rows",
+      len(set(_expected.values())) > 1 and max(_expected.values()) >= v8.TEAM_MIN_PRIOR,
+      f"distinct expected counts: {sorted(set(_expected.values()))}")
 incomplete = T_TEST.copy()
 incomplete.loc[incomplete.index[:6], "ch_3pt"] = np.nan
 check("G2 a row missing ONE channel is not usable history",

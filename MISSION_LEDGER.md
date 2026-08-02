@@ -343,7 +343,7 @@ positive one would have been provisional.
 
 ## 12. Standing operational state
 
-- Gate: **`python verify_all.py`** — runs **15** checks, exit non-zero on any failure.
+- Gate: **`python verify_all.py`** — runs **16** checks, exit non-zero on any failure.
   **But they are not one kind of evidence**, and since 2026-08-01 they are reported as two layers
   that are never added together:
   - **Layer A — reproducible repository gate.** The test suites plus `asof_manifest_scan` and
@@ -353,8 +353,8 @@ positive one would have been provisional.
     written down here has gone stale within a cycle — and it had again: this entry read
     "12 checks / 427 tests (36+22+8+13+5+45+35+66+123+75)", a sum with only ten addends that
     omitted `test_cbs_v6` outright and carried the pre-v6 `test_cbs_v5` count of 75. At the
-    last run it was **15 checks / 903 tests**
-    (36+22+8+13+5+45+35+66+123+79+104+235+132), up from 8 checks / 129 tests when the split was
+    last run it was **16 checks / 988 tests**
+    (36+22+8+13+5+45+35+66+123+79+104+235+133+85), up from 8 checks / 129 tests when the split was
     introduced. The cardinality is not the invariant — the membership is: every layer-A check
     reads only committed files, and `daily_certify` is never among them.
   - **Layer B — operational certification, 1 check** — the **ninth** `verify_all` check as
@@ -367,13 +367,15 @@ positive one would have been provisional.
     supposed to contain. Layer B is run separately on the capture machine, always with
     `operational_input_manifest.py`. `tests/test_gate_layers.py` enforces the split, the hook's
     flag, and the absence of any cross-layer aggregate.
-- Last gate — **layer A: PASS, 15/15, 903 tests, 29/29 artifacts attested, forecast chain
-  `ok=True` (8 records)**, run A10, 2026-08-01T23:46:18Z–23:48:23Z, exit 0. An earlier revision
+- Last gate — **layer A: PASS, 16/16, 988 tests, 33/33 artifacts attested, forecast chain
+  `ok=True` (8 records)**, run A12, 2026-08-02T00:50:07Z–00:52:01Z, exit 0. An earlier revision
   of this entry reported **A5**'s numbers (12/12, 427 tests) as though they were the latest,
   two layer-A runs after they stopped being so; the count now moves with every registration.
-  Note the 29/29 attestation figure covers only artifacts matched by
-  `asof_invariant.FITTED_ARTIFACT_GLOBS`; **`data/masters/*.parquet` matches no glob at all**,
-  so the masters are neither attested nor reported as missing — see §23.
+  **The attestation figure moved from 29/29 to 33/33 on 2026-08-02**, and the caveat that used
+  to sit here — that `data/masters/*.parquet` matched no glob at all, so the masters were
+  neither attested nor reported as missing — **is no longer true**. Three globs were added and
+  the four unattested CBS inputs were attested; see §24. A green scan now does cover the real
+  inputs a CBS run consumes.
   **Layer B: `WARN`, 0 fail, 1 warn, 9 pass/skip**, run **B5**, 2026-08-01T21:30:18Z–21:31:03Z,
   exit 0, bound to input manifest
   **`cb8326b5a71fbbd2fd747f11e14171c8b47efd1d8ff96acb570a6c8961566619`** —
@@ -1085,3 +1087,87 @@ byte-untouched. This follows the v5 `75 → 79` precedent.
 **Status: definition plus complete synthetic implementation plus a versioned real provenance
 layer.** Real-contract execution, fitting, prediction, scoring and any accuracy or coverage
 inspection await supervisory review. The hierarchical arm is **not** begun.
+
+---
+
+## 24. `contract_baseline_suite_v9` — collision-safe identity, five-input attestation, and the first real frame
+
+`project_docs/CONTRACT_BASELINE_SUITE_V9.md`, registered 2026-08-02. Registry append **1
+insertion, 0 deletions** (86 → 87); prefix byte-identical, **v1–v8 records unchanged**.
+`config_hash` **`aa4b3cc53785b9004b88aed748e12e7e4a803c3665c298a6cdd2b0523f6ee260`** recomputes
+from the registry. **`cbs_v8.py`, `cbs_v7.py`, `cbs_real_adapter.py` and
+`contract_validator_v3_strict.py` do not appear in the diff at all.** **No real fitting, OOF
+prediction, scoring, model coverage/accuracy inspection or profitability evaluation exists.**
+
+**Why.** v8's executable identity/provenance claim was rejected. `frame_digest` rendered every
+cell with `str(v)`, so a **null collided with an empty string** and **integer `1` collided with
+the string `"1"`** — and frame binding is the check standing between a mutated frame and the
+fitting code, so a changed frame could keep its identity and reach the model. `MUST_BE_ATTESTED`
+covered **three of five** consumed artifacts while the documentation claimed all. Audit verdicts
+used `bool(any present)`, which one surviving column satisfies. Policy limitations that can
+never be repaired retrospectively were filed as blockers alongside repairable ones. A second
+vacuous test remained. The imported no-argument config-hash helper resolved to `cbs_v7.ARM_ID`
+and returned **v7's** digest while looking like a self-check. And structurally,
+`cbs_real_adapter.py` audited and manifested frames somebody else had built — **nothing in the
+repository built them**.
+
+**What v9 adds.** `cbs_frame_identity/2` tags every cell with its type and keeps null distinct,
+so `None ≠ ""`, `1 ≠ "1"`, `1 ≠ 1.0`, `True ≠ 1` and `False ≠ 0`, while row- and column-order
+invariance is preserved. `cbs_snapshot_manifest/3` **refuses** `/1` and `/2` outright rather
+than superseding them, because their frame digests came from the colliding encoding. `cbs_v9`
+binds identity before delegating the modelling to v8, then restamps the emitted rows to the v9
+arm and identity and **re-validates every receipt** against them. `cbs_provenance/2` enforces
+all five consumed artifacts, requires **every** registered column rather than any, and separates
+**hard blockers** from **carried policy limitations**.
+
+**`cbs_real_frames/1` — the first executable real frame.** It joins the contract to the masters,
+derives the twelve adapter-side Stage-A features and the four team channels, attaches row-level
+source-policy timestamps, and emits schema, join, row-count, timestamp, provenance and identity
+receipts. It **fits, predicts and scores nothing**. The feature definitions are **ported** from
+the registered `minutes_twostage_availability_v1`, not invented — but with one deliberate
+divergence: `minutes_twostage` walks history **positionally**, and v7 established that position
+is not knowability, so every feature here is computed over the **availability-admitted** prior
+set. These features therefore **will not equal** `minutes_twostage`'s on the same rows. Measured
+on `season:2024`: player 16,556 train / 6,094 test, team 1,416 / 524, **0 rows reading a source
+at or after their own cutoff**, **0 unmatched rows claiming `appeared=True`**.
+
+Six adapter decisions are stated rather than assumed: playoffs are **kept**; `appeared` comes
+from the **contract**; the DNP prefix rule is **kept as registered** including the 82 rows classed
+against their own text; `side = home if is_home == 1 else away` is an **adapter decision**
+because no such mapping existed anywhere in the repository; the **contract's** `team_id` wins on
+the 8 mid-season-trade rows; and the 3,154 contract rows with no master box row take the
+registered declared defaults as a documented approximation.
+
+**Attestation: 29/29 → 33/33.** Three globs were added — `data/masters/*.parquet` plus the two
+contract paths **named explicitly**, since `experiments/prediction_contract_v2/*.parquet` would
+also sweep `game.parquet`, a sixth artifact no CBS arm consumes. The four unattested inputs were
+attested. **A convention divergence is disclosed rather than harmonised:** the new manifests use
+`bound_from_dates` (`2026-08-01T12:00:00Z`) while their already-attested sibling
+`player_game.parquet` carries `max(game_date)` read as midnight (`2026-07-31T00:00:00Z`) over
+identical data, so the new ones sit 36 hours **later**. That direction is fail-closed, and
+`player_game.parquet`'s manifest was **not** rewritten. `contract.json` has no dates of its own,
+so its bound is **inherited** from the tables it describes, at `asof_granularity="artifact"`.
+
+**The label discipline matters here.** Clearing every hard blocker is reported as
+`provenance_preconditions_met`, **not** `real_run_permitted`, alongside
+`supervisory_authorization_required: True`. A field named "permitted" would have outrun its
+evidence the moment attestation landed.
+
+**A defect the new tests found.** The adapter's `prev_dnp_*` backward scan used a truthiness
+test on `dnp_class`. A non-DNP row's class arrives from pandas as `NaN`, and **`if NaN:` is
+`True`**, so the scan stopped at the first non-DNP row and reported "no prior DNP" for a player
+who had one. The known-row fixture caught it by asserting a hand-computed answer rather than
+whatever the code produced; the same fixture also caught an unbalanced synthetic box score,
+because the adapter enforces `pts == ftm + 3·fg3m + 2·(fgm − fg3m)`.
+
+**Erratum against v8's test file.** `tests/test_cbs_v8.py`'s G2 assertion ended in
+`or True is not None` — unconditionally true, so it tested nothing. Replaced with an
+**independent exact recomputation** of every row's prior count derived from the fixture rather
+than from the runner (132 → 133). v8's implementation files are byte-untouched.
+
+`tests/test_cbs_v9.py` — **85 assertions, synthetic only.** Every adapter section builds its own
+miniature contract and masters in a temporary directory; the real artifacts are never read.
+
+**Status: definition plus complete synthetic implementation plus the first executable real
+causal frame.** Real fitting, OOF prediction, scoring, model coverage/accuracy inspection and
+profitability evaluation all await supervisory review. The hierarchical arm is **not** begun.

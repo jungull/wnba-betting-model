@@ -176,6 +176,24 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     # Incumbent arm OOF predictions -- the reference implementation every other council
     # arm is checked against. A stale copy would silently misalign the whole comparison.
     "experiments/arm_incumbent/predictions.parquet",
+    # ---- the CBS real inputs, added 2026-08-02 -------------------------------
+    # Every artifact a real contract_baseline_suite run consumes. Until now the
+    # scan reported "29/29 attested" while these were matched by NO pattern at
+    # all: the only real sources of all 14 Stage-A features and all four team
+    # channels were neither counted as attested nor reported as missing, so a
+    # green scan said nothing about them. See cbs_provenance.py.
+    #
+    # The masters. `data/masters/*.parquet` matches exactly these two today; the
+    # directory's other entries are .csv and .md.
+    "data/masters/*.parquet",
+    # The team-game contract table. Named EXPLICITLY rather than reached with
+    # `experiments/prediction_contract_v2/*.parquet`, because that wildcard would
+    # also sweep game.parquet -- a sixth artifact no CBS arm consumes, which would
+    # be adopted silently rather than chosen.
+    "experiments/prediction_contract_v2/team_game.parquet",
+    # The contract policy document itself. It has no dates of its own, so its
+    # manifest bound is INHERITED from the tables it describes and says so.
+    "experiments/prediction_contract_v2/contract.json",
 )
 
 # Directories never worth walking.
