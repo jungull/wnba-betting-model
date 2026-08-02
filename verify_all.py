@@ -110,6 +110,18 @@ REPOSITORY_CHECKS = [
     ("test_cbs_real_integration_v11", [sys.executable,
                                     "tests/test_cbs_real_integration_v11.py"]),
     ("test_cbs_v11",               [sys.executable, "tests/test_cbs_v11.py"]),
+    # ---- contract_baseline_suite_v12 -------------------------------------
+    # v11's real check (above) proves the real FRAME boundary and stops at a bound snapshot
+    # manifest.  Six defects lived in cbs_v11._run behind that green gate for exactly that
+    # reason: no test ever called the runner with a universe.  These two cross the boundary.
+    # test_cbs_v12 RUNS the runner nondegenerately to emitted predictions on a synthetic fold
+    # and drives every pre-fit control; test_cbs_real_integration_v12 runs the REAL 2021 team
+    # fold end to end through the real /5 boundary with a runtime no-fit sentinel, and measures
+    # the inherited team-blind ordering that blocks the real player fold.  Both are STANDING
+    # checks by design.
+    ("test_cbs_v12",               [sys.executable, "tests/test_cbs_v12.py"]),
+    ("test_cbs_real_integration_v12", [sys.executable,
+                                    "tests/test_cbs_real_integration_v12.py"]),
     ("asof_manifest_scan",         [sys.executable, "asof_invariant.py", "--scan"]),
     ("forecast_chain",             [sys.executable, "-c",
                                     "import sys;from evalharness import verify_chain;"

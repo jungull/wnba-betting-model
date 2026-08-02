@@ -71,15 +71,26 @@ print("\n1. registration is append-only and both new records are present")
 recs = _registry_records()
 ids = [r.get("experiment_id") for r in recs]
 
-ok(len(recs) == 91, f"registry holds 91 records (got {len(recs)})")
-ok(ids[-1] == "contract_baseline_suite_v11", "the last record is v11")
-ok(ids[-2] == "contract_baseline_suite_v10__erratum_20260802", "the v10 erratum precedes it")
-ok(ids.count("contract_baseline_suite_v10") == 1, "v10's own record appears exactly once")
-ok(recs[-2]["kind"] == "erratum" and recs[-2]["errata_for"] == "contract_baseline_suite_v10",
-   "the erratum is kind=erratum and names v10")
-ok(recs[-2]["prior_records_mutated"] is False, "the erratum mutates no prior record")
+# These were written as `recs[-1]` and `recs[-2]` and pinned `len(recs) == 91`, which asserted
+# "v11 is the newest record" -- a claim that is FALSE the moment the append-only registry is
+# appended to, and that made this standing gate check fail on the very next arm. Rebound to the
+# INDICES v11 was registered at, which is what the assertions were actually about: v11's record
+# sits at line 91, its predecessor erratum at line 90, and neither moves. The registry may grow.
+V11_INDEX, V10_ERRATUM_INDEX = 90, 89
 
-v11 = recs[-1]
+ok(len(recs) >= 91, f"registry holds at least the 91 records v11 registered (got {len(recs)})")
+ok(ids[V11_INDEX] == "contract_baseline_suite_v11", "v11's record sits at its registered index")
+ok(ids[V10_ERRATUM_INDEX] == "contract_baseline_suite_v10__erratum_20260802",
+   "the v10 erratum immediately precedes it")
+ok(ids.count("contract_baseline_suite_v11") == 1, "v11's own record appears exactly once")
+ok(ids.count("contract_baseline_suite_v10") == 1, "v10's own record appears exactly once")
+ok(recs[V10_ERRATUM_INDEX]["kind"] == "erratum"
+   and recs[V10_ERRATUM_INDEX]["errata_for"] == "contract_baseline_suite_v10",
+   "the erratum is kind=erratum and names v10")
+ok(recs[V10_ERRATUM_INDEX]["prior_records_mutated"] is False,
+   "the erratum mutates no prior record")
+
+v11 = recs[V11_INDEX]
 ok(v11["kind"] == "experiment", "v11 is kind=experiment")
 ok(v11["primary_metric"].endswith("NOT_YET_COMPUTED"),
    "v11's primary_metric is explicitly NOT_YET_COMPUTED")

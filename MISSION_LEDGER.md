@@ -1351,3 +1351,102 @@ Real fitting, OOF prediction, scoring, model coverage/accuracy inspection and pr
 evaluation all remain unperformed and unauthorised. Per the supervisor, once v11 passes this real
 smoke review the next action is **immediately the complete incumbent chronological OOF run**, with
 no additional infrastructure layer.
+
+---
+
+## `contract_baseline_suite_v12` — the fit boundary, made executable and fail-closed
+
+**Registered 2026-08-02. Correction and executability only. No real model fit, prediction, score,
+accuracy result, coverage result or profitability result exists.** Registry 91 → 93, append-only,
+the 91 prior lines byte-identical. `cbs_v11.py`, `cbs_v10.py` and every artifact under
+`experiments/prediction_contract_v4/` are byte-untouched. Nothing deleted.
+
+### What v11 established, and what it did not
+
+Contract v4 stands. The supervisor independently reran the all-season real no-fit integration
+(268/268) and reproduced every figure: 35,627 unique canonical obligations, 35,613 legacy ids, 28
+rows sharing 14 legacy ids, 2,990 visible team-games, 76 zero-candidate team-games exactly equal
+to season openers, 407 exact-tip games with zero missing or late `observed_at`.
+
+What v11 did **not** establish is that anything could consume it. `cbs_v11._run` — the function a
+chronological OOF would call — is neither executable nor fail-closed, and **no test ever called
+it with a universe.** v11's real gate stops at a bound snapshot manifest, one step before the
+runner; its unit suite tests the manifest gate in isolation. The runner sat between them,
+untouched.
+
+### Ten defects
+
+Four from the supervisor: the identity binder documents a real-manifest, artifact-byte and
+frame-identity check and **calls none of them**; the delegation shim declares no `frames`; the
+inner receipts are copied verbatim so `scoring_permitted` is computed from the **synthetic v10
+identity and the pre-restamp sidecar**; and `synthetic=True` leaves declared Stage-A defaults and
+a declared-`feature_asof` fallback reachable.
+
+Two more measured while correcting: the shim **cannot reach** the v10 binder at all, because that
+wrapper's exact artifact set names the **v3** contract directory and a v4 manifest raises
+`ArtifactSetError` first; and `_run` calls `validate_arm_output_v4` **without the required
+`expected_fold_id`**, so any v11 run with a universe raises `TypeError`.
+
+Three more from running the corrected boundary on real frames: `cbs_v7.canonical_digest` cannot
+encode a `Timestamp`, so a real sidecar cannot be digested — and the inherited validator takes
+that digest **after** every clause inside a blanket `except`, discarding all of them; the team
+universe cannot declare `cbs_obligation_key/1` because a team-game obligation has no player; and
+**blocker 9**, below.
+
+One more from running this arm's own gate: `tests/test_cbs_v11.py` asserted `len(recs) == 91` and
+`recs[-1]`, i.e. *"v11 is the newest record"* — which an append-only registry falsifies on the
+next arm. It went red on a correct registration. Rebound to registered indices.
+
+### BLOCKER 9 — the inherited obligation ordering is team-blind
+
+`cbs_generator.order_obligations` refuses rows indistinguishable on
+`(player_id, season, forecast_cutoff, game_id)`. The rule is sound; the tuple is team-blind.
+Contract v4 deliberately carries dual-team obligations — one player, one game, one cutoff, two
+clubs, two forecasts owed:
+
+**28 rows, 14 groups, in every season 2021-2026** — exactly the rows sharing a legacy
+`player_game_uid`, set equality verified. **Adding `team_id` resolves all 28, leaving none.**
+
+**No real player fold can enter the modelling core, for any season.** This is the same defect
+class v11 corrected one layer up — the team-blind master join and the `game_id`-keyed appearance
+index — surviving at the fit boundary because nothing had ever entered the runner with a real
+frame.
+
+v12 does **not** repair it. `cbs_generator` and `cbs_v8` are registered and immutable;
+`run_player_fold` calls the function with its default column names and exposes no seam. Rebinding
+another module's global would change its behaviour for every caller in the process — which
+`cbs_v8._provenance_rows` already rejects by name as not reentrant. Correcting it in this
+project's usual style would require forking the player runner, i.e. the whole modelling core.
+`require_orderable_obligations` therefore fails **closed** with the exact count, seasons and
+canonical keys, and the frame is not reordered behind the guard's back. **A ruling is requested.**
+
+### What runs
+
+The real **2021 team fold runs end to end** across the real `/5` boundary — real manifest stamps,
+five artifact digests verified against the bytes on disk, three frame digests bound, both frames'
+feature sources validated, exact obligation completeness over 418 obligations — on the
+declared-constant cold-start path, with **zero fits** proved by a runtime sentinel installed
+before the first real byte was read. The real **player** path emits nothing. The **synthetic**
+nondegenerate player run reaches emitted predictions through a fitted Stage-A ridge logistic with
+all eight receipts green, which is what shows the corrected boundary itself is sound.
+
+A label the emitted rows do not support, recorded so nobody reads it as one they do:
+`is_cold_start` marks an obligation with no prior admitted same-season team game — 12 of 418. It
+is **not** a no-fit flag; 406 rows carry `False` while the run fitted nothing. The no-fit claim
+rests on the sentinel, the uniform maximum fallback level and the declared-constant component.
+
+### Gate
+
+**Layer A A19, producer tree: PASS 29/29, 2,410 assertions, exit 0**; addends sum exactly; scan
+holds at 49/49 attested. Receipt at `project_docs/GATE_RECEIPT_A19_producer_tree.json`. Two new
+standing checks: `test_cbs_v12` (149) and `test_cbs_real_integration_v12` (80). **Layer B not run
+and not claimed; the latest genuine Layer-B result remains B5.**
+
+### Status
+
+Real fitting, chronological OOF prediction, scoring, model accuracy or coverage-quality
+inspection, and profitability evaluation all remain unperformed and unauthorised. Per the
+supervisor the next action is generation-only chronological OOF with a bounded target fan-out and
+one fan-in before any accuracy or profitability metric is opened — but **blocker 9 must be ruled
+on first**, because the player half of that run cannot start until the inherited team-blind
+ordering is corrected.
