@@ -343,7 +343,7 @@ positive one would have been provisional.
 
 ## 12. Standing operational state
 
-- Gate: **`python verify_all.py`** — runs **16** checks, exit non-zero on any failure.
+- Gate: **`python verify_all.py`** — runs **20** checks, exit non-zero on any failure.
   **But they are not one kind of evidence**, and since 2026-08-01 they are reported as two layers
   that are never added together:
   - **Layer A — reproducible repository gate.** The test suites plus `asof_manifest_scan` and
@@ -353,8 +353,8 @@ positive one would have been provisional.
     written down here has gone stale within a cycle — and it had again: this entry read
     "12 checks / 427 tests (36+22+8+13+5+45+35+66+123+75)", a sum with only ten addends that
     omitted `test_cbs_v6` outright and carried the pre-v6 `test_cbs_v5` count of 75. At the
-    last run it was **16 checks / 988 tests**
-    (36+22+8+13+5+45+35+66+123+79+104+235+133+85), up from 8 checks / 129 tests when the split was
+    last run it was **20 checks / 1,266 tests**
+    (36+22+8+13+5+45+35+66+123+79+104+235+133+85+58+107+71+41), up from 8 checks / 129 tests when the split was
     introduced. The cardinality is not the invariant — the membership is: every layer-A check
     reads only committed files, and `daily_certify` is never among them.
   - **Layer B — operational certification, 1 check** — the **ninth** `verify_all` check as
@@ -367,7 +367,7 @@ positive one would have been provisional.
     supposed to contain. Layer B is run separately on the capture machine, always with
     `operational_input_manifest.py`. `tests/test_gate_layers.py` enforces the split, the hook's
     flag, and the absence of any cross-layer aggregate.
-- Last gate — **layer A: PASS, 16/16, 988 tests, 33/33 artifacts attested, forecast chain
+- Last gate — **layer A: PASS, 20/20, 1,266 tests, 38/38 artifacts attested, forecast chain
   `ok=True` (8 records)**, run A12, 2026-08-02T00:50:07Z–00:52:01Z, exit 0. An earlier revision
   of this entry reported **A5**'s numbers (12/12, 427 tests) as though they were the latest,
   two layer-A runs after they stopped being so; the count now moves with every registration.
@@ -1171,3 +1171,84 @@ miniature contract and masters in a temporary directory; the real artifacts are 
 **Status: definition plus complete synthetic implementation plus the first executable real
 causal frame.** Real fitting, OOF prediction, scoring, model coverage/accuracy inspection and
 profitability evaluation all await supervisory review. The hierarchical arm is **not** begun.
+
+---
+
+## 25. `contract_baseline_suite_v10` + `prediction_contract_v3` — a causal row universe
+
+`project_docs/CONTRACT_BASELINE_SUITE_V10.md`, registered 2026-08-02. Registry **87 → 89**: a v9
+**erratum** (line 88, appended not mutated, with a distinct `experiment_id` so it cannot shadow
+the record it corrects) and v10 (line 89). v1–v9 byte-identical. `config_hash`
+**`46a8e7687b237b1ff01396ad44c6396bafe078568c08dc0f492f7fb8a35ec6f2`** recomputes from the
+registry. **No real MODEL fit, prediction, score, accuracy/coverage result, profitability result
+or model output exists.** Real artifacts *are* read and written and are never handed to a model —
+that phrasing replaces v9's `computed_nothing_on_real_data`, which was false.
+
+Built as one bounded **three-branch diamond** under a single coordinator: A the contract, B
+identity and artifact enforcement, C source maxima and the DNP taxonomy. Fanned in once; the
+coordinator reconciled the overlaps and ran one unified gate.
+
+**The row universe was still positional.** v2's `build_candidates` took the five prior team
+games without asking whether their appearance data was knowable at the cutoff. Correcting it
+required a **new contract**, not a mutation of v2. The registered v3 rule is the **latest five
+prior same-season team games whose appearance source bound is strictly earlier than the row's
+cutoff** — admitted, not scheduled, with equality excluded. The supervisor's independently
+reconstructed diff reproduced **exactly**: 6 v2-only, 18 causal-only, 21 team-games,
+**35,615 → 35,627**.
+
+**But the 18 are compound, and the receipt says so.** On `row_uid` alone the diff is 6 out / 4
+in. The other **14** are obligations v2 had **deleted without a receipt**: it ends with
+`drop_duplicates("row_uid")`, and `row_uid` **carries no team**, so a mid-season-traded player
+who was a candidate for *both* clubs in their head-to-head game collided and one obligation
+vanished. v3 keys on `(team_id, game_id, player_id)`. Four genuine causal additions plus fourteen
+recovered obligations. Both granularities are reported side by side rather than conflated.
+
+**A guard that prevented a fabricated number.** `data/odds_capture/` is gitignored and absent
+from every worktree; run naively, v2's tip resolver finds 2 exact tips instead of 407 and flips
+1,086 games to the date-only policy — which would have produced a **fabricated** diff of 30/4
+blamed on the lookback rule. v3 refuses to emit unless every game's cutoff and policy match v2's
+registered `game.parquet` exactly (1,495/1,495).
+
+**Frame identity `/3`.** `/2`'s integer-labelled-column defect was worse than aliasing: it
+stringified the column list then reindexed on the stringified names, so such a column was
+**dropped** and replaced by all-NaN — its values never entered the hash. Dict keys and container
+types also collided. `/3` **rejects before hashing**; a frame outside the scalar-only /
+string-column domain gets **no identity** rather than a weak one.
+
+**Exactly five artifacts, of the v3 contract**, enforced in both directions at construction *and*
+at the runner. The required set moved to v3 at fan-in — enforcing "exactly five" against the
+superseded universe would have passed while binding the wrong contract, and the fan-in suite
+caught `MUST_BE_ATTESTED` still pointing at v2.
+
+**The freshest source actually consumed.** 185 rows whose team source was newer than reported,
+1,060 false no-history labels, and 23 exact-tip rows under-reported by up to 24 hours — all now
+**zero**. An honest limit is recorded: the roster and team bounds coincide numerically because
+availability is monotone in `game_date`; they remain distinct record sets, and what v9 asserted
+(roster == the *player* bound) is false on 881 rows.
+
+**A semantic DNP taxonomy**, frozen while no result exists to be influenced by it: **107 rows
+change class**, moving `prev_dnp_cd` on 368 rows, `prev_dnp_inj` on 424 and `returning_flag` on
+146. **No parity with the old prefix rule is claimed.** Unmatched text maps to **UNKNOWN**, which
+is carried in a diagnostic column rather than being indistinguishable from "no prior DNP".
+
+**Evidence labels.** The v9 erratum corrects "84 assertions" (actual 85), two false
+`computed_nothing`/`synthetic_only` flags, and **a Layer-A total recorded as 988 whose own
+addends sum to 989** — an arithmetic slip that had propagated into the v9 handoff and the
+supervisory reply quoting it. It was found by `gate_receipt.py` on its first run, which is the
+argument for the tool: it parses each suite's own final line instead of trusting a typed total,
+and distinguishes a producer-tree receipt from a post-push clean-checkout receipt, since only the
+latter certifies a commit.
+
+**Framing, as directed:** the availability-admitted history rule is **ported transforms over a
+new causal history-admission rule**, not output parity with `minutes_twostage_availability_v1`.
+Any later comparison against the positional incumbent confounds a history-admission change with
+the estimator comparison and must not attribute the difference to model class.
+
+`tests/test_prediction_contract_v3.py` 58, `tests/test_cbs_identity_v3.py` 107,
+`tests/test_cbs_real_frames_v2.py` 71, `tests/test_cbs_v10.py` 41 — **277 new assertions, all
+synthetic.**
+
+**Status: definition plus a causal row universe.** Real fitting, OOF prediction, scoring, model
+coverage/accuracy inspection and profitability evaluation all await review. Per the supervisor,
+the next action after review is **immediately the incumbent chronological OOF run** — no further
+speculative infrastructure layer.

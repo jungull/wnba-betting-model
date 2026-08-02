@@ -194,6 +194,17 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     # The contract policy document itself. It has no dates of its own, so its
     # manifest bound is INHERITED from the tables it describes and says so.
     "experiments/prediction_contract_v2/contract.json",
+    # ---- the prediction_contract_v3 row universe, added 2026-08-02 -----------
+    # v2's candidate lookback took the positional five prior team games without
+    # asking whether their appearance data was admitted before the target cutoff.
+    # v3 is the availability-causal universe a real v10 run consumes. v2's
+    # artifacts stay attested and scanned: they are superseded, not retired, and
+    # the row diff between them is itself evidence.
+    "experiments/prediction_contract_v3/player_game.parquet",
+    "experiments/prediction_contract_v3/team_game.parquet",
+    "experiments/prediction_contract_v3/game.parquet",
+    "experiments/prediction_contract_v3/contract.json",
+    "experiments/prediction_contract_v3/row_diff_vs_v2.json",
 )
 
 # Directories never worth walking.

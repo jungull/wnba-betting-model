@@ -1,0 +1,269 @@
+{
+ "contract_version": "player_game_contract/3",
+ "supersedes": "player_game_contract/2",
+ "supersedes_reason": "v2's candidate lookback was POSITIONAL, not availability-causal: it took the five positionally prior same-season team games without asking whether those games' player-appearance data was admitted before the target row's forecast cutoff, so on the second leg of a back-to-back under the date-only cutoff policy it read a box score that did not yet exist at the cutoff. v2 also deduplicated obligations on a team-blind row_uid, silently deleting 14 real (team, game, player) obligations.",
+ "admission_rule": "A candidate for (team, game) is a player who appeared in one of the LATEST FIVE PRIOR SAME-SEASON TEAM GAMES WHOSE APPEARANCE SOURCE BOUND IS STRICTLY EARLIER THAN THE ROW'S FORECAST CUTOFF. Latest five ADMITTED, not latest five scheduled. The appearance source bound is floor_to_day(game_date) + 36 hours (policy id 'postgame_policy_lag_36h_from_game_date_utc/1'), i.e. noon UTC on the day AFTER the game. Admission is STRICT: a prior game whose bound EQUALS the cutoff is NOT admitted. The window never crosses a season boundary, so each season's opener has zero admitted prior games and therefore zero candidates.",
+ "availability_policy": {
+  "policy_id": "postgame_policy_lag_36h_from_game_date_utc/1",
+  "lag_hours": 36.0,
+  "formula": "floor_to_day_utc(game_date) + 36h = noon UTC the day AFTER the game",
+  "identical_to": [
+   "cbs_v7.OUTCOME_AVAILABILITY_POLICY_LAG_HOURS",
+   "cbs_real_frames.availability_of",
+   "asof_invariant.bound_from_dates (for a bare game date)"
+  ],
+  "kind": "POLICY, never an observation; deliberately NOT derived from observed_time, which is a local file mtime",
+  "strictness": "admission requires bound < cutoff; EQUALITY IS A VIOLATION"
+ },
+ "universe_kind": "RECENCY-ROSTER PROXY, made availability-causal; still not the complete slate",
+ "preserved_from_v2": [
+  "the cutoff machinery (resolve_tip_times / apply_cutoff_policy imported from the frozen v2 module) and, proven per game against v2's registered game.parquet, the resulting forecast_cutoff and cutoff_policy",
+  "the season reset: the window never crosses a season boundary and each season's opener yields zero candidates",
+  "zero-candidate team-games remain VISIBLE, as rows of team_game.parquet carrying n_candidates and a named zero_candidate_reason",
+  "the pg_uid row_uid construction, unchanged",
+  "the central invariant: the target game's own rows are never read to decide membership"
+ ],
+ "changed_vs_v2": [
+  "D5 the lookback is over ADMITTED prior games, not positionally prior ones",
+  "D6 one row per OBLIGATION (team_id, game_id, player_id); v2's drop_duplicates('row_uid') deleted 14 obligations without a receipt",
+  "D7 labels join on (game_id, team_id, player_id), not on the team-blind row_uid"
+ ],
+ "new_columns": {
+  "lookback_games_used": "count of ADMITTED prior same-season team games actually pooled for this row (0-5)",
+  "admitted_window_bound": "the LATEST availability bound among the admitted games used; strictly < forecast_cutoff on every row, enforced",
+  "prior_games_excluded_unadmitted": "prior same-season team games whose bound was not strictly before this row's cutoff",
+  "lookback_window_shifted_vs_positional": "True where the admitted window differs from v2's positional five",
+  "obligation_uid": "ob_ -- the UNIQUE key (team, player, game)",
+  "row_uid_shared_with_other_team": "True on both rows of a row_uid collision",
+  "appeared_for_other_team": "the player appeared in this game, for the other club"
+ },
+ "universe_limitations": [
+  "candidacy is inferred from appearance in the team's latest 5 ADMITTED games because exact historical rosters, transactions and inactive lists are not reconstructable for every season",
+  "a player who missed the entire admitted window is NOT a candidate even if rostered -- this understates the true slate",
+  "a debut or new signing with no prior appearance cannot be a candidate at all",
+  "the first game of each team-season has no admitted prior game and yields none",
+  "the availability bound is a POLICY, so it is conservative by construction: where a box score really was published sooner, v3 still refuses to use it"
+ ],
+ "central_invariant": "deleting every target-game player row before constructing the candidate roster does not change the candidate set; candidacy reads only same-season games that are strictly prior AND whose appearance data was admitted strictly before the row's forecast cutoff",
+ "cutoff_policies": {
+  "exact_tip_T-90m": "forecast_cutoff = scheduled_tip_time - 90 minutes; the ONLY rows usable for exact-cutoff market comparisons",
+  "date_only_prior_day_cutoff": "18:00 UTC on the day BEFORE the game. Conservative, reported separately, and NEVER described as T-90m"
+ },
+ "targets": {
+  "p_active": {
+   "key": "p_active",
+   "description": "Probability the candidate appears in the game.",
+   "prediction_required": "every candidate_at_cutoff",
+   "outcome_scoreable": "every candidate_at_cutoff",
+   "uncertainty": "the probability IS the uncertainty; calibration is scored",
+   "clustering": "game_date",
+   "table": "player_game"
+  },
+  "e_minutes_given_active": {
+   "key": "e_minutes_given_active",
+   "description": "Expected minutes CONDITIONAL on appearing.",
+   "prediction_required": "EVERY candidate_at_cutoff, including eventual DNPs -- at the cutoff we do not know who appears, and E[minutes] = P(active) x E[minutes|active] needs the conditional term for everyone",
+   "outcome_scoreable": "only rows where the player appeared (minutes > 0)",
+   "uncertainty": "predictive sd of minutes, strictly > 0",
+   "clustering": "game_date",
+   "table": "player_game"
+  },
+  "attempts_usage": {
+   "key": "attempts_usage",
+   "description": "Field-goal attempts conditional on appearing.",
+   "prediction_required": "every candidate_at_cutoff",
+   "outcome_scoreable": "only rows where the player appeared and fga is resolved",
+   "uncertainty": "predictive sd of attempts, strictly > 0",
+   "clustering": "game_date",
+   "table": "player_game"
+  },
+  "player_scoring_distribution": {
+   "key": "player_scoring_distribution",
+   "description": "Predictive distribution of player points, conditional on appearing.",
+   "prediction_required": "every candidate_at_cutoff",
+   "outcome_scoreable": "only rows where the player appeared and pts is resolved",
+   "uncertainty": "predictive sd PLUS the named quantiles",
+   "clustering": "game_date",
+   "table": "player_game"
+  },
+  "team_game_distribution": {
+   "key": "team_game_distribution",
+   "description": "Team points distribution.",
+   "prediction_required": "every team-game row",
+   "outcome_scoreable": "every team-game row with a resolved final score",
+   "uncertainty": "predictive sd of team points",
+   "clustering": "game_date",
+   "table": "team_game"
+  }
+ },
+ "quantiles": [
+  0.05,
+  0.25,
+  0.5,
+  0.75,
+  0.95
+ ],
+ "prediction_schema": {
+  "row_uid": "pg_/tg_/g_ id from this module; the join key",
+  "target_key": "one of TARGETS",
+  "arm_id": "stable arm name",
+  "fold_id": "exact OOF fold identity; must match the contract fold map",
+  "forecast_cutoff": "tz-aware ISO8601, from the row's cutoff policy",
+  "pred_point": "point prediction on the target's support",
+  "pred_sd": "predictive sd; > 0 except where the target says otherwise",
+  "pred_q05": "5th percentile (distribution targets; else null)",
+  "pred_q25": "25th percentile",
+  "pred_q50": "median",
+  "pred_q75": "75th percentile",
+  "pred_q95": "95th percentile",
+  "is_fallback": "bool: a fallback path produced this",
+  "is_cold_start": "bool: insufficient prior history at this cutoff",
+  "n_prior_games": "int: strictly-prior appearances readable at the cutoff",
+  "feature_asof": "tz-aware ISO8601; MUST be strictly < forecast_cutoff",
+  "model_hash": "hash of fitted parameters",
+  "config_hash": "hash of the arm's configuration",
+  "data_snapshot_hash": "hash of the input snapshot",
+  "exclusion_reason": "null if predicted; else why. A silently missing row is a violation"
+ },
+ "tables": {
+  "player_game": "one row per pregame OBLIGATION (team x player x game)",
+  "team_game": "tg_ -- one row per team x game, including zero-candidate ones",
+  "game": "g_ -- one row per game"
+ },
+ "obligation_vs_scoring": "prediction_required and outcome_scoreable are INDEPENDENT. E[minutes|active] is required for every candidate including eventual DNPs, and scored only where the player appeared FOR THAT TEAM, so an arm cannot buy coverage by dropping the inactive.",
+ "accounting": {
+  "master_rows": 33712,
+  "availability_policy": {
+   "policy_id": "postgame_policy_lag_36h_from_game_date_utc/1",
+   "lag_hours": 36.0,
+   "formula": "floor_to_day_utc(game_date) + 36h",
+   "matches_cbs_v7_id": true,
+   "matches_cbs_v7_lag": true,
+   "matches_bound_from_dates": true,
+   "ok": true
+  },
+  "tip_source_resolution": {
+   "repo": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\cbs-v2-gate-accounting",
+   "worktree_parent": "C:\\Users\\jgallagher\\wnba-betting-model",
+   "sources": {
+    "props_historical": {
+     "relpath": "data/props_capture/historical/master_props_historical.csv",
+     "env_override": "WNBA_PROPS_HIST",
+     "paths_tried": [
+      "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\cbs-v2-gate-accounting\\data\\props_capture\\historical\\master_props_historical.csv"
+     ],
+     "resolved": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\cbs-v2-gate-accounting\\data\\props_capture\\historical\\master_props_historical.csv",
+     "found": true,
+     "sha256": "47983f8725e775aac16ff342d7704b7b2a8e72c3dfdf0b1448d4481660431a82",
+     "bytes": 7834043,
+     "from_worktree_parent": false
+    },
+    "odds_extension": {
+     "relpath": "data/odds_capture/master_odds_extension.csv",
+     "env_override": "WNBA_ODDS_EXT",
+     "paths_tried": [
+      "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\cbs-v2-gate-accounting\\data\\odds_capture\\master_odds_extension.csv",
+      "C:\\Users\\jgallagher\\wnba-betting-model\\data\\odds_capture\\master_odds_extension.csv"
+     ],
+     "resolved": "C:\\Users\\jgallagher\\wnba-betting-model\\data\\odds_capture\\master_odds_extension.csv",
+     "found": true,
+     "sha256": "e958810adf6e60864d555b8da1eef1a9716bec9aaa6a77951b728b1f6edc4cfb",
+     "bytes": 7410955,
+     "from_worktree_parent": true
+    }
+   }
+  },
+  "cutoff_identity_vs_v2": {
+   "games_compared": 1495,
+   "cutoff_mismatches": 0,
+   "policy_mismatches": 0,
+   "ok": true,
+   "problems": []
+  },
+  "games_total": 1495,
+  "games_exact_tip": 407,
+  "games_date_only": 1088,
+  "games_with_tip_revisions": 40,
+  "tip_provenance_audit": {
+   "observations_total": 2217,
+   "observations_missing_observed_at": 0,
+   "observations_rejected_too_late": 866,
+   "games_with_any_observation": 784,
+   "games_exact_available": 407,
+   "games_downgraded_to_date_only": 1088
+  },
+  "admission_rule": "A candidate for (team, game) is a player who appeared in one of the LATEST FIVE PRIOR SAME-SEASON TEAM GAMES WHOSE APPEARANCE SOURCE BOUND IS STRICTLY EARLIER THAN THE ROW'S FORECAST CUTOFF. Latest five ADMITTED, not latest five scheduled. The appearance source bound is floor_to_day(game_date) + 36 hours (policy id 'postgame_policy_lag_36h_from_game_date_utc/1'), i.e. noon UTC on the day AFTER the game. Admission is STRICT: a prior game whose bound EQUALS the cutoff is NOT admitted. The window never crosses a season boundary, so each season's opener has zero admitted prior games and therefore zero candidates.",
+  "roster_lookback_admitted_games": 5,
+  "candidate_obligations": 35627,
+  "candidate_distinct_row_uids": 35613,
+  "candidate_games": 1458,
+  "obligations_sharing_a_row_uid": 28,
+  "row_uid_collision_note": "row_uid = pg_uid(player_id, game_id) is preserved from v2 and carries NO team, so a player traded mid-season who is a candidate for both clubs in their head-to-head game produces two obligations with one row_uid. v2 deleted one of each pair via drop_duplicates('row_uid'); v3 keeps both and exposes obligation_uid as the unique key. Joining v3 on row_uid alone will silently fan out or drop these rows.",
+  "team_games_total": 2990,
+  "team_games_window_shifted_vs_positional": 55,
+  "prior_games_excluded_unadmitted_total": 55,
+  "team_games_with_an_unadmitted_prior_game": 55,
+  "window_shift_by_cutoff_policy": {
+   "date_only_prior_day_cutoff": 55
+  },
+  "window_shift_note": "Every shifted window is the second leg of a back-to-back under the date-only cutoff policy: the previous night's box score has availability bound noon UTC the following day, which is AFTER an 18:00 UTC prior-day cutoff. Under the exact-tip policy the same prior game IS admitted, because tip-90m falls later in the day than noon UTC. The two policies therefore admit genuinely different windows, and that is a fact about what was knowable, not an inconsistency.",
+  "team_games_with_zero_candidates": 76,
+  "zero_candidate_reasons": {
+   "season_opener_no_prior_in_season_game": 76
+  },
+  "games_with_zero_candidates": 37,
+  "lookback_games_used_distribution": {
+   "0": 76,
+   "1": 76,
+   "2": 78,
+   "3": 78,
+   "4": 75,
+   "5": 2607
+  },
+  "candidate_count_distribution": {
+   "count": 1458.0,
+   "mean": 24.44,
+   "std": 1.83,
+   "min": 10.0,
+   "5%": 22.0,
+   "25%": 23.0,
+   "50%": 24.0,
+   "75%": 25.0,
+   "95%": 28.0,
+   "max": 31.0
+  },
+  "season_openers": 76,
+  "season_openers_with_candidates": 0,
+  "season_opener_coverage_note": "season openers legitimately have ZERO candidates: the window resets at every season boundary, so no in-season prior game exists. They are reported, not hidden.",
+  "teams_total": 15,
+  "teams_not_in_every_season": 3,
+  "row_diff_vs_v2": {
+   "v2_obligations": 35615,
+   "v3_obligations": 35627,
+   "v2_only": 6,
+   "v3_only": 18,
+   "team_games_affected": 21,
+   "matches_independent_reconstruction": true
+  },
+  "rows_failing_window_bound_before_cutoff": 0,
+  "candidates_not_in_target_box": 8276,
+  "candidates_appeared": 27345,
+  "candidates_dnp_or_absent": 8282,
+  "candidates_who_appeared_for_the_other_team": 11,
+  "rows_where_team_blind_label_would_differ": 11,
+  "label_join_note": "labels join on (game_id, team_id, player_id), NOT on row_uid. A team-blind join would tell the club a traded player left that he 'appeared' for them, because he appeared for the club he was traded to in the very same game.",
+  "required__p_active": 35627,
+  "scoreable__p_active": 35627,
+  "required__e_minutes_given_active": 35627,
+  "scoreable__e_minutes_given_active": 27345,
+  "required__attempts_usage": 35627,
+  "scoreable__attempts_usage": 27345,
+  "required__player_scoring_distribution": 35627,
+  "scoreable__player_scoring_distribution": 27345,
+  "team_game_rows": 2990,
+  "team_game_unique": 2990,
+  "team_game_zero_candidate_rows_retained": 76,
+  "game_rows": 1495
+ },
+ "row_diff_receipt": "row_diff_vs_v2.json"
+}
