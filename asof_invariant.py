@@ -205,6 +205,26 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     "experiments/prediction_contract_v3/game.parquet",
     "experiments/prediction_contract_v3/contract.json",
     "experiments/prediction_contract_v3/row_diff_vs_v2.json",
+    # ---- the prediction_contract_v4 canonically-keyed universe, 2026-08-02 ---
+    # v3 kept the team-blind row_uid, so the real player path could not execute for any
+    # season. v4 is the same 35,627-row universe under a unique team-bearing key. v3's
+    # artifacts stay attested and scanned: superseded, not retired, and the row diff
+    # between them is itself evidence. Listed explicitly, never as a wildcard, so a new
+    # file cannot be silently adopted into the attested set.
+    "experiments/prediction_contract_v4/player_game.parquet",
+    "experiments/prediction_contract_v4/team_game.parquet",
+    "experiments/prediction_contract_v4/game.parquet",
+    "experiments/prediction_contract_v4/contract.json",
+    "experiments/prediction_contract_v4/row_diff_vs_v3.json",
+    # ---- cbs_accounting_v11 receipts, 2026-08-02 ----------------------------
+    # numbers that previously existed only as prose in a hand-written markdown doc,
+    # re-emitted as hash-bound receipts so a claim can be checked against an artifact.
+    "experiments/cbs_accounting_v11/candidate_count_per_team_game.json",
+    "experiments/cbs_accounting_v11/team_season_presence.json",
+    "experiments/cbs_accounting_v11/source_maxima.json",
+    "experiments/cbs_accounting_v11/dnp_taxonomy.json",
+    "experiments/cbs_accounting_v11/a15_receipt_digest.json",
+    "experiments/cbs_accounting_v11/index.json",
 )
 
 # Directories never worth walking.

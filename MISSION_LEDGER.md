@@ -1252,3 +1252,102 @@ synthetic.**
 coverage/accuracy inspection and profitability evaluation all await review. Per the supervisor,
 the next action after review is **immediately the incumbent chronological OOF run** — no further
 speculative infrastructure layer.
+
+---
+
+## 26. `contract_baseline_suite_v11` + `prediction_contract_v4` — a key that names one thing
+
+**Evidence label: definition, correction and executability only. No real MODEL fit, prediction,
+score, accuracy result, coverage result, profitability result, or model output exists.** Real
+artifacts are read and written and real frames are built and identity-bound; nothing reaches an
+estimator. "Coverage" here means obligation completeness, never predictive accuracy.
+
+### What v10 got wrong
+
+v10 registered a **green Layer-A gate (20/20, 1,266 assertions) over a real player path that
+could not execute at all.** `cbs_real_frames_v2.build_player_frame(season, require_attested=True)`
+raises `MergeError: Merge keys are not unique in left dataset` for **every season 2021–2026** —
+not merely 2024, as the supervisor's spot check found. `prediction_contract_v3` restored dual-team
+obligations but kept the team-blind `row_uid = pg_uid(player_id, game_id)`; the adapter joins
+master on `(game_id, player_id)` with `validate="1:1"`; 28 obligations share 14 legacy ids.
+
+The gate was green because **every v10 suite touching the player path was synthetic at exactly the
+boundary that had changed.** That is the durable lesson, and it is why correction 6 — a real
+no-fit integration check in the standing gate — matters more than any individual key fix.
+
+### What v11 changes
+
+**One canonical key.** `cbs_obligation_key/1`: `row_uid = sha256(player_id, game_id, team_id)`,
+unique over all 35,627 obligations where the team-blind key yielded 35,613.
+`player_game_uid` is retained for legacy linkage only, byte-identical to v2's `pg_uid`. **The row
+SET is unchanged — 0 in, 0 out — only the key changed.**
+
+The v1 contract chose a team-blind id deliberately, so that an id would not move when a team is
+restated. That reasoning is **not refuted**: a retroactive trade correction will move a v4
+`row_uid`. The cost is accepted and recorded, because a key that cannot uniquely name the thing
+being predicted cannot support a merge, a coverage count, or a scoring join.
+
+**Team-aware joins.** Two findings that extend the supervisor's review:
+
+- The master-join corruption is **13 rows, not 11 of the 28**. Two are *single* obligations
+  registered to the club the player did not play for — outside the dual-team framing entirely.
+- **The appearance index was ~30× larger and entirely silent**: `appeared_by_game` keyed on
+  `game_id`, which names a contest with two clubs in it. **167 cross-club triples, 1,347 corrupted
+  lookups, 860 obligations across all six seasons.** It raised no error; it just produced wrong
+  team-history features.
+
+**A validator that counts obligations.** `contract_v4_strict/1`. The inherited `/3` computed
+coverage over a `row_uid` set, so one forecast could cover two obligations (`ok=True`, coverage
+1.0) while two *correct* forecasts were rejected as duplicates. `/3` rewarded answering half the
+question and punished answering all of it.
+
+**Membership stated as implemented.** Prior admitted team-game box membership **including DNP
+rows**, not "appeared in a prior game". An appeared-only universe would hold **32,438 rows, 3,189
+fewer** — the supervisor's figure, reproduced exactly. The behaviour is kept; only the label changes.
+
+**Roster provenance bound to candidacy.** On the 2024 fold the bound is identical on
+**22,659/22,659** rows while the **count differs on 19,830** — quantitative proof that the old
+timestamp agreement was a consequence of availability being monotone in `game_date`, not a binding.
+
+### `cbs_snapshot_manifest/5`, reconciled at fan-in
+
+A branch reused `/4` while adding three required manifest fields no genuine `/4` document carries.
+The coordinator introduced **`/5`** instead, refusing `/1`–`/4`. `/4` is refused for a *different*
+reason than `/1`–`/3`: its frame digests are sound, but it does not name the obligation key, so it
+cannot show the digested rows were uniquely keyed. **A digest over a row set that silently
+collapsed two obligations into one is a faithful digest of the wrong thing.**
+
+### Four errata against v10
+
+Registered as `contract_baseline_suite_v10__erratum_20260802`; v10's own record is byte-identical.
+
+1. The false executability claim — no real player fold has ever been built by `/2` on v3.
+2. **The A15 receipt digest.** Recorded `9ba369cc0186fdfd…`; authoritative raw SHA-256 is
+   `697595497db7eb97fe50ba4b1e5b92b043306b25ea7d9de6f64d4060af7de5a7`. The recorded value is the
+   digest of the file's **LF-normalized** content — all 205 line endings are CRLF — so it names a
+   transformation of the file rather than the file, and was truncated to 16 of 64 hex characters.
+   It had propagated into four documents including the supervisory reply.
+3. Candidate-membership prose.
+4. **Sections 4 and 6 of the v10 doc were measured on the wrong universe.** Every number —
+   185→0, 1,060→0, 23→0, 881, 25,498, 107 (57/42/7/1), 368/424/146 — **reproduces exactly**, but on
+   the **v2** universe of 35,615 obligations, not v3's 35,627. They could not have been measured on
+   v3, since the player build cannot run there. The arithmetic was right; the label was wrong. They
+   are now hash-bound receipts carrying the universe they were measured on, and are not re-asserted
+   for v3 or v4.
+
+### Accounting closed
+
+Candidate count per **team-game** (2,990): min 0, max 17, mean 11.9154, median 12; the 76 zeros are
+all season openers. The three absent team ids — Golden State Valkyries (2025), Portland Fire
+(2026), Toronto Tempo (2026) — are **real franchise history**: every absence is *leading*, and no
+id has a gap after its first season. One franchise transition: Phoenix **PHO → PHX** on a stable
+`team_id` with identical city/arena/coordinates — measured *not* a relocation, so
+`team_abbreviation` is not a safe cross-season join key. Whether any id had a pre-2021 incarnation
+is **explicitly undetermined** — no artifact covers a season before 2021.
+
+### Status
+
+Real fitting, OOF prediction, scoring, model coverage/accuracy inspection and profitability
+evaluation all remain unperformed and unauthorised. Per the supervisor, once v11 passes this real
+smoke review the next action is **immediately the complete incumbent chronological OOF run**, with
+no additional infrastructure layer.

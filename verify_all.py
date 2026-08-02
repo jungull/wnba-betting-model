@@ -94,6 +94,22 @@ REPOSITORY_CHECKS = [
     ("test_cbs_real_frames_v2",    [sys.executable,
                                     "tests/test_cbs_real_frames_v2.py"]),
     ("test_cbs_v10",               [sys.executable, "tests/test_cbs_v10.py"]),
+    # ---- contract_baseline_suite_v11 -------------------------------------
+    # test_cbs_real_integration_v11 is the REAL end-to-end no-fit smoke: it builds both
+    # real player and team folds for every season 2021-2026.  It is a STANDING check by
+    # design.  v10's gate was green over a player path that could not execute at all,
+    # because every suite touching that path was synthetic at exactly the boundary that
+    # had changed; this check is what makes a green gate mean the real path runs.
+    ("test_cbs_obligation_key",    [sys.executable, "tests/test_cbs_obligation_key.py"]),
+    ("test_prediction_contract_v4", [sys.executable,
+                                    "tests/test_prediction_contract_v4.py"]),
+    ("test_cbs_real_frames_v3",    [sys.executable, "tests/test_cbs_real_frames_v3.py"]),
+    ("test_contract_validator_v4_strict", [sys.executable,
+                                    "tests/test_contract_validator_v4_strict.py"]),
+    ("test_cbs_accounting_v11",    [sys.executable, "tests/test_cbs_accounting_v11.py"]),
+    ("test_cbs_real_integration_v11", [sys.executable,
+                                    "tests/test_cbs_real_integration_v11.py"]),
+    ("test_cbs_v11",               [sys.executable, "tests/test_cbs_v11.py"]),
     ("asof_manifest_scan",         [sys.executable, "asof_invariant.py", "--scan"]),
     ("forecast_chain",             [sys.executable, "-c",
                                     "import sys;from evalharness import verify_chain;"

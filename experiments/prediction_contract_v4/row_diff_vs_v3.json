@@ -1,0 +1,45 @@
+{
+ "receipt": "row_diff/2",
+ "contract_version": "player_game_contract/4",
+ "compared_against": {
+  "artifact": "experiments/prediction_contract_v3/player_game.parquet",
+  "sha256": "5d4ab523815775d487db3f42932ecdd084301bc8e3eb0e0a039eb38853b67450",
+  "rows": 35627
+ },
+ "claim": "THE ROW SET IS UNCHANGED. v4 changes the KEY (and the membership NAME and the roster provenance BINDING); it does not change which obligations exist. Any row-set difference below is a DEFECT of the re-key, not a finding.",
+ "expected": {
+  "granularity": "obligation (team_id, game_id, player_id)",
+  "v3_rows": 35627,
+  "v4_rows": 35627,
+  "v3_only": 0,
+  "v4_only": 0,
+  "claim": "UNCHANGED -- only the KEY changes"
+ },
+ "obligation_level": {
+  "granularity": "obligation (team_id, game_id, player_id)",
+  "v3_rows": 35627,
+  "v4_rows": 35627,
+  "v3_only_count": 0,
+  "v4_only_count": 0,
+  "net_change": 0,
+  "row_set_unchanged": true,
+  "v3_only_sample": [],
+  "v4_only_sample": [],
+  "defect": null
+ },
+ "key_level": {
+  "v3_key_column": "row_uid = pg_uid(player_id, game_id), TEAM-BLIND and NOT unique",
+  "v4_key_column": "row_uid = cbs_obligation_key/1, sha256(player_id, game_id, team_id), UNIQUE",
+  "v3_distinct_row_uids": 35613,
+  "v3_rows": 35627,
+  "v3_rows_sharing_a_row_uid": 28,
+  "v4_distinct_row_uids": 35627,
+  "v4_row_uid_is_unique": true,
+  "v4_distinct_player_game_uids": 35613,
+  "player_game_uid_set_equals_v3_row_uid_set": true,
+  "v4_reproduces_every_v3_obligation_uid": true,
+  "v3_obligation_uid_digests_equal_v4_row_uid_digests": false,
+  "field_order_note": "v3 hashed (team_id, player_id, game_id); v4 hashes (player_id, game_id, team_id) per the registered cbs_obligation_key field order. The digests are therefore DIFFERENT strings for the same obligation, deliberately: a v3 digest must not be mistakable for a v4 one. v4 carries v3_obligation_uid on every row so the mapping is explicit rather than inferred."
+ },
+ "downstream_merge_note": "the v4 frame still holds 28 rows sharing 14 (game_id, player_id) pairs -- that is the truth about traded players and it is what the canonical key exists to name. A consumer must join on row_uid or on (game_id, team_id, player_id). cbs_real_frames_v2.build_player_frame merges the contract to the master on (game_id, player_id) with validate='1:1' and therefore STILL raises MergeError against v4; that is a defect of the frames module, which is immutable here, and it is reported rather than worked around."
+}
