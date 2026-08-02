@@ -265,4 +265,36 @@ ok(json.dumps(diff).count("35627") >= 1, "the row-diff receipt exists and names 
 missing = [f for f in fc["implementation"] if not (REPO / f).exists()]
 ok(not missing, f"every registered implementation file exists (missing: {missing})")
 
+# --------------------------------------------------------------------------- #
+print("\n8. a gate receipt must be able to certify ITSELF")
+# --------------------------------------------------------------------------- #
+# The wrong A15 digest was not a transcription slip: gate_receipt.py wrote via
+# Path.write_text (text mode, so "\n" -> "\r\n" on Windows) while hashing the
+# pre-translation bytes, so every receipt it published named a LF-normalized
+# transformation that nobody hashing the real file could reproduce.
+import hashlib as _hl  # noqa: E402
+
+gr = (REPO / "gate_receipt.py").read_text(encoding="utf-8")
+ok('newline=""' in gr,
+   "gate_receipt.py writes with newline='' so the file is not newline-translated")
+ok("read_bytes()" in gr and "sha256(on_disk)" in gr,
+   "gate_receipt.py hashes the bytes read back off disk, not the string it meant to write")
+_main = gr.split("def main")[-1]
+_calls = [ln for ln in _main.splitlines()
+          if ".write_text(" in ln and not ln.lstrip().startswith("#")]
+ok(not _calls,
+   f"main() makes no newline-translating write_text call (found: {_calls})")
+
+a16 = REPO / "project_docs" / "GATE_RECEIPT_A16_producer_tree.json"
+if a16.exists():
+    raw = _hl.sha256(a16.read_bytes()).hexdigest()
+    lf = _hl.sha256(a16.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+    rec_a16 = json.loads(a16.read_text(encoding="utf-8"))
+    ok(sum(rec_a16["per_suite_assertions"].values()) == rec_a16["total_assertions"],
+       "the committed producer receipt's addends sum exactly to its stated total")
+    ok(isinstance(raw, str) and len(raw) == 64,
+       f"the committed producer receipt has a full 64-char raw digest ({raw[:16]}...)")
+    ok(raw != lf or b"\r\n" not in a16.read_bytes(),
+       "raw and LF-normalized digests are distinguished rather than conflated")
+
 print(f"\n{_n}/{_n} tests passed")

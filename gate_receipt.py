@@ -119,8 +119,24 @@ def main() -> int:
 
     rec = build(Path(args.root), receipt_kind=args.kind, label=args.label)
     text = json.dumps(rec, indent=2, default=str) + "\n"
-    Path(args.out).write_text(text, encoding="utf-8")
-    digest = hashlib.sha256(text.encode()).hexdigest()
+
+    # Write and hash the SAME bytes.
+    #
+    # This is the defect that produced the wrong A15 digest, and it lived in this tool rather
+    # than in a human transcription: `Path.write_text` opens in text mode, so on Windows every
+    # "\n" becomes "\r\n" on disk, while `text.encode()` hashed the pre-translation bytes. The
+    # published digest therefore identified a LF-normalized transformation of the file that no
+    # one hashing the actual file could ever reproduce. `newline=""` disables the translation,
+    # and the digest is then taken from the bytes read back off disk rather than from the string
+    # we hoped we wrote -- a receipt that certifies a gate must first be able to certify itself.
+    with open(args.out, "w", encoding="utf-8", newline="") as fh:
+        fh.write(text)
+    on_disk = Path(args.out).read_bytes()
+    digest = hashlib.sha256(on_disk).hexdigest()
+    if on_disk != text.encode("utf-8"):
+        raise SystemExit(
+            f"receipt bytes on disk differ from the bytes intended ({len(on_disk)} vs "
+            f"{len(text.encode('utf-8'))}); refusing to publish a digest that names neither")
     print(f"wrote {args.out}")
     print(f"  state={rec['state']} {rec['n_green']}/{rec['n_checks']} "
           f"assertions={rec['total_assertions']} exit={rec['exit_code']}")
