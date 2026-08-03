@@ -1,0 +1,360 @@
+{
+  "schema": "player_program_phase0_audit/1",
+  "audited_unit": "cbs_v14_player_oof/1",
+  "audited_commit": "d69aa0250fc95cbebacecb821482734819bebf36",
+  "audited_by": "the player model program, independently of the team thread",
+  "generated_utc": "2026-08-03T20:39:40.902314Z",
+  "scope": "row counts, key-set comparisons, flag distributions, selected constants and gate verdicts ONLY. Nothing is scored; no forecast is compared to any outcome; no accuracy, calibration, error, threshold, edge, return or profitability figure is computed anywhere in this file.",
+  "coverage_means": "OBLIGATION COMPLETENESS, never statistical coverage",
+  "nothing_persisted_to_any_arm_output_namespace": true,
+  "provenance": {
+    "question": "Q1-Q3: existence, push state, files changed, real contract read",
+    "commit": "d69aa0250fc95cbebacecb821482734819bebf36",
+    "committed_locally": true,
+    "pushed": false,
+    "push_evidence": "`git branch -r --contains d69aa02` is EMPTY; origin/worktree-cbs-v2-gate-accounting is at its parent 702a948",
+    "files_changed_by_the_commit": [
+      "MISSION_LEDGER.md",
+      "project_docs/GATE_RECEIPT_A25_producer_tree.json",
+      "run_player_oof_v14.py (new, 1136 lines)",
+      "run_team_oof_v12_2.py (modified, 31 lines)",
+      "tests/test_run_player_oof_v14.py (new, 546 lines)",
+      "verify_all.py (+9)"
+    ],
+    "artifacts_generated_by_the_commit": [],
+    "output_namespace_exists": false,
+    "output_namespace": "experiments/cbs_v14_player_oof",
+    "contract_read": "experiments/prediction_contract_v4/player_game.parquet",
+    "contract_is_the_real_v4_contract": true,
+    "n_producer_sources": 25
+  },
+  "producer_gate": {
+    "question": "Q9: does the reproducibility gate pass, and is it entitled to",
+    "verdict": "PASS",
+    "detail": {
+      "ok": true,
+      "working_tree_clean_vs_head": true,
+      "n_dirty_paths": 0,
+      "commit": "d69aa0250fc9"
+    },
+    "raw_git_probes": {
+      "status": {
+        "returncode": 128,
+        "stdout_empty": true,
+        "stderr": "fatal: this operation must be run in a work tree"
+      },
+      "rev_parse_head": {
+        "returncode": 0,
+        "stdout_empty": false,
+        "stderr": ""
+      }
+    },
+    "FAIL_OPEN": true,
+    "finding": "CRITICAL. The gate reports the producing tree CLEAN with n_dirty_paths: 0, but its own `git status --porcelain` exited non-zero and returned nothing. The gate did not measure the tree; it mistook a failed call for an empty diff. Any run performed here would stamp its artifacts `reproducible: true` against a commit whose working tree was never inspected \u2014 which is the exact guarantee cbs_v12_team_oof/1 was rejected for lacking.",
+    "why_git_fails_here": "`core.bare=true` is set on the shared repository at C:/Users/jgallagher/wnba-betting-model, so every worktree reports is-inside-work-tree=false. `git status` requires a work tree and exits 128; `git rev-parse HEAD` does not and exits 0. The gate therefore gets a real commit and a false cleanliness verdict in the same breath \u2014 the worst possible combination, because the artifact looks fully attributed.",
+    "repair_exists_but_is_uncommitted": "the worktree .claude/worktrees/cbs-v2-gate-accounting carries an UNCOMMITTED `run_player_oof_v14.py` (1198 lines vs 1136 committed) adding `_git_checked`, which raises DirtyProducer on a non-zero git exit, and `_git_env`, which scrubs inherited GIT_DIR/GIT_WORK_TREE. It is preserved under experiments/player_program/preserved_uncommitted_d69aa02/ with a manifest."
+  },
+  "fold": {
+    "question": "Q4-Q8: chronological split, cutoff safety, tuning window, obligations, cold-start",
+    "season": 2022,
+    "executes_on_the_real_contract": true,
+    "scoring_permitted_receipt": true,
+    "failed_receipts": [],
+    "inherited_receipts": [],
+    "receipts_ok": {
+      "identity_binding": true,
+      "frame_binding": true,
+      "source_provenance": true,
+      "fold_boundary": true,
+      "provenance_history": true,
+      "prediction_validation": true,
+      "exclusion_crosstab": true,
+      "coverage": true,
+      "obligation_order": true,
+      "receipt_authorship": true
+    },
+    "split": {
+      "rule": "train = every season STRICTLY BEFORE the fold season; test = the fold season",
+      "n_train_rows": 4850,
+      "n_test_rows": 5563,
+      "n_universe_rows": 5563,
+      "train_seasons": [
+        2021
+      ],
+      "test_seasons": [
+        2022
+      ],
+      "train_and_test_seasons_disjoint": true,
+      "granularity": "SEASON-level expanding window. Model COEFFICIENTS see prior seasons only; FEATURES are as-of the row's own cutoff and do use within-season history. Both are chronological; they are different boundaries and are reported separately."
+    },
+    "cutoff_safety": {
+      "rule": "every source timestamp strictly before the row's own forecast_cutoff",
+      "violations_by_column": {
+        "src_asof_gamelog": 0,
+        "src_asof_team_gamelog": 0,
+        "src_asof_roster": 0,
+        "src_asof_schedule": 0,
+        "feature_asof": 0
+      },
+      "total_violations": 0
+    },
+    "tuning_and_calibration": {
+      "selected_constants": {
+        "lambda": 31.622777,
+        "lambda_default": false,
+        "lambda_inner_fit_dates": 51,
+        "lambda_inner_val_dates": 16,
+        "minutes_alpha": 0.2,
+        "attempts_alpha": 0.03,
+        "points_alpha": 0.1,
+        "minutes_alpha_held_fixed_at": 0.2
+      },
+      "fitted_on": "the TRAIN frame only, which is strictly earlier seasons",
+      "lambda_selection": "select_lambda_chronological (chronological inner split)",
+      "alpha_selection": "select_alpha_bound over the tuning prefix of the train frame",
+      "minutes_alpha_held_fixed_for_rate_targets": true,
+      "alpha_is_selected_not_frozen": true,
+      "frozen_spec_alpha_for_comparison": 0.3
+    },
+    "per_target": {
+      "attempts_usage": {
+        "n_emitted": 5563,
+        "n_required": 5563,
+        "n_covered": 5563,
+        "n_excluded": 0,
+        "obligation_completeness": 1.0,
+        "n_cold_start": 310,
+        "fallback_levels": {
+          "0": 4742,
+          "2": 511,
+          "3": 310
+        },
+        "components": [
+          "attempts_usage/prefix_mean",
+          "attempts_usage/walk_forward_active_ewma"
+        ],
+        "n_exclusion_reason_set": 0,
+        "emits_quantiles": true
+      },
+      "e_minutes_given_active": {
+        "n_emitted": 5563,
+        "n_required": 5563,
+        "n_covered": 5563,
+        "n_excluded": 0,
+        "obligation_completeness": 1.0,
+        "n_cold_start": 310,
+        "fallback_levels": {
+          "0": 4742,
+          "2": 511,
+          "3": 310
+        },
+        "components": [
+          "e_minutes_given_active/prefix_mean",
+          "e_minutes_given_active/walk_forward_active_ewma"
+        ],
+        "n_exclusion_reason_set": 0,
+        "emits_quantiles": true
+      },
+      "p_active": {
+        "n_emitted": 5563,
+        "n_required": 5563,
+        "n_covered": 5563,
+        "n_excluded": 0,
+        "obligation_completeness": 1.0,
+        "n_cold_start": 168,
+        "fallback_levels": {
+          "0": 5057,
+          "2": 338,
+          "3": 168
+        },
+        "components": [
+          "p_active/declared_constant",
+          "p_active/ridge_logistic_stage_a"
+        ],
+        "n_exclusion_reason_set": 0,
+        "emits_quantiles": false
+      },
+      "player_scoring_distribution": {
+        "n_emitted": 5563,
+        "n_required": 5563,
+        "n_covered": 5563,
+        "n_excluded": 0,
+        "obligation_completeness": 1.0,
+        "n_cold_start": 310,
+        "fallback_levels": {
+          "0": 4742,
+          "2": 511,
+          "3": 310
+        },
+        "components": [
+          "player_scoring_distribution/prefix_mean",
+          "player_scoring_distribution/walk_forward_active_ewma"
+        ],
+        "n_exclusion_reason_set": 0,
+        "emits_quantiles": true
+      }
+    },
+    "obligation_preservation": {
+      "every_obligation_owed_every_target": true,
+      "every_obligation_received_every_target": true,
+      "n_excluded_total": 0,
+      "dnp_rows_still_owed": "yes: prediction_required is True on every row for every target, so a DNP obligation still owes a p_active AND an e_minutes_given_active forecast. outcome_scoreable is separately False for the three conditional targets on rows that did not appear.",
+      "n_test_rows_that_did_not_appear": 1201
+    },
+    "cold_start_flags": {
+      "p_active_keys_on": "n_prior_candidate_games (prior OBLIGATIONS)",
+      "conditional_targets_key_on": "n_prior_appearances (prior APPEARANCES)",
+      "n_cold_by_target": {
+        "attempts_usage": 310,
+        "e_minutes_given_active": 310,
+        "p_active": 168,
+        "player_scoring_distribution": 310
+      },
+      "differentiated_correctly": true
+    },
+    "two_stage": {
+      "identity": "E[minutes] = P(active) x E[minutes | active]",
+      "row_uid_sets_identical": true,
+      "n_obligations": 5563,
+      "p_active_min": 0.035055,
+      "p_active_max": 0.973717,
+      "e_minutes_given_active_min": 1.356831,
+      "e_minutes_given_active_max": 37.246073,
+      "note": "range only; no comparison to any outcome is made"
+    }
+  },
+  "minutes_reproduction": {
+    "question": "Q10: can the v14 player output reproduce the registered minutes result",
+    "answer": "NO -- not as built, for three independent reasons",
+    "incumbent": {
+      "experiment_id": "minutes_ewma_vs_carryforward_v1",
+      "incumbent_id": "minutes_ewma_alpha030_v1",
+      "quoted_from": "experiments/registry.jsonl (evaluation record, run 1)",
+      "recomputed_here": false,
+      "why_not_recomputed": "recomputing a metric is scoring; this audit does not score",
+      "frozen_alpha": 0.3,
+      "n_rows": 13501
+    },
+    "universe_reconciliation": {
+      "incumbent_rows": 13501,
+      "contract_obligations_same_seasons": 19064,
+      "contract_appeared_same_seasons": 14508,
+      "incumbent_rows_present_in_contract": 13450,
+      "incumbent_rows_ABSENT_from_contract": 51,
+      "contract_appeared_absent_from_incumbent": 1058,
+      "per_season": {
+        "2024": {
+          "incumbent_rows": 4356,
+          "contract_appeared": 4769,
+          "in_both": 4343,
+          "incumbent_only": 13,
+          "contract_only": 426
+        },
+        "2025": {
+          "incumbent_rows": 5225,
+          "contract_appeared": 5675,
+          "in_both": 5200,
+          "incumbent_only": 25,
+          "contract_only": 475
+        },
+        "2026": {
+          "incumbent_rows": 3920,
+          "contract_appeared": 4064,
+          "in_both": 3907,
+          "incumbent_only": 13,
+          "contract_only": 157
+        }
+      }
+    },
+    "the_absent_rows": {
+      "n": 51,
+      "by_season": {
+        "2024": 13,
+        "2025": 25,
+        "2026": 13
+      },
+      "n_distinct_games": 43,
+      "n_distinct_players": 44,
+      "all_their_games_are_in_the_contract": true,
+      "interpretation": "these are player-games in which the player DEMONSTRABLY LOGGED MINUTES but was never a candidate obligation. The games are all in the contract; the (game, player) pairs are not. The pattern is mid-season signings, hardship contracts and trades -- players with no roster evidence in the candidacy window who nonetheless played immediately.",
+      "sample": [
+        {
+          "season": 2024,
+          "game_id": "1022400157",
+          "player_id": 203824,
+          "player_name": "Odyssey Sims",
+          "team_abbreviation": "LAS"
+        },
+        {
+          "season": 2024,
+          "game_id": "1022400159",
+          "player_id": 203824,
+          "player_name": "Odyssey Sims",
+          "team_abbreviation": "LAS"
+        },
+        {
+          "season": 2024,
+          "game_id": "1022400149",
+          "player_id": 1627669,
+          "player_name": "Moriah Jefferson",
+          "team_abbreviation": "CHI"
+        },
+        {
+          "season": 2024,
+          "game_id": "1022400149",
+          "player_id": 1627671,
+          "player_name": "Rachel Banham",
+          "team_abbreviation": "CHI"
+        },
+        {
+          "season": 2024,
+          "game_id": "1022400161",
+          "player_id": 1628881,
+          "player_name": "Monique Billings",
+          "team_abbreviation": "PHO"
+        },
+        {
+          "season": 2024,
+          "game_id": "1022400166",
+          "player_id": 1628899,
+          "player_name": "Myisha Hines-Allen",
+          "team_abbreviation": "MIN"
+        },
+        {
+          "season": 2024,
+          "game_id": "1022400154",
+          "player_id": 1629497,
+          "player_name": "Marina Mabrey",
+          "team_abbreviation": "CON"
+        },
+        {
+          "season": 2024,
+          "game_id": "1022400087",
+          "player_id": 1629571,
+          "player_name": "Morgan Bertsch",
+          "team_abbreviation": "DAL"
+        },
+        {
+          "season": 2024,
+          "game_id": "1022400170",
+          "player_id": 1630134,
+          "player_name": "Sug Sutton",
+          "team_abbreviation": "WAS"
+        },
+        {
+          "season": 2024,
+          "game_id": "1022400238",
+          "player_id": 1630151,
+          "player_name": "Olivia \u00c9poupa",
+          "team_abbreviation": "MIN"
+        }
+      ]
+    },
+    "three_reasons": [
+      "ROW UNIVERSE: the incumbent scores a played-rows-with-prior-appearance universe; the arm emits over the contract obligation universe. The sets differ in both directions.",
+      "SMOOTHING POLICY: the incumbent freezes alpha at 0.30 per MINUTES_MODEL_SPEC; the arm SELECTS alpha per fold via select_alpha_bound.",
+      "FOLD STRUCTURE: the incumbent tunes on 2021-2023 and tests on 2024-2026 pooled; the arm refits every season on an expanding prior-seasons window."
+    ],
+    "is_a_bridge_buildable": "yes, and it is the first thing the player program should build: restrict the arm's emission to the incumbent's key set, pin alpha to 0.30, and compare on the 13,450 obligations the two universes share. The 51 unshared rows must be reported, never silently dropped."
+  }
+}
