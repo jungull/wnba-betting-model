@@ -1450,3 +1450,78 @@ supervisor the next action is generation-only chronological OOF with a bounded t
 one fan-in before any accuracy or profitability metric is opened — but **blocker 9 must be ruled
 on first**, because the player half of that run cannot start until the inherited team-blind
 ordering is corrected.
+
+---
+
+## `contract_baseline_suite_v13` and the first real fitted output
+
+**Registered 2026-08-02.** Registry 93 to 94, append-only, the 93 prior lines byte-identical.
+`cbs_generator.py`, `cbs_v8.py`, `cbs_v12.py`, `cbs_v11.py`, `cbs_v10.py` and every artifact under
+`experiments/prediction_contract_v4/` are byte-untouched, and no module's globals were rebound.
+Nothing deleted.
+
+### The player branch
+
+v12's player path failed closed because `cbs_generator.order_obligations` cannot name contract
+v4's dual-team obligations: its tie key is team-blind, and 28 rows in 14 groups — in every season
+2021-2026 — differ only in `team_id`.
+
+`cbs_obligation_order/2` appends `team_id` and a terminal `row_uid` tie-breaker, making the order
+TOTAL, and re-asserts uniqueness AFTER sorting rather than only before. Because the key
+extends `/1`'s and the sort is stable, everything `/1` could already distinguish keeps its relative
+order: the refusal is strictly narrower, never wider.
+
+`cbs_player_runner/13` is `cbs_v8.run_player_fold` GENERATED from `inspect.getsource` — exact
+by construction — with exactly TWO lines changed, both the ordering call. Every other
+modelling name is imported from `cbs_v8`, so the estimator, masks, tuning, calibration and
+walk-forward are the same objects. The diff is re-derived at test time against the live inherited
+source and fails on any third differing line.
+
+`team_id` is an ORDERING DISCRIMINATOR ONLY. History stays grouped by `(player_id, season)`, and
+that is verified by reading the `group_cols` out of the fork's own source AST rather than
+restating a constant.
+
+**The real 2021 player fold now runs end to end** through the complete boundary: four targets by
+4,850 obligations, exact obligation completeness, the real collision's two siblings both
+forecast with distinct canonical keys, all eight v13-owned receipts green — declared-constant cold
+start, **zero estimator calls** proved by a runtime sentinel. No real fitted player output exists,
+and none is authorised before review.
+
+### BLOCKER 11 — found by running it, not by reasoning about it
+
+The two real siblings came back with `n_prior_candidate_games` 23 and 24: one apart, purely by
+sort order. `cbs_v8._prior_by_cutoff` is documented as by-cutoff and implemented as a POSITIONAL
+prefix.
+
+Every availability-gated quantity is correct — admission is an explicit `availability < cutoff`
+comparison, so a same-cutoff sibling can never be admitted, and the two siblings agree exactly on
+`n_prior_appearances` and `n_prior_available_obligations`. The positional count is not gated at
+all: **55** rows contract-wide exceed the causal count, **28** by exactly one, and **2
+obligations** would receive a different `p_active` fallback band. Not an outcome leak; it does feed
+the fallback ladder.
+
+The ruling requires the walk-forward preserved byte-for-byte, so v13 measures it on every fold and
+reports it rather than repairing it. **A ruling is requested.**
+
+### The team branch — the first real fitted output
+
+`run_team_oof_v12.py` ran all six chronological folds against the ACCEPTED v12: **2,990
+forecast rows**, exactly the contract's 2,990 visible team-games. 2021 is a cold start; **2022-2026
+fit real models.** Predictions, provenance sidecars, per-fold receipts, command/config identity and
+runtime logs are persisted under `experiments/cbs_v12_team_oof/` and attested (scan 49 to 68).
+
+**No score, accuracy, calibration, threshold, edge, return or profitability figure was computed,
+and no forecast was compared to any outcome.** The runner checks that against its own AST at
+startup and refuses to persist an unreceipted fold or a prediction carrying an outcome column.
+
+### Gate
+
+**Layer A A21, producer tree: PASS 31/31, 2,639 assertions, exit 0**; addends sum exactly; scan
+68/68 attested. Layer B not run and not claimed; the latest genuine Layer-B result remains **B5**.
+
+### Status
+
+Real fitted PLAYER output, chronological player OOF, scoring, accuracy or coverage-quality
+inspection and profitability evaluation all remain unperformed and unauthorised. After v13 passes
+review the next step is generation-only chronological player OOF with bounded target fan-out,
+followed by one receipt-checked fan-in. Scoring remains a separate later authorisation.

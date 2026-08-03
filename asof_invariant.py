@@ -176,6 +176,17 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     # Incumbent arm OOF predictions -- the reference implementation every other council
     # arm is checked against. A stale copy would silently misalign the whole comparison.
     "experiments/arm_incumbent/predictions.parquet",
+    # ---- the generation-only chronological team OOF, added 2026-08-02 --------
+    # contract_baseline_suite_v12's team forecasts, one fold per season 2021-2026. From 2022 on
+    # these are GENUINELY FITTED artifacts -- the first real fitted output this project has
+    # produced under the corrected fit boundary -- so a stale copy would misstate a run rather
+    # than merely be old. The sidecars and fold receipts are swept in with them because a
+    # forecast whose provenance has drifted from it is worse than no provenance: the receipt
+    # would still look consistent on its own. `runtime_log.jsonl` is deliberately NOT matched:
+    # it is an append-only log of what happened, not a fitted artifact, and it changes on every
+    # resumed run by design.
+    "experiments/cbs_v12_team_oof/*.parquet",
+    "experiments/cbs_v12_team_oof/*.json",
     # ---- the CBS real inputs, added 2026-08-02 -------------------------------
     # Every artifact a real contract_baseline_suite run consumes. Until now the
     # scan reported "29/29 attested" while these were matched by NO pattern at

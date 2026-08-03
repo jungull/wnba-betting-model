@@ -122,6 +122,15 @@ REPOSITORY_CHECKS = [
     ("test_cbs_v12",               [sys.executable, "tests/test_cbs_v12.py"]),
     ("test_cbs_real_integration_v12", [sys.executable,
                                     "tests/test_cbs_real_integration_v12.py"]),
+    # ---- contract_baseline_suite_v13 -------------------------------------
+    # v12 certified the fit boundary but its player path failed closed: the inherited obligation
+    # ordering is team-blind and cannot name contract v4's 28 dual-team obligations.
+    # test_cbs_real_integration_v13 is the first check in this project that takes REAL player
+    # obligations all the way through a runner, and it is a STANDING check for the same reason
+    # v11's was: a green gate has to mean the real path runs, not that a fixture does.
+    ("test_cbs_v13",               [sys.executable, "tests/test_cbs_v13.py"]),
+    ("test_cbs_real_integration_v13", [sys.executable,
+                                    "tests/test_cbs_real_integration_v13.py"]),
     ("asof_manifest_scan",         [sys.executable, "asof_invariant.py", "--scan"]),
     ("forecast_chain",             [sys.executable, "-c",
                                     "import sys;from evalharness import verify_chain;"
