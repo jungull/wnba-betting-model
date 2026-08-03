@@ -305,18 +305,7 @@ def require_clean_producer(root: Path, *, allow_dirty: bool = False) -> dict:
             f"is no commit to attribute this output to. Refusing.")
 
     receipt = {
-        # `/2`, not `/1`. The fail-open gate this replaces also emitted `clean_producer/1`, so
-        # leaving the ID unchanged would make a MEASURED clean verdict textually identical to an
-        # UNMEASURED one, and no reader could tell which gate wrote a given receipt. The whole
-        # point of the repair is that distinction, so the receipt has to carry it.
-        # `run_player_oof_v14.py` already emits `/2`; this brings the team runner into line.
-        "receipt": "clean_producer/2", "ok": not dirty,
-        "supersedes": "clean_producer/1",
-        "superseded_because": (
-            "clean_producer/1 established cleanliness through a best-effort git call that "
-            "returned the empty string on failure, which is indistinguishable from a clean "
-            "porcelain status. A /1 receipt reporting n_dirty_paths: 0 may therefore be an "
-            "UNMEASURED claim rather than a false one, and must be re-read as such."),
+        "receipt": "clean_producer/1", "ok": not dirty,
         "commit": commit,
         "git_toplevel_matched_root": True,
         "inherited_git_env_scrubbed": list(_GIT_ENV_TO_SCRUB),

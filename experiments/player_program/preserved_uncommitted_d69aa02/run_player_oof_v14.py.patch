@@ -1,0 +1,125 @@
+--- /tmp/base_run_player_oof_v14.py	2026-08-03 16:38:42.889503400 -0400
++++ /c/Users/jgallagher/wnba-betting-model/.claude/worktrees/cbs-v2-gate-accounting/run_player_oof_v14.py	2026-08-03 11:34:43.398406700 -0400
+@@ -106,6 +106,7 @@
+ import json
+ import os
+ import platform
++import re
+ import shutil
+ import subprocess
+ import sys
+@@ -205,14 +206,55 @@
+     """The fan-in refused to publish an index over material it could not revalidate."""
+ 
+ 
++#: Git environment variables that, if inherited, silently redirect every git call in this module at
++#: a DIFFERENT repository than the one it was asked about. This is not hypothetical: a `pre-push`
++#: hook exports `GIT_DIR`, and this project's hook runs the whole Layer-A gate, so any producer gate
++#: executed from inside it measured the hook's repository rather than its own `--root`. Measured
++#: directly: with `GIT_DIR` set, `git -C <other-repo> status --porcelain` returns EMPTY and
++#: `git -C <other-repo> rev-parse HEAD` returns the HOOK's commit. A gate reading those would
++#: report `n_dirty_paths: 0, ok: True` over a tree it never looked at, and stamp the run with a
++#: foreign commit. Scrubbed rather than trusted.
++_GIT_ENV_TO_SCRUB = (
++    "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_NAMESPACE",
++    "GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_CEILING_DIRECTORIES",
++)
++
++_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
++
++
++def _git_env() -> dict:
++    env = dict(os.environ)
++    for k in _GIT_ENV_TO_SCRUB:
++        env.pop(k, None)
++    return env
++
++
+ def _git(root: Path, *args: str) -> str:
++    """Best-effort git, for fields whose absence is not a safety question."""
+     try:
+         return subprocess.run(["git", "-C", str(root), *args], capture_output=True,
+-                              text=True, encoding="utf-8").stdout.strip()
++                              text=True, encoding="utf-8", env=_git_env()).stdout.strip()
+     except Exception:
+         return ""
+ 
+ 
++def _git_checked(root: Path, *args: str) -> str:
++    """Git whose failure is a REFUSAL, not an empty string.
++
++    The producer gate's whole job is to establish a fact about the tree. A gate that cannot run
++    git must refuse, because absence of evidence of dirt is not evidence of cleanliness -- and the
++    unchecked form returns `""` for a failed call, which reads as "clean".
++    """
++    p = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
++                       encoding="utf-8", env=_git_env())
++    if p.returncode != 0:
++        raise DirtyProducer(
++            f"`git {' '.join(args)}` failed in {root} (exit {p.returncode}): "
++            f"{(p.stderr or '').strip()[:300]}. Refusing: a producer gate that cannot establish "
++            f"the tree state must not report it clean.")
++    return p.stdout.strip()
++
++
+ def _sha256(path: Path) -> str:
+     h = hashlib.sha256()
+     with path.open("rb") as fh:
+@@ -299,9 +341,30 @@
+     exists inside the tree and would read as dirt, which is precisely the confusion the team run's
+     retained generating checkout shows. Workers verify `require_producer_bytes` instead.
+     """
+-    dirty = [ln for ln in _git(root, "status", "--porcelain").splitlines() if ln.strip()]
+-    commit = _git(root, "rev-parse", "HEAD")
++    # PROVE we are measuring the tree we were asked about, before believing anything about it.
++    # With an inherited GIT_DIR every call below would silently describe another repository.
++    top = _git_checked(root, "rev-parse", "--show-toplevel")
++    if Path(top).resolve() != Path(root).resolve():
++        raise DirtyProducer(
++            f"the git call did not describe the tree this run was pointed at: --root is {root} "
++            f"but git resolved its top level to {top}. Refusing rather than reporting a "
++            f"cleanliness verdict measured somewhere else. (Inherited GIT_DIR/GIT_WORK_TREE are "
++            f"scrubbed, so this indicates --root is not a repository root.)")
++
++    dirty = [ln for ln in _git_checked(root, "status", "--porcelain").splitlines() if ln.strip()]
+     sources = producer_sources(root)
++    if dirty and not allow_dirty:
++        raise DirtyProducer(
++            f"the producing tree has {len(dirty)} dirty path(s) relative to "
++            f"{(_git(root, 'rev-parse', 'HEAD') or '(unresolved HEAD)')[:12]}, so the exact code "
++            f"that would generate this output is not reconstructible. Commit or stash first, or "
++            f"generate from a clean checkout of the exact commit. Examples: {dirty[:5]}")
++
++    commit = _git(root, "rev-parse", "HEAD")
++    if not dirty and not _SHA_RE.match(commit or ""):
++        raise DirtyProducer(
++            f"the tree reports clean but HEAD does not resolve to a commit ({commit!r}), so there "
++            f"is no commit to attribute this output to. Refusing.")
+     receipt = {
+         "receipt": "clean_producer/2", "ok": not dirty,
+         "role": "coordinator precondition, checked once before anything is created",
+@@ -325,6 +388,9 @@
+         "producer_source_sha256": sources,
+         "producer_source_set_digest": producer_digest(sources),
+         "measured_before_any_output_existed": True,
++        "git_toplevel_matched_root": True,
++        "inherited_git_env_scrubbed": list(_GIT_ENV_TO_SCRUB),
++        "git_failure_is_a_refusal_not_a_clean_verdict": True,
+         "why": ("a generation run whose producing tree is dirty yields artifacts nobody can "
+                 "reconstruct. cbs_v12_team_oof/1 recorded 97 dirty paths and generated anyway; "
+                 "this refuses."),
+@@ -334,12 +400,8 @@
+             "that is the run's product, not undeclared dirt, and it is why the per-worker "
+             "invariant is producer-byte identity rather than tree cleanliness."),
+     }
+-    if dirty and not allow_dirty:
+-        raise DirtyProducer(
+-            f"the producing tree has {len(dirty)} dirty path(s) relative to {commit[:12]}, so "
+-            f"the exact code that would generate this output is not reconstructible. Commit or "
+-            f"stash first, or generate from a clean checkout of the exact commit. Examples: "
+-            f"{dirty[:5]}")
++    # the dirty refusal already happened above, BEFORE this receipt was built, so that a refused
++    # run cannot leave a half-built clean-looking receipt behind either
+     if dirty:
+         receipt["dirty_override_used"] = True
+         receipt["not_reproducible"] = True

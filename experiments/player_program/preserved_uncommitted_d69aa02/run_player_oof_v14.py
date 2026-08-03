@@ -367,12 +367,6 @@ def require_clean_producer(root: Path, *, allow_dirty: bool = False) -> dict:
             f"is no commit to attribute this output to. Refusing.")
     receipt = {
         "receipt": "clean_producer/2", "ok": not dirty,
-        "supersedes": "clean_producer/1",
-        "superseded_because": (
-            "clean_producer/1 established cleanliness through a best-effort git call that "
-            "returned the empty string on failure, which is indistinguishable from a clean "
-            "porcelain status. A /1 receipt reporting n_dirty_paths: 0 may therefore be an "
-            "UNMEASURED claim rather than a false one, and must be re-read as such."),
         "role": "coordinator precondition, checked once before anything is created",
         "commit": commit,
         # The generating checkout, recorded BY THE RUN rather than transcribed into a handoff

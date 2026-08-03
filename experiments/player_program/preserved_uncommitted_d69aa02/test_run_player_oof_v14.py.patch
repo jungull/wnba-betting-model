@@ -1,0 +1,118 @@
+--- /tmp/base_test_run_player_oof_v14.py	2026-08-03 16:38:43.991689100 -0400
++++ /c/Users/jgallagher/wnba-betting-model/.claude/worktrees/cbs-v2-gate-accounting/tests/test_run_player_oof_v14.py	2026-08-03 11:40:09.134882100 -0400
+@@ -16,6 +16,7 @@
+   §7  attempts are immutable; carry-forward copies, revalidates, and never overwrites
+   §8  the fan-in is receipt-checked: a 0 exit code over substituted bytes is still refused
+   §9  the scope claim is stated at its actual width, and nothing is scored
++  §10 the producer gate is not fail-open under an inherited git environment
+ 
+ Season 2021 is the only season generated here: its training window is empty, so it fits nothing.
+ No score, accuracy, calibration, threshold, edge, return or profitability figure is computed
+@@ -29,6 +30,7 @@
+ from __future__ import annotations
+ 
+ import json
++import os
+ import shutil
+ import subprocess
+ import sys
+@@ -150,8 +152,29 @@
+           "mkdir still precedes the gate")
+ 
+ # Behavioural, against a genuinely dirty tree that is not this repository.
++#: EVERY git call this suite makes against a fixture goes through here, with the inherited git
++#: environment scrubbed. This is not hygiene, it is damage control learned the hard way: this suite
++#: runs inside the `pre-push` hook, which exports GIT_DIR, and `git init <path>` under an inherited
++#: GIT_DIR does not create the repository at `<path>` -- it REINITIALISES the repository GIT_DIR
++#: points at, and records `core.bare = true` in it, which breaks `git status` for the real checkout
++#: and every worktree. That happened once. It must not happen twice.
++def _git_fixture(*args, cwd=None):
++    return subprocess.run(["git", *args], capture_output=True, text=True,
++                          env=rp._git_env(), cwd=cwd)
++
++
++#: The canary. If a fixture git call ever escapes its sandbox again, this is what catches it.
++_REAL_CONFIG = Path(rp._git(ROOT, "rev-parse", "--git-common-dir") or ".") / "config"
++_REAL_CONFIG_BEFORE = _REAL_CONFIG.read_bytes() if _REAL_CONFIG.is_file() else None
++
+ _TG = Path(tempfile.mkdtemp(prefix="cbs_dirty_root_"))
+-subprocess.run(["git", "init", "-q", str(_TG)], capture_output=True, text=True)
++_git_fixture("init", "-q", str(_TG))
++check("2 creating the fixture repository did not touch the REAL repository's config",
++      _REAL_CONFIG.is_file() and _REAL_CONFIG.read_bytes() == _REAL_CONFIG_BEFORE,
++      f"{_REAL_CONFIG} changed -- a fixture git call escaped its sandbox")
++check("2 and this repository still has a work tree",
++      rp._git(ROOT, "rev-parse", "--is-inside-work-tree") == "true",
++      "core.bare may have been set on the real repository")
+ for _rel in sorted(set(rp.PRODUCER_SOURCES) | set(r2.PRODUCER_SOURCES)):
+     shutil.copy2(ROOT / _rel, _TG / _rel)
+ _TG_DIRTY = [ln for ln in rp._git(_TG, "status", "--porcelain").splitlines() if ln.strip()]
+@@ -538,6 +561,68 @@
+       not any(k in json.dumps(FOLD).lower()
+               for k in ("log_loss", "roc_auc", "brier", "profitability", "\"roi\"")))
+ 
++
++# ==========================================================================
++print("\n10. the producer gate is not fail-open under an inherited git environment")
++# ==========================================================================
++# Found by the pre-push hook, which runs this whole gate and therefore exports GIT_DIR into every
++# suite. With GIT_DIR inherited, `git -C <other-repo> status --porcelain` returns the EMPTY STRING
++# and `rev-parse HEAD` returns the HOOK's commit -- so a gate that swallowed git failures and read
++# "" as "no dirty lines" would certify a tree it never measured, under a foreign commit.
++check("10 the scrub list covers the variables git exports into hooks",
++      {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"} <= set(rp._GIT_ENV_TO_SCRUB)
++      and {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"} <= set(r2._GIT_ENV_TO_SCRUB))
++check("10 the scrubbed env really removes them",
++      not any(k in rp._git_env() for k in rp._GIT_ENV_TO_SCRUB))
++
++# reproduce the exact conditions: point git at THIS repository while asking about the fixture.
++# --absolute-git-dir is used rather than ROOT/".git" because in a worktree that path is a FILE.
++_REAL_GITDIR = rp._git(ROOT, "rev-parse", "--absolute-git-dir")
++check("10 the fixture's git dir was resolvable for the reproduction",
++      bool(_REAL_GITDIR), _REAL_GITDIR)
++_saved = {k: os.environ.get(k) for k in ("GIT_DIR", "GIT_WORK_TREE")}
++os.environ["GIT_DIR"] = _REAL_GITDIR
++try:
++    _raw = subprocess.run(["git", "-C", str(_TG), "rev-parse", "HEAD"],
++                          capture_output=True, text=True)
++    check("10 the raw, unscrubbed call is the one that lies -- it answers for the WRONG repo",
++          _raw.returncode == 0 and _raw.stdout.strip() == rp._git(ROOT, "rev-parse", "HEAD"),
++          f"unscrubbed rev-parse in the fixture returned {_raw.stdout.strip()[:12]!r}; "
++          f"if this no longer reproduces, the environment changed")
++    # both runners must still measure the FIXTURE, and so must still refuse it
++    refuses("10 the player gate still refuses the dirty fixture despite GIT_DIR",
++            lambda: rp.require_clean_producer(_TG),
++            contains="not reconstructible", exc=rp.DirtyProducer)
++    refuses("10 and the team gate does too",
++            lambda: r2.require_clean_producer(_TG),
++            contains="not reconstructible", exc=r2.DirtyProducer)
++    _under_hook = rp.require_clean_producer(ROOT, allow_dirty=True)
++    check("10 and this repository is still measured as ITSELF under GIT_DIR",
++          Path(_under_hook["producer_checkout_path"]).resolve() == ROOT
++          and _under_hook["n_dirty_paths"] == len(_dirty))
++finally:
++    for _k, _v in _saved.items():
++        if _v is None:
++            os.environ.pop(_k, None)
++        else:
++            os.environ[_k] = _v
++
++# a root that is not a repository top level is refused rather than measured elsewhere
++_NOTREPO = Path(tempfile.mkdtemp(prefix="cbs_notrepo_"))
++for _rel in sorted(set(rp.PRODUCER_SOURCES) | set(r2.PRODUCER_SOURCES)):
++    shutil.copy2(ROOT / _rel, _NOTREPO / _rel)
++refuses("10 a --root that is not a git repository is REFUSED, not assumed clean",
++        lambda: rp.require_clean_producer(_NOTREPO), exc=rp.DirtyProducer)
++refuses("10 a subdirectory of a repository is REFUSED as not its top level",
++        lambda: rp.require_clean_producer(ROOT / "tests"), exc=rp.DirtyProducer)
++check("10 a failed git call is a refusal, not an empty string that reads as clean",
++      "must not report it clean" in (rp._git_checked.__doc__ or "")
++      or "must not report it clean" in SRC)
++check("10 the receipt records the three guards",
++      REC["git_toplevel_matched_root"] is True
++      and REC["git_failure_is_a_refusal_not_a_clean_verdict"] is True
++      and "GIT_DIR" in REC["inherited_git_env_scrubbed"])
++
+ print(f"\n    temporary fixtures left in place under {TMP.parent} (nothing deleted)")
+ print(f"    total runtime {time.time() - T_START:.0f}s")
+ print(f"\n{PASSED}/{PASSED + len(FAILED)} tests passed")
