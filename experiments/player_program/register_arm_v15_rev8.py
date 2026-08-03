@@ -24,7 +24,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 ARM_REGISTRY = HERE / "arm_registry.jsonl"
-RECORD_ID = "cbs_v15_player_oof_v5__rev4"
+RECORD_ID = "cbs_v15_player_oof_v5__rev8"
 
 #: Every file whose bytes can change what the arm produces.
 IMPLEMENTATION = (
@@ -83,14 +83,14 @@ def config_hash_of(frozen: dict) -> str:
 def build_frozen() -> dict:
     return {
         "arm_id": "cbs_v15_player_oof_v5",
-        "arm_revision": 4,
+        "arm_revision": 8,
         "revision_note": ("/1 is a DESIGN registration. /2 was execution-bound but never executed: the "
                           "first real run refused because the inherited runner forwards cbs_v7's "
                           "SHARED registry path by default, so v15 looked for its own record in a "
                           "file the player program does not write. The gate caught it. Fixing it "
                           "changed cbs_v15.py's bytes, which invalidates /2 by construction, so /3 "
                           "is registered rather than /2 amended."),
-        "supersedes_revision": 3,
+        "supersedes_revision": 7,
         "row_universe": "prediction_contract_v5",
         "row_universe_changed_vs_v14": True,
 
@@ -109,10 +109,12 @@ def build_frozen() -> dict:
             },
             "runner_fork": {
                 "id": "cbs_player_runner/15",
-                "forked_from": "cbs_player_runner_v14.run_player_fold",
+                "forked_from": "cbs_v14._run",
+                "inner_core_unforked": "cbs_player_runner_v14.run_player_fold",
                 "generated_at_import_from_inspect_getsource": True,
-                "n_seams": 1, "n_changed_lines": 2,
-                "seam": "the identity-binding call, rebound to /2",
+                "n_seams": 1, "n_changed_lines": 4,
+                "seam": "the outer identity-binding call, rebound to the v15 registration",
+                "namespace_overrides": ["require_registered_identity_v15", "ARM_ID"],
             },
             "estimator_objects_are_identical_not_copied": True,
             "n_estimator_objects_asserted_identical": 14,
@@ -218,7 +220,7 @@ def main() -> int:
         "kind": "arm",
         "experiment_id": RECORD_ID,
         "arm_id": "cbs_v15_player_oof_v5",
-        "arm_revision": 4,
+        "arm_revision": 8,
         "registered_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "registered_before_execution": True,
         "extra": {"frozen_config": frozen},

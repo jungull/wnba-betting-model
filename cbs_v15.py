@@ -34,13 +34,13 @@ from cbs_v7 import recompute_registered_config_hash as _recompute_for
 REPO = Path(__file__).resolve().parent
 
 ARM_ID = "cbs_v15_player_oof_v5"
-ARM_REVISION = 4
+ARM_REVISION = 8
 ROW_UNIVERSE = "prediction_contract_v5"
 SUPERSEDES = None
 INHERITS_ESTIMATOR_FROM = _v14.ARM_ID
 
 ARM_REGISTRY = REPO / "experiments" / "player_program" / "arm_registry.jsonl"
-REGISTRY_RECORD_ID = "cbs_v15_player_oof_v5__rev4"
+REGISTRY_RECORD_ID = "cbs_v15_player_oof_v5__rev8"
 
 HISTORY_POLICY = "tier_a_target_fit_with_observed_history/1"
 
@@ -182,7 +182,11 @@ def require_registered_identity_v15(config_hash: str, snapshot_hash: str,
     if not binding["ok"]:
         raise _v14.FrameBindingError("; ".join(binding["problems"]))
 
+    # `recomputed_by` is REQUIRED, not decorative: cbs_v14._run marks any required
+    # receipt whose recomputed_by is not this arm as INHERITED, and refuses. A green
+    # receipt describing another arm's identity does not count as this arm's evidence.
     return {"receipt": "identity_binding/8", "ok": True, "arm_id": ARM_ID,
+            "recomputed_by": ARM_ID,
             "arm_revision": ARM_REVISION, "row_universe": ROW_UNIVERSE,
             "registry_read": str(ARM_REGISTRY),
             "callers_registry_path_ignored": (

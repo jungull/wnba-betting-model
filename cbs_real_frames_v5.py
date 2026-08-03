@@ -62,10 +62,14 @@ V5_CONTRACT = "experiments/prediction_contract_v5/player_game_enriched.parquet"
 RealFrameError = rf3.RealFrameError
 
 #: v5 columns carried through the frame so the runner and the receipts can see the tier policy.
+#: Carried through the frame so the runner and the receipts can see the tier policy. TIMESTAMP
+#: columns are deliberately EXCLUDED: they reach the provenance sidecar, which is JSON-digested,
+#: and a pandas Timestamp is not JSON serialisable — the first real run failed on exactly that.
+#: The timestamps stay in the contract, where a reader can join them back by row_uid.
 V5_CARRY = ("universe_tier", "evaluation_tier", "fit_eligible", "is_fallback",
             "candidate_source", "team_assignment_source", "team_assignment_confidence",
-            "roster_evidence_regime", "candidate_evidence_time", "cutoff_source",
-            "team_assignment_ambiguous", "history_admissible_from",
+            "roster_evidence_regime", "cutoff_source",
+            "team_assignment_ambiguous",
             "history_eligible_after_event", "n_prior_candidate_obligations",
             "n_prior_appearances", "n_prior_team_games", "era")
 
