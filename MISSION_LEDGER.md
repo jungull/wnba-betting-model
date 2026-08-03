@@ -1525,3 +1525,67 @@ Real fitted PLAYER output, chronological player OOF, scoring, accuracy or covera
 inspection and profitability evaluation all remain unperformed and unauthorised. After v13 passes
 review the next step is generation-only chronological player OOF with bounded target fan-out,
 followed by one receipt-checked fan-in. Scoring remains a separate later authorisation.
+
+
+---
+
+## `contract_baseline_suite_v14` and the reproducible team run
+
+**Registered 2026-08-03.** Registry 94 → 96, append-only. `cbs_generator.py`, `cbs_v8.py`,
+`cbs_v12.py`, `cbs_v13.py`, `cbs_obligation_order.py`, `cbs_player_runner_v13.py` and every
+artifact under `experiments/prediction_contract_v4/` are byte-untouched; no globals were rebound.
+Nothing deleted.
+
+### The count, defined by cutoff
+
+v13 measured a defect it was not permitted to repair; the supervisor ruled that measuring was not
+enough, because it changes an actual decision. `cbs_player_history/14` defines
+`n_prior_candidate_games` as the number of candidate OBLIGATIONS in the same `(player_id, season)`
+with a STRICTLY EARLIER `forecast_cutoff` — not distinct game ids, not availability-gated. It
+replaces exactly two of the inherited history frame's seven columns and proves the confinement by
+re-running the inherited function and diffing column by column.
+
+`cbs_player_runner/14` widens v13's fork from two seams to three, still generated from
+`inspect.getsource` and still parity-checked against the live inherited source.
+`cbs_obligation_order/3` makes true the two claims v13's `/2` made about itself.
+
+### The finding: 41 of the 55 were invisible
+
+The 55 corrected rows are one per equal-cutoff group. **14** are the dual-team collision the
+inherited order refused. The other **41** are a phenomenon nothing had ever objected to: one
+player, one season, one cutoff, TWO DIFFERENT GAMES — a trade where both clubs play the same date,
+so the date-only cutoff gives both obligations one cutoff. Differing `game_id` satisfied the
+inherited tie key, so the positional prefix miscounted them silently from v5 onward. 82 rows,
+2021-2025. **One of the two corrected `p_active` fallback-band decisions comes from each kind.**
+
+### The real player path
+
+The real 2021 fold traverses the complete boundary: four targets × 4,850 obligations, exact
+obligation completeness, both real siblings now receiving the SAME prior count, all eight
+v14-owned receipts green, **zero estimator calls** by runtime sentinel. Seasons 2022-2026 were not
+run: the ruling forbids a real fitted player fold before review. **No real fitted player output
+exists.**
+
+### The team run
+
+`/1`'s output survived independent review; its production did not — a 97-path dirty tree, no
+producing source bytes bound, and a fail-open resume. `cbs_v12_team_oof/2` refuses a dirty
+producer tree, digests all 19 producing sources before any frame is built, validates every
+artifact byte and identity on resume with the strict validators re-run on the artifacts as read
+back, enumerates twelve failure modes, and never writes into an existing attempt. `/1` is retained
+intact and labelled provisional.
+
+The scope claim is narrowed to what is defensible: no target row's own outcome informed its
+forecast; no forecast was scored against its outcome; no evaluation metric was calculated. The
+wrapper-only AST scan is labelled as covering the wrapper only.
+
+### Gate
+
+**Layer A A23, producer tree: PASS 34/34, exit 0**; scan 68/68 attested. Layer B not run and not
+claimed; the latest genuine Layer-B result remains **B5**.
+
+### Status
+
+Real fitted PLAYER output beyond the 2021 zero-fit smoke, chronological player OOF, scoring,
+accuracy or coverage-quality inspection and profitability evaluation all remain unperformed and
+unauthorised.

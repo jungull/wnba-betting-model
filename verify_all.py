@@ -131,6 +131,17 @@ REPOSITORY_CHECKS = [
     ("test_cbs_v13",               [sys.executable, "tests/test_cbs_v13.py"]),
     ("test_cbs_real_integration_v13", [sys.executable,
                                     "tests/test_cbs_real_integration_v13.py"]),
+    # ---- contract_baseline_suite_v14 -------------------------------------
+    # v13 corrected the obligation ORDER; running it showed the prior-obligation COUNT was a
+    # positional prefix, which changed two real fallback-band decisions. test_cbs_v14 proves the
+    # corrected count and the three-line fork; test_cbs_real_integration_v14 proves it on the
+    # real 2021 obligations. test_run_team_oof_v12_2 covers the corrected generation runner:
+    # a dirty producer tree is refused outright, and a resume validates every artifact byte and
+    # identity instead of only the inputs.
+    ("test_cbs_v14",               [sys.executable, "tests/test_cbs_v14.py"]),
+    ("test_cbs_real_integration_v14", [sys.executable,
+                                    "tests/test_cbs_real_integration_v14.py"]),
+    ("test_run_team_oof_v12_2",    [sys.executable, "tests/test_run_team_oof_v12_2.py"]),
     ("asof_manifest_scan",         [sys.executable, "asof_invariant.py", "--scan"]),
     ("forecast_chain",             [sys.executable, "-c",
                                     "import sys;from evalharness import verify_chain;"
