@@ -151,7 +151,50 @@ unified patches against `d69aa02`, and `PRESERVATION_MANIFEST.json` with before/
 player program **has not modified them and has not committed them to any team branch.** This is
 team-thread material; disposition is the team thread's. Flagged as **S2**. *(measured)*
 
-### P-D2 · played player-games that are not obligations — **RESTATED at its true size; v5 specified**
+### P-D2 · played player-games that are not obligations — **v5 Stage 1 BUILT; 977 → 210**
+
+> **Resolution 2026-08-03, appended.** `prediction_contract_v5` Stage 1 is implemented, validated
+> and committed at `ac9958f`. `experiments/prediction_contract_v5/`.
+>
+> | | v4 | v5 |
+> |---|---|---|
+> | universe rows | 35,627 | **44,851** |
+> | Tier A (verified obligation) | 35,627 | 35,629 |
+> | Tier B (fallback candidate) | — | 9,222 |
+> | v4 obligations lost | — | **0** (superset asserted) |
+> | **appearing players missed** | **977** | **210** (−78.5%) |
+>
+> Residual 210: 94 mid-season, 92 opener, 24 early; **86 of them in 2021**, which has no prior
+> season for S2 and the thinnest transaction resolution.
+>
+> **The false-obligation probe the amendment required is the most useful result.** Sole-source
+> rows and how many appeared: **S_TX 1,258 → 434 (34.5%)**; **S2 5,053 → 44 (0.87%)**. S2 as a
+> sole source is **99.1% non-appearing, a 115:1 ratio**. Its value could never have been
+> established by counting opening-night recoveries — exactly the amendment's point. Retained as
+> Tier B, reported separately, flagged `weak`, and structurally barred from Tier A.
+>
+> **Two defects found by running it**, both recorded rather than quietly fixed:
+>
+> 1. An earlier spec draft required `n_prior_appearances ≤ n_prior_candidate_obligations` as an
+>    invariant. It is not one — appearances count games *played*, obligations count forecasts
+>    *owed*, and 8,269 rows demonstrated the difference. Enforcing it would have made the contract
+>    refuse to describe the gap it exists to close. Now a reported per-row measure.
+> 2. v4 owes nothing for a season opener, so a game where **both** clubs are playing their first
+>    game has no v4 row and therefore **no cutoff**. The generator skipped those games entirely,
+>    silently discarding **728 of the 749** opener rows v5 exists to recover — the gap had erased
+>    its own timestamp. Games absent from v4 now take v4's own `POLICY_DATE_ONLY` fallback, and
+>    every row declares `cutoff_source`. 2,345 rows carry a derived cutoff.
+>
+> Tests: `tests/test_prediction_contract_v5.py`, **44/44**, including a behavioural test of the
+> postgame prohibition — a fixture player who appears only in the target game is asserted *not* to
+> be a candidate for it and *is* recorded as a candidate-universe miss.
+>
+> **P-D3 is resolved by the same commit**: `n_prior_games` is retired, replaced by
+> `n_prior_candidate_obligations`, `n_prior_appearances`, `n_prior_team_games`.
+>
+> The original entries follow, retained unchanged.
+
+### P-D2 (original) · 51 → 977 played player-games are not obligations
 
 > **Update 2026-08-03.** The figure is **977, not 51.** The 51 were only the rows visible where
 > the registered minutes universe overlapped the contract. Measured against
@@ -338,15 +381,15 @@ split, player universe, or coverage validation fails.
 |---|---|---|
 | 1 | `core.bare=false` verified | **PASS** — all seven checkouts resolve |
 | 2 | producer gate fails closed | **PASS** — 61/61, `clean_producer/2` at `ef0d557` |
-| 3 | new or amended player universe passes | **BLOCKED** — v5 specified, not implemented |
-| 4 | obligation coverage reconciles | **BLOCKED** — 1.000 inside v4's universe, but 977 played rows sit outside it |
-| 5 | cold-start and fallback semantics reconcile | **PARTIAL** — correct on fitted folds; P-D3 open on the degenerate fold |
-| 6 | `n_prior_games` semantics corrected | **BLOCKED** — specified in v5 §4, not implemented |
+| 3 | new or amended player universe passes | **PASS** — v5 Stage 1 built and validated, 44/44 tests, superset over v4 asserted |
+| 4 | obligation coverage reconciles | **PASS with a declared residue** — misses 977 → 210, enumerated by cause, season and tier; the residue is *audited*, never zero and never unknown |
+| 5 | cold-start and fallback semantics reconcile | **PASS** — `is_cold_start` derives from prior appearances; Tier A/B carry `is_fallback`, `team_assignment_confidence` and evidence times |
+| 6 | `n_prior_games` semantics corrected | **PASS** — retired; three named fields, never conditioned on fold or target |
 | 7 | snapshot and model identities valid | **PASS** — all receipts pass, no failed or inherited |
-| 8 | real OOF artifact reproducible | **BLOCKED** — never generated |
+| 8 | real OOF artifact reproducible | **BLOCKED** — Stage 2 not authorised; never generated |
 
-**Three of eight clear. Accuracy interpretation remains unauthorised**, and the program stops here
-as instructed. This is consistent with the standing escalation in `MISSION_LEDGER.md`, in which the
+**Seven of eight clear. Only the out-of-fold artifact remains, and it is Stage 2.** Accuracy
+interpretation remains unauthorised and the program stops here as instructed. This is consistent with the standing escalation in `MISSION_LEDGER.md`, in which the
 supervisor declined to self-authorize the first outcome-comparing step under reduced independence.
 
 ---
