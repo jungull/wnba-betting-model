@@ -187,10 +187,14 @@ FITTED_ARTIFACT_GLOBS: tuple[str, ...] = (
     # resumed run by design.
     "experiments/cbs_v12_team_oof/*.parquet",
     "experiments/cbs_v12_team_oof/*.json",
-    # The /2 attempt directories are added in the ARTIFACT commit, alongside the artifacts
-    # themselves. A glob that matches no file is reported GONE by this scan, and rightly so, so
-    # declaring the pattern before the run exists would turn the code commit's own gate red on
-    # an artifact nobody has produced yet.
+    # The /2 attempt directories, added in the ARTIFACT commit alongside the artifacts
+    # themselves -- a glob that matches no file is reported GONE by this scan, and rightly so,
+    # so the pattern could not be declared before the run existed. /1 above is RETAINED and
+    # still attested: it is provisional, not withdrawn. Attempts are immutable, so every attempt
+    # that exists is attested rather than only the newest -- an attempt nobody can verify is
+    # worse than an attempt nobody reuses.
+    "experiments/cbs_v12_team_oof_v2/attempt_*/*.parquet",
+    "experiments/cbs_v12_team_oof_v2/attempt_*/*.json",
     # ---- the CBS real inputs, added 2026-08-02 -------------------------------
     # Every artifact a real contract_baseline_suite run consumes. Until now the
     # scan reported "29/29 attested" while these were matched by NO pattern at
