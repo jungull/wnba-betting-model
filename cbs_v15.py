@@ -8,10 +8,10 @@ the population being predicted, which is why this is a new arm rather than an am
 HOW THE IDENTITY BINDS, AND WHY IT IS NOT CIRCULAR
 ---------------------------------------------------
 `cbs_v14` hard-codes its config digest and recomputes it from the registry to check. That cannot
-work here: `/2`'s frozen config must cover the bytes of the implementation, and this file is part
+work here: the execution-bound revision's frozen config must cover the bytes of the implementation, and this file is part
 of the implementation, so a hard-coded constant would have to hash itself.
 
-So the binding is inverted and made stronger. `/2`'s frozen config declares a SHA-256 for every
+So the binding is inverted and made stronger. The registration declares a SHA-256 for every
 implementation file **except this one's own config value**, and:
 
   * `REGISTERED_CONFIG_HASH` is recomputed from the registry at import — never transcribed;
@@ -34,13 +34,13 @@ from cbs_v7 import recompute_registered_config_hash as _recompute_for
 REPO = Path(__file__).resolve().parent
 
 ARM_ID = "cbs_v15_player_oof_v5"
-ARM_REVISION = 2
+ARM_REVISION = 4
 ROW_UNIVERSE = "prediction_contract_v5"
 SUPERSEDES = None
 INHERITS_ESTIMATOR_FROM = _v14.ARM_ID
 
 ARM_REGISTRY = REPO / "experiments" / "player_program" / "arm_registry.jsonl"
-REGISTRY_RECORD_ID = "cbs_v15_player_oof_v5__rev2"
+REGISTRY_RECORD_ID = "cbs_v15_player_oof_v5__rev4"
 
 HISTORY_POLICY = "tier_a_target_fit_with_observed_history/1"
 
@@ -79,8 +79,8 @@ def registered_record() -> dict:
             rec = obj
     if rec is None:
         raise AdapterBoundaryError(
-            f"no registry record for {REGISTRY_RECORD_ID!r}. Register "
-            f"cbs_v15_player_oof_v5/2 BEFORE executing: it must carry the implementation hashes.")
+            f"no registry record for {REGISTRY_RECORD_ID!r}. Register revision "
+            f"{ARM_REVISION} BEFORE executing: it must carry the implementation hashes.")
     return rec
 
 
@@ -90,12 +90,13 @@ def recompute_registered_config_hash(registry_path: Path | str = ARM_REGISTRY,
 
 
 def verify_implementation_bytes(root: Path | str = REPO) -> dict:
-    """Every declared implementation file must hash, from disk, to what `/2` registered."""
+    """Every declared implementation file must hash, from disk, to what the registration says."""
     root = Path(root)
     frozen = registered_record()["extra"]["frozen_config"]
     declared = frozen.get("implementation_sha256") or {}
     if not declared:
-        raise AdapterBoundaryError("the /2 record declares no implementation_sha256")
+        raise AdapterBoundaryError(
+            f"the {REGISTRY_RECORD_ID} record declares no implementation_sha256")
     problems, checked = [], {}
     for rel, want in sorted(declared.items()):
         p = root / rel
@@ -108,7 +109,7 @@ def verify_implementation_bytes(root: Path | str = REPO) -> dict:
             problems.append(f"{rel}: disk {got[:16]}… != registered {want[:16]}…")
     if problems:
         raise AdapterBoundaryError(
-            "the implementation on disk is not the one cbs_v15_player_oof_v5/2 registers: "
+            f"the implementation on disk is not the one {REGISTRY_RECORD_ID} registers: "
             + "; ".join(problems))
     return {"receipt": "implementation_bytes/1", "ok": True,
             "n_files": len(declared), "sha256": checked,
@@ -119,7 +120,8 @@ def verify_implementation_bytes(root: Path | str = REPO) -> dict:
 try:
     REGISTERED_CONFIG_HASH = recompute_registered_config_hash()
 except AdapterBoundaryError:
-    #: `/2` is not registered yet. Importing is allowed so the modules can be written and tested;
+    #: The execution-bound revision is not registered yet. Importing is allowed so the modules
+    #: can be written and tested;
     #: EXECUTION is not, and `require_registered_identity_v15` refuses below.
     REGISTERED_CONFIG_HASH = None
 
@@ -128,15 +130,24 @@ def require_registered_identity_v15(config_hash: str, snapshot_hash: str,
                                     snapshot_manifest: dict | None, *,
                                     frames: dict, synthetic: bool,
                                     artifact_root: Path | str | None = None,
-                                    registry_path: Path | str = ARM_REGISTRY) -> dict:
+                                    registry_path: Path | str | None = None) -> dict:
     """v14's identity clauses, clause for clause, bound to v15's registration.
 
     Adds one clause v14 has no need of: the implementation bytes on disk must be the ones the
     registration describes.
+
+    `registry_path` is accepted for signature compatibility with the inherited runner and is then
+    **ignored**. This is deliberate. The inherited `run_player_fold` defaults it to `cbs_v7`'s
+    `REGISTRY_PATH` — the SHARED team registry — and forwards that default down, so honouring the
+    caller would send v15 looking for its own record in a file the player program does not write.
+    The first real run did exactly that and the gate refused, which is the behaviour working.
+    An arm's registration lives where the arm says it lives, not where its caller guesses.
     """
+    if registry_path is not None and Path(registry_path).resolve() != ARM_REGISTRY.resolve():
+        _ignored_registry = str(registry_path)                       # noqa: F841 - recorded below
     if not synthetic:
         impl = verify_implementation_bytes()
-        expected_cfg = recompute_registered_config_hash(registry_path)
+        expected_cfg = recompute_registered_config_hash(ARM_REGISTRY)
     else:
         impl, expected_cfg = None, SYNTHETIC_CONFIG_HASH
 
@@ -173,6 +184,12 @@ def require_registered_identity_v15(config_hash: str, snapshot_hash: str,
 
     return {"receipt": "identity_binding/8", "ok": True, "arm_id": ARM_ID,
             "arm_revision": ARM_REVISION, "row_universe": ROW_UNIVERSE,
+            "registry_read": str(ARM_REGISTRY),
+            "callers_registry_path_ignored": (
+                str(registry_path) if registry_path is not None
+                and Path(registry_path).resolve() != ARM_REGISTRY.resolve() else None),
+            "why_ignored": ("the inherited runner forwards cbs_v7's SHARED registry path by "
+                            "default; an arm's registration lives where the arm says it lives"),
             "inherits_estimator_from": INHERITS_ESTIMATOR_FROM,
             "history_policy": HISTORY_POLICY,
             "synthetic": bool(synthetic), "config_hash": expected_cfg,

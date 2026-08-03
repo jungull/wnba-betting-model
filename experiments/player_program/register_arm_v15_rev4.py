@@ -24,7 +24,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 ARM_REGISTRY = HERE / "arm_registry.jsonl"
-RECORD_ID = "cbs_v15_player_oof_v5__rev2"
+RECORD_ID = "cbs_v15_player_oof_v5__rev4"
 
 #: Every file whose bytes can change what the arm produces.
 IMPLEMENTATION = (
@@ -83,10 +83,14 @@ def config_hash_of(frozen: dict) -> str:
 def build_frozen() -> dict:
     return {
         "arm_id": "cbs_v15_player_oof_v5",
-        "arm_revision": 2,
-        "revision_note": ("/1 is a DESIGN registration written before these files existed and is "
-                          "labelled so by its own erratum. /2 is execution-bound."),
-        "supersedes_revision": 1,
+        "arm_revision": 4,
+        "revision_note": ("/1 is a DESIGN registration. /2 was execution-bound but never executed: the "
+                          "first real run refused because the inherited runner forwards cbs_v7's "
+                          "SHARED registry path by default, so v15 looked for its own record in a "
+                          "file the player program does not write. The gate caught it. Fixing it "
+                          "changed cbs_v15.py's bytes, which invalidates /2 by construction, so /3 "
+                          "is registered rather than /2 amended."),
+        "supersedes_revision": 3,
         "row_universe": "prediction_contract_v5",
         "row_universe_changed_vs_v14": True,
 
@@ -214,7 +218,7 @@ def main() -> int:
         "kind": "arm",
         "experiment_id": RECORD_ID,
         "arm_id": "cbs_v15_player_oof_v5",
-        "arm_revision": 2,
+        "arm_revision": 4,
         "registered_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "registered_before_execution": True,
         "extra": {"frozen_config": frozen},
