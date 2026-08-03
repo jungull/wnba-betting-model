@@ -63,7 +63,7 @@ COLUMN_DICTIONARY = {
     "candidate_observed_time": "when this repository observed the evidence",
     "roster_evidence_regime": "captured_asof | retrospective_effective_date | weak_prior_season",
     "src_asof_roster": "captured pre-cutoff roster evidence ONLY; NULL when none exists",
-    "src_asof_roster_is_null_because": "the reason, in words, whenever it is NULL",
+    "roster_asof_absent_reason": "the reason, in words, whenever it is NULL",
     "fit_eligible": "may enter coefficient fitting. True for Tier A only, per tier_a_fit_only/1",
     "is_fallback": "S2-only rows: fallback/sensitivity prediction only",
     "is_cold_start": "no prior appearance this season; derived from n_prior_appearances",

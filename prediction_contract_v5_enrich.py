@@ -165,7 +165,7 @@ def enrich(cand: pd.DataFrame, mp: pd.DataFrame, v4: pd.DataFrame) -> tuple[pd.D
     # ---- 3. roster provenance, honestly ------------------------------------
     tier_a_time = df["candidate_published_time"]        # S1/S3 only; null otherwise, by Stage 1
     df["src_asof_roster"] = tier_a_time
-    df["src_asof_roster_is_null_because"] = np.where(
+    df["roster_asof_absent_reason"] = np.where(
         tier_a_time.notna(), None,
         "no captured pre-cutoff roster evidence; this row rests on a retrospective effective "
         "date or on prior-season affiliation, and writing either into an as-of column would "

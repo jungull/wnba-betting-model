@@ -1,0 +1,249 @@
+{
+  "schema": "v15_module_tests/1",
+  "n_checks": 31,
+  "n_passed": 31,
+  "all_passed": true,
+  "scope": "object identity, source diffs, tier rules, refusals and row counts; nothing is scored",
+  "frame_fork": {
+    "adapter": "cbs_real_frames/5",
+    "forked_from": "cbs_real_frames/3.build_player_frame",
+    "generated_at_import_from_inspect_getsource": true,
+    "n_seams": 5,
+    "seams": {
+      "input": {
+        "reason": "v5 schema: read the enriched v5 contract"
+      },
+      "carried_columns": {
+        "reason": "tier policy: carry tier and evidence columns"
+      },
+      "train_filter": {
+        "reason": "tier policy: the training frame is Tier A only"
+      },
+      "universe_columns": {
+        "reason": "contract identity: the universe carries tier columns"
+      },
+      "scoreability": {
+        "reason": "v5 schema: p_active scoreable on Tier A or on an appearance"
+      }
+    },
+    "seams_applied": {
+      "input": {
+        "removed_lines": 1,
+        "added_lines": 1
+      },
+      "carried_columns": {
+        "removed_lines": 2,
+        "added_lines": 3
+      },
+      "train_filter": {
+        "removed_lines": 1,
+        "added_lines": 2
+      },
+      "universe_columns": {
+        "removed_lines": 1,
+        "added_lines": 2
+      },
+      "scoreability": {
+        "removed_lines": 2,
+        "added_lines": 3
+      }
+    },
+    "n_changed_lines": 16,
+    "changed_lines": [
+      "-def build_player_frame(season: int, root: Path | str = REPO_ROOT, *,",
+      "+def build_player_frame_v5(season: int, root: Path | str = REPO_ROOT, *,",
+      "-    pg, tg, mp, mt = load_inputs(root, require_attested=require_attested)",
+      "+    pg, tg, mp, mt = load_inputs_v5(root, require_attested=require_attested)",
+      "-         if c in pg.columns]",
+      "+         if c in pg.columns] + \\",
+      "+        [c for c in V5_CARRY if c in pg.columns]",
+      "-    train = frame[frame[\"season\"] < season].reset_index(drop=True)",
+      "+    train = frame[(frame[\"season\"] < season)",
+      "+                  & frame[\"fit_eligible\"].astype(bool)].reset_index(drop=True)",
+      "-    universe = src[list(PLAYER_UNIVERSE_IDENTITY) + [\"appeared\"]].copy()",
+      "+    universe = src[list(PLAYER_UNIVERSE_IDENTITY) + [\"appeared\"]",
+      "+                   + [c for c in V5_UNIVERSE_CARRY if c in src.columns]].copy()",
+      "-                      else pd.Series(True, index=universe.index))",
+      "+                      else ((universe[\"universe_tier\"] == \"A\")",
+      "+                            | universe[\"appeared\"].astype(bool)))"
+    ],
+    "unchanged": "every estimator, mask, tuning rule, calibration, availability gate, conditional history and grouping rule; none is inside the diff",
+    "name_resolution": "the fork executes in cbs_real_frames_v3's own namespace, so every name it does not redefine is the SAME OBJECT /3 uses"
+  },
+  "runner_fork": {
+    "runner": "cbs_player_runner/15",
+    "forked_from": "cbs_player_runner_v14.run_player_fold",
+    "generated_at_import_from_inspect_getsource": true,
+    "n_permitted_seams": 1,
+    "seam": {
+      "old": "identity = require_registered_identity(",
+      "new": "identity = require_registered_identity_v15(",
+      "reason": "contract identity: bind to cbs_v15_player_oof_v5/2 instead of v14's registration"
+    },
+    "n_changed_lines": 2,
+    "n_changed_lines_expected": 2,
+    "changed_lines": [
+      "-    identity = require_registered_identity(",
+      "+    identity = require_registered_identity_v15("
+    ],
+    "unchanged": "every estimator, standardizer, mask, tuning rule, lambda and alpha selection, calibration, dispersion, availability gate, conditional history and grouping rule \u2014 none is inside the diff",
+    "name_resolution": "executes in cbs_player_runner_v14's namespace, so every name it does not redefine is the SAME OBJECT /14 uses"
+  },
+  "checks": [
+    {
+      "check": "generated at import from inspect.getsource",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "exactly five seams",
+      "ok": true,
+      "detail": "5"
+    },
+    {
+      "check": "16 changed lines (5 seams + the rename)",
+      "ok": true,
+      "detail": "16"
+    },
+    {
+      "check": "no estimator or feature formula appears anywhere in the diff",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "check": "every seam has an authorised reason",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "exactly one permitted seam",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "exactly two changed lines (one removed, one added)",
+      "ok": true,
+      "detail": "2"
+    },
+    {
+      "check": "no estimator formula in the runner diff",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "check": "the seam is the identity binding and nothing else",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "every estimator name resolves to v14's own object",
+      "ok": true,
+      "detail": "differ: []"
+    },
+    {
+      "check": "a meaningful number were checked",
+      "ok": true,
+      "detail": "14 objects"
+    },
+    {
+      "check": "v15 inherits the fit boundary objects from v14",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "v15 declares it inherits the estimator from v14",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "v15 is a DIFFERENT arm id",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "v15 declares a different row universe",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "a wrong config hash is refused",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "execution is refused while /2 is unregistered",
+      "ok": true,
+      "detail": "REGISTERED_CONFIG_HASH is None until /2 exists"
+    },
+    {
+      "check": "train is Tier A only",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "train carries no Tier B row",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "test carries all three tiers",
+      "ok": true,
+      "detail": "{'A_primary': 5563, 'B_s2_weak_fallback': 429, 'B_transaction_sensitivity': 341}"
+    },
+    {
+      "check": "the universe equals the test frame",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "the universe carries the tier columns",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "every test row is required for every target",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "p_active scoreability follows the v5 rule, not v4's always-True",
+      "ok": true,
+      "detail": "5689/6333"
+    },
+    {
+      "check": "the v14 train row count is reproduced on Tier A",
+      "ok": true,
+      "detail": "4850"
+    },
+    {
+      "check": "the sensitivity is labelled as such",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "the sensitivity's universe is the primary universe",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "the sensitivity train frame is Tier A only",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "both training frames contain the same rows",
+      "ok": true,
+      "detail": "4850 vs 4850"
+    },
+    {
+      "check": "withholding Tier B history CHANGES later Tier A features \u2014 the influence is real and is measured, not denied",
+      "ok": true,
+      "detail": "{'min_ewma': 2027, 'start_share_l5': 122, 'played_share_l10_team_games': 704, 'days_since_last_appearance': 102}"
+    },
+    {
+      "check": "the primary and sensitivity differ ONLY through history, not through membership",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}
