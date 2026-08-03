@@ -1,0 +1,253 @@
+{
+  "schema": "player_roster_source_audit/1",
+  "generated_utc": "2026-08-03T21:26:32.259223Z",
+  "scope": "row counts, key-set comparisons, name resolution rates and date comparisons only; nothing is fitted, predicted or scored",
+  "bounded": "audits sources present in or already fetched by this repository; fetches nothing new; does not block the player program on the non-existence of a perfect source",
+  "postgame_use_declaration": "the box score is used ONLY to audit what the pregame universe missed. It is never used to construct a candidate set. A player who appears unexpectedly is recorded as a candidate-universe MISS, never retroactively added.",
+  "gap_being_explained": {
+    "played_player_team_games": 28322,
+    "not_an_obligation_under_v4": 977,
+    "by_cause": {
+      "season_opener": 749,
+      "mid_season_arrival": 176,
+      "early_season_partial_window": 52
+    }
+  },
+  "sources": [
+    {
+      "source": "data/injury_history/injury_history.csv",
+      "present": true,
+      "what_it_is": "the Basketball-Reference WNBA transaction wire, scraped by scrape_injury_history.py: signings, trades, drafts, waivers, waiver claims, contract conversions and suspensions, plus per-game ESPN did-not-play rows",
+      "n_rows": 8340,
+      "categories": {
+        "missed_game_other": 3131,
+        "missed_game_injury": 2242,
+        "signing": 1455,
+        "waiver": 795,
+        "draft": 260,
+        "trade": 252,
+        "contract_suspension": 111,
+        "front_office": 49,
+        "retirement": 21,
+        "waiver_claim": 18,
+        "contract_conversion": 6
+      },
+      "q1_seasons_covered": {
+        "range": [
+          "2021-01-07",
+          "2026-07-29"
+        ],
+        "by_year": {
+          "2021": 1151,
+          "2022": 1261,
+          "2023": 1299,
+          "2024": 1383,
+          "2025": 1785,
+          "2026": 1461
+        },
+        "verdict": "2021-2026, complete"
+      },
+      "q2_timestamps": {
+        "effective_date": "the `date` column \u2014 the date the transaction took effect",
+        "publication_time": null,
+        "observation_time": "a SINGLE retrospective scrape. The CSV was committed 2026-07-30 13:42 -0400 in 98271bb, so every record \u2014 including 2021 ones \u2014 was observed on 2026-07-30",
+        "distinguishable": false,
+        "verdict": "effective dates are real and per-row; publication and observation times are NOT recoverable. Observation time is one constant for all 8,340 rows."
+      },
+      "q3_as_of_reconstructable": {
+        "answer": "NO, not provably",
+        "why": "the archive records what EVENTUALLY happened, not what was knowable at a cutoff. A signing effective 2021-05-14 is a true fact about 2021-05-14, and league-wire moves are in practice reported same-day \u2014 but this artifact cannot PROVE any record was public before 2026-07-30, and the raw HTML that might have carried a fetch timestamp is gitignored (.gitignore: data/injury_history/raw/) and absent from the repository.",
+        "roadmap_precedent": "ROADMAP.md already rules on exactly this class: 'the historical injury archive records what was eventually known, not what was knowable at a historical cutoff. W1 backtests are regime-B only.'"
+      },
+      "q4_identity_quality": {
+        "player_key": "free-text name; no player_id",
+        "team_key": "abbreviation; POR->PDX and PHO->PHX aliased",
+        "n_acquisition_rows": 1846,
+        "n_acquisition_name_resolved": 1483,
+        "n_acquisition_team_resolved": 1846,
+        "n_acquisition_fully_resolved": 1483,
+        "acquisition_resolution_rate": 0.8034,
+        "n_release_rows": 927,
+        "release_resolution_rate": 0.6753,
+        "n_ambiguous_names_mapping_to_multiple_ids": 0,
+        "verdict": "names resolve against the masters at roughly four in five. The unresolved fifth are overwhelmingly training-camp signings of players who never appear in a box score, so they are NOT a loss for candidacy \u2014 but the rate must be reported, not assumed benign."
+      },
+      "q5_corrections_overwrite_history": {
+        "answer": "YES",
+        "why": "Basketball-Reference edits its transaction pages in place. Only one snapshot was ever taken and the raw HTML is gitignored, so a re-scrape cannot be diffed against what was parsed. A correction made after 2026-07-30 would silently change the archive on the next fetch.",
+        "mitigation": "if this source is used, the parsed CSV must be treated as a frozen, hash-pinned artifact and any re-fetch registered as a new version"
+      },
+      "q6_regime": {
+        "verdict": "B",
+        "reasoning": "every fact in it is true and its effective dates are per-row and real, which is far more than prior-season affiliation offers. But its observation time is a single retrospective moment, so it cannot support a Regime-A claim of walk-forward legitimacy. Regime B is exactly the category ROADMAP.md defines for this: usable, reported with coverage, applying to the covered subset and nothing wider.",
+        "consequence_for_v5": "Tier B, not Tier A. It may create a FALLBACK candidate carrying its evidence time and confidence; it may not create a verified obligation."
+      },
+      "power_against_the_gap": {
+        "gap_rows": 977,
+        "explained_by_prior_dated_acquisition": 826,
+        "explained_pct": 84.5,
+        "by_cause": {
+          "early_season_partial_window": {
+            "n": 52,
+            "explained": 43,
+            "pct": 82.7
+          },
+          "mid_season_arrival": {
+            "n": 176,
+            "explained": 142,
+            "pct": 80.7
+          },
+          "season_opener": {
+            "n": 749,
+            "explained": 641,
+            "pct": 85.6
+          }
+        },
+        "comparison_prior_season_membership": "43.3% of openers, 12.5% of mid-season arrivals (audit_candidacy_gap.py)"
+      },
+      "false_obligation_risk": {
+        "question": "does an acquisition-only rule keep DEPARTED players in the candidate set \u2014 the same failure mode the amendment flags for prior-season affiliation",
+        "team_games_checked_after_an_acquisition": 105871,
+        "candidate_did_not_appear__acquisition_only": 81176,
+        "candidate_did_not_appear__after_honouring_releases": 31214,
+        "releases_remove": 49962,
+        "interpretation": "'did not appear' is NOT the same as 'false candidate' \u2014 a rostered player who is a healthy scratch is a correct candidate and a legitimate p_active=low obligation. This figure bounds candidate INFLATION, and the delta shows how much of it honouring release records removes. It is reported because candidate quality cannot be judged by recall alone."
+      }
+    },
+    {
+      "source": "data/injury_capture/injury_log.csv",
+      "present": true,
+      "what_it_is": "official pregame availability reports, captured live with per-row capture_utc; carries TEAM AFFILIATION for every listed player",
+      "n_rows": 551,
+      "q1_seasons_covered": {
+        "report_date_range": [
+          "2026-07-30",
+          "2026-08-01"
+        ],
+        "verdict": "2026-07-30 onward ONLY"
+      },
+      "q2_timestamps": {
+        "capture_utc": "per row, the moment the artifact was fetched",
+        "distinguishable": true,
+        "verdict": "publication and observation are BOTH pinned per row"
+      },
+      "q3_as_of_reconstructable": {
+        "answer": "YES, within its span",
+        "why": "capture_utc is the observation time and it is recorded on every row"
+      },
+      "q4_identity_quality": {
+        "player_key": "free-text name",
+        "team_key": "full team name",
+        "verdict": "needs the same name resolution as the wire, but within a much smaller and current player pool"
+      },
+      "q5_corrections_overwrite_history": {
+        "answer": "NO",
+        "why": "each capture is a separate timestamped row and revisions are preserved rather than overwritten"
+      },
+      "q6_regime": {
+        "verdict": "D-eligible (and A-legitimate within its span)",
+        "consequence_for_v5": "TIER A, but only from 2026-07-30. This is the only source in the repository that can create a verified obligation for a player with no prior box row."
+      }
+    },
+    {
+      "source": "data/w1_truth/roster_asof.csv",
+      "present": true,
+      "n_rows": 762,
+      "what_it_is": "per (team, player) tenure summary: first_game_date, last_game_date, n_games, n_played",
+      "q1_seasons_covered": {
+        "verdict": "2021-2026"
+      },
+      "q2_timestamps": {
+        "verdict": "NONE per row. Its manifest carries one artifact-level fit_through_date; asof_granularity is 'artifact'"
+      },
+      "q3_as_of_reconstructable": {
+        "answer": "NO",
+        "why": "it is DERIVED FROM BOX SCORES. first_game_date is the date she first appeared, which is exactly the information that arrives too late \u2014 it cannot establish affiliation BEFORE the game it is derived from"
+      },
+      "q4_identity_quality": {
+        "verdict": "good: carries player_id and team_id"
+      },
+      "q5_corrections_overwrite_history": {
+        "answer": "n/a \u2014 regenerated from the masters"
+      },
+      "q6_regime": {
+        "verdict": "UNUSABLE for candidacy",
+        "consequence_for_v5": "not a roster source. Its name invites the opposite conclusion, which is why it is audited here explicitly."
+      }
+    },
+    {
+      "source": "data/reference/player_bios.csv",
+      "present": true,
+      "n_rows": 1058,
+      "what_it_is": "player biographical attributes by season",
+      "q4_identity_quality": {
+        "verdict": "carries player_id and season"
+      },
+      "q6_regime": {
+        "verdict": "UNUSABLE for candidacy",
+        "why": "NO team column at all; it cannot assign a player to a team"
+      }
+    },
+    {
+      "source": "data/news_capture/news_items.csv",
+      "present": true,
+      "n_rows": 2265,
+      "what_it_is": "unstructured headlines and summaries with published_utc",
+      "q1_seasons_covered": {
+        "published_range": [
+          "2026-05-20T12:03:06Z",
+          "2026-08-01T15:30:14Z"
+        ],
+        "verdict": "2026-05-20 onward only"
+      },
+      "q2_timestamps": {
+        "verdict": "published_utc and capture_utc per row \u2014 genuinely point-in-time"
+      },
+      "q3_as_of_reconstructable": {
+        "answer": "YES within span, but the CONTENT is prose"
+      },
+      "q6_regime": {
+        "verdict": "UNUSABLE as a roster source without an extraction layer",
+        "why": "headlines are speculative ('Moves to watch ahead of the trade deadline'); a rumour is not a transaction. W1 extraction exists but is graded for availability, not affiliation."
+      }
+    },
+    {
+      "source": "official WNBA transaction log (wnba.com)",
+      "present": false,
+      "checked": "no capture exists in data/; nothing in the repository fetches it",
+      "q6_regime": {
+        "verdict": "NOT PRESENT",
+        "note": "would be the ideal Tier-A historical source IF it carried per-record publication timestamps and an archived snapshot per fetch. Fetching it is OUT OF SCOPE for this bounded audit."
+      }
+    },
+    {
+      "source": "official team roster histories / archived roster endpoints",
+      "present": false,
+      "checked": "no roster endpoint is called anywhere in the repository (grep: commonteamroster, teamroster \u2014 zero hits)",
+      "q6_regime": {
+        "verdict": "NOT PRESENT",
+        "note": "a live roster endpoint returns the CURRENT roster. Without an archived per-date snapshot it lists the FINAL roster, which the amendment explicitly forbids using. It would need to be captured forward from today to become Tier A."
+      }
+    },
+    {
+      "source": "prosportstransactions.com",
+      "present": false,
+      "checked": "scrape_injury_history.py documents that it sits behind a Cloudflare managed challenge that 403s every scripted client; it was NOT scraped and bypass tooling is explicitly disallowed",
+      "q6_regime": {
+        "verdict": "NOT ACCESSIBLE"
+      }
+    }
+  ],
+  "conclusion": {
+    "tier_a_sources_found": [
+      "S1 in-season prior box membership (v4's rule) \u2014 a prior game's box is observable at that game's availability bound, strictly before the cutoff",
+      "S3 captured pregame availability report \u2014 per-row capture_utc, 2026-07-30 onward ONLY"
+    ],
+    "tier_b_sources_found": [
+      "S-TX the Basketball-Reference transaction wire \u2014 real per-row EFFECTIVE dates covering 2021-2026 and explaining 84.5% of the gap, but a single retrospective observation time and in-place corrections. Regime B.",
+      "S2 prior-season franchise affiliation \u2014 cutoff-safe but evidence of PAST affiliation only, and not proof of current roster membership."
+    ],
+    "tier_a_gap_that_remains": "for 2021 through 2026-07-29 there is NO Tier-A source that can assign a player to a team before her first box appearance for that team. That is the honest finding, and v5 therefore treats those rows as Tier B or Tier C rather than manufacturing a verified obligation.",
+    "recommendation": "adopt S-TX as a TIER B source. It is the strongest affiliation evidence in the repository by a wide margin \u2014 84.5% of the gap versus 43.3% for prior-season affiliation \u2014 and its effective dates are per-row and true. It cannot be Tier A because its observation time is a single retrospective scrape, and the amendment's rule is that Tier A requires provable pre-cutoff observation. Capturing the official roster or transaction feed FORWARD from today is the only path to Tier A for future seasons; it will never retro-fit history."
+  }
+}
