@@ -151,7 +151,24 @@ unified patches against `d69aa02`, and `PRESERVATION_MANIFEST.json` with before/
 player program **has not modified them and has not committed them to any team branch.** This is
 team-thread material; disposition is the team thread's. Flagged as **S2**. *(measured)*
 
-### P-D2 · 51 played player-games are not obligations — **OPEN, shared**
+### P-D2 · played player-games that are not obligations — **RESTATED at its true size; v5 specified**
+
+> **Update 2026-08-03.** The figure is **977, not 51.** The 51 were only the rows visible where
+> the registered minutes universe overlapped the contract. Measured against
+> `master_player.parquet` by `audit_candidacy_gap.py`: **977 of 28,322** played player-team-games
+> (3.45%), 356 players, 233 games, stable at 2.9–4.6% in every season.
+>
+> The decomposition changes what the fix is. **749 (77%) are season openers** — v4 requires a
+> prior *same-season* team game, so every team's first game of every season yields zero
+> candidates. **176 (18%) are mid-season arrivals.** 52 are partial early-season windows.
+>
+> `prediction_contract_v5` is specified against this
+> (`experiments/player_program/PREDICTION_CONTRACT_V5_SPEC.md`, registered). Prior-season
+> franchise membership is provable and cutoff-safe and recovers **324 of 749** openers (51.2%
+> outside 2021); the residue is declared an audited exclusion, because **roster membership cannot
+> be reconstructed from box scores alone** and no transaction log exists in this repository.
+>
+> The original entry follows, retained unchanged.
 
 Reconciling the registered minutes universe against contract v4 for 2024–2026:
 
@@ -311,14 +328,26 @@ split, player universe, or coverage validation fails.
 |---|---|
 | contract | **PASS** — real v4 contract, attested, 35,627 obligations, canonical key re-derives |
 | chronological split | **PASS** — train/test seasons disjoint, 0 cutoff violations, tuning and calibration inside the train frame |
-| coverage validation (obligation completeness) | **PASS** — 1.000 on all four targets, 0 excluded |
-| **provenance** | **FAIL** — P-D1, the gate cannot measure its own tree |
-| **player universe** | **FAIL** — P-D2, 51 played games outside the obligation universe |
+| coverage validation (obligation completeness) | **PASS** — 1.000 on all four targets, 0 excluded, *within v4's universe* |
+| **provenance** | ~~FAIL~~ → **PASS** — P-D1 resolved; gate measured, `FAIL_OPEN: false` |
+| **player universe** | **FAIL** — P-D2, now measured at **977** played player-team-games outside the obligation universe, not 51 |
 
-Two of five fail. **The program stops before accuracy interpretation** and requests direction on
-S1, S2, S3 and scoring authorisation. This is consistent with the standing escalation recorded in
-`MISSION_LEDGER.md`, in which the supervisor declined to self-authorize the first outcome-comparing
-step under reduced independence.
+### The authorised gate list (2026-08-03 instruction), current state
+
+| # | condition | state |
+|---|---|---|
+| 1 | `core.bare=false` verified | **PASS** — all seven checkouts resolve |
+| 2 | producer gate fails closed | **PASS** — 61/61, `clean_producer/2` at `ef0d557` |
+| 3 | new or amended player universe passes | **BLOCKED** — v5 specified, not implemented |
+| 4 | obligation coverage reconciles | **BLOCKED** — 1.000 inside v4's universe, but 977 played rows sit outside it |
+| 5 | cold-start and fallback semantics reconcile | **PARTIAL** — correct on fitted folds; P-D3 open on the degenerate fold |
+| 6 | `n_prior_games` semantics corrected | **BLOCKED** — specified in v5 §4, not implemented |
+| 7 | snapshot and model identities valid | **PASS** — all receipts pass, no failed or inherited |
+| 8 | real OOF artifact reproducible | **BLOCKED** — never generated |
+
+**Three of eight clear. Accuracy interpretation remains unauthorised**, and the program stops here
+as instructed. This is consistent with the standing escalation in `MISSION_LEDGER.md`, in which the
+supervisor declined to self-authorize the first outcome-comparing step under reduced independence.
 
 ---
 
