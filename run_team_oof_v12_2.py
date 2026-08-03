@@ -60,6 +60,29 @@ The defensible claim, and the only one made here:
 The AST scan is retained, labelled as covering the wrapper only, and treated as one piece of
 evidence for the second and third clauses rather than as a proof of the first.
 
+CORRECTION LOG
+--------------
+
+**2026-08-03 — the pre-gate `mkdir` side effect.** Self-reported to the supervisor in the v14
+handoff and confirmed by it independently: `base.mkdir(parents=True, exist_ok=True)` ran *before*
+`require_clean_producer`, so a run this module refused still left an empty
+`experiments/cbs_v12_team_oof_v2/` behind. A gate that declines to act must not have already acted.
+All directory creation now happens strictly after both the scope scan and the producer gate have
+returned, and `tests/test_run_player_oof_v14.py` §7 asserts it behaviourally for both runners by
+invoking `main()` against a dirty tree and checking that nothing was created.
+
+**Consequence for `cbs_v12_team_oof/2`, stated so no reviewer has to discover it.** This file is
+one of the nineteen `PRODUCER_SOURCES`, so its bytes are inside
+`producer_source_set_digest`. `attempt_001` was generated at commit `3b04be5` from the *pre-fix*
+bytes and records `12ce0b88ca495fc0d97f4fc90b3a4eeda55a1ab794a2d877ccd5239ac800057d`. That digest
+still recomputes exactly from `git show 3b04be5:<path>` for all nineteen sources — the receipt
+names commit `3b04be5` and verifies against commit `3b04be5`, which is the whole point of recording
+the commit alongside the digest. It does **not** recompute at any later commit, and after this fix
+two of the nineteen differ at HEAD rather than one (`asof_invariant.py` from the artifact commit
+`702a948`, and now this file). The artifacts are untouched and are not re-generated: re-running
+under the fixed bytes would produce a *different* producer digest for byte-identical forecasts,
+which would misrepresent history rather than improve it.
+
 Run::
 
     python run_team_oof_v12_2.py                  # all six seasons, resuming what validates
@@ -516,8 +539,11 @@ def main() -> int:
 
     root = Path(args.root).resolve()
     base = Path(args.out) if args.out else root / OUT_DIR
-    base.mkdir(parents=True, exist_ok=True)
 
+    # NOTHING is created before the gates below have passed. A refused run must leave the
+    # filesystem exactly as it found it: an empty output namespace is a claim that a run was
+    # attempted here, and a run this module refuses was not attempted, it was declined. The
+    # earlier ordering created `base` first and so left that false trace behind on every refusal.
     if args.allow_dirty and not args.i_am_not_generating_evidence:
         raise DirtyProducer(
             "--allow-dirty is refused without --i-am-not-generating-evidence. Two independent "
@@ -527,6 +553,9 @@ def main() -> int:
     scope = assert_no_scoring()
     producer = require_clean_producer(root, allow_dirty=args.allow_dirty)
     pdig = producer["producer_source_set_digest"]
+
+    # both gates have returned; from here on the run is genuinely happening and may write
+    base.mkdir(parents=True, exist_ok=True)
 
     # find a reusable attempt before creating a new one
     existing = sorted(p for p in base.glob("attempt_*") if p.is_dir())

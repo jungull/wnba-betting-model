@@ -142,6 +142,15 @@ REPOSITORY_CHECKS = [
     ("test_cbs_real_integration_v14", [sys.executable,
                                     "tests/test_cbs_real_integration_v14.py"]),
     ("test_run_team_oof_v12_2",    [sys.executable, "tests/test_run_team_oof_v12_2.py"]),
+    # test_run_player_oof_v14 covers the PLAYER generation runner, which is the team runner's
+    # shape plus the three things a fold-level fan-out required: disjoint per-season write lanes,
+    # a per-worker producer-byte invariant that re-derives rather than trusts the digest it was
+    # handed, and one receipt-checked fan-in that revalidates every persisted byte instead of
+    # reading exit codes.  It is a STANDING check for the same reason the real-integration suites
+    # are: it runs a REAL 2021 player fold end to end, so a green gate means the generation path
+    # executes rather than that a fixture does.  It also carries the behavioural regression for
+    # the owed pre-gate `mkdir` correction, asserted against BOTH runners.
+    ("test_run_player_oof_v14",    [sys.executable, "tests/test_run_player_oof_v14.py"]),
     ("asof_manifest_scan",         [sys.executable, "asof_invariant.py", "--scan"]),
     ("forecast_chain",             [sys.executable, "-c",
                                     "import sys;from evalharness import verify_chain;"

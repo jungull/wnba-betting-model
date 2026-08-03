@@ -1589,3 +1589,117 @@ claimed; the latest genuine Layer-B result remains **B5**.
 Real fitted PLAYER output beyond the 2021 zero-fit smoke, chronological player OOF, scoring,
 accuracy or coverage-quality inspection and profitability evaluation all remain unperformed and
 unauthorised.
+
+## `cbs_v14_player_oof/1` — the generation-only chronological player OOF
+
+Authorised by the supervisory reply of 2026-08-03T14:08:00Z, which ACCEPTED
+`contract_baseline_suite_v14` and CERTIFIED `cbs_v12_team_oof/2` as reproducibly produced. This
+continues the standing 2026-08-02T23:20Z authorization; it is not a widening.
+
+**Supervisor generation change, and what it costs.** The Codex supervisor exhausted its usage
+allowance on 2026-08-03 and the role transferred, on the user's explicit instruction, to a Claude
+Opus generation. Correspondence filenames keep the `__codex__` routing token because the reply
+watcher matches on it; the reply bodies are signed by the Claude supervisor. **Independence is
+REDUCED**: engineer and supervisor are now the same model family with the same blind spots. The
+supervisor accordingly reported what it executed rather than only its conclusions, and
+**deliberately did not self-authorize the first outcome-comparing step**, escalating that to the
+user instead.
+
+### A prior ruling was corrected in the engineer's favour
+
+The 2026-08-03T00:27:15Z v13 reply described the 55 corrected rows as "including the 28 collision
+rows." It is **14**, not 28 — only the second member of each dual-team pair was ever overcounted —
+and the larger group of **41** is the two-games-one-cutoff phenomenon no ordering guard had ever
+objected to. The supervisor recomputed the decomposition from `player_game.parquet` directly and
+confirmed the engineer, not the prior ruling.
+
+### The owed checkout-path label, corrected
+
+The v14 handoff record names the generating checkout `_gen_3b04be5__20260803T012640Z`. **The
+retained path is `_gen_3b04be5__20260803T011852Z`**, and it is the only `_gen_*` checkout that
+exists; it sits at exact commit `3b04be5` with its sole dirty path being the untracked output the
+run itself wrote *after* the producer gate had recorded `n_dirty_paths: 0`. Nothing was lost and
+nothing was deleted. The inbox record is the document of record and is left uncorrected by design;
+the correction is carried here and into the next handoff.
+
+**This was the fifth path/label defect in the programme, and the supervisor asked for a standing
+check rather than a sixth individual fix.** The defect class is hand-transcribing a path into a
+document after the fact. The standing correction is therefore to stop transcribing:
+`run_player_oof_v14.require_clean_producer` records `producer_checkout_path`,
+`producer_checkout_name` and `producer_checkout_recorded_by` **as part of the run's own receipt**,
+so a handoff quotes an artifact instead of recalling a path, and
+`tests/test_run_player_oof_v14.py` §1 asserts the recorded path resolves to the directory the run
+actually executed in.
+
+### The owed `mkdir` side effect, fixed
+
+`run_team_oof_v12_2.py` created its output directory at line 519, *before*
+`require_clean_producer` at line 528, so a run it refused still left an empty
+`experiments/cbs_v12_team_oof_v2/` behind. A gate that declines to act must not have already
+acted. All directory creation now happens strictly after both the scope scan and the producer
+gate return, in **both** runners, and the regression is tested behaviourally against a genuinely
+dirty fixture tree rather than by reading the source.
+
+**Consequence, stated so no reviewer has to discover it:** `run_team_oof_v12_2.py` is one of the
+nineteen producer sources of `cbs_v12_team_oof/2`, so its bytes are inside that run's
+`producer_source_set_digest`. `attempt_001` records
+`12ce0b88ca495fc0d97f4fc90b3a4eeda55a1ab794a2d877ccd5239ac800057d`, which still recomputes exactly
+from `git show 3b04be5:<path>` for all nineteen sources — the receipt names commit `3b04be5` and
+verifies against commit `3b04be5`. After this fix **two** of the nineteen differ at HEAD rather
+than one (`asof_invariant.py` from the artifact commit, and now this file). The artifacts are NOT
+regenerated: re-running under the fixed bytes would attach a different producer digest to
+byte-identical forecasts, which misrepresents history rather than improving it.
+
+### Why the fan-out unit is the fold and not the target
+
+The authorization is for *bounded dependency-respecting target fan-out*, and respecting the
+dependency is what fixes the unit. Inside `cbs_player_runner_v14.run_player_fold` the minutes
+smoothing constant is selected first and then **held fixed** while the attempts and points rate
+constants are selected against it; `p_active` is fitted on Stage-A features over the same shared
+history frame. Splitting the four targets across workers would either duplicate that selection —
+giving the arm four minutes constants where it has one — or require forking a runner whose
+permitted diff against `cbs_v8.run_player_fold` is provably three lines. Either changes the
+registered arm rather than parallelizing it.
+
+So the fan-out unit is the **fold**, which genuinely is independent, and `require_target_chain`
+asserts on the returned diagnostics that the four targets came from ONE call with the minutes
+constant held fixed. There is exactly **one** fan-in.
+
+### What `cbs_v14_player_oof/1` adds over the team runner
+
+Inherited: the producer gate that refuses a dirty tree, the digest over every producing source
+byte taken before any frame is built, immutable attempts, fail-closed resume with named failure
+modes, per-artifact manifests.
+
+Added, because the fan-out exposed the need:
+
+1. **Disjoint write lanes.** Each season owns a set of filenames no other season can name, so two
+   concurrent workers cannot write the same byte. `require_lane_discipline` asserts it by set
+   equality over the directory as it is on disk. Runtime logs are OPERATIONAL and their absence is
+   not a refusal; forecasts, sidecars, receipts and manifests are EVIDENTIARY and theirs is.
+2. **A per-worker producer-byte invariant.** Whole-tree cleanliness is a coordinator-time
+   precondition and cannot be rechecked inside a worker, because by then the run's own untracked
+   output legitimately exists and reads as dirt — exactly the confusion the retained generating
+   checkout illustrates. Each worker instead recomputes the producer digest from disk and refuses
+   if it differs from the one it was dispatched with. It does not trust the digest it was handed.
+3. **One receipt-checked fan-in.** It re-reads every persisted byte, re-hashes it against its
+   manifest, and re-runs the strict prediction validator and the provenance-sidecar validator on
+   the artifacts *as read back*, by exactly the routine a resume uses. Worker exit codes, stdout
+   and in-memory results are not evidence and are not consulted for the verdict.
+4. **Self-contained attempts.** The team runner, finding one stale season, wrote the replacement
+   into a new attempt and left the run split across two directories. Here a partially valid prior
+   attempt is carried forward by COPYING its validated bytes into the new attempt and
+   revalidating the copies in place, so every attempt directory validates on its own wherever it
+   sits. The source attempt is untouched; nothing is overwritten and nothing is removed.
+
+Two failure modes are added to the twelve, giving **fourteen**: `wrong_producer_digest` (a receipt
+attributing output to producing bytes that did not produce it) and `wrong_target_set` (a fold
+claiming other than the four registered targets).
+
+### Evidence labels, unchanged and in force
+
+**Nothing anywhere has been scored.** No accuracy, calibration, threshold, edge, return or
+profitability figure exists, and no forecast has been compared to any outcome. "Coverage" means
+OBLIGATION COMPLETENESS throughout. Scoring, accuracy, calibration, thresholds, edge, returns and
+profitability remain **unauthorised**, and are now escalated to the user rather than withheld by
+the supervisor.
