@@ -39,6 +39,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import construction_receipt as cr                                              # noqa: E402
 import feature_gate                                                            # noqa: E402
 import gate_invocation as gi                                                   # noqa: E402
 
@@ -945,6 +946,50 @@ def note_assurance(label: str, rep: dict) -> dict:
     return rep
 
 
+# --------------------------------------------------------------------------------------------
+# a synthetic PRODUCER, so the two verified-assurance cases are producer-emitted rather than
+# caller-manufactured. These tests act as the producer: they materialise a source artifact, then
+# call construction_receipt.emit_construction_receipt WITH THE FRAME IN HAND, which resolves this
+# file as the producer by stack walk and writes the receipt to disk. The gate is then handed the
+# receipt's PATH, exactly as a real producer would hand it over.
+# --------------------------------------------------------------------------------------------
+
+#: persists for the process; receipts must remain on disk while the audits that read them run.
+PRODUCER_DIR = Path(tempfile.mkdtemp(prefix="gate_invocation_synthetic_producer_"))
+
+
+def synthetic_construction_receipt(frame: pd.DataFrame, names, *, experiment: str, arm: str,
+                                   fold: str, scope: str = "fold", offset=None, target=None,
+                                   outcome_mask=None, transformation=None,
+                                   label: str | None = None) -> Path:
+    """Emit a real construction receipt for a synthetic frame, and return its PATH."""
+    tag = label or f"{experiment}__{arm}__{fold}"
+    artifact = PRODUCER_DIR / f"source__{tag}.csv"
+    frame.to_csv(artifact, index=True)
+    source = cr.source_declaration(
+        artifact, role="feature_source", artifact_id=f"synthetic_source/{tag}",
+        cutoff_valid=True,
+        cutoff_rationale="seeded synthetic frame; every column is generated independently of the "
+                         "target and no column is a function of a post-cutoff observation",
+        coverage={"rows": int(len(frame))})
+    keys = pd.DataFrame({"row_uid": [str(x) for x in frame.index]}, index=frame.index)
+    universe = cr.universe_contract(
+        keys, contract_id=f"synthetic_universe/{tag}", row_identity_columns=["row_uid"],
+        description="the seeded synthetic row universe this test constructs")
+    cutoff = cr.cutoff_contract(
+        decision_time_rule="synthetic: no column is a function of any post-cutoff observation",
+        per_row_decision_time_column=None, fold_cutoff=fold)
+    ident = cr.fold_declaration(fold_id=fold, kind=scope, n_rows=int(len(frame)))
+    path = PRODUCER_DIR / f"CONSTRUCTION_RECEIPT__{tag}.json"
+    cr.emit_construction_receipt(
+        receipt_path=path, experiment=experiment, arm=arm, fold=fold, scope=scope,
+        run_id=f"synthetic::{tag}", frame=frame, feature_names=list(names),
+        universe=universe, fold_identity=ident, cutoff=cutoff, sources=[source],
+        feature_set_id=f"synthetic/{tag}", transformation=transformation,
+        gate_arguments={"offset": offset, "target": target, "outcome_mask": outcome_mask})
+    return path
+
+
 @dataclass
 class DualCase:
     raw: pd.DataFrame
@@ -1287,31 +1332,37 @@ def test_the_legitimate_imputation_demonstrates_every_obligation_the_contract_na
 
 
 def test_a_producer_backed_transformation_reaches_the_full_stage_one_pass():
-    prov = {"producer_source_path": str(Path(__file__).resolve()),
-            "producer_source_sha256": gi._sha256_file(Path(__file__).resolve()),
-            "input_manifest": {str(Path(gi.__file__).resolve().parent / "feature_gate.py"): None},
-            "feature_construction_receipt": str(Path(__file__).resolve()),
-            "experiment": "legit_imputation", "arm": "A",
-            "row_universe_digest": gi.index_digest(LEGIT.raw.index, sort=True,
-                                                   label="raw_index_membership")}
-    rep = note_assurance("producer_backed_transformation", legit_audit(provenance=prov))
+    receipt = synthetic_construction_receipt(
+        LEGIT.raw, LEGIT.names, experiment="legit_imputation", arm="A", fold="2024",
+        offset=LEGIT.offset, target=LEGIT.target, outcome_mask=LEGIT.outcome_mask,
+        transformation=LEGIT.transformation)
+    rep = note_assurance("producer_backed_transformation",
+                         legit_audit(construction_receipt=receipt))
     assert rep["passed"] is True, rep["blocking"]
     assert rep["assurance"] == "TRANSFORMATION_VERIFIED"
     assert rep["stage1_pass"] is True
-    assert rep["dual_frame"]["provenance"]["verified"] is True
-    assert rep["dual_frame"]["provenance"]["row_universe_digest_matches"] is True
+    c = rep["dual_frame"]["construction_receipt"]
+    assert c["verified"] is True and c["source"] == "path"
+    assert c["producer_source_sha256"] == gi._sha256_file(Path(__file__).resolve())
+    assert c["checks"]["cross_module_digest_agreement"] is True
+    assert "construction_receipt_verified" in kinds(rep)
     assert "raw_provenance_asserted_not_verified" not in kinds(rep)
 
 
 def test_a_producer_backed_untransformed_design_reaches_identity_verified():
-    prov = {"producer_source_path": str(Path(__file__).resolve()),
-            "row_universe_digest": gi.index_digest(CASE.df.index, sort=True,
-                                                   label="raw_index_membership")}
-    rep = note_assurance("producer_backed_identity", audit(provenance=prov))
+    receipt = synthetic_construction_receipt(
+        CASE.df, CASE.names, experiment=EXPERIMENT, arm=ARM, fold=FOLD,
+        offset=CASE.offset, target=CASE.target, outcome_mask=CASE.outcome_mask)
+    rep = note_assurance("producer_backed_identity", audit(construction_receipt=receipt))
     assert rep["passed"] is True, rep["blocking"]
     assert rep["dual_frame"]["case"] == "identity"
     assert rep["assurance"] == "IDENTITY_VERIFIED"
     assert rep["stage1_pass"] is True
+    # the receipt's own digests are bound into the gate record, so it cannot be swapped later
+    f = rep["binding"]["fields"]
+    assert f["construction_receipt_verified"] is True
+    assert f["construction_receipt_digest"].startswith("construction:sha256=")
+    assert f["construction_frozen_source_manifest"]
 
 
 def test_a_caller_asserted_raw_frame_does_not_receive_producer_backed_assurance():
@@ -1320,7 +1371,26 @@ def test_a_caller_asserted_raw_frame_does_not_receive_producer_backed_assurance(
     assert asserted["assurance"] == "RAW_PROVENANCE_ASSERTED"
     assert asserted["stage1_pass"] is False
     assert asserted["dual_frame"]["provenance"]["claimed"] is False
+    assert asserted["dual_frame"]["construction_receipt"]["claimed"] is False
     assert "raw_provenance_asserted_not_verified" in kinds(asserted)
+    assert "producer_construction_receipt_absent" in kinds(asserted)
+
+    # a provenance MAPPING, however complete, is not a producer receipt and never grants a
+    # verified level. This is the whole point of the second revision: the mapping below verifies
+    # in every field it declares, and the record still says RAW_PROVENANCE_ASSERTED.
+    prov = {"producer_source_path": str(Path(__file__).resolve()),
+            "producer_source_sha256": gi._sha256_file(Path(__file__).resolve()),
+            "input_manifest": {str(Path(gi.__file__).resolve().parent / "feature_gate.py"): None},
+            "feature_construction_receipt": str(Path(__file__).resolve()),
+            "experiment": EXPERIMENT, "arm": ARM,
+            "row_universe_digest": gi.index_digest(CASE.df.index, sort=True,
+                                                   label="raw_index_membership")}
+    mapped = note_assurance("caller_manufactured_provenance_mapping", audit(provenance=prov))
+    assert mapped["passed"] is True, mapped["blocking"]
+    assert mapped["dual_frame"]["provenance"]["verified"] is True     # every field checks out
+    assert mapped["dual_frame"]["provenance"]["grants_assurance"] is False
+    assert mapped["assurance"] == "RAW_PROVENANCE_ASSERTED"           # and it still grants nothing
+    assert mapped["stage1_pass"] is False
     # ...and the levels are the four the specification names, no more and no fewer
     assert gi.ASSURANCE_LEVELS == ("IDENTITY_VERIFIED", "TRANSFORMATION_VERIFIED",
                                    "RAW_PROVENANCE_ASSERTED", "FAILED")
@@ -1690,10 +1760,11 @@ def main() -> int:
         for label in sorted(ASSURANCE_OBSERVED):
             level, stage1 = ASSURANCE_OBSERVED[label]
             print(f"  {label:<38} {level:<26} stage1_pass={stage1}")
-        print("  NOTE: no producer feature-construction receipt or input manifest is wired into")
-        print("  this repository's feature producers. Every case that does not construct a")
-        print("  provenance= mapping by hand therefore reaches RAW_PROVENANCE_ASSERTED and is NOT")
-        print("  a full Stage 1 pass. The two verified cases above supply provenance explicitly.")
+        print("  NOTE: the two verified cases above are reached through a PRODUCER-EMITTED")
+        print("  construction receipt written to disk and re-derived against real files. A")
+        print("  provenance mapping assembled at the invocation site cannot reach a verified")
+        print("  level by any route: caller_manufactured_provenance_mapping verifies in every")
+        print("  field it declares and still reports RAW_PROVENANCE_ASSERTED.")
         print("=" * 94)
     print(f"{npass} passed, {nfail} failed, {len(tests)} total")
     return 1 if nfail else 0

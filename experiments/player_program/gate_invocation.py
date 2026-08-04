@@ -97,24 +97,39 @@ column reconciliation, and the exact digest of the matrix handed to the fitter.
 
 No fit occurs if either frame or the declared transformation lineage is unavailable.
 
-**Producer provenance.** A caller calling a matrix "raw" is a claim, not evidence. ``provenance=``
-binds the raw frame to the upstream producer by source hash, input-manifest hashes, a
-feature-construction receipt, experiment/arm identity and a row-universe digest, each of which is
-verified against the filesystem and against the frame actually supplied. A claim that cannot be
-verified BLOCKS. Provenance that is not claimed at all does not block, but it is not silently
-given the assurance of a verified one either.
+**Producer provenance, and why a mapping is not enough.** A caller calling a matrix "raw" is a
+claim, not evidence. The first version of this module accepted that claim as a ``provenance=``
+MAPPING built by the caller at the invocation site: ``producer_source_path`` named any readable
+file, ``input_manifest`` named any readable files, and ``row_universe_digest`` was recomputed from
+the very frame being presented. A runner that hashed its own source file and re-digested the frame
+it was already holding reached a full Stage 1 pass having demonstrated nothing. The mapping is
+still accepted and still BLOCKS when a claim it makes cannot be verified — an unverifiable claim
+is worse than no claim — but **it can no longer grant a verified assurance level**.
+
+**The producer construction receipt.** ``construction_receipt=`` takes a PATH to a
+``construction_receipt/1`` emitted by the producer DURING construction (see
+``construction_receipt.py``). It is read from disk and every digest it recorded is re-derived:
+the producer source is re-hashed, every declared source artifact is re-hashed, the receipt's own
+binding is recomputed from its body, and the row universe, feature order, raw-frame values and
+per-column missingness masks are recomputed from the frame actually presented. Fold, scope and
+cutoff identity are compared, so a receipt copied onto another fold blocks. **The verified
+assurance levels are reachable only through this path.** There is no code path from an inline
+mapping to a verified level, which is what makes the distinction structural rather than a
+convention this module asks callers to observe.
 
 **Assurance level.** Every record reports exactly one:
 
-    ``IDENTITY_VERIFIED``        raw and fitted frames proven identical, provenance verified
-    ``TRANSFORMATION_VERIFIED``  both frames and the transformation lineage verified
-    ``RAW_PROVENANCE_ASSERTED``  dual frames supplied, upstream provenance not demonstrable
+    ``IDENTITY_VERIFIED``        raw and fitted frames proven identical, AND a producer-emitted
+                                 construction receipt re-derived against on-disk reality
+    ``TRANSFORMATION_VERIFIED``  both frames and the transformation lineage verified, AND the
+                                 same producer-emitted construction receipt
+    ``RAW_PROVENANCE_ASSERTED``  dual frames supplied, no producer construction receipt: the
+                                 frame called "raw" is caller-asserted
     ``FAILED``                   at least one unadjudicated blocking finding
 
-Only the first two are a full Stage 1 pass (``stage1_pass``). **In this repository there is no
-feature-construction receipt or input manifest wired into the producers, so a caller who does not
-supply ``provenance=`` explicitly reaches ``RAW_PROVENANCE_ASSERTED`` and no higher.** That is
-reported as a limitation of the lineage, not smoothed over by redefining the levels.
+Only the first two are a full Stage 1 pass (``stage1_pass``). A caller who manufactures a
+provenance mapping by hand, however complete, reaches ``RAW_PROVENANCE_ASSERTED`` and no higher.
+That is reported as a limitation of the lineage, not smoothed over by redefining the levels.
 
 Detection of the ws2 case itself is two-sided and neither side is trusted alone:
 
@@ -123,10 +138,35 @@ Detection of the ws2 case itself is two-sided and neither side is trusted alone:
   has fewer nulls in that column, the mask was converted into values —
   ``missingness_mask_converted_to_values``. Raw-blocks-plus-transformed-clean is the signature.
 * independently, the TRANSFORMED frame's own values are checked for a pattern that separates the
-  outcome mask: a value carried by every outcome-negative row and absent from at least one
-  outcome-positive row means a row NOT carrying it certifies the outcome —
-  ``value_pattern_encodes_outcome``. This is the ws2 shape stated as a property of the values, and
-  it fires whether or not a raw frame was ever produced.
+  outcome mask — ``value_pattern_encodes_outcome``. See the warning below, which governs how much
+  that check may be relied on.
+
+``value_pattern_encodes_outcome`` — WHAT IT IS AND WHAT IT IS NOT
+-----------------------------------------------------------------
+**It is a targeted fail-closed heuristic, and it is NOT proof that a transformed design is
+leakage-free.** It fires when a REPEATED VALUE separates the outcome mask one-directionally: a
+value carried by every row on one side and absent from at least one row on the other, so a row
+NOT carrying it certifies the outcome. That is the ws2 shape read off the transformed frame, and
+it is worth having because it fires whether or not a raw frame was ever produced.
+
+Its reach is bounded, and the bounds are structural rather than incidental:
+
+* it only examines candidate values that REPEAT — the caller's declared fill constants, ``0.0``,
+  and the three most frequent values of the column, each required to occur at least
+  ``GATE_MIN_ROWS`` times. A fill that is jittered, a fill that is a per-row function, a fill
+  drawn from a distribution, or a mask re-encoded as a smooth transformation carries no repeated
+  value and is INVISIBLE to it;
+* it needs the outcome mask to be non-degenerate on both sides, so it does nothing on a universe
+  where the outcome is defined for every row;
+* it is per-column and one-directional, so a pattern spread across two columns, or a value that
+  merely correlates with the outcome without separating it, does not fire it;
+* a design on which it does not fire has been shown NOTHING about leakage in general.
+
+**The primary controls are the producer construction receipt and the RAW-frame audit**: the
+receipt establishes that the frame audited is the frame a named producer built from named bytes
+under a declared cutoff, and the raw audit runs ``feature_gate`` against the null mask BEFORE any
+fill converts it into ordinary numbers. This heuristic is a backstop underneath both, and a
+passing record must never be read as a leakage certificate on its strength.
 
 Imputation is **not** prohibited. It must be explicit, cutoff-valid, fitted only on chronological
 training rows, frozen, applied unchanged to the held-out frame, and auditable. A caller who
@@ -150,7 +190,11 @@ Usage::
                                                      "reason": "...", "cutoff_valid": True,
                                                      "frozen_parameters": {"value": 0.0},
                                                      "fitted_on_row_universe_digest": d}]},
-                     fitted_matrix=X, provenance={"producer_source_path": "build.py", ...})
+                     fitted_matrix=X,
+                     construction_receipt="…/CONSTRUCTION_RECEIPT__exp__arm__2024.json")
+
+    # a verified level requires the receipt PATH, emitted by the producer during construction.
+    # `provenance=` still records and still blocks an unverifiable claim, but never grants one.
 
     receipt = audit_run(run_id="turnover_p3_arm_a", experiment="turnover_p3", arm="A",
                         folds=[FoldInvocation("2022", df22, names, off22, y22, m22, df23), ...],
@@ -291,6 +335,8 @@ BLOCKING = {
     "fitted_matrix_undeclared", "audited_matrix_is_not_the_fitted_matrix",
     # the producer behind the frame called "raw"
     "producer_provenance_unverifiable",
+    # the PRODUCER-EMITTED construction receipt -- the only route to a verified assurance level
+    "construction_receipt_not_read_from_disk", "construction_receipt_unverifiable",
 }
 
 #: adjudication cannot excuse the defect this module exists to close. "I did not supply the
@@ -317,6 +363,10 @@ NON_ADJUDICABLE = {
     "imputation_precedes_raw_audit", "imputation_rule_fitted_off_training_rows",
     "missingness_mask_converted_to_values", "fitted_matrix_undeclared",
     "audited_matrix_is_not_the_fitted_matrix", "producer_provenance_unverifiable",
+    # -- the construction receipt. "I built the provenance mapping myself" and "the receipt does
+    # not re-derive" are the two halves of the defect this module's second revision closes; an
+    # escape hatch for either would hand a verified assurance level back to a caller's word.
+    "construction_receipt_not_read_from_disk", "construction_receipt_unverifiable",
 }
 
 #: recorded, never blocking. Listed so that "not in BLOCKING" is a deliberate statement.
@@ -329,6 +379,7 @@ INFORMATIONAL = {
     "raw_provenance_asserted_not_verified", "raw_frame_is_the_fitted_frame",
     "raw_frame_columns_differ", "declared_transformation_had_no_effect",
     "authorised_row_operation", "authorised_column_operation", "raw_audit_restricted",
+    "producer_construction_receipt_absent", "construction_receipt_verified",
 }
 
 #: the ws3 case, kept in the module so the magnitude is never re-derived from memory.
@@ -1326,9 +1377,12 @@ def _verify_provenance(provenance: Any, identity: Mapping[str, Any],
         "row_universe_digest_declared": None, "row_universe_digest_matches": None,
         "row_universe_digest_recomputed": raw_row_membership_digest,
         "provenance_digest": None, "problems": [],
-        "note": "this repository has no feature-construction receipt or input manifest wired into "
-                "the producers; a caller who does not supply provenance= reaches "
-                "RAW_PROVENANCE_ASSERTED and no higher"}
+        "grants_assurance": False,
+        "note": "a provenance MAPPING is built by the caller at the invocation site and can no "
+                "longer grant a verified assurance level, however complete it is. It is still "
+                "recorded, and a claim it makes that cannot be verified still BLOCKS. The verified "
+                "levels are reachable only through construction_receipt=, a PATH to a receipt the "
+                "producer emitted during construction"}
     if provenance is None:
         return rec, []
     if not isinstance(provenance, Mapping):
@@ -1410,6 +1464,152 @@ def _verify_provenance(provenance: Any, identity: Mapping[str, Any],
                    "claim is worse than no claim: it is the appearance of lineage without the "
                    "lineage, which is the whole subject of this module")]
     return rec, []
+
+
+def _verify_construction_receipt(spec: Any, identity: Mapping[str, Any], names: Sequence[str],
+                                 raw_df: Any, bound: Mapping[str, Any],
+                                 ident: Mapping[str, Any]) -> tuple[dict, list[dict]]:
+    """Consume a PRODUCER-EMITTED construction receipt, by path, and re-derive it against disk.
+
+    This is the only route to ``IDENTITY_VERIFIED`` or ``TRANSFORMATION_VERIFIED``, and the
+    restriction is structural rather than advisory:
+
+    * ``spec`` must be a PATH. A mapping — however complete, however honestly assembled — is
+      refused with ``construction_receipt_not_read_from_disk``, because a mapping is exactly the
+      caller-manufactured claim this control exists to replace. There is no branch that reads a
+      dict and returns ``verified=True``.
+    * the receipt is verified by ``construction_receipt.verify_construction_receipt``, which
+      re-hashes the producer source and every declared source artifact off disk, recomputes the
+      receipt's own binding from its body, and recomputes the row universe, the feature order, the
+      raw-frame values and the per-column missingness masks from the frame presented HERE.
+    * experiment, arm, fold and scope are compared, so a receipt copied onto another fold or a
+      final-design receipt offered for a fold blocks.
+    * the digests the producer recorded are additionally compared against the ones THIS module
+      computed for the same frame. The two modules implement the digest algebra independently, so
+      agreement is evidence and disagreement is a drift that must not be papered over.
+
+    A receipt that is claimed and does not re-derive BLOCKS. No receipt at all does not block; it
+    caps the record at ``RAW_PROVENANCE_ASSERTED``, which is recorded rather than silent.
+    """
+    rec: dict[str, Any] = {
+        "claimed": spec is not None, "verified": False, "source": None,
+        "receipt_path": None, "receipt_digest": None, "receipt_schema": None,
+        "producer_source_path": None, "producer_source_sha256": None,
+        "producing_commit": None, "universe_contract_id": None,
+        "row_universe_digest": None, "frozen_source_manifest": [],
+        "claim_boundary": None, "checks": {}, "problems": [], "receipt": None,
+        "grants_assurance": False,
+        "note": "the verified assurance levels are reachable only through a producer-emitted "
+                "construction receipt read from disk and re-derived against real files"}
+
+    if spec is None:
+        return rec, [_finding(
+            "producer_construction_receipt_absent",
+            detail="no producer construction receipt was presented. The frame called raw is "
+                   "caller-asserted: the repository cannot demonstrate which producer built it, "
+                   "from which bytes, under which cutoff, for which fold. Recorded, not blocking, "
+                   "and it caps the record at RAW_PROVENANCE_ASSERTED")]
+
+    if not isinstance(spec, (str, Path)):
+        rec["source"] = "inline"
+        rec["problems"] = ["construction_receipt:not_a_path"]
+        return rec, [_finding(
+            "construction_receipt_not_read_from_disk", python_type=type(spec).__name__,
+            detail="a construction receipt must be presented as a PATH to a file the producer "
+                   "wrote during construction. An inline mapping assembled at the invocation site "
+                   "is the caller-manufactured provenance this control replaces, and it cannot "
+                   "reach a verified assurance level by any route")]
+
+    rec["source"] = "path"
+    rec["receipt_path"] = str(spec)
+    try:
+        import construction_receipt as _cr
+    except Exception as e:                                       # pragma: no cover - defensive
+        rec["problems"] = [f"construction_receipt_module:{e!r}"]
+        return rec, [_finding("construction_receipt_unverifiable", error=repr(e),
+                              detail="the construction-receipt verifier is unavailable")]
+
+    gate_args = {k: bound.get(k) for k in ("offset", "target", "outcome_mask")
+                 if bound.get(k) is not None}
+    report = _cr.verify_construction_receipt(
+        spec, frame=(raw_df if isinstance(raw_df, pd.DataFrame) else None),
+        feature_names=[str(c) for c in names],
+        experiment=identity.get("experiment"), arm=identity.get("arm"),
+        fold=identity.get("fold"), scope=identity.get("scope"),
+        gate_arguments=gate_args or None)
+
+    receipt = dict(report.get("receipt") or {})
+    prod = dict(receipt.get("produced_frame_provenance") or {})
+    frozen = dict(receipt.get("frozen_source_provenance") or {})
+    producer = dict(prod.get("producer") or {})
+    rec.update({
+        "receipt_digest": report.get("receipt_digest"),
+        "receipt_schema": receipt.get("schema"),
+        "producer_source_path": producer.get("source_path"),
+        "producer_source_sha256": producer.get("source_sha256"),
+        "producing_commit": dict(prod.get("commit") or {}),
+        "universe_contract_id": (prod.get("universe") or {}).get("universe_contract_id"),
+        "row_universe_digest": (prod.get("universe") or {}).get("row_universe_digest"),
+        "frozen_source_manifest": [
+            {k: s.get(k) for k in ("path", "sha256", "role", "cutoff_valid", "artifact_id")}
+            for s in (frozen.get("sources") or [])],
+        "claim_boundary": dict(receipt.get("claim_boundary") or {}),
+        "checks": dict(report.get("checks") or {}),
+        "receipt": receipt,
+        "verification": {k: report[k] for k in ("findings", "blocking", "verified")},
+    })
+
+    findings: list[dict] = []
+    problems = sorted({f["kind"] for f in report.get("blocking", [])})
+
+    # the two modules digest independently; agreement is the evidence, drift is a defect
+    cross: list[str] = []
+    rec_frame = dict(prod.get("raw_frame") or {})
+    if isinstance(raw_df, pd.DataFrame):
+        if (ident.get("raw_frame_values_digest") is not None
+                and rec_frame.get("values_digest") != ident.get("raw_frame_values_digest")):
+            cross.append("raw_frame_values_digest")
+        if (ident.get("raw_row_membership_digest") is not None
+                and rec_frame.get("row_membership_digest")
+                != ident.get("raw_row_membership_digest")):
+            cross.append("raw_row_membership_digest")
+        if (ident.get("raw_missingness_digest") is not None
+                and (rec_frame.get("missingness") or {}).get("aggregate_digest")
+                != ident.get("raw_missingness_digest")):
+            cross.append("raw_missingness_digest")
+    rec["checks"]["cross_module_digest_agreement"] = not cross
+    if cross:
+        problems += [f"cross_module:{c}" for c in cross]
+        findings.append(_finding(
+            "construction_receipt_unverifiable", diverging_digests=cross,
+            detail="the digests the producer recorded and the digests this module computed for "
+                   "the SAME frame disagree. The two implementations are independent on purpose; "
+                   "a disagreement means one of them is not describing this frame"))
+
+    rec["problems"] = problems
+    rec["verified"] = bool(report.get("verified")) and not cross
+    rec["grants_assurance"] = rec["verified"]
+
+    if report.get("blocking"):
+        findings.append(_finding(
+            "construction_receipt_unverifiable", problems=problems,
+            receipt_path=str(spec), receipt_digest=report.get("receipt_digest"),
+            blocking=[{k: b.get(k) for k in ("kind", "detail")} for b in report["blocking"][:6]],
+            detail="a producer construction receipt was presented and could not be re-derived "
+                   "from the files and the frame on offer. An unverifiable receipt is worse than "
+                   "no receipt: it is the appearance of lineage without the lineage"))
+    elif rec["verified"]:
+        findings.append(_finding(
+            "construction_receipt_verified", receipt_path=str(spec),
+            receipt_digest=report.get("receipt_digest"),
+            producer_source_sha256=producer.get("source_sha256"),
+            producing_commit=(prod.get("commit") or {}).get("sha"),
+            n_frozen_sources=len(rec["frozen_source_manifest"]),
+            detail="every digest the producer recorded re-derived against the files on disk and "
+                   "the frame presented, including the producer's own source hash, each frozen "
+                   "source artifact's hash, the row universe, the feature order and the "
+                   "per-column raw missingness masks"))
+    return rec, findings
 
 
 def dual_frame_identity(df: Any, names: Sequence[str], raw_df: Any = UNSPECIFIED,
@@ -1717,7 +1917,9 @@ def _conversion_findings(raw_audit: Mapping[str, Any] | None, ident: Mapping[str
 def _dual_frame_structure(df: Any, names: Sequence[str], raw_df: Any, transformation: Any,
                           provenance: Any, fitted_matrix: Any, identity: Mapping[str, Any],
                           ident: Mapping[str, Any],
-                          design_row_membership_digest: str | None) -> tuple[list[dict], dict, Any]:
+                          design_row_membership_digest: str | None,
+                          construction_receipt: Any = None,
+                          bound: Mapping[str, Any] | None = None) -> tuple[list[dict], dict, Any]:
     """Everything about the pair of frames that is decidable WITHOUT calling the gate."""
     findings: list[dict] = []
     norm, spec_bad = normalise_transformation(transformation)
@@ -1746,6 +1948,7 @@ def _dual_frame_structure(df: Any, names: Sequence[str], raw_df: Any, transforma
                           "audited_matrix_digest": ident.get("audited_matrix_digest"),
                           "matches": None},
         "provenance": None,
+        "construction_receipt": None,
         "assurance": None,
         "stage1_pass": False,
     }
@@ -1775,14 +1978,20 @@ def _dual_frame_structure(df: Any, names: Sequence[str], raw_df: Any, transforma
                                              ident.get("raw_row_membership_digest"))
     rec["provenance"] = prov
     findings += prov_findings
-    if provenance is None:
+    cr_rec, cr_findings = _verify_construction_receipt(
+        construction_receipt, identity, names, raw_df, dict(bound or {}), ident)
+    rec["construction_receipt"] = cr_rec
+    findings += cr_findings
+    if construction_receipt is None:
         findings.append(_finding(
             "raw_provenance_asserted_not_verified",
-            detail="the frame presented as raw is caller-asserted: no producer source, input "
-                   "manifest or feature-construction receipt was supplied, so its lineage cannot "
-                   "be demonstrated independently. Recorded, not blocking, and it caps the "
-                   "assurance level at RAW_PROVENANCE_ASSERTED rather than silently granting the "
-                   "assurance of a producer-backed frame"))
+            detail="the frame presented as raw is caller-asserted: no producer-emitted "
+                   "construction receipt was presented, so its lineage cannot be demonstrated "
+                   "independently. A provenance mapping, if one was supplied, is recorded and is "
+                   "checked, but a mapping the caller assembled at the invocation site cannot "
+                   "establish that the frame came from the producer it names. Recorded, not "
+                   "blocking, and it caps the assurance level at RAW_PROVENANCE_ASSERTED rather "
+                   "than silently granting the assurance of a producer-backed frame"))
 
     raw_for_audit: Any = None
     if raw_supplied and isinstance(raw_df, pd.DataFrame) and isinstance(df, pd.DataFrame):
@@ -1833,10 +2042,19 @@ def _dual_frame_structure(df: Any, names: Sequence[str], raw_df: Any, transforma
     return findings, rec, raw_for_audit
 
 
-def _assurance_level(case: str | None, provenance_verified: bool, blocking: Sequence) -> str:
+def _assurance_level(case: str | None, construction_receipt_verified: bool,
+                     blocking: Sequence) -> str:
+    """The one level a record reports.
+
+    ``construction_receipt_verified`` is true ONLY when a producer-emitted receipt was read from
+    a path and re-derived against on-disk reality. It is deliberately not "the caller supplied a
+    provenance mapping and every string in it happened to name a readable file": that condition
+    is satisfiable by any runner able to hash its own source, and satisfying it demonstrates
+    nothing about where the frame came from.
+    """
     if blocking:
         return "FAILED"
-    if not provenance_verified:
+    if not construction_receipt_verified:
         return "RAW_PROVENANCE_ASSERTED"
     if case == "identity":
         return "IDENTITY_VERIFIED"
@@ -1871,7 +2089,8 @@ def binding_fields(identity: Mapping[str, Any], design: Mapping[str, Any] | None
                    arguments: Mapping[str, Mapping[str, Any]],
                    gate: Mapping[str, Any], caller: Mapping[str, Any],
                    dual: Mapping[str, Any] | None = None,
-                   provenance: Mapping[str, Any] | None = None) -> dict:
+                   provenance: Mapping[str, Any] | None = None,
+                   construction: Mapping[str, Any] | None = None) -> dict:
     """The exact facts a receipt is bound to.
 
     A receipt is a claim about a specific gate, a specific caller, a specific arm and fold, and a
@@ -1909,6 +2128,14 @@ def binding_fields(identity: Mapping[str, Any], design: Mapping[str, Any] | None
     f["provenance_claimed"] = bool(p2.get("claimed", False))
     f["provenance_verified"] = bool(p2.get("verified", False))
     f["provenance_digest"] = p2.get("provenance_digest")
+    c2 = dict(construction or {})
+    f["construction_receipt_claimed"] = bool(c2.get("claimed", False))
+    f["construction_receipt_verified"] = bool(c2.get("verified", False))
+    f["construction_receipt_digest"] = c2.get("receipt_digest")
+    f["construction_producer_source_sha256"] = c2.get("producer_source_sha256")
+    f["construction_frozen_source_manifest"] = [
+        {"path": s.get("path"), "sha256": s.get("sha256")}
+        for s in (c2.get("frozen_source_manifest") or [])]
     return f
 
 
@@ -1926,7 +2153,10 @@ _INPUT_BINDING_FIELDS = tuple(
     + [f"{n}_{s}" for n in REQUIRED_ARGUMENTS
        for s in ("value_digest", "index_digest", "n", "declared_not_applicable")]
     + list(DUAL_BINDING_FIELDS)
-    + ["provenance_claimed", "provenance_verified", "provenance_digest"])
+    + ["provenance_claimed", "provenance_verified", "provenance_digest",
+       "construction_receipt_claimed", "construction_receipt_verified",
+       "construction_receipt_digest", "construction_producer_source_sha256",
+       "construction_frozen_source_manifest"])
 
 
 # --------------------------------------------------------------------------------------------
@@ -2214,6 +2444,7 @@ def _invoke(df: Any, names: Sequence[str], supplied: Mapping[str, Any], *,
             raw_df: Any = UNSPECIFIED,
             transformation: Any = None,
             provenance: Any = None,
+            construction_receipt: Any = None,
             fitted_matrix: Any = UNSPECIFIED) -> tuple[dict, dict]:
     identity = {"experiment": experiment, "arm": arm, "fold": fold, "scope": scope}
     args_report, bound, raw = _validate(df, names, supplied, not_applicable, adjudications,
@@ -2227,7 +2458,7 @@ def _invoke(df: Any, names: Sequence[str], supplied: Mapping[str, Any], *,
     dual_rec: dict[str, Any] = {"policy": "MANDATORY for every fitted feature design "
                                           "(contract §8a)",
                                 "evaluated": False, "case": None, "assurance": None,
-                                "stage1_pass": False,
+                                "stage1_pass": False, "construction_receipt": None,
                                 "note": "argument validation blocked first, so the dual-frame "
                                         "audit was not reached"}
     om_bound = bound.get("outcome_mask")
@@ -2247,7 +2478,8 @@ def _invoke(df: Any, names: Sequence[str], supplied: Mapping[str, Any], *,
         design_membership = (args_report.get("design") or {}).get("design_row_membership_digest")
         dual_findings, dual_rec, raw_for_audit = _dual_frame_structure(
             df, names, raw_df, transformation, provenance, fitted_matrix, identity,
-            dual_ident, design_membership)
+            dual_ident, design_membership, construction_receipt=construction_receipt,
+            bound=bound)
         dual_rec["evaluated"] = True
         structural_blocking = _blocking_after_adjudication(dual_findings, norm)
 
@@ -2324,7 +2556,8 @@ def _invoke(df: Any, names: Sequence[str], supplied: Mapping[str, Any], *,
 
     gate_ident = gate_module_identity()
     fields = binding_fields(identity, args_report.get("design"), args_report["arguments"],
-                            gate_ident, caller, dual_ident, dual_rec.get("provenance"))
+                            gate_ident, caller, dual_ident, dual_rec.get("provenance"),
+                            dual_rec.get("construction_receipt"))
 
     core = dict(args_report)
     for k in ("findings", "blocking", "adjudications_declared", "adjudications_applied",
@@ -2351,8 +2584,8 @@ def _invoke(df: Any, names: Sequence[str], supplied: Mapping[str, Any], *,
     })
 
     def _stamp(rep: dict) -> dict:
-        prov_ok = bool((dual_rec.get("provenance") or {}).get("verified"))
-        level = _assurance_level(dual_rec.get("case"), prov_ok, rep["blocking"])
+        receipt_ok = bool((dual_rec.get("construction_receipt") or {}).get("verified"))
+        level = _assurance_level(dual_rec.get("case"), receipt_ok, rep["blocking"])
         rep["assurance"] = level
         rep["stage1_pass"] = level in STAGE1_PASS_LEVELS
         dual_rec["assurance"] = level
@@ -2385,6 +2618,7 @@ def audit_fold(df: pd.DataFrame, names: Sequence[str], *,
                raw_df: Any = UNSPECIFIED,
                transformation: Any = None,
                provenance: Any = None,
+               construction_receipt: Any = None,
                fitted_matrix: Any = UNSPECIFIED,
                align: Mapping[str, str] | None = None,
                not_applicable: Mapping[str, Any] | None = None,
@@ -2412,6 +2646,10 @@ def audit_fold(df: pd.DataFrame, names: Sequence[str], *,
     is required, and the wrapper proves the identity by digest rather than believing it. If
     ``receipt_path`` is given the receipt is written before this function returns, and a failed
     write is itself blocking.
+
+    ``construction_receipt`` is the PATH of a producer-emitted ``construction_receipt/1``. It is
+    the only route to ``IDENTITY_VERIFIED`` or ``TRANSFORMATION_VERIFIED``; a caller who assembles
+    a ``provenance=`` mapping instead reaches ``RAW_PROVENANCE_ASSERTED`` and no higher.
     """
     rep, _ = _invoke(df, names, {"offset": offset, "target": target,
                                  "outcome_mask": outcome_mask, "test_df": test_df},
@@ -2421,6 +2659,7 @@ def audit_fold(df: pd.DataFrame, names: Sequence[str], *,
                      caller=caller_identity(caller_path), receipt_path=receipt_path,
                      require_receipt=require_receipt, raw_df=raw_df,
                      transformation=transformation, provenance=provenance,
+                     construction_receipt=construction_receipt,
                      fitted_matrix=fitted_matrix)
     if rep["blocking"] and raise_on_block:
         raise GateInvocationFailure(json.dumps(rep["blocking"][:6], default=str))
@@ -2444,6 +2683,7 @@ def guarded_fit(fit_fn: Callable[[dict, dict], Any], df: pd.DataFrame, names: Se
                 raw_df: Any = UNSPECIFIED,
                 transformation: Any = None,
                 provenance: Any = None,
+                construction_receipt: Any = None,
                 fitted_matrix: Any = UNSPECIFIED,
                 align: Mapping[str, str] | None = None,
                 scope: str = "fold",
@@ -2468,7 +2708,8 @@ def guarded_fit(fit_fn: Callable[[dict, dict], Any], df: pd.DataFrame, names: Se
                          gate_adjudicated=gate_adjudicated, thresholds=thresholds,
                          caller=caller_identity(caller_path), receipt_path=receipt_path,
                          require_receipt=True, raw_df=raw_df, transformation=transformation,
-                         provenance=provenance, fitted_matrix=fitted_matrix)
+                         provenance=provenance, construction_receipt=construction_receipt,
+                         fitted_matrix=fitted_matrix)
     if rep["blocking"]:
         raise GateInvocationFailure(json.dumps(rep["blocking"][:6], default=str))
     return rep, fit_fn(rep, bound)
@@ -2485,6 +2726,7 @@ def verify_receipt(receipt: Mapping[str, Any], df: pd.DataFrame, names: Sequence
                    raw_df: Any = UNSPECIFIED,
                    transformation: Any = None,
                    provenance: Any = None,
+                   construction_receipt: Any = None,
                    fitted_matrix: Any = UNSPECIFIED,
                    align: Mapping[str, str] | None = None,
                    not_applicable: Mapping[str, Any] | None = None,
@@ -2519,17 +2761,19 @@ def verify_receipt(receipt: Mapping[str, Any], df: pd.DataFrame, names: Sequence
     identity = {"experiment": experiment, "arm": arm, "fold": str(fold),
                 "scope": scope or str(receipt.get("identity", {}).get("scope") or "fold")}
     caller = caller_identity(caller_path)
-    args_report, _, _ = _validate(df, names,
-                                  {"offset": offset, "target": target,
-                                   "outcome_mask": outcome_mask, "test_df": test_df},
-                                  not_applicable, None, align, identity, caller)
+    args_report, bound, _ = _validate(df, names,
+                                      {"offset": offset, "target": target,
+                                       "outcome_mask": outcome_mask, "test_df": test_df},
+                                      not_applicable, None, align, identity, caller)
     dual_ident = dual_frame_identity(df, names, raw_df, transformation, fitted_matrix,
                                      outcome_mask=(outcome_mask
                                                    if _is_supplied(outcome_mask) else None))
     prov, _prov_findings = _verify_provenance(provenance, identity,
                                               dual_ident.get("raw_row_membership_digest"))
+    constr, _constr_findings = _verify_construction_receipt(
+        construction_receipt, identity, names, raw_df, bound, dual_ident)
     fields = binding_fields(identity, args_report.get("design"), args_report["arguments"],
-                            gate_module_identity(), caller, dual_ident, prov)
+                            gate_module_identity(), caller, dual_ident, prov, constr)
     digest = binding_digest(fields)
 
     if stored:
@@ -2598,6 +2842,8 @@ class FoldInvocation:
     raw_df: Any = UNSPECIFIED
     transformation: Any = None
     provenance: Any = None
+    #: PATH to the producer-emitted construction receipt. The only route to a verified level.
+    construction_receipt: Any = None
     fitted_matrix: Any = UNSPECIFIED
 
     def invoke(self, *, experiment: str, arm: str, scope: str = "fold",
@@ -2614,7 +2860,9 @@ class FoldInvocation:
                          caller=dict(caller or caller_identity()),
                          receipt_path=receipt_path, require_receipt=False,
                          raw_df=self.raw_df, transformation=self.transformation,
-                         provenance=self.provenance, fitted_matrix=self.fitted_matrix)
+                         provenance=self.provenance,
+                         construction_receipt=self.construction_receipt,
+                         fitted_matrix=self.fitted_matrix)
         return rep
 
 
@@ -2858,9 +3106,22 @@ def _main() -> int:                                              # pragma: no co
     print(f"  assurance levels     : {', '.join(ASSURANCE_LEVELS)}")
     print(f"  full Stage 1 pass    : {', '.join(STAGE1_PASS_LEVELS)}")
     print(f"  bound into receipts  : {len(DUAL_BINDING_FIELDS)} dual fields + 3 provenance fields")
-    print("  LIMITATION: no producer feature-construction receipt or input manifest is wired into")
-    print("  this repository, so a caller who does not supply provenance= reaches")
-    print("  RAW_PROVENANCE_ASSERTED and no higher, and no such run is a full Stage 1 pass.")
+    print("                         + 5 construction-receipt fields")
+    print()
+    print("producer construction receipt (construction_receipt.py) — the ONLY route to a verified")
+    print("assurance level. construction_receipt= takes a PATH; the receipt is re-derived against")
+    print("on-disk reality. A provenance= MAPPING assembled at the invocation site is recorded and")
+    print("is checked, but it cannot reach IDENTITY_VERIFIED or TRANSFORMATION_VERIFIED by any")
+    print("route: a caller who hashes its own source file and re-digests the frame it is holding")
+    print("has demonstrated nothing about where that frame came from.")
+    print()
+    print("LIMITATION: only possession_features.py emits a construction receipt today. Every other")
+    print("feature producer in this repository is still unreceipted, so any arm fitted through one")
+    print("of them reaches RAW_PROVENANCE_ASSERTED and is NOT a full Stage 1 pass.")
+    print()
+    print("value_pattern_encodes_outcome is a targeted fail-closed heuristic over REPEATED values.")
+    print("It is not proof that a transformed design is leakage-free. The producer construction")
+    print("receipt and the RAW-frame audit are the primary controls; see the module docstring.")
     return 0
 
 
