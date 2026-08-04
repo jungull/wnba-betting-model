@@ -1,0 +1,23 @@
+{
+  "schema": "discovery_hypothesis_ledger_update/1",
+  "note": "fields to MERGE into HYPOTHESIS_LEDGER.json -> workstreams.ws3_team_total_plus_allocation. The shared ledger was deliberately not edited from this worktree because parallel workstreams write the same file.",
+  "workstream": "ws3_team_total_plus_allocation",
+  "result": "NULL. The two-stage formulation does not improve player identity and does not match the D aggregate on the team total. Stage 1 team MAE 3.00926 vs the frozen D aggregate 2.96745 (paired -0.04181, 90% CI [-0.07115, -0.01324]); against a K0 intercept-only control through the identical pipeline the nine stage-1 features add nothing (-0.00340, CI [-0.03975, +0.03398]). Stage 2 allocation, evaluated with the team total held EXACTLY at the D aggregate so the team metric is identical to the incumbent by construction, makes player identity worse: deviance 1.22854 -> 1.24366, MAE -0.00302 (CI [-0.00498, -0.00104]). Share calibration improves (slope 1.0293 -> 0.9703) while multinomial log loss degrades (2.26964 -> 2.27674). Allocated expectations sum to the stage-1 total exactly (max deviation 1.07e-14).",
+  "disposition": "FALSIFIED for this formulation, with a redirection. The falsifier written on the card -- 'the allocation gain requires sacrificing team-total accuracy' -- is not what happened: there was no allocation gain to trade. The decomposition instead identifies where the error lives. Holding the D shares fixed and supplying the true candidate total is worth +0.04135 player MAE (CI [+0.03865, +0.04417]), roughly an order of magnitude more than any movement in the allocation layer. The D-proportional allocation is already near the achievable frontier for these features; the team total is the binding constraint. Future work in this direction should target the total, not the split.",
+  "motivating_observation_withdrawn": {
+    "what": "arm G improving operational player deviance 1.22854 -> 1.22717 while worsening team MAE 2.96745 -> 2.97251, read as aggregation cancellation",
+    "why": "turnover_p2_v1/turnover_role_context_features_v1.parquet columns offensive_involvement_proxy, trailing_minutes_share and role_change are non-null on exactly the 27,351 appearing candidates and null on exactly the 8,278 non-appearing ones, zero off-diagonal. The missingness is an exact post-cutoff did_appear indicator.",
+    "measurement": "refit through an identical pipeline, the leaking column is worth 0.02180 player deviance over a cutoff-valid rebuild of the same signal -- 15.9x the entire published arm-G gain of 0.00137",
+    "conclusion": "the aggregation-cancellation reading of arm G is not established on cutoff-valid inputs"
+  },
+  "gate_findings_for_the_wave": [
+    "feature_gate.audit must be run on the TRAINING FOLD ACTUALLY BEING FITTED, not once on the pooled matrix. The 2021 projected-exposure regime gives every Tier A candidate on a team an identical projected possession share and an identical p_active, so the 2022 training fold's within-team design had std 7.8e-9 and 5.1e-17 while the pooled design was healthy. The gate blocks it as impossible_scaling the moment it is applied per fold.",
+    "the gate is PAIRWISE and cannot see a multi-way exact linear dependency. proj_off_poss_share == proj_minutes_share exactly and role_change == proj_minutes_share - trailing_minutes_share, so three declared features span two dimensions. A supplementary SVD rank check is implemented in ws3/run_ws3_two_stage.py::rank_check.",
+    "a feature construction that is safe under an additive link is not automatically safe under a compositional one. P2's EWMA decays player state only on days the player appeared while team state decays every team game, so the ratio is not a share (max 1.617). A log-offset Poisson absorbs that; a within-team softmax saturated to exact 0.0 and 1.0 shares, deviance 8.2465.",
+    "in every one of these failures the optimiser converged -- stage 2 in five Newton iterations in every fold"
+  ],
+  "development_only": true,
+  "artifacts": "experiments/player_program/discovery_wave_1/ws3/",
+  "canonical_artifacts_modified": "none",
+  "arm_registry_appended": false
+}

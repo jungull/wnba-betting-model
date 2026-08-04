@@ -1,0 +1,1826 @@
+{
+  "schema": "discovery_ws3_two_stage/1",
+  "workstream": "ws3_team_total_plus_allocation",
+  "wave": "discovery_wave_1",
+  "lane": "DISCOVERY (development folds only) \u2014 may not replace Arm D; not registered as an arm",
+  "executed_utc": "2026-08-04T13:10:43.775112Z",
+  "hyperparameters": {
+    "reused_frozen_from_P1": {
+      "EB_PRIOR_K": 200.0,
+      "EWMA_ALPHA": 0.1
+    },
+    "reused_frozen_from_P2": {
+      "INVOLVE_ALPHA": 0.1,
+      "INVOLVE_SHRINK_K": 50.0,
+      "RIDGE_LAMBDA": 10.0,
+      "MIN_TRAIN_ROWS": 2000
+    },
+    "fixed_here_before_results": {
+      "STAGE1_RIDGE_LAMBDA": 10.0,
+      "STAGE2_RIDGE_LAMBDA": 10.0,
+      "MIN_TRAIN_TEAM_GAMES": 200,
+      "RECENT_ROSTER_WINDOW": 10,
+      "SHARE_CALIBRATION_BINS": 10,
+      "WINSOR_Q": [
+        0.005,
+        0.995
+      ]
+    }
+  },
+  "walk_forward": "by season; fold s trains on seasons < s only; all statistics train-fold only",
+  "universe": "ALL Tier A candidate obligations including non-appearers (realised target 0); never built from realised rows",
+  "feature_gate": {
+    "note": "a converging optimiser does not validate an unidentified design",
+    "declared": {
+      "stage1": [
+        "log_personnel_rate",
+        "team_tov_rate_ewma",
+        "team_tov_rate_shrunk",
+        "roster_continuity_minutes",
+        "roster_continuity_jaccard",
+        "displaced_creation_responsibility",
+        "proj_top5_concentration",
+        "n_candidates",
+        "frac_candidates_cold_start",
+        "log_proj_team_off_poss"
+      ],
+      "stage2": [
+        "offensive_involvement_proxy",
+        "proj_off_poss_share",
+        "proj_minutes_share",
+        "proj_rotation_rank",
+        "p_active",
+        "prior_tov_share",
+        "role_change",
+        "trailing_minutes_share",
+        "responsibility_transfer",
+        "displaced_creation_responsibility"
+      ]
+    },
+    "audits": [
+      {
+        "label": "stage1_as_declared",
+        "raised": true,
+        "passed": false,
+        "blocking": [
+          {
+            "kind": "deterministic_transform_of_offset",
+            "feature": "log_proj_team_off_poss",
+            "corr_with_offset": 1.0
+          }
+        ],
+        "features": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start",
+          "log_proj_team_off_poss"
+        ]
+      },
+      {
+        "n_features": 9,
+        "n_rows": 2914,
+        "features": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "findings": [],
+        "blocking": [],
+        "passed": true,
+        "note": "a converging optimiser does not validate an unidentified design",
+        "label": "stage1_after_removing_the_offset_duplicate",
+        "raised": false
+      },
+      {
+        "label": "stage2_as_declared_within_team_centred",
+        "raised": true,
+        "passed": false,
+        "blocking": [
+          {
+            "kind": "impossible_scaling",
+            "feature": "displaced_creation_responsibility",
+            "std": 2.135140332744813e-17
+          },
+          {
+            "kind": "near_collinear",
+            "feature": "proj_off_poss_share",
+            "other": "proj_minutes_share",
+            "corr": 1.0
+          }
+        ],
+        "features": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_minutes_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "trailing_minutes_share",
+          "responsibility_transfer",
+          "displaced_creation_responsibility"
+        ]
+      },
+      {
+        "n_features": 8,
+        "n_rows": 35629,
+        "features": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "trailing_minutes_share",
+          "responsibility_transfer"
+        ],
+        "findings": [],
+        "blocking": [],
+        "passed": true,
+        "note": "a converging optimiser does not validate an unidentified design",
+        "label": "stage2_after_removing_the_duplicate_and_the_within_team_constant",
+        "raised": false
+      },
+      {
+        "n_features": 7,
+        "n_rows": 35629,
+        "features": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "findings": [],
+        "blocking": [],
+        "passed": true,
+        "note": "a converging optimiser does not validate an unidentified design",
+        "label": "stage2_final_after_resolving_the_three_way_dependency",
+        "raised": false
+      }
+    ],
+    "multiway_rank_check": {
+      "why": "feature_gate.audit compares features PAIRWISE and cannot see a >2-way exact linear dependency; this design contains one",
+      "stage1": {
+        "n_features": 9,
+        "numerical_rank": 9,
+        "rank_deficient": false,
+        "normalised_singular_values": [
+          1.0,
+          0.9131126905,
+          0.6576904346,
+          0.5563050263,
+          0.4468163027,
+          0.2526119443,
+          0.2171117671,
+          0.1841365247,
+          0.1400981828
+        ],
+        "condition_number": 7.137851326029608
+      },
+      "stage2_pairwise_clean_design": {
+        "n_features": 8,
+        "numerical_rank": 8,
+        "rank_deficient": false,
+        "normalised_singular_values": [
+          1.0,
+          0.6601057944,
+          0.371983766,
+          0.2759110613,
+          0.217771479,
+          0.1866106095,
+          0.1324898187,
+          0.04788348
+        ],
+        "condition_number": 20.884029333746767
+      },
+      "stage2_final_design": {
+        "n_features": 7,
+        "numerical_rank": 7,
+        "rank_deficient": false,
+        "normalised_singular_values": [
+          1.0,
+          0.7108209152,
+          0.4078008178,
+          0.3046391465,
+          0.2382021149,
+          0.2006793395,
+          0.119485389
+        ],
+        "condition_number": 8.369224120251848
+      }
+    },
+    "null_imputation_inside_the_design_matrix_only": {
+      "offensive_involvement_proxy": 769,
+      "proj_off_poss_share": 0,
+      "proj_rotation_rank": 0,
+      "p_active": 0,
+      "prior_tov_share": 769,
+      "role_change": 769,
+      "responsibility_transfer": 769
+    },
+    "stage1_features_used": [
+      "log_personnel_rate",
+      "team_tov_rate_ewma",
+      "team_tov_rate_shrunk",
+      "roster_continuity_minutes",
+      "roster_continuity_jaccard",
+      "displaced_creation_responsibility",
+      "proj_top5_concentration",
+      "n_candidates",
+      "frac_candidates_cold_start"
+    ],
+    "stage2_features_used": [
+      "offensive_involvement_proxy",
+      "proj_off_poss_share",
+      "proj_rotation_rank",
+      "p_active",
+      "prior_tov_share",
+      "role_change",
+      "responsibility_transfer"
+    ],
+    "softmax_saturation_negative_result": {
+      "status": "NEGATIVE RESULT, PRESERVED",
+      "what": "stage 2 executed with P2's appearance-clocked EWMA state and no winsorisation; the within-team softmax saturated",
+      "diagnosis": "player EWMA state was decayed only on days the player appeared while team EWMA state was decayed every team game, so player/team was not bounded by 1; a within-group softmax is multiplicative and unbounded-outlier-sensitive where the additive Poisson of P1/P2 is not",
+      "evidence": {
+        "share_S2_min": 0.0,
+        "share_S2_max": 1.0,
+        "share_S2_1st_percentile": 0.0,
+        "share_S2_99th_percentile": 1.0,
+        "corr_with_D_shares": 0.2353,
+        "max_trailing_minutes_share": 1.617461,
+        "max_prior_tov_share": 2.574689
+      },
+      "measured_metrics": {
+        "D_frozen_unconstrained": {
+          "poisson_deviance": 1.2285420505227964,
+          "mae": 0.8478710366088574
+        },
+        "D_total_x_S2_shares": {
+          "poisson_deviance": 8.246467600014133,
+          "mae": 1.0493567151197083
+        },
+        "S1_total_x_S2_shares": {
+          "poisson_deviance": 8.235257361504328,
+          "mae": 1.0431145597016112
+        },
+        "ORACLE_total_x_S2_shares": {
+          "poisson_deviance": 8.169484710819662,
+          "mae": 1.0146117501803282
+        },
+        "S2_share_calibration_slope": 0.11422294804021273,
+        "S2_multinomial_log_loss_per_turnover": 6.237621840236808
+      },
+      "correction": "three changes, in order of importance: (1) the PERMANENT GATE IS NOW RUN PER TRAINING FOLD, which caught a 2022-fold design whose within-team variance was 1e-9 and 1e-17; (2) player state is decayed on EVERY team game (absent players contribute 0) and keyed by (team, player), so the ratio is a genuine share; (3) stage-2 features are winsorised at training-fold quantiles",
+      "second_saturation_had_a_different_cause": "after (2), the un-winsorised ablation still saturated. The cause was NOT outliers: the 2021 projected-exposure regime gives every Tier A candidate on a team an IDENTICAL projected possession share and an IDENTICAL p_active, so the 2022 training fold's within-team-game design had std 7.8e-9 and 5.1e-17. Dividing test rows by that std sent |X.gamma| to 6.9e4. The POOLED gate cannot see this -- pooled variance is healthy. The per-training-fold gate blocks it as impossible_scaling and drops both features for that fold. Winsorisation had merely MASKED it by clipping the feature to a sign indicator.",
+      "lesson": "a feature construction that is safe under an additive link is not automatically safe under a compositional one, and a design matrix that passes a POOLED audit can be degenerate inside one training fold. The optimiser converged in 5 Newton iterations in every fold while producing degenerate shares."
+    },
+    "leakage_audit": {
+      "test": "is the feature's NULL PATTERN identical to the post-cutoff did_appear indicator? if yes the missingness itself is an appearance oracle",
+      "canonical_p2_artifact_NOT_MODIFIED": true,
+      "columns": {
+        "trailing_minutes_share :: turnover_p2_v1_canonical": {
+          "non_null": 27351,
+          "null": 8278,
+          "null_and_appeared": 0,
+          "non_null_and_did_not_appear": 0,
+          "null_pattern_is_exactly_did_appear": true,
+          "verdict": "LEAKING \u2014 missingness is an exact did_appear indicator"
+        },
+        "trailing_minutes_share :: ws3_rebuilt": {
+          "non_null": 34860,
+          "null": 769,
+          "null_and_appeared": 138,
+          "non_null_and_did_not_appear": 7647,
+          "null_pattern_is_exactly_did_appear": false,
+          "verdict": "clean \u2014 missingness is not the appearance indicator"
+        },
+        "role_change :: turnover_p2_v1_canonical": {
+          "non_null": 27351,
+          "null": 8278,
+          "null_and_appeared": 0,
+          "non_null_and_did_not_appear": 0,
+          "null_pattern_is_exactly_did_appear": true,
+          "verdict": "LEAKING \u2014 missingness is an exact did_appear indicator"
+        },
+        "role_change :: ws3_rebuilt": {
+          "non_null": 34860,
+          "null": 769,
+          "null_and_appeared": 138,
+          "non_null_and_did_not_appear": 7647,
+          "null_pattern_is_exactly_did_appear": false,
+          "verdict": "clean \u2014 missingness is not the appearance indicator"
+        },
+        "offensive_involvement_proxy :: turnover_p2_v1_canonical": {
+          "non_null": 27351,
+          "null": 8278,
+          "null_and_appeared": 0,
+          "non_null_and_did_not_appear": 0,
+          "null_pattern_is_exactly_did_appear": true,
+          "verdict": "LEAKING \u2014 missingness is an exact did_appear indicator"
+        },
+        "offensive_involvement_proxy :: ws3_rebuilt": {
+          "non_null": 34860,
+          "null": 769,
+          "null_and_appeared": 138,
+          "non_null_and_did_not_appear": 7647,
+          "null_pattern_is_exactly_did_appear": false,
+          "verdict": "clean \u2014 missingness is not the appearance indicator"
+        }
+      },
+      "rebuilt_null_meaning": "no prior appearance for THAT TEAM before the cutoff, i.e. a cold start; this is knowable at the cutoff and is preserved as NULL rather than imputed in the artifact"
+    },
+    "passed_for_the_fitted_designs": true,
+    "per_training_fold_gate": {
+      "stage1_2022": {
+        "kept": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "n_features": 9,
+            "n_rows": 406,
+            "features": [
+              "log_personnel_rate",
+              "team_tov_rate_ewma",
+              "team_tov_rate_shrunk",
+              "roster_continuity_minutes",
+              "roster_continuity_jaccard",
+              "displaced_creation_responsibility",
+              "proj_top5_concentration",
+              "n_candidates",
+              "frac_candidates_cold_start"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage1_train_fold_2022/attempt0",
+            "raised": false
+          }
+        ]
+      },
+      "stage2_2022": {
+        "kept": [
+          "offensive_involvement_proxy",
+          "proj_rotation_rank",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "label": "stage2_winsorised_train_fold_2022/attempt0",
+            "raised": true,
+            "passed": false,
+            "features": [
+              "offensive_involvement_proxy",
+              "proj_off_poss_share",
+              "proj_rotation_rank",
+              "p_active",
+              "prior_tov_share",
+              "role_change",
+              "responsibility_transfer"
+            ],
+            "blocking": [
+              {
+                "kind": "impossible_scaling",
+                "feature": "proj_off_poss_share",
+                "std": 7.80108356964482e-09
+              },
+              {
+                "kind": "impossible_scaling",
+                "feature": "p_active",
+                "std": 5.13611574504531e-17
+              }
+            ]
+          },
+          {
+            "n_features": 5,
+            "n_rows": 4850,
+            "features": [
+              "offensive_involvement_proxy",
+              "proj_rotation_rank",
+              "prior_tov_share",
+              "role_change",
+              "responsibility_transfer"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage2_winsorised_train_fold_2022/attempt1",
+            "raised": false
+          }
+        ]
+      },
+      "stage1_2023": {
+        "kept": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "n_features": 9,
+            "n_rows": 872,
+            "features": [
+              "log_personnel_rate",
+              "team_tov_rate_ewma",
+              "team_tov_rate_shrunk",
+              "roster_continuity_minutes",
+              "roster_continuity_jaccard",
+              "displaced_creation_responsibility",
+              "proj_top5_concentration",
+              "n_candidates",
+              "frac_candidates_cold_start"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage1_train_fold_2023/attempt0",
+            "raised": false
+          }
+        ]
+      },
+      "stage2_2023": {
+        "kept": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "n_features": 7,
+            "n_rows": 10413,
+            "features": [
+              "offensive_involvement_proxy",
+              "proj_off_poss_share",
+              "proj_rotation_rank",
+              "p_active",
+              "prior_tov_share",
+              "role_change",
+              "responsibility_transfer"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage2_winsorised_train_fold_2023/attempt0",
+            "raised": false
+          }
+        ]
+      },
+      "stage1_2024": {
+        "kept": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "n_features": 9,
+            "n_rows": 1380,
+            "features": [
+              "log_personnel_rate",
+              "team_tov_rate_ewma",
+              "team_tov_rate_shrunk",
+              "roster_continuity_minutes",
+              "roster_continuity_jaccard",
+              "displaced_creation_responsibility",
+              "proj_top5_concentration",
+              "n_candidates",
+              "frac_candidates_cold_start"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage1_train_fold_2024/attempt0",
+            "raised": false
+          }
+        ]
+      },
+      "stage2_2024": {
+        "kept": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "n_features": 7,
+            "n_rows": 16563,
+            "features": [
+              "offensive_involvement_proxy",
+              "proj_off_poss_share",
+              "proj_rotation_rank",
+              "p_active",
+              "prior_tov_share",
+              "role_change",
+              "responsibility_transfer"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage2_winsorised_train_fold_2024/attempt0",
+            "raised": false
+          }
+        ]
+      },
+      "stage1_2025": {
+        "kept": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "n_features": 9,
+            "n_rows": 1892,
+            "features": [
+              "log_personnel_rate",
+              "team_tov_rate_ewma",
+              "team_tov_rate_shrunk",
+              "roster_continuity_minutes",
+              "roster_continuity_jaccard",
+              "displaced_creation_responsibility",
+              "proj_top5_concentration",
+              "n_candidates",
+              "frac_candidates_cold_start"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage1_train_fold_2025/attempt0",
+            "raised": false
+          }
+        ]
+      },
+      "stage2_2025": {
+        "kept": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "n_features": 7,
+            "n_rows": 22659,
+            "features": [
+              "offensive_involvement_proxy",
+              "proj_off_poss_share",
+              "proj_rotation_rank",
+              "p_active",
+              "prior_tov_share",
+              "role_change",
+              "responsibility_transfer"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage2_winsorised_train_fold_2025/attempt0",
+            "raised": false
+          }
+        ]
+      },
+      "stage1_2026": {
+        "kept": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "n_features": 9,
+            "n_rows": 2499,
+            "features": [
+              "log_personnel_rate",
+              "team_tov_rate_ewma",
+              "team_tov_rate_shrunk",
+              "roster_continuity_minutes",
+              "roster_continuity_jaccard",
+              "displaced_creation_responsibility",
+              "proj_top5_concentration",
+              "n_candidates",
+              "frac_candidates_cold_start"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage1_train_fold_2026/attempt0",
+            "raised": false
+          }
+        ]
+      },
+      "stage2_2026": {
+        "kept": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "passed": true,
+        "audits": [
+          {
+            "n_features": 7,
+            "n_rows": 30098,
+            "features": [
+              "offensive_involvement_proxy",
+              "proj_off_poss_share",
+              "proj_rotation_rank",
+              "p_active",
+              "prior_tov_share",
+              "role_change",
+              "responsibility_transfer"
+            ],
+            "findings": [],
+            "blocking": [],
+            "passed": true,
+            "note": "a converging optimiser does not validate an unidentified design",
+            "label": "stage2_winsorised_train_fold_2026/attempt0",
+            "raised": false
+          }
+        ]
+      }
+    }
+  },
+  "sum_to_total_constraint": {
+    "S1_total_x_D_shares": {
+      "max_abs_deviation": 1.0658141036401503e-14,
+      "mean_abs_deviation": 1.969598129067333e-15,
+      "exact_to_1e-9": true
+    },
+    "S1_total_x_S2_shares": {
+      "max_abs_deviation": 8.881784197001252e-15,
+      "mean_abs_deviation": 1.4916764536761883e-15,
+      "exact_to_1e-9": true
+    },
+    "D_total_x_S2_shares": {
+      "max_abs_deviation": 8.881784197001252e-15,
+      "mean_abs_deviation": 1.4721694465173662e-15,
+      "exact_to_1e-9": true
+    },
+    "D_total_x_S2_shares_no_winsorisation": {
+      "max_abs_deviation": 8.881784197001252e-15,
+      "mean_abs_deviation": 1.493505235597328e-15,
+      "exact_to_1e-9": true
+    },
+    "ORACLE_total_x_S2_shares": {
+      "max_abs_deviation": 7.105427357601002e-15,
+      "mean_abs_deviation": 1.3334106182509001e-15,
+      "exact_to_1e-9": true
+    },
+    "ORACLE_total_x_D_shares": {
+      "max_abs_deviation": 1.0658141036401503e-14,
+      "mean_abs_deviation": 1.812780079329614e-15,
+      "exact_to_1e-9": true
+    },
+    "share_D": {
+      "max_abs_share_sum_error": 6.661338147750939e-16
+    },
+    "share_S2": {
+      "max_abs_share_sum_error": 5.551115123125783e-16
+    },
+    "share_S2_no_winsorisation": {
+      "max_abs_share_sum_error": 5.551115123125783e-16
+    },
+    "assertion": "ALLOCATED PLAYER EXPECTATIONS SUM EXACTLY TO THE STAGE-1 TEAM TOTAL"
+  },
+  "fold_detail": {
+    "2021": {
+      "train_team_games": 0,
+      "train_player_rows": 0,
+      "test_team_games": 406,
+      "stage1": {
+        "fallback_to_D_aggregate": true
+      },
+      "stage2": {
+        "fallback_to_D_proportional_shares": true
+      }
+    },
+    "2022": {
+      "train_team_games": 406,
+      "train_player_rows": 4850,
+      "test_team_games": 466,
+      "K0_intercept_only": {
+        "converged": true,
+        "intercept": -1.8077622744377817
+      },
+      "stage1": {
+        "fallback_to_D_aggregate": false,
+        "converged": true,
+        "features_after_fold_gate": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "coef": {
+          "intercept": -1.81054,
+          "log_personnel_rate": -0.01473,
+          "team_tov_rate_ewma": -0.04374,
+          "team_tov_rate_shrunk": 0.09993,
+          "roster_continuity_minutes": -0.06342,
+          "roster_continuity_jaccard": -0.0146,
+          "displaced_creation_responsibility": -0.06292,
+          "proj_top5_concentration": 0.00282,
+          "n_candidates": 0.01289,
+          "frac_candidates_cold_start": 0.03265
+        }
+      },
+      "train_fold_level_calibration_ratio": 0.9846061741121991,
+      "stage2": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 5,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_rotation_rank",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.04567,
+          "proj_rotation_rank": -0.00907,
+          "prior_tov_share": -0.05794,
+          "role_change": -0.61825,
+          "responsibility_transfer": 0.03342
+        }
+      },
+      "stage2_ablation": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 5,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_rotation_rank",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.04428,
+          "proj_rotation_rank": -0.00919,
+          "prior_tov_share": -0.05732,
+          "role_change": -0.61649,
+          "responsibility_transfer": 0.0297
+        }
+      }
+    },
+    "2023": {
+      "train_team_games": 872,
+      "train_player_rows": 10413,
+      "test_team_games": 508,
+      "K0_intercept_only": {
+        "converged": true,
+        "intercept": -1.795942181431835
+      },
+      "stage1": {
+        "fallback_to_D_aggregate": false,
+        "converged": true,
+        "features_after_fold_gate": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "coef": {
+          "intercept": -1.79886,
+          "log_personnel_rate": 0.03783,
+          "team_tov_rate_ewma": -0.01742,
+          "team_tov_rate_shrunk": 0.02949,
+          "roster_continuity_minutes": -0.08212,
+          "roster_continuity_jaccard": -0.01906,
+          "displaced_creation_responsibility": -0.06751,
+          "proj_top5_concentration": -0.01017,
+          "n_candidates": -0.003,
+          "frac_candidates_cold_start": 0.01828
+        }
+      },
+      "train_fold_level_calibration_ratio": 0.9936507004029294,
+      "stage2": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 5,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.0579,
+          "proj_off_poss_share": -0.05858,
+          "proj_rotation_rank": -0.00604,
+          "p_active": 0.15916,
+          "prior_tov_share": -0.0465,
+          "role_change": -0.40964,
+          "responsibility_transfer": 0.08635
+        }
+      },
+      "stage2_ablation": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 6,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.0575,
+          "proj_off_poss_share": -0.05938,
+          "proj_rotation_rank": -0.0062,
+          "p_active": 0.15917,
+          "prior_tov_share": -0.04635,
+          "role_change": -0.40339,
+          "responsibility_transfer": 0.07585
+        }
+      }
+    },
+    "2024": {
+      "train_team_games": 1380,
+      "train_player_rows": 16563,
+      "test_team_games": 512,
+      "K0_intercept_only": {
+        "converged": true,
+        "intercept": -1.8019745475079498
+      },
+      "stage1": {
+        "fallback_to_D_aggregate": false,
+        "converged": true,
+        "features_after_fold_gate": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "coef": {
+          "intercept": -1.8043,
+          "log_personnel_rate": 0.02046,
+          "team_tov_rate_ewma": -0.01159,
+          "team_tov_rate_shrunk": 0.04132,
+          "roster_continuity_minutes": -0.07415,
+          "roster_continuity_jaccard": -0.00703,
+          "displaced_creation_responsibility": -0.0596,
+          "proj_top5_concentration": -0.01169,
+          "n_candidates": 0.00234,
+          "frac_candidates_cold_start": 0.01164
+        }
+      },
+      "train_fold_level_calibration_ratio": 0.9916889544097128,
+      "stage2": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 5,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.08168,
+          "proj_off_poss_share": -0.0702,
+          "proj_rotation_rank": -0.00428,
+          "p_active": 0.19197,
+          "prior_tov_share": -0.04098,
+          "role_change": -0.30594,
+          "responsibility_transfer": 0.08516
+        }
+      },
+      "stage2_ablation": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 5,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.07835,
+          "proj_off_poss_share": -0.06698,
+          "proj_rotation_rank": -0.00421,
+          "p_active": 0.19014,
+          "prior_tov_share": -0.03997,
+          "role_change": -0.30278,
+          "responsibility_transfer": 0.07868
+        }
+      }
+    },
+    "2025": {
+      "train_team_games": 1892,
+      "train_player_rows": 22659,
+      "test_team_games": 607,
+      "K0_intercept_only": {
+        "converged": true,
+        "intercept": -1.802390728924096
+      },
+      "stage1": {
+        "fallback_to_D_aggregate": false,
+        "converged": true,
+        "features_after_fold_gate": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "coef": {
+          "intercept": -1.80498,
+          "log_personnel_rate": 0.0147,
+          "team_tov_rate_ewma": -0.01092,
+          "team_tov_rate_shrunk": 0.04578,
+          "roster_continuity_minutes": -0.06475,
+          "roster_continuity_jaccard": -0.00551,
+          "displaced_creation_responsibility": -0.04243,
+          "proj_top5_concentration": -0.01544,
+          "n_candidates": 0.00709,
+          "frac_candidates_cold_start": 0.00649
+        }
+      },
+      "train_fold_level_calibration_ratio": 0.9919244534810068,
+      "stage2": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 5,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.07519,
+          "proj_off_poss_share": -0.08155,
+          "proj_rotation_rank": -0.00602,
+          "p_active": 0.199,
+          "prior_tov_share": -0.01845,
+          "role_change": -0.239,
+          "responsibility_transfer": 0.07829
+        }
+      },
+      "stage2_ablation": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 5,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.06994,
+          "proj_off_poss_share": -0.0807,
+          "proj_rotation_rank": -0.0064,
+          "p_active": 0.19707,
+          "prior_tov_share": -0.01293,
+          "role_change": -0.23377,
+          "responsibility_transfer": 0.07102
+        }
+      }
+    },
+    "2026": {
+      "train_team_games": 2499,
+      "train_player_rows": 30098,
+      "test_team_games": 415,
+      "K0_intercept_only": {
+        "converged": true,
+        "intercept": -1.8039729719883275
+      },
+      "stage1": {
+        "fallback_to_D_aggregate": false,
+        "converged": true,
+        "features_after_fold_gate": [
+          "log_personnel_rate",
+          "team_tov_rate_ewma",
+          "team_tov_rate_shrunk",
+          "roster_continuity_minutes",
+          "roster_continuity_jaccard",
+          "displaced_creation_responsibility",
+          "proj_top5_concentration",
+          "n_candidates",
+          "frac_candidates_cold_start"
+        ],
+        "coef": {
+          "intercept": -1.80648,
+          "log_personnel_rate": 0.01137,
+          "team_tov_rate_ewma": 0.00222,
+          "team_tov_rate_shrunk": 0.03745,
+          "roster_continuity_minutes": -0.04876,
+          "roster_continuity_jaccard": -0.00567,
+          "displaced_creation_responsibility": -0.02537,
+          "proj_top5_concentration": -0.01323,
+          "n_candidates": 0.00802,
+          "frac_candidates_cold_start": 0.00511
+        }
+      },
+      "train_fold_level_calibration_ratio": 0.9921360618708124,
+      "stage2": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 5,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.08732,
+          "proj_off_poss_share": -0.11134,
+          "proj_rotation_rank": -0.02156,
+          "p_active": 0.21974,
+          "prior_tov_share": -0.02061,
+          "role_change": -0.19129,
+          "responsibility_transfer": 0.06603
+        }
+      },
+      "stage2_ablation": {
+        "fallback_to_D_proportional_shares": false,
+        "converged": true,
+        "newton_iterations": 5,
+        "features_after_fold_gate": [
+          "offensive_involvement_proxy",
+          "proj_off_poss_share",
+          "proj_rotation_rank",
+          "p_active",
+          "prior_tov_share",
+          "role_change",
+          "responsibility_transfer"
+        ],
+        "gamma": {
+          "offensive_involvement_proxy": 0.08271,
+          "proj_off_poss_share": -0.11057,
+          "proj_rotation_rank": -0.02197,
+          "p_active": 0.21851,
+          "prior_tov_share": -0.01638,
+          "role_change": -0.18774,
+          "responsibility_transfer": 0.06155
+        }
+      }
+    }
+  },
+  "results": {
+    "team_games": 2914,
+    "player_rows": 35629,
+    "sign_convention": "INCUMBENT minus CHALLENGER absolute error; POSITIVE = challenger better",
+    "stage1_team_total": {
+      "D_aggregate_INCUMBENT": {
+        "mae": 2.967450520182488,
+        "rmse": 3.7144396851884123,
+        "bias": 0.0804390838229629,
+        "poisson_deviance": 1.068070070882263
+      },
+      "D_aggregate_level_calibrated": {
+        "mae": 2.963681228509596,
+        "rmse": 3.7148854077274165,
+        "bias": -0.022899230715570255,
+        "poisson_deviance": 1.0684149251971515
+      },
+      "K0_intercept_only_control": {
+        "mae": 3.0058559682821113,
+        "rmse": 3.7838246331073737,
+        "bias": 0.022487390837401047,
+        "poisson_deviance": 1.1086499076803082
+      },
+      "S1_team_total_model": {
+        "mae": 3.0092600816475223,
+        "rmse": 3.7803221342818745,
+        "bias": 0.29898861993564835,
+        "poisson_deviance": 1.0966599915613011
+      }
+    },
+    "stage1_paired_vs_D_aggregate": {
+      "D_aggregate_level_calibrated": {
+        "mean_mae_reduction": 0.0037692916728920486,
+        "ci90": [
+          -6.060651098817666e-05,
+          0.007651644694188686
+        ],
+        "clusters": 1458,
+        "team_games_improved": 1307,
+        "team_games_worsened": 1201
+      },
+      "K0_intercept_only_control": {
+        "mean_mae_reduction": -0.038405448099622694,
+        "ci90": [
+          -0.06368428749779069,
+          -0.013766768024510366
+        ],
+        "clusters": 1458,
+        "team_games_improved": 1200,
+        "team_games_worsened": 1308
+      },
+      "S1_team_total_model": {
+        "mean_mae_reduction": -0.04180956146503465,
+        "ci90": [
+          -0.07115381916166069,
+          -0.013241907768466793
+        ],
+        "clusters": 1458,
+        "team_games_improved": 1250,
+        "team_games_worsened": 1258
+      }
+    },
+    "stage1_paired_vs_K0_intercept_only": {
+      "S1_team_total_model": {
+        "mean_mae_reduction": -0.0034041133654119636,
+        "ci90": [
+          -0.039745527833344146,
+          0.033980738593713894
+        ],
+        "clusters": 1458,
+        "team_games_improved": 1304,
+        "team_games_worsened": 1204
+      },
+      "note": "K0 is an intercept-only Poisson fit on the same offset through the identical walk-forward pipeline; it isolates the free recalibration an unpenalised intercept buys from any genuine feature contribution"
+    },
+    "stage1_by_season_team_mae": {
+      "2021": {
+        "D_aggregate_INCUMBENT": 3.1726305194745557,
+        "D_aggregate_level_calibrated": 3.1726305194745557,
+        "K0_intercept_only_control": 3.1726305194745557,
+        "S1_team_total_model": 3.1726305194745557
+      },
+      "2022": {
+        "D_aggregate_INCUMBENT": 3.0745088817924837,
+        "D_aggregate_level_calibrated": 3.0758402143856776,
+        "K0_intercept_only_control": 3.1388169090282316,
+        "S1_team_total_model": 3.431947734307137
+      },
+      "2023": {
+        "D_aggregate_INCUMBENT": 2.827291351316588,
+        "D_aggregate_level_calibrated": 2.8233098486546355,
+        "K0_intercept_only_control": 2.831501668943689,
+        "S1_team_total_model": 2.8008311553707204
+      },
+      "2024": {
+        "D_aggregate_INCUMBENT": 3.0251670660813295,
+        "D_aggregate_level_calibrated": 3.0170320532220782,
+        "K0_intercept_only_control": 3.07338823169134,
+        "S1_team_total_model": 2.980282219346221
+      },
+      "2025": {
+        "D_aggregate_INCUMBENT": 2.924119427565568,
+        "D_aggregate_level_calibrated": 2.9167528888115175,
+        "K0_intercept_only_control": 2.9389973145929904,
+        "S1_team_total_model": 2.9009610075858885
+      },
+      "2026": {
+        "D_aggregate_INCUMBENT": 2.8102449377229792,
+        "D_aggregate_level_calibrated": 2.807968075160765,
+        "K0_intercept_only_control": 2.921297900368531,
+        "S1_team_total_model": 2.8240920192502657
+      }
+    },
+    "stage2_player_allocation": {
+      "D_frozen_unconstrained": {
+        "poisson_deviance": 1.2285420505227964,
+        "mae": 0.8478710366088574,
+        "rmse": 1.15389103751142,
+        "bias": 0.012669440350840996
+      },
+      "S1_total_x_D_shares": {
+        "poisson_deviance": 1.2312621491230977,
+        "mae": 0.8526345909734161,
+        "rmse": 1.15626542835162,
+        "bias": 0.030544018594192344
+      },
+      "D_total_x_S2_shares": {
+        "poisson_deviance": 1.243659758063,
+        "mae": 0.8508870396690237,
+        "rmse": 1.1660217712983632,
+        "bias": 0.01266944035084099
+      },
+      "S1_total_x_S2_shares": {
+        "poisson_deviance": 1.246379856663301,
+        "mae": 0.8559727775454374,
+        "rmse": 1.1690304607468116,
+        "bias": 0.030544018594192344
+      },
+      "D_total_x_S2_shares_no_winsorisation": {
+        "poisson_deviance": 1.2456784715210973,
+        "mae": 0.8516029114251138,
+        "rmse": 1.1669201894384968,
+        "bias": 0.012669440350840997
+      },
+      "ORACLE_total_x_D_shares": {
+        "poisson_deviance": 1.140431516652691,
+        "mae": 0.806517051528874,
+        "rmse": 1.0973504691775573,
+        "bias": -2.168781681043838e-18
+      },
+      "ORACLE_total_x_S2_shares": {
+        "poisson_deviance": 1.1555492241928946,
+        "mae": 0.8103886863070411,
+        "rmse": 1.110583582467415,
+        "bias": -6.23213126736735e-18
+      }
+    },
+    "stage2_player_appearing": {
+      "D_frozen_unconstrained": {
+        "n": 27351,
+        "poisson_deviance": 1.2871691798655802,
+        "mae": 0.9478855224141846
+      },
+      "S1_total_x_D_shares": {
+        "n": 27351,
+        "poisson_deviance": 1.2851564934346693,
+        "mae": 0.9513127824285854
+      },
+      "D_total_x_S2_shares": {
+        "n": 27351,
+        "poisson_deviance": 1.3160248821822913,
+        "mae": 0.9563955925793666
+      },
+      "S1_total_x_S2_shares": {
+        "n": 27351,
+        "poisson_deviance": 1.313546097564723,
+        "mae": 0.9600094984418991
+      },
+      "D_total_x_S2_shares_no_winsorisation": {
+        "n": 27351,
+        "poisson_deviance": 1.318125594660556,
+        "mae": 0.9570636382594135
+      },
+      "ORACLE_total_x_D_shares": {
+        "n": 27351,
+        "poisson_deviance": 1.176912501608558,
+        "mae": 0.8962760298073462
+      },
+      "ORACLE_total_x_S2_shares": {
+        "n": 27351,
+        "poisson_deviance": 1.2059690428651118,
+        "mae": 0.9060011149775541
+      }
+    },
+    "stage2_player_non_appearing": {
+      "D_frozen_unconstrained": {
+        "n": 8278,
+        "poisson_deviance": 1.034834559020685,
+        "mae": 0.5174172795103426
+      },
+      "S1_total_x_D_shares": {
+        "n": 8278,
+        "poisson_deviance": 1.053192058368592,
+        "mae": 0.526596029184296
+      },
+      "D_total_x_S2_shares": {
+        "n": 8278,
+        "poisson_deviance": 1.004561121944767,
+        "mae": 0.5022805609723835
+      },
+      "S1_total_x_S2_shares": {
+        "n": 8278,
+        "poisson_deviance": 1.0244586371785476,
+        "mae": 0.5122293185892738
+      },
+      "D_total_x_S2_shares_no_winsorisation": {
+        "n": 8278,
+        "poisson_deviance": 1.006308905806272,
+        "mae": 0.503154452903136
+      },
+      "ORACLE_total_x_D_shares": {
+        "n": 8278,
+        "poisson_deviance": 1.0198961917520006,
+        "mae": 0.5099480958760003
+      },
+      "ORACLE_total_x_S2_shares": {
+        "n": 8278,
+        "poisson_deviance": 0.9889591709790984,
+        "mae": 0.4944795854895492
+      }
+    },
+    "stage2_paired_vs_D_frozen": {
+      "S1_total_x_D_shares": {
+        "mean_mae_reduction": -0.004763554364558673,
+        "ci90": [
+          -0.005864273137955578,
+          -0.003765726536509163
+        ],
+        "clusters": 1458,
+        "rows_improved": 16844,
+        "rows_worsened": 17143
+      },
+      "D_total_x_S2_shares": {
+        "mean_mae_reduction": -0.0030160030601663044,
+        "ci90": [
+          -0.00498410204532025,
+          -0.001044483875973044
+        ],
+        "clusters": 1458,
+        "rows_improved": 18195,
+        "rows_worsened": 15792
+      },
+      "S1_total_x_S2_shares": {
+        "mean_mae_reduction": -0.008101740936580006,
+        "ci90": [
+          -0.010401433653940952,
+          -0.005831172355418642
+        ],
+        "clusters": 1458,
+        "rows_improved": 17943,
+        "rows_worsened": 16044
+      },
+      "D_total_x_S2_shares_no_winsorisation": {
+        "mean_mae_reduction": -0.0037318748162563403,
+        "ci90": [
+          -0.005662469780450193,
+          -0.0018204629041593838
+        ],
+        "clusters": 1458,
+        "rows_improved": 18148,
+        "rows_worsened": 15839
+      },
+      "ORACLE_total_x_D_shares": {
+        "mean_mae_reduction": 0.041353985079983356,
+        "ci90": [
+          0.03865159748248637,
+          0.044166469570283334
+        ],
+        "clusters": 1458,
+        "rows_improved": 19793,
+        "rows_worsened": 15836
+      },
+      "ORACLE_total_x_S2_shares": {
+        "mean_mae_reduction": 0.03748235030181634,
+        "ci90": [
+          0.033985193102910864,
+          0.040964657847988646
+        ],
+        "clusters": 1458,
+        "rows_improved": 20575,
+        "rows_worsened": 15054
+      }
+    },
+    "stage2_by_season_player_deviance": {
+      "2021": {
+        "D_frozen_unconstrained": 1.690515492404679,
+        "S1_total_x_D_shares": 1.690515492404679,
+        "D_total_x_S2_shares": 1.690515492404679,
+        "S1_total_x_S2_shares": 1.690515492404679,
+        "D_total_x_S2_shares_no_winsorisation": 1.690515492404679,
+        "ORACLE_total_x_D_shares": 1.5895375058562182,
+        "ORACLE_total_x_S2_shares": 1.5895375058562182
+      },
+      "2022": {
+        "D_frozen_unconstrained": 1.2011910486719866,
+        "S1_total_x_D_shares": 1.2213800731765687,
+        "D_total_x_S2_shares": 1.236350313462302,
+        "S1_total_x_S2_shares": 1.256539337966884,
+        "D_total_x_S2_shares_no_winsorisation": 1.246449930596242,
+        "ORACLE_total_x_D_shares": 1.1097906221074008,
+        "ORACLE_total_x_S2_shares": 1.1449498868977164
+      },
+      "2023": {
+        "D_frozen_unconstrained": 1.1199903883521114,
+        "S1_total_x_D_shares": 1.120080854896352,
+        "D_total_x_S2_shares": 1.1359337512188055,
+        "S1_total_x_S2_shares": 1.1360242177630457,
+        "D_total_x_S2_shares_no_winsorisation": 1.137414051782511,
+        "ORACLE_total_x_D_shares": 1.03660621946969,
+        "ORACLE_total_x_S2_shares": 1.0525495823363837
+      },
+      "2024": {
+        "D_frozen_unconstrained": 1.1432987431714123,
+        "S1_total_x_D_shares": 1.1405649589799107,
+        "D_total_x_S2_shares": 1.1723955436372635,
+        "S1_total_x_S2_shares": 1.169661759445762,
+        "D_total_x_S2_shares_no_winsorisation": 1.17492311472909,
+        "ORACLE_total_x_D_shares": 1.0492573826605323,
+        "ORACLE_total_x_S2_shares": 1.0783541831263834
+      },
+      "2025": {
+        "D_frozen_unconstrained": 1.1752422257716526,
+        "S1_total_x_D_shares": 1.1741202315311665,
+        "D_total_x_S2_shares": 1.1851018303931289,
+        "S1_total_x_S2_shares": 1.1839798361526426,
+        "D_total_x_S2_shares_no_winsorisation": 1.1845537510575925,
+        "ORACLE_total_x_D_shares": 1.0880237796853252,
+        "ORACLE_total_x_S2_shares": 1.0978833843068012
+      },
+      "2026": {
+        "D_frozen_unconstrained": 1.137295576188396,
+        "S1_total_x_D_shares": 1.1389332807717334,
+        "D_total_x_S2_shares": 1.1362589527698876,
+        "S1_total_x_S2_shares": 1.137896657353225,
+        "D_total_x_S2_shares_no_winsorisation": 1.1354102476563346,
+        "ORACLE_total_x_D_shares": 1.0638586550562779,
+        "ORACLE_total_x_S2_shares": 1.0628220316377694
+      }
+    },
+    "share_calibration": {
+      "D_shares": {
+        "decile_bins": [
+          {
+            "bin": 0,
+            "n": 3563,
+            "mean_predicted_share": 0.006638861648802128,
+            "mean_realised_share": 0.007852494577006508,
+            "gap": 0.0012136329282043806
+          },
+          {
+            "bin": 1,
+            "n": 3563,
+            "mean_predicted_share": 0.020376653769461447,
+            "mean_realised_share": 0.018978761861726163,
+            "gap": -0.0013978919077352846
+          },
+          {
+            "bin": 2,
+            "n": 3563,
+            "mean_predicted_share": 0.039536703789346664,
+            "mean_realised_share": 0.03816466552315609,
+            "gap": -0.0013720382661905756
+          },
+          {
+            "bin": 3,
+            "n": 3563,
+            "mean_predicted_share": 0.058032609077772905,
+            "mean_realised_share": 0.05631359108921495,
+            "gap": -0.001719017988557954
+          },
+          {
+            "bin": 4,
+            "n": 3563,
+            "mean_predicted_share": 0.07206545769125863,
+            "mean_realised_share": 0.06958263203869015,
+            "gap": -0.0024828256525684794
+          },
+          {
+            "bin": 5,
+            "n": 3562,
+            "mean_predicted_share": 0.083682487493525,
+            "mean_realised_share": 0.0753795862187621,
+            "gap": -0.008302901274762894
+          },
+          {
+            "bin": 6,
+            "n": 3563,
+            "mean_predicted_share": 0.0969815421619719,
+            "mean_realised_share": 0.09959139784946236,
+            "gap": 0.0026098556874904616
+          },
+          {
+            "bin": 7,
+            "n": 3563,
+            "mean_predicted_share": 0.11464384852879599,
+            "mean_realised_share": 0.11775320016133484,
+            "gap": 0.003109351632538851
+          },
+          {
+            "bin": 8,
+            "n": 3563,
+            "mean_predicted_share": 0.13924678797904946,
+            "mean_realised_share": 0.1440220908659447,
+            "gap": 0.004775302886895233
+          },
+          {
+            "bin": 9,
+            "n": 3563,
+            "mean_predicted_share": 0.1866686606827758,
+            "mean_realised_share": 0.19033219388202297,
+            "gap": 0.003663533199247171
+          }
+        ],
+        "calibration_intercept": -0.0023929336196970236,
+        "calibration_slope": 1.0293053057582335,
+        "mean_abs_bin_gap": 0.0030646351424191286,
+        "multinomial_log_loss_per_turnover": 2.2696445807658225
+      },
+      "S2_shares": {
+        "decile_bins": [
+          {
+            "bin": 0,
+            "n": 3563,
+            "mean_predicted_share": 0.005184677165018696,
+            "mean_realised_share": 0.0075063640912947935,
+            "gap": 0.0023216869262760974
+          },
+          {
+            "bin": 1,
+            "n": 3563,
+            "mean_predicted_share": 0.01839608912700416,
+            "mean_realised_share": 0.01741202739549563,
+            "gap": -0.0009840617315085322
+          },
+          {
+            "bin": 2,
+            "n": 3563,
+            "mean_predicted_share": 0.039150489653173214,
+            "mean_realised_share": 0.03952223525647862,
+            "gap": 0.00037174560330540535
+          },
+          {
+            "bin": 3,
+            "n": 3563,
+            "mean_predicted_share": 0.057329972110158986,
+            "mean_realised_share": 0.060403544357852036,
+            "gap": 0.00307357224769305
+          },
+          {
+            "bin": 4,
+            "n": 3563,
+            "mean_predicted_share": 0.07102425546153948,
+            "mean_realised_share": 0.069703833497158,
+            "gap": -0.0013204219643814796
+          },
+          {
+            "bin": 5,
+            "n": 3562,
+            "mean_predicted_share": 0.0826004140101189,
+            "mean_realised_share": 0.07960349753268116,
+            "gap": -0.0029969164774377444
+          },
+          {
+            "bin": 6,
+            "n": 3563,
+            "mean_predicted_share": 0.09619675764459439,
+            "mean_realised_share": 0.09954361491432016,
+            "gap": 0.003346857269725778
+          },
+          {
+            "bin": 7,
+            "n": 3563,
+            "mean_predicted_share": 0.1142794689955284,
+            "mean_realised_share": 0.11765830042043572,
+            "gap": 0.0033788314249073165
+          },
+          {
+            "bin": 8,
+            "n": 3563,
+            "mean_predicted_share": 0.1422916650394855,
+            "mean_realised_share": 0.14221437643968912,
+            "gap": -7.728859979638791e-05
+          },
+          {
+            "bin": 9,
+            "n": 3563,
+            "mean_predicted_share": 0.1914195199188371,
+            "mean_realised_share": 0.18424452083287718,
+            "gap": -0.007174999085959921
+          }
+        ],
+        "calibration_intercept": 0.0024267648537147106,
+        "calibration_slope": 0.9702803765820843,
+        "mean_abs_bin_gap": 0.0025046381330991714,
+        "multinomial_log_loss_per_turnover": 2.2767385224204153
+      },
+      "S2_shares_no_winsorisation": {
+        "decile_bins": [
+          {
+            "bin": 0,
+            "n": 3563,
+            "mean_predicted_share": 0.005198293615976777,
+            "mean_realised_share": 0.007509631919200714,
+            "gap": 0.002311338303223937
+          },
+          {
+            "bin": 1,
+            "n": 3563,
+            "mean_predicted_share": 0.018383941865804977,
+            "mean_realised_share": 0.017698165826450712,
+            "gap": -0.0006857760393542654
+          },
+          {
+            "bin": 2,
+            "n": 3563,
+            "mean_predicted_share": 0.0391660518099067,
+            "mean_realised_share": 0.0400528075293316,
+            "gap": 0.0008867557194249046
+          },
+          {
+            "bin": 3,
+            "n": 3564,
+            "mean_predicted_share": 0.057373092791493274,
+            "mean_realised_share": 0.05965436313206742,
+            "gap": 0.002281270340574147
+          },
+          {
+            "bin": 4,
+            "n": 3562,
+            "mean_predicted_share": 0.07108512147984847,
+            "mean_realised_share": 0.07062679405338246,
+            "gap": -0.00045832742646600977
+          },
+          {
+            "bin": 5,
+            "n": 3562,
+            "mean_predicted_share": 0.082643863324187,
+            "mean_realised_share": 0.07879823498875238,
+            "gap": -0.0038456283354346144
+          },
+          {
+            "bin": 6,
+            "n": 3563,
+            "mean_predicted_share": 0.09630741095232467,
+            "mean_realised_share": 0.09920943494038362,
+            "gap": 0.002902023988058944
+          },
+          {
+            "bin": 7,
+            "n": 3563,
+            "mean_predicted_share": 0.11451800154745473,
+            "mean_realised_share": 0.11832036797592047,
+            "gap": 0.0038023664284657366
+          },
+          {
+            "bin": 8,
+            "n": 3563,
+            "mean_predicted_share": 0.14222215588979215,
+            "mean_realised_share": 0.14136610140311612,
+            "gap": -0.0008560544866760278
+          },
+          {
+            "bin": 9,
+            "n": 3563,
+            "mean_predicted_share": 0.190979236493633,
+            "mean_realised_share": 0.18458608764172832,
+            "gap": -0.006393148851904673
+          }
+        ],
+        "calibration_intercept": 0.002445346713337111,
+        "calibration_slope": 0.9700528119420507,
+        "mean_abs_bin_gap": 0.0024422689919583263,
+        "multinomial_log_loss_per_turnover": 2.2776857980209653
+      }
+    },
+    "share_calibration_note": "a perfectly calibrated share model has slope 1, intercept 0 and zero bin gaps; realised shares are weighted by the team-game realised total",
+    "motivating_premise_retest": {
+      "question": "does arm G's player-deviance gain survive removal of the post-cutoff missingness structure?",
+      "p2_published_operational": {
+        "D_deviance": 1.22854,
+        "G_deviance": 1.22717,
+        "D_team_mae": 2.96745,
+        "G_team_mae": 2.97251
+      },
+      "pipeline_note": "both variants are refitted here on the OPERATIONAL track walk-forward (P2 trained on the intrinsic frame), so absolute values need not reproduce P2; the leaking-vs-clean CONTRAST is the measurement",
+      "D_baseline_deviance_this_pipeline": 1.2285420505227964,
+      "arms": {
+        "involve_canonical_LEAKING": {
+          "player_poisson_deviance": 1.2631277277244133,
+          "player_mae": 0.861438088124912,
+          "team_mae": 3.1434520298574955,
+          "nulls_mean_imputed": 8278
+        },
+        "involve_ws3_clean": {
+          "player_poisson_deviance": 1.2849318739734432,
+          "player_mae": 0.869705747879914,
+          "team_mae": 3.2235844534954525,
+          "nulls_mean_imputed": 769
+        }
+      },
+      "gain_vs_D": {
+        "involve_canonical_LEAKING": -0.03458567720161687,
+        "involve_ws3_clean": -0.0563898234506468
+      },
+      "value_of_the_leak_alone": {
+        "deviance_advantage_of_the_leaking_column_over_the_clean_one": 0.021804146249029932,
+        "p2_published_G_minus_D_deviance_gain": 0.0013699999999998713,
+        "ratio": 15.915435218271519,
+        "reading": "the post-cutoff missingness structure is worth an order of magnitude more deviance than the entire published arm-G gain, so the observation that motivated ws3 is not established on cutoff-valid inputs"
+      }
+    },
+    "joint_verdict": {
+      "question": "does allocation improve player identity WITHOUT harming the team total?",
+      "arm_that_answers_it": "D_total_x_S2_shares",
+      "why": "this arm holds the team total EXACTLY at the frozen D aggregate and changes only the allocation, so its team-total MAE is identical to the incumbent by construction and any player-level movement is pure allocation",
+      "team_total_mae_identical_to_incumbent": true,
+      "player_deviance_incumbent": 1.2285420505227964,
+      "player_deviance_allocated": 1.243659758063,
+      "player_deviance_change": 0.015117707540203584,
+      "player_mae_reduction": -0.0030160030601663044,
+      "player_mae_reduction_ci90": [
+        -0.00498410204532025,
+        -0.001044483875973044
+      ]
+    }
+  },
+  "artifact_sha256": {
+    "player_features": "06374855d13aea3bbf0a1dfa22a5d7a0d7f1e3f865e0c4f73e8810836859cb61",
+    "team_features": "28aaca3444dc2abd4f32d989267b3cf593b57beba9f3e1c2b19aac857c2f6d80"
+  }
+}
