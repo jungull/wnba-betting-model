@@ -407,11 +407,47 @@ def build():
             criteria=crit, severity="A",
         ))
 
+    # Created from P29's stop condition SC1, which V3 must not absorb silently. The market-odds
+    # family was excluded on the stated ground that capture begins 2026-07-31. P29 measured that
+    # a game-joined historical odds archive with snapshots from 2022-05-21 exists and is the
+    # PARENT of a tracked repository artifact (tip_times.csv). The stated ground is therefore
+    # factually wrong, which does not by itself make the family admissible -- the packet carries
+    # a SEPARATE objection that a market feature changes what the model is.
+    N.append(node(
+        "P2B_MARKET_ODDS_ELIGIBILITY",
+        "Adjudicate the market-odds family: the stated exclusion ground is factually wrong",
+        "possession", "audit", ["G01_GRAPH_ENGINE"], "cutoff-validity and candidate-universe auditor",
+        "VERIFIED_READ_ONLY_DERIVATION. Establishes what historical odds evidence EXISTS and "
+        "whether it is cutoff-valid. It does NOT decide whether a market feature belongs in a "
+        "possession model -- that is a separate question about what the model is, and this node "
+        "raises it rather than settling it.",
+        outputs=[f"{PP}/stage2b/P2B_MARKET_ODDS_ELIGIBILITY/REPORT.md",
+                 f"{PP}/stage2b/P2B_MARKET_ODDS_ELIGIBILITY/FINDINGS.json"],
+        validators=[f"python -c \"import json;json.load(open('{PP}/stage2b/"
+                    f"P2B_MARKET_ODDS_ELIGIBILITY/FINDINGS.json'))\""],
+        criteria=[
+            "the historical odds archive is located and its true date span measured, not relayed",
+            "the 2022-05-21 earliest-snapshot figure is reproduced or corrected against the bytes",
+            "the provenance of data/reference/tip_times.csv is traced to its parent archive",
+            "for each candidate market field: does a per-snapshot observation timestamp survive, "
+            "or only a latest-snapshot value? A single retrospective pull is permanently "
+            "CUTOFF_UNPROVEN no matter how far back its event dates reach",
+            "coverage is reported by season and by fold, never pooled",
+            "the packet's SEPARATE objection -- that a market feature changes what the model IS, "
+            "from predicting possessions to predicting the market -- is stated and left OPEN, not "
+            "resolved by this node",
+            "the node does NOT admit the family; it reports what the evidence permits",
+        ],
+        stops=["if the evidence would ADMIT a family the frozen packet excluded, HALT and raise: "
+               "that changes the candidate universe and is not this node's decision"],
+        severity="A",
+    ))
+
     N.append(node(
         "P30_EVIDENCE_PACKET_V3",
         "Build and freeze EVIDENCE_PACKET_V3 with an immutable correction addendum",
         "possession", "integration",
-        ["P21_FREEZE_V2_HALT_PACKET"] + [r[0] for r in remediation],
+        ["P21_FREEZE_V2_HALT_PACKET", "P2B_MARKET_ODDS_ELIGIBILITY"] + [r[0] for r in remediation],
         "coordinator",
         "FROZEN EVIDENCE. V3 supersedes V2 as the basis for candidate selection. V1 and V2 are "
         "historical records and are NOT edited. V3 states explicitly what was withdrawn, "

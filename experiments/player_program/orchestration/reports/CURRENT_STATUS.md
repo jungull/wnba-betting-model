@@ -6,35 +6,40 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `e82ee721f6aef78f3013952af043e2ba60ecd06e` |
+| HEAD | `97c1d694d2aa6191e001e1b2c5fde949d9dffe04` |
 | working tree | DIRTY |
-| nodes | 64 |
-| events | 101 |
+| nodes | 65 |
+| events | 117 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 20 |
-| FAILED | 5 |
-| PASSED | 34 |
-| READY | 2 |
-| SUPERSEDED | 1 |
+| BLOCKED | 13 |
+| FAILED | 3 |
+| PASSED | 36 |
+| RUNNING | 8 |
+| SUPERSEDED | 3 |
 | USER_REQUIRED | 2 |
 
 ## Severity A blockers
 
-* **P25_OFFSET_DEPENDENCY_GUARD** — S4/S5: full-design offset and affine-dependency audit including own/opponent contrasts
-* **P27_FOLD_LOCAL_ESTIMABILITY_GUARD** — S7: fold-local rank, support, variance and degeneracy checks
+None open against a node.
 
 ## Running
 
-None.
+* `P2B_MARKET_ODDS_ELIGIBILITY` — Adjudicate the market-odds family: the stated exclusion ground is factually wrong
+* `F10_WITHIN_BETWEEN_TEAM_INVOLVEMENT` — Within-team versus between-team involvement forecaster
+* `F11_PLAYER_ALLOCATION_ARCHITECTURE` — Player allocation / distribution architecture
+* `F12_OFF_DEF_STRENGTH_COMPONENTS` — Offensive and defensive strength components
+* `F13_SCORE_MARGIN_TOTAL_DISTRIBUTIONS` — Score, margin and total distributions
+* `F14_DECISION_TIME_MARKET_COMPARISON` — Decision-time market comparison
+* `F15_PROSPECTIVE_VALIDATION` — Prospective validation design
+* `F16_PLAYER_PROPS` — Player props — last, by design
 
 ## Ready — next automatically scheduled
 
-* `G03_FROZEN_PATH_GUARD` (governance) — Task-specific tests proving the frozen-path guard fails closed
-* `G04_PROGRAM_ROADMAP_EXTRACTION` (governance) — Convert documented remaining program into graph nodes; unknown work becomes NEEDS_TARGET_CONTRACT
+None.
 
 ## Passed
 
@@ -67,6 +72,8 @@ None.
 * `R13_I12_REPORT_REMEDIATION` — Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence
 * `R14_D10_COACHING_CORRECTION` — Correct D10's manufactured negative on the coaching family and re-measure its coverage
 * `R15_G02_INDEX_CLASSIFICATION` — Repair the DERIVED vs HAND-MAINTAINED classification in the document index
+* `G03_FROZEN_PATH_GUARD` — Task-specific tests proving the frozen-path guard fails closed
+* `G04_PROGRAM_ROADMAP_EXTRACTION` — Convert documented remaining program into graph nodes; unknown work becomes NEEDS_TARGET_CONTRACT
 * `R16_I11_SEAL_HONESTY` — Make I11's seal claim honest: obfuscation is not blinding
 * `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
 * `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
@@ -80,11 +87,11 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | FAILED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
+| lane | BLOCKED | FAILED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED |
 |---|---|---|---|---|---|---|
 | data | 0 | 1 | 5 | 0 | 0 | 0 |
-| future_research | 7 | 0 | 0 | 0 | 0 | 0 |
-| governance | 0 | 0 | 3 | 2 | 1 | 0 |
+| future_research | 0 | 0 | 0 | 7 | 0 | 0 |
+| governance | 0 | 0 | 5 | 0 | 1 | 0 |
 | operations | 0 | 2 | 11 | 0 | 0 | 1 |
-| possession | 13 | 2 | 11 | 0 | 0 | 1 |
+| possession | 13 | 0 | 11 | 1 | 2 | 1 |
 | product | 0 | 0 | 4 | 0 | 0 | 0 |
