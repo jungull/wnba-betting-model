@@ -1,0 +1,95 @@
+{
+  "schema": "discovery_ws2_frozen_constructions/1",
+  "workstream": "ws2_responsibility_transfer",
+  "wave": "discovery_wave_1",
+  "lane": "DISCOVERY (development folds only)",
+  "frozen_before_any_fit": true,
+  "freeze_note": "This file is committed BEFORE the fit runs. The formulas below are the pre-registered constructions; no result influenced them.",
+
+  "basketball_mechanism": "turnovers rise specifically for players positioned to ABSORB missing teammates' offensive responsibility",
+
+  "why_the_prior_arm_does_not_test_it": {
+    "arm": "H (teammate_context)",
+    "feature": "displaced_involvement",
+    "defect": "displaced_involvement is CONSTANT within a team-game (verified: nunique==1 for all 2914 team-games). Arm H therefore applies the identical value to every candidate on the roster, which is a team-level intercept shift and cannot express 'which player absorbs'. It is a test of 'do teams turn the ball over more when contributors are missing', not of the responsibility-transfer mechanism.",
+    "result": "null (operational team MAE 2.9681 vs incumbent D 2.9675)"
+  },
+
+  "base_quantities": {
+    "D_gt": "displaced_involvement from turnover_role_context_features_v1 (team-level, constant within game_id x team_id)",
+    "prior_involvement_i": "offensive_involvement_proxy from turnover_role_context_features_v1, NULL IMPUTED TO 0.0",
+    "null_imputation_rationale": "a player with no prior offensive history has no established creation share, so mechanistically absorbs no allocated load. Imputation is applied to the RAW construction inputs BEFORE standardisation, so the zero carries its mechanistic meaning rather than being silently mapped to the training mean.",
+    "S_gt": "sum of prior_involvement_i over all tier_a_only candidates on team-game (g,t); verified strictly positive for all 2914 team-games",
+    "expansion_i": "max(proj_minutes_share_i - trailing_minutes_share_i, 0.0), nulls imputed to 0.0",
+    "expansion_rationale": "the mechanism names players positioned to ABSORB, i.e. whose projected role EXPANDS. The positive part is the frozen definition; a signed role_change would encode role contraction as negative absorption, which is a different claim, and its heavy left tail (min -1.53) would let a handful of contracting players dominate a multiplicative term."
+  },
+
+  "constructions": {
+    "C1_transfer_direct": {
+      "label": "direct interaction",
+      "formula": "T1_i = D_gt * prior_involvement_i",
+      "reads_as": "the team's missing offensive responsibility, scaled by how involved this player already was"
+    },
+    "C2_transfer_allocated": {
+      "label": "allocated displaced load",
+      "formula": "T2_i = D_gt * (prior_involvement_i / S_gt)",
+      "reads_as": "distribute the missing involvement among the projected candidates in proportion to their prior creation shares; sums back to D_gt within each team-game by construction"
+    },
+    "C3_transfer_role_sensitive": {
+      "label": "role-sensitive transfer",
+      "formula": "T3_i = T2_i * expansion_i",
+      "reads_as": "allocated displaced load, further weighted by the player's projected-role expansion"
+    }
+  },
+
+  "arms": {
+    "D": {"features": [], "role": "frozen incumbent; beta=0 by construction of the offset"},
+    "H": {"features": ["displaced_involvement"], "role": "team-level reference arm, re-fit here identically to P2"},
+    "T1": {"features": ["transfer_direct"], "role": "PRIMARY construction 1"},
+    "T2": {"features": ["transfer_allocated"], "role": "PRIMARY construction 2"},
+    "T3": {"features": ["transfer_role_sensitive"], "role": "PRIMARY construction 3"},
+    "T123": {"features": ["transfer_direct", "transfer_allocated", "transfer_role_sensitive"], "role": "DIAGNOSTIC: all three jointly"},
+    "HT2": {"features": ["displaced_involvement", "transfer_allocated"], "role": "DIAGNOSTIC: does the player-specific allocation add anything beyond the team-level term?"},
+    "HT3": {"features": ["displaced_involvement", "transfer_role_sensitive"], "role": "DIAGNOSTIC: same question for the role-sensitive form"}
+  },
+  "arm_parallelism_note": "T1/T2/T3 are single-feature arms exactly like H, so the comparison against H is apples-to-apples in degrees of freedom.",
+
+  "estimator": {
+    "family": "Poisson ridge via IRLS with step-halving, intercept unpenalised",
+    "ridge_lambda": 10.0,
+    "offset": "log(exposure) + log(D_ewma_shrunk rate), so beta=0 reproduces Arm D exactly",
+    "validation": "walk-forward by season; fold s trains on all seasons < s",
+    "standardisation": "training-fold mean/std ONLY, applied to the test fold; std==0 replaced by 1",
+    "min_train_rows": 2000,
+    "fallback": "insufficient training support or solver non-convergence falls back to Arm D",
+    "training_source": "intrinsic rows with realised exposure > 0 (mirrors run_turnover_p2.py); training folds are strictly prior seasons"
+  },
+
+  "tracks": {
+    "intrinsic": {"n_rows": 28193, "exposure": "realised offensive possessions", "status": "ORACLE DIAGNOSTIC - conditions on having appeared; not an operational claim"},
+    "operational": {"n_rows": 35629, "exposure": "projected offensive possessions (tier_a_only)", "status": "the decision-relevant track; includes all Tier A candidates including non-appearers"}
+  },
+
+  "evaluation": {
+    "primary_metric": "operational team-game MAE against player_attributed turnovers",
+    "sign_convention": "paired diff = INCUMBENT abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats the incumbent",
+    "comparisons": ["every arm vs D", "every arm vs H"],
+    "uncertainty": "game-clustered percentile bootstrap, 2000 resamples, 90% CI, seed 20260730 (evalharness.compare.cluster_bootstrap_ci)"
+  },
+
+  "gate": {
+    "requirement": "experiments/player_program/feature_gate.audit(...) MUST pass before ANY fit",
+    "applied_to": "the exact standardised training design matrix of every (track, season, arm), with the fit's offset and target supplied",
+    "on_failure": "the design is fixed, not adjudicated away"
+  },
+
+  "prohibitions_observed": [
+    "tier_a_only regime ONLY; no transaction Tier B, no S2",
+    "no actual target-game minutes, lineups, possessions or outcomes",
+    "does not modify canonical artifacts or Arm D",
+    "does not append to arm_registry.jsonl",
+    "nulls and negative results are preserved as findings"
+  ],
+
+  "falsification": "the hypothesis is weakened if no construction beats H on operational team MAE, or if gains appear only on the intrinsic (oracle-appearance) track."
+}
