@@ -712,31 +712,47 @@ def build():
                                 "to the possession lane rather than fixed quietly"],
                       severity="C"))
 
-    # Remediation, created by the coordinator from a confirmed defect rather than seeded.
-    # Parent finding: O15_LOGOUT_SURVIVAL produced FINDINGS.json, TESTS.py, measurement scripts
-    # and evidence, but not its declared REPORT.md. The independent verifier scored it
-    # PASS_WITH_DEFECTS and missed that; the mechanical expected-output check caught it.
-    N.append(node(
-        "R10_O15_REPORT_REMEDIATION",
-        "Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence",
-        "operations", "documentation", ["G01_GRAPH_ENGINE"], "fast documentation engineer",
-        "REMEDIATION of a confirmed missing declared output. It writes up evidence that ALREADY "
-        "EXISTS and may not add a finding the original run did not make. Its parent finding is "
-        "O15's validation_failed event, which is preserved and not rewritten.",
-        outputs=[f"{PP}/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md"],
-        validators=[f"python -c \"import pathlib,sys;p=pathlib.Path('{PP}/ops_lane/"
-                    f"R10_O15_REPORT_REMEDIATION/REPORT.md');sys.exit(0 if p.exists() and "
-                    f"p.stat().st_size>1000 else 1)\""],
-        criteria=[
-            "the report is derived ONLY from files already present in ops_lane/O15_LOGOUT_SURVIVAL/",
-            "no new measurement is performed and no new finding is introduced",
-            "the epistemic status of the original node is carried verbatim",
-            "the report states that O15's own declared output was missing and that this is a "
-            "remediation, not the original run",
-            "nothing under ops_lane/O15_LOGOUT_SURVIVAL/ is modified",
-        ],
-        severity="C",
-    ))
+    # Remediation family, created by the coordinator from confirmed defects rather than seeded.
+    #
+    # Three nodes failed the SAME way: they produced substantive machine-readable artifacts,
+    # working code and evidence, and then did not write their declared prose REPORT.md. In two of
+    # the three the independent verifier still scored PASS_WITH_DEFECTS -- once while itself
+    # listing the missing output under failed_criteria. The mechanical expected-output check
+    # caught all three. That is the argument for running both an independent reviewer and a
+    # mechanical validator: they fail differently.
+    #
+    # A remediation writes up evidence that ALREADY EXISTS. It may not add a finding the original
+    # run did not make -- that would be an unregistered second attempt wearing a repair's clothes.
+    REPORT_REMEDIATION = [
+        ("R10_O15_REPORT_REMEDIATION", "O15_LOGOUT_SURVIVAL", "ops_lane", "operations"),
+        ("R11_P25_REPORT_REMEDIATION", "P25_OFFSET_DEPENDENCY_GUARD", "stage2b", "possession"),
+        ("R12_P27_REPORT_REMEDIATION", "P27_FOLD_LOCAL_ESTIMABILITY_GUARD", "stage2b", "possession"),
+    ]
+    for nid, parent, sub, lane in REPORT_REMEDIATION:
+        root = LANE_ROOT[lane]
+        N.append(node(
+            nid,
+            f"Write the missing {parent} report from its own preserved evidence",
+            lane, "documentation", ["G01_GRAPH_ENGINE"], "documentation engineer",
+            f"REMEDIATION of a confirmed missing declared output. It writes up evidence that "
+            f"ALREADY EXISTS in {sub}/{parent}/ and may not add a finding the original run did "
+            f"not make. Its parent finding is {parent}'s validation_failed event, which is "
+            f"preserved and not rewritten.",
+            outputs=[f"{root}/{nid}/REPORT.md"],
+            validators=[f"python -c \"import pathlib,sys;p=pathlib.Path('{root}/{nid}/REPORT.md');"
+                        f"sys.exit(0 if p.exists() and p.stat().st_size>1000 else 1)\""],
+            criteria=[
+                f"the report is derived ONLY from files already present in {PP}/{sub}/{parent}/",
+                "no new measurement is performed and no new finding is introduced",
+                "the epistemic status of the original node is carried verbatim",
+                f"the report states that {parent}'s declared output was missing and that this is "
+                f"a remediation, not the original run",
+                f"nothing under {PP}/{sub}/{parent}/ is modified",
+                "every defect the independent verifier raised against the original node is "
+                "carried into the report rather than quietly dropped",
+            ],
+            severity="C",
+        ))
 
     N.append(node(
         "O16_SHARED_SCHEMA_ADOPTION", "Merge a shared schema or contract change proposed by the operations lane",

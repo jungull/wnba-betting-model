@@ -1,0 +1,340 @@
+{
+ "schema": "stage2b_node_findings/1",
+ "node_id": "P29_TIP_TIME_AND_COVERAGE_AUDIT",
+ "lane": "possession",
+ "type": "audit",
+ "role": "coverage auditor",
+ "epistemic_status": "VERIFIED_READ_ONLY_DERIVATION. Determines whether a null mask is separable from fold identity. A coverage finding is not a licence to admit a feature.",
+ "measurement_script": "experiments/player_program/stage2b/P29_TIP_TIME_AND_COVERAGE_AUDIT/run_measurements.py",
+ "measurement_output": "experiments/player_program/stage2b/P29_TIP_TIME_AND_COVERAGE_AUDIT/MEASUREMENTS.json",
+
+ "inputs": {
+  "team_possession_prior_v1.parquet": {
+   "path": "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+   "sha256": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18",
+   "matches_EVIDENCE_PACKET_V2_sources": true
+  },
+  "possessions_raw_v2.parquet": {
+   "path": "experiments/player_program/possessions_v2/possessions_raw_v2.parquet",
+   "sha256": "7200881fd811db9d0d6b10ea0a19b01ec7b6d027ee4567b9ef963241b15a4b1a",
+   "matches_EVIDENCE_PACKET_V2_sources": true
+  },
+  "tip_times.csv": {
+   "path": "data/reference/tip_times.csv",
+   "sha256": "3bd2c4ab4d7f673f9010a40ac4ac904c88dbb039db4627b0e918d07810c4542a",
+   "bytes": 160391,
+   "matches_EVIDENCE_PACKET_V2_sources": false,
+   "note": "adjudicated by CORRECTION_ADDENDUM C7 but never bound by hash in any packet"
+  }
+ },
+
+ "RULING": {
+  "subject": "every feature derived from data/reference/tip_times.csv (tip_utc, tip_local, tip_hour_local, tip_dow_local, and any transform, indicator or interaction of them)",
+  "verdict": "INELIGIBLE_FOR_THIS_WAVE",
+  "authority": "acceptance criterion of this node: 'if the null mask is not separable from fold identity, tip-derived features are ruled INELIGIBLE for this wave and the reason is recorded'",
+  "separability_verdict": "NOT_SEPARABLE_IN_THE_SENSE_THAT_GOVERNS_ADMISSION",
+  "reasons": [
+   {
+    "id": "R1",
+    "kind": "fold_local_non_estimability",
+    "statement": "On operational fold train_lt_2022 the feature has 0 observed values in 410 of 410 training rows. The fold cannot be fitted with it at all. GATE_INVOCATION_CONTRACT section 4 permits exactly two outcomes for a fold-degenerate term -- fail that fold, or a fallback frozen and registered with a numeric trigger before any result is visible. No such preregistered fallback exists for tip coverage.",
+    "measured": {"fold": "train_lt_2022", "train_rows": 410, "train_rows_with_tip": 0,
+                 "train_tip_missing_rate": 1.0}
+   },
+   {
+    "id": "R2",
+    "kind": "null_mask_not_separable_from_fold_identity",
+    "statement": "Fold identity alone explains 76.78% of the null mask's variance; the mask is 100% coincident with fold 1 and, inside fold train_lt_2022's training set, has ZERO variance. There is no within-fold contrast there that could distinguish a tip effect from a 2021 level effect.",
+    "measured": {"eta2_null_on_fold_dummies": 0.767781,
+                 "cramers_v_null_vs_fold": 0.876231,
+                 "phi_null_vs_fold1_indicator": 0.847227,
+                 "share_of_fold1_that_is_null": 1.0,
+                 "share_of_nulls_in_fold1": 0.757246,
+                 "train_lt_2022_train_null_mask_is_constant": true}
+   },
+   {
+    "id": "R3",
+    "kind": "coverage_in_later_seasons_is_not_a_licence",
+    "statement": "2023, 2024 and 2025 are 99.6%, 99.6% and 100.0% covered. That is availability, not eligibility. It does not repair fold train_lt_2022, and the frozen gate's pooled PASS is uninformative because the gate cannot see a fold.",
+    "measured": {"null_rate_2023": 0.003846, "null_rate_2024": 0.003817,
+                 "null_rate_2025": 0.0, "pooled_frozen_gate_passed": true,
+                 "pooled_blocking_findings": 0}
+   },
+   {
+    "id": "R4",
+    "kind": "cutoff_validity_unproven_independently",
+    "statement": "tip_times.csv is built by data/reference/collect_bios.py::phase_tips, which takes commence_utc=('commence_utc','last') from the LATEST odds snapshot per game and does not retain the snapshot timestamp. For the 36 games whose commence time provably moved (n_commence_variants > 1) the retained value cannot be shown to predate the forecast cutoff. D10_FIELD_AVAILABILITY_LEDGER already records this as CUTOFF_UNPROVEN on 2,438 of 2,438 covered rows; this node reconfirmed it by reading phase_tips.",
+    "measured": {"n_commence_variants_eq_1": 1183, "n_commence_variants_eq_2": 35,
+                 "n_commence_variants_eq_3": 1,
+                 "D10_cutoff_valid_rate_for_tip_times_fields": 0.0}
+   },
+   {
+    "id": "R5",
+    "kind": "null_mask_confounds_the_cold_start_stratum",
+    "statement": "28 of the 37 league_prior_all team-game rows -- 75.7% of the incumbent's coldest fallback tier -- fall on tip-null rows. Any imputation of the tip nulls injects a proxy for the exact stratum V2 finding S6 measures as carrying 37-42% of MSE as BIAS. Apparent feature value could be pure stratum re-centring, and the frozen gate has no dimension for that.",
+    "measured": {"league_prior_all_rows_total": 37,
+                 "league_prior_all_rows_on_null": 28,
+                 "league_prior_all_rows_on_covered": 9,
+                 "corr_null_mask_with_tier_league_prior_all": 0.16669}
+   },
+   {
+    "id": "R6",
+    "kind": "coverage_fails_at_the_live_edge",
+    "statement": "The six 2026 null games are 2026-07-30 (3) and 2026-07-31 (3) -- the final two days of the universe, postdating the last odds capture. The null mask is open at BOTH ends of calendar time, so a tip feature is missing precisely on the most recent games a deployed model must score.",
+    "measured": {"null_games_2026": 6,
+                 "game_ids": ["1022600210", "1022600211", "1022600212",
+                              "1022600213", "1022600214", "1022600215"],
+                 "dates": ["2026-07-30", "2026-07-30", "2026-07-30",
+                           "2026-07-31", "2026-07-31", "2026-07-31"],
+                 "universe_max_game_date": "2026-07-31"}
+   }
+  ],
+  "what_this_ruling_does_NOT_say": [
+   "it does not say a tip effect is absent -- no fit was run and none may be, this wave",
+   "it does not condemn the underlying odds feed; the unprovenness is a property of the DERIVATION",
+   "it does not extend to tip.scheduled_tip_time__contract_v4_screened, which D10 records as the only CUTOFF_VALID field in its ledger, on 814 of 2,982 rows (27.3%) and 0% of 2021-2024 -- that field is out of this node's scope and carries its own, worse, fold-coverage problem"
+  ]
+ },
+
+ "reproduction_of_the_reported_pattern": {
+  "claim_under_test": "V2_STOP_CONDITION.not_stop_conditions_but_recorded.tip_times_null_mask_is_almost_exactly_fold_1: '1,219 of 1,495 games and NONE of 2021'",
+  "verdict": "CORRECTED",
+  "what_is_true": "1,219 of 1,495 games are COVERED; 276 are NULL. 2021 is 209 of 209 NULL, i.e. 100% null, not 'none'.",
+  "the_claim_is_also_internally_incoherent": "a 1,219-game mask containing no 2021 game cannot be 'almost exactly fold 1', which is 209 games",
+  "the_qualitative_conclusion_survives": "the null mask IS dominated by fold 1: 209 of 276 nulls (75.72%) are 2021, and 2021 is 100% null",
+  "measured": {
+   "games_total": 1495,
+   "games_null": 276,
+   "games_covered": 1219,
+   "resolved_clusters_total": 1491,
+   "resolved_clusters_null": 272,
+   "resolved_clusters_covered": 1219,
+   "team_rows_total": 2982,
+   "team_rows_null": 544,
+   "team_rows_covered": 2438,
+   "by_season_games": {
+    "2021": {"games": 209, "null": 209, "covered": 0, "null_rate": 1.0},
+    "2022": {"games": 239, "null": 59, "covered": 180, "null_rate": 0.246862},
+    "2023": {"games": 260, "null": 1, "covered": 259, "null_rate": 0.003846},
+    "2024": {"games": 262, "null": 1, "covered": 261, "null_rate": 0.003817},
+    "2025": {"games": 310, "null": 0, "covered": 310, "null_rate": 0.0},
+    "2026": {"games": 215, "null": 6, "covered": 209, "null_rate": 0.027907}
+   },
+   "all_4_games_excluded_from_the_resolved_frame_are_2021_and_are_null": true
+  },
+  "independent_agreement": {
+   "D10_FIELD_AVAILABILITY_LEDGER": "reports 2,438 of 2,982 rows covered and 1,219 of 1,491 clusters covered, with per-season row coverage 0 / 360 / 518 / 522 / 620 / 418 -- AGREES with this node exactly",
+   "CORRECTION_ADDENDUM_C7": "reports 1219 rows 'of' 1495 with '2021 coverage is zero' -- AGREES; it is the V2 stop-condition packet that inverted this into a null count"
+  }
+ },
+
+ "null_mask_vs_fold_identity": {
+  "fold_definitions_used": {
+   "season_labels": {"1": "2021", "2": "2022", "3": "2023", "4": "2024", "5": "2025", "6": "2026"},
+   "operational": "possession_features.py::chronological_folds -- EXPANDING WINDOW, five folds with test seasons 2022..2026; 2021 is never a test fold and is training-only in every fold"
+  },
+  "association_measures_game_frame_n_1495": {
+   "phi_null_vs_fold1_indicator": 0.847227,
+   "cramers_v_null_vs_fold": 0.876231,
+   "chi2": 1147.832271,
+   "dof": 5,
+   "eta2_null_on_fold_dummies": 0.767781,
+   "off_diagonal_vs_exact_fold1_mask": {
+    "null_but_not_fold1": 67, "fold1_but_not_null": 0, "total": 67, "rate": 0.044816
+   },
+   "mask_is_exactly_fold1": false
+  },
+  "the_mask_is_calendar_time_not_basketball": {
+   "phi_null_vs_game_date_before_2022_05_21": 0.923591,
+   "first_odds_snapshot_in_the_parent_archive": "2022-05-21T17:55:00Z",
+   "games_before_2022_05_21": 242,
+   "of_those_null": 242,
+   "nulls_on_or_after_2022_05_21": 34,
+   "decomposition_of_those_34": {"2022|Playoffs": 23, "2022|Regular Season": 3,
+                                 "2023|Regular Season": 1, "2024|Regular Season": 1,
+                                 "2026|Regular Season": 6},
+   "playoff_coverage": {"2021": {"games": 17, "null": 17}, "2022": {"games": 23, "null": 23},
+                        "2023": {"games": 20, "null": 0}, "2024": {"games": 22, "null": 0},
+                        "2025": {"games": 24, "null": 0}},
+   "reading": "the mask is 'the game predates the odds archive, or is in the 2022 playoffs, or postdates the last capture'. It encodes data-collection history, not any property of the game."
+  },
+  "per_fold_null_mask_variance": {
+   "2021": {"games": 209, "null": 209, "sd": 0.0, "constant": true},
+   "2022": {"games": 239, "null": 59, "sd": 0.431186, "constant": false},
+   "2023": {"games": 260, "null": 1, "sd": 0.061898, "constant": false},
+   "2024": {"games": 262, "null": 1, "sd": 0.061662, "constant": false},
+   "2025": {"games": 310, "null": 0, "sd": 0.0, "constant": true},
+   "2026": {"games": 215, "null": 6, "sd": 0.164706, "constant": false}
+  },
+  "operational_fold_training_coverage": {
+   "train_lt_2022": {"train_rows": 410, "train_rows_with_tip": 0, "missing_rate": 1.0},
+   "train_lt_2023": {"train_rows": 888, "train_rows_with_tip": 360, "missing_rate": 0.594595},
+   "train_lt_2024": {"train_rows": 1408, "train_rows_with_tip": 878, "missing_rate": 0.37642},
+   "train_lt_2025": {"train_rows": 1932, "train_rows_with_tip": 1400, "missing_rate": 0.275362},
+   "train_lt_2026": {"train_rows": 2552, "train_rows_with_tip": 2020, "missing_rate": 0.208464}
+  },
+  "honest_qualification": "the mask is NOT literally identical to fold identity: 67 games (4.48%) are null outside 2021 and eta2 leaves 23.2% of the mask's variance unexplained by fold. But 59 of those 67 sit in 2022, the earliest test fold, and the fold that decides admission -- train_lt_2022 -- carries no contrast whatsoever."
+ },
+
+ "gate_behaviour_measured_not_assumed": {
+  "frozen_feature_gate_pooled": {
+   "passed": true,
+   "findings": [{"kind": "missingness_present", "feature": "tip_hour_local",
+                 "n_missing": 544, "missing_rate": 0.182428}],
+   "blocking": [],
+   "corr_null_mask_with_target": -0.017358,
+   "missingness_corr_threshold": 0.5,
+   "why_it_does_not_fire": "|corr(null mask, target)| = 0.0174, two orders below the 0.5 threshold, and no outcome_mask makes the mask an exact outcome indicator"
+  },
+  "frozen_feature_gate_on_the_100_percent_missing_fold": {
+   "fold": "2021 season rows / train_lt_2022 training rows",
+   "rows": 410,
+   "rows_with_a_value": 0,
+   "passed": true,
+   "findings": [],
+   "severity": "A -- silent enforcement gap"
+  },
+  "mechanism_measured_on_a_synthetic_all_nan_column": {
+   "nanstd_of_all_nan": "nan",
+   "so_zero_variance_cannot_fire": true,
+   "missingness_loop_short_circuit": "feature_gate.py line 152: if n_miss == 0 or n_miss == len(miss): continue",
+   "design_rank_report_checked": false,
+   "audit_result": {"passed": true, "findings": [], "blocking": []},
+   "conclusion": "a column that is 100% NaN over the rows handed to the frozen gate produces ZERO findings -- not even missingness_present. This is stronger than the V2 packet's claim that 'neither gate branch blocks'."
+  },
+  "missingness_indicator_treated_as_a_feature": {
+   "pooled": {"passed": true, "findings": []},
+   "2021": {"passed": false, "blocking": ["zero_variance", "rank_deficient"]},
+   "2025": {"passed": false, "blocking": ["zero_variance", "rank_deficient"]},
+   "2022_2023_2024_2026": {"passed": true},
+   "reading": "the remedy 'add a missingness dummy' is itself fold-degenerate in two of six seasons and passes pooled"
+  },
+  "P27_call_site_guard_run_unmodified": {
+   "module": "experiments/player_program/stage2b/P27_FOLD_LOCAL_ESTIMABILITY_GUARD/fold_estimability_guard.py::guard",
+   "fold_policy": "EXPANDING_PRIOR_SEASONS",
+   "train_lt_2022": {"verdict": "UNEVALUABLE_PROSPECTIVELY",
+                     "blocking": ["single_level_factor (unique_levels 0)", "no_cluster_support"]},
+   "train_lt_2023": {"verdict": "ESTIMABLE"},
+   "train_lt_2024": {"verdict": "ESTIMABLE"},
+   "train_lt_2025": {"verdict": "ESTIMABLE"},
+   "train_lt_2026": {"verdict": "ESTIMABLE"},
+   "pooled_pass_would_be_misleading": true,
+   "reading": "the call-site remedy for the shared gate's blind spot already exists and returns the right verdict. The gap is that nothing makes routing through it mandatory."
+  }
+ },
+
+ "provenance_of_tip_times_csv": {
+  "question_from_the_acceptance_criteria": "tip_times.csv is odds-derived and covers 2022-2026, which sits oddly beside 'market odds unavailable historically'",
+  "verdict": "the oddity is REAL and the packet's stated reason is FALSE; the packet's practical verdict happens to hold for this branch for a different reason",
+  "builder": {
+   "file": "data/reference/collect_bios.py",
+   "function": "phase_tips",
+   "in_this_worktree": true,
+   "reads": ["data/drive_masters/master_odds.csv (source_table='drive_master')",
+             "data/odds_capture/master_odds_extension.csv (source_table='extension')"],
+   "selection_rule": "sort by snapshot, then commence_utc = ('commence_utc','last') per (game_id, source_table); prefer 'extension' where both cover a game",
+   "discards": "odds_snapshot_timestamp is not written to the output",
+   "records": ["n_snapshots", "n_commence_variants"]
+  },
+  "source_table_by_season_in_the_output": {
+   "2022|drive_master": 180, "2023|drive_master": 259, "2024|drive_master": 261,
+   "2025|drive_master": 113, "2025|extension": 197, "2026|extension": 209
+  },
+  "in_scope_finding": {
+   "data/drive_masters/ tracked by git": false,
+   "data/odds_capture/ tracked by git": false,
+   "present in the player-model-program worktree": false,
+   "consequence": "tip_times.csv is a TRACKED derived artifact whose entire upstream is UNVERSIONED and absent from the branch that carries the frozen program artifacts. Its construction is not reproducible from this branch, and no packet binds its hash.",
+   "severity": "B -- reproducibility"
+  },
+  "OUT_OF_SCOPE_ROOT_WORKTREE_OBSERVATION": {
+   "disclosure": "measured read-only against C:/Users/jgallagher/wnba-betting-model, a DIFFERENT worktree on branch data-refresh-2026. Outside this node's declared read scope. Reported because the acceptance criteria require the provenance question to be addressed and it cannot be answered from inside this branch.",
+   "data/drive_masters/master_odds.csv": {
+    "rows": 20004, "distinct_game_id": 813,
+    "distinct_game_id_by_season": {"2022": 180, "2023": 259, "2024": 261, "2025": 113},
+    "exactly_matches_the_drive_master_counts_in_tip_times_csv": true,
+    "game_ids_inside_the_contract_universe": 813,
+    "odds_snapshot_timestamp_span": ["2022-05-21T17:55:00Z", "2025-07-03T22:55:37Z"],
+    "markets": "odds_spread and odds_price only; no totals column"
+   },
+   "data/odds_capture/historical": {"n_json_files": 292,
+                                    "first": "hist_2025-07-05_15Z.json",
+                                    "last": "hist_2026-07-29_22Z.json"},
+   "data/odds_capture live snapshots": {"n_json_files": 69,
+                                        "first": "live_20260730T150132Z.json",
+                                        "last": "live_20260804T200008Z.json"}
+  }
+ },
+
+ "contradictions": [
+  {
+   "id": "X1",
+   "between": ["stage2a/V2_STOP_CONDITION.json", "stage2a/CORRECTION_ADDENDUM.json", "the bytes"],
+   "statement": "V2_STOP_CONDITION records the tip null mask as '1,219 of 1,495 games and NONE of 2021'. CORRECTION_ADDENDUM C7 records the same 1,219/1,495 as COVERAGE with '2021 coverage is zero'. The bytes say 276 null / 1,219 covered and 2021 is 100% null. The stop-condition packet inverted the addendum's coverage figure into a null figure and then negated the 2021 statement.",
+   "resolution": "the addendum and the bytes agree; the stop-condition packet is wrong on both numbers. Its qualitative conclusion ('the mask is nearly fold 1') is nonetheless correct.",
+   "action": "reported, not edited -- both packets are frozen"
+  },
+  {
+   "id": "X2",
+   "between": ["stage2a/EVIDENCE_PACKET_V2.json availability table", "data/reference/tip_times.csv and its builder"],
+   "statement": "the packet records 'market odds / totals -- source data/odds_capture/ -- coverage 2026-07-31..2026-08-06 only -- UNAVAILABLE HISTORICALLY'. tip_times.csv is a tracked artifact built by collect_bios.py::phase_tips from odds snapshots reaching back to 2022-05-21, and the packet's own CORRECTION_ADDENDUM calls it 'odds-derived'. The stated reason for the unavailability verdict is false.",
+   "nuance_that_must_travel_with_it": "the odds tables are untracked and absent from this branch, so market-odds features are in fact unavailable HERE -- but for a reproducibility reason, not the capture-window reason the packet gives",
+   "trips_stop_condition": true
+  },
+  {
+   "id": "X3",
+   "between": ["experiments/bios_collection/tip_coverage_by_season.csv", "the frozen contract universe"],
+   "statement": "the bios file reports 2026 as 209 of 209 games covered, 0 without. Against the 1,495-game contract universe, 2026 has 215 games and 6 are null. The denominators differ: the bios file counts master_team is_home rows, not the contract universe.",
+   "resolution": "neither file is wrong; the '100% covered' reading does not transfer to the contract universe and must not be cited as if it did",
+   "action": "recorded"
+  },
+  {
+   "id": "X4",
+   "between": ["stage2a/EVIDENCE_PACKET_V2.json sources block", "CORRECTION_ADDENDUM C7"],
+   "statement": "C7 adjudicates data/reference/tip_times.csv on availability grounds, but no packet binds it by hash. Its sha256 is 3bd2c4ab4d7f673f9010a40ac4ac904c88dbb039db4627b0e918d07810c4542a (160,391 bytes). An unbound input cannot be shown not to have moved.",
+   "action": "recorded; hash written here so a later node can detect drift"
+  }
+ ],
+
+ "stop_conditions": [
+  {
+   "id": "SC1",
+   "affects": "CUTOFF-VALID FEATURE SET / CANDIDATE UNIVERSE",
+   "severity": "A",
+   "statement": "the market-odds family was excluded on the stated ground that capture begins 2026-07-31. A game-joined historical odds archive with snapshots from 2022-05-21 demonstrably exists and is the parent of a tracked repository artifact. Whether market features may enter the candidate universe -- and the separate objection the packet raises, that a market feature changes what the model IS -- are not this node's to decide.",
+   "action_taken": "HALTED and raised; not resolved inside the node",
+   "what_this_node_did_NOT_do": "did not construct, evaluate, propose or admit any odds-derived feature"
+  },
+  {
+   "id": "SC2",
+   "affects": "LEAKAGE STATUS / enforcement of the cutoff-valid feature set",
+   "severity": "A",
+   "statement": "feature_gate.audit returns passed=True with an EMPTY findings list for a column that is 100% missing over the rows it is handed. Measured on the real fold (410 rows, 0 values) and on a synthetic all-NaN column. Any feature whose coverage begins mid-history therefore passes the shared gate silently on every early fold. This is not specific to tip times.",
+   "action_taken": "HALTED and raised. feature_gate.py was NOT edited and must not be.",
+   "remedy_that_already_exists": "P27's fold_estimability_guard returns UNEVALUABLE_PROSPECTIVELY on exactly this case (single_level_factor unique_levels=0, no_cluster_support) and sets pooled_pass_would_be_misleading=true. The open question is program-level: whether routing through it is MANDATORY at every call site."
+  }
+ ],
+
+ "could_not_establish": [
+  "whether the retained commence_time predates the forecast cutoff for the 36 games with n_commence_variants > 1. tip_times.csv discards odds_snapshot_timestamp and the parent odds tables are absent from this branch. D10's CUTOFF_UNPROVEN verdict therefore stands, reconfirmed rather than upgraded.",
+  "whether the JSON snapshots under data/odds_capture/ carry a TOTALS market. The files are not in this worktree and were not opened in the root worktree. master_odds.csv carries spread and price only.",
+  "why the 2022 playoffs are 23 of 23 uncovered while 2023-2025 playoffs are 0 of 66 uncovered, and why six games on 2026-07-30/31 are uncovered. Both need the odds archive, which this branch does not have.",
+  "any statement about how much predictive value a tip feature would carry. No fit was run and none is permitted: no performance peeking.",
+  "whether a preregistered active-set rule COULD lawfully govern the train_lt_2022 degeneracy. P27's preregistration machinery exists, but no rule covering tip coverage is registered, and registering one after this measurement is visible would violate GATE_INVOCATION_CONTRACT section 4."
+ ],
+
+ "scope_compliance": {
+  "wrote_only_inside": "experiments/player_program/stage2b/P29_TIP_TIME_AND_COVERAGE_AUDIT/",
+  "files_written": ["REPORT.md", "FINDINGS.json", "run_measurements.py", "MEASUREMENTS.json"],
+  "frozen_artifacts_modified": [],
+  "git_commands_run": ["git rev-parse --abbrev-ref HEAD", "git ls-files", "git check-ignore"],
+  "git_mutations_run": [],
+  "forbidden_inputs_read": [],
+  "SEALED_RESULTS_accessed": false,
+  "reads_outside_the_declared_read_scope": [
+   "data/reference/tip_times.csv -- required by the acceptance criteria, tracked, in this worktree",
+   "data/reference/collect_bios.py -- the builder named by D10, tracked, in this worktree",
+   "C:/Users/jgallagher/wnba-betting-model/data/drive_masters/ and data/odds_capture/ -- ROOT WORKTREE, different branch, READ ONLY, disclosed and quarantined under OUT_OF_SCOPE_ROOT_WORKTREE_OBSERVATION"
+  ]
+ }
+}

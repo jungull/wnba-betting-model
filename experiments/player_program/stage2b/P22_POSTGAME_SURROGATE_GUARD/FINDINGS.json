@@ -1,0 +1,562 @@
+{
+  "schema": "player_program_node_findings/1",
+  "node_id": "P22_POSTGAME_SURROGATE_GUARD",
+  "spec_version": "P22_POSTGAME_SURROGATE_GUARD_v1",
+  "lane": "possession",
+  "type": "implementation",
+  "status": "LANDED",
+  "status_note": "LANDED is not VERIFIED. A separate verifier context validates this node.",
+  "epistemic_status": "INFRASTRUCTURE + task-specific INVARIANT. Establishes that a prohibited column cannot silently enter a prediction frame. Establishes nothing about any candidate's accuracy.",
+  "mandate": "S1: enforced invariant against current-game outcome-derived columns",
+  "outputs": {
+    "REPORT.md": "edff0f200fa548f02acb4c0c51a6b2b7e2328ac0fd50b9a7e97692ecdafbe78f",
+    "FINDINGS.json": "f41e40f3089564d982365fffa3249260867b8ccd875bff3b10cf92ca70ecc73f",
+    "TESTS.py": "c1bbf0833997c4fb957a12988da097fdbc4eb4cebcec7f40e491af95f34b25af",
+    "postgame_surrogate_guard.py": "951e85132f470fdd939c8039958f0544413aaaa485da5dba7da9c1b9b73ceeda",
+    "MEASUREMENTS.json": "e253929e8101d83c763342a6b43d6a3c7580bd4b3ae91669c5e64ec73dbf5c6f",
+    "receipts/EXEMPLAR_LAGGED_DURATION_RECEIPT.json": "ac92c595fde9d73021522a7bf46554c92745ae110bf6824f08af391f33a2a322"
+  },
+  "validation_command": "python experiments/player_program/stage2b/P22_POSTGAME_SURROGATE_GUARD/TESTS.py",
+  "validation_result": {
+    "exit_code": 0,
+    "checks_passed": 73,
+    "checks_failed": 0,
+    "verdict": "ALL CHECKS PASSED"
+  },
+  "frozen_artifact_integrity": {
+    "feature_gate.py": {
+      "sha256": "b064c2c4675d354ec5cb5c6647782634c8139ca4233a5d732f408b6c2532f9a7",
+      "byte_unchanged": true,
+      "git_last_commit_touching_it": "42af2cd57effd2d0d46713eb6a1715d9528ef653",
+      "git_status_porcelain": "",
+      "how_measured": "sha256 of the file bytes, recomputed inside postgame_surrogate_guard.audit on every invocation and asserted by TESTS.py::section_a7; git status/log read-only",
+      "note": "the wrapper raises gate_bytes_changed if the gate is ever not these bytes, so a future gate edit cannot silently invalidate this node's claim"
+    },
+    "modified_frozen_artifacts": [],
+    "write_scope_respected": "experiments/player_program/stage2b/P22_POSTGAME_SURROGATE_GUARD/",
+    "sealed_results_read": false,
+    "sealed_results_exists_in_worktree": false,
+    "comparative_performance_inspected": false
+  },
+  "re_derivations": [
+    {
+      "claim": "V2_STOP_CONDITION S1: master_team rows",
+      "packet_value": 2990,
+      "measured": 2990,
+      "verdict": "AGREES",
+      "how_measured": "len(pd.read_parquet('data/masters/master_team.parquet')) in TESTS.py::section_m1"
+    },
+    {
+      "claim": "S1: nulls in master_team.minutes",
+      "packet_value": 0,
+      "measured": 0,
+      "verdict": "AGREES",
+      "how_measured": "master_team['minutes'].isna().sum()"
+    },
+    {
+      "claim": "S1: minutes/game_minutes mean, sd, min, max",
+      "packet_value": [
+        5.0,
+        0.0,
+        5.0,
+        5.0
+      ],
+      "measured": [
+        5.0,
+        0.0,
+        5.0,
+        5.0
+      ],
+      "verdict": "AGREES",
+      "how_measured": "game_minutes = 40 + 5*max(0, max_period-4) grouped from possessions_raw_v2, joined on game_id; ratio = minutes / game_minutes"
+    },
+    {
+      "claim": "S1: exactly_5x_game_minutes",
+      "packet_value": "2990/2990",
+      "measured": "2990/2990",
+      "verdict": "AGREES",
+      "how_measured": "(ratio == 5.0).sum()"
+    },
+    {
+      "claim": "S1: game_minutes recoverable by division",
+      "packet_value": "2990/2990",
+      "measured": "2990/2990",
+      "verdict": "AGREES",
+      "how_measured": "((minutes/5.0) == game_minutes).sum()"
+    },
+    {
+      "claim": "brief: universe is 2,982 team-game rows over 1,491 game clusters",
+      "packet_value": [
+        2982,
+        1491
+      ],
+      "measured": [
+        2982,
+        1491
+      ],
+      "verdict": "AGREES",
+      "how_measured": "possession_features.load_universe(); len(frame), frame.game_id.nunique()"
+    },
+    {
+      "claim": "frozen packet nit: game_clusters 1491 vs games_with_one_shared_projection 1495 sit over different universes",
+      "packet_value": [
+        1491,
+        1495
+      ],
+      "measured": [
+        1491,
+        1495
+      ],
+      "verdict": "AGREES",
+      "how_measured": "possessions_raw_v2 game_id nunique vs universe game_id nunique"
+    }
+  ],
+  "new_measurements": [
+    {
+      "id": "M2_feature_gate_is_blind_to_the_duration_surrogate",
+      "statement": "feature_gate.audit returns passed=True with findings==[] for designs containing master_team.minutes, minutes/5, a rename, an affine transform, a nonlinear injective transform and raw game_minutes, with offset=, target= and test_df= all supplied",
+      "values": {
+        "mt_minutes": {
+          "gate_passed": true,
+          "findings": [],
+          "corr_with_target": -0.02035,
+          "corr_with_offset": -0.002952,
+          "std": 6.22213,
+          "n_null": 0
+        },
+        "mt_minutes_div5": {
+          "gate_passed": true,
+          "findings": [],
+          "corr_with_target": -0.02035,
+          "corr_with_offset": -0.002952,
+          "std": 1.244426,
+          "n_null": 0
+        },
+        "team_tempo_index": {
+          "gate_passed": true,
+          "findings": [],
+          "corr_with_target": -0.02035,
+          "corr_with_offset": -0.002952,
+          "std": 6.22213,
+          "n_null": 0
+        },
+        "duration_affine": {
+          "gate_passed": true,
+          "findings": [],
+          "corr_with_target": -0.02035,
+          "corr_with_offset": -0.002952,
+          "std": 18.66639,
+          "n_null": 0
+        },
+        "duration_monotone": {
+          "gate_passed": true,
+          "findings": [],
+          "corr_with_target": -0.019632,
+          "corr_with_offset": -0.004234,
+          "std": 0.592146,
+          "n_null": 0
+        },
+        "game_minutes_raw": {
+          "gate_passed": true,
+          "findings": [],
+          "corr_with_target": -0.02035,
+          "corr_with_offset": -0.002952,
+          "std": 1.244426,
+          "n_null": 0
+        }
+      },
+      "thresholds": {
+        "target_corr_threshold": 0.98,
+        "corr_threshold": 0.999
+      },
+      "interpretation": "NOT a defect in feature_gate.py. GATE_INVOCATION_CONTRACT section 7.3 states this limitation in advance. The gate has two comparands, target and offset; the prohibited quantity is neither. This is the measured justification for a call-site wrapper",
+      "how_measured": "TESTS.py::section_m2"
+    },
+    {
+      "id": "M3_prohibited_basis_level_support",
+      "statement": "the realised duration basis on the 2,982 audited rows",
+      "values": {
+        "game_minutes": {
+          "40": 2850,
+          "45": 120,
+          "50": 10,
+          "60": 2
+        },
+        "is_overtime": {
+          "0": 2850,
+          "1": 132
+        },
+        "max_period_distribution": {
+          "4": 1429,
+          "5": 60,
+          "6": 5,
+          "8": 1
+        }
+      },
+      "note": "no 7-period game exists; the distribution jumps 6 -> 8. The single 8-period game is game_id 1022600142 (2026) and is independently corroborated by master_team recording 300.0 minutes = 5 x 60 on exactly its two rows",
+      "how_measured": "TESTS.py::section_m1, MEASURED['period_structure']"
+    },
+    {
+      "id": "M4_no_fold_is_degenerate_on_the_prohibited_basis",
+      "statement": "every chronological training fold carries overtime variation, so the dependency battery discriminates in every fold",
+      "values": {
+        "train_lt_2022": {
+          "n_train_rows": 410,
+          "n_overtime_rows": 32
+        },
+        "train_lt_2023": {
+          "n_train_rows": 888,
+          "n_overtime_rows": 56
+        },
+        "train_lt_2024": {
+          "n_train_rows": 1408,
+          "n_overtime_rows": 78
+        },
+        "train_lt_2025": {
+          "n_train_rows": 1932,
+          "n_overtime_rows": 98
+        },
+        "train_lt_2026": {
+          "n_train_rows": 2552,
+          "n_overtime_rows": 114
+        }
+      },
+      "how_measured": "TESTS.py::section_a4 per-fold loop"
+    },
+    {
+      "id": "M5_lag_re_derivation_is_exact",
+      "statement": "the PRIOR_GAME claim for prior_game_minutes was re-derived from the declared source and compared value-for-value",
+      "values": {
+        "verified": true,
+        "n_rows": 2982,
+        "n_expected_null": 15,
+        "n_presented_null": 15,
+        "n_rows_disagreeing": 0
+      },
+      "how_measured": "postgame_surrogate_guard.verify_prior_game_lag via TESTS.py::section_a4"
+    },
+    {
+      "id": "M6_lagged_column_is_not_a_surrogate",
+      "statement": "dependency report for prior_game_minutes against game_minutes",
+      "values": {
+        "column_is_function_of_prohibited": false,
+        "n_prohibited_levels": 4,
+        "n_prohibited_levels_with_varying_column": 2,
+        "prohibited_is_function_of_column": false,
+        "n_column_levels": 4,
+        "n_column_levels_with_varying_prohibited": 3,
+        "column_cardinality_within_recovery_bound": true,
+        "column_exact_affine_of_prohibited": false,
+        "column_affine_rel_max_residual": 15.835164918836648,
+        "column_affine_slope": -0.001810716801690803,
+        "column_affine_intercept": 40.32228741047317,
+        "prohibited_exact_affine_of_column": false,
+        "prohibited_affine_rel_max_residual": 15.875282930097203,
+        "prohibited_affine_slope": -0.001801884036804506,
+        "prohibited_affine_intercept": 40.320249744413616,
+        "pearson_r": -0.001806295
+      },
+      "how_measured": "postgame_surrogate_guard.dependency_report via TESTS.py::section_a4"
+    }
+  ],
+  "negative_results": [
+    {
+      "id": "N1_no_false_positive_on_the_incumbent_equivalent_feature_set",
+      "statement": "the guard does NOT fire on pace_gap, pace_evidence_depth, opp_pace_evidence_depth or is_playoff_game",
+      "values": {
+        "passed": true,
+        "blocking_kinds": [],
+        "max_abs_r_vs_game_minutes": 0.060192146
+      },
+      "caveat": "pace_gap measures r = exactly 0.0 against every prohibited quantity. This is a structural artifact of the two-sided design -- the two rows of a game carry exactly negated pace_gap and identical game_minutes, so the covariance cancels by antisymmetry. It must not be cited as an independence result",
+      "how_measured": "TESTS.py::section_no_false_positive"
+    },
+    {
+      "id": "N2_minutes_is_the_only_duration_surrogate_in_these_artifacts",
+      "statement": "sweeping every numeric column of the two candidate-bearing artifacts against the prohibited basis: the frozen prior artifact yields 0 blocking columns of 5 checked, and master_team yields exactly 1 of 51 -- minutes",
+      "values": {
+        "team_possession_prior_v1": {
+          "n_checked": 5,
+          "n_skipped_constant": 1,
+          "skipped": [
+            "pace_resolved"
+          ],
+          "blocked": []
+        },
+        "master_team": {
+          "n_checked": 51,
+          "n_skipped_constant": 1,
+          "skipped": [
+            "in_misc"
+          ],
+          "blocked": [
+            {
+              "column": "minutes",
+              "prohibited_quantity": "game_minutes",
+              "pearson_r": 1.0
+            }
+          ]
+        }
+      },
+      "interpretation": "S1's naming of master_team.minutes is COMPLETE for that artifact against this basis. This strengthens S1; it does not correct it. The other 50 master_team columns remain realised target-game box-score outcomes, prohibited for reasons this guard does not test, and possession_features.py already excludes all of master_team",
+      "scope_limit": "DIAGNOSTIC only. The 48 possessions_raw_v2 columns raised by S8 are P2A_POSSESSION_COLUMN_ADJUDICATION's mandate and were not adjudicated here",
+      "how_measured": "TESTS.py::section_scan"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion": "a test proves unlagged master_team.minutes FAILS",
+      "discharged": true,
+      "evidence": "TESTS.py section A1",
+      "blocking_kinds": [
+        "exact_affine_of_prohibited",
+        "function_of_prohibited",
+        "prohibited_exact_affine_of_column",
+        "prohibited_recoverable",
+        "same_game_join"
+      ]
+    },
+    {
+      "criterion": "a test proves minutes/5 FAILS",
+      "discharged": true,
+      "evidence": "TESTS.py section A2",
+      "blocking_kinds": [
+        "exact_affine_of_prohibited",
+        "function_of_prohibited",
+        "lag_alignment_violated",
+        "prohibited_exact_affine_of_column",
+        "prohibited_recoverable"
+      ],
+      "detail": "game_minutes is recovered from minutes/5 by an affine map with slope 1.0 and relative max residual 0.0"
+    },
+    {
+      "criterion": "a test proves a renamed or linearly transformed current-game duration FAILS",
+      "discharged": true,
+      "evidence": "TESTS.py section A3",
+      "blocking_kinds": {
+        "team_tempo_index": [
+          "exact_affine_of_prohibited",
+          "function_of_prohibited",
+          "prohibited_exact_affine_of_column",
+          "prohibited_recoverable"
+        ],
+        "duration_affine": [
+          "exact_affine_of_prohibited",
+          "function_of_prohibited",
+          "prohibited_exact_affine_of_column",
+          "prohibited_recoverable"
+        ],
+        "duration_monotone": [
+          "function_of_prohibited",
+          "prohibited_recoverable"
+        ],
+        "game_minutes_raw": [
+          "exact_affine_of_prohibited",
+          "function_of_prohibited",
+          "prohibited_exact_affine_of_column",
+          "prohibited_recoverable"
+        ]
+      },
+      "detail": "four variants tested: rename (byte-identical values), affine 3x-17.5, nonlinear injective exp(x/100), and raw game_minutes. The partition test function_of_prohibited is invariant to ANY injective reparameterisation, so it catches all four; the affine tests are cardinality-free and catch the linear case without a partition argument. The nonlinear case defeats affine recovery and is caught by the partition test alone -- neither check is sufficient on its own"
+    },
+    {
+      "criterion": "a test proves a correctly lagged prior-game duration PASSES when every cutoff check passes",
+      "discharged": true,
+      "evidence": "TESTS.py section A4",
+      "detail": {
+        "final_design": "guard passed, guarded_audit passed",
+        "complete_case_rows": 2967,
+        "lag_verification": {
+          "verified": true,
+          "n_rows": 2982,
+          "n_expected_null": 15,
+          "n_presented_null": 15,
+          "n_rows_disagreeing": 0
+        },
+        "per_fold": {
+          "train_lt_2022": {
+            "lagged_passes": true,
+            "prohibited_blocked": true
+          },
+          "train_lt_2023": {
+            "lagged_passes": true,
+            "prohibited_blocked": true
+          },
+          "train_lt_2024": {
+            "lagged_passes": true,
+            "prohibited_blocked": true
+          },
+          "train_lt_2025": {
+            "lagged_passes": true,
+            "prohibited_blocked": true
+          },
+          "train_lt_2026": {
+            "lagged_passes": true,
+            "prohibited_blocked": true
+          }
+        },
+        "null_handling": "the 15 first-appearance rows are DROPPED, not imputed. Imputing would be an undeclared transformation (GATE_INVOCATION_CONTRACT section 8a) and would break the lag re-derivation"
+      }
+    },
+    {
+      "criterion": "same-game joins fail closed",
+      "discharged": true,
+      "evidence": "TESTS.py section A5",
+      "routes": {
+        "undeclared_column": [
+          "exact_affine_of_prohibited",
+          "function_of_prohibited",
+          "lag_specification_absent",
+          "prohibited_exact_affine_of_column",
+          "prohibited_recoverable"
+        ],
+        "declared_same_game": [
+          "exact_affine_of_prohibited",
+          "function_of_prohibited",
+          "prohibited_exact_affine_of_column",
+          "prohibited_recoverable",
+          "same_game_join"
+        ],
+        "mislabelled_as_prior": [
+          "exact_affine_of_prohibited",
+          "function_of_prohibited",
+          "lag_alignment_violated",
+          "prohibited_exact_affine_of_column",
+          "prohibited_recoverable"
+        ],
+        "strict_false": [
+          "same_game_join"
+        ],
+        "unverifiable": [
+          "lag_unverifiable"
+        ],
+        "no_basis": [
+          "prohibited_basis_absent"
+        ],
+        "misaligned_basis": [
+          "prohibited_basis_misaligned"
+        ],
+        "guarded_audit_composition": [
+          "exact_affine_of_prohibited",
+          "function_of_prohibited",
+          "lag_specification_absent",
+          "prohibited_exact_affine_of_column",
+          "prohibited_recoverable"
+        ]
+      },
+      "detail": "eight independent routes, all blocking: undeclared column, declared SAME_GAME, same-game values mislabelled PRIOR_GAME, strict_inequality=False, PRIOR_GAME with no source to re-derive from, prohibited basis omitted, prohibited basis misaligned, and guarded_audit raising before feature_gate sees the design"
+    },
+    {
+      "criterion": "construction receipts record the lag transformation and the source keys",
+      "discharged": true,
+      "evidence": "TESTS.py section A6",
+      "receipt": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\player_program\\stage2b\\P22_POSTGAME_SURROGATE_GUARD\\receipts\\EXEMPLAR_LAGGED_DURATION_RECEIPT.json",
+      "receipt_digest": "construction:sha256=4b72076806b01afb4564617de70d392035924f21eb11f4b7867710c901fe9c00",
+      "qualification": "discharged against postgame_surrogate_guard.verify_guard_receipt, NOT against the unmodified construction_receipt.verify_construction_receipt -- see contradictions.C1"
+    },
+    {
+      "criterion": "feature_gate.py is byte-unchanged: this is a Stage 2 wrapper, not a gate edit",
+      "discharged": true,
+      "evidence": "TESTS.py section A7",
+      "sha256": "b064c2c4675d354ec5cb5c6647782634c8139ca4233a5d732f408b6c2532f9a7"
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "C1",
+      "severity": "C",
+      "severity_basis": "RESEARCH_CONTRACT_V1 Severity C explicitly lists 'stronger digest binding'",
+      "artifact": "experiments/player_program/construction_receipt.py",
+      "statement": "construction_receipt RECORDS the lag transformation but does not BIND it. binding_fields binds transformation_digest -- the stored scalar -- and verify_construction_receipt never recomputes sha256(canonical(transformation)) from the transformation body. An emitted receipt's lag declaration can therefore be edited in place and still verify clean",
+      "demonstration": {
+        "edit": "produced_frame_provenance.transformation.columns.prior_game_minutes.strict_inequality: true -> false",
+        "construction_receipt_verify_verdict": true,
+        "construction_receipt_blocking_kinds": [],
+        "guard_verify_verdict": false,
+        "guard_blocking_kinds": [
+          "transformation_body_edited"
+        ],
+        "stored_transformation_digest": "transformation:sha256=a49c2f53860b16a21529bf10e5d3715b8db465bd2dffc4bcc5fca6e5702fd05d",
+        "recomputed_transformation_digest": "transformation:sha256=b85904db4d3c66274bc1b67e0aeb24cc229e804631ca1e038e21bb76e6462a1c"
+      },
+      "why_it_matters": "the edited field in the demonstration is strict_inequality, which is exactly the flag separating a lawful prior-game lag from a same-game join",
+      "resolution": "NOT resolved by editing the frozen module. Closed at the CALL SITE by postgame_surrogate_guard.verify_guard_receipt, which delegates to cr.verify_construction_receipt and then recomputes the transformation digest, raising transformation_body_edited",
+      "trips_stop_condition": false,
+      "stop_condition_reasoning": "does not change the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set, or the leakage status"
+    },
+    {
+      "id": "C2",
+      "severity": "none -- consistency confirmation",
+      "statement": "GATE_INVOCATION_CONTRACT.md's stated preparation basis for feature_gate.py (42af2cd, informative missingness) matches the live git log, and the file is clean in git status. feature_gate.BLOCKING has exactly the 12 kinds section 3 enumerates and the thresholds match. No document/bytes disagreement found",
+      "trips_stop_condition": false
+    },
+    {
+      "id": "C3",
+      "severity": "none -- wording caveat, not a correction",
+      "statement": "S1's consequence says master_team.minutes 'must be named an explicitly PROHIBITED column ... and any lagged use must be audited rather than assumed safe'. The N2 sweep supports the stronger statement that minutes is the ONLY duration surrogate among master_team's 51 numeric columns, so naming it is SUFFICIENT for that artifact against this basis -- and only against this basis",
+      "trips_stop_condition": false
+    }
+  ],
+  "could_not_establish": [
+    {
+      "id": "U1",
+      "statement": "that the guard catches a non-exact, nonlinear NEAR-surrogate of the form f(game_minutes) + noise, where the noise breaks both partition tests and keeps |r| below 0.999",
+      "why": "the battery is an EXACT dependency guard plus one correlation threshold at |r| >= 0.999. I did not construct such a column and did not measure the boundary. This mirrors the open gap GATE_INVOCATION_CONTRACT section 7.1 records for feature_gate.py, one comparand over. It is NOT closed here"
+    },
+    {
+      "id": "U2",
+      "statement": "that prior_game_minutes is cutoff-valid in the OPERATIONAL sense, i.e. that the universe-restricted game history equals the true schedule history",
+      "why": "the re-derivation proves the column equals the club's previous game WITHIN the audited universe (0 of 2,982 rows disagreeing). The 8 team-games dropped by the pace_resolved restriction and the 4 games in possessions_raw_v2 that are not in the universe are absent from that history. Any arm using this column must state which of the two histories it means"
+    },
+    {
+      "id": "U3",
+      "statement": "that the single 8-period game is a real four-overtime game rather than a period-coding artifact",
+      "why": "two independent artifacts agree on eight periods, which is strong, but no play-by-play inspection was performed. It affects only the 2-row support of the game_minutes = 60 level"
+    },
+    {
+      "id": "U4",
+      "statement": "anything about the other prohibited-outcome surfaces: S3's 5,373 missed_game_* injury rows, S8's 32 unadjudicated possession columns, S2's join hazards",
+      "why": "out of this node's mandate. is_overtime is in this guard's basis and is therefore blocked as a feature by construction, but score_diff_offense_start, abs_score_diff_start, non_competitive_conservative and the rest belong to P2A_POSSESSION_COLUMN_ADJUDICATION. A pass from this guard is NOT a cutoff-validity certificate"
+    },
+    {
+      "id": "U5",
+      "statement": "any comparative performance figure for any challenger",
+      "why": "forbidden by the no-performance-peeking rule. None was computed and none was read; stage2b/SEALED_RESULTS/ does not exist in this worktree and was not opened"
+    }
+  ],
+  "stop_conditions_tripped": [],
+  "stop_condition_statement": "No finding in this node changes the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set, or the leakage status. S1's leakage status was already declared by the frozen V2 halt packet; this node implements the enforcement S1 asked for and does not re-adjudicate it. The one defect found (C1) is Severity C and is closed at the call site without touching the frozen artifact.",
+  "interface_for_downstream_callers": {
+    "module": "experiments/player_program/stage2b/P22_POSTGAME_SURROGATE_GUARD/postgame_surrogate_guard.py",
+    "entry_points": {
+      "realised_duration_basis(index, game_id=, possessions_path=)": "build the prohibited basis",
+      "LagSpec(...)": "declare one column's lag transformation and source keys; kinds are SAME_GAME, PRIOR_GAME, SCHEDULE, DERIVED_NO_JOIN",
+      "audit(frame, names, prohibited=, lag_specs=, lag_sources=)": "enforce S1; raises PostgameSurrogateFailure on any blocking finding",
+      "guarded_audit(...)": "guard FIRST, then feature_gate.audit; returns both records",
+      "emit_guard_receipt(...)": "emit a construction_receipt/1 whose transformation block is the lag record",
+      "verify_guard_receipt(path, ...)": "cr.verify_construction_receipt PLUS the transformation-digest recomputation C1 requires"
+    },
+    "blocking_kinds": [
+      "exact_affine_of_prohibited",
+      "function_of_prohibited",
+      "gate_bytes_changed",
+      "lag_alignment_violated",
+      "lag_specification_absent",
+      "lag_specification_unrecognised",
+      "lag_unverifiable",
+      "near_collinear_with_prohibited",
+      "prohibited_basis_absent",
+      "prohibited_basis_degenerate",
+      "prohibited_basis_misaligned",
+      "prohibited_exact_affine_of_column",
+      "prohibited_recoverable",
+      "same_game_join"
+    ],
+    "thresholds": {
+      "EXACT_RTOL": 1e-09,
+      "NEAR_COLLINEAR_R": 0.999,
+      "RECOVERY_CARDINALITY_FACTOR": 4
+    },
+    "claim_boundary": "a pass from this guard establishes ONE invariant: no declared feature is, or recovers, the realised current-game duration. It is a NECESSARY condition, never a sufficient one, and it is not a cutoff-validity certificate"
+  }
+}

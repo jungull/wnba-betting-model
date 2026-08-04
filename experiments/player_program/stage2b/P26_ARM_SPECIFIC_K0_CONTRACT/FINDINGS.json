@@ -1,0 +1,227 @@
+{
+  "schema": "player_program_node_findings/1",
+  "node_id": "P26_ARM_SPECIFIC_K0_CONTRACT",
+  "lane": "possession",
+  "type": "documentation",
+  "severity_on_failure": "A",
+  "addresses_stop_condition_findings": ["S6", "S9"],
+  "measured_bearing_on": ["S4", "S5", "S7"],
+  "epistemic_status": "CONTRACT. Defines what a matched null must be for each kind of arm. It is a specification, not evidence, and it decides no arm's fate.",
+  "status": "LANDED",
+  "completed": true,
+
+  "outputs": [
+    "experiments/player_program/stage2b/P26_ARM_SPECIFIC_K0_CONTRACT/REPORT.md",
+    "experiments/player_program/stage2b/P26_ARM_SPECIFIC_K0_CONTRACT/FINDINGS.json",
+    "experiments/player_program/stage2b/P26_ARM_SPECIFIC_K0_CONTRACT/K0_MATCHED_SCHEMA.json",
+    "experiments/player_program/stage2b/P26_ARM_SPECIFIC_K0_CONTRACT/validate_k0_matched.py",
+    "experiments/player_program/stage2b/P26_ARM_SPECIFIC_K0_CONTRACT/TESTS.py",
+    "experiments/player_program/stage2b/P26_ARM_SPECIFIC_K0_CONTRACT/MEASURE.py",
+    "experiments/player_program/stage2b/P26_ARM_SPECIFIC_K0_CONTRACT/MEASUREMENTS.json",
+    "experiments/player_program/stage2b/P26_ARM_SPECIFIC_K0_CONTRACT/K0_MATCHED_EXAMPLES.json"
+  ],
+
+  "frozen_artifacts_modified": [],
+  "git_commands_run": ["rev-parse --abbrev-ref HEAD (read-only)"],
+
+  "artifact_digests_reverified": {
+    "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet": {
+      "sha256": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18",
+      "matches_evidence_packet_v2_sources": true
+    },
+    "experiments/player_program/possessions_v2/possessions_raw_v2.parquet": {
+      "sha256": "7200881fd811db9d0d6b10ea0a19b01ec7b6d027ee4567b9ef963241b15a4b1a",
+      "matches_evidence_packet_v2_sources": true
+    }
+  },
+
+  "acceptance_criteria": [
+    {
+      "criterion": "K0_MATCHED is defined per arm_id, not as one universal object",
+      "satisfied_by": "REPORT.md 1.1; K0_MATCHED_SCHEMA.json requires a non-empty arm_id; validate_k0_matched.validate_registry blocks arm_id_duplicated and arm_id_missing",
+      "test": "TESTS.py T01 (3 assertions)"
+    },
+    {
+      "criterion": "for every arm the matched null holds identical rows, target, folds, weights, offset, fallback machinery, nuisance terms and lower-order structural terms",
+      "satisfied_by": "REPORT.md 1.2; rule R2 over all 17 comparison_gate.DIMENSIONS plus a redundant pin of rows/target/folds/weights/offset in invariants",
+      "test": "TESTS.py T02 (4 assertions)"
+    },
+    {
+      "criterion": "the matched null excludes ONLY the treatment mechanism under test",
+      "satisfied_by": "REPORT.md 1.3; rules R4 (exclusion_not_minimal, treatment_term_survives_in_k0) and R5 (structural_closure_violated)",
+      "test": "TESTS.py T03 (3 assertions)"
+    },
+    {
+      "criterion": "for a calibration-only arm the matched null fixes the tested parameter at its incumbent/null value (slope fixed at 1; the preregistered lower-order intercept structure)",
+      "satisfied_by": "REPORT.md 1.5; rule R8 requires role=slope with null_value exactly 1.0 and the declared lower-order structure present in k0.structural_terms",
+      "test": "TESTS.py T04 (4 assertions)"
+    },
+    {
+      "criterion": "for a substantive-feature arm K0 contains every non-substantive structural degree of freedom granted to the candidate and excludes the substantive terms",
+      "satisfied_by": "REPORT.md 1.3/1.5; rule R5 requires set equality of structural_terms, R4 requires the substantive difference to equal exactly the treatment set",
+      "test": "TESTS.py T05, T03"
+    },
+    {
+      "criterion": "a candidate with tier interactions has lower-order tier main effects in its K0",
+      "satisfied_by": "REPORT.md 1.6; rule R6 decomposes FACTOR:feature terms and requires each non-substantive factor's main effect in k0.structural_terms",
+      "test": "TESTS.py T06"
+    },
+    {
+      "criterion": "no arm receives credit for free re-centring, changed fallback, or a more flexible estimator",
+      "satisfied_by": "REPORT.md 1.7; rule R7 emits the countable code free_flexibility_granted over the eight FLEXIBILITY_DIMENSIONS, in addition to the generic invariant_mismatch",
+      "test": "TESTS.py T07 (5 assertions)"
+    },
+    {
+      "criterion": "K0_FLAT is marked diagnostic only",
+      "satisfied_by": "REPORT.md 1.1; schema pins k0_flat_role with const 'diagnostic_only'; rule R11 blocks any other value",
+      "test": "TESTS.py T08 (2 assertions)"
+    },
+    {
+      "criterion": "a machine-readable schema validates a K0 specification against its arm",
+      "satisfied_by": "K0_MATCHED_SCHEMA.json (shape) + validate_k0_matched.check_relation (the arm-relative rules) + bind_and_require_matched_k0 (delegation to the frozen gate). Two worked records in K0_MATCHED_EXAMPLES.json validate clean.",
+      "test": "TESTS.py T00, T09, T10, T11, T12, T13"
+    }
+  ],
+
+  "tests": {
+    "command": "python experiments/player_program/stage2b/P26_ARM_SPECIFIC_K0_CONTRACT/TESTS.py",
+    "framework": "standalone script; pytest is NOT installed in this environment",
+    "assertions": 41,
+    "passing": 41,
+    "exit_code": 0
+  },
+
+  "measurements": [
+    {"id": "M1a", "claim": "team-game rows in team_possession_prior_v1", "value": 2990, "how_measured": "MEASURE.py M1_universe.team_game_rows_total", "matches_packet": "AGREES"},
+    {"id": "M1b", "claim": "resolved team-game rows", "value": 2982, "how_measured": "MEASURE.py M1_universe.resolved_rows", "matches_packet": "AGREES"},
+    {"id": "M1c", "claim": "unresolved team-game rows", "value": 8, "how_measured": "MEASURE.py M1_universe.unresolved_rows", "matches_packet": "AGREES"},
+    {"id": "M1d", "claim": "game clusters over the resolved rows", "value": 1491, "how_measured": "MEASURE.py M1_universe.game_clusters_resolved", "matches_packet": "AGREES"},
+    {"id": "M1e", "claim": "game clusters over all 2990 rows", "value": 1495, "how_measured": "MEASURE.py M1_universe.game_clusters_total", "matches_packet": "AGREES", "note": "explains the V2 packet-nit: 1495 - 1491 = 4 games x 2 team-rows = the 8 unresolved rows"},
+    {"id": "M2a", "claim": "pooled residual variance (ddof=1)", "value": 13.50014000520758, "how_measured": "MEASURE.py M2_pooled.residual_variance_ddof1", "matches_packet": "AGREES"},
+    {"id": "M2b", "claim": "pooled target variance (ddof=1)", "value": 15.27299027376524, "how_measured": "MEASURE.py M2_pooled.target_variance_ddof1", "matches_packet": "AGREES"},
+    {"id": "M2c", "claim": "variance explained vs target", "value": 0.11607748298006348, "how_measured": "MEASURE.py M2_pooled.variance_explained_vs_target", "matches_packet": "AGREES"},
+    {"id": "M2d", "claim": "pooled squared bias", "value": 0.02533534506961617, "how_measured": "MEASURE.py M2_pooled.squared_bias", "matches_packet": "AGREES"},
+    {"id": "M2e", "claim": "pooled bias share of MSE", "value": 0.0018737846493183724, "how_measured": "MEASURE.py M2_pooled.bias_share_of_mse", "matches_packet": "AGREES"},
+    {"id": "M3a", "claim": "S4 evidence: var(projected)/var(target)", "value": 0.15730306529044968, "how_measured": "MEASURE.py M2_pooled.var_projected_over_var_target", "matches_packet": "AGREES"},
+    {"id": "M4a", "claim": "S6 bias share, team_window_same_season (n=2762)", "value": 0.010336041218808498, "how_measured": "MEASURE.py M3_bias_share_by_stratum", "matches_packet": "AGREES"},
+    {"id": "M4b", "claim": "S6 bias share, league_prior_all (n=37)", "value": 0.003721106912957431, "how_measured": "MEASURE.py M3_bias_share_by_stratum", "matches_packet": "AGREES"},
+    {"id": "M4c", "claim": "S6 bias share, team_window_prior_season (n=183)", "value": 0.37098409941137944, "how_measured": "MEASURE.py M3_bias_share_by_stratum", "matches_packet": "AGREES"},
+    {"id": "M4d", "claim": "S6 bias share, season_openers (n=76)", "value": 0.42488074658743996, "how_measured": "MEASURE.py M3_bias_share_by_stratum.season_openers_gno_eq_1", "matches_packet": "AGREES", "note": "S6 does not define 'season_openers'; only game_no_in_season == 1 reproduces 0.42488"},
+    {"id": "M4e", "claim": "bias share, game_no_in_season <= 3 (n=228)", "value": 0.2119262424162061, "how_measured": "MEASURE.py M3_bias_share_by_stratum.season_openers_gno_le_3", "matches_packet": "NOT_IN_PACKET"},
+    {"id": "M4f", "claim": "bias share, pace_level > 1 i.e. the tier partition (n=220)", "value": 0.2641865725221315, "how_measured": "MEASURE.py M3_bias_share_by_stratum.pace_level_gt_1", "matches_packet": "NOT_IN_PACKET"},
+    {"id": "M5a", "claim": "S7 pace_source x season cells that are identically zero", "value": 4, "how_measured": "MEASURE.py M4_identically_zero_fold_cells: league_prior_all in 2022/2023/2024, team_window_prior_season in 2021", "matches_packet": "AGREES"},
+    {"id": "M5b", "claim": "S7 per-season counts, all 18 cells", "value": "every cell reproduces S7 exactly", "how_measured": "MEASURE.py M4_pace_source_by_season", "matches_packet": "AGREES"},
+    {"id": "M6a", "claim": "S5 identity max abs(own_est + opp_est - 2*projected)", "value": 0.0, "how_measured": "MEASURE.py M6_offset_identity.max_abs_deviation over 2982 two-sided rows", "matches_packet": "AGREES"},
+    {"id": "M6b", "claim": "S5 corr(own_est, projected)", "value": 0.7738440692208864, "how_measured": "MEASURE.py M6_offset_identity.corr_own_projected", "matches_packet": "AGREES"},
+    {"id": "M6c", "claim": "S5 corr(own_est, opp_est)", "value": 0.1976692869366804, "how_measured": "MEASURE.py M6_offset_identity.corr_own_opp", "matches_packet": "AGREES"},
+    {"id": "M7a", "claim": "packet claim 'pace_level > 1 == game_no_in_season <= 3, 2982/2982, zero off-diagonal', with game_no counted over ALL 2990 rows", "value": "2982/2982 agree, 0 off-diagonal - claim TRUE", "how_measured": "cumcount over the full prior frame then restricted to resolved rows", "matches_packet": "AGREES"},
+    {"id": "M7b", "claim": "same claim with game_no counted over the 2982 RESOLVED rows, which is what build_evidence_packet.py:98 does", "value": "2974/2982 agree, 8 off-diagonal - claim FALSE", "how_measured": "MEASURE.py M5_tier_equals_game_no_le_3", "matches_packet": "CORRECTS"},
+    {"id": "M8a", "claim": "comparison_gate parity dimensions", "value": 17, "how_measured": "MEASURE.py M7_comparison_gate.n_dimensions", "matches_packet": "NOT_IN_PACKET"},
+    {"id": "M8b", "claim": "occurrences of 'K0_MATCHED' / 'K0_FLAT' / 'slope' in comparison_gate.py", "value": "0 / 0 / 0", "how_measured": "MEASURE.py M7_comparison_gate", "matches_packet": "NOT_IN_PACKET"},
+    {"id": "M8c", "claim": "comparison_gate.SideSpec fields keying a control to an arm (arm_id, k0_kind, control_kind)", "value": "none present", "how_measured": "MEASURE.py M7_comparison_gate.sidespec_fields_with_arm_key", "matches_packet": "NOT_IN_PACKET"},
+    {"id": "M9a", "claim": "frozen require_matched_k0 on K0 whose tier main effects sit in substantive_features", "value": "BLOCKED k0_has_substantive_features", "how_measured": "TESTS.py T12; REPORT.md 2.8 scenario A", "matches_packet": "NOT_IN_PACKET"},
+    {"id": "M9b", "claim": "frozen require_matched_k0 on K0 whose tier main effects sit in a structural dimension, identical both sides", "value": "PASSED", "how_measured": "TESTS.py T12; REPORT.md 2.8 scenario B", "matches_packet": "NOT_IN_PACKET"},
+    {"id": "M9c", "claim": "frozen require_matched_k0 on a K0 that drops the tier structure (S6 straw control)", "value": "BLOCKED dimension_mismatch", "how_measured": "REPORT.md 2.8 scenario C", "matches_packet": "NOT_IN_PACKET"},
+    {"id": "M9d", "claim": "frozen require_matched_k0 on a calibration arm declaring its slope under calibration_freedom", "value": "BLOCKED dimension_mismatch", "how_measured": "REPORT.md 2.8 scenario D", "matches_packet": "NOT_IN_PACKET"},
+    {"id": "M9e", "claim": "frozen require_matched_k0 on S4's free slope carried as a substantive column", "value": "PASSED - S4 reproduced against the bytes", "how_measured": "TESTS.py T12; REPORT.md 2.8 scenario E", "matches_packet": "AGREES"},
+    {"id": "M10a", "claim": "arm_registry.jsonl records / of kind 'arm' / Stage 2B possession arms", "value": "41 / 17 / 0", "how_measured": "MEASURE.py M8_arm_registry", "matches_packet": "NOT_IN_PACKET"}
+  ],
+
+  "contradictions": [
+    {
+      "id": "X1",
+      "class": "frozen document vs frozen document",
+      "left": "stage2a/EVIDENCE_PACKET_V2.json control_specification.K0_MATCHED - a single object with one definition, one excludes list, one tier_partition_rule",
+      "right": "stage2a/V2_STOP_CONDITION.json S9 - 'one control construction cannot serve every arm'; K0_MATCHED 'must be constructed per arm'",
+      "consequence": "both are frozen and cannot both govern. This contract sides with S9, which is a change to the K0 structure and is RAISED, not adopted.",
+      "severity": "A"
+    },
+    {
+      "id": "X2",
+      "class": "document vs bytes",
+      "left": "EVIDENCE_PACKET_V2 control_specification.K0_MATCHED.why_this_is_not_feature_absorption: 'pace_level > 1 is algebraically identical to game_no_in_season <= 3 (2982/2982, zero off-diagonal)'",
+      "right": "measured 2974/2982 with 8 off-diagonal when game_no_in_season is counted over the resolved frame, which is exactly what the packet's own producer stage2a/build_evidence_packet.py:98 does. 2982/2982 holds only when counted over all 2990 rows.",
+      "consequence": "this is the SOLE stated justification for admitting the tier partition into K0_MATCHED. The contract does not rest on it. The 8 discrepant rows are the 2021 fourth games of the eight teams whose opener is unresolved.",
+      "severity": "A",
+      "packet_not_edited": true
+    },
+    {
+      "id": "X3",
+      "class": "pooled reading presented without its stratum qualification",
+      "left": "EVIDENCE_PACKET_V2 bias_variance.reading: 'A better point estimate must reduce dispersion, not re-centre.'",
+      "right": "re-derived: pooled bias share 0.0018738, but 0.3709841 on team_window_prior_season and 0.4248807 on season openers",
+      "consequence": "the reading is true pooled and false on precisely the strata the wave's cold-start arms would occupy. Raised by S6; reproduces exactly.",
+      "severity": "B"
+    },
+    {
+      "id": "X4",
+      "class": "contract prose vs gate bytes",
+      "left": "GATE_INVOCATION_CONTRACT section 7.2 assigns 'calibration freedom' to comparison_gate",
+      "right": "measured: zero occurrences of 'slope' in comparison_gate.py; scenario D blocks and scenario E passes, differing only in where the same flexibility was declared",
+      "consequence": "the gate's coverage of calibration slope is entirely routing-dependent and nothing in the frozen gate enforces the routing. arm_kind + treatment_terms + verdict_label_policy exist to force it at the call site.",
+      "severity": "A"
+    },
+    {
+      "id": "X5",
+      "class": "document vs bytes",
+      "left": "EVIDENCE_PACKET_V2 K0_MATCHED.label: 'MATCHED STRUCTURAL CONTROL - not a literally featureless model'",
+      "right": "comparison_gate.k0_findings blocks any K0 with n_substantive_features > 0; the module docstring says K0 carries 'zero substantive features'",
+      "consequence": "resolved by RESEARCH_CONTRACT_V1's precedence rule (the implementation governs): structural terms exist but are declared in a structural parity dimension, never in substantive_features. That reading was nowhere written down before this node; REPORT.md 1.4 writes it down.",
+      "severity": "A"
+    },
+    {
+      "id": "X6",
+      "class": "defect found while building this node's own tests",
+      "left": "sharing one dict object between the arm sidespec and the K0 sidespec",
+      "right": "every parity check passed trivially - the two sides were the same object; 7 assertions failed only after the aliasing was removed",
+      "consequence": "the in-memory form of the failure that row and fold digests exist to prevent. Recorded rather than silently fixed, because an implementation node could reproduce it and see a green gate.",
+      "severity": "C"
+    }
+  ],
+
+  "could_not_establish": [
+    "No Stage 2B possession arm is registered (measured: 0 of 41 registry records). The contract is written against arm KINDS and has never been validated against a real arm; the two example records are prefixed EXAMPLE_.",
+    "The Stage 2B chronological fold boundaries are not frozen anywhere in the repository. EVIDENCE_PACKET_V2 states only 'chronological, nested by season; a game is NEVER split across folds'. The schema requires chronological_folds to be stated but I could not check it against a frozen definition.",
+    "pipeline_id remains ASSERTED, not demonstrated. comparison_gate documents this in REMAINING_GAPS and this node's wrapper does NOT close it: a K0 record can declare the arm's pipeline_id while being produced by different code.",
+    "The shape checker is a stdlib SUBSET of JSON Schema 2020-12, not a conformant processor - jsonschema is not installed (measured; pandas, numpy and pyarrow are, pytest is not). It implements exactly the keywords K0_MATCHED_SCHEMA.json uses.",
+    "Which construction of game_no_in_season the frozen packet intended (X2). The packet does not say and was not edited; both constructions are reported.",
+    "Whether the tier partition belongs in any particular arm's K0. That is per-arm by construction and cannot be answered before the arms exist.",
+    "Anything about comparative performance. No challenger performance was inspected; stage2b/SEALED_RESULTS was not read and does not exist on disk."
+  ],
+
+  "stop_conditions": {
+    "tripped": [
+      {
+        "condition": "a finding would change the K0 structure",
+        "what": "K0_MATCHED becomes a map keyed by arm_id, superseding the single object in the frozen EVIDENCE_PACKET_V2.control_specification (X1)",
+        "disposition": "RAISED, not adopted. The coordinator must explicitly supersede the packet's control_specification block or reject this contract. Until then two frozen documents disagree and no arm may be adjudicated against either."
+      },
+      {
+        "condition": "a finding would change the K0 structure",
+        "what": "the packet's tier_partition_rule is replaced by a per-arm rule keyed to the declared treatment mechanism, with a verdict-labelling consequence (REPORT.md 1.8)",
+        "disposition": "RAISED, not adopted."
+      },
+      {
+        "condition": "a finding would change the K0 structure",
+        "what": "the packet's justification for that rule does not hold as written (X2)",
+        "disposition": "RAISED. The packet is frozen and was not edited."
+      }
+    ],
+    "not_tripped": [
+      "primary target - pinned by the schema with const REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS; unchanged",
+      "inference structure - 2982 rows / 1491 clusters / equal row weighting / game-clustered resampling consumed as given and re-derived only to confirm",
+      "candidate universe - unchanged, confirmed at 2982 resolved rows",
+      "cutoff-valid feature set - untouched; no feature was adjudicated here",
+      "leakage status - untouched; no fit was run"
+    ]
+  },
+
+  "deferred_to_owning_nodes": {
+    "P27_FOLD_LOCAL_ESTIMABILITY_GUARD": "the NUMERIC fold-local trigger for S7. This node declares the required fold_local_fallback field and blocks on its absence; it does not set the threshold.",
+    "P25_OFFSET_DEPENDENCY_GUARD": "the augmented-rank check over [X | offset] for S5. This node only requires that the offset be the same declared string on both sides.",
+    "P22_POSTGAME_SURROGATE_GUARD / P24_INJURY_REGIME_LEDGER / P2A_POSSESSION_COLUMN_ADJUDICATION": "the cutoff-valid feature set (S1, S3, S8).",
+    "P28_PRIMARY_SECONDARY_ORDERING_CONTRACT": "the primary-before-secondary ordering that the calibration-only verdict label depends on."
+  },
+
+  "self_assessment": "The node produced its two required outputs plus a working schema, a call-site validator and 41 passing tests. It does NOT mark itself accepted. Two of its central design decisions (per-arm K0, the per-arm tier rule) change the K0 structure relative to a frozen packet and are raised for coordinator adjudication rather than resolved."
+}

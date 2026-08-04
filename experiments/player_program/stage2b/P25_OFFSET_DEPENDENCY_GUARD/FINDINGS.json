@@ -1,0 +1,169 @@
+{
+  "schema": "stage2b_node_findings/1",
+  "node_id": "P25_OFFSET_DEPENDENCY_GUARD",
+  "title": "S4/S5: full-design offset and affine-dependency audit including own/opponent contrasts",
+  "lane": "possession",
+  "type": "implementation",
+  "severity_on_failure": "A",
+  "epistemic_status": "INFRASTRUCTURE + task-specific INVARIANT. Proves a design cannot smuggle the offset into substantive_features. Establishes nothing about which mechanism is real.",
+  "branch": "player-model-program",
+  "reproduction_command": "python experiments/player_program/stage2b/P25_OFFSET_DEPENDENCY_GUARD/TESTS.py",
+  "tests_written": 21,
+  "tests_passing": 21,
+  "exit_code": 0,
+
+  "artifacts_read": {
+    "projected_exposure_v1/team_possession_prior_v1.parquet": "own_est, opp_est, projected_team_off_possessions, pace_resolved, season",
+    "possessions_v2/possessions_raw_v2.parquet": "game_id, offense_team_id, period -> regulation-equivalent target",
+    "feature_gate.py": "READ ONLY, imported, byte-unchanged",
+    "stage2a/V2_STOP_CONDITION.json": "S1-S9",
+    "stage2a/EVIDENCE_PACKET_V2.json": "target, variance, dependence-structure blocks",
+    "GATE_INVOCATION_CONTRACT.md": "sections 1, 3, 3.1, 4, 7, 8a",
+    "RESEARCH_CONTRACT_V1.md": "phase 0, severity rules"
+  },
+
+  "files_written": [
+    "experiments/player_program/stage2b/P25_OFFSET_DEPENDENCY_GUARD/offset_dependency_guard.py",
+    "experiments/player_program/stage2b/P25_OFFSET_DEPENDENCY_GUARD/TESTS.py",
+    "experiments/player_program/stage2b/P25_OFFSET_DEPENDENCY_GUARD/MEASUREMENTS.json",
+    "experiments/player_program/stage2b/P25_OFFSET_DEPENDENCY_GUARD/PREREGISTERED_CONTRASTS.json",
+    "experiments/player_program/stage2b/P25_OFFSET_DEPENDENCY_GUARD/FINDINGS.json"
+  ],
+  "report_md_not_written": {
+    "reason": "the executing harness refused the Write of a .md report file and instructed that findings be returned as the agent's text output; the full REPORT.md body was returned in the node's final message instead",
+    "action_for_coordinator": "persist the returned prose to experiments/player_program/stage2b/P25_OFFSET_DEPENDENCY_GUARD/REPORT.md; every number in it is reproduced by MEASUREMENTS.json"
+  },
+
+  "measurements": [
+    {"claim": "S5 identity universe size", "value": "2982 rows over 1491 game clusters", "how_measured": "TESTS.py::build_panel + t02_identity_reproduced", "matches_packet": "AGREES"},
+    {"claim": "own_est + opp_est == 2 * projected_team_off_possessions, max abs deviation", "value": "0.0; 2982 of 2982 rows deviate by exactly zero", "how_measured": "TESTS.py::t02_identity_reproduced", "matches_packet": "AGREES"},
+    {"claim": "corr(own_est, projected)", "value": "0.773844", "how_measured": "TESTS.py::t02_identity_reproduced", "matches_packet": "AGREES (packet 0.7738)"},
+    {"claim": "corr(own_est, opp_est)", "value": "0.197669", "how_measured": "TESTS.py::t02_identity_reproduced", "matches_packet": "AGREES (packet 0.1977)"},
+    {"claim": "artifact totals", "value": "2990 rows, 1495 games, 8 unresolved rows (4 games)", "how_measured": "TESTS.py::build_panel", "matches_packet": "AGREES"},
+    {"claim": "feature_gate.audit on {own_est, opp_est} with offset=projected", "value": "passed=true, findings=[], feature-only rank 2 of 2, condition 1.221776", "how_measured": "TESTS.py::t03_feature_gate_passes_the_dependent_design", "matches_packet": "AGREES with S5's mechanism claim; now demonstrated against the frozen gate rather than argued"},
+    {"claim": "augmented design [offset|own|opp] rank / singular values / condition", "value": "rank 2 of 3; sv [80.9533805, 48.91370142, 0.0]; condition 1.8252e13", "how_measured": "TESTS.py::t04, via the FROZEN feature_gate.design_rank_report", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "R2(offset ~ 1 + own_est + opp_est)", "value": "1.0 exactly, pooled and in all six chronological folds", "how_measured": "TESTS.py::t04_guard_rejects_the_dependent_design", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "per-fold row counts 2021..2026", "value": "410, 478, 520, 524, 620, 430 (sum 2982)", "how_measured": "TESTS.py::t04", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "R2(offset ~ 1 + own_est) alone", "value": "0.598835 -- own_est alone is correctly NOT blocked", "how_measured": "TESTS.py::t05_isolation_would_miss_it", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "synthetic pair a=u+w, b=u-w, offset=(a+b)/2", "value": "corr(a,b)=0.003636, corr(a,offset)=0.704712; feature_gate passes; guard blocks", "how_measured": "TESTS.py::t11", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "contrast own_est - opp_est: formula reproduction", "value": "max abs deviation 0.0", "how_measured": "TESTS.py::t12", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "contrast augmented design [offset|contrast]", "value": "rank 2 of 2, condition 1.000000000000002, R2(offset~contrast)=0.0; full rank and condition 1.0 in every fold", "how_measured": "TESTS.py::t12", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "corr(contrast, offset)", "value": "0.0 to twelve decimal places -- exact, and structural", "how_measured": "TESTS.py::t02", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "the exact orthogonality is conditional on two-sided games", "value": "1491 games two-sided, 0 one-sided, 0 with differing projections; forcing 400 games one-sided moves corr(contrast,offset) to -0.021273", "how_measured": "TESTS.py::t20", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "near-affine candidate constructed at corr 0.99955 (R2 0.9991) is blocked", "value": "candidate_affine_in_offset", "how_measured": "TESTS.py::t07", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "benign candidate at corr 0.853353 passes", "value": "guard passed=true", "how_measured": "TESTS.py::t08", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "incumbent_projection argument is load-bearing", "value": "with offset=log(projection*share): corr(candidate,offset)=0.074205, R2=0.005506; guard PASSES without incumbent_projection= and BLOCKS with it", "how_measured": "TESTS.py::t09", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "fold-degenerate contrast is invisible pooled", "value": "pooled guard record passed=true; blocked only once fold_ids supplied (fold_local_zero_variance + fold_local_rank_deficient)", "how_measured": "TESTS.py::t16", "matches_packet": "AGREES with GATE_INVOCATION_CONTRACT section 1 (ws3 shape)"},
+    {"claim": "var(target) on the regulation-equivalent target", "value": "15.27299 (n=2982, mean 79.28758, sd 3.90807)", "how_measured": "TESTS.py::t19 + build_panel", "matches_packet": "AGREES"},
+    {"claim": "sd(projected) / var(projected)", "value": "1.549996 / 2.402488", "how_measured": "TESTS.py::t02", "matches_packet": "AGREES (adversarial doc 1.550)"},
+    {"claim": "var(projected)/var(target)", "value": "0.157303", "how_measured": "TESTS.py::t19", "matches_packet": "AGREES (packet 0.157)"},
+    {"claim": "variance explained by the identity predictor", "value": "0.116077", "how_measured": "TESTS.py::t19", "matches_packet": "AGREES (packet 0.11608)"},
+    {"claim": "incumbent OLS calibration intercept and slope on the possession target", "value": "intercept 10.251429, slope 0.868961", "how_measured": "TESTS.py::t19", "matches_packet": "CORRECTS -- the packet argued 'slope is not 1' indirectly from a variance ratio and never computed it"},
+    {"claim": "incumbent possession MAE by overtime stratum", "value": "pooled 2.90325; regulation 2.92806; overtime 2.36744 on 132 rows", "how_measured": "TESTS.py::t20", "matches_packet": "AGREES exactly with downstream_operational_boundary.measured_mismatch"},
+    {"claim": "offset tie structure (makes the fit-free exact-determination test informative)", "value": "1014 distinct offset values, all 1014 with >= 2 rows; own_est constant in only 9 of 1014 groups", "how_measured": "TESTS.py::t20", "matches_packet": "NOT_IN_PACKET"},
+    {"claim": "feature_gate.py digest", "value": "sha256 b064c2c4675d354ec5cb5c6647782634c8139ca4233a5d732f408b6c2532f9a7, 10812 bytes; git blob b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2; last touched at 42af2cd; git status clean", "how_measured": "TESTS.py::t01 + git status --porcelain / rev-parse / log (read-only)", "matches_packet": "AGREES with GATE_INVOCATION_CONTRACT's stated provenance"},
+    {"claim": "RESIDUAL GAP, negative result: nonlinear joint reconstruction is NOT caught", "value": "offset == a*b exactly: linear R2(offset ~ 1+a+b) = 0.924168, augmented rank 3 of 3, guard passed=true, blocking=[]", "how_measured": "TESTS.py::t21", "matches_packet": "NOT_IN_PACKET"}
+  ],
+
+  "guard": {
+    "module": "experiments/player_program/stage2b/P25_OFFSET_DEPENDENCY_GUARD/offset_dependency_guard.py",
+    "entrypoint": "audit_augmented_design(df, candidate_features, offset, *, nuisance_features, incumbent_projection, fold_ids, declared_family, recalibration_declaration, preregistered_contrasts, prereg_digest_expected)",
+    "audits": "[offset | nuisance | candidate] -- the offset is a REQUIRED positional argument",
+    "reuses_frozen": ["feature_gate.design_rank_report", "feature_gate.RANK_TOL = 1e-8", "feature_gate.COND_MAX = 1e6"],
+    "modifies_frozen": "none",
+    "thresholds": {
+      "NEAR_R2": 0.998001,
+      "NEAR_R2_provenance": "0.999**2; for a single regressor R2 == r2, so this reduces EXACTLY to feature_gate's corr_threshold=0.999 and extends the same strictness to subsets and to the offset",
+      "EXACT_R2": 0.999999999,
+      "SPEARMAN": 0.999,
+      "MIN_TIE_GROUPS": 20
+    },
+    "blocking_kinds": [
+      "offset_missing", "offset_is_placeholder",
+      "candidate_affine_in_offset", "candidate_monotone_transform_of_offset",
+      "candidate_exactly_determined_by_offset",
+      "candidate_is_function_of_incumbent_projection",
+      "pair_reconstructs_offset", "design_reconstructs_offset",
+      "augmented_rank_deficient", "augmented_ill_conditioned",
+      "fold_local_rank_deficient", "fold_local_reconstructs_offset", "fold_local_zero_variance",
+      "contrast_not_preregistered", "contrast_prereg_digest_mismatch", "contrast_formula_mismatch",
+      "calibration_parameter_in_substantive_arm", "recalibration_family_incomplete",
+      "mixed_family_arm"
+    ]
+  },
+
+  "acceptance_criteria": [
+    {"criterion": "the audit runs on the COMPLETE design [offset | nuisance | candidate], never on candidate features in isolation", "status": "MET", "evidence": "offset is a required positional argument; offset=None -> offset_missing; all-zero offset -> offset_is_placeholder; audited_columns recorded as ['__offset__','own_est','opp_est']; the same dependency split across nuisance_features and candidate_features is still blocked (t04, t05, t18)"},
+    {"criterion": "a candidate that is an exact or near-exact affine function of the offset is REJECTED", "status": "MET", "evidence": "2*offset+3 -> candidate_affine_in_offset; a candidate at corr 0.99955 (R2 0.9991) -> candidate_affine_in_offset; exp(offset/10) -> candidate_monotone_transform_of_offset; a benign candidate at corr 0.853353 correctly passes (t06, t07, t10, t08)"},
+    {"criterion": "a candidate that is an exact function of the incumbent projection is REJECTED", "status": "MET", "evidence": "t09: with offset=log(projection*share) every offset-side test is silent (corr 0.074205, R2 0.005506) and the guard passes; supplying incumbent_projection= blocks with candidate_is_function_of_incumbent_projection + calibration_parameter_in_substantive_arm"},
+    {"criterion": "a pair of candidates that JOINTLY reconstruct the offset is REJECTED", "status": "MET", "evidence": "real data: pair_reconstructs_offset on {own_est, opp_est}; synthetic: a=u+w, b=u-w with corr(a,b)=0.003636, feature_gate passes it, guard blocks (t04, t11)"},
+    {"criterion": "the identity own_est + opp_est == 2 * projected is reproduced and its rejection proven", "status": "MET", "evidence": "max abs deviation 0.0 on 2982/2982 rows; augmented rank 2 of 3 with smallest singular value exactly 0.0 and condition 1.8252e13; R2(offset ~ own+opp) = 1.0 pooled and in all six folds (t02, t04)"},
+    {"criterion": "a single nonredundant contrast such as own_est - opp_est is permitted only with a preregistered exact formula, fold-local full rank, and no offset reconstruction", "status": "MET", "evidence": "permitted only when all four hold: digest-bound preregistration (edited record -> contrast_prereg_digest_mismatch, t15), exact formula reproduction re-derived by a restricted AST evaluator (one row perturbed by 1e-6 -> contrast_formula_mismatch, t14), fold-local full rank (2021 zeroed -> fold_local_zero_variance + fold_local_rank_deficient, invisible to the pooled audit, t16), and no offset reconstruction per fold (R2 = 0.0 in every fold, t12). An unregistered contrast_* column -> contrast_not_preregistered (t13). Contrast + its own inputs -> still design_reconstructs_offset (t12)."},
+    {"criterion": "recalibration is a SEPARATE hypothesis family with its own nested null and its own family-level multiplicity accounting; a calibration parameter may not hide inside a substantive-feature arm", "status": "MET", "evidence": "SUBSTANTIVE + offset/projection function -> calibration_parameter_in_substantive_arm (t17a); RECALIBRATION without family_id/nested_null_id/k0_carries_offset_slope/n_hypotheses_in_family/multiplicity_procedure/family_alpha -> recalibration_family_incomplete (t17b); k0_carries_offset_slope=false -> same block (t17c); complete declaration passes (t17d); a substantive column riding inside a recalibration arm -> mixed_family_arm (t17e)"},
+    {"criterion": "feature_gate.py is byte-unchanged", "status": "MET", "evidence": "sha256 b064c2c4675d354ec5cb5c6647782634c8139ca4233a5d732f408b6c2532f9a7 (10812 bytes), recomputed inside every guard record; git status --porcelain empty; blob b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2; last commit 42af2cd, matching GATE_INVOCATION_CONTRACT's stated provenance; RANK_TOL and COND_MAX asserted unshadowed (t01)"}
+  ],
+
+  "could_not_establish": [
+    "Whether this guard is enforced anywhere. stage2b/ did not exist before this node and no Stage 2B fit harness exists; the guard has NO CALLER. An uninvoked guard enforces nothing, and this node may not be cited as evidence that any arm was audited.",
+    "Whether own_est - opp_est is cutoff-valid or leakage-free. The guard tests IDENTIFIABILITY ONLY. Cutoff validity is governed by S1, S3, S8 and by producer obligations (GATE_INVOCATION_CONTRACT section 7.3) and remains unresolved.",
+    "Whether the contrast has any predictive value. Not measured -- no performance peeking. Nothing under stage2b/SEALED_RESULTS was read; the directory does not exist.",
+    "Whether K0_MATCHED should carry the offset slope, the tier ladder, or per-arm structure (S4, S6, S9). The guard requires the caller to DECLARE k0_carries_offset_slope and fails closed without it; it does not choose the value.",
+    "Nonlinear joint reconstruction. Measured negative result: offset == a*b exactly gives linear R2 0.924168, augmented rank 3 of 3, guard passes. Same open gap as GATE_INVOCATION_CONTRACT section 7.1, one level up.",
+    "The chronological fold specification. I used season (six folds, matching the V2 adversarial source's pace_source x season table). No frozen fold-specification artifact was found to bind against; a different Stage 2B partition requires recomputing the fold-local results.",
+    "The identity on the 8 unresolved rows: both team_pace_estimate and projected_team_off_possessions are null there, so it is unverifiable. '2982 rows' is the strongest true statement."
+  ],
+
+  "contradictions": [
+    {
+      "id": "C1",
+      "documents": ["stage2a/EVIDENCE_PACKET_V2.json dependence_structure", "stage2a/V2_HYPOTHESES_adversarial.md E8"],
+      "claim_in_document": "game_clusters: 1491 and games_with_one_shared_projection: 1495, three lines apart",
+      "measured": "1495 games exist in the artifact; 1491 have two resolved sides sharing one NON-NULL projection; 0 games have a single resolved side; 0 games have two sides with different projections; the remaining 4 games have BOTH sides null",
+      "assessment": "1495 is only correct if NaN == NaN counts as 'one shared projection'. E8 called this 'two denominators over different universes'; the measurement sharpens it -- four of the 1495 entries are shared NULLS, not shared projections. The packet is frozen and was NOT edited.",
+      "how_measured": "TESTS.py::t20_conditions_the_contrast_depends_on and build_panel"
+    },
+    {
+      "id": "C2",
+      "documents": ["stage2a/V2_STOP_CONDITION.json S4.evidence_the_slope_is_not_1"],
+      "claim_in_document": "var(projected)/var(target) = 0.157 against 0.116 variance explained, offered as evidence the calibration slope is not 1",
+      "measured": "both figures reproduce (0.157303, 0.116077) and the conclusion is CORRECT, but the slope itself was never computed: OLS slope 0.868961, intercept 10.251429",
+      "assessment": "not a contradiction in substance; a gap between the evidence offered and the evidence available. The magnitude matters -- 0.131 of free shrinkage is what a disguised recalibration arm would collect.",
+      "how_measured": "TESTS.py::t19_recalibration_slope_is_not_one"
+    },
+    {
+      "id": "C3",
+      "documents": ["stage2a/EVIDENCE_PACKET_V2.json downstream_operational_boundary", "discovery_wave_1/HYPOTHESIS_LEDGER.json frozen_incumbent"],
+      "claim_in_document": "possession MAE vs the regulation-equivalent target is 2.92806 (regulation) / 2.36744 (overtime); the frozen incumbent's TURNOVER team MAE is 2.9675 operational and 2.896 intrinsic",
+      "measured": "possession MAE reproduces EXACTLY: 2.92806 regulation, 2.36744 on 132 overtime rows, 2.90325 pooled",
+      "assessment": "no document confuses them, but 2.90325 (possession) and 2.896 (turnover intrinsic) differ by ~0.24% on different targets. A reader quoting one for the other would not notice. Flagged, not corrected.",
+      "how_measured": "TESTS.py::t20_conditions_the_contrast_depends_on"
+    }
+  ],
+
+  "raised_not_resolved": [
+    {
+      "id": "R1",
+      "affects": "K0_MATCHED / K0 STRUCTURE",
+      "statement": "recalibration_family_incomplete blocks unless the caller declares k0_carries_offset_slope: true, i.e. that K0_MATCHED carries the same offset-slope freedom as the challenger. That is S4's own proposed fix, and S4/S6/S9 leave the construction of K0_MATCHED unresolved (S9: it must be per arm; S6: whether it carries the tier ladder decides the wave). The guard demands a declaration and fails closed without one; it does NOT choose the value. The coordinator must rule on K0 structure before any recalibration arm can legitimately declare true.",
+      "resolved_inside_node": false
+    },
+    {
+      "id": "R2",
+      "affects": "CANDIDATE UNIVERSE (form, not content)",
+      "statement": "the natural 'add an opponent adjustment' challenger -- {own_est, opp_est} with the incumbent projection as offset -- is rejected outright. Its admissible reparameterisation is the single contrast own_est - opp_est. This constrains the FORM an opponent hypothesis may take. It is exactly what the acceptance criteria instructed, so it was implemented; but PREREGISTERED_CONTRASTS.json is marked PROPOSED and the coordinator must freeze it and bind digest 30e32e4f41bb8cca28e238babc2388772ebf28d2fd14d5bcfdbfcf9ef6a2e8a8 before any arm relies on it.",
+      "resolved_inside_node": false
+    },
+    {
+      "id": "R3",
+      "affects": "enforcement",
+      "statement": "the guard is unwired. It is not invoked by any fitting code and nothing forces a future Stage 2B arm to call it. Wiring it into the Stage 2B harness and into gate_invocation's receipt (so the augmented record is BOUND rather than asserted) is coordinator work outside this node's write scope.",
+      "resolved_inside_node": false
+    }
+  ],
+
+  "stop_conditions_tripped": [],
+  "halted": false,
+  "frozen_artifacts_modified": [],
+  "git_commands_run": ["git rev-parse --abbrev-ref HEAD", "git status --porcelain", "git rev-parse HEAD:<path>", "git log --oneline -1 -- <path>"],
+  "sealed_results_read": false
+}

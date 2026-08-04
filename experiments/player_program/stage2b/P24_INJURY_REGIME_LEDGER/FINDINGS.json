@@ -1,0 +1,673 @@
+{
+  "inputs": {
+    "injury_history_csv": {
+      "path": "data/injury_history/injury_history.csv",
+      "exists": true,
+      "sha256": "6aec435c94af3da10adc793c9978afbe33749cdff8f97a194939db564ed2f33b",
+      "bytes": 916886
+    },
+    "injury_history_raw_dir": {
+      "path": "data/injury_history/raw/",
+      "exists": false,
+      "manifest_exists": false
+    },
+    "team_possession_prior_v1": {
+      "path": "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+      "sha256": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18"
+    },
+    "team_cities_csv": {
+      "path": "data/reference/team_cities.csv",
+      "sha256": "10a544fdc52a9c80c1573437c9838b11815c9eafe6ac2cf052be17a2128ac42d"
+    },
+    "documentation": {
+      "path": "project_docs/INJURY_HISTORY.md",
+      "exists": true,
+      "sha256": "368f21b4ad8a707fe59998d351acc494dbb039ec55d3505d7838174748d2d6ba"
+    },
+    "producer_script": {
+      "path": "scrape_injury_history.py",
+      "exists": true,
+      "sha256": "7423899209ca7126ca0f2ca8270b6f947ce51e002b0249b8dce2056fa97ee4ff"
+    }
+  },
+  "schema_audit": {
+    "columns": [
+      "date",
+      "team",
+      "player_acquired",
+      "player_relinquished",
+      "notes",
+      "category",
+      "source_page"
+    ],
+    "n_columns": 7,
+    "rows": 8340,
+    "columns_matching_timestamp_pattern": [],
+    "date_column_string_lengths": [
+      10
+    ],
+    "date_column_has_time_component": false,
+    "date_min": "2021-01-07",
+    "date_max": "2026-07-29",
+    "verdict": "NO OBSERVATION TIMESTAMP EXISTS ON ANY ROW. The only temporal field is `date`, date-granularity only (10 chars, no time component). There is no column recording WHEN the fact became knowable."
+  },
+  "S3_split_reproduction": {
+    "packet_claim": {
+      "total_rows": 8340,
+      "missed_game_star_rows": 5373,
+      "announcement_dated_rows": 2967
+    },
+    "measured": {
+      "total_rows": 8340,
+      "missed_game_star_rows": 5373,
+      "announcement_dated_rows": 2967
+    },
+    "verdict": "AGREE",
+    "category_counts": {
+      "missed_game_other": 3131,
+      "missed_game_injury": 2242,
+      "signing": 1455,
+      "waiver": 795,
+      "draft": 260,
+      "trade": 252,
+      "contract_suspension": 111,
+      "front_office": 49,
+      "retirement": 21,
+      "waiver_claim": 18,
+      "contract_conversion": 6
+    },
+    "category_by_source_family": {
+      "contract_conversion": {
+        "bbref_transactions": 6,
+        "espn_summary": 0
+      },
+      "contract_suspension": {
+        "bbref_transactions": 111,
+        "espn_summary": 0
+      },
+      "draft": {
+        "bbref_transactions": 260,
+        "espn_summary": 0
+      },
+      "front_office": {
+        "bbref_transactions": 49,
+        "espn_summary": 0
+      },
+      "missed_game_injury": {
+        "bbref_transactions": 0,
+        "espn_summary": 2242
+      },
+      "missed_game_other": {
+        "bbref_transactions": 0,
+        "espn_summary": 3131
+      },
+      "retirement": {
+        "bbref_transactions": 21,
+        "espn_summary": 0
+      },
+      "signing": {
+        "bbref_transactions": 1455,
+        "espn_summary": 0
+      },
+      "trade": {
+        "bbref_transactions": 252,
+        "espn_summary": 0
+      },
+      "waiver": {
+        "bbref_transactions": 795,
+        "espn_summary": 0
+      },
+      "waiver_claim": {
+        "bbref_transactions": 18,
+        "espn_summary": 0
+      }
+    },
+    "regime_source_family_is_a_perfect_partition": true,
+    "note": "The split is not merely a category-name split: it is a SOURCE split. Every missed_game_* row comes from an espn_summary_<eventid>.json boxscore; every other row comes from a bbref_transactions_<year>.html page. The two regimes have disjoint provenance."
+  },
+  "regime_R_realised_participation": {
+    "rows": 5373,
+    "classification": "NOT A PREGAME FEATURE",
+    "distinct_source_pages": 1318,
+    "source_pages_with_more_than_one_distinct_date": 0,
+    "distinct_row_dates": 553,
+    "row_dates_that_are_contract_game_dates": 548,
+    "row_dates_not_in_contract_schedule": [
+      "2022-07-26",
+      "2023-08-15",
+      "2024-06-25",
+      "2025-07-01",
+      "2026-06-30"
+    ],
+    "n_row_dates_not_in_contract_schedule": 5,
+    "rows_whose_team_played_on_that_exact_date_in_the_contract_universe": 5354,
+    "rows_whose_team_did_not_play_that_date_in_the_contract_universe": 19,
+    "explanation_of_the_19_non_contract_rows": {
+      "all_carry_the_commissioners_cup_final_tag": true,
+      "dates": [
+        "2022-07-26",
+        "2023-08-15",
+        "2024-06-25",
+        "2025-07-01",
+        "2026-06-30"
+      ],
+      "meaning": "the Commissioner's Cup final is outside the contract team-game universe; those 19 rows describe a game the program does not model. They are not a join defect."
+    },
+    "contemporaneity_rate_within_the_contract_universe": 99.6464,
+    "producer_evidence": "scrape_injury_history.py parse_espn_dnp() reads boxscore.players[].statistics[].athletes[] and keeps rows where ath['didNotPlay'] is truthy, then stamps the row with g['date'] -- the date of that same game. The record's ONLY evidentiary source is the completed game's own boxscore.",
+    "why_not_a_pregame_feature": "A didNotPlay flag in a boxscore is a realised participation outcome of the target game, observable only after the game has been played. Its date is the target game's own date by construction, so no lag exists between the observation and the event it describes. Using it on the target-game row is target-adjacent leakage of exactly the kind Severity A names.",
+    "lagged_use_status": "LAGGED USE NOT ADJUDICATED HERE. Strictly-earlier-game aggregates of these rows are a different object with a different (and separately unproven) cutoff argument; this node classifies the TARGET-GAME row only, and does not license lagged construction."
+  },
+  "regime_T_announcement_wire": {
+    "rows": 2967,
+    "classification": "CUTOFF_UNPROVEN",
+    "rows_with_null_team": 23,
+    "rows_with_unmappable_team": 0,
+    "rows_dated_on_a_day_the_named_team_played_a_contract_game": 281,
+    "rows_dated_on_a_day_ANY_contract_game_was_played": 656,
+    "reasons_cutoff_is_unproven": [
+      "no source/observation timestamp column exists on any row",
+      "`date` is date-granularity only, so an announcement cannot be ordered against a same-day tip",
+      "the producer bulk-scraped six whole-season transaction pages on a single day (2026-07-30), so the CAPTURE time is AFTER every game in 2021-2025; only a LAG argument on `date` is available, and `date` is the page's own listed date, not an observed capture",
+      "project_docs/INJURY_HISTORY.md states BBRef dates 'are league-office announcement dates, which can trail the real-world event' -- the document itself does not claim the date is an observation time"
+    ],
+    "designation_semantics": {
+      "documented": true,
+      "document": "project_docs/INJURY_HISTORY.md, 'CSV schema' category table",
+      "but": "the documented semantics are TRANSACTION-TYPE semantics (signing / waiver / trade / draft / contract_suspension / activation / retirement / front_office / contract_conversion). There is NO availability DESIGNATION anywhere in the file: no Out / Doubtful / Questionable / Probable, no probability of playing. The document says so explicitly under 'Known limitations': there is no historical pregame status signal.",
+      "categories_present_in_data_but_absent_from_doc_table": [],
+      "categories_documented_but_absent_from_data": [
+        "activation",
+        "missed_game_unspecified",
+        "other"
+      ]
+    }
+  },
+  "declared_cutoff_test": {
+    "declared_cutoff": "prediction_contract_v4/v5 `forecast_cutoff`; registered date-only fallback POLICY_DATE_ONLY = 18:00 UTC on the day before the game (prediction_contract_v5.date_only_cutoff)",
+    "note": "this is the ONLY declared pregame cutoff in the repository. The possession lane declares none, so the possession lane has no cutoff to test an injury field against at all.",
+    "applied_to": "the next contract game for the named team, per regime-T row",
+    "regime_T_rows_tested": 2944,
+    "bands_relative_to_the_next_game_for_that_team": {
+      "UNAMBIGUOUSLY_PRE": 2350,
+      "AMBIGUOUS_D_MINUS_1": 313,
+      "POST_CUTOFF_D_OR_LATER": 281,
+      "NO_LATER_GAME_FOR_TEAM": 0
+    },
+    "bands_by_season": {
+      "2021": {
+        "UNAMBIGUOUSLY_PRE": 374,
+        "AMBIGUOUS_D_MINUS_1": 51,
+        "POST_CUTOFF_D_OR_LATER": 28
+      },
+      "2022": {
+        "UNAMBIGUOUSLY_PRE": 385,
+        "POST_CUTOFF_D_OR_LATER": 65,
+        "AMBIGUOUS_D_MINUS_1": 63
+      },
+      "2023": {
+        "UNAMBIGUOUSLY_PRE": 353,
+        "POST_CUTOFF_D_OR_LATER": 46,
+        "AMBIGUOUS_D_MINUS_1": 44
+      },
+      "2024": {
+        "UNAMBIGUOUSLY_PRE": 335,
+        "AMBIGUOUS_D_MINUS_1": 38,
+        "POST_CUTOFF_D_OR_LATER": 34
+      },
+      "2025": {
+        "UNAMBIGUOUSLY_PRE": 405,
+        "POST_CUTOFF_D_OR_LATER": 81,
+        "AMBIGUOUS_D_MINUS_1": 72
+      },
+      "2026": {
+        "UNAMBIGUOUSLY_PRE": 498,
+        "AMBIGUOUS_D_MINUS_1": 45,
+        "POST_CUTOFF_D_OR_LATER": 27
+      }
+    },
+    "team_games_whose_admitted_transaction_evidence_includes_a_D_minus_1_row": 229,
+    "conditional_eligibility": {
+      "statement": "NOTHING is ELIGIBLE today. The following is what WOULD become eligible under a single, named, registerable relaxation -- it is a proposal to be adjudicated elsewhere, not a classification made here.",
+      "relaxation": "accept the BBRef listed `date` as a bona fide EVENT date with an end-of-day upper bound, i.e. treat the row's observation time as d 23:59:59 UTC rather than 00:00 UTC",
+      "rows_that_would_survive": 2350,
+      "rows_that_would_still_be_CUTOFF_UNPROVEN": 617,
+      "still_missing_even_then": [
+        "an availability DESIGNATION -- the file has none in any regime",
+        "the raw payloads and fetch manifest, which do not exist here, so the event-date claim can never be audited against a capture record"
+      ]
+    },
+    "consumer": {
+      "module": "prediction_contract_v5.py (player lane)",
+      "categories_consumed": [
+        "contract_conversion",
+        "contract_suspension",
+        "draft",
+        "retirement",
+        "signing",
+        "trade",
+        "waiver",
+        "waiver_claim"
+      ],
+      "regime_T_rows_in_scope": 2918,
+      "regime_T_rows_not_consumed": 49,
+      "regime_R_rows_consumed": 0,
+      "finding": "the ONE existing consumer of injury_history.csv reads only regime-T categories and never touches missed_game_*. The regime split this node makes explicit is already implicit in that module's ACQUIRE/RELEASE frozensets -- but it is nowhere written down as an epistemic rule, and nothing enforces it.",
+      "defect": "pd.to_datetime(tx['date'], utc=True) pins a date-only announcement to 00:00 UTC, the earliest instant it could have occurred, and admission is `x < c`. The coercion is silent and always resolves ambiguity toward admission."
+    }
+  },
+  "classification_ledger": {
+    "rule": "a row is ELIGIBLE only if ALL of: (a) a source timestamp at or before the declared pregame cutoff, (b) documented designation semantics, (c) no derivation from the game outcome",
+    "counts": {
+      "NOT_A_PREGAME_FEATURE": 5373,
+      "CUTOFF_UNPROVEN": 2967
+    },
+    "ELIGIBLE": 0,
+    "criterion_failed_by_regime": {
+      "R_REALISED_PARTICIPATION": [
+        "(a) no timestamp",
+        "(c) derived from the game outcome"
+      ],
+      "T_ANNOUNCEMENT_WIRE": [
+        "(a) no timestamp",
+        "(b) transaction-type semantics only; no availability designation"
+      ]
+    },
+    "fitted_feature_universe_contribution": 0,
+    "availability_report_contribution": 8340
+  },
+  "coverage_by_season_and_fold": {
+    "fold_definition": "chronological, nested by season (EVIDENCE_PACKET_V2.inference_specification.fold_construction); six folds 2021..2026, matching the per-fold enumeration in V2_STOP_CONDITION S7. fold identifier == season.",
+    "universe": {
+      "team_game_rows_all": 2990,
+      "game_clusters_all": 1495,
+      "team_game_rows_resolved": 2982,
+      "game_clusters_resolved": 1491,
+      "note": "BOTH are reported per the packet's do_not_substitute rule. 2,982 / 1,491 is the resolved fitted universe; 2,990 / 1,495 is the full schedule universe. The 8-row / 4-game difference is the unresolved-no-prior-games stratum."
+    },
+    "column_semantics": {
+      "ELIGIBLE_rows": "rows passing all three eligibility criteria",
+      "cutoff_valid_coverage_of_fitted_universe_pct": "share of team-game rows in this fold that a CUTOFF-VALID injury feature could be built for; zero because ELIGIBLE_rows is zero",
+      "AVAILABILITY_*": "reported per the requirement that CUTOFF_UNPROVEN rows stay in availability reports while being excluded from the fitted feature universe",
+      "LEAKAGE_EXPOSURE_*": "team-games for which a naive date join to injury_history would attach a regime-R row describing THAT game's own realised absences"
+    },
+    "rows": [
+      {
+        "fold": 2021,
+        "season": 2021,
+        "team_game_rows": 418,
+        "team_game_rows_resolved": 410,
+        "game_clusters": 209,
+        "game_clusters_resolved": 205,
+        "first_game_date": "2021-05-14",
+        "last_game_date": "2021-10-17",
+        "injury_rows_dated_in_season": 1151,
+        "regime_R_rows": 691,
+        "regime_T_rows": 460,
+        "ELIGIBLE_rows": 0,
+        "cutoff_valid_coverage_of_fitted_universe_pct": 0.0,
+        "CONDITIONAL_regime_T_rows_unambiguously_pre_cutoff": 374,
+        "CONDITIONAL_regime_T_rows_ambiguous_D_minus_1": 51,
+        "CONDITIONAL_regime_T_rows_post_cutoff": 28,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_same_season": 418,
+        "AVAILABILITY_pct_team_games_with_ge1_prior_T_row_same_season": 100.0,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_within_30d": 309,
+        "AMBIGUOUS_team_games_with_a_same_day_T_row_for_that_team": 25,
+        "LEAKAGE_EXPOSURE_team_games_with_ge1_same_day_regime_R_row": 316,
+        "LEAKAGE_EXPOSURE_pct": 75.598,
+        "team_games_after_last_injury_row_date": 0
+      },
+      {
+        "fold": 2022,
+        "season": 2022,
+        "team_game_rows": 478,
+        "team_game_rows_resolved": 478,
+        "game_clusters": 239,
+        "game_clusters_resolved": 239,
+        "first_game_date": "2022-05-06",
+        "last_game_date": "2022-09-18",
+        "injury_rows_dated_in_season": 1261,
+        "regime_R_rows": 748,
+        "regime_T_rows": 513,
+        "ELIGIBLE_rows": 0,
+        "cutoff_valid_coverage_of_fitted_universe_pct": 0.0,
+        "CONDITIONAL_regime_T_rows_unambiguously_pre_cutoff": 385,
+        "CONDITIONAL_regime_T_rows_ambiguous_D_minus_1": 63,
+        "CONDITIONAL_regime_T_rows_post_cutoff": 65,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_same_season": 478,
+        "AVAILABILITY_pct_team_games_with_ge1_prior_T_row_same_season": 100.0,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_within_30d": 382,
+        "AMBIGUOUS_team_games_with_a_same_day_T_row_for_that_team": 48,
+        "LEAKAGE_EXPOSURE_team_games_with_ge1_same_day_regime_R_row": 351,
+        "LEAKAGE_EXPOSURE_pct": 73.431,
+        "team_games_after_last_injury_row_date": 0
+      },
+      {
+        "fold": 2023,
+        "season": 2023,
+        "team_game_rows": 520,
+        "team_game_rows_resolved": 520,
+        "game_clusters": 260,
+        "game_clusters_resolved": 260,
+        "first_game_date": "2023-05-19",
+        "last_game_date": "2023-10-18",
+        "injury_rows_dated_in_season": 1299,
+        "regime_R_rows": 852,
+        "regime_T_rows": 447,
+        "ELIGIBLE_rows": 0,
+        "cutoff_valid_coverage_of_fitted_universe_pct": 0.0,
+        "CONDITIONAL_regime_T_rows_unambiguously_pre_cutoff": 353,
+        "CONDITIONAL_regime_T_rows_ambiguous_D_minus_1": 44,
+        "CONDITIONAL_regime_T_rows_post_cutoff": 46,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_same_season": 520,
+        "AVAILABILITY_pct_team_games_with_ge1_prior_T_row_same_season": 100.0,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_within_30d": 445,
+        "AMBIGUOUS_team_games_with_a_same_day_T_row_for_that_team": 42,
+        "LEAKAGE_EXPOSURE_team_games_with_ge1_same_day_regime_R_row": 380,
+        "LEAKAGE_EXPOSURE_pct": 73.077,
+        "team_games_after_last_injury_row_date": 0
+      },
+      {
+        "fold": 2024,
+        "season": 2024,
+        "team_game_rows": 524,
+        "team_game_rows_resolved": 524,
+        "game_clusters": 262,
+        "game_clusters_resolved": 262,
+        "first_game_date": "2024-05-14",
+        "last_game_date": "2024-10-20",
+        "injury_rows_dated_in_season": 1383,
+        "regime_R_rows": 971,
+        "regime_T_rows": 412,
+        "ELIGIBLE_rows": 0,
+        "cutoff_valid_coverage_of_fitted_universe_pct": 0.0,
+        "CONDITIONAL_regime_T_rows_unambiguously_pre_cutoff": 335,
+        "CONDITIONAL_regime_T_rows_ambiguous_D_minus_1": 38,
+        "CONDITIONAL_regime_T_rows_post_cutoff": 34,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_same_season": 524,
+        "AVAILABILITY_pct_team_games_with_ge1_prior_T_row_same_season": 100.0,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_within_30d": 402,
+        "AMBIGUOUS_team_games_with_a_same_day_T_row_for_that_team": 28,
+        "LEAKAGE_EXPOSURE_team_games_with_ge1_same_day_regime_R_row": 413,
+        "LEAKAGE_EXPOSURE_pct": 78.817,
+        "team_games_after_last_injury_row_date": 0
+      },
+      {
+        "fold": 2025,
+        "season": 2025,
+        "team_game_rows": 620,
+        "team_game_rows_resolved": 620,
+        "game_clusters": 310,
+        "game_clusters_resolved": 310,
+        "first_game_date": "2025-05-16",
+        "last_game_date": "2025-10-10",
+        "injury_rows_dated_in_season": 1785,
+        "regime_R_rows": 1221,
+        "regime_T_rows": 564,
+        "ELIGIBLE_rows": 0,
+        "cutoff_valid_coverage_of_fitted_universe_pct": 0.0,
+        "CONDITIONAL_regime_T_rows_unambiguously_pre_cutoff": 405,
+        "CONDITIONAL_regime_T_rows_ambiguous_D_minus_1": 72,
+        "CONDITIONAL_regime_T_rows_post_cutoff": 81,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_same_season": 620,
+        "AVAILABILITY_pct_team_games_with_ge1_prior_T_row_same_season": 100.0,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_within_30d": 517,
+        "AMBIGUOUS_team_games_with_a_same_day_T_row_for_that_team": 51,
+        "LEAKAGE_EXPOSURE_team_games_with_ge1_same_day_regime_R_row": 510,
+        "LEAKAGE_EXPOSURE_pct": 82.258,
+        "team_games_after_last_injury_row_date": 0
+      },
+      {
+        "fold": 2026,
+        "season": 2026,
+        "team_game_rows": 430,
+        "team_game_rows_resolved": 430,
+        "game_clusters": 215,
+        "game_clusters_resolved": 215,
+        "first_game_date": "2026-05-08",
+        "last_game_date": "2026-07-31",
+        "injury_rows_dated_in_season": 1461,
+        "regime_R_rows": 890,
+        "regime_T_rows": 571,
+        "ELIGIBLE_rows": 0,
+        "cutoff_valid_coverage_of_fitted_universe_pct": 0.0,
+        "CONDITIONAL_regime_T_rows_unambiguously_pre_cutoff": 498,
+        "CONDITIONAL_regime_T_rows_ambiguous_D_minus_1": 45,
+        "CONDITIONAL_regime_T_rows_post_cutoff": 27,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_same_season": 430,
+        "AVAILABILITY_pct_team_games_with_ge1_prior_T_row_same_season": 100.0,
+        "AVAILABILITY_team_games_with_ge1_prior_T_row_within_30d": 344,
+        "AMBIGUOUS_team_games_with_a_same_day_T_row_for_that_team": 23,
+        "LEAKAGE_EXPOSURE_team_games_with_ge1_same_day_regime_R_row": 367,
+        "LEAKAGE_EXPOSURE_pct": 85.349,
+        "team_games_after_last_injury_row_date": 12
+      }
+    ],
+    "headline": "CUTOFF-VALID COVERAGE IS 0 OF 2,990 TEAM-GAME ROWS (0 OF 2,982 RESOLVED) IN EVERY ONE OF THE SIX FOLDS. No row of injury_history.csv satisfies the eligibility rule. AVAILABILITY coverage is separately high and is reported alongside, as required."
+  },
+  "documentation_table_reproduction": {
+    "source": "project_docs/INJURY_HISTORY.md, 'Coverage' table",
+    "rows": [
+      {
+        "year": 2021,
+        "documented": {
+          "total": 1151,
+          "missed_game_injury": 321,
+          "missed_game_other": 370,
+          "wire": 460
+        },
+        "measured": {
+          "total": 1151,
+          "missed_game_injury": 321,
+          "missed_game_other": 370,
+          "wire": 460
+        },
+        "verdict": "AGREE"
+      },
+      {
+        "year": 2022,
+        "documented": {
+          "total": 1261,
+          "missed_game_injury": 293,
+          "missed_game_other": 455,
+          "wire": 513
+        },
+        "measured": {
+          "total": 1261,
+          "missed_game_injury": 293,
+          "missed_game_other": 455,
+          "wire": 513
+        },
+        "verdict": "AGREE"
+      },
+      {
+        "year": 2023,
+        "documented": {
+          "total": 1299,
+          "missed_game_injury": 398,
+          "missed_game_other": 454,
+          "wire": 447
+        },
+        "measured": {
+          "total": 1299,
+          "missed_game_injury": 398,
+          "missed_game_other": 454,
+          "wire": 447
+        },
+        "verdict": "AGREE"
+      },
+      {
+        "year": 2024,
+        "documented": {
+          "total": 1383,
+          "missed_game_injury": 340,
+          "missed_game_other": 631,
+          "wire": 412
+        },
+        "measured": {
+          "total": 1383,
+          "missed_game_injury": 340,
+          "missed_game_other": 631,
+          "wire": 412
+        },
+        "verdict": "AGREE"
+      },
+      {
+        "year": 2025,
+        "documented": {
+          "total": 1785,
+          "missed_game_injury": 528,
+          "missed_game_other": 693,
+          "wire": 564
+        },
+        "measured": {
+          "total": 1785,
+          "missed_game_injury": 528,
+          "missed_game_other": 693,
+          "wire": 564
+        },
+        "verdict": "AGREE"
+      },
+      {
+        "year": 2026,
+        "documented": {
+          "total": 1461,
+          "missed_game_injury": 362,
+          "missed_game_other": 528,
+          "wire": 571
+        },
+        "measured": {
+          "total": 1461,
+          "missed_game_injury": 362,
+          "missed_game_other": 528,
+          "wire": 571
+        },
+        "verdict": "AGREE"
+      }
+    ],
+    "all_agree": true
+  },
+  "span_gaps": {
+    "injury_history_last_row_date": "2026-07-29",
+    "contract_universe_last_game_date": "2026-07-31",
+    "team_game_rows_after_last_injury_row": 12,
+    "game_clusters_after_last_injury_row": 6,
+    "affected_dates": [
+      "2026-07-30",
+      "2026-07-31"
+    ],
+    "packet_claim": "EVIDENCE_PACKET_V2 records the source as '8,340 rows, 2021-01-07 .. 2026-07-29, full contract span'",
+    "verdict": "CORRECT -- the span is NOT the full contract span. The contract universe runs to 2026-07-31; the injury file stops at 2026-07-29."
+  },
+  "provenance_defects": {
+    "raw_payload_dir_present": false,
+    "fetch_manifest_present": false,
+    "raw_dir_is_gitignored": true,
+    "consequence": "project_docs/INJURY_HISTORY.md states that every HTTP payload is kept under data/injury_history/raw/ and that manifest.jsonl records url/status/time per fetch. Neither the directory nor the manifest exists in this worktree, and .gitignore line 7 excludes 'data/injury_history/raw/' from version control. Therefore (a) the CSV cannot be re-derived offline here -- 'python scrape_injury_history.py --parse-only' would emit zero rows -- and (b) the ONLY record that could have carried a per-row observation time is absent. The 'no source timestamp' verdict is therefore not recoverable by further work inside this repository."
+  },
+  "single_observation_time": {
+    "claim_source": "experiments/player_program/ROSTER_SOURCE_AUDIT_RECEIPT.json q2_timestamps",
+    "claimed": "the CSV was committed 2026-07-30 13:42 -0400 in 98271bb, so every record -- including 2021 ones -- was observed on 2026-07-30",
+    "re_derived_command": "git log --diff-filter=A --format=\"%h %ad %s\" --date=iso -- data/injury_history/injury_history.csv",
+    "re_derived": "98271bb  2026-07-30 13:42:00 -0400  Add historical injury/absence/transaction archive 2021-2026 (8,340 rows)",
+    "verdict": "AGREE",
+    "consequence_measured_here": {
+      "observation_time_utc": "2026-07-30T17:42:00Z",
+      "declared_cutoff_rule": "(game_date - 1 day) 18:00 UTC",
+      "team_game_rows_whose_cutoff_is_LATER_than_the_observation_time": 6,
+      "team_game_rows_total": 2990,
+      "reading": "the single observation time postdates the pregame cutoff of 2984 of 2990 team-game rows. Only 6 rows could ever be served by this artifact under a capture argument, and those are at the very end of the span."
+    },
+    "acq_rel_accounting_cross_check": {
+      "receipt_n_acquisition_rows": 1846,
+      "measured_ACQ_category_rows": 1991,
+      "measured_ACQ_rows_with_a_named_acquired_player": 1846,
+      "receipt_n_release_rows": 927,
+      "measured_REL_category_rows": 927,
+      "verdict": "AGREE once the receipt's implicit filter is made explicit: it counts ACQ-category rows WITH a named acquired player (1,846 of 1,991); the 145-row remainder is the outgoing side of trade sentences, which carries player_relinquished only."
+    }
+  },
+  "registered_consumer_binding": {
+    "registry": "experiments/player_program/arm_registry.jsonl",
+    "arms_binding_injury_history_csv": [
+      "cbs_v15_player_oof_v5/2",
+      "cbs_v15_player_oof_v5/3",
+      "cbs_v15_player_oof_v5/4",
+      "cbs_v15_player_oof_v5/5",
+      "cbs_v15_player_oof_v5/6",
+      "cbs_v15_player_oof_v5/7",
+      "cbs_v15_player_oof_v5/8"
+    ],
+    "registry_source_snapshot_sha256": "6aec435c94af3da10adc793c9978afbe33749cdff8f97a194939db564ed2f33b",
+    "on_disk_sha256": "6aec435c94af3da10adc793c9978afbe33749cdff8f97a194939db564ed2f33b",
+    "bytes_agree_with_the_receipt": true,
+    "lane": "player lane. The possession lane (this node's lane) binds no injury field in any arm, control or feature frame."
+  },
+  "contradictions": [
+    {
+      "id": "C1",
+      "between": "EVIDENCE_PACKET_V2 vs the bytes",
+      "packet_says": "injury / transaction history is ONE field, '8,340 rows, 2021-01-07 .. 2026-07-29, full contract span', Category B on cutoff grounds",
+      "bytes_say": "two regimes with disjoint provenance and different epistemic status, and the span is NOT the full contract span -- 12 team-game rows over 6 game clusters (2026-07-30, 2026-07-31) postdate the last injury row",
+      "verdict": "CORRECT the packet",
+      "severity": "A on the regime point (S3 already names it); B on the span point"
+    },
+    {
+      "id": "C2",
+      "between": "project_docs/INJURY_HISTORY.md vs the bytes",
+      "doc_says": "'Raw pages: data/injury_history/raw/ (every HTTP payload; parsing is re-runnable offline; manifest.jsonl records url/status/time per fetch)'",
+      "bytes_say": "data/injury_history/raw/ does not exist in this worktree and .gitignore line 7 excludes it from version control; manifest.jsonl -- the only artifact that could carry a fetch time -- is absent",
+      "verdict": "the document describes a provenance chain that is not present",
+      "consequence": "'--parse-only' would rebuild an EMPTY csv here, and no observation timestamp is recoverable by further work",
+      "severity": "A for any arm that would rely on the cutoff claim"
+    },
+    {
+      "id": "C3",
+      "between": "prediction_contract_v5.py's behaviour vs any written rule",
+      "observed": "ACQUIRE and RELEASE deliberately exclude every missed_game_* category, so the regime split is already being honoured in code",
+      "missing": "no document, gate or receipt states the rule. Nothing prevents the next consumer from joining missed_game_* on the target-game date -- which would attach 2,337 of 2,990 team-game rows (78.2%) to their OWN realised absences",
+      "verdict": "an unwritten invariant, exactly the S1 shape",
+      "severity": "A as a latent hazard"
+    },
+    {
+      "id": "C4",
+      "between": "the acceptance criterion 'source timestamp' and the consumer's date coercion",
+      "observed": "prediction_contract_v5 does pd.to_datetime(tx['date'], utc=True), pinning a date-only announcement to 00:00 UTC -- the earliest instant in its true interval -- then admits on `x < c`",
+      "measured": "313 regime-T rows fall on the day before their team's next game, straddling the 18:00 UTC date-only cutoff; they affect 229 team-games",
+      "verdict": "silent ambiguity resolution, always toward admission. Not a leak that has been demonstrated to fire; a systematic bias in the direction that leaks.",
+      "severity": "B, escalating to A if any fitted arm depends on those rows"
+    },
+    {
+      "id": "C5",
+      "between": "INJURY_HISTORY.md coverage table vs the bytes",
+      "result": "AGREE on all six seasons and all four columns",
+      "verdict": "no contradiction; recorded because it was checked",
+      "severity": "none"
+    },
+    {
+      "id": "C6",
+      "between": "this node's mandated classification and sibling node D10_FIELD_AVAILABILITY_LEDGER/build_ledger.py",
+      "d10_says": "fields injury.missed_game_injury_wire and injury.missed_game_other_wire carry verdict CUTOFF_UNPROVEN, structural_class retrospective_archive_single_observation_time",
+      "this_node_says": "NOT A PREGAME FEATURE. CUTOFF_UNPROVEN says 'we cannot show it was knowable in time'. These rows are stronger than that: they are the target game's own realised participation, read out of its boxscore. No timestamp could rescue them, because the fact does not exist before the game is played.",
+      "verdict": "D10's verdict is not wrong, it is not strict enough. RESEARCH_CONTRACT_V1 precedence: 'where this contract and an arm's own registration disagree, the STRICTER governs'. The strict classification is NOT A PREGAME FEATURE.",
+      "note": "D10's build_ledger.py is present but its output ledger is NOT materialised in this worktree, so only its source text could be compared, not its numbers.",
+      "severity": "B -- a labelling gap, not a live leak"
+    }
+  ],
+  "stop_conditions": {
+    "tripped": [
+      {
+        "condition": "a finding would change the CUTOFF-VALID FEATURE SET",
+        "finding": "injury_history.csv contributes ZERO cutoff-valid rows. EVIDENCE_PACKET_V2 lists 'injury / transaction history' as ONE Category B field with cutoff unproven; it is TWO regimes, and the 5,373-row majority regime is a realised participation OUTCOME sourced from the target game's own boxscore, not merely an unproven pregame signal.",
+        "action": "RAISED, NOT RESOLVED"
+      }
+    ],
+    "not_tripped_but_recorded": [
+      "the primary target, K0 structure, inference structure and candidate universe are untouched by this node: no possession-lane arm, control or feature frame binds an injury field, so removing it changes no fitted possession design.",
+      "the player-lane arm cbs_v15_player_oof_v5 DOES bind injury_history.csv, but consumes regime-T categories only and never missed_game_*. This node does not adjudicate the player lane; the binding is recorded so the player thread can act on C4."
+    ]
+  },
+  "schema": "p24_injury_regime_ledger/1",
+  "node_id": "P24_INJURY_REGIME_LEDGER",
+  "epistemic_status": "VERIFIED_READ_ONLY_DERIVATION. Classifies fields by epistemic regime. A field passing classification is ELIGIBLE for consideration, which is not the same as useful or admitted."
+}

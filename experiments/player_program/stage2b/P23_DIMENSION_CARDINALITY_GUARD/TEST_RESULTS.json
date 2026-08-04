@@ -1,0 +1,466 @@
+{
+  "n_tests": 16,
+  "n_failed": 0,
+  "results": [
+    {
+      "test": "t01_spec_requires_explicit_declarations",
+      "status": "PASS",
+      "detail": {
+        "n_invalid_specs_rejected": 5
+      }
+    },
+    {
+      "test": "t02_duplicate_primary_key_is_rejected",
+      "status": "PASS",
+      "detail": {
+        "duplicate_pk_rejected": true,
+        "unique_pk_accepted": true
+      }
+    },
+    {
+      "test": "t03_fan_out_fails_the_merge",
+      "status": "PASS",
+      "detail": {
+        "guarded_rows": 8,
+        "unguarded_rows": 12,
+        "unguarded_excess_rows": 4
+      }
+    },
+    {
+      "test": "t04_row_universe_detects_every_mutation",
+      "status": "PASS",
+      "detail": {
+        "detected_problem_kinds": [
+          "game_key_set_changed",
+          "row_count_changed",
+          "team_game_key_fan_out",
+          "team_game_key_set_changed"
+        ]
+      }
+    },
+    {
+      "test": "t05_null_expansion_is_reported",
+      "status": "PASS",
+      "detail": {
+        "null_from_dimension_values": 4,
+        "null_from_unmatched_rows": 4
+      }
+    },
+    {
+      "test": "t06_undeclared_null_interval_is_a_hard_failure",
+      "status": "PASS",
+      "detail": {
+        "rows_before_null_unsafe_filter": 3,
+        "rows_after_null_unsafe_filter": 1
+      }
+    },
+    {
+      "test": "t07_interval_resolution_is_exact_or_it_raises",
+      "status": "PASS",
+      "detail": {
+        "pairs_resolved": 5,
+        "uncovered_rejected": true,
+        "overlap_rejected": true
+      }
+    },
+    {
+      "test": "t08_no_order_dependent_dedup_in_this_node",
+      "status": "PASS",
+      "detail": {
+        "merge_guard_clean": true,
+        "scanner_patterns": [
+          "drop_duplicates",
+          "groupby_first",
+          "groupby_last",
+          "head",
+          "idxmin_idxmax",
+          "keep_first_or_last",
+          "nth",
+          "positional_row_pick",
+          "sort_then_take",
+          "tail"
+        ]
+      }
+    },
+    {
+      "test": "t09_rederive_S2_dimension_measurements",
+      "status": "PASS",
+      "detail": {
+        "rows": 16,
+        "distinct_team_id": 15,
+        "duplicated_team_id": {
+          "1611661317": 2
+        },
+        "last_season_dtype": "float64",
+        "last_season_nulls": 15,
+        "elevation_ft_min": 20,
+        "elevation_ft_max": 2030,
+        "rows_above_1000ft": 4,
+        "distinct_arenas_above_1000ft": 3,
+        "distinct_franchises_above_1000ft": 3,
+        "n_columns": 11,
+        "columns": [
+          "team_id",
+          "abbreviation",
+          "franchise",
+          "first_season",
+          "last_season",
+          "city",
+          "arena",
+          "lat",
+          "lon",
+          "elevation_ft",
+          "timezone"
+        ]
+      }
+    },
+    {
+      "test": "t10_rederive_the_2982_1491_universe",
+      "status": "PASS",
+      "detail": {
+        "prior_artifact_rows": 2990,
+        "prior_artifact_games": 1495,
+        "restriction": "pace_resolved == True",
+        "universe_rows": 2982,
+        "universe_game_clusters": 1491,
+        "universe_team_game_keys": 2982,
+        "duplicate_team_game_keys": 0,
+        "distinct_team_id": 15,
+        "seasons": [
+          2021,
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ],
+        "distinct_team_season_pairs": 76,
+        "rows_for_team_1611661317": 246
+      }
+    },
+    {
+      "test": "t11_naive_join_corrupts_the_real_universe_and_the_guard_rejects_it",
+      "status": "PASS",
+      "detail": {
+        "universe_rows": 2982,
+        "naive_left_merge_rows": 3228,
+        "excess_rows": 246,
+        "naive_game_clusters": 1491,
+        "duplicated_team_game_keys_after_naive_merge": 246,
+        "guard_rejected": true,
+        "row_universe_assertion_rejected": true
+      }
+    },
+    {
+      "test": "t12_null_unsafe_filter_destroys_the_real_universe",
+      "status": "PASS",
+      "detail": {
+        "dimension_rows": 16,
+        "rows_surviving_last_season_notna": 1,
+        "franchises_lost": 14,
+        "universe_rows_before": 2982,
+        "universe_rows_after_null_unsafe_inner_join": 246,
+        "rows_lost": 2736
+      }
+    },
+    {
+      "test": "t13_season_effective_resolution_preserves_the_real_universe",
+      "status": "PASS",
+      "detail": {
+        "required_key_season_pairs": 76,
+        "resolved_dimension_rows": 76,
+        "n_uncovered": 0,
+        "n_ambiguous": 0,
+        "multi_row_keys": [
+          "1611661317"
+        ],
+        "merged_rows": 2982,
+        "merged_game_clusters": 1491,
+        "merged_team_game_keys": 2982,
+        "fan_out_rows": 0,
+        "row_universe_preserved": true,
+        "any_null_expansion": false,
+        "n_unmatched_fact_rows": 0,
+        "phoenix_abbreviation_by_season": {
+          "2021": [
+            "PHO"
+          ],
+          "2022": [
+            "PHO"
+          ],
+          "2023": [
+            "PHO"
+          ],
+          "2024": [
+            "PHO"
+          ],
+          "2025": [
+            "PHX"
+          ],
+          "2026": [
+            "PHX"
+          ]
+        },
+        "phoenix_rows": 246
+      }
+    },
+    {
+      "test": "t14_resolution_is_not_order_dependent",
+      "status": "PASS",
+      "detail": {
+        "permutations_tested": 8,
+        "resolution_invariant": true,
+        "keys_where_keep_first_differs_from_keep_last": 1
+      }
+    },
+    {
+      "test": "t15_packet_schema_listing_is_incomplete",
+      "status": "PASS",
+      "detail": {
+        "packet_source_string": "data/reference/team_cities.csv (16 rows: team_id, franchise, first_season, last_season, city, arena, lat, lon, elevation_ft)",
+        "actual_columns": [
+          "team_id",
+          "abbreviation",
+          "franchise",
+          "first_season",
+          "last_season",
+          "city",
+          "arena",
+          "lat",
+          "lon",
+          "elevation_ft",
+          "timezone"
+        ],
+        "n_actual_columns": 11,
+        "columns_named_in_packet": [
+          "team_id",
+          "franchise",
+          "first_season",
+          "last_season",
+          "city",
+          "arena",
+          "lat",
+          "lon",
+          "elevation_ft"
+        ],
+        "columns_omitted_from_packet": [
+          "abbreviation",
+          "timezone"
+        ]
+      }
+    },
+    {
+      "test": "t16_dimension_is_team_keyed_not_venue_of_play_keyed",
+      "status": "PASS",
+      "detail": {
+        "team_cities_columns": [
+          "team_id",
+          "abbreviation",
+          "franchise",
+          "first_season",
+          "last_season",
+          "city",
+          "arena",
+          "lat",
+          "lon",
+          "elevation_ft",
+          "timezone"
+        ],
+        "team_cities_has_game_key": false,
+        "universe_columns": [
+          "game_id",
+          "team_id",
+          "game_date",
+          "season",
+          "season_type",
+          "pace_level",
+          "pace_source",
+          "n_history_games",
+          "team_pace_estimate",
+          "projected_team_off_possessions",
+          "pace_resolved"
+        ],
+        "universe_has_is_home": false,
+        "universe_has_opp_team_id": false,
+        "universe_rows_per_game": [
+          2
+        ]
+      }
+    }
+  ],
+  "measurements": {
+    "S2_dimension": {
+      "rows": 16,
+      "distinct_team_id": 15,
+      "duplicated_team_id": {
+        "1611661317": 2
+      },
+      "last_season_dtype": "float64",
+      "last_season_nulls": 15,
+      "elevation_ft_min": 20,
+      "elevation_ft_max": 2030,
+      "rows_above_1000ft": 4,
+      "distinct_arenas_above_1000ft": 3,
+      "distinct_franchises_above_1000ft": 3,
+      "n_columns": 11,
+      "columns": [
+        "team_id",
+        "abbreviation",
+        "franchise",
+        "first_season",
+        "last_season",
+        "city",
+        "arena",
+        "lat",
+        "lon",
+        "elevation_ft",
+        "timezone"
+      ]
+    },
+    "universe": {
+      "prior_artifact_rows": 2990,
+      "prior_artifact_games": 1495,
+      "restriction": "pace_resolved == True",
+      "universe_rows": 2982,
+      "universe_game_clusters": 1491,
+      "universe_team_game_keys": 2982,
+      "duplicate_team_game_keys": 0,
+      "distinct_team_id": 15,
+      "seasons": [
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "distinct_team_season_pairs": 76,
+      "rows_for_team_1611661317": 246
+    },
+    "naive_join": {
+      "universe_rows": 2982,
+      "naive_left_merge_rows": 3228,
+      "excess_rows": 246,
+      "naive_game_clusters": 1491,
+      "duplicated_team_game_keys_after_naive_merge": 246,
+      "guard_rejected": true,
+      "row_universe_assertion_rejected": true
+    },
+    "null_unsafe_filter": {
+      "dimension_rows": 16,
+      "rows_surviving_last_season_notna": 1,
+      "franchises_lost": 14,
+      "universe_rows_before": 2982,
+      "universe_rows_after_null_unsafe_inner_join": 246,
+      "rows_lost": 2736
+    },
+    "season_effective_resolution": {
+      "required_key_season_pairs": 76,
+      "resolved_dimension_rows": 76,
+      "n_uncovered": 0,
+      "n_ambiguous": 0,
+      "multi_row_keys": [
+        "1611661317"
+      ],
+      "merged_rows": 2982,
+      "merged_game_clusters": 1491,
+      "merged_team_game_keys": 2982,
+      "fan_out_rows": 0,
+      "row_universe_preserved": true,
+      "any_null_expansion": false,
+      "n_unmatched_fact_rows": 0,
+      "phoenix_abbreviation_by_season": {
+        "2021": [
+          "PHO"
+        ],
+        "2022": [
+          "PHO"
+        ],
+        "2023": [
+          "PHO"
+        ],
+        "2024": [
+          "PHO"
+        ],
+        "2025": [
+          "PHX"
+        ],
+        "2026": [
+          "PHX"
+        ]
+      },
+      "phoenix_rows": 246
+    },
+    "order_independence": {
+      "permutations_tested": 8,
+      "resolution_invariant": true,
+      "keys_where_keep_first_differs_from_keep_last": 1
+    },
+    "packet_schema_listing": {
+      "packet_source_string": "data/reference/team_cities.csv (16 rows: team_id, franchise, first_season, last_season, city, arena, lat, lon, elevation_ft)",
+      "actual_columns": [
+        "team_id",
+        "abbreviation",
+        "franchise",
+        "first_season",
+        "last_season",
+        "city",
+        "arena",
+        "lat",
+        "lon",
+        "elevation_ft",
+        "timezone"
+      ],
+      "n_actual_columns": 11,
+      "columns_named_in_packet": [
+        "team_id",
+        "franchise",
+        "first_season",
+        "last_season",
+        "city",
+        "arena",
+        "lat",
+        "lon",
+        "elevation_ft"
+      ],
+      "columns_omitted_from_packet": [
+        "abbreviation",
+        "timezone"
+      ]
+    },
+    "venue_semantics": {
+      "team_cities_columns": [
+        "team_id",
+        "abbreviation",
+        "franchise",
+        "first_season",
+        "last_season",
+        "city",
+        "arena",
+        "lat",
+        "lon",
+        "elevation_ft",
+        "timezone"
+      ],
+      "team_cities_has_game_key": false,
+      "universe_columns": [
+        "game_id",
+        "team_id",
+        "game_date",
+        "season",
+        "season_type",
+        "pace_level",
+        "pace_source",
+        "n_history_games",
+        "team_pace_estimate",
+        "projected_team_off_possessions",
+        "pace_resolved"
+      ],
+      "universe_has_is_home": false,
+      "universe_has_opp_team_id": false,
+      "universe_rows_per_game": [
+        2
+      ]
+    }
+  }
+}

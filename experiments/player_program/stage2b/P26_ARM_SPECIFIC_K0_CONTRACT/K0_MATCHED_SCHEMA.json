@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "player_program/stage2b/k0_matched/1",
+  "title": "K0_MATCHED[arm_id] specification record",
+  "description": "ONE record per arm_id. K0_MATCHED is a MAP keyed by arm_id, never a single universal object. This file constrains the SHAPE of a record; the cross-field rules that JSON Schema cannot express (exclusion minimality, lower-order closure, structural closure, null-construction adequacy) are implemented in validate_k0_matched.py and are equally binding. A record that satisfies this schema and fails the validator is NOT a valid K0_MATCHED specification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "arm_id",
+    "arm_kind",
+    "treatment_mechanism",
+    "invariants",
+    "arm_spec",
+    "k0_spec",
+    "fold_local_fallback",
+    "verdict_label_policy",
+    "k0_flat_role",
+    "registered_before_results"
+  ],
+  "properties": {
+    "schema": {"const": "k0_matched/1"},
+
+    "arm_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The registry arm_id this matched null belongs to. The key of the K0_MATCHED map. Two records may not share an arm_id."
+    },
+
+    "arm_kind": {
+      "type": "string",
+      "enum": [
+        "calibration_only",
+        "substantive_feature",
+        "structural_reparameterisation",
+        "level_transport",
+        "hierarchical_pooling",
+        "observation_purification"
+      ],
+      "description": "What KIND of claim the arm makes. The kind determines the shape of the matched null AND the verdict label the arm is eligible for. An arm may not be scored under a kind it did not declare before results."
+    },
+
+    "treatment_mechanism": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statement", "treatment_terms", "tested_parameters", "null_construction", "claimed_signal_axes"],
+      "properties": {
+        "statement": {
+          "type": "string",
+          "minLength": 20,
+          "description": "The mechanism under test, in basketball terms. A feature list is not a mechanism."
+        },
+        "treatment_terms": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true,
+          "description": "EXACTLY the terms the matched null excludes. Interaction terms use 'FACTOR:feature' form so that lower-order closure is checkable."
+        },
+        "tested_parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "role", "null_value", "null_value_meaning"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "role": {"type": "string", "enum": ["slope", "intercept", "shrinkage_weight", "coefficient", "pooling_strength"]},
+              "null_value": {"type": "number"},
+              "null_value_meaning": {"type": "string", "minLength": 1}
+            }
+          },
+          "description": "Parameters the arm estimates that the matched null FIXES. Required non-empty for calibration_only, structural_reparameterisation and hierarchical_pooling."
+        },
+        "claimed_signal_axes": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["team_identity", "opponent_identity", "league_time", "season_time", "venue", "roster", "possession_observation", "support_size"]},
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "The axes along which the arm CLAIMS its signal lives. A permutation null must act on an axis in this list; permuting an axis the arm does not use destroys nothing (S9)."
+        },
+        "null_construction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "destroys_claimed_signal"],
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": ["term_removal", "parameter_fixed_at_null", "targeted_permutation", "structural_collapse"]
+            },
+            "permutation_axis": {"type": "string"},
+            "permutation_seed": {"type": "integer"},
+            "destroys_claimed_signal": {
+              "type": "string",
+              "minLength": 20,
+              "description": "How this construction removes the mechanism, stated against claimed_signal_axes. 'It permutes something' is not an answer."
+            }
+          }
+        }
+      }
+    },
+
+    "invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rows", "target", "folds", "weights", "offset", "fallback_machinery", "nuisance_terms", "lower_order_structural_terms"],
+      "description": "Held IDENTICAL between the arm and its matched null. Row-set and fold identity are digests, not prose.",
+      "properties": {
+        "rows": {"type": "string", "minLength": 1, "description": "row_digest() string; byte-identical on both sides"},
+        "target": {"type": "string", "const": "REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS"},
+        "folds": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "weights": {"type": "string", "minLength": 1},
+        "offset": {"type": "string", "minLength": 1},
+        "fallback_machinery": {"type": "string", "minLength": 1},
+        "nuisance_terms": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "lower_order_structural_terms": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      }
+    },
+
+    "arm_spec": {"$ref": "#/$defs/side"},
+    "k0_spec": {"$ref": "#/$defs/side"},
+
+    "fold_local_fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "trigger", "numeric_threshold", "action", "registered_before_results"],
+      "description": "GATE_INVOCATION_CONTRACT section 4. A structural partition indicator that is identically zero in a fold is a blocking zero_variance finding ON THE CONTROL (S7, measured: 4 of 18 pace_source-by-season cells are exactly 0). The remedy must be frozen with a NUMERIC trigger before any result is visible. This node declares the FIELD; P27_FOLD_LOCAL_ESTIMABILITY_GUARD owns the threshold.",
+      "properties": {
+        "required": {"type": "boolean"},
+        "trigger": {"type": "string", "minLength": 1},
+        "numeric_threshold": {"type": ["number", "null"]},
+        "action": {"type": "string", "enum": ["drop_term_for_fold", "collapse_to_parent_tier", "refuse_to_score_fold", "not_applicable"]},
+        "registered_before_results": {"type": "boolean"}
+      }
+    },
+
+    "verdict_label_policy": {
+      "type": "string",
+      "minLength": 20,
+      "description": "The label this arm is eligible for given its kind. A calibration_only arm may NEVER be reported as feature value, however large challenger_vs_k0 is."
+    },
+
+    "k0_flat_role": {
+      "const": "diagnostic_only",
+      "description": "K0_FLAT (intercept-only) is a DIAGNOSTIC REFERENCE. Beating K0_FLAT has NO promotion value. K0_MATCHED[arm_id] is the sole authoritative promotion control."
+    },
+
+    "registered_before_results": {"type": "boolean"},
+
+    "notes": {"type": "array", "items": {"type": "string"}}
+  },
+
+  "$defs": {
+    "side": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "role", "pipeline_id", "substantive_features", "structural_terms", "declaration_routing", "comparison_gate_sidespec"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "enum": ["challenger", "k0"]},
+        "pipeline_id": {"type": "string", "minLength": 1},
+        "substantive_features": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "structural_terms": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true,
+          "description": "Non-substantive structural degrees of freedom: tier main effects, fallback indicators, nuisance terms. These are NOT declared in substantive_features -- comparison_gate.k0_findings blocks any K0 whose substantive_features is non-empty (measured). They are carried in the structural comparison_gate dimensions and must be IDENTICAL on both sides."
+        },
+        "declaration_routing": {
+          "type": "object",
+          "description": "term -> which of the 17 comparison_gate dimensions carries it. A term with no route is undeclared and therefore invisible to the frozen gate.",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["intercept_treatment", "calibration_freedom", "penalty_treatment", "exposure_offset", "training_rows", "evaluation_rows", "chronological_folds", "clipping", "link_function", "preprocessing", "missing_value_handling", "companion_components", "fallback_rules", "aggregation", "candidate_universe", "post_processing", "prediction_universe", "substantive_features"]
+          }
+        },
+        "comparison_gate_sidespec": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["intercept_treatment", "calibration_freedom", "penalty_treatment", "exposure_offset", "training_rows", "evaluation_rows", "chronological_folds", "clipping", "link_function", "preprocessing", "missing_value_handling", "companion_components", "fallback_rules", "aggregation", "candidate_universe", "post_processing", "prediction_universe"],
+          "description": "All seventeen comparison_gate.DIMENSIONS, stated. UNSPECIFIED is a blocking finding in the frozen gate; there is no dimension that means 'same as the other side'.",
+          "properties": {
+            "intercept_treatment": {},
+            "calibration_freedom": {},
+            "penalty_treatment": {},
+            "exposure_offset": {},
+            "training_rows": {},
+            "evaluation_rows": {},
+            "chronological_folds": {},
+            "clipping": {},
+            "link_function": {},
+            "preprocessing": {},
+            "missing_value_handling": {},
+            "companion_components": {},
+            "fallback_rules": {},
+            "aggregation": {},
+            "candidate_universe": {},
+            "post_processing": {},
+            "prediction_universe": {}
+          }
+        }
+      }
+    }
+  }
+}

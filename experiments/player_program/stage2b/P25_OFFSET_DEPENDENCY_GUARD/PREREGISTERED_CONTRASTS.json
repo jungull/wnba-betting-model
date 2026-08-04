@@ -1,0 +1,37 @@
+{
+  "schema": "offset_dependency_guard_prereg/1",
+  "node": "P25_OFFSET_DEPENDENCY_GUARD",
+  "status": "PROPOSED — the coordinator freezes this file; the guard binds it by digest",
+  "registered_before_any_result": true,
+  "why_this_form": [
+    "own_est + opp_est == 2 * projected_team_off_possessions holds EXACTLY on all 2,982 resolved rows,",
+    "so {own_est, opp_est} spans the same two dimensions as {offset, own_est - opp_est}.",
+    "The symmetric direction IS the offset and carries zero new information.",
+    "The antisymmetric direction is the only nonredundant direction the pair contains.",
+    "Admitting the CONTRAST instead of the PAIR is therefore not a weakening of the guard:",
+    "it is the unique reparameterisation that keeps the offset a constraint rather than a free parameter."
+  ],
+  "contrasts": [
+    {
+      "name": "contrast_own_minus_opp_pace_estimate",
+      "formula": "own_est - opp_est",
+      "inputs": [
+        "own_est",
+        "opp_est"
+      ],
+      "input_definitions": {
+        "own_est": "team_possession_prior_v1.team_pace_estimate on the row's own team-game",
+        "opp_est": "team_possession_prior_v1.team_pace_estimate on the SAME game_id, other team_id"
+      },
+      "units": "regulation-equivalent offensive possessions per game",
+      "offset_it_is_audited_against": "projected_team_off_possessions",
+      "admissibility_conditions": [
+        "the column must reproduce the formula EXACTLY (max |deviation| <= 1e-12)",
+        "the augmented design [offset | contrast] must be full rank in EVERY chronological fold",
+        "R^2(offset ~ 1 + contrast) must be below 0.998001 in EVERY fold",
+        "own_est and opp_est must NOT also appear as design columns"
+      ],
+      "registered_before_any_result": true
+    }
+  ]
+}

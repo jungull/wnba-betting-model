@@ -1,0 +1,289 @@
+{
+  "EXAMPLE_opponent_pace_adjustment_v1": {
+    "schema": "k0_matched/1",
+    "arm_id": "EXAMPLE_opponent_pace_adjustment_v1",
+    "arm_kind": "substantive_feature",
+    "treatment_mechanism": {
+      "statement": "the opponent's own trailing pace tendency carries information the incumbent's symmetric two-sided mean discards",
+      "treatment_terms": [
+        "opp_pace_trailing",
+        "TIER_L2:opp_pace_trailing",
+        "TIER_L3:opp_pace_trailing"
+      ],
+      "tested_parameters": [],
+      "claimed_signal_axes": [
+        "opponent_identity"
+      ],
+      "null_construction": {
+        "method": "term_removal",
+        "destroys_claimed_signal": "removing the opponent term and its tier interactions leaves the incumbent's symmetric projection, in which no opponent-specific quantity appears"
+      }
+    },
+    "invariants": {
+      "rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+      "target": "REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS",
+      "folds": [
+        "2021",
+        "2022",
+        "2023",
+        "2024",
+        "2025",
+        "2026"
+      ],
+      "weights": "equal per team-game row",
+      "offset": "projected_team_off_possessions (incumbent team_possession_prior/1)",
+      "fallback_machinery": "incumbent pace ladder L1 -> L2 -> L3; unresolved rows excluded",
+      "nuisance_terms": [],
+      "lower_order_structural_terms": [
+        "TIER_L1",
+        "TIER_L2",
+        "TIER_L3"
+      ]
+    },
+    "arm_spec": {
+      "name": "arm",
+      "role": "challenger",
+      "pipeline_id": "stage2b_possession_runner/1",
+      "substantive_features": [
+        "opp_pace_trailing",
+        "TIER_L2:opp_pace_trailing",
+        "TIER_L3:opp_pace_trailing"
+      ],
+      "structural_terms": [
+        "TIER_L1",
+        "TIER_L2",
+        "TIER_L3"
+      ],
+      "declaration_routing": {
+        "TIER_L1": "preprocessing",
+        "TIER_L2": "preprocessing",
+        "TIER_L3": "preprocessing",
+        "opp_pace_trailing": "substantive_features",
+        "TIER_L2:opp_pace_trailing": "substantive_features",
+        "TIER_L3:opp_pace_trailing": "substantive_features"
+      },
+      "comparison_gate_sidespec": {
+        "intercept_treatment": "free_unpenalised_single_intercept",
+        "calibration_freedom": "none -- no post-fit rescaling of any kind",
+        "penalty_treatment": "ridge lambda=0.0; intercept unpenalised",
+        "exposure_offset": "projected_team_off_possessions (incumbent team_possession_prior/1)",
+        "training_rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+        "evaluation_rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+        "chronological_folds": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "clipping": "none",
+        "link_function": "identity",
+        "preprocessing": "standardise on the training fold only; structural terms carried: TIER main effects {L1, L2, L3}",
+        "missing_value_handling": "none -- complete case on the 2982 resolved team-games",
+        "companion_components": "none",
+        "fallback_rules": "incumbent pace ladder L1 -> L2 -> L3; unresolved rows excluded",
+        "aggregation": "none -- the unit of prediction is the team-game",
+        "candidate_universe": "2982 resolved team-game rows over 1491 game clusters",
+        "post_processing": "none",
+        "prediction_universe": "2982 resolved team-game rows over 1491 game clusters"
+      }
+    },
+    "k0_spec": {
+      "name": "k0",
+      "role": "k0",
+      "pipeline_id": "stage2b_possession_runner/1",
+      "substantive_features": [],
+      "structural_terms": [
+        "TIER_L1",
+        "TIER_L2",
+        "TIER_L3"
+      ],
+      "declaration_routing": {
+        "TIER_L1": "preprocessing",
+        "TIER_L2": "preprocessing",
+        "TIER_L3": "preprocessing"
+      },
+      "comparison_gate_sidespec": {
+        "intercept_treatment": "free_unpenalised_single_intercept",
+        "calibration_freedom": "none -- no post-fit rescaling of any kind",
+        "penalty_treatment": "ridge lambda=0.0; intercept unpenalised",
+        "exposure_offset": "projected_team_off_possessions (incumbent team_possession_prior/1)",
+        "training_rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+        "evaluation_rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+        "chronological_folds": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "clipping": "none",
+        "link_function": "identity",
+        "preprocessing": "standardise on the training fold only; structural terms carried: TIER main effects {L1, L2, L3}",
+        "missing_value_handling": "none -- complete case on the 2982 resolved team-games",
+        "companion_components": "none",
+        "fallback_rules": "incumbent pace ladder L1 -> L2 -> L3; unresolved rows excluded",
+        "aggregation": "none -- the unit of prediction is the team-game",
+        "candidate_universe": "2982 resolved team-game rows over 1491 game clusters",
+        "post_processing": "none",
+        "prediction_universe": "2982 resolved team-game rows over 1491 game clusters"
+      }
+    },
+    "fold_local_fallback": {
+      "required": true,
+      "trigger": "fold-local standard deviation of any TIER indicator on the training fold",
+      "numeric_threshold": 1e-08,
+      "action": "collapse_to_parent_tier",
+      "registered_before_results": true
+    },
+    "verdict_label_policy": "eligible for FEATURE VALUE DEMONSTRATED only via challenger_vs_k0 against this record",
+    "k0_flat_role": "diagnostic_only",
+    "registered_before_results": true
+  },
+  "EXAMPLE_offset_recalibration_v1": {
+    "schema": "k0_matched/1",
+    "arm_id": "EXAMPLE_offset_recalibration_v1",
+    "arm_kind": "calibration_only",
+    "treatment_mechanism": {
+      "statement": "an affine re-map of the incumbent's own projection: it adds no information and can only re-scale what the incumbent already emits",
+      "treatment_terms": [
+        "projected_team_off_possessions_as_column"
+      ],
+      "tested_parameters": [
+        {
+          "name": "b1",
+          "role": "slope",
+          "null_value": 1.0,
+          "null_value_meaning": "the incumbent's own slope on its own output, i.e. no recalibration"
+        }
+      ],
+      "claimed_signal_axes": [
+        "league_time"
+      ],
+      "null_construction": {
+        "method": "parameter_fixed_at_null",
+        "destroys_claimed_signal": "fixing b1 at exactly 1 leaves the incumbent's projection entering at unit slope through the offset, which is the incumbent itself"
+      }
+    },
+    "invariants": {
+      "rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+      "target": "REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS",
+      "folds": [
+        "2021",
+        "2022",
+        "2023",
+        "2024",
+        "2025",
+        "2026"
+      ],
+      "weights": "equal per team-game row",
+      "offset": "projected_team_off_possessions (incumbent team_possession_prior/1)",
+      "fallback_machinery": "incumbent pace ladder L1 -> L2 -> L3; unresolved rows excluded",
+      "nuisance_terms": [],
+      "lower_order_structural_terms": [
+        "TIER_L1",
+        "TIER_L2",
+        "TIER_L3"
+      ]
+    },
+    "arm_spec": {
+      "name": "arm",
+      "role": "challenger",
+      "pipeline_id": "stage2b_possession_runner/1",
+      "substantive_features": [
+        "projected_team_off_possessions_as_column"
+      ],
+      "structural_terms": [
+        "TIER_L1",
+        "TIER_L2",
+        "TIER_L3"
+      ],
+      "declaration_routing": {
+        "TIER_L1": "preprocessing",
+        "TIER_L2": "preprocessing",
+        "TIER_L3": "preprocessing",
+        "projected_team_off_possessions_as_column": "substantive_features"
+      },
+      "comparison_gate_sidespec": {
+        "intercept_treatment": "free_unpenalised_single_intercept",
+        "calibration_freedom": "none -- no post-fit rescaling of any kind",
+        "penalty_treatment": "ridge lambda=0.0; intercept unpenalised",
+        "exposure_offset": "projected_team_off_possessions (incumbent team_possession_prior/1)",
+        "training_rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+        "evaluation_rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+        "chronological_folds": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "clipping": "none",
+        "link_function": "identity",
+        "preprocessing": "standardise on the training fold only; structural terms carried: TIER main effects {L1, L2, L3}",
+        "missing_value_handling": "none -- complete case on the 2982 resolved team-games",
+        "companion_components": "none",
+        "fallback_rules": "incumbent pace ladder L1 -> L2 -> L3; unresolved rows excluded",
+        "aggregation": "none -- the unit of prediction is the team-game",
+        "candidate_universe": "2982 resolved team-game rows over 1491 game clusters",
+        "post_processing": "none",
+        "prediction_universe": "2982 resolved team-game rows over 1491 game clusters"
+      }
+    },
+    "k0_spec": {
+      "name": "k0",
+      "role": "k0",
+      "pipeline_id": "stage2b_possession_runner/1",
+      "substantive_features": [],
+      "structural_terms": [
+        "TIER_L1",
+        "TIER_L2",
+        "TIER_L3"
+      ],
+      "declaration_routing": {
+        "TIER_L1": "preprocessing",
+        "TIER_L2": "preprocessing",
+        "TIER_L3": "preprocessing"
+      },
+      "comparison_gate_sidespec": {
+        "intercept_treatment": "free_unpenalised_single_intercept",
+        "calibration_freedom": "none -- no post-fit rescaling of any kind",
+        "penalty_treatment": "ridge lambda=0.0; intercept unpenalised",
+        "exposure_offset": "projected_team_off_possessions (incumbent team_possession_prior/1)",
+        "training_rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+        "evaluation_rows": "rows:n=2982:sha256=0000000000000000000000000000000f",
+        "chronological_folds": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "clipping": "none",
+        "link_function": "identity",
+        "preprocessing": "standardise on the training fold only; structural terms carried: TIER main effects {L1, L2, L3}",
+        "missing_value_handling": "none -- complete case on the 2982 resolved team-games",
+        "companion_components": "none",
+        "fallback_rules": "incumbent pace ladder L1 -> L2 -> L3; unresolved rows excluded",
+        "aggregation": "none -- the unit of prediction is the team-game",
+        "candidate_universe": "2982 resolved team-game rows over 1491 game clusters",
+        "post_processing": "none",
+        "prediction_universe": "2982 resolved team-game rows over 1491 game clusters"
+      }
+    },
+    "fold_local_fallback": {
+      "required": true,
+      "trigger": "fold-local sd of any TIER indicator",
+      "numeric_threshold": 1e-08,
+      "action": "collapse_to_parent_tier",
+      "registered_before_results": true
+    },
+    "verdict_label_policy": "CALIBRATION RESULT ONLY -- this arm is NOT eligible for a feature value label however large challenger_vs_k0 is",
+    "k0_flat_role": "diagnostic_only",
+    "registered_before_results": true
+  }
+}

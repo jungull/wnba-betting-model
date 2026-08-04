@@ -1,0 +1,353 @@
+{
+  "schema": "stage2b_node_findings/1",
+  "node_id": "P23_DIMENSION_CARDINALITY_GUARD",
+  "title": "S2: merge cardinality invariants preserving the 2,982-row / 1,491-game universe",
+  "lane": "possession",
+  "type": "implementation",
+  "severity_on_failure": "A",
+  "epistemic_status": "INFRASTRUCTURE + task-specific INVARIANT. Proves a dimension merge cannot silently change the row universe. Does not establish that any dimension is scientifically usable.",
+  "addresses": "V2_STOP_CONDITION.json findings.S2_team_cities_join_hazards",
+  "s2_remains_unresolved_as_an_adjudication": true,
+  "input_artifacts": {
+    "data/reference/team_cities.csv": {
+      "sha256": "10a544fdc52a9c80c1573437c9838b11815c9eafe6ac2cf052be17a2128ac42d",
+      "bytes": 1892
+    },
+    "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet": {
+      "sha256": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18",
+      "bytes": 44025
+    },
+    "experiments/player_program/stage2a/V2_STOP_CONDITION.json": {
+      "sha256": "a4dd090b2b38dfb4d37028e15daa10c689deb27269cde3d8b9cddd12fd92244d",
+      "bytes": 14555
+    },
+    "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json": {
+      "sha256": "3a35ae735333c47713d6e7cc4c35c081e4eb07364c71cba744db03709730a32c",
+      "bytes": 30883
+    }
+  },
+  "validation": {
+    "command": "python experiments/player_program/stage2b/P23_DIMENSION_CARDINALITY_GUARD/TESTS.py",
+    "n_tests": 16,
+    "n_failed": 0,
+    "exit_code": 0
+  },
+  "artifacts_written": [
+    "experiments/player_program/stage2b/P23_DIMENSION_CARDINALITY_GUARD/merge_guard.py",
+    "experiments/player_program/stage2b/P23_DIMENSION_CARDINALITY_GUARD/TESTS.py",
+    "experiments/player_program/stage2b/P23_DIMENSION_CARDINALITY_GUARD/TEST_RESULTS.json",
+    "experiments/player_program/stage2b/P23_DIMENSION_CARDINALITY_GUARD/build_findings.py",
+    "experiments/player_program/stage2b/P23_DIMENSION_CARDINALITY_GUARD/FINDINGS.json",
+    "experiments/player_program/stage2b/P23_DIMENSION_CARDINALITY_GUARD/REPORT.md"
+  ],
+  "frozen_artifacts_modified": [],
+  "measurements": [
+    {
+      "claim": "data/reference/team_cities.csv row count",
+      "packet_states": 16,
+      "measured": 16,
+      "verdict": "AGREE",
+      "how": "TESTS.py::t09 -- len(pd.read_csv(team_cities.csv))"
+    },
+    {
+      "claim": "distinct team_id in team_cities.csv",
+      "packet_states": 15,
+      "measured": 15,
+      "verdict": "AGREE",
+      "how": "TESTS.py::t09 -- tc.team_id.nunique()"
+    },
+    {
+      "claim": "duplicated team_id",
+      "packet_states": {
+        "1611661317": 2
+      },
+      "measured": {
+        "1611661317": 2
+      },
+      "verdict": "AGREE",
+      "how": "TESTS.py::t09 -- tc.team_id.value_counts()[>1]"
+    },
+    {
+      "claim": "last_season dtype",
+      "packet_states": "float64",
+      "measured": "float64",
+      "verdict": "AGREE",
+      "how": "TESTS.py::t09 -- str(tc.last_season.dtype)"
+    },
+    {
+      "claim": "last_season nulls",
+      "packet_states": "15 of 16",
+      "measured": "15 of 16",
+      "verdict": "AGREE",
+      "how": "TESTS.py::t09 -- tc.last_season.isna().sum()"
+    },
+    {
+      "claim": "elevation_ft range",
+      "packet_states": [
+        20,
+        2030
+      ],
+      "measured": [
+        20,
+        2030
+      ],
+      "verdict": "AGREE",
+      "how": "TESTS.py::t09 -- tc.elevation_ft.min()/max()"
+    },
+    {
+      "claim": "venues above 1000 ft",
+      "packet_states": 4,
+      "measured": {
+        "rows_above_1000ft": 4,
+        "distinct_arenas": 3,
+        "distinct_franchises": 3
+      },
+      "verdict": "CORRECT",
+      "correction": "the packet's 4 is a ROW count; there are 3 distinct arenas. The 4th row is the second Phoenix row for the same building (Footprint Center, identical lat/lon/elevation_ft). The original source's 3 is the correct venue count.",
+      "how": "TESTS.py::t09 -- (tc.elevation_ft>1000).sum() vs tc.loc[tc.elevation_ft>1000,'arena'].nunique()"
+    },
+    {
+      "claim": "team_cities.csv column count",
+      "packet_states": 9,
+      "measured": 11,
+      "verdict": "CORRECT",
+      "correction": "EVIDENCE_PACKET_V2 names 9 columns; the file has 11. Omitted: abbreviation, timezone",
+      "how": "TESTS.py::t15 -- tc.shape[1] vs the packet source string"
+    },
+    {
+      "claim": "candidate universe rows / game clusters",
+      "packet_states": "2,982 rows over 1,491 game clusters",
+      "measured": {
+        "rows": 2982,
+        "game_clusters": 1491,
+        "team_game_keys": 2982,
+        "duplicate_team_game_keys": 0
+      },
+      "verdict": "AGREE",
+      "how": "TESTS.py::t10 -- team_possession_prior_v1.parquet restricted to pace_resolved == True"
+    },
+    {
+      "claim": "parent artifact shape before the pace_resolved restriction",
+      "measured": {
+        "rows": 2990,
+        "games": 1495
+      },
+      "verdict": "NOT_IN_PACKET",
+      "how": "TESTS.py::t10 -- len(prior), prior.game_id.nunique()"
+    },
+    {
+      "claim": "distinct (team_id, season) pairs needing dimension resolution",
+      "measured": 76,
+      "verdict": "NOT_IN_PACKET",
+      "how": "TESTS.py::t10 -- len(set(zip(u.team_id, u.season)))"
+    },
+    {
+      "claim": "universe rows carrying team_id 1611661317",
+      "measured": 246,
+      "verdict": "NOT_IN_PACKET",
+      "how": "TESTS.py::t10 -- (u.team_id == 1611661317).sum()"
+    },
+    {
+      "claim": "naive merge(on='team_id') fan-out on the real universe",
+      "packet_states": "a naive join fans out 1:m and duplicates that franchise's rows",
+      "measured": {
+        "rows_before": 2982,
+        "rows_after": 3228,
+        "excess_rows": 246,
+        "game_clusters_after": 1491,
+        "duplicated_team_game_keys": 246
+      },
+      "verdict": "AGREE",
+      "note": "the game-cluster count is UNCHANGED at 1,491, so a guard that only counts games sees nothing; only row count and team-game key multiplicity move",
+      "how": "TESTS.py::t11 -- u.merge(tc, on='team_id', how='left')"
+    },
+    {
+      "claim": "null-unsafe last_season filter destroys the universe",
+      "packet_states": "last_season is float with 15 of 16 values null, so a null-unsafe filter drops every current franchise",
+      "measured": {
+        "dimension_rows_surviving": 1,
+        "franchises_lost": 14,
+        "universe_rows_after": 246,
+        "universe_rows_lost": 2736
+      },
+      "verdict": "AGREE",
+      "how": "TESTS.py::t12 -- u.merge(tc[tc.last_season.notna()], on='team_id', how='inner')"
+    },
+    {
+      "claim": "season-effective resolution preserves the universe exactly",
+      "measured": {
+        "required_pairs": 76,
+        "resolved_rows": 76,
+        "uncovered": 0,
+        "ambiguous": 0,
+        "merged_rows": 2982,
+        "merged_game_clusters": 1491,
+        "merged_team_game_keys": 2982,
+        "fan_out_rows": 0,
+        "any_null_expansion": false,
+        "unmatched_fact_rows": 0
+      },
+      "verdict": "NOT_IN_PACKET",
+      "how": "TESTS.py::t13 -- resolve_effective_dimension + guarded_merge with effective_from=first_season, effective_to=last_season, effective_on=season, open_ended_upper_bound=True"
+    },
+    {
+      "claim": "PHO/PHX resolution by declared interval only",
+      "measured": {
+        "2021": [
+          "PHO"
+        ],
+        "2022": [
+          "PHO"
+        ],
+        "2023": [
+          "PHO"
+        ],
+        "2024": [
+          "PHO"
+        ],
+        "2025": [
+          "PHX"
+        ],
+        "2026": [
+          "PHX"
+        ]
+      },
+      "verdict": "NOT_IN_PACKET",
+      "how": "TESTS.py::t13 -- merged[merged.team_id==1611661317].groupby('season')"
+    },
+    {
+      "claim": "resolution is invariant to dimension row order",
+      "measured": {
+        "permutations_tested": 8,
+        "identical_every_time": true,
+        "keys_where_keep_first_differs_from_keep_last": 1
+      },
+      "verdict": "NOT_IN_PACKET",
+      "how": "TESTS.py::t14 -- tc.sample(frac=1.0, random_state=seed) over 8 seeds, compared against drop_duplicates keep='first' vs keep='last'"
+    },
+    {
+      "claim": "the dimension is team-keyed, not venue-of-play keyed",
+      "measured": {
+        "team_cities_has_game_key": false,
+        "universe_has_is_home": false,
+        "universe_has_opp_team_id": false,
+        "universe_rows_per_game": [
+          2
+        ]
+      },
+      "verdict": "NOT_IN_PACKET",
+      "how": "TESTS.py::t16 -- column presence on both frames"
+    }
+  ],
+  "acceptance_criteria": [
+    {
+      "criterion": "every dimension merge declares explicit keys and expected cardinality",
+      "met": true,
+      "enforced_by": "merge_guard.DimensionSpec.__post_init__",
+      "demonstrated_by": "TESTS.py::t01 (5 invalid specifications rejected)"
+    },
+    {
+      "criterion": "row count, game key set and team-game key set are asserted unchanged",
+      "met": true,
+      "enforced_by": "merge_guard.RowUniverse.capture / .assert_unchanged inside guarded_merge",
+      "demonstrated_by": "TESTS.py::t04, t13"
+    },
+    {
+      "criterion": "duplicate primary keys are rejected and fan-out fails the merge",
+      "met": true,
+      "enforced_by": "merge_guard.check_dimension_primary_key (pre-merge) + pandas validate= + RowUniverse.assert_unchanged (post-merge)",
+      "demonstrated_by": "TESTS.py::t02, t03, t11"
+    },
+    {
+      "criterion": "null expansion is reported",
+      "met": true,
+      "enforced_by": "merge_guard.null_expansion_report",
+      "demonstrated_by": "TESTS.py::t05, t13",
+      "note": "reported per column and split into nulls from unmatched fact rows vs nulls already present in the dimension source"
+    },
+    {
+      "criterion": "the duplicated team_id 1611661317 (PHO/PHX) is resolved ONLY from documented effective-date or season semantics; if it cannot be, the affected feature family is EXCLUDED rather than guessed",
+      "met": true,
+      "enforced_by": "merge_guard.resolve_effective_dimension; AmbiguousDimensionError / UndeclaredNullIntervalError",
+      "demonstrated_by": "TESTS.py::t06, t07, t13, t14",
+      "outcome": "RESOLVED from first_season/last_season alone: all 76 (team_id, season) pairs match exactly one interval, 0 uncovered, 0 ambiguous. The EXCLUDE branch was therefore not taken on this dimension, but it is implemented and tested."
+    },
+    {
+      "criterion": "deduplication by arbitrary first/last row order is not used anywhere",
+      "met": true,
+      "enforced_by": "absent by construction; merge_guard.assert_no_order_dependent_dedup",
+      "demonstrated_by": "TESTS.py::t08 (0 hits), t14 (8-permutation invariance)"
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "C1",
+      "between": "V2_STOP_CONDITION.json S2 note and the bytes of data/reference/team_cities.csv",
+      "document_says": "I measure 4 venues above 1000 ft, not 3",
+      "bytes_say": "4 ROWS above 1000 ft but 3 distinct arenas; PHO and PHX are the same building with identical lat/lon/elevation_ft",
+      "resolution": "the original source's 3 is correct as a venue count; the coordinator's 4 counts rows. This is the S2 fan-out defect occurring inside the measurement that documents the S2 fan-out defect.",
+      "severity": "B",
+      "action_taken": "raised only; V2_STOP_CONDITION.json is frozen and was NOT edited"
+    },
+    {
+      "id": "C2",
+      "between": "EVIDENCE_PACKET_V2.json cutoff_valid_availability_table_CORRECTED and the bytes of data/reference/team_cities.csv",
+      "document_says": "data/reference/team_cities.csv (16 rows: team_id, franchise, first_season, last_season, city, arena, lat, lon, elevation_ft)",
+      "bytes_say": "11 columns; omitted from the packet listing: abbreviation, timezone",
+      "resolution": "timezone is the material omission -- the same entry promotes 'time zone' as an available feature while its schema listing does not name the column. Same failure mode as S8.",
+      "severity": "B",
+      "action_taken": "raised only; EVIDENCE_PACKET_V2.json is frozen and was NOT edited"
+    },
+    {
+      "id": "C3",
+      "between": "acceptance criterion 5's phrase 'documented effective-date or season semantics' and the absence of any data dictionary",
+      "document_says": "resolution must come from DOCUMENTED effective-date/season semantics",
+      "bytes_say": "no data dictionary for team_cities.csv exists under experiments/player_program/. The documentation is the column names first_season/last_season plus their observed values.",
+      "resolution": "the reading is coherent and uniquely consistent with the bytes -- contiguous, non-overlapping intervals covering all 76 required pairs with multiplicity exactly 1 -- but it is inferred, not cited. The guard makes it explicit and refutable via the mandatory open_ended_upper_bound declaration.",
+      "severity": "C",
+      "action_taken": "disclosed in REPORT.md section 5.3"
+    }
+  ],
+  "could_not_establish": [
+    "that the venue/elevation/timezone family is scientifically usable -- out of epistemic scope",
+    "cutoff validity of any field -- untouched; not delegated to any gate per GATE_INVOCATION_CONTRACT section 7.3",
+    "that other dimension merges are safe -- only team_cities.csv was audited. master_team.parquet, the injury sources and the possession/rotation artifacts were NOT audited for merge cardinality; their key uniqueness is an open question",
+    "whether season is the correct effective-date grain -- a mid-season venue or identity change is not representable in this schema and would be invisible to the guard",
+    "the construction provenance of team_possession_prior_v1.parquet -- possession_features.py:156 already records that its receipt does not re-establish it",
+    "whether the packet's other schema listings are complete -- only the one entry S2 concerns was checked"
+  ],
+  "negative_results_preserved": [
+    "the EXCLUDE branch of criterion 5 was not exercised on real data because the real data resolved cleanly -- a fact about the data, not a strengthening of the guard",
+    "no dimension other than team_cities.csv was found to need interval resolution because no other dimension was audited",
+    "elevation_ft spans [20, 2030] ft with 3 distinct venues above 1000 ft; this node makes no claim about whether that spread supports a feature"
+  ],
+  "stop_conditions_tripped": [],
+  "stop_condition_assessment": {
+    "primary_target": "untouched",
+    "K0_structure": "untouched",
+    "inference_structure": "untouched",
+    "candidate_universe": "preserved and now enforced at 2,982 rows / 1,491 clusters; not changed",
+    "cutoff_valid_feature_set": "untouched; no field promoted, demoted or adjudicated; S2 remains unresolved as an adjudication",
+    "leakage_status": "untouched"
+  },
+  "raised_not_resolved": [
+    {
+      "id": "R1",
+      "summary": "team_cities.csv is keyed by team, not by venue-of-play, and the 2,982-row universe artifact carries no is_home / opp_team_id",
+      "measured": {
+        "team_cities_has_game_key": false,
+        "universe_has_is_home": false,
+        "universe_has_opp_team_id": false,
+        "away_team_game_rows_affected": 1491
+      },
+      "consequence": "a team_id-keyed venue merge attaches each team its OWN arena on every row, including its away rows. Any elevation / altitude / travel-distance / timezone-shift feature needs the venue of PLAY, which requires a home-team or opponent key this artifact lacks.",
+      "why_not_a_stop_condition": "it changes no target, control, universe or adjudication; it is a construction constraint on how a venue feature family could be built",
+      "for": "coordinator",
+      "evidence": "TESTS.py::t16"
+    }
+  ],
+  "recommended_call_sites": [
+    "any future arm importing venue / elevation / timezone / travel must call merge_guard.resolve_effective_dimension then merge_guard.guarded_merge with the team_cities__season_effective spec in REPORT.md section 3.5",
+    "merge_guard should be applied to master_team.parquet and the injury sources before either backs a registered arm; neither was audited here"
+  ]
+}
