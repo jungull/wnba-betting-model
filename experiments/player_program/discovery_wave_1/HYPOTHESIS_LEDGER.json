@@ -1,0 +1,124 @@
+{
+  "schema": "discovery_hypothesis_ledger/1",
+  "wave": "discovery_wave_1",
+  "lane": "DISCOVERY (development folds only)",
+  "binding_rules": [
+    "no discovery result may replace Arm D directly",
+    "any promising formulation must later become a NEW frozen challenger under a separate registered evaluation",
+    "preserve all null and negative results",
+    "feature_gate.audit() must pass before any fit"
+  ],
+  "frozen_incumbent": {
+    "arm": "D_ewma_shrunk",
+    "K": 200,
+    "alpha": 0.1,
+    "operational_team_mae": 2.9675,
+    "intrinsic_team_mae": 2.896
+  },
+  "workstreams": {
+    "ws1_repaired_projected_role": {
+      "basketball_mechanism": "turnover rate changes most when a player occupies a substantially DIFFERENT offensive role than normal, not simply because the role is large",
+      "exact_formulation": "projected minutes share ONLY (never both shares); trailing minutes share; projected minus trailing; rotation-rank change; bounded transform for a materially expanded role; linear plus ONE preregistered bounded nonlinear form (positive/negative role-change split)",
+      "expected_direction": "role CHANGE positive on turnover rate; role LEVEL near null once change is included",
+      "data_and_provenance": "projected_player_possessions/1 tier_a_only; master_player minutes, strictly prior games",
+      "supports_hypothesis": "role-change coefficient stable across folds AND operational team MAE not worse than D",
+      "falsifies_or_weakens": "change term null once level is included, or the gain is confined to one season",
+      "known_confounders": "projected minutes share is a deterministic transform of the exposure offset; role change correlates with injury context",
+      "metrics": "operational team MAE vs D; intrinsic deviance; season stability",
+      "development_only": true,
+      "result": "PENDING",
+      "disposition": "PENDING"
+    },
+    "ws2_responsibility_transfer": {
+      "basketball_mechanism": "turnovers rise specifically for players positioned to ABSORB missing teammates offensive responsibility",
+      "exact_formulation": "three frozen constructions: (1) team_displaced_involvement x player_prior_involvement; (2) allocated displaced load proportional to prior creation share; (3) allocated load x projected-role expansion",
+      "expected_direction": "positive interaction; the player-specific form beats the team-level H arm",
+      "data_and_provenance": "P2 feature artifact; frozen prior involvement; tier_a_only candidates",
+      "supports_hypothesis": "a player-specific transfer form beats team-level displaced_involvement on operational team MAE",
+      "falsifies_or_weakens": "no construction beats H, or gains appear only under oracle appearance",
+      "known_confounders": "absences correlate with opponent quality and with the absent player own rate",
+      "metrics": "operational team MAE vs D and vs H; player deviance",
+      "development_only": true,
+      "result": "PENDING",
+      "disposition": "PENDING"
+    },
+    "ws3_team_total_plus_allocation": {
+      "basketball_mechanism": "one model should not have to control BOTH how many turnovers a team commits AND which players commit them",
+      "exact_formulation": "stage 1 team-total count model on projected team possessions; stage 2 compositional allocation (multinomial / Dirichlet-multinomial / softmax shares with shrinkage) summing EXACTLY to the stage-1 total",
+      "expected_direction": "allocation improves player identity WITHOUT harming the team total; G becomes useful in the allocation layer",
+      "data_and_provenance": "team_turnover_reconciliation_v1; projected exposure; P2 features",
+      "supports_hypothesis": "team-total accuracy at least matching the D aggregate AND player allocation deviance improving",
+      "falsifies_or_weakens": "the allocation gain requires sacrificing team-total accuracy",
+      "known_confounders": "team total and allocation share a common exposure error",
+      "metrics": "team-total MAE; allocation deviance; share calibration; both jointly",
+      "development_only": true,
+      "result": "PENDING",
+      "disposition": "PENDING"
+    },
+    "ws4_ewma_timescale_family": {
+      "basketball_mechanism": "one decay rate cannot suit both stable and unstable roles",
+      "exact_formulation": "effective-half-life family: slow long-memory; incumbent alpha=0.10; fast role-responsive; dual short+long timescale; role-change-GATED decay. Nested chronological development folds only",
+      "expected_direction": "faster adaptation helps after role shifts and team changes; slow decay remains better for stable roles",
+      "data_and_provenance": "P1 target artifact; strictly prior games",
+      "supports_hypothesis": "a gated or dual-timescale variant beats alpha=0.10 in unstable-role strata AND does not lose in stable strata",
+      "falsifies_or_weakens": "no variant beats the incumbent anywhere, or gains vanish out of fold",
+      "known_confounders": "role instability correlates with injury and with low support",
+      "metrics": "by-stratum deviance and team MAE; post-trade and post-role-shift subsets",
+      "development_only": true,
+      "result": "PENDING",
+      "disposition": "PENDING"
+    },
+    "ws5_opportunity_proxies": {
+      "basketball_mechanism": "FGA share is an incomplete proxy for ball-handling responsibility",
+      "exact_formulation": "bounded set: FGA share; play-ending involvement (FGA + frozen FT weight x FTA + turnovers); share of team play-ending involvement; short vs long involvement change; involvement rank among projected teammates; projected responsibility share after removing unavailable teammates",
+      "expected_direction": "play-ending involvement beats FGA share as a rate predictor and especially as an allocation weight",
+      "data_and_provenance": "master_player fga and fta; canonical turnover targets; strictly prior games",
+      "supports_hypothesis": "a proxy improves the conditional rate OR allocation beyond the P1 EWMA",
+      "falsifies_or_weakens": "all proxies are redundant with the P1 EWMA turnover rate",
+      "known_confounders": "involvement is mechanically related to turnovers because turnovers enter the play-ending formula",
+      "metrics": "conditional rate deviance; allocation weight quality; redundancy with D",
+      "development_only": true,
+      "result": "PENDING",
+      "disposition": "PENDING"
+    },
+    "ws6_mechanism_decomposition": {
+      "basketball_mechanism": "bad passes relate to creation burden; lost balls to handling pressure; offensive fouls to drives; travels to role instability; shot-clock violations are team or lineup driven",
+      "exact_formulation": "diagnostics plus bounded discovery models per mechanism: base rate, support, source-schema stability, player concentration, relation to involvement and to role change, contribution to total-model error",
+      "expected_direction": "the G player-level gain and team-level loss arise from OFFSETTING mechanism effects",
+      "data_and_provenance": "player_turnover_targets_v1 mechanism columns; canonical events",
+      "supports_hypothesis": "involvement helps one mechanism and hurts another with opposite signs",
+      "falsifies_or_weakens": "all mechanisms respond to involvement in the same direction",
+      "known_confounders": "mechanism mix differs by source schema, which is confounded with season type",
+      "metrics": "per-mechanism deviance and error contribution; NO promotion",
+      "development_only": true,
+      "result": "PENDING",
+      "disposition": "PENDING"
+    },
+    "ws7_nonlinear_heterogeneous": {
+      "basketball_mechanism": "role and involvement effects may be hidden by linear pooling",
+      "exact_formulation": "piecewise-linear; splines with few preregistered knots; separate expansion vs contraction effects; involvement x projected minutes; involvement x historical support; partial pooling by continuous role tier derived WITHIN each training fold. No unrestricted player-specific slopes",
+      "expected_direction": "the effect concentrates among primary creators and among secondary creators receiving expanded roles",
+      "data_and_provenance": "P2 feature artifact; P1 targets",
+      "supports_hypothesis": "a bounded nonlinear form beats the linear term out of fold in a preregistered stratum",
+      "falsifies_or_weakens": "linear and nonlinear indistinguishable, or gains only in fold",
+      "known_confounders": "role tiers correlate with support; low-support players are noisier",
+      "metrics": "stratum-wise deviance and operational team MAE",
+      "development_only": true,
+      "result": "PENDING",
+      "disposition": "PENDING"
+    },
+    "ws8_operational_error_decomposition": {
+      "basketball_mechanism": "where does operational error actually come from: availability, candidate precision, minute allocation, possession allocation, or rate",
+      "exact_formulation": "hold Arm D fixed; five LABELLED diagnostic counterfactuals: (1) full operational; (2) oracle appearance with exposure reallocated among actual participants; (3) Tier A plus actual missing participants; (4) oracle minutes or possessions; (5) realised exposure",
+      "expected_direction": "exposure-side errors dominate rate error",
+      "data_and_provenance": "projected exposure artifact; realised possessions; targets",
+      "supports_hypothesis": "a clear ordering of incremental error contributions",
+      "falsifies_or_weakens": "contributions are diffuse and none dominates",
+      "known_confounders": "oracle variants are NOT models and are never promotion evidence",
+      "metrics": "incremental team MAE change per counterfactual step",
+      "development_only": true,
+      "result": "PENDING",
+      "disposition": "PENDING"
+    }
+  }
+}
