@@ -3,7 +3,7 @@
   "workstream": "ws1_repaired_projected_role",
   "wave": "discovery_wave_1",
   "lane": "DISCOVERY (development folds only) -- may not replace Arm D",
-  "executed_utc": "2026-08-04T13:01:54.265488Z",
+  "executed_utc": "2026-08-04T13:07:44.455952Z",
   "hypothesis": "turnover rate changes most when a player occupies a substantially DIFFERENT offensive role than normal, not simply because the role is large",
   "sign_convention": "INCUMBENT(D) absolute error MINUS CHALLENGER absolute error; POSITIVE = challenger beats D",
   "frozen_incumbent": {
@@ -24,16 +24,16 @@
     "rule": "primary arm must beat the K0 recalibration control on operational team MAE with a 90% game-clustered CI excluding zero",
     "primary_arm_evidence": {
       "L1_linear": {
-        "operational_vs_K0": -0.00037584235693266884,
+        "operational_vs_K0": -0.0014479584006771684,
         "operational_ci_excludes_zero": false,
-        "intrinsic_vs_K0": -0.003935086588590964,
+        "intrinsic_vs_K0": -0.0045372960751629806,
         "beats_K0_operationally": false,
         "beats_K0_intrinsically": false
       },
       "N1_split": {
-        "operational_vs_K0": -0.0026893761298572567,
+        "operational_vs_K0": -0.00377967464682446,
         "operational_ci_excludes_zero": false,
-        "intrinsic_vs_K0": -0.006521572685780149,
+        "intrinsic_vs_K0": -0.0069967525585288995,
         "beats_K0_operationally": false,
         "beats_K0_intrinsically": false
       }
@@ -135,6 +135,44 @@
     "source": "experiments/player_program/turnover_p2_v1/turnover_role_context_features_v1.parquet",
     "source_sha256": "5ab9160078771f6857cd332da9d3a1182e83ce4ab35b5dd8c2746b0be98b2072",
     "source_unmodified": true,
+    "p2_trailing_columns_DISCARDED": {
+      "columns": [
+        "trailing_minutes_share",
+        "trailing_rotation_rank",
+        "role_change",
+        "offensive_involvement_proxy",
+        "displaced_involvement",
+        "_prior_support"
+      ],
+      "defect": "built by iterating the realised box score and left-merging onto the candidate universe, so the null mask is an EXACT did_appear indicator -- post-cutoff outcome information",
+      "evidence": {
+        "trailing_minutes_share": {
+          "n_null": 8278,
+          "n_nonnull": 27351,
+          "null_mask_equals_not_did_appear": true,
+          "off_diagonal_rows": 0
+        },
+        "trailing_rotation_rank": {
+          "n_null": 8278,
+          "n_nonnull": 27351,
+          "null_mask_equals_not_did_appear": true,
+          "off_diagonal_rows": 0
+        },
+        "role_change": {
+          "n_null": 8278,
+          "n_nonnull": 27351,
+          "null_mask_equals_not_did_appear": true,
+          "off_diagonal_rows": 0
+        }
+      },
+      "action": "dropped outright and rebuilt; never imputed"
+    },
+    "trailing_role_rebuild": {
+      "artifact": "ws1_trailing_role_state_v1.parquet",
+      "machine": "EWMA alpha=0.1, new = (1-alpha)*old + value, state snapshotted BEFORE the day's games are consumed (strictly prior games)",
+      "change_vs_p2": "state is READ for every universe member on its own game date, appearer or not; the box score only UPDATES state",
+      "universe": "Tier A candidate rows UNION intrinsic realised-participant rows"
+    },
     "share_identity_check": {
       "claim": "proj_minutes_share and proj_off_poss_share are algebraically identical",
       "max_abs_difference": 5.551115123125783e-17,
@@ -168,15 +206,75 @@
       "rows": 35629,
       "rows_without_candidate_features": 0,
       "feature_null_fraction": {
-        "expanded_role_bounded": 0.23234,
+        "expanded_role_bounded": 0.0,
         "proj_minutes_share": 0.0,
-        "role_change": 0.23234,
-        "role_change_neg": 0.23234,
-        "role_change_pos": 0.23234,
-        "rotation_rank_change": 0.23234,
-        "trailing_minutes_share": 0.23234
+        "role_change": 0.0,
+        "role_change_neg": 0.0,
+        "role_change_pos": 0.0,
+        "rotation_rank_change": 0.0,
+        "trailing_minutes_share": 0.0
       }
     }
+  },
+  "leakage_guard": {
+    "track": "operational",
+    "n_rows": 35629,
+    "n_did_appear": 27351,
+    "n_did_not_appear": 8278,
+    "features": {
+      "expanded_role_bounded": {
+        "n_null": 0,
+        "null_mask_off_diagonal_vs_did_appear": 8278,
+        "corr_with_did_appear": -0.1059976081923963,
+        "mean_if_appeared": 0.014809579805396269,
+        "mean_if_not": 0.04118457152617264
+      },
+      "proj_minutes_share": {
+        "n_null": 0,
+        "null_mask_off_diagonal_vs_did_appear": 8278,
+        "corr_with_did_appear": 0.4984265537586266,
+        "mean_if_appeared": 0.09503849694417023,
+        "mean_if_not": 0.038004598946605454
+      },
+      "role_change": {
+        "n_null": 0,
+        "null_mask_off_diagonal_vs_did_appear": 8278,
+        "corr_with_did_appear": 0.19126839990048952,
+        "mean_if_appeared": -0.008040466332514415,
+        "mean_if_not": -0.029168198432247775
+      },
+      "role_change_neg": {
+        "n_null": 0,
+        "null_mask_off_diagonal_vs_did_appear": 8278,
+        "corr_with_did_appear": 0.2522230597045927,
+        "mean_if_appeared": -0.015184779571052362,
+        "mean_if_not": -0.038718453614736165
+      },
+      "role_change_pos": {
+        "n_null": 0,
+        "null_mask_off_diagonal_vs_did_appear": 8278,
+        "corr_with_did_appear": -0.058150046686333334,
+        "mean_if_appeared": 0.007144313238537946,
+        "mean_if_not": 0.009550255182488391
+      },
+      "rotation_rank_change": {
+        "n_null": 0,
+        "null_mask_off_diagonal_vs_did_appear": 8278,
+        "corr_with_did_appear": 0.20147728155871278,
+        "mean_if_appeared": 0.34188877920368543,
+        "mean_if_not": -1.1296206813239913
+      },
+      "trailing_minutes_share": {
+        "n_null": 0,
+        "null_mask_off_diagonal_vs_did_appear": 8278,
+        "corr_with_did_appear": 0.26927333875549353,
+        "mean_if_appeared": 0.10307896327668464,
+        "mean_if_not": 0.06717279737885323
+      }
+    },
+    "all_features_fully_populated": true,
+    "violations": [],
+    "note": "zero nulls on the operational track means no missingness indicator exists and fillna(0) is a no-op there; a non-zero corr_with_did_appear is legitimate signal only because these values are computable strictly before the cutoff"
   },
   "identifiability": {
     "K0_intercept_only": {
@@ -192,34 +290,34 @@
     },
     "L1_linear": {
       "checked": true,
-      "n_complete_rows": 27351,
+      "n_complete_rows": 35629,
       "n_features": 4,
       "singular_values": [
-        222.38854442,
-        164.81991705,
-        136.99104276,
-        118.38574432
+        268.44216339,
+        184.60431494,
+        155.60227797,
+        110.29044795
       ],
       "numerical_rank": 4,
       "full_rank": true,
-      "condition_number": 1.8785078025478443,
+      "condition_number": 2.433956597052292,
       "condition_ok": true,
       "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
     },
     "N1_split": {
       "checked": true,
-      "n_complete_rows": 27351,
+      "n_complete_rows": 35629,
       "n_features": 5,
       "singular_values": [
-        240.86813443,
-        184.46820441,
-        150.1560325,
-        125.63207392,
-        79.8672103
+        288.62257315,
+        213.77602312,
+        168.09849737,
+        120.16027614,
+        80.2883891
       ],
       "numerical_rank": 5,
       "full_rank": true,
-      "condition_number": 3.0158576157433794,
+      "condition_number": 3.594823316094141,
       "condition_ok": true,
       "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
     },
@@ -238,49 +336,49 @@
     },
     "D0_change_only": {
       "checked": true,
-      "n_complete_rows": 27351,
+      "n_complete_rows": 35629,
       "n_features": 3,
       "singular_values": [
-        216.43840231,
-        145.46153995,
-        118.52577104
+        260.54875567,
+        162.92444214,
+        111.61080626
       ],
       "numerical_rank": 3,
       "full_rank": true,
-      "condition_number": 1.8260872753716992,
+      "condition_number": 2.3344402249686484,
       "condition_ok": true,
       "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
     },
     "S1_trailing_basis": {
       "checked": true,
-      "n_complete_rows": 27351,
+      "n_complete_rows": 35629,
       "n_features": 4,
       "singular_values": [
-        238.35155859,
-        153.0203959,
-        145.39763326,
-        89.64831957
+        286.00942805,
+        164.2529772,
+        153.09986363,
+        101.46919881
       ],
       "numerical_rank": 4,
       "full_rank": true,
-      "condition_number": 2.6587398373554083,
+      "condition_number": 2.8186822346763116,
       "condition_ok": true,
       "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
     },
     "X_literal_card_set": {
       "checked": true,
-      "n_complete_rows": 27351,
+      "n_complete_rows": 35629,
       "n_features": 5,
       "singular_values": [
-        239.25086603,
-        208.27352927,
-        145.63900926,
-        122.16971429,
+        286.01492791,
+        234.43381293,
+        163.96745968,
+        120.39900555,
         0.0
       ],
       "numerical_rank": 4,
       "full_rank": false,
-      "condition_number": 197587007343653.16,
+      "condition_number": 141497484210343.34,
       "condition_ok": false,
       "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
     }
@@ -378,66 +476,66 @@
       "L1_linear": {
         "intercept": {
           "by_season": {
-            "2022": -0.018768,
-            "2023": -0.005724,
-            "2024": -0.009842,
-            "2025": -0.011761,
-            "2026": -0.014242
+            "2022": -0.018975,
+            "2023": -0.005881,
+            "2024": -0.009916,
+            "2025": -0.011739,
+            "2026": -0.014018
           },
-          "mean": -0.0120674,
-          "sd": 0.004356878130037608,
+          "mean": -0.0121058,
+          "sd": 0.004347880375539326,
           "sign_consistent": true,
           "sign": "negative"
         },
         "proj_minutes_share": {
           "by_season": {
-            "2022": 0.00509,
-            "2023": -0.004415,
-            "2024": 0.007344,
-            "2025": 0.01428,
-            "2026": 0.021187
+            "2022": 0.005505,
+            "2023": -0.003285,
+            "2024": 0.007839,
+            "2025": 0.014218,
+            "2026": 0.020201
           },
-          "mean": 0.008697199999999999,
-          "sd": 0.008647954565098039,
+          "mean": 0.0088956,
+          "sd": 0.007963913600736764,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "role_change": {
           "by_season": {
-            "2022": -0.032212,
-            "2023": -0.024831,
-            "2024": -0.018834,
-            "2025": -0.012564,
-            "2026": -0.014357
+            "2022": -0.03497,
+            "2023": -0.025785,
+            "2024": -0.018027,
+            "2025": -0.013111,
+            "2026": -0.015314
           },
-          "mean": -0.0205596,
-          "sd": 0.007202816743469182,
+          "mean": -0.0214414,
+          "sd": 0.008006105185419438,
           "sign_consistent": true,
           "sign": "negative"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016129,
-            "2023": 0.010425,
-            "2024": 0.004055,
-            "2025": -0.000953,
-            "2026": -0.005422
+            "2022": 0.018785,
+            "2023": 0.010521,
+            "2024": 0.002448,
+            "2025": -0.000109,
+            "2026": -0.003047
           },
-          "mean": 0.0048468,
-          "sd": 0.007721622016131067,
+          "mean": 0.0057196,
+          "sd": 0.00794087324165296,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.026508,
-            "2023": 0.029491,
-            "2024": 0.026716,
-            "2025": 0.025459,
-            "2026": 0.02438
+            "2022": 0.026359,
+            "2023": 0.029555,
+            "2024": 0.026654,
+            "2025": 0.025504,
+            "2026": 0.024278
           },
-          "mean": 0.0265108,
-          "sd": 0.001707061732920049,
+          "mean": 0.02647,
+          "sd": 0.0017493668568942312,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -445,79 +543,79 @@
       "N1_split": {
         "intercept": {
           "by_season": {
-            "2022": -0.018584,
-            "2023": -0.005694,
-            "2024": -0.010093,
-            "2025": -0.012302,
-            "2026": -0.014351
+            "2022": -0.018818,
+            "2023": -0.005838,
+            "2024": -0.010171,
+            "2025": -0.012308,
+            "2026": -0.014126
           },
-          "mean": -0.012204799999999998,
-          "sd": 0.004293251234204679,
+          "mean": -0.0122522,
+          "sd": 0.004291790414267687,
           "sign_consistent": true,
           "sign": "negative"
         },
         "proj_minutes_share": {
           "by_season": {
-            "2022": 0.005306,
-            "2023": -0.007721,
-            "2024": 0.008505,
-            "2025": 0.015872,
-            "2026": 0.02166
+            "2022": 0.005695,
+            "2023": -0.006697,
+            "2024": 0.009071,
+            "2025": 0.016019,
+            "2026": 0.020585
           },
-          "mean": 0.0087244,
-          "sd": 0.010006025276801974,
+          "mean": 0.0089346,
+          "sd": 0.00938915411738459,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "role_change_pos": {
           "by_season": {
-            "2022": -0.010868,
-            "2023": -0.036545,
-            "2024": -0.00142,
-            "2025": 0.005151,
-            "2026": -0.000158
+            "2022": -0.01264,
+            "2023": -0.037056,
+            "2024": -0.001229,
+            "2025": 0.004892,
+            "2026": -0.000548
           },
-          "mean": -0.008767999999999998,
-          "sd": 0.01481779669181623,
+          "mean": -0.0093162,
+          "sd": 0.014998008086409342,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "role_change_neg": {
           "by_season": {
-            "2022": -0.02329,
-            "2023": -0.007703,
-            "2024": -0.0169,
-            "2025": -0.014365,
-            "2026": -0.013148
+            "2022": -0.024911,
+            "2023": -0.008287,
+            "2024": -0.016309,
+            "2025": -0.014872,
+            "2026": -0.013751
           },
-          "mean": -0.0150812,
-          "sd": 0.005086855036267497,
+          "mean": -0.015625999999999998,
+          "sd": 0.00537815537150053,
           "sign_consistent": true,
           "sign": "negative"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016229,
-            "2023": 0.009513,
-            "2024": 0.004618,
-            "2025": 4.2e-05,
-            "2026": -0.005748
+            "2022": 0.018842,
+            "2023": 0.009602,
+            "2024": 0.003036,
+            "2025": 0.000901,
+            "2026": -0.003586
           },
-          "mean": 0.004930800000000001,
-          "sd": 0.007572065224230441,
+          "mean": 0.005759,
+          "sd": 0.007800992962437539,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.024146,
-            "2023": 0.045478,
-            "2024": 0.020951,
-            "2025": 0.01736,
-            "2026": 0.019908
+            "2022": 0.024319,
+            "2023": 0.045585,
+            "2024": 0.021026,
+            "2025": 0.017363,
+            "2026": 0.019822
           },
-          "mean": 0.025568599999999997,
-          "sd": 0.010189737339107422,
+          "mean": 0.025623,
+          "sd": 0.010229305646034827,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -553,53 +651,53 @@
       "D0_change_only": {
         "intercept": {
           "by_season": {
-            "2022": -0.018623,
-            "2023": -0.007028,
-            "2024": -0.007269,
-            "2025": -0.00649,
-            "2026": -0.006455
+            "2022": -0.018819,
+            "2023": -0.006847,
+            "2024": -0.007227,
+            "2025": -0.006651,
+            "2026": -0.006742
           },
-          "mean": -0.009173,
-          "sd": 0.004735287826521214,
+          "mean": -0.009257199999999998,
+          "sd": 0.004784920162343359,
           "sign_consistent": true,
           "sign": "negative"
         },
         "role_change": {
           "by_season": {
-            "2022": -0.031755,
-            "2023": -0.02623,
-            "2024": -0.016279,
-            "2025": -0.00747,
-            "2026": -0.009458
+            "2022": -0.03434,
+            "2023": -0.027169,
+            "2024": -0.014008,
+            "2025": -0.005374,
+            "2026": -0.00782
           },
-          "mean": -0.0182384,
-          "sd": 0.009417613893126007,
+          "mean": -0.017742200000000003,
+          "sd": 0.011222461377077669,
           "sign_consistent": true,
           "sign": "negative"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016277,
-            "2023": 0.010077,
-            "2024": 0.004543,
-            "2025": -7.5e-05,
-            "2026": -0.002104
+            "2022": 0.018724,
+            "2023": 0.010767,
+            "2024": 0.00112,
+            "2025": -0.003011,
+            "2026": -0.004727
           },
-          "mean": 0.0057436,
-          "sd": 0.006732209788769212,
+          "mean": 0.004574600000000001,
+          "sd": 0.008883092808250963,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.026781,
-            "2023": 0.030137,
-            "2024": 0.02541,
-            "2025": 0.023028,
-            "2026": 0.021762
+            "2022": 0.026647,
+            "2023": 0.030068,
+            "2024": 0.025154,
+            "2025": 0.022885,
+            "2026": 0.021889
           },
-          "mean": 0.0254236,
-          "sd": 0.0029395602800418976,
+          "mean": 0.0253286,
+          "sd": 0.00289940011726564,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -607,66 +705,66 @@
       "S1_trailing_basis": {
         "intercept": {
           "by_season": {
-            "2022": -0.018781,
-            "2023": -0.005734,
-            "2024": -0.009845,
-            "2025": -0.011762,
-            "2026": -0.014242
+            "2022": -0.01899,
+            "2023": -0.005891,
+            "2024": -0.009919,
+            "2025": -0.01174,
+            "2026": -0.014018
           },
-          "mean": -0.0120728,
-          "sd": 0.0043576473193685595,
+          "mean": -0.0121116,
+          "sd": 0.004349441187095188,
           "sign_consistent": true,
           "sign": "negative"
         },
         "trailing_minutes_share": {
           "by_season": {
-            "2022": 0.031043,
-            "2023": -0.005897,
-            "2024": 0.008356,
-            "2025": 0.015297,
-            "2026": 0.023581
+            "2022": 0.033596,
+            "2023": -0.004376,
+            "2024": 0.008919,
+            "2025": 0.015233,
+            "2026": 0.022485
           },
-          "mean": 0.014476,
-          "sd": 0.01273227461218144,
+          "mean": 0.015171400000000002,
+          "sd": 0.01276049981152776,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "role_change": {
           "by_season": {
-            "2022": -0.001094,
-            "2023": -0.029685,
-            "2024": -0.012838,
-            "2025": -0.002224,
-            "2026": 0.002064
+            "2022": -0.001296,
+            "2023": -0.029394,
+            "2024": -0.011629,
+            "2025": -0.002816,
+            "2026": 0.000343
           },
-          "mean": -0.0087554,
-          "sd": 0.011602856813733417,
+          "mean": -0.008958399999999998,
+          "sd": 0.011024548473293589,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016196,
-            "2023": 0.010418,
-            "2024": 0.004059,
-            "2025": -0.000948,
-            "2026": -0.005418
+            "2022": 0.018856,
+            "2023": 0.01052,
+            "2024": 0.002454,
+            "2025": -0.000103,
+            "2026": -0.003043
           },
-          "mean": 0.0048614,
-          "sd": 0.007738320220823121,
+          "mean": 0.005736799999999999,
+          "sd": 0.007961875894536412,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.026575,
-            "2023": 0.029494,
-            "2024": 0.02672,
-            "2025": 0.025462,
-            "2026": 0.024382
+            "2022": 0.02643,
+            "2023": 0.029559,
+            "2024": 0.026657,
+            "2025": 0.025507,
+            "2026": 0.02428
           },
-          "mean": 0.0265266,
-          "sd": 0.0017075064392265112,
+          "mean": 0.0264866,
+          "sd": 0.0017493187931306286,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -674,79 +772,79 @@
       "X_literal_card_set": {
         "intercept": {
           "by_season": {
-            "2022": -0.018781,
-            "2023": -0.005728,
-            "2024": -0.009845,
-            "2025": -0.011763,
-            "2026": -0.014244
+            "2022": -0.018989,
+            "2023": -0.005885,
+            "2024": -0.009919,
+            "2025": -0.011742,
+            "2026": -0.01402
           },
-          "mean": -0.012072199999999998,
-          "sd": 0.004359578208955541,
+          "mean": -0.012111,
+          "sd": 0.004350983015365607,
           "sign_consistent": true,
           "sign": "negative"
         },
         "proj_minutes_share": {
           "by_season": {
-            "2022": 0.002609,
-            "2023": -0.010127,
-            "2024": -0.000335,
-            "2025": 0.005532,
-            "2026": 0.00981
+            "2022": 0.002813,
+            "2023": -0.009537,
+            "2024": 0.000216,
+            "2025": 0.005345,
+            "2026": 0.008909
           },
-          "mean": 0.0014977999999999997,
-          "sd": 0.006709654757139148,
+          "mean": 0.0015492,
+          "sd": 0.006242646823263351,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "trailing_minutes_share": {
           "by_season": {
-            "2022": 0.016335,
-            "2023": 0.007705,
-            "2024": 0.008736,
-            "2025": 0.009377,
-            "2026": 0.01267
+            "2022": 0.017736,
+            "2023": 0.008436,
+            "2024": 0.008673,
+            "2025": 0.009512,
+            "2026": 0.012575
           },
-          "mean": 0.0109646,
-          "sd": 0.0031579014930804912,
+          "mean": 0.0113864,
+          "sd": 0.003501741429631833,
           "sign_consistent": true,
           "sign": "positive"
         },
         "role_change": {
           "by_season": {
-            "2022": -0.015855,
-            "2023": -0.018505,
-            "2024": -0.012566,
-            "2025": -0.006227,
-            "2026": -0.005536
+            "2022": -0.017217,
+            "2023": -0.018862,
+            "2024": -0.011805,
+            "2025": -0.006685,
+            "2026": -0.00656
           },
-          "mean": -0.011737800000000001,
-          "sd": 0.005143218579838894,
+          "mean": -0.012225799999999998,
+          "sd": 0.00513673154447456,
           "sign_consistent": true,
           "sign": "negative"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016158,
-            "2023": 0.010431,
-            "2024": 0.004059,
-            "2025": -0.00095,
-            "2026": -0.005421
+            "2022": 0.018825,
+            "2023": 0.01053,
+            "2024": 0.002454,
+            "2025": -0.000104,
+            "2026": -0.003045
           },
-          "mean": 0.0048554,
-          "sd": 0.007730166895999076,
+          "mean": 0.005731999999999999,
+          "sd": 0.00795345663218201,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.026532,
-            "2023": 0.029496,
-            "2024": 0.02672,
-            "2025": 0.025462,
-            "2026": 0.024382
+            "2022": 0.026385,
+            "2023": 0.029561,
+            "2024": 0.026657,
+            "2025": 0.025507,
+            "2026": 0.02428
           },
-          "mean": 0.026518399999999998,
-          "sd": 0.0017080465567425268,
+          "mean": 0.026478,
+          "sd": 0.0017504070383770748,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -771,66 +869,66 @@
       "L1_linear": {
         "intercept": {
           "by_season": {
-            "2022": -0.018768,
-            "2023": -0.005724,
-            "2024": -0.009842,
-            "2025": -0.011761,
-            "2026": -0.014242
+            "2022": -0.018975,
+            "2023": -0.005881,
+            "2024": -0.009916,
+            "2025": -0.011739,
+            "2026": -0.014018
           },
-          "mean": -0.0120674,
-          "sd": 0.004356878130037608,
+          "mean": -0.0121058,
+          "sd": 0.004347880375539326,
           "sign_consistent": true,
           "sign": "negative"
         },
         "proj_minutes_share": {
           "by_season": {
-            "2022": 0.00509,
-            "2023": -0.004415,
-            "2024": 0.007344,
-            "2025": 0.01428,
-            "2026": 0.021187
+            "2022": 0.005505,
+            "2023": -0.003285,
+            "2024": 0.007839,
+            "2025": 0.014218,
+            "2026": 0.020201
           },
-          "mean": 0.008697199999999999,
-          "sd": 0.008647954565098039,
+          "mean": 0.0088956,
+          "sd": 0.007963913600736764,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "role_change": {
           "by_season": {
-            "2022": -0.032212,
-            "2023": -0.024831,
-            "2024": -0.018834,
-            "2025": -0.012564,
-            "2026": -0.014357
+            "2022": -0.03497,
+            "2023": -0.025785,
+            "2024": -0.018027,
+            "2025": -0.013111,
+            "2026": -0.015314
           },
-          "mean": -0.0205596,
-          "sd": 0.007202816743469182,
+          "mean": -0.0214414,
+          "sd": 0.008006105185419438,
           "sign_consistent": true,
           "sign": "negative"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016129,
-            "2023": 0.010425,
-            "2024": 0.004055,
-            "2025": -0.000953,
-            "2026": -0.005422
+            "2022": 0.018785,
+            "2023": 0.010521,
+            "2024": 0.002448,
+            "2025": -0.000109,
+            "2026": -0.003047
           },
-          "mean": 0.0048468,
-          "sd": 0.007721622016131067,
+          "mean": 0.0057196,
+          "sd": 0.00794087324165296,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.026508,
-            "2023": 0.029491,
-            "2024": 0.026716,
-            "2025": 0.025459,
-            "2026": 0.02438
+            "2022": 0.026359,
+            "2023": 0.029555,
+            "2024": 0.026654,
+            "2025": 0.025504,
+            "2026": 0.024278
           },
-          "mean": 0.0265108,
-          "sd": 0.001707061732920049,
+          "mean": 0.02647,
+          "sd": 0.0017493668568942312,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -838,79 +936,79 @@
       "N1_split": {
         "intercept": {
           "by_season": {
-            "2022": -0.018584,
-            "2023": -0.005694,
-            "2024": -0.010093,
-            "2025": -0.012302,
-            "2026": -0.014351
+            "2022": -0.018818,
+            "2023": -0.005838,
+            "2024": -0.010171,
+            "2025": -0.012308,
+            "2026": -0.014126
           },
-          "mean": -0.012204799999999998,
-          "sd": 0.004293251234204679,
+          "mean": -0.0122522,
+          "sd": 0.004291790414267687,
           "sign_consistent": true,
           "sign": "negative"
         },
         "proj_minutes_share": {
           "by_season": {
-            "2022": 0.005306,
-            "2023": -0.007721,
-            "2024": 0.008505,
-            "2025": 0.015872,
-            "2026": 0.02166
+            "2022": 0.005695,
+            "2023": -0.006697,
+            "2024": 0.009071,
+            "2025": 0.016019,
+            "2026": 0.020585
           },
-          "mean": 0.0087244,
-          "sd": 0.010006025276801974,
+          "mean": 0.0089346,
+          "sd": 0.00938915411738459,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "role_change_pos": {
           "by_season": {
-            "2022": -0.010868,
-            "2023": -0.036545,
-            "2024": -0.00142,
-            "2025": 0.005151,
-            "2026": -0.000158
+            "2022": -0.01264,
+            "2023": -0.037056,
+            "2024": -0.001229,
+            "2025": 0.004892,
+            "2026": -0.000548
           },
-          "mean": -0.008767999999999998,
-          "sd": 0.01481779669181623,
+          "mean": -0.0093162,
+          "sd": 0.014998008086409342,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "role_change_neg": {
           "by_season": {
-            "2022": -0.02329,
-            "2023": -0.007703,
-            "2024": -0.0169,
-            "2025": -0.014365,
-            "2026": -0.013148
+            "2022": -0.024911,
+            "2023": -0.008287,
+            "2024": -0.016309,
+            "2025": -0.014872,
+            "2026": -0.013751
           },
-          "mean": -0.0150812,
-          "sd": 0.005086855036267497,
+          "mean": -0.015625999999999998,
+          "sd": 0.00537815537150053,
           "sign_consistent": true,
           "sign": "negative"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016229,
-            "2023": 0.009513,
-            "2024": 0.004618,
-            "2025": 4.2e-05,
-            "2026": -0.005748
+            "2022": 0.018842,
+            "2023": 0.009602,
+            "2024": 0.003036,
+            "2025": 0.000901,
+            "2026": -0.003586
           },
-          "mean": 0.004930800000000001,
-          "sd": 0.007572065224230441,
+          "mean": 0.005759,
+          "sd": 0.007800992962437539,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.024146,
-            "2023": 0.045478,
-            "2024": 0.020951,
-            "2025": 0.01736,
-            "2026": 0.019908
+            "2022": 0.024319,
+            "2023": 0.045585,
+            "2024": 0.021026,
+            "2025": 0.017363,
+            "2026": 0.019822
           },
-          "mean": 0.025568599999999997,
-          "sd": 0.010189737339107422,
+          "mean": 0.025623,
+          "sd": 0.010229305646034827,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -946,53 +1044,53 @@
       "D0_change_only": {
         "intercept": {
           "by_season": {
-            "2022": -0.018623,
-            "2023": -0.007028,
-            "2024": -0.007269,
-            "2025": -0.00649,
-            "2026": -0.006455
+            "2022": -0.018819,
+            "2023": -0.006847,
+            "2024": -0.007227,
+            "2025": -0.006651,
+            "2026": -0.006742
           },
-          "mean": -0.009173,
-          "sd": 0.004735287826521214,
+          "mean": -0.009257199999999998,
+          "sd": 0.004784920162343359,
           "sign_consistent": true,
           "sign": "negative"
         },
         "role_change": {
           "by_season": {
-            "2022": -0.031755,
-            "2023": -0.02623,
-            "2024": -0.016279,
-            "2025": -0.00747,
-            "2026": -0.009458
+            "2022": -0.03434,
+            "2023": -0.027169,
+            "2024": -0.014008,
+            "2025": -0.005374,
+            "2026": -0.00782
           },
-          "mean": -0.0182384,
-          "sd": 0.009417613893126007,
+          "mean": -0.017742200000000003,
+          "sd": 0.011222461377077669,
           "sign_consistent": true,
           "sign": "negative"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016277,
-            "2023": 0.010077,
-            "2024": 0.004543,
-            "2025": -7.5e-05,
-            "2026": -0.002104
+            "2022": 0.018724,
+            "2023": 0.010767,
+            "2024": 0.00112,
+            "2025": -0.003011,
+            "2026": -0.004727
           },
-          "mean": 0.0057436,
-          "sd": 0.006732209788769212,
+          "mean": 0.004574600000000001,
+          "sd": 0.008883092808250963,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.026781,
-            "2023": 0.030137,
-            "2024": 0.02541,
-            "2025": 0.023028,
-            "2026": 0.021762
+            "2022": 0.026647,
+            "2023": 0.030068,
+            "2024": 0.025154,
+            "2025": 0.022885,
+            "2026": 0.021889
           },
-          "mean": 0.0254236,
-          "sd": 0.0029395602800418976,
+          "mean": 0.0253286,
+          "sd": 0.00289940011726564,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -1000,66 +1098,66 @@
       "S1_trailing_basis": {
         "intercept": {
           "by_season": {
-            "2022": -0.018781,
-            "2023": -0.005734,
-            "2024": -0.009845,
-            "2025": -0.011762,
-            "2026": -0.014242
+            "2022": -0.01899,
+            "2023": -0.005891,
+            "2024": -0.009919,
+            "2025": -0.01174,
+            "2026": -0.014018
           },
-          "mean": -0.0120728,
-          "sd": 0.0043576473193685595,
+          "mean": -0.0121116,
+          "sd": 0.004349441187095188,
           "sign_consistent": true,
           "sign": "negative"
         },
         "trailing_minutes_share": {
           "by_season": {
-            "2022": 0.031043,
-            "2023": -0.005897,
-            "2024": 0.008356,
-            "2025": 0.015297,
-            "2026": 0.023581
+            "2022": 0.033596,
+            "2023": -0.004376,
+            "2024": 0.008919,
+            "2025": 0.015233,
+            "2026": 0.022485
           },
-          "mean": 0.014476,
-          "sd": 0.01273227461218144,
+          "mean": 0.015171400000000002,
+          "sd": 0.01276049981152776,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "role_change": {
           "by_season": {
-            "2022": -0.001094,
-            "2023": -0.029685,
-            "2024": -0.012838,
-            "2025": -0.002224,
-            "2026": 0.002064
+            "2022": -0.001296,
+            "2023": -0.029394,
+            "2024": -0.011629,
+            "2025": -0.002816,
+            "2026": 0.000343
           },
-          "mean": -0.0087554,
-          "sd": 0.011602856813733417,
+          "mean": -0.008958399999999998,
+          "sd": 0.011024548473293589,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016196,
-            "2023": 0.010418,
-            "2024": 0.004059,
-            "2025": -0.000948,
-            "2026": -0.005418
+            "2022": 0.018856,
+            "2023": 0.01052,
+            "2024": 0.002454,
+            "2025": -0.000103,
+            "2026": -0.003043
           },
-          "mean": 0.0048614,
-          "sd": 0.007738320220823121,
+          "mean": 0.005736799999999999,
+          "sd": 0.007961875894536412,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.026575,
-            "2023": 0.029494,
-            "2024": 0.02672,
-            "2025": 0.025462,
-            "2026": 0.024382
+            "2022": 0.02643,
+            "2023": 0.029559,
+            "2024": 0.026657,
+            "2025": 0.025507,
+            "2026": 0.02428
           },
-          "mean": 0.0265266,
-          "sd": 0.0017075064392265112,
+          "mean": 0.0264866,
+          "sd": 0.0017493187931306286,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -1067,79 +1165,79 @@
       "X_literal_card_set": {
         "intercept": {
           "by_season": {
-            "2022": -0.018781,
-            "2023": -0.005728,
-            "2024": -0.009845,
-            "2025": -0.011763,
-            "2026": -0.014244
+            "2022": -0.018989,
+            "2023": -0.005885,
+            "2024": -0.009919,
+            "2025": -0.011742,
+            "2026": -0.01402
           },
-          "mean": -0.012072199999999998,
-          "sd": 0.004359578208955541,
+          "mean": -0.012111,
+          "sd": 0.004350983015365607,
           "sign_consistent": true,
           "sign": "negative"
         },
         "proj_minutes_share": {
           "by_season": {
-            "2022": 0.002609,
-            "2023": -0.010127,
-            "2024": -0.000335,
-            "2025": 0.005532,
-            "2026": 0.00981
+            "2022": 0.002813,
+            "2023": -0.009537,
+            "2024": 0.000216,
+            "2025": 0.005345,
+            "2026": 0.008909
           },
-          "mean": 0.0014977999999999997,
-          "sd": 0.006709654757139148,
+          "mean": 0.0015492,
+          "sd": 0.006242646823263351,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "trailing_minutes_share": {
           "by_season": {
-            "2022": 0.016335,
-            "2023": 0.007705,
-            "2024": 0.008736,
-            "2025": 0.009377,
-            "2026": 0.01267
+            "2022": 0.017736,
+            "2023": 0.008436,
+            "2024": 0.008673,
+            "2025": 0.009512,
+            "2026": 0.012575
           },
-          "mean": 0.0109646,
-          "sd": 0.0031579014930804912,
+          "mean": 0.0113864,
+          "sd": 0.003501741429631833,
           "sign_consistent": true,
           "sign": "positive"
         },
         "role_change": {
           "by_season": {
-            "2022": -0.015855,
-            "2023": -0.018505,
-            "2024": -0.012566,
-            "2025": -0.006227,
-            "2026": -0.005536
+            "2022": -0.017217,
+            "2023": -0.018862,
+            "2024": -0.011805,
+            "2025": -0.006685,
+            "2026": -0.00656
           },
-          "mean": -0.011737800000000001,
-          "sd": 0.005143218579838894,
+          "mean": -0.012225799999999998,
+          "sd": 0.00513673154447456,
           "sign_consistent": true,
           "sign": "negative"
         },
         "rotation_rank_change": {
           "by_season": {
-            "2022": 0.016158,
-            "2023": 0.010431,
-            "2024": 0.004059,
-            "2025": -0.00095,
-            "2026": -0.005421
+            "2022": 0.018825,
+            "2023": 0.01053,
+            "2024": 0.002454,
+            "2025": -0.000104,
+            "2026": -0.003045
           },
-          "mean": 0.0048554,
-          "sd": 0.007730166895999076,
+          "mean": 0.005731999999999999,
+          "sd": 0.00795345663218201,
           "sign_consistent": false,
           "sign": "MIXED"
         },
         "expanded_role_bounded": {
           "by_season": {
-            "2022": 0.026532,
-            "2023": 0.029496,
-            "2024": 0.02672,
-            "2025": 0.025462,
-            "2026": 0.024382
+            "2022": 0.026385,
+            "2023": 0.029561,
+            "2024": 0.026657,
+            "2025": 0.025507,
+            "2026": 0.02428
           },
-          "mean": 0.026518399999999998,
-          "sd": 0.0017080465567425268,
+          "mean": 0.026478,
+          "sd": 0.0017504070383770748,
           "sign_consistent": true,
           "sign": "positive"
         }
@@ -1209,12 +1307,12 @@
           "A": 0.8108948997106133,
           "D": 0.778969022347452,
           "K0_intercept_only": 0.7786679800253784,
-          "L1_linear": 0.7807146095358357,
-          "N1_split": 0.7811867240110507,
+          "L1_linear": 0.7805555882666494,
+          "N1_split": 0.7810435645978566,
           "D0_level_only": 0.7780159117132485,
-          "D0_change_only": 0.7815966891607007,
-          "S1_trailing_basis": 0.7807046209704593,
-          "X_literal_card_set": 0.7807148233557357
+          "D0_change_only": 0.7814546192950454,
+          "S1_trailing_basis": 0.7805448466328416,
+          "X_literal_card_set": 0.780555870385642
         }
       },
       "team_games_split_by_exposure_to_mechanism": {
@@ -1224,56 +1322,56 @@
             "A": 3.063418698667949,
             "D": 3.0520774679314915,
             "K0_intercept_only": 3.057582152038738,
-            "L1_linear": 3.043828659367965,
-            "N1_split": 3.043608140444243,
+            "L1_linear": 3.044445538868972,
+            "N1_split": 3.044196861048433,
             "D0_level_only": 3.0547876244482204,
-            "D0_change_only": 3.0479602447323386,
-            "S1_trailing_basis": 3.044029590648939,
-            "X_literal_card_set": 3.0438263007093207
+            "D0_change_only": 3.04870850850183,
+            "S1_trailing_basis": 3.0446631140267293,
+            "X_literal_card_set": 3.044444236963433
           },
           "paired_vs_D": {
             "L1_linear": {
-              "mean_mae_reduction": 0.008248808563525665,
+              "mean_mae_reduction": 0.007631929062518878,
               "ci90_game_clustered": [
-                -0.004555656491346005,
-                0.020849287524033644
+                -0.004994805661541616,
+                0.02033196309030216
               ]
             },
             "N1_split": {
-              "mean_mae_reduction": 0.008469327487247987,
+              "mean_mae_reduction": 0.007880606883058226,
               "ci90_game_clustered": [
-                -0.005472410571806604,
-                0.022335883552242725
+                -0.0060313824831397835,
+                0.021830411574030702
               ]
             },
             "D0_change_only": {
-              "mean_mae_reduction": 0.0041172231991532865,
+              "mean_mae_reduction": 0.003368959429660802,
               "ci90_game_clustered": [
-                -0.008910161783494639,
-                0.016997642788093993
+                -0.009256115891338412,
+                0.01601552121968912
               ]
             }
           },
           "paired_vs_K0": {
             "L1_linear": {
-              "mean_mae_reduction": 0.013753492670772293,
+              "mean_mae_reduction": 0.013136613169765506,
               "ci90_game_clustered": [
-                -0.00013005457502179735,
-                0.028237235833065435
+                -0.000315055857518941,
+                0.02771464467850969
               ]
             },
             "N1_split": {
-              "mean_mae_reduction": 0.013974011594494613,
+              "mean_mae_reduction": 0.013385290990304853,
               "ci90_game_clustered": [
-                -0.0012960766542321224,
-                0.02953093346138352
+                -0.001710225837674665,
+                0.029163514688908612
               ]
             },
             "D0_change_only": {
-              "mean_mae_reduction": 0.009621907306399913,
+              "mean_mae_reduction": 0.008873643536907429,
               "ci90_game_clustered": [
-                -0.003250037847735737,
-                0.022469963913421116
+                -0.0036534546711641095,
+                0.021513053074036902
               ]
             }
           }
@@ -1284,56 +1382,56 @@
             "A": 2.8876303214338224,
             "D": 2.8482340019914942,
             "K0_intercept_only": 2.844611428786379,
-            "L1_linear": 2.8539623353058916,
-            "N1_split": 2.857408259208432,
+            "L1_linear": 2.85456005318489,
+            "N1_split": 2.8578486756246426,
             "D0_level_only": 2.8478393001994347,
-            "D0_change_only": 2.8470263858793365,
-            "S1_trailing_basis": 2.8538024776441437,
-            "X_literal_card_set": 2.853974084178421
+            "D0_change_only": 2.8458041717085534,
+            "S1_trailing_basis": 2.854370466994602,
+            "X_literal_card_set": 2.8545729182465327
           },
           "paired_vs_D": {
             "L1_linear": {
-              "mean_mae_reduction": -0.005728333314397646,
+              "mean_mae_reduction": -0.0063260511933963355,
               "ci90_game_clustered": [
-                -0.013612197271407923,
-                0.001565544993422967
+                -0.014485191248128351,
+                0.001182086682766364
               ]
             },
             "N1_split": {
-              "mean_mae_reduction": -0.009174257216938184,
+              "mean_mae_reduction": -0.009614673633148496,
               "ci90_game_clustered": [
-                -0.01865317032030706,
-                -0.0009043367829793605
+                -0.01952129004564532,
+                -0.0010725676345866633
               ]
             },
             "D0_change_only": {
-              "mean_mae_reduction": 0.0012076161121574859,
+              "mean_mae_reduction": 0.0024298302829404523,
               "ci90_game_clustered": [
-                -0.007052440065368347,
-                0.009048172198528208
+                -0.005623316066095624,
+                0.01029699093765391
               ]
             }
           },
           "paired_vs_K0": {
             "L1_linear": {
-              "mean_mae_reduction": -0.00935090651951296,
+              "mean_mae_reduction": -0.009948624398511649,
               "ci90_game_clustered": [
-                -0.016390751720245858,
-                -0.003397322604506167
+                -0.017499932688742097,
+                -0.0037064078750013146
               ]
             },
             "N1_split": {
-              "mean_mae_reduction": -0.012796830422053497,
+              "mean_mae_reduction": -0.013237246838263808,
               "ci90_game_clustered": [
-                -0.021470867545297142,
-                -0.005440158026288249
+                -0.02244688239737126,
+                -0.005571270441594101
               ]
             },
             "D0_change_only": {
-              "mean_mae_reduction": -0.0024149570929578278,
+              "mean_mae_reduction": -0.0011927429221748613,
               "ci90_game_clustered": [
-                -0.007746550791758797,
-                0.0027003997219301632
+                -0.006127264045165334,
+                0.0037112491394323058
               ]
             }
           }
@@ -1344,190 +1442,190 @@
     "operational": {
       "observed_over_expected_by_role_change_bin": {
         "(-inf, -0.1]": {
-          "n_rows": 259,
+          "n_rows": 1174,
           "observed_turnovers": 459.0,
-          "expected_under_D": 208.14611884482986,
-          "observed_over_expected": 2.205181641374627,
-          "mean_role_change": -0.21530159289949505
+          "expected_under_D": 475.216617183994,
+          "observed_over_expected": 0.9658753153875609,
+          "mean_role_change": -0.14771322035415377
         },
         "(-0.1, -0.05]": {
-          "n_rows": 1961,
+          "n_rows": 3636,
           "observed_turnovers": 3618.0,
-          "expected_under_D": 1927.5089158365113,
-          "observed_over_expected": 1.8770341191546913,
-          "mean_role_change": -0.06945496255543704
+          "expected_under_D": 2490.6735902886603,
+          "observed_over_expected": 1.4526190883088324,
+          "mean_role_change": -0.0728138997639819
         },
         "(-0.05, -0.02]": {
-          "n_rows": 4194,
+          "n_rows": 5866,
           "observed_turnovers": 5130.0,
-          "expected_under_D": 4053.6263556466533,
-          "observed_over_expected": 1.2655335124447202,
-          "mean_role_change": -0.0306419149759135
+          "expected_under_D": 4790.137891453703,
+          "observed_over_expected": 1.0709503810219452,
+          "mean_role_change": -0.03135439563065164
         },
         "(-0.02, 0.02]": {
-          "n_rows": 17657,
+          "n_rows": 20427,
           "observed_turnovers": 24810.0,
-          "expected_under_D": 23611.644983302744,
-          "observed_over_expected": 1.0507527119582176,
-          "mean_role_change": -0.0024416085054562602
+          "expected_under_D": 25012.642577583552,
+          "observed_over_expected": 0.9918983939040027,
+          "mean_role_change": -0.0026559624370411207
         },
         "(0.02, 0.05]": {
-          "n_rows": 2188,
+          "n_rows": 2653,
           "observed_turnovers": 2735.0,
-          "expected_under_D": 2882.994818716358,
-          "observed_over_expected": 0.9486662904298065,
-          "mean_role_change": 0.03139764145426232
+          "expected_under_D": 3335.04552086695,
+          "observed_over_expected": 0.8200787614104388,
+          "mean_role_change": 0.031622709742615676
         },
         "(0.05, 0.1]": {
-          "n_rows": 1073,
+          "n_rows": 1849,
           "observed_turnovers": 1160.0,
-          "expected_under_D": 1413.4322983064835,
-          "observed_over_expected": 0.8206972498009734,
-          "mean_role_change": 0.06798960005859243
+          "expected_under_D": 2269.259008602171,
+          "observed_over_expected": 0.5111800793134418,
+          "mean_role_change": 0.06952359925232696
         },
         "(0.1, inf]": {
-          "n_rows": 19,
+          "n_rows": 24,
           "observed_turnovers": 52.0,
-          "expected_under_D": 34.865759819914835,
-          "observed_over_expected": 1.4914345842048258,
-          "mean_role_change": 0.10643641561085272
+          "expected_under_D": 42.4242842810813,
+          "observed_over_expected": 1.2257130763945239,
+          "mean_role_change": 0.10548185254147775
         }
       },
       "materially_expanded_role_segment": {
-        "n_rows": 1092,
-        "share_of_rows": 0.03064919026635606,
+        "n_rows": 1873,
+        "share_of_rows": 0.0525695360520924,
         "observed_turnovers": 1212.0,
-        "expected_under_D": 1448.2980581263985,
-        "observed_over_expected": 0.8368443175073457,
+        "expected_under_D": 2311.6832928832528,
+        "observed_over_expected": 0.5242932731015805,
         "player_mae": {
-          "A": 0.9729046203272437,
-          "D": 0.9554726384445636,
-          "K0_intercept_only": 0.9539755399345078,
-          "L1_linear": 0.9695647900305435,
-          "N1_split": 0.9701824230745308,
-          "D0_level_only": 0.9535220484035927,
-          "D0_change_only": 0.9707097325549897,
-          "S1_trailing_basis": 0.9695590115042299,
-          "X_literal_card_set": 0.9695640092174013
+          "A": 1.0220048722526105,
+          "D": 1.0180252834694703,
+          "K0_intercept_only": 1.0160756511744828,
+          "L1_linear": 1.0357876320334922,
+          "N1_split": 1.0364522884217986,
+          "D0_level_only": 1.015411120526148,
+          "D0_change_only": 1.037551567082656,
+          "S1_trailing_basis": 1.0357773200567515,
+          "X_literal_card_set": 1.0357868973305442
         }
       },
       "team_games_split_by_exposure_to_mechanism": {
         "team_games_with_material_expansion": {
-          "team_games": 702,
+          "team_games": 946,
           "team_mae": {
-            "A": 3.1598824788437097,
-            "D": 3.12559263855164,
-            "K0_intercept_only": 3.1324327615402834,
-            "L1_linear": 3.120784173133212,
-            "N1_split": 3.1217976265883918,
-            "D0_level_only": 3.1299130583256827,
-            "D0_change_only": 3.123803472702709,
-            "S1_trailing_basis": 3.1221103104815384,
-            "X_literal_card_set": 3.121590834834223
+            "A": 3.1315660346807443,
+            "D": 3.090388579182909,
+            "K0_intercept_only": 3.095355929424535,
+            "L1_linear": 3.0979702176224424,
+            "N1_split": 3.1033604588121046,
+            "D0_level_only": 3.092055093132391,
+            "D0_change_only": 3.0950888349560355,
+            "S1_trailing_basis": 3.098342132983836,
+            "X_literal_card_set": 3.0979773751336688
           },
           "paired_vs_D": {
             "L1_linear": {
-              "mean_mae_reduction": 0.0048084654184277304,
+              "mean_mae_reduction": -0.00758163843953272,
               "ci90_game_clustered": [
-                -0.007090318210106739,
-                0.017543818626004723
+                -0.023948496974782327,
+                0.007555813124706374
               ]
             },
             "N1_split": {
-              "mean_mae_reduction": 0.003795011963248863,
+              "mean_mae_reduction": -0.012971879629195361,
               "ci90_game_clustered": [
-                -0.008967257235385398,
-                0.01785996323722986
+                -0.03365244427774835,
+                0.00592701512695002
               ]
             },
             "D0_change_only": {
-              "mean_mae_reduction": 0.0017891658489308268,
+              "mean_mae_reduction": -0.004700255773125845,
               "ci90_game_clustered": [
-                -0.011180105188885596,
-                0.014255909577065186
+                -0.016542231151614198,
+                0.0069193551859569125
               ]
             }
           },
           "paired_vs_K0": {
             "L1_linear": {
-              "mean_mae_reduction": 0.011648588407071399,
+              "mean_mae_reduction": -0.0026142881979070915,
               "ci90_game_clustered": [
-                -0.0024371455115640484,
-                0.026234539910051285
+                -0.020019098563589216,
+                0.013624142609960649
               ]
             },
             "N1_split": {
-              "mean_mae_reduction": 0.010635134951892531,
+              "mean_mae_reduction": -0.008004529387569731,
               "ci90_game_clustered": [
-                -0.003858398039510409,
-                0.02629315867050091
+                -0.029710157683740974,
+                0.0122212210833969
               ]
             },
             "D0_change_only": {
-              "mean_mae_reduction": 0.008629288837574495,
+              "mean_mae_reduction": 0.00026709446849978373,
               "ci90_game_clustered": [
-                -0.004617295076935751,
-                0.02176444754193742
+                -0.012304038119118158,
+                0.01272213075471626
               ]
             }
           }
         },
         "team_games_without": {
-          "team_games": 2212,
+          "team_games": 1968,
           "team_mae": {
-            "A": 2.9667964003451384,
-            "D": 2.9172625603745566,
-            "K0_intercept_only": 2.910802367027582,
-            "L1_linear": 2.9149942809922593,
-            "N1_split": 2.917720408066747,
-            "D0_level_only": 2.9139761575029444,
-            "D0_change_only": 2.9100203762274353,
-            "S1_trailing_basis": 2.914960295770271,
-            "X_literal_card_set": 2.9152238371460415
+            "A": 2.956468327694993,
+            "D": 2.908355294667042,
+            "K0_intercept_only": 2.9011463034708744,
+            "L1_linear": 2.9020336175686148,
+            "N1_split": 2.902895128227077,
+            "D0_level_only": 2.905401478271291,
+            "D0_change_only": 2.8974565027510093,
+            "S1_trailing_basis": 2.9017308739738867,
+            "X_literal_card_set": 2.9020387405209727
           },
           "paired_vs_D": {
             "L1_linear": {
-              "mean_mae_reduction": 0.0022682793822969686,
+              "mean_mae_reduction": 0.006321677098426647,
               "ci90_game_clustered": [
-                -0.004928184949246202,
-                0.009470907631587587
+                0.00022806900522962092,
+                0.012596970320548228
               ]
             },
             "N1_split": {
-              "mean_mae_reduction": -0.0004578476921906814,
+              "mean_mae_reduction": 0.0054601664399650885,
               "ci90_game_clustered": [
-                -0.00899155785417112,
-                0.007966503479178558
+                -0.0006235179227564825,
+                0.011779314191169248
               ]
             },
             "D0_change_only": {
-              "mean_mae_reduction": 0.007242184147121175,
+              "mean_mae_reduction": 0.010898791916031676,
               "ci90_game_clustered": [
-                -0.0011400156160039341,
-                0.015403453658716783
+                0.002451648930253436,
+                0.019532144937015505
               ]
             }
           },
           "paired_vs_K0": {
             "L1_linear": {
-              "mean_mae_reduction": -0.004191913964677179,
+              "mean_mae_reduction": -0.0008873140977404268,
               "ci90_game_clustered": [
-                -0.009868840201796233,
-                0.001474699612434546
+                -0.005355447032735739,
+                0.003410633356369466
               ]
             },
             "N1_split": {
-              "mean_mae_reduction": -0.006918041039164828,
+              "mean_mae_reduction": -0.0017488247562019866,
               "ci90_game_clustered": [
-                -0.014739976840323944,
-                -8.378714873286667e-05
+                -0.006341091902052428,
+                0.0026102100745340772
               ]
             },
             "D0_change_only": {
-              "mean_mae_reduction": 0.0007819908001470275,
+              "mean_mae_reduction": 0.003689800719864602,
               "ci90_game_clustered": [
-                -0.004167939637054569,
-                0.005717869184426926
+                -0.000763326635067358,
+                0.008545639394522282
               ]
             }
           }
@@ -1543,7 +1641,7 @@
     "corr_role_change_with_exposure_error": -0.3358943126801958,
     "corr_proj_minutes_share_with_exposure_error": -0.15978196283913898,
     "corr_trailing_minutes_share_with_exposure_error": 0.12947758755761332,
-    "corr_rotation_rank_change_with_exposure_error": -0.3695890600452517,
+    "corr_rotation_rank_change_with_exposure_error": -0.32361897959387836,
     "corr_expanded_role_bounded_with_exposure_error": -0.1456927638823417,
     "mean_exposure_error_by_role_change_bin": {
       "(-inf, -0.1]": {
@@ -1612,14 +1710,14 @@
           "bias": -0.0015135440615483026
         },
         "L1_linear": {
-          "deviance": 1.0884090746001447,
-          "mae": 0.8959000179722486,
-          "bias": -0.0020789243380269174
+          "deviance": 1.088456535259989,
+          "mae": 0.8959747376507449,
+          "bias": -0.0015190404945567629
         },
         "N1_split": {
-          "deviance": 1.088769805590196,
-          "mae": 0.8961745671622524,
-          "bias": -0.0017035960224612739
+          "deviance": 1.0888153454505678,
+          "mae": 0.8962531950093829,
+          "bias": -0.0011221945261389347
         },
         "D0_level_only": {
           "deviance": 1.0886454091304443,
@@ -1627,19 +1725,19 @@
           "bias": 0.0014644092238110988
         },
         "D0_change_only": {
-          "deviance": 1.0883265839856846,
-          "mae": 0.8957686819372311,
-          "bias": -0.006722159256127266
+          "deviance": 1.0883224676611847,
+          "mae": 0.8957491170674956,
+          "bias": -0.007094888500671476
         },
         "S1_trailing_basis": {
-          "deviance": 1.0883737886563933,
-          "mae": 0.8958592247719563,
-          "bias": -0.0024239809800189814
+          "deviance": 1.0884171378823824,
+          "mae": 0.895930312467723,
+          "bias": -0.0018910219052709503
         },
         "X_literal_card_set": {
-          "deviance": 1.0884096320741579,
-          "mae": 0.8958998233000659,
-          "bias": -0.0020774028376840843
+          "deviance": 1.088457253073597,
+          "mae": 0.895974729706837,
+          "bias": -0.0015163118856072607
         }
       },
       "team": {
@@ -1659,14 +1757,14 @@
           "bias": -0.014309640418253288
         },
         "L1_linear": {
-          "mae": 2.898468224145392,
-          "rmse": 3.6260203200062184,
-          "bias": -0.019654967760561016
+          "mae": 2.8990704336319637,
+          "rmse": 3.6265070811671385,
+          "bias": -0.014361605856149828
         },
         "N1_split": {
-          "mae": 2.901054710242581,
-          "rmse": 3.62941077856456,
-          "bias": -0.0161064663518614
+          "mae": 2.9015298901153295,
+          "rmse": 3.6299623937260477,
+          "bias": -0.010609668100414171
         },
         "D0_level_only": {
           "mae": 2.896349319867409,
@@ -1674,19 +1772,19 @@
           "bias": 0.013845100351075237
         },
         "D0_change_only": {
-          "mae": 2.894126576133612,
-          "rmse": 3.6206727653205446,
-          "bias": -0.06355393558282899
+          "mae": 2.893366254679211,
+          "rmse": 3.6200526251664495,
+          "bias": -0.06707786435259253
         },
         "S1_trailing_basis": {
-          "mae": 2.8983929377348043,
-          "rmse": 3.6259016518374168,
-          "bias": -0.022917268869777074
+          "mae": 2.8989762886832198,
+          "rmse": 3.6263587698281285,
+          "bias": -0.017878464310967127
         },
         "X_literal_card_set": {
-          "mae": 2.898476666121781,
-          "rmse": 3.6260299161848546,
-          "bias": -0.019640582898332436
+          "mae": 2.899079977865283,
+          "rmse": 3.6265179773966305,
+          "bias": -0.01433580851473022
         }
       },
       "paired_vs_D": {
@@ -1708,14 +1806,14 @@
         },
         "L1_linear": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": -0.0024520012645423833,
+          "mean_mae_reduction": -0.0030542107511143998,
           "ci90_game_clustered": [
-            -0.008855774263077806,
-            0.0039671444701518946
+            -0.00965459481141975,
+            0.0034523719353068073
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.00938814533169562,
-            0.003919499668420148
+            -0.01019397641592358,
+            0.0036131110110210847
           ],
           "ci_excludes_zero": false,
           "improved": 1307,
@@ -1724,18 +1822,18 @@
         },
         "N1_split": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": -0.005038487361731567,
+          "mean_mae_reduction": -0.00551366723448032,
           "ci90_game_clustered": [
-            -0.012612550193658974,
-            0.0024885153347164717
+            -0.01337837133217366,
+            0.0021615256482300444
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.013198518093287183,
-            0.0024487291533737236
+            -0.013980699649984833,
+            0.002143547098002025
           ],
           "ci_excludes_zero": false,
-          "improved": 1300,
-          "worsened": 1272,
+          "improved": 1301,
+          "worsened": 1271,
           "tied": 410
         },
         "D0_level_only": {
@@ -1756,50 +1854,50 @@
         },
         "D0_change_only": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": 0.0018896467472379905,
+          "mean_mae_reduction": 0.002649968201638482,
           "ci90_game_clustered": [
-            -0.005006971662902593,
-            0.008658365619224308
+            -0.004127248164211646,
+            0.009262474117716942
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.005355285814616345,
-            0.008786382302338573
+            -0.004401795392039088,
+            0.009498149725248164
           ],
           "ci_excludes_zero": false,
-          "improved": 1306,
-          "worsened": 1266,
+          "improved": 1307,
+          "worsened": 1265,
           "tied": 410
         },
         "S1_trailing_basis": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": -0.002376714853955345,
+          "mean_mae_reduction": -0.0029600658023699942,
           "ci90_game_clustered": [
-            -0.008818826670539574,
-            0.004123358305422534
+            -0.009576623824389315,
+            0.003601614979998151
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.009438460626285724,
-            0.004022080321426244
+            -0.010176497374021608,
+            0.003676116601321257
           ],
           "ci_excludes_zero": false,
-          "improved": 1308,
-          "worsened": 1264,
+          "improved": 1309,
+          "worsened": 1263,
           "tied": 410
         },
         "X_literal_card_set": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": -0.0024604432409314953,
+          "mean_mae_reduction": -0.003063754984433539,
           "ci90_game_clustered": [
-            -0.008869161987768326,
-            0.003960609893753774
+            -0.009666016704811223,
+            0.0034434535348714965
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.009396386122173242,
-            0.003913404392834102
+            -0.010205226398217027,
+            0.0036071286032267154
           ],
           "ci_excludes_zero": false,
-          "improved": 1306,
-          "worsened": 1266,
+          "improved": 1308,
+          "worsened": 1264,
           "tied": 410
         },
         "A": {
@@ -1822,34 +1920,34 @@
       "paired_vs_K0": {
         "L1_linear": {
           "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": -0.003935086588590964,
+          "mean_mae_reduction": -0.0045372960751629806,
           "ci90_game_clustered": [
-            -0.010011335299902632,
-            0.0020279028748645435
+            -0.010949444601072434,
+            0.0016349161121632142
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.010209174994707963,
-            0.002343317973845431
+            -0.011207416690226166,
+            0.0019632205734916703
           ],
           "ci_excludes_zero": false,
-          "improved": 1243,
-          "worsened": 1329,
+          "improved": 1234,
+          "worsened": 1338,
           "tied": 410
         },
         "N1_split": {
           "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": -0.006521572685780149,
+          "mean_mae_reduction": -0.0069967525585288995,
           "ci90_game_clustered": [
-            -0.013902383676399873,
-            0.0003991639799468112
+            -0.014488859190581058,
+            0.00034413345585649095
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.014277199896996747,
-            0.0008292440825533649
+            -0.01501361502492715,
+            0.0006558081189401
           ],
           "ci_excludes_zero": false,
-          "improved": 1242,
-          "worsened": 1330,
+          "improved": 1253,
+          "worsened": 1319,
           "tied": 410
         },
         "D0_level_only": {
@@ -1870,50 +1968,50 @@
         },
         "D0_change_only": {
           "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": 0.0004065614231894093,
+          "mean_mae_reduction": 0.0011668828775899009,
           "ci90_game_clustered": [
-            -0.00479241601371942,
-            0.005373891688414325
+            -0.0037738649911121616,
+            0.005821849134360933
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.004805672669864957,
-            0.005481817815690168
+            -0.0035810803027566153,
+            0.006024231376001635
           ],
           "ci_excludes_zero": false,
-          "improved": 1304,
-          "worsened": 1268,
+          "improved": 1309,
+          "worsened": 1263,
           "tied": 410
         },
         "S1_trailing_basis": {
           "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": -0.0038598001780039254,
+          "mean_mae_reduction": -0.004443151126418577,
           "ci90_game_clustered": [
-            -0.009900929042311381,
-            0.0020367906059501374
+            -0.010756122773395368,
+            0.001698867495975369
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.010200416608491423,
-            0.0023308747964175397
-          ],
-          "ci_excludes_zero": false,
-          "improved": 1242,
-          "worsened": 1330,
-          "tied": 410
-        },
-        "X_literal_card_set": {
-          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": -0.003943528564980076,
-          "ci90_game_clustered": [
-            -0.010019624997927273,
-            0.0020226967408893365
-          ],
-          "ci90_date_clustered_sensitivity": [
-            -0.010222014201181245,
-            0.002336277661376174
+            -0.011006535966375918,
+            0.0019746348493433603
           ],
           "ci_excludes_zero": false,
           "improved": 1243,
           "worsened": 1329,
+          "tied": 410
+        },
+        "X_literal_card_set": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.004546840308482119,
+          "ci90_game_clustered": [
+            -0.010963183055614239,
+            0.001625242122191581
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.011223787289340661,
+            0.001955728054751485
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1234,
+          "worsened": 1338,
           "tied": 410
         },
         "A": {
@@ -1949,56 +2047,56 @@
           "A": 3.0229005431418146,
           "D": 2.9661481324401393,
           "K0_intercept_only": 2.9709176415880787,
-          "L1_linear": 2.9679168117739794,
-          "N1_split": 2.968545131126225,
+          "L1_linear": 2.968702298857699,
+          "N1_split": 2.969215698852105,
           "D0_level_only": 2.980029382095091,
-          "D0_change_only": 2.9674021723704134,
-          "S1_trailing_basis": 2.967379327505173,
-          "X_literal_card_set": 2.9679340814271282
+          "D0_change_only": 2.967662026307051,
+          "S1_trailing_basis": 2.9680487867992698,
+          "X_literal_card_set": 2.9687229043467123
         },
         "2023": {
           "A": 2.815773617818617,
           "D": 2.784950516747601,
           "K0_intercept_only": 2.7811322664184845,
-          "L1_linear": 2.7710461797117607,
-          "N1_split": 2.7785621985492615,
+          "L1_linear": 2.7718044943648863,
+          "N1_split": 2.7793184841374305,
           "D0_level_only": 2.7712599822558937,
-          "D0_change_only": 2.775187660929443,
-          "S1_trailing_basis": 2.7710817850218246,
-          "X_literal_card_set": 2.7710532848942884
+          "D0_change_only": 2.774939004682283,
+          "S1_trailing_basis": 2.7718393369010337,
+          "X_literal_card_set": 2.771813069311394
         },
         "2024": {
           "A": 2.937013174210746,
           "D": 2.908850802669296,
           "K0_intercept_only": 2.90468811294349,
-          "L1_linear": 2.9012661900241703,
-          "N1_split": 2.901381022427713,
+          "L1_linear": 2.9003839082340948,
+          "N1_split": 2.9004945600769623,
           "D0_level_only": 2.9054026455322806,
-          "D0_change_only": 2.8986749788361323,
-          "S1_trailing_basis": 2.901270782249444,
-          "X_literal_card_set": 2.9012706603019778
+          "D0_change_only": 2.8973250736524667,
+          "S1_trailing_basis": 2.900388058190009,
+          "X_literal_card_set": 2.9003881635721007
         },
         "2025": {
           "A": 2.8701712832434065,
           "D": 2.8649177061322857,
           "K0_intercept_only": 2.8605351860954884,
-          "L1_linear": 2.866445538916639,
-          "N1_split": 2.8686461193153368,
+          "L1_linear": 2.866788768763903,
+          "N1_split": 2.8687192877647845,
           "D0_level_only": 2.8657569173241515,
-          "D0_change_only": 2.8584503886360397,
-          "S1_trailing_basis": 2.866449301521974,
-          "X_literal_card_set": 2.8664508883952835
+          "D0_change_only": 2.858732865427679,
+          "S1_trailing_basis": 2.8667913379416565,
+          "X_literal_card_set": 2.8667935527150354
         },
         "2026": {
           "A": 2.851413747384285,
           "D": 2.7609880260236377,
           "K0_intercept_only": 2.7614101567242173,
-          "L1_linear": 2.799880526041483,
-          "N1_split": 2.804717044807287,
+          "L1_linear": 2.802846840915926,
+          "N1_split": 2.807327110702296,
           "D0_level_only": 2.7674151404780156,
-          "D0_change_only": 2.780021039685863,
-          "S1_trailing_basis": 2.799901827207843,
-          "X_literal_card_set": 2.7998981197208828
+          "D0_change_only": 2.7759978471165923,
+          "S1_trailing_basis": 2.802869522173764,
+          "X_literal_card_set": 2.802867670360129
         }
       },
       "by_season_paired_vs_D": {
@@ -2014,52 +2112,52 @@
         },
         "2022": {
           "K0_intercept_only": -0.004769509147939451,
-          "L1_linear": -0.0017686793338398054,
-          "N1_split": -0.002396998686086076,
+          "L1_linear": -0.002554166417559741,
+          "N1_split": -0.0030675664119657305,
           "D0_level_only": -0.013881249654951444,
-          "D0_change_only": -0.001254039930274806,
-          "S1_trailing_basis": -0.001231195065033929,
-          "X_literal_card_set": -0.0017859489869893979,
+          "D0_change_only": -0.0015138938669120748,
+          "S1_trailing_basis": -0.001900654359130609,
+          "X_literal_card_set": -0.0025747719065735888,
           "A": -0.05675241070167562
         },
         "2023": {
           "K0_intercept_only": 0.003818250329116243,
-          "L1_linear": 0.013904337035839851,
-          "N1_split": 0.006388318198339105,
+          "L1_linear": 0.01314602238271443,
+          "N1_split": 0.005632032610170266,
           "D0_level_only": 0.013690534491707065,
-          "D0_change_only": 0.009762855818157624,
-          "S1_trailing_basis": 0.013868731725776315,
-          "X_literal_card_set": 0.013897231853312542,
+          "D0_change_only": 0.010011512065317809,
+          "S1_trailing_basis": 0.013111179846567112,
+          "X_literal_card_set": 0.013137447436206727,
           "A": -0.03082310107101626
         },
         "2024": {
           "K0_intercept_only": 0.00416268972580589,
-          "L1_linear": 0.0075846126451252814,
-          "N1_split": 0.007469780241583192,
+          "L1_linear": 0.00846689443520096,
+          "N1_split": 0.008356242592333654,
           "D0_level_only": 0.003448157137015263,
-          "D0_change_only": 0.01017582383316319,
-          "S1_trailing_basis": 0.007580020419851568,
-          "X_literal_card_set": 0.007580142367318221,
+          "D0_change_only": 0.011525729016829729,
+          "S1_trailing_basis": 0.008462744479286596,
+          "X_literal_card_set": 0.008462639097194885,
           "A": -0.028162371541450498
         },
         "2025": {
           "K0_intercept_only": 0.00438252003679775,
-          "L1_linear": -0.0015278327843527325,
-          "N1_split": -0.0037284131830503096,
+          "L1_linear": -0.0018710626316169182,
+          "N1_split": -0.003801581632498198,
           "D0_level_only": -0.0008392111918656956,
-          "D0_change_only": 0.0064673174962462075,
-          "S1_trailing_basis": -0.0015315953896876601,
-          "X_literal_card_set": -0.001533182262997517,
+          "D0_change_only": 0.006184840704607249,
+          "S1_trailing_basis": -0.0018736318093705942,
+          "X_literal_card_set": -0.001875846582749617,
           "A": -0.0052535771111204945
         },
         "2026": {
           "K0_intercept_only": -0.00042213070058002384,
-          "L1_linear": -0.038892500017845666,
-          "N1_split": -0.04372901878364913,
+          "L1_linear": -0.04185881489228814,
+          "N1_split": -0.04633908467865857,
           "D0_level_only": -0.0064271144543779565,
-          "D0_change_only": -0.01903301366222577,
-          "S1_trailing_basis": -0.038913801184205066,
-          "X_literal_card_set": -0.03891009369724558,
+          "D0_change_only": -0.015009821092954902,
+          "S1_trailing_basis": -0.04188149615012605,
+          "X_literal_card_set": -0.04187964433649185,
           "A": -0.09042572136064773
         }
       },
@@ -2074,48 +2172,48 @@
           "A": 0.005326117030249573
         },
         "2022": {
-          "L1_linear": 0.0030008298140996458,
-          "N1_split": 0.0023725104618533754,
+          "L1_linear": 0.00221534273037971,
+          "N1_split": 0.001701942735973721,
           "D0_level_only": -0.009111740507011993,
-          "D0_change_only": 0.0035154692176646452,
-          "S1_trailing_basis": 0.003538314082905522,
-          "X_literal_card_set": 0.0029835601609500533,
+          "D0_change_only": 0.0032556152810273766,
+          "S1_trailing_basis": 0.002868854788808842,
+          "X_literal_card_set": 0.002194737241365862,
           "A": -0.05198290155373619
         },
         "2023": {
-          "L1_linear": 0.010086086706723608,
-          "N1_split": 0.0025700678692228626,
+          "L1_linear": 0.009327772053598188,
+          "N1_split": 0.0018137822810540233,
           "D0_level_only": 0.009872284162590823,
-          "D0_change_only": 0.0059446054890413816,
-          "S1_trailing_basis": 0.010050481396660071,
-          "X_literal_card_set": 0.0100789815241963,
+          "D0_change_only": 0.006193261736201566,
+          "S1_trailing_basis": 0.009292929517450869,
+          "X_literal_card_set": 0.009319197107090484,
           "A": -0.0346413514001325
         },
         "2024": {
-          "L1_linear": 0.0034219229193193923,
-          "N1_split": 0.0033070905157773023,
+          "L1_linear": 0.0043042047093950694,
+          "N1_split": 0.004193552866527765,
           "D0_level_only": -0.0007145325887906266,
-          "D0_change_only": 0.006013134107357301,
-          "S1_trailing_basis": 0.0034173306940456787,
-          "X_literal_card_set": 0.003417452641512331,
+          "D0_change_only": 0.007363039291023839,
+          "S1_trailing_basis": 0.004300054753480707,
+          "X_literal_card_set": 0.004299949371388996,
           "A": -0.032325061267256386
         },
         "2025": {
-          "L1_linear": -0.0059103528211504825,
-          "N1_split": -0.008110933219848059,
+          "L1_linear": -0.006253582668414668,
+          "N1_split": -0.008184101669295948,
           "D0_level_only": -0.005221731228663445,
-          "D0_change_only": 0.0020847974594484582,
-          "S1_trailing_basis": -0.00591411542648541,
-          "X_literal_card_set": -0.005915702299795267,
+          "D0_change_only": 0.0018023206678094998,
+          "S1_trailing_basis": -0.0062561518461683435,
+          "X_literal_card_set": -0.006258366619547367,
           "A": -0.00963609714791825
         },
         "2026": {
-          "L1_linear": -0.038470369317265635,
-          "N1_split": -0.0433068880830691,
+          "L1_linear": -0.04143668419170812,
+          "N1_split": -0.04591695397807855,
           "D0_level_only": -0.006004983753797932,
-          "D0_change_only": -0.018610882961645744,
-          "S1_trailing_basis": -0.038491670483625035,
-          "X_literal_card_set": -0.03848796299666555,
+          "D0_change_only": -0.014587690392374878,
+          "S1_trailing_basis": -0.041459365449546016,
+          "X_literal_card_set": -0.04145751363591183,
           "A": -0.09000359066006772
         }
       },
@@ -2132,44 +2230,44 @@
             "intercept": -0.01466
           },
           "L1_linear": {
-            "intercept": -0.018768,
-            "proj_minutes_share": 0.00509,
-            "role_change": -0.032212,
-            "rotation_rank_change": 0.016129,
-            "expanded_role_bounded": 0.026508
+            "intercept": -0.018975,
+            "proj_minutes_share": 0.005505,
+            "role_change": -0.03497,
+            "rotation_rank_change": 0.018785,
+            "expanded_role_bounded": 0.026359
           },
           "N1_split": {
-            "intercept": -0.018584,
-            "proj_minutes_share": 0.005306,
-            "role_change_pos": -0.010868,
-            "role_change_neg": -0.02329,
-            "rotation_rank_change": 0.016229,
-            "expanded_role_bounded": 0.024146
+            "intercept": -0.018818,
+            "proj_minutes_share": 0.005695,
+            "role_change_pos": -0.01264,
+            "role_change_neg": -0.024911,
+            "rotation_rank_change": 0.018842,
+            "expanded_role_bounded": 0.024319
           },
           "D0_level_only": {
             "intercept": -0.014585,
             "proj_minutes_share": 0.00443
           },
           "D0_change_only": {
-            "intercept": -0.018623,
-            "role_change": -0.031755,
-            "rotation_rank_change": 0.016277,
-            "expanded_role_bounded": 0.026781
+            "intercept": -0.018819,
+            "role_change": -0.03434,
+            "rotation_rank_change": 0.018724,
+            "expanded_role_bounded": 0.026647
           },
           "S1_trailing_basis": {
-            "intercept": -0.018781,
-            "trailing_minutes_share": 0.031043,
-            "role_change": -0.001094,
-            "rotation_rank_change": 0.016196,
-            "expanded_role_bounded": 0.026575
+            "intercept": -0.01899,
+            "trailing_minutes_share": 0.033596,
+            "role_change": -0.001296,
+            "rotation_rank_change": 0.018856,
+            "expanded_role_bounded": 0.02643
           },
           "X_literal_card_set": {
-            "intercept": -0.018781,
-            "proj_minutes_share": 0.002609,
-            "trailing_minutes_share": 0.016335,
-            "role_change": -0.015855,
-            "rotation_rank_change": 0.016158,
-            "expanded_role_bounded": 0.026532
+            "intercept": -0.018989,
+            "proj_minutes_share": 0.002813,
+            "trailing_minutes_share": 0.017736,
+            "role_change": -0.017217,
+            "rotation_rank_change": 0.018825,
+            "expanded_role_bounded": 0.026385
           }
         },
         "2023": {
@@ -2180,44 +2278,44 @@
             "intercept": -0.005242
           },
           "L1_linear": {
-            "intercept": -0.005724,
-            "proj_minutes_share": -0.004415,
-            "role_change": -0.024831,
-            "rotation_rank_change": 0.010425,
-            "expanded_role_bounded": 0.029491
+            "intercept": -0.005881,
+            "proj_minutes_share": -0.003285,
+            "role_change": -0.025785,
+            "rotation_rank_change": 0.010521,
+            "expanded_role_bounded": 0.029555
           },
           "N1_split": {
-            "intercept": -0.005694,
-            "proj_minutes_share": -0.007721,
-            "role_change_pos": -0.036545,
-            "role_change_neg": -0.007703,
-            "rotation_rank_change": 0.009513,
-            "expanded_role_bounded": 0.045478
+            "intercept": -0.005838,
+            "proj_minutes_share": -0.006697,
+            "role_change_pos": -0.037056,
+            "role_change_neg": -0.008287,
+            "rotation_rank_change": 0.009602,
+            "expanded_role_bounded": 0.045585
           },
           "D0_level_only": {
             "intercept": -0.003041,
             "proj_minutes_share": -0.009456
           },
           "D0_change_only": {
-            "intercept": -0.007028,
-            "role_change": -0.02623,
-            "rotation_rank_change": 0.010077,
-            "expanded_role_bounded": 0.030137
+            "intercept": -0.006847,
+            "role_change": -0.027169,
+            "rotation_rank_change": 0.010767,
+            "expanded_role_bounded": 0.030068
           },
           "S1_trailing_basis": {
-            "intercept": -0.005734,
-            "trailing_minutes_share": -0.005897,
-            "role_change": -0.029685,
-            "rotation_rank_change": 0.010418,
-            "expanded_role_bounded": 0.029494
+            "intercept": -0.005891,
+            "trailing_minutes_share": -0.004376,
+            "role_change": -0.029394,
+            "rotation_rank_change": 0.01052,
+            "expanded_role_bounded": 0.029559
           },
           "X_literal_card_set": {
-            "intercept": -0.005728,
-            "proj_minutes_share": -0.010127,
-            "trailing_minutes_share": 0.007705,
-            "role_change": -0.018505,
-            "rotation_rank_change": 0.010431,
-            "expanded_role_bounded": 0.029496
+            "intercept": -0.005885,
+            "proj_minutes_share": -0.009537,
+            "trailing_minutes_share": 0.008436,
+            "role_change": -0.018862,
+            "rotation_rank_change": 0.01053,
+            "expanded_role_bounded": 0.029561
           }
         },
         "2024": {
@@ -2228,44 +2326,44 @@
             "intercept": -0.00704
           },
           "L1_linear": {
-            "intercept": -0.009842,
-            "proj_minutes_share": 0.007344,
-            "role_change": -0.018834,
-            "rotation_rank_change": 0.004055,
-            "expanded_role_bounded": 0.026716
+            "intercept": -0.009916,
+            "proj_minutes_share": 0.007839,
+            "role_change": -0.018027,
+            "rotation_rank_change": 0.002448,
+            "expanded_role_bounded": 0.026654
           },
           "N1_split": {
-            "intercept": -0.010093,
-            "proj_minutes_share": 0.008505,
-            "role_change_pos": -0.00142,
-            "role_change_neg": -0.0169,
-            "rotation_rank_change": 0.004618,
-            "expanded_role_bounded": 0.020951
+            "intercept": -0.010171,
+            "proj_minutes_share": 0.009071,
+            "role_change_pos": -0.001229,
+            "role_change_neg": -0.016309,
+            "rotation_rank_change": 0.003036,
+            "expanded_role_bounded": 0.021026
           },
           "D0_level_only": {
             "intercept": -0.00749,
             "proj_minutes_share": 0.001451
           },
           "D0_change_only": {
-            "intercept": -0.007269,
-            "role_change": -0.016279,
-            "rotation_rank_change": 0.004543,
-            "expanded_role_bounded": 0.02541
+            "intercept": -0.007227,
+            "role_change": -0.014008,
+            "rotation_rank_change": 0.00112,
+            "expanded_role_bounded": 0.025154
           },
           "S1_trailing_basis": {
-            "intercept": -0.009845,
-            "trailing_minutes_share": 0.008356,
-            "role_change": -0.012838,
-            "rotation_rank_change": 0.004059,
-            "expanded_role_bounded": 0.02672
+            "intercept": -0.009919,
+            "trailing_minutes_share": 0.008919,
+            "role_change": -0.011629,
+            "rotation_rank_change": 0.002454,
+            "expanded_role_bounded": 0.026657
           },
           "X_literal_card_set": {
-            "intercept": -0.009845,
-            "proj_minutes_share": -0.000335,
-            "trailing_minutes_share": 0.008736,
-            "role_change": -0.012566,
-            "rotation_rank_change": 0.004059,
-            "expanded_role_bounded": 0.02672
+            "intercept": -0.009919,
+            "proj_minutes_share": 0.000216,
+            "trailing_minutes_share": 0.008673,
+            "role_change": -0.011805,
+            "rotation_rank_change": 0.002454,
+            "expanded_role_bounded": 0.026657
           }
         },
         "2025": {
@@ -2276,44 +2374,44 @@
             "intercept": -0.006723
           },
           "L1_linear": {
-            "intercept": -0.011761,
-            "proj_minutes_share": 0.01428,
-            "role_change": -0.012564,
-            "rotation_rank_change": -0.000953,
-            "expanded_role_bounded": 0.025459
+            "intercept": -0.011739,
+            "proj_minutes_share": 0.014218,
+            "role_change": -0.013111,
+            "rotation_rank_change": -0.000109,
+            "expanded_role_bounded": 0.025504
           },
           "N1_split": {
-            "intercept": -0.012302,
-            "proj_minutes_share": 0.015872,
-            "role_change_pos": 0.005151,
-            "role_change_neg": -0.014365,
-            "rotation_rank_change": 4.2e-05,
-            "expanded_role_bounded": 0.01736
+            "intercept": -0.012308,
+            "proj_minutes_share": 0.016019,
+            "role_change_pos": 0.004892,
+            "role_change_neg": -0.014872,
+            "rotation_rank_change": 0.000901,
+            "expanded_role_bounded": 0.017363
           },
           "D0_level_only": {
             "intercept": -0.009873,
             "proj_minutes_share": 0.009186
           },
           "D0_change_only": {
-            "intercept": -0.00649,
-            "role_change": -0.00747,
-            "rotation_rank_change": -7.5e-05,
-            "expanded_role_bounded": 0.023028
+            "intercept": -0.006651,
+            "role_change": -0.005374,
+            "rotation_rank_change": -0.003011,
+            "expanded_role_bounded": 0.022885
           },
           "S1_trailing_basis": {
-            "intercept": -0.011762,
-            "trailing_minutes_share": 0.015297,
-            "role_change": -0.002224,
-            "rotation_rank_change": -0.000948,
-            "expanded_role_bounded": 0.025462
+            "intercept": -0.01174,
+            "trailing_minutes_share": 0.015233,
+            "role_change": -0.002816,
+            "rotation_rank_change": -0.000103,
+            "expanded_role_bounded": 0.025507
           },
           "X_literal_card_set": {
-            "intercept": -0.011763,
-            "proj_minutes_share": 0.005532,
-            "trailing_minutes_share": 0.009377,
-            "role_change": -0.006227,
-            "rotation_rank_change": -0.00095,
-            "expanded_role_bounded": 0.025462
+            "intercept": -0.011742,
+            "proj_minutes_share": 0.005345,
+            "trailing_minutes_share": 0.009512,
+            "role_change": -0.006685,
+            "rotation_rank_change": -0.000104,
+            "expanded_role_bounded": 0.025507
           }
         },
         "2026": {
@@ -2324,44 +2422,44 @@
             "intercept": -0.00649
           },
           "L1_linear": {
-            "intercept": -0.014242,
-            "proj_minutes_share": 0.021187,
-            "role_change": -0.014357,
-            "rotation_rank_change": -0.005422,
-            "expanded_role_bounded": 0.02438
+            "intercept": -0.014018,
+            "proj_minutes_share": 0.020201,
+            "role_change": -0.015314,
+            "rotation_rank_change": -0.003047,
+            "expanded_role_bounded": 0.024278
           },
           "N1_split": {
-            "intercept": -0.014351,
-            "proj_minutes_share": 0.02166,
-            "role_change_pos": -0.000158,
-            "role_change_neg": -0.013148,
-            "rotation_rank_change": -0.005748,
-            "expanded_role_bounded": 0.019908
+            "intercept": -0.014126,
+            "proj_minutes_share": 0.020585,
+            "role_change_pos": -0.000548,
+            "role_change_neg": -0.013751,
+            "rotation_rank_change": -0.003586,
+            "expanded_role_bounded": 0.019822
           },
           "D0_level_only": {
             "intercept": -0.011601,
             "proj_minutes_share": 0.014562
           },
           "D0_change_only": {
-            "intercept": -0.006455,
-            "role_change": -0.009458,
-            "rotation_rank_change": -0.002104,
-            "expanded_role_bounded": 0.021762
+            "intercept": -0.006742,
+            "role_change": -0.00782,
+            "rotation_rank_change": -0.004727,
+            "expanded_role_bounded": 0.021889
           },
           "S1_trailing_basis": {
-            "intercept": -0.014242,
-            "trailing_minutes_share": 0.023581,
-            "role_change": 0.002064,
-            "rotation_rank_change": -0.005418,
-            "expanded_role_bounded": 0.024382
+            "intercept": -0.014018,
+            "trailing_minutes_share": 0.022485,
+            "role_change": 0.000343,
+            "rotation_rank_change": -0.003043,
+            "expanded_role_bounded": 0.02428
           },
           "X_literal_card_set": {
-            "intercept": -0.014244,
-            "proj_minutes_share": 0.00981,
-            "trailing_minutes_share": 0.01267,
-            "role_change": -0.005536,
-            "rotation_rank_change": -0.005421,
-            "expanded_role_bounded": 0.024382
+            "intercept": -0.01402,
+            "proj_minutes_share": 0.008909,
+            "trailing_minutes_share": 0.012575,
+            "role_change": -0.00656,
+            "rotation_rank_change": -0.003045,
+            "expanded_role_bounded": 0.02428
           }
         }
       }
@@ -2386,14 +2484,14 @@
           "bias": 0.005339393508628094
         },
         "L1_linear": {
-          "deviance": 1.2276854334462115,
-          "mae": 0.8459097475782292,
-          "bias": 0.004600702956253909
+          "deviance": 1.2299044251957156,
+          "mae": 0.8470649100038073,
+          "bias": 0.006135524740498617
         },
         "N1_split": {
-          "deviance": 1.2277638736980379,
-          "mae": 0.8460015114131991,
-          "bias": 0.004798053070186759
+          "deviance": 1.2301604502202108,
+          "mae": 0.8472499655002375,
+          "bias": 0.006439742003542126
         },
         "D0_level_only": {
           "deviance": 1.2285259497097425,
@@ -2401,19 +2499,19 @@
           "bias": 0.007645744437028226
         },
         "D0_change_only": {
-          "deviance": 1.2283677542132527,
-          "mae": 0.8465652161672974,
-          "bias": 0.0012093713193866687
+          "deviance": 1.2302357389788072,
+          "mae": 0.8475235584515398,
+          "bias": 0.0018529860907658454
         },
         "S1_trailing_basis": {
-          "deviance": 1.2288241854512307,
-          "mae": 0.8464711492001493,
-          "bias": 0.0049111683154414035
+          "deviance": 1.2298803117058614,
+          "mae": 0.8470438668478434,
+          "bias": 0.005844893870311762
         },
         "X_literal_card_set": {
-          "deviance": 1.2285665814139937,
-          "mae": 0.8463495793406036,
-          "bias": 0.00504241494603371
+          "deviance": 1.2299046137818925,
+          "mae": 0.8470643384794105,
+          "bias": 0.00613766233783018
         }
       },
       "team": {
@@ -2433,14 +2531,14 @@
           "bias": -0.009184196527484445
         },
         "L1_linear": {
-          "mae": 2.964570294816195,
-          "rmse": 3.712809941173412,
-          "bias": -0.018216044739749276
+          "mae": 2.96564241085994,
+          "rmse": 3.7129326514687264,
+          "bias": 0.0005499694506606888
         },
         "N1_split": {
-          "mae": 2.96688382858912,
-          "rmse": 3.715761948108041,
-          "bias": -0.01580307726915441
+          "mae": 2.9679741271060864,
+          "rmse": 3.7161295514878145,
+          "bias": 0.004269584023405077
         },
         "D0_level_only": {
           "mae": 2.965996646307873,
@@ -2448,19 +2546,19 @@
           "bias": 0.019015177950198577
         },
         "D0_change_only": {
-          "mae": 2.9615220007043197,
-          "rmse": 3.7105128932274614,
-          "bias": -0.059681300364300735
+          "mae": 2.961615797969251,
+          "rmse": 3.7099625808408176,
+          "bias": -0.05181192813044054
         },
         "S1_trailing_basis": {
-          "mae": 2.9648639712429237,
-          "rmse": 3.713006230649409,
-          "bias": -0.014420035720363131
+          "mae": 2.9655586883264653,
+          "rmse": 3.712918169272425,
+          "bias": -0.0030035265252786924
         },
         "X_literal_card_set": {
-          "mae": 2.964938879142302,
-          "rmse": 3.7130285746652225,
-          "bias": -0.012815304697242597
+          "mae": 2.9656481943108184,
+          "rmse": 3.712939175336931,
+          "bias": 0.0005761055025914233
         }
       },
       "paired_vs_D": {
@@ -2482,34 +2580,34 @@
         },
         "L1_linear": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": 0.00288022536629278,
+          "mean_mae_reduction": 0.0018081093225482806,
           "ci90_game_clustered": [
-            -0.0031629229242869476,
-            0.009001822464544076
+            -0.00482393769825381,
+            0.008255016982034846
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.0034958443776620133,
-            0.008654512650459953
+            -0.005427117794757328,
+            0.00826940861523738
           ],
           "ci_excludes_zero": false,
-          "improved": 1308,
-          "worsened": 1200,
+          "improved": 1311,
+          "worsened": 1197,
           "tied": 406
         },
         "N1_split": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": 0.000566691593368193,
+          "mean_mae_reduction": -0.0005236069235990109,
           "ci90_game_clustered": [
-            -0.006957144335157112,
-            0.007664534661875011
+            -0.008586862060392504,
+            0.006928481157597267
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.007185088698369511,
-            0.007325766249045459
+            -0.009238727775564929,
+            0.007095375416861513
           ],
           "ci_excludes_zero": false,
-          "improved": 1307,
-          "worsened": 1201,
+          "improved": 1300,
+          "worsened": 1208,
           "tied": 406
         },
         "D0_level_only": {
@@ -2530,50 +2628,50 @@
         },
         "D0_change_only": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": 0.005928519478167976,
+          "mean_mae_reduction": 0.0058347222132372305,
           "ci90_game_clustered": [
-            -0.0009168362415836761,
-            0.012737398088000685
+            -0.00118033264281092,
+            0.012760476452762565
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.0011386805333746897,
-            0.012800727106920764
+            -0.0013755299932546898,
+            0.012701967533496079
           ],
           "ci_excludes_zero": false,
-          "improved": 1306,
-          "worsened": 1202,
+          "improved": 1301,
+          "worsened": 1207,
           "tied": 406
         },
         "S1_trailing_basis": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": 0.0025865489395642417,
+          "mean_mae_reduction": 0.0018918318560232094,
           "ci90_game_clustered": [
-            -0.0035064118289455763,
-            0.008603749086871351
+            -0.004738424617791434,
+            0.008408272168989274
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.0038184119306892044,
-            0.008302631456168354
+            -0.005394539709034848,
+            0.008348917062504745
           ],
           "ci_excludes_zero": false,
-          "improved": 1311,
-          "worsened": 1197,
+          "improved": 1314,
+          "worsened": 1194,
           "tied": 406
         },
         "X_literal_card_set": {
           "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
-          "mean_mae_reduction": 0.002511641040185947,
+          "mean_mae_reduction": 0.001802325871669892,
           "ci90_game_clustered": [
-            -0.0035278009664609184,
-            0.008510502097234078
+            -0.004831093887461442,
+            0.008248970812473035
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.0037783603334015205,
-            0.008229492566502544
+            -0.00543658299568698,
+            0.008266838695572596
           ],
           "ci_excludes_zero": false,
-          "improved": 1302,
-          "worsened": 1206,
+          "improved": 1310,
+          "worsened": 1198,
           "tied": 406
         },
         "A": {
@@ -2596,34 +2694,34 @@
       "paired_vs_K0": {
         "L1_linear": {
           "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": -0.00037584235693266884,
+          "mean_mae_reduction": -0.0014479584006771684,
           "ci90_game_clustered": [
-            -0.006049696924747285,
-            0.005032321916769377
+            -0.007923812017777402,
+            0.004770353686351907
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.006176716314031089,
-            0.005094951506995344
+            -0.008356292320158288,
+            0.005027294107056794
           ],
           "ci_excludes_zero": false,
-          "improved": 1267,
-          "worsened": 1241,
+          "improved": 1272,
+          "worsened": 1236,
           "tied": 406
         },
         "N1_split": {
           "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": -0.0026893761298572567,
+          "mean_mae_reduction": -0.00377967464682446,
           "ci90_game_clustered": [
-            -0.009706275612999821,
-            0.0037059333667834775
+            -0.011703315993378576,
+            0.003425099137342287
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.009879518559576098,
-            0.0037262704084745565
+            -0.01227300473695808,
+            0.003763125749241039
           ],
           "ci_excludes_zero": false,
-          "improved": 1263,
-          "worsened": 1245,
+          "improved": 1252,
+          "worsened": 1256,
           "tied": 406
         },
         "D0_level_only": {
@@ -2644,50 +2742,50 @@
         },
         "D0_change_only": {
           "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": 0.0026724517549425258,
+          "mean_mae_reduction": 0.0025786544900117817,
           "ci90_game_clustered": [
-            -0.0020923175819231887,
-            0.007375002073074574
+            -0.002484467931596248,
+            0.007754032788474882
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.0023225501387632666,
-            0.007471282587738786
+            -0.0026868180751604973,
+            0.007679830513466258
           ],
           "ci_excludes_zero": false,
-          "improved": 1298,
-          "worsened": 1210,
+          "improved": 1304,
+          "worsened": 1204,
           "tied": 406
         },
         "S1_trailing_basis": {
           "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": -0.0006695187836612072,
+          "mean_mae_reduction": -0.0013642358672022396,
           "ci90_game_clustered": [
-            -0.006272395350975014,
-            0.004814848587755426
+            -0.007729394030404451,
+            0.004734719310521112
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.0063752252882672365,
-            0.004651510778750235
+            -0.008232187163562435,
+            0.005023836560977294
           ],
           "ci_excludes_zero": false,
-          "improved": 1248,
-          "worsened": 1260,
+          "improved": 1273,
+          "worsened": 1235,
           "tied": 406
         },
         "X_literal_card_set": {
           "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
-          "mean_mae_reduction": -0.0007444266830395022,
+          "mean_mae_reduction": -0.001453741851555557,
           "ci90_game_clustered": [
-            -0.006402740603437158,
-            0.004708043905587211
+            -0.007932777382050811,
+            0.004767578665271403
           ],
           "ci90_date_clustered_sensitivity": [
-            -0.006449746552607259,
-            0.004618328870867736
+            -0.008364441539274023,
+            0.005022947880618882
           ],
           "ci_excludes_zero": false,
-          "improved": 1256,
-          "worsened": 1252,
+          "improved": 1272,
+          "worsened": 1236,
           "tied": 406
         },
         "A": {
@@ -2723,56 +2821,56 @@
           "A": 3.147169096475741,
           "D": 3.0745088817924837,
           "K0_intercept_only": 3.0755220807169894,
-          "L1_linear": 3.0622542819661227,
-          "N1_split": 3.062577667933133,
+          "L1_linear": 3.0654009949663217,
+          "N1_split": 3.0656449230631964,
           "D0_level_only": 3.082816322109332,
-          "D0_change_only": 3.0658940495152134,
-          "S1_trailing_basis": 3.0630781037477095,
-          "X_literal_card_set": 3.062854634375688
+          "D0_change_only": 3.0687403988501987,
+          "S1_trailing_basis": 3.064836620613709,
+          "X_literal_card_set": 3.0654095402433583
         },
         "2023": {
           "A": 2.8309319727496214,
           "D": 2.827291351316588,
           "K0_intercept_only": 2.823894581082815,
-          "L1_linear": 2.815386262196851,
-          "N1_split": 2.82343349072842,
+          "L1_linear": 2.8175486179142997,
+          "N1_split": 2.826157519699774,
           "D0_level_only": 2.8182449075772387,
-          "D0_change_only": 2.817366826574099,
-          "S1_trailing_basis": 2.815069086263729,
-          "X_literal_card_set": 2.8158276245483407
+          "D0_change_only": 2.8191548460556284,
+          "S1_trailing_basis": 2.8175661809666455,
+          "X_literal_card_set": 2.817553548178848
         },
         "2024": {
           "A": 3.076943603343719,
           "D": 3.0251670660813295,
           "K0_intercept_only": 3.018108440408735,
-          "L1_linear": 3.0138682494890925,
-          "N1_split": 3.012893750453681,
+          "L1_linear": 3.013109666629245,
+          "N1_split": 3.0125581366374994,
           "D0_level_only": 3.0190567357965747,
-          "D0_change_only": 3.01076116914387,
-          "S1_trailing_basis": 3.014498742152767,
-          "X_literal_card_set": 3.014534625552566
+          "D0_change_only": 3.0099527811064464,
+          "S1_trailing_basis": 3.01311255885694,
+          "X_literal_card_set": 3.013112684237081
         },
         "2025": {
           "A": 2.940987436711477,
           "D": 2.924119427565568,
           "K0_intercept_only": 2.9179049696595687,
-          "L1_linear": 2.917614739047059,
-          "N1_split": 2.92056834953226,
+          "L1_linear": 2.916547842392004,
+          "N1_split": 2.919036011567539,
           "D0_level_only": 2.921384892259851,
-          "D0_change_only": 2.9126507286681123,
-          "S1_trailing_basis": 2.9190151739767916,
-          "X_literal_card_set": 2.9184711297983714
+          "D0_change_only": 2.911870401563422,
+          "S1_trailing_basis": 2.9165492390953656,
+          "X_literal_card_set": 2.9165504941277445
         },
         "2026": {
           "A": 2.9220893516631476,
           "D": 2.8102449377229792,
           "K0_intercept_only": 2.8082001655007316,
-          "L1_linear": 2.841808292182,
-          "N1_split": 2.8447216642332087,
+          "L1_linear": 2.845652393104348,
+          "N1_split": 2.8482540634834637,
           "D0_level_only": 2.8133198528980987,
-          "D0_change_only": 2.824986586189835,
-          "S1_trailing_basis": 2.8405073796160827,
-          "X_literal_card_set": 2.841107243262279
+          "D0_change_only": 2.82239903383079,
+          "S1_trailing_basis": 2.8456711409011195,
+          "X_literal_card_set": 2.8456697706551055
         }
       },
       "by_season_paired_vs_D": {
@@ -2788,52 +2886,52 @@
         },
         "2022": {
           "K0_intercept_only": -0.0010131989245059502,
-          "L1_linear": 0.012254599826361349,
-          "N1_split": 0.011931213859350967,
+          "L1_linear": 0.009107886826161996,
+          "N1_split": 0.008863958729287054,
           "D0_level_only": -0.00830744031684805,
-          "D0_change_only": 0.00861483227726994,
-          "S1_trailing_basis": 0.011430778044774017,
-          "X_literal_card_set": 0.011654247416795762,
+          "D0_change_only": 0.005768482942285012,
+          "S1_trailing_basis": 0.009672261178775034,
+          "X_literal_card_set": 0.00909934154912547,
           "A": -0.07266021468325752
         },
         "2023": {
           "K0_intercept_only": 0.0033967702337732624,
-          "L1_linear": 0.011905089119737209,
-          "N1_split": 0.00385786058816802,
+          "L1_linear": 0.009742733402288697,
+          "N1_split": 0.0011338316168140856,
           "D0_level_only": 0.00904644373934965,
-          "D0_change_only": 0.009924524742488772,
-          "S1_trailing_basis": 0.01222226505285923,
-          "X_literal_card_set": 0.011463726768247215,
+          "D0_change_only": 0.008136505260960086,
+          "S1_trailing_basis": 0.009725170349942656,
+          "X_literal_card_set": 0.009737803137740456,
           "A": -0.0036406214330326077
         },
         "2024": {
           "K0_intercept_only": 0.00705862567259357,
-          "L1_linear": 0.0112988165922365,
-          "N1_split": 0.012273315627647836,
+          "L1_linear": 0.012057399452083402,
+          "N1_split": 0.012608929443829294,
           "D0_level_only": 0.006110330284754342,
-          "D0_change_only": 0.014405896937459011,
-          "S1_trailing_basis": 0.010668323928562002,
-          "X_literal_card_set": 0.010632440528763037,
+          "D0_change_only": 0.015214284974882728,
+          "S1_trailing_basis": 0.012054507224389308,
+          "X_literal_card_set": 0.012054381844248011,
           "A": -0.05177653726238976
         },
         "2025": {
           "K0_intercept_only": 0.006214457905998747,
-          "L1_linear": 0.006504688518508382,
-          "N1_split": 0.003551078033307804,
+          "L1_linear": 0.007571585173563627,
+          "N1_split": 0.005083415998028811,
           "D0_level_only": 0.002734535305716326,
-          "D0_change_only": 0.011468698897455486,
-          "S1_trailing_basis": 0.0051042535887760076,
-          "X_literal_card_set": 0.005648297767196248,
+          "D0_change_only": 0.012249026002145894,
+          "S1_trailing_basis": 0.007570188470202193,
+          "X_literal_card_set": 0.007568933437823358,
           "A": -0.016868009145909198
         },
         "2026": {
           "K0_intercept_only": 0.0020447722222476307,
-          "L1_linear": -0.031563354459020254,
-          "N1_split": -0.03447672651023017,
+          "L1_linear": -0.03540745538136935,
+          "N1_split": -0.038009125760484166,
           "D0_level_only": -0.0030749151751197643,
-          "D0_change_only": -0.014741648466855668,
-          "S1_trailing_basis": -0.03026244189310304,
-          "X_literal_card_set": -0.03086230553929966,
+          "D0_change_only": -0.01215409610781148,
+          "S1_trailing_basis": -0.035426203178140867,
+          "X_literal_card_set": -0.03542483293212606,
           "A": -0.11184441394016874
         }
       },
@@ -2848,48 +2946,48 @@
           "A": -0.03637272353325282
         },
         "2022": {
-          "L1_linear": 0.0132677987508673,
-          "N1_split": 0.012944412783856918,
+          "L1_linear": 0.010121085750667945,
+          "N1_split": 0.009877157653793005,
           "D0_level_only": -0.0072942413923421014,
-          "D0_change_only": 0.00962803120177589,
-          "S1_trailing_basis": 0.012443976969279966,
-          "X_literal_card_set": 0.012667446341301713,
+          "D0_change_only": 0.006781681866790963,
+          "S1_trailing_basis": 0.010685460103280984,
+          "X_literal_card_set": 0.010112540473631419,
           "A": -0.07164701575875158
         },
         "2023": {
-          "L1_linear": 0.008508318885963947,
-          "N1_split": 0.00046109035439475805,
+          "L1_linear": 0.006345963168515436,
+          "N1_split": -0.002262938616959177,
           "D0_level_only": 0.005649673505576389,
-          "D0_change_only": 0.006527754508715509,
-          "S1_trailing_basis": 0.008825494819085969,
-          "X_literal_card_set": 0.008066956534473953,
+          "D0_change_only": 0.004739735027186823,
+          "S1_trailing_basis": 0.006328400116169395,
+          "X_literal_card_set": 0.0063410329039671936,
           "A": -0.00703739166680587
         },
         "2024": {
-          "L1_linear": 0.004240190919642929,
-          "N1_split": 0.005214689955054266,
+          "L1_linear": 0.004998773779489832,
+          "N1_split": 0.005550303771235724,
           "D0_level_only": -0.0009482953878392278,
-          "D0_change_only": 0.007347271264865441,
-          "S1_trailing_basis": 0.003609698255968432,
-          "X_literal_card_set": 0.0035738148561694667,
+          "D0_change_only": 0.008155659302289158,
+          "S1_trailing_basis": 0.004995881551795738,
+          "X_literal_card_set": 0.004995756171654441,
           "A": -0.05883516293498333
         },
         "2025": {
-          "L1_linear": 0.00029023061250963534,
-          "N1_split": -0.0026633798726909425,
+          "L1_linear": 0.0013571272675648798,
+          "N1_split": -0.001131041907969936,
           "D0_level_only": -0.0034799226002824204,
-          "D0_change_only": 0.005254240991456739,
-          "S1_trailing_basis": -0.001110204317222739,
-          "X_literal_card_set": -0.0005661601388024982,
+          "D0_change_only": 0.006034568096147148,
+          "S1_trailing_basis": 0.001355730564203447,
+          "X_literal_card_set": 0.0013544755318246119,
           "A": -0.023082467051907946
         },
         "2026": {
-          "L1_linear": -0.033608126681267884,
-          "N1_split": -0.0365214987324778,
+          "L1_linear": -0.03745222760361698,
+          "N1_split": -0.0400538979827318,
           "D0_level_only": -0.005119687397367395,
-          "D0_change_only": -0.0167864206891033,
-          "S1_trailing_basis": -0.032307214115350674,
-          "X_literal_card_set": -0.03290707776154729,
+          "D0_change_only": -0.01419886833005911,
+          "S1_trailing_basis": -0.0374709754003885,
+          "X_literal_card_set": -0.03746960515437369,
           "A": -0.11388918616241638
         }
       },
@@ -2906,44 +3004,44 @@
             "intercept": -0.01466
           },
           "L1_linear": {
-            "intercept": -0.018768,
-            "proj_minutes_share": 0.00509,
-            "role_change": -0.032212,
-            "rotation_rank_change": 0.016129,
-            "expanded_role_bounded": 0.026508
+            "intercept": -0.018975,
+            "proj_minutes_share": 0.005505,
+            "role_change": -0.03497,
+            "rotation_rank_change": 0.018785,
+            "expanded_role_bounded": 0.026359
           },
           "N1_split": {
-            "intercept": -0.018584,
-            "proj_minutes_share": 0.005306,
-            "role_change_pos": -0.010868,
-            "role_change_neg": -0.02329,
-            "rotation_rank_change": 0.016229,
-            "expanded_role_bounded": 0.024146
+            "intercept": -0.018818,
+            "proj_minutes_share": 0.005695,
+            "role_change_pos": -0.01264,
+            "role_change_neg": -0.024911,
+            "rotation_rank_change": 0.018842,
+            "expanded_role_bounded": 0.024319
           },
           "D0_level_only": {
             "intercept": -0.014585,
             "proj_minutes_share": 0.00443
           },
           "D0_change_only": {
-            "intercept": -0.018623,
-            "role_change": -0.031755,
-            "rotation_rank_change": 0.016277,
-            "expanded_role_bounded": 0.026781
+            "intercept": -0.018819,
+            "role_change": -0.03434,
+            "rotation_rank_change": 0.018724,
+            "expanded_role_bounded": 0.026647
           },
           "S1_trailing_basis": {
-            "intercept": -0.018781,
-            "trailing_minutes_share": 0.031043,
-            "role_change": -0.001094,
-            "rotation_rank_change": 0.016196,
-            "expanded_role_bounded": 0.026575
+            "intercept": -0.01899,
+            "trailing_minutes_share": 0.033596,
+            "role_change": -0.001296,
+            "rotation_rank_change": 0.018856,
+            "expanded_role_bounded": 0.02643
           },
           "X_literal_card_set": {
-            "intercept": -0.018781,
-            "proj_minutes_share": 0.002609,
-            "trailing_minutes_share": 0.016335,
-            "role_change": -0.015855,
-            "rotation_rank_change": 0.016158,
-            "expanded_role_bounded": 0.026532
+            "intercept": -0.018989,
+            "proj_minutes_share": 0.002813,
+            "trailing_minutes_share": 0.017736,
+            "role_change": -0.017217,
+            "rotation_rank_change": 0.018825,
+            "expanded_role_bounded": 0.026385
           }
         },
         "2023": {
@@ -2954,44 +3052,44 @@
             "intercept": -0.005242
           },
           "L1_linear": {
-            "intercept": -0.005724,
-            "proj_minutes_share": -0.004415,
-            "role_change": -0.024831,
-            "rotation_rank_change": 0.010425,
-            "expanded_role_bounded": 0.029491
+            "intercept": -0.005881,
+            "proj_minutes_share": -0.003285,
+            "role_change": -0.025785,
+            "rotation_rank_change": 0.010521,
+            "expanded_role_bounded": 0.029555
           },
           "N1_split": {
-            "intercept": -0.005694,
-            "proj_minutes_share": -0.007721,
-            "role_change_pos": -0.036545,
-            "role_change_neg": -0.007703,
-            "rotation_rank_change": 0.009513,
-            "expanded_role_bounded": 0.045478
+            "intercept": -0.005838,
+            "proj_minutes_share": -0.006697,
+            "role_change_pos": -0.037056,
+            "role_change_neg": -0.008287,
+            "rotation_rank_change": 0.009602,
+            "expanded_role_bounded": 0.045585
           },
           "D0_level_only": {
             "intercept": -0.003041,
             "proj_minutes_share": -0.009456
           },
           "D0_change_only": {
-            "intercept": -0.007028,
-            "role_change": -0.02623,
-            "rotation_rank_change": 0.010077,
-            "expanded_role_bounded": 0.030137
+            "intercept": -0.006847,
+            "role_change": -0.027169,
+            "rotation_rank_change": 0.010767,
+            "expanded_role_bounded": 0.030068
           },
           "S1_trailing_basis": {
-            "intercept": -0.005734,
-            "trailing_minutes_share": -0.005897,
-            "role_change": -0.029685,
-            "rotation_rank_change": 0.010418,
-            "expanded_role_bounded": 0.029494
+            "intercept": -0.005891,
+            "trailing_minutes_share": -0.004376,
+            "role_change": -0.029394,
+            "rotation_rank_change": 0.01052,
+            "expanded_role_bounded": 0.029559
           },
           "X_literal_card_set": {
-            "intercept": -0.005728,
-            "proj_minutes_share": -0.010127,
-            "trailing_minutes_share": 0.007705,
-            "role_change": -0.018505,
-            "rotation_rank_change": 0.010431,
-            "expanded_role_bounded": 0.029496
+            "intercept": -0.005885,
+            "proj_minutes_share": -0.009537,
+            "trailing_minutes_share": 0.008436,
+            "role_change": -0.018862,
+            "rotation_rank_change": 0.01053,
+            "expanded_role_bounded": 0.029561
           }
         },
         "2024": {
@@ -3002,44 +3100,44 @@
             "intercept": -0.00704
           },
           "L1_linear": {
-            "intercept": -0.009842,
-            "proj_minutes_share": 0.007344,
-            "role_change": -0.018834,
-            "rotation_rank_change": 0.004055,
-            "expanded_role_bounded": 0.026716
+            "intercept": -0.009916,
+            "proj_minutes_share": 0.007839,
+            "role_change": -0.018027,
+            "rotation_rank_change": 0.002448,
+            "expanded_role_bounded": 0.026654
           },
           "N1_split": {
-            "intercept": -0.010093,
-            "proj_minutes_share": 0.008505,
-            "role_change_pos": -0.00142,
-            "role_change_neg": -0.0169,
-            "rotation_rank_change": 0.004618,
-            "expanded_role_bounded": 0.020951
+            "intercept": -0.010171,
+            "proj_minutes_share": 0.009071,
+            "role_change_pos": -0.001229,
+            "role_change_neg": -0.016309,
+            "rotation_rank_change": 0.003036,
+            "expanded_role_bounded": 0.021026
           },
           "D0_level_only": {
             "intercept": -0.00749,
             "proj_minutes_share": 0.001451
           },
           "D0_change_only": {
-            "intercept": -0.007269,
-            "role_change": -0.016279,
-            "rotation_rank_change": 0.004543,
-            "expanded_role_bounded": 0.02541
+            "intercept": -0.007227,
+            "role_change": -0.014008,
+            "rotation_rank_change": 0.00112,
+            "expanded_role_bounded": 0.025154
           },
           "S1_trailing_basis": {
-            "intercept": -0.009845,
-            "trailing_minutes_share": 0.008356,
-            "role_change": -0.012838,
-            "rotation_rank_change": 0.004059,
-            "expanded_role_bounded": 0.02672
+            "intercept": -0.009919,
+            "trailing_minutes_share": 0.008919,
+            "role_change": -0.011629,
+            "rotation_rank_change": 0.002454,
+            "expanded_role_bounded": 0.026657
           },
           "X_literal_card_set": {
-            "intercept": -0.009845,
-            "proj_minutes_share": -0.000335,
-            "trailing_minutes_share": 0.008736,
-            "role_change": -0.012566,
-            "rotation_rank_change": 0.004059,
-            "expanded_role_bounded": 0.02672
+            "intercept": -0.009919,
+            "proj_minutes_share": 0.000216,
+            "trailing_minutes_share": 0.008673,
+            "role_change": -0.011805,
+            "rotation_rank_change": 0.002454,
+            "expanded_role_bounded": 0.026657
           }
         },
         "2025": {
@@ -3050,44 +3148,44 @@
             "intercept": -0.006723
           },
           "L1_linear": {
-            "intercept": -0.011761,
-            "proj_minutes_share": 0.01428,
-            "role_change": -0.012564,
-            "rotation_rank_change": -0.000953,
-            "expanded_role_bounded": 0.025459
+            "intercept": -0.011739,
+            "proj_minutes_share": 0.014218,
+            "role_change": -0.013111,
+            "rotation_rank_change": -0.000109,
+            "expanded_role_bounded": 0.025504
           },
           "N1_split": {
-            "intercept": -0.012302,
-            "proj_minutes_share": 0.015872,
-            "role_change_pos": 0.005151,
-            "role_change_neg": -0.014365,
-            "rotation_rank_change": 4.2e-05,
-            "expanded_role_bounded": 0.01736
+            "intercept": -0.012308,
+            "proj_minutes_share": 0.016019,
+            "role_change_pos": 0.004892,
+            "role_change_neg": -0.014872,
+            "rotation_rank_change": 0.000901,
+            "expanded_role_bounded": 0.017363
           },
           "D0_level_only": {
             "intercept": -0.009873,
             "proj_minutes_share": 0.009186
           },
           "D0_change_only": {
-            "intercept": -0.00649,
-            "role_change": -0.00747,
-            "rotation_rank_change": -7.5e-05,
-            "expanded_role_bounded": 0.023028
+            "intercept": -0.006651,
+            "role_change": -0.005374,
+            "rotation_rank_change": -0.003011,
+            "expanded_role_bounded": 0.022885
           },
           "S1_trailing_basis": {
-            "intercept": -0.011762,
-            "trailing_minutes_share": 0.015297,
-            "role_change": -0.002224,
-            "rotation_rank_change": -0.000948,
-            "expanded_role_bounded": 0.025462
+            "intercept": -0.01174,
+            "trailing_minutes_share": 0.015233,
+            "role_change": -0.002816,
+            "rotation_rank_change": -0.000103,
+            "expanded_role_bounded": 0.025507
           },
           "X_literal_card_set": {
-            "intercept": -0.011763,
-            "proj_minutes_share": 0.005532,
-            "trailing_minutes_share": 0.009377,
-            "role_change": -0.006227,
-            "rotation_rank_change": -0.00095,
-            "expanded_role_bounded": 0.025462
+            "intercept": -0.011742,
+            "proj_minutes_share": 0.005345,
+            "trailing_minutes_share": 0.009512,
+            "role_change": -0.006685,
+            "rotation_rank_change": -0.000104,
+            "expanded_role_bounded": 0.025507
           }
         },
         "2026": {
@@ -3098,44 +3196,44 @@
             "intercept": -0.00649
           },
           "L1_linear": {
-            "intercept": -0.014242,
-            "proj_minutes_share": 0.021187,
-            "role_change": -0.014357,
-            "rotation_rank_change": -0.005422,
-            "expanded_role_bounded": 0.02438
+            "intercept": -0.014018,
+            "proj_minutes_share": 0.020201,
+            "role_change": -0.015314,
+            "rotation_rank_change": -0.003047,
+            "expanded_role_bounded": 0.024278
           },
           "N1_split": {
-            "intercept": -0.014351,
-            "proj_minutes_share": 0.02166,
-            "role_change_pos": -0.000158,
-            "role_change_neg": -0.013148,
-            "rotation_rank_change": -0.005748,
-            "expanded_role_bounded": 0.019908
+            "intercept": -0.014126,
+            "proj_minutes_share": 0.020585,
+            "role_change_pos": -0.000548,
+            "role_change_neg": -0.013751,
+            "rotation_rank_change": -0.003586,
+            "expanded_role_bounded": 0.019822
           },
           "D0_level_only": {
             "intercept": -0.011601,
             "proj_minutes_share": 0.014562
           },
           "D0_change_only": {
-            "intercept": -0.006455,
-            "role_change": -0.009458,
-            "rotation_rank_change": -0.002104,
-            "expanded_role_bounded": 0.021762
+            "intercept": -0.006742,
+            "role_change": -0.00782,
+            "rotation_rank_change": -0.004727,
+            "expanded_role_bounded": 0.021889
           },
           "S1_trailing_basis": {
-            "intercept": -0.014242,
-            "trailing_minutes_share": 0.023581,
-            "role_change": 0.002064,
-            "rotation_rank_change": -0.005418,
-            "expanded_role_bounded": 0.024382
+            "intercept": -0.014018,
+            "trailing_minutes_share": 0.022485,
+            "role_change": 0.000343,
+            "rotation_rank_change": -0.003043,
+            "expanded_role_bounded": 0.02428
           },
           "X_literal_card_set": {
-            "intercept": -0.014244,
-            "proj_minutes_share": 0.00981,
-            "trailing_minutes_share": 0.01267,
-            "role_change": -0.005536,
-            "rotation_rank_change": -0.005421,
-            "expanded_role_bounded": 0.024382
+            "intercept": -0.01402,
+            "proj_minutes_share": 0.008909,
+            "trailing_minutes_share": 0.012575,
+            "role_change": -0.00656,
+            "rotation_rank_change": -0.003045,
+            "expanded_role_bounded": 0.02428
           }
         }
       },
@@ -3154,11 +3252,11 @@
         },
         "L1_linear": {
           "n": 27351,
-          "mae": 0.947421819754094
+          "mae": 0.9474310238591933
         },
         "N1_split": {
           "n": 27351,
-          "mae": 0.9475587558312814
+          "mae": 0.9475659239793905
         },
         "D0_level_only": {
           "n": 27351,
@@ -3166,15 +3264,15 @@
         },
         "D0_change_only": {
           "n": 27351,
-          "mae": 0.9471626010720907
+          "mae": 0.9471243622031397
         },
         "S1_trailing_basis": {
           "n": 27351,
-          "mae": 0.9473820793123364
+          "mae": 0.9473866741899771
         },
         "X_literal_card_set": {
           "n": 27351,
-          "mae": 0.9474217681127528
+          "mae": 0.9474310212312301
         }
       },
       "player_non_appearing": {
@@ -3192,11 +3290,11 @@
         },
         "L1_linear": {
           "n": 8278,
-          "mae": 0.5105078768265895
+          "mae": 0.515449353098919
         },
         "N1_split": {
           "n": 8278,
-          "mae": 0.5104503889103037
+          "mae": 0.5158001249151548
         },
         "D0_level_only": {
           "n": 8278,
@@ -3204,15 +3302,15 @@
         },
         "D0_change_only": {
           "n": 8278,
-          "mae": 0.5141855260814069
+          "mae": 0.5184366312456928
         },
         "S1_trailing_basis": {
           "n": 8278,
-          "mae": 0.5130554872650891
+          "mae": 0.5155053160366937
         },
         "X_literal_card_set": {
           "n": 8278,
-          "mae": 0.512401109286599
+          "mae": 0.5154469019071689
         }
       }
     }

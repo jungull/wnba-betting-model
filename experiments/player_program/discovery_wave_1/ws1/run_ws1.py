@@ -42,7 +42,7 @@ import feature_gate                                                             
 from feature_gate import FeatureGateFailure                                      # noqa: E402,F401
 from evalharness.compare import cluster_bootstrap_ci                             # noqa: E402
 from run_turnover_p2 import poisson_ridge, _pois_dev                             # noqa: E402
-from register_turnover_p2 import RIDGE_LAMBDA, MIN_TRAIN_ROWS                    # noqa: E402
+from register_turnover_p2 import RIDGE_LAMBDA, MIN_TRAIN_ROWS, INVOLVE_ALPHA     # noqa: E402
 
 # --------------------------------------------------------------------------------------------- #
 # PREREGISTRATION -- every tunable is a module constant fixed before the first fit.
@@ -163,16 +163,119 @@ def design_rank_report(df: pd.DataFrame, names: list[str]) -> dict:
                     "coefficients are then a property of the penalty, not of the data"}
 
 
-def build_features() -> tuple[pd.DataFrame, dict]:
-    """Derive the WS1 feature columns from the frozen, read-only P2 role-context artifact.
+LEAKING_P2_COLUMNS = ["trailing_minutes_share", "trailing_rotation_rank", "role_change",
+                      "offensive_involvement_proxy", "displaced_involvement", "_prior_support"]
 
-    Every derived column is a deterministic function of columns that were already validated as
-    chronologically isolated in turnover_p2_v1/FEATURE_VALIDATION.json, so no new leakage surface
-    is introduced.  The source artifact is not modified.
+
+def build_trailing_role_state(C: pd.DataFrame, universe: pd.DataFrame) -> pd.DataFrame:
+    """Rebuild the trailing-role signal so state is read for EVERY row of `universe`.
+
+    THE DEFECT BEING REPAIRED (coordinator amendment, verified here):
+        turnover_p2_v1's trailing columns were produced by iterating the REALISED box score
+        (master_player filtered to minutes.notna()) and left-merging onto the candidate universe.
+        A candidate who did not appear never generated a row, so the column is NULL for exactly the
+        non-appearers -- verified crosstab 27,351 non-null / 8,278 null with ZERO off-diagonal
+        against `did_appear`.  The null mask IS a post-cutoff outcome indicator, and any imputation
+        of it encodes "did not appear" into the design.
+
+    THE REPAIR
+        Same EWMA machine (alpha = INVOLVE_ALPHA = 0.10, update new = (1-alpha)*old + value, state
+        snapshotted BEFORE the day's games are consumed, so strictly prior games only).  The only
+        change is WHERE state is read: the forward pass now emits a row for every universe member
+        on its own game date, whether or not that player later appeared.  The box score is used
+        only to UPDATE state, never to decide who gets a row.
+
+    The canonical artifact is not modified; this writes its own copy under the ws1 directory.
+    """
+    box = pd.read_parquet(INPUTS["master_player"],
+                          columns=["game_id", "team_id", "player_id", "minutes"])
+    box["game_id"] = box["game_id"].astype(str)
+    box["team_id"] = box["team_id"].astype("int64")
+    box["player_id"] = box["player_id"].astype("int64")
+    box = box[box["minutes"].notna()].merge(C[["game_id", "game_date"]], on="game_id", how="left")
+    box = box[box["game_date"].notna()].sort_values(["game_date", "game_id"])
+
+    ewm_min: dict[int, float] = {}
+    ewm_tm: dict[int, float] = {}
+    uni_by_date = {d: sub for d, sub in universe.groupby("game_date", sort=False)}
+    box_by_date = {d: sub for d, sub in box.groupby("game_date", sort=False)}
+    rows = []
+    for d in sorted(set(uni_by_date) | set(box_by_date)):
+        # ---- SNAPSHOT: read state for every universe member on this date, appearers or not ---- #
+        for r in uni_by_date.get(d, pd.DataFrame()).itertuples(index=False):
+            tm = ewm_tm.get(r.team_id, 0.0)
+            pm = ewm_min.get(r.player_id, 0.0)
+            rows.append({"game_id": r.game_id, "team_id": r.team_id, "player_id": r.player_id,
+                         "trailing_minutes_share_raw": (pm / tm) if tm > 0 else np.nan,
+                         "team_prior_support": tm, "player_prior_support": pm})
+        # ---- CONSUME: only now do this date's realised games update the EWMA state ------------ #
+        day = box_by_date.get(d)
+        if day is None:
+            continue
+        for r in day.itertuples(index=False):
+            ewm_min[r.player_id] = ((1 - INVOLVE_ALPHA) * ewm_min.get(r.player_id, 0.0)
+                                    + float(r.minutes or 0))
+        for t, sub in day.groupby("team_id"):
+            ewm_tm[t] = (1 - INVOLVE_ALPHA) * ewm_tm.get(t, 0.0) + float(sub["minutes"].sum())
+    return pd.DataFrame(rows)
+
+
+def build_features() -> tuple[pd.DataFrame, dict]:
+    """Assemble the WS1 feature frame.
+
+    Projected-role columns are taken from the frozen P2 artifact (they are clean: zero nulls,
+    built from pre-cutoff projections).  The trailing-role columns are REBUILT here -- the P2
+    versions are dropped outright, never imputed.
     """
     F = pd.read_parquet(INPUTS["features"])
     ident = float(np.nanmax(np.abs(F["proj_minutes_share"] - F["proj_off_poss_share"])))
-    F = F.copy()
+    C = pd.read_parquet(INPUTS["contract"],
+                        columns=["game_id", "game_date", "season"]).drop_duplicates("game_id")
+    C["game_id"] = C["game_id"].astype(str)
+
+    # quantify the defect in the source artifact before discarding it
+    O = pd.read_parquet(INPUTS["operational"], columns=["game_id", "team_id", "player_id",
+                                                        "did_appear"])
+    chk = O.merge(F[["game_id", "team_id", "player_id"] + LEAKING_P2_COLUMNS[:3]],
+                  on=["game_id", "team_id", "player_id"], how="left")
+    leak_ev = {}
+    for c in LEAKING_P2_COLUMNS[:3]:
+        ct = pd.crosstab(chk[c].isna(), chk["did_appear"])
+        leak_ev[c] = {"null_and_did_not_appear": int(ct.get(False, {}).get(True, 0)),
+                      "nonnull_and_appeared": int(ct.get(True, {}).get(False, 0)),
+                      "null_but_appeared": int(ct.get(True, {}).get(True, 0)),
+                      "nonnull_but_did_not_appear": int(ct.get(False, {}).get(False, 0))}
+    leak_ev = {c: {"n_null": int(chk[c].isna().sum()),
+                   "n_nonnull": int(chk[c].notna().sum()),
+                   "null_mask_equals_not_did_appear": bool(
+                       (chk[c].isna() == ~chk["did_appear"].astype(bool)).all()),
+                   "off_diagonal_rows": int((chk[c].isna() != ~chk["did_appear"].astype(bool)).sum())}
+               for c in LEAKING_P2_COLUMNS[:3]}
+
+    F = F.drop(columns=[c for c in LEAKING_P2_COLUMNS if c in F.columns]).copy()
+
+    # universe for the rebuild: candidate rows PLUS intrinsic rows outside the candidate universe
+    I = pd.read_parquet(INPUTS["intrinsic"], columns=["game_id", "team_id", "player_id"])
+    uni = pd.concat([F[["game_id", "team_id", "player_id"]], I], ignore_index=True) \
+            .drop_duplicates(["game_id", "team_id", "player_id"])
+    uni = uni.merge(C[["game_id", "game_date"]], on="game_id", how="left")
+    uni = uni[uni["game_date"].notna()]
+
+    T = build_trailing_role_state(C, uni)
+    T.to_parquet(HERE / "ws1_trailing_role_state_v1.parquet", index=False)
+
+    F = F.merge(T, on=["game_id", "team_id", "player_id"], how="left")
+    # Residual missingness is a TEAM-GAME property (the team has no prior history at all), never a
+    # player-level outcome.  Neutralise it using projection-only information: no prior history =>
+    # no evidence of role change.  This cannot encode appearance because every candidate on such a
+    # team-game is treated identically.
+    no_hist = F["trailing_minutes_share_raw"].isna()
+    F["trailing_history_missing"] = no_hist
+    F["trailing_minutes_share"] = F["trailing_minutes_share_raw"].where(
+        ~no_hist, F["proj_minutes_share"])
+    F["trailing_rotation_rank"] = F.groupby(["game_id", "team_id"])["trailing_minutes_share"].rank(
+        ascending=False, method="first")
+    F["role_change"] = F["proj_minutes_share"] - F["trailing_minutes_share"]
     F["rotation_rank_change"] = F["trailing_rotation_rank"] - F["proj_rotation_rank"]
     F["expanded_role_bounded"] = np.clip(
         (F["role_change"] - MATERIAL_EXPANSION_LO) / (MATERIAL_EXPANSION_HI - MATERIAL_EXPANSION_LO),
@@ -183,6 +286,20 @@ def build_features() -> tuple[pd.DataFrame, dict]:
         "source": str(INPUTS["features"].relative_to(ROOT)).replace("\\", "/"),
         "source_sha256": _sha(INPUTS["features"]),
         "source_unmodified": True,
+        "p2_trailing_columns_DISCARDED": {
+            "columns": LEAKING_P2_COLUMNS,
+            "defect": "built by iterating the realised box score and left-merging onto the "
+                      "candidate universe, so the null mask is an EXACT did_appear indicator -- "
+                      "post-cutoff outcome information",
+            "evidence": leak_ev,
+            "action": "dropped outright and rebuilt; never imputed"},
+        "trailing_role_rebuild": {
+            "artifact": "ws1_trailing_role_state_v1.parquet",
+            "machine": f"EWMA alpha={INVOLVE_ALPHA}, new = (1-alpha)*old + value, state "
+                       "snapshotted BEFORE the day's games are consumed (strictly prior games)",
+            "change_vs_p2": "state is READ for every universe member on its own game date, "
+                            "appearer or not; the box score only UPDATES state",
+            "universe": "Tier A candidate rows UNION intrinsic realised-participant rows"},
         "share_identity_check": {
             "claim": "proj_minutes_share and proj_off_poss_share are algebraically identical",
             "max_abs_difference": ident, "identical": bool(ident < 1e-12),
@@ -232,6 +349,42 @@ def main() -> int:
     for nm, d in (("intrinsic", I), ("operational", O)):
         merge_cov[nm]["feature_null_fraction"] = {
             c: round(float(d[c].isna().mean()), 5) for c in allfeat}
+
+    # ------------------------------------------------------- LEAKAGE GUARD (fail closed) ------ #
+    # The P2 defect was invisible because a null mask carried outcome information and imputation
+    # laundered it into the design.  The guard is therefore structural, not statistical: on the
+    # operational track every feature must be FULLY POPULATED, so there is no mask to leak and
+    # fillna is a no-op.  A feature that cannot be computed without knowing the outcome cannot be
+    # used, and this raises rather than silently imputing.
+    did = O["did_appear"].astype(bool).to_numpy()
+    guard = {"track": "operational", "n_rows": int(len(O)),
+             "n_did_appear": int(did.sum()), "n_did_not_appear": int((~did).sum()),
+             "features": {}}
+    violations = []
+    for c in allfeat:
+        v = O[c]
+        nmask = v.isna().to_numpy()
+        rec = {"n_null": int(nmask.sum()),
+               "null_mask_off_diagonal_vs_did_appear": int((nmask != ~did).sum())}
+        if nmask.sum():
+            rec["null_mask_equals_not_did_appear"] = bool((nmask == ~did).all())
+            violations.append(c)
+        vv = v.to_numpy(float)
+        m = np.isfinite(vv)
+        rec["corr_with_did_appear"] = (float(np.corrcoef(vv[m], did[m].astype(float))[0, 1])
+                                       if m.sum() > 10 and np.std(vv[m]) > 0 else None)
+        rec["mean_if_appeared"] = float(np.nanmean(vv[did]))
+        rec["mean_if_not"] = float(np.nanmean(vv[~did]))
+        guard["features"][c] = rec
+    guard["all_features_fully_populated"] = not violations
+    guard["violations"] = violations
+    if violations:
+        raise SystemExit(
+            "LEAKAGE GUARD: operational features still contain nulls, so imputing them would "
+            f"encode a post-cutoff mask: {violations}")
+    guard["note"] = ("zero nulls on the operational track means no missingness indicator exists "
+                     "and fillna(0) is a no-op there; a non-zero corr_with_did_appear is legitimate "
+                     "signal only because these values are computable strictly before the cutoff")
 
     # ------------------------------------------------------------------ identifiability ------ #
     ident_report = {a: design_rank_report(F, spec["features"]) for a, spec in ARMS.items()}
@@ -549,6 +702,7 @@ def main() -> int:
         "primary_arms": PRIMARY,
         "feature_provenance": feat_prov,
         "merge_coverage": merge_cov,
+        "leakage_guard": guard,
         "identifiability": ident_report,
         "gate_audit_summary": {
             a: {"passed": gate_audits[a]["gate_passed_all_folds"],
