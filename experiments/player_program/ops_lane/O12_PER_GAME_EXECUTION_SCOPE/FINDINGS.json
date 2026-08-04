@@ -1,0 +1,170 @@
+{
+  "node_id": "O12_PER_GAME_EXECUTION_SCOPE",
+  "lane": "operations",
+  "epistemic_status": "DESIGN OR IMPLEMENTATION ANALYSIS of a documented prospective-capture defect. Isolated branch only. This lane does not block possession research unless it changes the historical feature evidence.",
+  "worktree": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program",
+  "branch": "player-model-program",
+  "documentation_found": "DOCUMENTED",
+  "documentation_citations": [
+    {
+      "path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md",
+      "line": 201,
+      "quote_summary": "Defect D-c, 'Per-game execution scope': daily_forecast.py cannot be scoped to one game and keys deduplication on now; severity A for confirmation validity; cross-thread amendment bundled with the forecast_log.py schema change."
+    },
+    {
+      "path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md",
+      "line": 609,
+      "quote_summary": "Appendix F contract-amendment map: daily_forecast.py -- 'per-game scope; stop keying deduplication on now (D-c)', owner engineering, bundle yes."
+    },
+    {
+      "path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md",
+      "line": 569,
+      "quote_summary": "D-c is item (i) of a four-fault repair set; D-b, D-a, D-d are separate."
+    },
+    {
+      "path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md",
+      "line": 596,
+      "quote_summary": "D-b / D-c / D-f mean served obligations are not a random subset, which must be accounted for whenever the period is graded."
+    },
+    {
+      "path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md",
+      "line": 304,
+      "quote_summary": "Decision D-4: the bundled cross-thread amendment is 'Prepare, do not implement.'"
+    },
+    {
+      "path": "project_docs/FREEZE_PROPOSAL_v0.md",
+      "line": 43,
+      "quote_summary": "prospective_v0 uses two fixed daily runs; 'Per-game dispatching is a documented v1 upgrade' -- i.e. the absence of per-game scope is contractually expected in v0, not an accident."
+    }
+  ],
+  "reproduced": "REPRODUCED",
+  "reproduction": {
+    "limb_1_no_per_game_scope": {
+      "status": "REPRODUCED_BY_INSPECTION",
+      "evidence": [
+        "daily_forecast.py:877-889 -- argparse exposes only --slate-date, --cutoff, --live, --no-log. There is no game-selecting option.",
+        "daily_forecast.py:929 -- the slate is discovered whole for the date.",
+        "daily_forecast.py:978 -- 'for g in slate:' forecasts every discovered game.",
+        "daily_forecast.py:1058-1061 -- the COMPLETENESS RULE frozen 2026-07-31 requires every slate game to get a chain record, so scoping cannot be added as a silent filter."
+      ],
+      "measured": "In forecasts/forecast_log.jsonl no firing ever produced fewer than 2 records (records_per_cutoff_min = 2, max = 3); in experiments/forecast_dryrun/scratch_chain.jsonl every firing produced exactly 3 (min = max = 3). No single-game execution exists anywhere in either chain."
+    },
+    "limb_2_dedup_keyed_on_now": {
+      "status": "REPRODUCED",
+      "evidence": [
+        "daily_forecast.py:893-895 -- 'now = datetime.now(timezone.utc)'; 'cutoff = ... if args.cutoff else now'.",
+        "evalharness/forecast_log.py:697-707 -- the duplicate key is (game_id, forecast_cutoff, model_version_hash).",
+        "Measured: 0 of 3 distinct forecast_cutoff values in the official chain and 1 of 5 in the scratch chain fall on a round second. Every scheduled cutoff carries microsecond resolution, i.e. it is a wall clock, so the key can never collide."
+      ],
+      "measured": {
+        "official_chain_n_records": 8,
+        "official_chain_n_distinct_cutoffs": 3,
+        "official_chain_cutoffs_on_round_second": 0,
+        "official_repeat_servings_under_shipped_key": 0,
+        "official_repeat_servings_under_obligation_key": 0,
+        "scratch_chain_n_records": 15,
+        "scratch_chain_n_distinct_cutoffs": 5,
+        "scratch_chain_cutoffs_on_round_second": 1,
+        "scratch_repeat_servings_under_shipped_key": 0,
+        "scratch_repeat_servings_under_obligation_key": 3,
+        "scratch_repeat_obligations": [
+          ["1022600210", "T-90m", "8cfca795fc6b11396a5a738cb41811af12eee0f02972959110cdd5be0c8f729e"],
+          ["1022600211", "T-90m", "8cfca795fc6b11396a5a738cb41811af12eee0f02972959110cdd5be0c8f729e"],
+          ["1022600212", "T-8h", "8cfca795fc6b11396a5a738cb41811af12eee0f02972959110cdd5be0c8f729e"]
+        ],
+        "note": "Records 0-2 and 6-8 of the scratch chain are the same three games at the same three labels under the same model_version_hash, logged by two firings 110 seconds apart. The chain accepted all six. The shipped duplicate refusal fired zero times in the entire history of both chains."
+      },
+      "synthetic_reproduction": "TESTS.py test 1: four simulated 15-minute firings at the T-30m obligation produce four chain records and zero DuplicateForecastError refusals, all four carrying one obligation identity, with the hash chain still verifying. The defect is semantic, not an integrity failure."
+    }
+  },
+  "additional_finding_not_in_the_documented_description": {
+    "id": "O12-1",
+    "title": "decision_time_label is assigned by the firing instant, with no proximity bound",
+    "severity_suggested": "B",
+    "evidence": [
+      "daily_forecast.py:598-599 -- nearest_label() returns the CONTRACT_LABELS entry minimising |hours_to_tip - label_hours|, with no maximum distance.",
+      "Measured on real bytes: game 1022600212 in experiments/forecast_dryrun/scratch_chain.jsonl is recorded as serving T-8h at hours_to_tip 4.806 and 4.776, then T-90m at 4.716. The label flips at the 4.75h midpoint between the 8h and 1.5h contract times.",
+      "TESTS.py test 8 reproduces the flip and confirms every real label in that game equals nearest_label(hours_to_tip)."
+    ],
+    "why_it_matters": "decision_time_label today records which contract time happened to be nearest to when the job fired, not which obligation the run was dispatched to serve. A record can claim to have served the T-90m obligation from 4.7 hours before tip. This is the mechanism behind the documented 'serves a non-random subset' claim, and it is a precondition for any obligation-keyed fix: the label must become an input (the obligation being served) rather than an output of the wall clock."
+  },
+  "fix": {
+    "location": "experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/per_game_obligation_scope.py",
+    "kind": "call-site wrapper; no shared artifact edited",
+    "shared_files_touched": [],
+    "design": [
+      "Obligation identity is (game_id, decision_time_label, model_version_hash). Within a game each of the four contract labels occurs exactly once (daily_forecast.py:126), so the triple is complete AND is derivable from schema evalharness/forecast_log/1 records already on disk. No schema change is needed to adopt it.",
+      "forecast_cutoff keeps its existing meaning as the as-of data boundary and its existing never-in-the-future refusal (daily_forecast.py:899). The fix does not widen it.",
+      "guarded_log_forecast() refuses a repeat serving before delegating to the unmodified evalharness log_forecast, which keeps its own DuplicateForecastError underneath as a second line of defence. The wrapper only ever adds a refusal.",
+      "scope_slate_to_games() returns a ScopeDeclaration naming every excluded game, so per-game scope is declared rather than silent and does not violate the COMPLETENESS RULE at daily_forecast.py:1058-1061. game_ids=None reproduces existing whole-slate behaviour byte for byte."
+    ],
+    "tests": {
+      "path": "experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/TESTS.py",
+      "runner": "python experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/TESTS.py",
+      "exit_code": 0,
+      "n_checks": 34,
+      "n_passing": 34,
+      "n_failing": 0
+    },
+    "backward_compatibility": "Applied to the real official chain the obligation key finds 0 repeat servings, i.e. adopting it would have changed nothing already logged there. Applied to the real scratch chain it finds 3, i.e. it would have refused three repeat servings the shipped key accepted.",
+    "not_adopted": "The call site in daily_forecast.py is NOT changed by this node. Adoption is a proposal."
+  },
+  "shared_contract_changes_proposed": [
+    {
+      "id": "P1",
+      "file": "evalharness/forecast_log.py",
+      "change": "Change the duplicate key at lines 697-707 from (game_id, forecast_cutoff, model_version_hash) to (game_id, decision_time_label, model_version_hash), or add the latter as an additional refusal. NOT merged here.",
+      "status": "PROPOSED_ONLY",
+      "note": "This is the frozen shared chain contract. Per the standing rule the equivalent enforcement is implemented at the call site instead, in this node's wrapper. Merge is reserved to O16_SHARED_SCHEMA_ADOPTION / the user."
+    },
+    {
+      "id": "P2",
+      "file": "daily_forecast.py",
+      "change": "Add --game-id (repeatable) plus a written scope declaration, and route logging through an obligation-keyed guard. NOT merged here.",
+      "status": "PROPOSED_ONLY",
+      "note": "daily_forecast.py is outside this node's write scope and PROJECT_UPDATE_2026-08-04.md:304 records the standing decision 'Prepare, do not implement.'"
+    },
+    {
+      "id": "P3",
+      "file": "daily_forecast.py:598-599 (nearest_label) and the prospective_v0 / prospective_team_pair_v1 contracts",
+      "change": "Make decision_time_label the obligation dispatched, not nearest_label(hours_to_tip), and/or bound the label by a maximum distance from the contract time. NOT merged here.",
+      "status": "PROPOSED_ONLY",
+      "note": "This changes what a prospective capture record means and therefore touches two registered team-thread contracts. It is a precondition for P1/P2 being meaningful."
+    }
+  ],
+  "escalations": [],
+  "changes_historical_feature_evidence": false,
+  "changes_historical_feature_evidence_reasoning": "D-c lives entirely in the prospective capture path: the CLI surface of daily_forecast.py, the chain duplicate key, and the label assignment. It touches no historical feature construction, no fold rule, no target definition, and no candidate universe. Nothing under possessions_v1/, possessions_v2/, possession_features_v1/ or stage2a/ reads forecasts/forecast_log.jsonl or the scratch chain. No escalation to the possession lane is warranted.",
+  "stop_conditions_tripped": [],
+  "contradictions_found": [
+    {
+      "id": "C1",
+      "description": "PROJECT_UPDATE_2026-08-04.md:580-585 (Appendix E.2) identifies official-chain record_idx 3 as GSV v TOR, created 14:30:06.442135Z against an 18:00:00Z cutoff. In THIS worktree, forecasts/forecast_log.jsonl record_idx 3 is game_id 1022600213, forecast_cutoff 2026-07-31T22:45:04.663008+00:00, logged_at_utc 2026-07-31T22:45:06.311020+00:00, label T-30m. The document and the bytes available to this node disagree.",
+      "most_likely_explanation": "The live chain is in the repository-root worktree on a different branch, which this node is instructed not to read or treat as program state. This worktree's copy was last committed in a5119a3 and appears to be an earlier snapshot: its last cutoff is 2026-08-01T14:20:03Z while the project update is dated 2026-08-04.",
+      "resolved": false,
+      "consequence_for_this_node": "None for the reproduction. Both limbs of D-c reproduce on the bytes present here, and the mechanism is in the source code, not in any particular record."
+    },
+    {
+      "id": "C2",
+      "description": "Appendix F (PROJECT_UPDATE_2026-08-04.md:611-612) assigns fixes to prospective_pair/should_run_base.py and prospective_pair/coverage_audit.py. Neither file, nor any directory named prospective_pair, exists anywhere in this worktree (searched by filename across the whole tree).",
+      "most_likely_explanation": "Those are team-thread files living outside this worktree, consistent with Appendix F marking them 'no -- internal'.",
+      "resolved": false,
+      "consequence_for_this_node": "The 20-minute lead window cited in D-b could not be bound to any byte. In this node's module it is therefore an explicit parameter, and due_obligations() is documented as NOT a fix for D-b."
+    }
+  ],
+  "could_not_establish": [
+    "Whether the LIVE official chain (repository-root worktree, different branch) shows the same repeat-serving pattern. Out of scope by instruction; not read.",
+    "The actual scheduler firing cadence. No scheduled-task definition, wrapper script, or invocation record exists in this worktree; the 15-minute cadence is taken from PROJECT_UPDATE_2026-08-04.md:201 and modelled synthetically in TESTS.py, not measured. The two scratch-chain firings that repeat-served were 110 seconds apart, which is a manual re-run pattern, not a 15-minute one.",
+    "The registered coverage-audit rule that decides whether a repeat serving counts once or twice toward coverage. coverage_audit.py is absent (C2), so the coverage consequence of the proposed key change is stated as a mechanism, not as a recomputed coverage number.",
+    "Whether adopting the obligation key would alter the published coverage figure of 31.9% (PROJECT_UPDATE_2026-08-04.md, Appendix E.1). Not recomputed: the auditor is absent and the receipt was built against the live chain.",
+    "Whether any downstream consumer keys on forecast_cutoff in a way the proposed change would break. Not exhaustively audited across clv_transfer.py and cbs_accounting_v11.py."
+  ],
+  "outputs": [
+    "experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/REPORT.md",
+    "experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/FINDINGS.json",
+    "experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/per_game_obligation_scope.py",
+    "experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/TESTS.py",
+    "experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/measure_chain_scope.py",
+    "experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/chain_scope_measurements.json"
+  ]
+}

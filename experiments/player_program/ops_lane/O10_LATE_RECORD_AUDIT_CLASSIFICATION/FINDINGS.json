@@ -1,0 +1,156 @@
+{
+  "node_id": "O10_LATE_RECORD_AUDIT_CLASSIFICATION",
+  "lane": "operations",
+  "type": "audit",
+  "generated_utc": "2026-08-04",
+  "epistemic_status": "DESIGN OR IMPLEMENTATION ANALYSIS of a documented prospective-capture defect. Isolated branch only. This lane does not block possession research unless it changes the historical feature evidence.",
+
+  "documentation_found": "DOCUMENTED",
+  "documented_as": "D-a",
+  "documentation_citations": [
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:199",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:266",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:552",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:558",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:571",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:612"
+  ],
+
+  "defect": {
+    "summary": "The forecast-coverage auditor admits records that were created after their own cutoff as evidence that the forecasting job was healthy at that (slate date, decision-time label). Such records are classified `late_record` and are deliberately excluded from SERVED, yet they still downgrade an unserved obligation from `missing_job_did_not_run` (operational miss) to `missing_data_unavailable` (benign game-specific gap).",
+    "site": {
+      "file": "prospective_pair/coverage_audit.py",
+      "lines": "189-194 (served_at construction); consumed at 242-248",
+      "sha256": "2360121ef80f0645ce6595a3f7adb6c17008ca8048f32f2de2b008fbbb68ae54",
+      "worktree": "C:/Users/jgallagher/wnba-betting-model (branch data-refresh-2026)",
+      "git_tracked": false,
+      "in_this_node_read_scope": false,
+      "note": "The file is UNTRACKED. `git ls-files prospective_pair/` returns nothing and no commit touches it. It does not exist on branch player-model-program. Read read-only; nothing was written to that worktree."
+    },
+    "corroborating_line_references": {
+      "late_record_classification": "coverage_audit.py:227-228 (`created > cutoff`)",
+      "SERVED_excludes_late_record": "coverage_audit.py:253",
+      "DUE_includes_late_record": "coverage_audit.py:255",
+      "class_docstring_gap": "coverage_audit.py:19-20",
+      "authors_reasoned_about_date_key_only": "coverage_audit.py:184-186"
+    }
+  },
+
+  "reproduced": "REPRODUCED",
+  "reproduction": {
+    "method": "Re-derived the served-evidence index from the frozen published audit frame and re-applied the classification rule with a timeliness test. No re-run of the auditor (its main() writes into the repo-root worktree).",
+    "evidence_artifact": "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/evidence/coverage_audit_snapshot.csv",
+    "evidence_artifact_sha256": "26b22b90636071a0c2e20bd9ab4cee90bc0ebe9659c378f81fc8d791967ecbb0",
+    "receipt_artifact_sha256": "00b2274684125f46f73157d0eabe18d68e3978d88ea090ef43f105d722a61198",
+    "command": "python experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/TESTS.py",
+    "exit_code": 0,
+    "affected_obligation": {
+      "game_date": "2026-08-03",
+      "home": "CHI",
+      "away": "PHX",
+      "decision_time_label": "T-30m",
+      "published_classification": "missing_data_unavailable",
+      "published_reason": "job served 2 other game(s) on 2026-08-03 at T-30m",
+      "corrected_classification": "missing_job_did_not_run",
+      "only_companion_records_at_that_date_label": [
+        {"game": "NYL v SEA T-30m", "classification": "late_record", "created_utc": "2026-08-03T22:45:08.958486+00:00"},
+        {"game": "ATL v LVA T-30m", "classification": "late_record", "created_utc": "2026-08-03T22:45:08.976775+00:00"}
+      ]
+    },
+    "measured": {
+      "obligations_total": 84,
+      "obligations_due": 47,
+      "served": 15,
+      "late_record_before": 2,
+      "late_record_after": 2,
+      "missing_data_unavailable_before": 4,
+      "missing_data_unavailable_after": 3,
+      "operational_misses_before": 26,
+      "operational_misses_after": 27,
+      "obligations_reclassified": 1,
+      "coverage_served_before": 0.3191489361702128,
+      "coverage_served_after": 0.3191489361702128,
+      "coverage_served_changed": false,
+      "unexplained_before": 0,
+      "unexplained_after": 0,
+      "promotion_grade_before": false,
+      "promotion_grade_after": false
+    },
+    "agrees_with_documentation": true,
+    "documentation_figures_matched": ["26 -> 27 operational misses", "4 -> 3 data-unavailable", "coverage 31.9% unchanged", "2 late records"]
+  },
+
+  "fix": {
+    "designed": true,
+    "tested": true,
+    "applied_to_shared_file": false,
+    "rule": "A record counts as evidence the job was healthy at a label only if it was created at or before that label's cutoff — the same predicate as the late_record test. Timeliness that cannot be established (unknown tip or unknown label) excludes the record: fail closed toward reporting the miss.",
+    "implementation": "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/late_record_evidence.py",
+    "proposed_patch_text_only": "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/PROPOSED_PATCH.diff",
+    "tests_file": "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/TESTS.py",
+    "tests_written": 30,
+    "tests_passing": 30,
+    "invariants_verified": [
+      "only missing_data_unavailable can change class, and only to missing_job_did_not_run",
+      "coverage_served is invariant under the fix",
+      "late_record rows keep their own classification",
+      "explicit_no_forecast remains valid health evidence",
+      "exactly-at-cutoff counts as timely",
+      "evidence never leaks across dates or decision-time labels",
+      "an operational miss is never demoted to a data gap",
+      "reclassification is idempotent and row-preserving",
+      "fails closed when tip or label is unknown"
+    ],
+    "downstream_if_applied": [
+      "regenerate forecasts/coverage_receipt.json",
+      "re-run verify_chain() on both chains",
+      "confirm no schema-/1 consumer breaks",
+      "re-run build_program_state.py"
+    ]
+  },
+
+  "shared_contract_changes_proposed": [
+    "prospective_pair/coverage_audit.py:189-194 — filter served_at to records created at or before their own cutoff (PROPOSED ONLY; team-thread owned per PROJECT_UPDATE_2026-08-04.md:612; NOT merged from this node)",
+    "prospective_pair/coverage_audit.py:19-20 — amend the missing_data_unavailable class docstring to state that only timely records constitute 'the job did serve other games' (PROPOSED ONLY; NOT merged)"
+  ],
+  "shared_contract_changes_merged": [],
+
+  "escalations": [],
+  "changes_historical_feature_evidence": false,
+  "escalation_rationale": "The coverage auditor is a read-only reporting layer over the prospective forecast logs (coverage_audit.py:5). It produces no feature, target or training row, and touches neither the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set, nor leakage status.",
+
+  "stop_conditions_tripped": [],
+
+  "contradictions": [
+    {
+      "kind": "documentation_vs_version_control",
+      "statement": "PROJECT_UPDATE_2026-08-04.md:612 tracks a B-severity defect against prospective_pair/coverage_audit.py, but that file is untracked by git and exists only as uncommitted working-tree bytes in one worktree. No commit contains it and no other worktree can see it.",
+      "resolved": false
+    },
+    {
+      "kind": "unverifiable_citation",
+      "statement": "PROJECT_UPDATE_2026-08-04.md:199 calls D-a 'A variant of the bug PL-003 fixed once'. PL-003 appears nowhere else in this worktree; no ledger defining the PL- series exists under experiments/player_program/. The prior fix could not be located or verified.",
+      "resolved": false
+    }
+  ],
+
+  "could_not_establish": [
+    "Whether the same late-record-as-health-evidence pattern occurs at a third site. Only coverage_audit.py was audited; prospective_pair/should_run_base.py (D-b / D-d) was not read and is outside this node's mandate.",
+    "Whether the corrected auditor reproduces on live data — coverage_audit.main() writes into the repo-root worktree and was deliberately not executed.",
+    "Whether recs[0] is always the earliest-created record. The frame-level reclassifier relies on the auditor's stated chain-order invariant (coverage_audit.py:216-218); the proposed source fix does not depend on it.",
+    "Any figure in PROJECT_UPDATE_2026-08-04.md outside Appendix E and section 5.",
+    "Whether the documented four-fault repair set (D-a through D-d) is complete."
+  ],
+
+  "outputs_written": [
+    "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/REPORT.md",
+    "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/FINDINGS.json",
+    "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/late_record_evidence.py",
+    "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/TESTS.py",
+    "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/PROPOSED_PATCH.diff",
+    "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/evidence/coverage_audit_snapshot.csv",
+    "experiments/player_program/ops_lane/O10_LATE_RECORD_AUDIT_CLASSIFICATION/evidence/coverage_receipt_snapshot.json"
+  ],
+  "frozen_artifacts_modified": [],
+  "git_commands_run": ["rev-parse (read-only)", "ls-files (read-only)", "log (read-only)", "cat-file -e (read-only)"]
+}

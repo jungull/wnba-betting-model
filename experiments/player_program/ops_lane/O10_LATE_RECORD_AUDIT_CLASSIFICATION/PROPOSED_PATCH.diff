@@ -1,0 +1,86 @@
+PROPOSED ONLY — NOT APPLIED BY THIS NODE.
+
+Target: prospective_pair/coverage_audit.py
+  owner  : team thread (experiments/player_program/PROJECT_UPDATE_2026-08-04.md:612)
+  sha256 : 2360121ef80f0645ce6595a3f7adb6c17008ca8048f32f2de2b008fbbb68ae54
+  note   : the file is UNTRACKED in git — it exists only as an uncommitted working-tree
+           file on branch data-refresh-2026 at C:/Users/jgallagher/wnba-betting-model.
+           `git ls-files prospective_pair/` returns nothing. Line numbers below are
+           against that on-disk byte state and are not reproducible from any commit.
+
+Behavioural contract of the change, verified by TESTS.py:
+  - only `missing_data_unavailable` rows can change class, and only to
+    `missing_job_did_not_run`;
+  - `coverage_served` is invariant (both classes are in DUE, neither is in SERVED);
+  - `late_record` rows keep their own classification;
+  - on the frozen published artifact exactly one obligation moves:
+    2026-08-03 CHI v PHX T-30m; operational_misses 26 -> 27.
+
+--- a/prospective_pair/coverage_audit.py
++++ b/prospective_pair/coverage_audit.py
+@@ -45,6 +45,9 @@
+ from alt_model_log import read_official, read_records  # noqa: E402
+
+ CONTRACT_LABELS = [("T-24h", 24.0), ("T-8h", 8.0), ("T-90m", 1.5), ("T-30m", 0.5)]
++
++#: label -> hours before tip, for the served-evidence timeliness test.
++LABEL_HOURS = dict(CONTRACT_LABELS)
+
+ #: PREREGISTERED coverage threshold for a promotion-grade period. Registered
+ #: 2026-08-03 before any prospective_team_pair_v1 data exists.
+@@ -184,14 +187,29 @@
+     # Which games the job served at (SLATE DATE, label). This must be keyed by date:
+     # a global key would report "the job served 6 other games at T-8h" for a day it
+     # never ran at all, dressing an operational miss as a game-specific data gap.
++    #
++    # A record is evidence the job was HEALTHY at a label only if it was created at
++    # or before that label's cutoff. A record created after its own cutoff is
++    # classified `late_record` below and is NOT in SERVED; admitting it here would
++    # let a class the auditor refuses to count as served still downgrade an unserved
++    # obligation from an operational miss to a benign game-specific gap. Same
++    # predicate as the `late_record` test (`created > cutoff`), so the two cannot
++    # disagree. Anything whose timeliness cannot be established is excluded — fail
++    # closed, in the direction that reports the miss.
+     gid_date = {str(g.game_id): g.game_date for g in slate.itertuples()
+                 if pd.notna(g.game_id)}
++    tip_by_gid = {str(g.game_id): g.tip for g in slate.itertuples()
++                  if pd.notna(g.game_id)}
+     served_at: dict[tuple, set] = {}
+     for r in official:
+         rgid = prov.get(str(r["game_id"]), str(r["game_id"]))
+         d = gid_date.get(rgid)
+-        if d is not None:
+-            served_at.setdefault((d, r["decision_time_label"]), set()).add(rgid)
++        if d is None:
++            continue
++        label = r["decision_time_label"]
++        hrs, tip = LABEL_HOURS.get(label), tip_by_gid.get(rgid)
++        if hrs is None or tip is None:
++            continue
++        if _utc(r["logged_at_utc"]) > tip - timedelta(hours=hrs):
++            continue
++        served_at.setdefault((d, label), set()).add(rgid)
+
+     rows = []
+     for g in slate.itertuples():
+@@ -241,10 +259,11 @@
+             elif not served_at.get((g.game_date, label)):
+                 cls, why = "missing_job_did_not_run", \
+-                    f"no base record for ANY game on {g.game_date} at {label}"
++                    f"no TIMELY base record for ANY game on {g.game_date} at {label}"
+             else:
+                 cls, why = "missing_data_unavailable", \
+-                    ("job served %d other game(s) on %s at %s"
++                    ("job served %d other game(s) timely on %s at %s"
+                      % (len(served_at[(g.game_date, label)]), g.game_date, label))
+             rows.append({**base, "classification": cls, "reason": why})
+     return pd.DataFrame(rows)
+
+Also required by the module docstring (:12-23), which documents the class list but not
+the evidence rule: add one line under `missing_data_unavailable` stating that only
+records created at or before their own cutoff count as "the job did serve other games".
+
+Downstream, per PROJECT_UPDATE_2026-08-04.md:617-619: regenerate
+forecasts/coverage_receipt.json and re-run build_program_state.py after applying.
+The published receipt (operational_misses 26) becomes stale on application; Appendix E
+of PROJECT_UPDATE_2026-08-04.md already carries the corrected column (27).

@@ -1,0 +1,215 @@
+{
+  "node_id": "O15_LOGOUT_SURVIVAL",
+  "lane": "operations",
+  "type": "audit",
+  "generated_utc": "2026-08-04T20:00:54Z",
+  "machine": "JOHNG-T",
+  "worktree": ".claude/worktrees/player-model-program",
+  "branch": "player-model-program",
+
+  "epistemic_status": "DESIGN OR IMPLEMENTATION ANALYSIS of a documented prospective-capture defect. Isolated branch only. This lane does not block possession research unless it changes the historical feature evidence.",
+
+  "documentation_found": "DOCUMENTED",
+  "documentation_citations": [
+    {"path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md", "line": 204, "quote": "D-f | Logout survival. The Interactive-mode task does not run when logged out. | C | reliability improvement, not the primary historical cause - 25 of 26 job-did-not-run misses predate a functioning scheduler entirely"},
+    {"path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md", "line": 573, "quote": "Logout survival (D-f) is a reliability improvement, not the primary historical cause"},
+    {"path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md", "line": 591, "quote": "Batch-logon entered in PL-006 as logout survival - a reliability improvement - and was never a registered validity condition."},
+    {"path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md", "line": 267, "quote": "(5) Batch-logon with IT - reliability, demoted."},
+    {"path": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md", "line": 596, "quote": "D-b / D-c / D-f mean served obligations are not a random subset"},
+    {"path": "project_docs/FREEZE_PROPOSAL_v0.md", "line": 65, "quote": "Create WNBA_DailyForecast_AM (10:00) and _PM (18:30) scheduled tasks", "note": "names no principal or logon mode; corroborates PROJECT_UPDATE:580"},
+    {"path": "project_docs/FREEZE_PROPOSAL_v0.md", "line": 58, "quote": "Missed days are missed - never backfilled into the chain."},
+    {"path": "setup_scripts/verify_scheduled_tasks.ps1", "line": 108, "quote": "$swa  = [bool]$task.Settings.StartWhenAvailable", "note": "the only standing audit reads StartWhenAvailable and never reads Principal.LogonType"},
+    {"path": "setup_scripts/verify_scheduled_tasks.ps1", "line": 25, "quote": "Task state is not in the repo and cannot be checked from anywhere else."},
+    {"path": "START_HERE.md", "line": 50, "quote": "Six scheduled tasks on this machine"}
+  ],
+  "documentation_gaps": [
+    "No script in the repository registers the scheduled tasks. grep over *.ps1 *.bat *.py *.md for Register-ScheduledTask|New-ScheduledTask|schtasks returns only auditing, documentation and deletion references. The 13 live task definitions exist only on the machine.",
+    "Nothing in the repository ever reads Principal.LogonType. Repo-wide grep for LogonType|Principal|RunLevel|batch logon returns zero hits in any script. The one automated task audit is structurally blind to D-f.",
+    "D-f is documented as a fact but nowhere quantified. No document states how many launches it suppressed, on which days, or with what artifact consequence."
+  ],
+
+  "reproduced": "REPRODUCED",
+  "reproduction": {
+    "authority_1_task_definitions": {
+      "source": "Get-ScheduledTask, via measure_logon_survival.ps1 -> EVIDENCE_measured.json",
+      "wnba_tasks_total": 13,
+      "wnba_tasks_with_logon_type_Interactive": 13,
+      "all_start_when_available": true,
+      "all_run_level": "Limited",
+      "xml_spelling": "InteractiveToken",
+      "xml_evidence_file": "evidence_task_WNBA_OddsCapture.xml"
+    },
+    "authority_2_scheduler_log": {
+      "log": "Microsoft-Windows-TaskScheduler/Operational",
+      "event_id": 332,
+      "event_meaning": "Task Scheduler did not launch task X because user Y was not logged on when the launching conditions were met.",
+      "verbatim_example": "Task Scheduler did not launch task \"\\WNBA_OddsCapture\"  because user \"(NONE)\" was not logged on when the launching conditions were met. User Action: Ensure user is logged on or change the task definition to allow launching when user is logged off.",
+      "verbatim_example_time_local": "2026-08-02T16:00:01.6488732-04:00",
+      "e332_total_all_tasks": 118,
+      "e332_wnba_total": 23,
+      "e332_wnba_by_task": {
+        "WNBA_OddsCapture": 7,
+        "WNBA_InjuryCapture": 7,
+        "WNBA_NewsCapture": 4,
+        "WNBA_DailyForecast_AM": 1,
+        "WNBA_DailyRefresh": 1,
+        "WNBA_RefAssignments": 1,
+        "WNBA_PropsCapture_1": 1,
+        "WNBA_PropsCapture_2": 1
+      },
+      "affected_days": ["2026-08-02"],
+      "window_local": "2026-08-02T08:00:02-04:00 .. 2026-08-02T16:00:01-04:00",
+      "log_oldest_retained_record_local": "2026-07-30T21:32:55-04:00",
+      "log_record_count": 17021,
+      "log_max_bytes": 10485760
+    },
+    "start_when_available_did_not_recover": {
+      "claim": "StartWhenAvailable=True retried none of the suppressed launches.",
+      "evidence": "Every id-100 start for WNBA_InjuryCapture on 2026-08-02 is on the trigger's own :00:01 cadence (17:00:01,18:00:01,19:00:01,20:00:01,21:00:01,22:00:01,23:00:01 local). A catch-up run would land off-cadence. There is no off-cadence start.",
+      "asserted_by": "TESTS.py test group [6]"
+    },
+    "artifact_corroboration": {
+      "source": "corroborate_capture_gap.py -> EVIDENCE_capture_gap.json",
+      "read_scope": "READ-ONLY read of the live capture tree at the repository root (a different worktree on a different branch); nothing written there. Necessary because this program worktree's data/ stops on 2026-08-01.",
+      "injury_pdf_count": 71,
+      "series_span_utc": "2026-07-30T15:49:50Z .. 2026-08-04T20:00:08Z",
+      "largest_gap_hours": 18.0,
+      "largest_gap_local": "2026-08-01T23:00:05 .. 2026-08-02T17:00:04",
+      "next_largest_gaps_hours": [11.914, 11.0, 11.0, 10.102],
+      "next_largest_are": "the ordinary 23:00-10:00 overnight window; the 18h gap is the only anomaly in the series",
+      "aug02_local_hours_present": [17, 18, 19, 20, 21, 22, 23],
+      "aug02_local_hours_missing": [10, 11, 12, 13, 14, 15, 16],
+      "aug02_n_missing_slots": 7,
+      "exact_match": "7 missing hourly injury slots == 7 WNBA_InjuryCapture id-332 events, hour for hour",
+      "forecast_log_records_total": 23,
+      "forecast_records_by_cutoff_date_utc": {"2026-07-31": 6, "2026-08-01": 4, "2026-08-03": 12, "2026-08-04": 1},
+      "forecast_records_2026_08_02": 0,
+      "note": "2026-08-02 is the only zero-record day in the prospective chain. The AM half is directly attributable (id-332 on WNBA_DailyForecast_AM at 2026-08-02T10:20:01 local). Per FREEZE_PROPOSAL_v0.md:58 it is permanently missing."
+    }
+  },
+
+  "contradictions": [
+    {
+      "id": "C1",
+      "summary": "The scheduled-task inventory disagrees three ways.",
+      "sources": [
+        {"path": "START_HERE.md", "line": 50, "says": "Six scheduled tasks on this machine"},
+        {"path": "setup_scripts/verify_scheduled_tasks.ps1", "line": "67-79", "says": "$Expected lists 11 tasks"},
+        {"source": "Get-ScheduledTask (measured)", "says": "13 WNBA* tasks registered"}
+      ],
+      "unknown_to_the_auditor": ["WNBA prospective pair", "WNBA_ReplyDeliveryWatchdog"],
+      "consequence": "The task that runs prospective_pair\\run_pair.cmd - the one producing the prospective-pair records whose validity PROJECT_UPDATE_2026-08-04.md:576-592 adjudicates - is absent from the inventory of the script whose job is to prove those tasks are healthy.",
+      "resolution": "Frozen bytes govern: the machine wins over both documents. Reported, not reconciled."
+    },
+    {
+      "id": "C2",
+      "summary": "D-f's severity-C label is unquantified in the repository; measured capture impact is larger than the label suggests.",
+      "not_a_factual_contradiction": true,
+      "detail": "PROJECT_UPDATE_2026-08-04.md:204 concerns the 26 forecast-obligation misses, a quantity I did not test and do not contest. But the same defect destroyed 23 capture launches, an 18-hour injury-capture hole and the only zero-record day in the prospective forecast chain. No document carries any of those numbers."
+    }
+  ],
+
+  "fix": {
+    "designed": true,
+    "tested": true,
+    "applied_to_machine": false,
+    "applied_deliberately_not": "Changing scheduled-task principals is a machine configuration change and belongs to the operator, not to an analyst node. Additionally this session is not elevated (SZ\\jgallagher, IsInRole(Administrator)=False) and S4U registration requires elevation.",
+    "change": "Principal LogonType: InteractiveToken -> S4U",
+    "shape": "A minimal rewrite of exactly one XML element. Everything else - triggers, actions, settings, UserId, RunLevel and above all StartWhenAvailable - is required to survive byte-identical.",
+    "why_that_shape": "setup_scripts/verify_scheduled_tasks.ps1:129-135 records that rebuilding a settings object with New-ScheduledTaskSettingsSet silently resets every other setting to its default. The identical trap exists for New-ScheduledTaskPrincipal, so a careless logon-mode change could destroy the StartWhenAvailable mitigation while fixing D-f - trading one silent-loss defect for another.",
+    "why_S4U_over_Password": {
+      "S4U_cost": "the process receives no outbound network credentials",
+      "cost_does_not_bind_here": "odds_capture_daily.py:42, props_capture_daily.py:55,70, injury_capture_daily.py, news_capture_daily.py and ref_assignments_capture_daily.py all use plain requests/urllib against public endpoints and write to local disk; none drives a browser (no selenium/playwright/pyautogui anywhere in the capture family - only a Chrome User-Agent string at injury_capture_daily.py:63 and ref_assignments_capture_daily.py:71); none reads a UNC path; the API key comes from a local .env (odds_capture_daily.py:32), not a credential store.",
+      "Password_route": "PROJECT_UPDATE_2026-08-04.md:267 'batch-logon with IT'. Available as an explicit mode but deliberately not applied from a repo file, so no secret passes through one."
+    },
+    "excluded_task": {
+      "task": "WNBA_ReplyDeliveryWatchdog",
+      "reason": "its action script lives under 'C:\\Users\\jgallagher\\OneDrive - Sasserath Co\\...'. Under S4U there is no interactive OneDrive client to hydrate a cloud-only placeholder, so conversion could turn a logout failure into a file-not-found failure. Needs its own decision."
+    },
+    "tests": {
+      "command": "python experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/TESTS.py",
+      "convention": "standalone runnable script, main() returns 1 on failure (pytest is not installed)",
+      "exit_code": 0,
+      "assertions_passed": 37,
+      "assertions_failed": 0,
+      "skipped": 0,
+      "groups": [
+        "[1] logon-mode classification, including that an ABSENT <LogonType> must count as non-surviving because Task Scheduler defaults it to InteractiveToken",
+        "[2] the rewrite changes exactly one line and preserves StartWhenAvailable, UserId, RunLevel, repetition interval, MultipleInstancesPolicy and action arguments",
+        "[3] idempotence (second application byte-identical) and refusal to guess (rejects a non-surviving target, a definition with no <LogonType>, a definition with two <Principals> blocks)",
+        "[4] the Password alternative is also a single-line rewrite",
+        "[5] the rewrite against this machine's REAL exported WNBA_OddsCapture definition - every non-LogonType line byte-identical; the real definition's <StartWhenAvailable>true</StartWhenAvailable> confirmed present so the assertion is not vacuous",
+        "[6] the classifier reproduces the PowerShell count (13) and the no-catch-up property"
+      ]
+    },
+    "dry_run": {
+      "command": "powershell -File apply_logon_survival.ps1   (no -Apply)",
+      "exit_code": 1,
+      "meaning": "exit 1 = at least one task still does not survive logoff, which is correct for a read-only run",
+      "result": "13 tasks listed Interactive; 12 planned for conversion; WNBA_ReplyDeliveryWatchdog skipped"
+    },
+    "verification_limit": "Reading back LogonType=S4U proves the DEFINITION changed. It does not prove a launch succeeds with no session present. The only confirming observation is an actual logged-out firing: log out across a trigger boundary, log back in, and check for a new id-100 start at the trigger instant AND no new id-332. Until then the fix is designed and unit-tested but NOT operationally confirmed."
+  },
+
+  "outputs": [
+    "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/FINDINGS.json",
+    "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/logon_survival_fix.py",
+    "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/TESTS.py",
+    "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/apply_logon_survival.ps1",
+    "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/measure_logon_survival.ps1",
+    "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/corroborate_capture_gap.py",
+    "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/EVIDENCE_measured.json",
+    "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/EVIDENCE_capture_gap.json",
+    "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/evidence_task_WNBA_OddsCapture.xml"
+  ],
+  "required_output_not_written": {
+    "path": "experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/REPORT.md",
+    "reason": "The harness running this node blocked the Write call with 'Subagents should return findings as text, not write report files.' The full report content was returned in the node's final message instead. This is a harness constraint, not an omission of the work; the coordinator should paste the returned text into REPORT.md to satisfy the contract's required-outputs list."
+  },
+
+  "escalations": [],
+  "escalation_test": {
+    "question": "Does this defect change historical feature evidence?",
+    "answer": "NO",
+    "reasoning": "What D-f destroyed on 2026-08-02 is prospective capture: 7 injury snapshots, 7 odds snapshots, 4 news captures, one refresh, one referee pull, two props pulls and the AM forecast run. None of it touches the frozen historical universe (2,982 team-game rows over 1,491 game clusters), the primary target REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status.",
+    "consequence_stays_in_ops_lane": "PROJECT_UPDATE_2026-08-04.md:596-598 already states that D-b/D-c/D-f mean served obligations are not a random subset. This node makes it concrete for one day: on 2026-08-02 the served subset is the afternoon and evening only - a time-of-day-structured, not random, selection."
+  },
+  "stop_conditions_tripped": [],
+
+  "shared_contract_changes_proposed": [
+    {
+      "id": "P1",
+      "file": "setup_scripts/verify_scheduled_tasks.ps1",
+      "status": "PROPOSED ONLY - file NOT modified by this node; outside its write scope",
+      "change": "Read Principal.LogonType and add to $problems when it is not in @('S4U','Password'); add a 'logon type' column to the table.",
+      "rationale_measured": "The script reads Settings.StartWhenAvailable at line 108 and nothing about how the task runs. On 2026-08-02 it would have printed LastTaskResult=0, StartWhenAvailable=True, State=Ready for tasks that had just lost 23 launches."
+    },
+    {
+      "id": "P2",
+      "file": "setup_scripts/verify_scheduled_tasks.ps1",
+      "status": "PROPOSED ONLY - file NOT modified by this node",
+      "change": "Extend $Expected (lines 67-79) from 11 to 13 entries: add 'WNBA prospective pair' (Critical=$true) and 'WNBA_ReplyDeliveryWatchdog'.",
+      "rationale_measured": "Get-ScheduledTask reports 13 WNBA* tasks; the auditor knows 11."
+    }
+  ],
+
+  "could_not_establish": [
+    "That S4U actually launches these tasks while logged out on this machine. Not applied, not elevated, and a logged-out firing cannot be staged from inside a session.",
+    "Whether the '25 of 26' claim at PROJECT_UPDATE_2026-08-04.md:204,573-574 is correct. It concerns forecast obligations, whose ledger I did not open. Neither confirmed nor contested; my numbers are about capture launches, a different quantity.",
+    "Why the 2026-08-02 evening forecast run (18:45 local) produced nothing. The last WNBA id-332 is at 16:00:01, so the PM absence is NOT attributable to D-f. Cause unestablished.",
+    "Anything before 2026-07-30T21:32:55-04:00, the oldest record the rolling 10 MB Operational log still holds. Absence of an id-332 before that instant is not evidence the defect did not fire. The window does cover essentially the whole prospective era, which began 2026-07-30 (FREEZE_PROPOSAL_v0.md:21).",
+    "Whether the odds, props, news and referee streams show file gaps matching their 7/2/4/1 suppressed launches. Only the injury-PDF series and the forecast chain were independently corroborated.",
+    "What working directory these tasks run in - every action's WorkingDirectory is empty. Unchanged by a logon-mode change, so not a regression risk of this fix, but an unexamined property of the task set.",
+    "Whether S4U registration succeeds for a Limited RunLevel principal under this machine's policy. The script carries RunLevel across explicitly and verifies it after, but that path was never executed."
+  ],
+
+  "constraints_observed": {
+    "git_mutating_commands_run": 0,
+    "git_read_only_commands_run": ["git rev-parse --abbrev-ref HEAD"],
+    "frozen_artifacts_modified": [],
+    "writes_outside_scope": [],
+    "sealed_results_read": false,
+    "performance_peeking": false,
+    "machine_state_modified": false
+  }
+}

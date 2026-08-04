@@ -1,0 +1,251 @@
+{
+  "node_id": "O14_OPS_ENTITY_RESOLUTION",
+  "lane": "operations",
+  "type": "audit",
+  "epistemic_status": "DESIGN OR IMPLEMENTATION ANALYSIS of a documented prospective-capture defect. Isolated branch only. This lane does not block possession research unless it changes the historical feature evidence.",
+  "documentation_found": "DOCUMENTED",
+  "documentation_citations": [
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:203",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:212-227",
+    "experiments/forecast_dryrun/OPERATIONAL_GAPS.md:166",
+    "experiments/forecast_dryrun/OPERATIONAL_GAPS.md:182-185",
+    "project_docs/PLAN_2026-07-31_W1_AUDIT_AND_BAKEOFF.md:135-138",
+    "data/w1_truth/W1_TRUTH_REPORT.md:60",
+    "data/w1_truth/W1_TRUTH_REPORT.md:76",
+    "data/w1_truth/W1_TRUTH_REPORT.md:80",
+    "experiments/props_capture_setup/REPORT.md:61-63"
+  ],
+  "implementation_under_audit": {
+    "path": "daily_forecast.py",
+    "function": "player_layer",
+    "lines": "640-760",
+    "resolution_primitive": "daily_forecast.py:606-609 (_norm_name: NFKD, drop combining marks, lowercase, drop non-alphanumerics)",
+    "constants": {
+      "MINUTES_ALPHA": 0.3,
+      "MINUTES_ALPHA_line": 112,
+      "RECENCY_GAMES": 3,
+      "RECENCY_GAMES_line": 120
+    },
+    "modified_by_this_node": false
+  },
+  "reproduced": "REPRODUCED",
+  "snapshots": {
+    "SNAP_PROGRAM": {
+      "repo": "worktree player-model-program",
+      "master_last_game_date": "2026-07-31",
+      "master_manifest_fit_through": "2026-08-01T12:00:00+00:00",
+      "master_sha256": "52e084efaad5c08444b407c64c18d55b57ff5a1e13491cc908dfd960b8641dce",
+      "injury_rows": 551,
+      "reproducible": true
+    },
+    "SNAP_LIVE": {
+      "repo": "repository root worktree, READ ONLY",
+      "master_last_game_date": "2026-08-03",
+      "injury_rows_at_time_of_run": 1109,
+      "reproducible": false,
+      "note": "live capture schedulers are appending; the injury log grew 1106 to 1109 between two runs minutes apart"
+    }
+  },
+  "findings": [
+    {
+      "id": "O14-F1",
+      "title": "Same-season prior-team minutes history is discarded for a transferred player",
+      "status": "REPRODUCED",
+      "severity_proposed": "B",
+      "mechanism": "daily_forecast.py:654 filters to one team; daily_forecast.py:674-683 computes games_played, min_ewma, last_played and cold_start from that team-filtered frame.",
+      "measurements": {
+        "SNAP_PROGRAM": {
+          "movers": 11,
+          "movers_with_le_1_game_at_new_team": 3,
+          "mean_abs_ewma_error_min": 0.4423387927083225,
+          "max_abs_ewma_error_min": 1.62378102845592
+        },
+        "SNAP_LIVE": {
+          "movers": 14,
+          "movers_with_le_1_game_at_new_team": 5,
+          "mean_abs_ewma_error_min": 1.2719254862742522,
+          "max_abs_ewma_error_min": 9.422688231522674
+        }
+      },
+      "worst_case": {
+        "player": "Kelsey Plum",
+        "identity_min_ewma": 29.96,
+        "forecaster_min_ewma": 20.53,
+        "games_identity": 13,
+        "games_seen": 1
+      },
+      "mislabelled_cold_start": ["Chloe Bibby", "Haley Jones", "Sania Feagin", "Aneesah Morrow"],
+      "measured_by": "repro_entity_resolution.py::m1_transfer_history_truncation"
+    },
+    {
+      "id": "O14-F2",
+      "title": "One identity can occupy two recency rosters and have her minutes attributed twice",
+      "status": "REPRODUCED",
+      "severity_proposed": "B",
+      "mechanism": "daily_forecast.py:662-665 builds each roster from that team's own last RECENCY_GAMES games with no cross-team exclusivity check; daily_forecast.py:743 sums min_ewma per team.",
+      "measurements": {
+        "SNAP_PROGRAM": {"players_on_two_rosters": 0},
+        "SNAP_LIVE": {
+          "players_on_two_rosters": 2,
+          "players": ["Chloe Bibby (CHI+MIN)", "Aneesah Morrow (CON+TOR)"],
+          "minutes_attributed_across_teams": 35.561433001023254
+        }
+      },
+      "measured_by": "repro_entity_resolution.py::m2_double_rostering, ::m7_double_counted_minutes"
+    },
+    {
+      "id": "O14-F3",
+      "title": "A designation published under the NEW team cannot bind, and the Phase-3 Out gate silently fails, until the master ingests a game for that team",
+      "status": "REPRODUCED",
+      "severity_proposed": "A for the availability estimate, B while the player layer remains informational",
+      "mechanism": "daily_forecast.py:667-669 selects injury rows by franchise-name equality; daily_forecast.py:685 matches by normalized name within that team only; daily_forecast.py:731-735 degrades to WARN and states outright that the gate did not fire.",
+      "measurements": {
+        "SNAP_PROGRAM": {"capture_rows": 551, "unbindable_to_named_team": 0},
+        "SNAP_LIVE": {
+          "capture_rows": 1109,
+          "bind_to_named_team": 1049,
+          "unbindable_to_named_team": 23,
+          "absent_from_season_entirely": 37,
+          "unbindable_windows": {
+            "Aneesah Morrow": {
+              "team": "Toronto Tempo",
+              "statuses": ["Out"],
+              "captures": 7,
+              "first": "20260802T000003Z",
+              "last": "20260802T230003Z"
+            },
+            "Kelsey Plum": {
+              "team": "Phoenix Mercury",
+              "statuses": ["Available", "Questionable"],
+              "captures": 16,
+              "first": "20260802T220002Z",
+              "last": "20260803T230002Z"
+            }
+          }
+        }
+      },
+      "realized_harm": {
+        "capture": "20260802T210004Z",
+        "player": "Aneesah Morrow",
+        "designation": "Out (Toronto Tempo)",
+        "baseline_behaviour": "counted AVAILABLE for Connecticut at 22.73 projected minutes; Out gate fires nowhere",
+        "connecticut_sum_min_ewma_available_baseline": 243.18,
+        "connecticut_sum_min_ewma_available_fixed": 220.44,
+        "delta_minutes": 22.73,
+        "share_of_200_minute_pool": 0.1137,
+        "measured_by": "TESTS.py::t5_real_morrow_2026_08_02"
+      },
+      "note_on_documentation": "PROJECT_UPDATE_2026-08-04.md:216-218 states the Out case as a counterfactual. It was not counterfactual; Morrow is a realized instance the document does not mention."
+    },
+    {
+      "id": "O14-F4",
+      "title": "NEGATIVE RESULT: normalized-exact matching is not what is losing matches; season scoping is",
+      "status": "NEGATIVE_RESULT_PRESERVED",
+      "measurements": {
+        "norm_collisions_between_distinct_master_players": 0,
+        "capture_names_unmatched_by_normalized_exact": {"SNAP_PROGRAM": 3, "SNAP_LIVE": 4},
+        "recovered_by_first_initial_plus_surname": 0,
+        "genuinely_absent_from_every_season": ["Kara Dunn", "Ugonne Onyiah", "Tonie Morgan"],
+        "present_in_earlier_seasons_only": [{"player": "Iliana Rupert", "seasons": [2022, 2023, 2025]}]
+      },
+      "consequence": "The persistent alias table recommended at OPERATIONAL_GAPS.md:182-185 would have recovered nothing on this feed. alias_table.json is shipped EMPTY BY DESIGN with the rejected candidates recorded. A cross-season identity index, not fuzzy matching, is the fix.",
+      "measured_by": "repro_entity_resolution.py::m4_name_normalisation"
+    },
+    {
+      "id": "O14-F5",
+      "title": "The props capture path carries no player identity at all",
+      "status": "REPRODUCED",
+      "severity_proposed": "C (no settlement has been run yet)",
+      "measurements": {
+        "artifact": "data/props_capture/master_props.csv",
+        "has_player_id_column": false,
+        "distinct_player_names_SNAP_LIVE": 90,
+        "unmatched_against_current_season_master": ["Megan Gustafson"],
+        "unmatched_against_all_seasons_master": []
+      },
+      "documented_at": "experiments/props_capture_setup/REPORT.md:61-63",
+      "measured_by": "repro_entity_resolution.py::m8_props_identity"
+    }
+  ],
+  "contradictions": [
+    {
+      "kind": "document_states_a_mechanism_that_does_not_exist_in_the_code",
+      "document": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:216",
+      "claim": "one appearance falls below the matcher's season-history threshold",
+      "bytes": "There is no season-history threshold in daily_forecast.py:640-760. RECENCY_GAMES=3 (line 120) is a window over the TEAM's games; the only player test is a bare presence test at lines 702 and 707. The failing test was presence, not a threshold.",
+      "effect_on_the_document_conclusion": "none - the conclusion is right, the stated cause is wrong"
+    },
+    {
+      "kind": "document_vs_bytes_explained_by_snapshot_age_not_error",
+      "document": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:215",
+      "claim": "Plum shows LAS 2026 (17 g) + PHX 2026 (1 g)",
+      "bytes_in_program_worktree": "LAS 2026 = 17 rows, PHX 2026 = 0 rows",
+      "bytes_in_root_worktree": "LAS 2026 = 17 rows, PHX 2026 = 1 row, game_date 2026-08-03",
+      "resolution": "the program worktree master is bound through 2026-08-01T12:00:00+00:00 per its manifest and predates the game; the document is correct about the live bytes"
+    },
+    {
+      "kind": "two_measurements_that_must_not_be_conflated",
+      "detail": "data/w1_truth/W1_TRUTH_REPORT.md:76 reports an 8.2% wrong-team rate for the NEWS-EXTRACTION feed, where the extracted team behaves as feed provenance (:80). The official injury PDF feed measured here publishes no wrong-team rows; its cross-team binding failures are trade-timing races. The 8.2% must not be carried onto the injury path."
+    }
+  ],
+  "fix": {
+    "location": "experiments/player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/fix_entity_resolution.py",
+    "merged": false,
+    "production_files_modified": [],
+    "components": [
+      {"id": "F1", "change": "identity-keyed minutes history across the season instead of the team-filtered frame", "addresses": "O14-F1"},
+      {"id": "F2", "change": "single tenancy: one team per identity as of the cutoff; a more recent designation naming another team wins and is flagged designation_transfer", "addresses": "O14-F2"},
+      {"id": "F3", "change": "designations bind to player_id via a cross-season identity index, then attach wherever that identity is rostered", "addresses": "O14-F3, O14-F4, O14-F5"},
+      {"id": "F4", "change": "fail-closed: an unbindable Out/Doubtful raises BLOCK, not WARN, and materialises an explicit unresolved cold-start object", "addresses": "PROJECT_UPDATE_2026-08-04.md:225-227"}
+    ],
+    "explicitly_not_done": "fuzzy matching - M4 shows it would have recovered nothing, and OPERATIONAL_GAPS.md:183 records a standing policy against it"
+  },
+  "tests": {
+    "file": "experiments/player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/TESTS.py",
+    "runner": "python TESTS.py (main() returns 1 on failure; pytest is not installed)",
+    "checks_total": 27,
+    "checks_passed": 27,
+    "checks_failed": 0,
+    "cases": [
+      {"id": "T1", "kind": "synthetic", "asserts": "transferred player prior-team history is not discarded; fix EWMA equals identity EWMA; baseline error 6.60 min on the fixture"},
+      {"id": "T2", "kind": "synthetic", "asserts": "baseline double-rosters, fix assigns to the most recent team only"},
+      {"id": "T3", "kind": "synthetic", "asserts": "an Out published under the new team before ingest still fires the gate; fix removes her from the old team and attributes 32.0 vacated minutes to the new one"},
+      {"id": "T4", "kind": "synthetic", "asserts": "unbindable Out fails CLOSED (BLOCK) with an explicit cold_start_unresolved object"},
+      {"id": "T5", "kind": "real replay, read-only, SKIPs if the live snapshot is absent", "asserts": "the Morrow 2026-08-02 case above"},
+      {"id": "T6", "kind": "synthetic", "asserts": "no regression: identical available set, sum_min_ewma_available to 1e-9, and n_out when nothing moves"}
+    ]
+  },
+  "escalation_to_possession_lane": {
+    "required": false,
+    "why": "The defect is confined to the prospective path, which resolves by (team_abbreviation, player_name) strings. Historical builders key on player_id throughout.",
+    "evidence": [
+      "experiments/player_program/possession_artifact_v1.py:263",
+      "experiments/player_program/fit_rate_and_p3.py:289",
+      "experiments/player_program/score_v14_v15.py:245",
+      "experiments/player_program/validate_p3.py:250"
+    ]
+  },
+  "shared_contract_changes_proposed": [
+    "PROPOSAL ONLY, NOT MERGED: add a resolved player_id column to the prospective capture artifacts (data/injury_capture/injury_log.csv, data/props_capture/master_props.csv), populated at capture time against a cross-season identity index, with the raw capture string retained alongside it.",
+    "PROPOSAL ONLY, NOT MERGED: make roster construction single-tenant per player identity as of the cutoff, and record the assignment source (last_game vs designation_transfer) on each roster entry.",
+    "PROPOSAL ONLY, NOT MERGED: promote an unbindable Out/Doubtful designation from WARN to a BLOCK-severity gap in the forecast gap taxonomy, so the availability estimate fails closed rather than degrading silently.",
+    "PROPOSAL ONLY, NOT MERGED: add a persistent, human-curated alias table artifact (schema ops_lane/O14/alias_table/1) with explicit rejected-candidate records and no fuzzy fallback."
+  ],
+  "stop_conditions_tripped": [],
+  "could_not_establish": [
+    "Whether any stored forecast record in forecasts/forecast_log.jsonl (23 records) was affected in practice during the 2026-08-02 Morrow window - that is coverage/obligation accounting and outside this node mandate.",
+    "Whether the props path has ever mis-joined a settlement; no graded props file exists in either snapshot.",
+    "Any interval on the transfer-population EWMA error; 11-14 movers in a partial season is one observation of a tail, not an estimate of it.",
+    "Whether the F2 designation_transfer rule is safe against a feed that publishes a wrong franchise; no such instance exists in the captured data to test against.",
+    "Nothing under experiments/player_program/stage2b/SEALED_RESULTS/ was read; no comparative challenger performance was inspected."
+  ],
+  "outputs": [
+    "experiments/player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/REPORT.md",
+    "experiments/player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/FINDINGS.json",
+    "experiments/player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/MEASUREMENTS.json",
+    "experiments/player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/repro_entity_resolution.py",
+    "experiments/player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/fix_entity_resolution.py",
+    "experiments/player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/TESTS.py",
+    "experiments/player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/alias_table.json"
+  ]
+}

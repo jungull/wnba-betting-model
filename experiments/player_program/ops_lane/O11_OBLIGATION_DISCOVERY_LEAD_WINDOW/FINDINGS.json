@@ -1,0 +1,107 @@
+{
+  "node_id": "O11_OBLIGATION_DISCOVERY_LEAD_WINDOW",
+  "epistemic_status": "DESIGN OR IMPLEMENTATION ANALYSIS of a documented prospective-capture defect. Isolated branch only. This lane does not block possession research unless it changes the historical feature evidence.",
+  "generated_utc": "2026-08-04",
+  "documentation_found": "DOCUMENTED",
+  "documentation_citations": [
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:200 -- defect D-b, 'Obligation discovery / lead window', severity A for coverage integrity, required action 'independent fix in should_run_base.py'",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:189-191 -- 'Capture defect decomposes into four faults'",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:573 -- 25 of 26 job-did-not-run misses predate a functioning scheduler",
+    "experiments/player_program/orchestration/scripts/seed_graph.py:694 -- node title derived verbatim from D-b"
+  ],
+  "reproduced": "REPRODUCED",
+  "reproduction": {
+    "case": "2026-08-04 GSV v TOR, T-24h, cutoff 2026-08-04T02:00:00Z, tip 2026-08-05T02:00:00Z",
+    "observed_declines_utc": [
+      "2026-08-04T01:30:05.128408+00:00",
+      "2026-08-04T01:45:04.560181+00:00",
+      "2026-08-04T02:00:05.384686+00:00"
+    ],
+    "observed_reason": "no unserved obligation inside its 20-minute lead window",
+    "observed_evidence": "forecasts/runner_logs/pair_20260803.log:1996,2093,2190 -- the gate printed no 'upcoming' line for GSV v TOR at any of the three firings; the same log at pair_20260804.log:3922-3923 prints the game once the official id exists",
+    "minutes_to_cutoff_at_0145": 14.9,
+    "reproduction_method": "TESTS.py sections 2-3: gate_logic.classify_original on the measured fixture returns fire=False with the lead-window reason and an EMPTY upcoming/new/would_duplicate at all three instants; with the official game_id supplied and nothing else changed, the same function returns fire=True at 01:45 and 02:00"
+  },
+  "root_cause": {
+    "location": "prospective_pair/should_run_base.py:80-82",
+    "code": "gid = str(g.game_id) if pd.notna(g.game_id) else None; if gid is None or g.tip <= now: continue",
+    "statement": "The gate requires an official game_id before an obligation exists for it. game_id is supplied only by data/ref_assignments/assignments_log.csv (coverage_audit.py:116-124) or by a COMPLETED game in master_team.parquet (coverage_audit.py:128-142); neither can apply to an unplayed game before referee assignments are published. Referee assignments arrive on the morning of the game, roughly 12 hours AFTER that game's T-24h cutoff, so no T-24h obligation is ever discoverable in time. The gate's identity rule is strictly stricter than that of the job it guards: daily_forecast.py:561-563 already mints PROV-<slate_date>-<away>@<home> and sets game_id_provisional when the id is absent, and coverage_audit.py:148-168 resolves those ids retroactively.",
+    "silence_mechanism": "Dropped rows never reach `upcoming`, so nothing is printed for them, and the decline falls through to the `elif not in_window` branch (should_run_base.py:97-98), which attributes the decline to the lead window. The lead window did not cause it."
+  },
+  "measurements": {
+    "script": "experiments/player_program/ops_lane/O11_OBLIGATION_DISCOVERY_LEAD_WINDOW/measure_discovery_lag.py",
+    "data_source": "C:/Users/jgallagher/wnba-betting-model (repository-root worktree, branch data-refresh-2026): 68 data/odds_capture/live_*.json captures and 108 data/ref_assignments/assignments_log.csv rows, as of 2026-08-04T19:00:05Z",
+    "distinct_games": 21,
+    "obligations_examined": 84,
+    "t24h_obligations": 21,
+    "t24h_discoverable_before_cutoff": 0,
+    "t24h_not_discoverable": 21,
+    "t8h_not_discoverable": 13,
+    "t90m_not_discoverable": 8,
+    "t30m_not_discoverable": 7,
+    "median_game_id_lead_minutes_by_label": {
+      "T-24h": -971.2,
+      "T-8h": -11.2,
+      "T-90m": 378.8,
+      "T-30m": 438.8
+    },
+    "gsv_tor_20260804": {
+      "odds_first_seen_utc": "2026-08-03T03:00:02+00:00",
+      "odds_lead_before_t24h_cutoff_minutes": 1380.0,
+      "game_id_first_seen_utc": "2026-08-04T14:00:02+00:00",
+      "game_id_lead_before_t24h_cutoff_minutes": -720.0
+    },
+    "coverage_audit_context": {
+      "source": "forecasts/coverage_audit.csv, forecasts/coverage_receipt.json (produced by the frozen auditor, read only)",
+      "missing_job_did_not_run_total": 26,
+      "of_which_T24h": 10,
+      "gate_first_existed_utc": "2026-08-03T21:45:03.022396+00:00",
+      "gate_firings_logged": 89,
+      "misses_with_cutoff_after_the_gate_existed_attributable_to_D_b": 1,
+      "note": "Consistent with PROJECT_UPDATE_2026-08-04.md:573 -- D-b is not the historical cause of the other 25 misses, which predate the gate entirely. Its blast radius is prospective."
+    },
+    "prospective_exposure_at_time_of_audit": {
+      "games_on_the_2026-08-05_and_2026-08-06_slates_with_no_game_id": 5,
+      "their_T-24h_obligations_currently_classified_not_yet_due": 5,
+      "prediction": "Under the unfixed gate every one of these becomes an operational miss when its cutoff passes, and the decline will again be logged as a lead-window decline."
+    }
+  },
+  "fix": {
+    "status": "DESIGNED AND TESTED IN THIS NODE ONLY; NOT APPLIED to any shared or live file",
+    "implemented_in": "experiments/player_program/ops_lane/O11_OBLIGATION_DISCOVERY_LEAD_WINDOW/gate_logic.py::classify_fixed",
+    "proposed_patch": "experiments/player_program/ops_lane/O11_OBLIGATION_DISCOVERY_LEAD_WINDOW/PROPOSED_PATCH.diff",
+    "summary": [
+      "Do not skip a slate row that lacks an official game_id; identify it with the same PROV-<slate_date>-<away>@<home> id daily_forecast.py:562 already mints for it.",
+      "Report every unresolved game and the number of games examined in the decline reason, so a decline can never be silent.",
+      "Leave current_label, CONTRACT_LABELS, LEAD and the `and not dup` conjunction untouched."
+    ],
+    "tests": "experiments/player_program/ops_lane/O11_OBLIGATION_DISCOVERY_LEAD_WINDOW/TESTS.py",
+    "checks_run": 45,
+    "checks_failed": 0,
+    "no_regression_evidence": "TESTS.py section 8: on a slate where every game already carries an official id, classify_fixed and classify_original agree on fire and on in_window at all three instants."
+  },
+  "shared_contract_changes_proposed": [
+    "prospective_pair/should_run_base.py -- adopt PROPOSED_PATCH.diff. Not merged from this lane. Reserved to O16_SHARED_SCHEMA_ADOPTION / the user.",
+    "prospective_pair/coverage_audit.py -- OPTIONAL, NOT PROPOSED AS A FIX: the auditor charges an operational miss for obligations the gate is structurally unable to discover, because audit() (coverage_audit.py:197-198) keeps rows whose game_id is null while the gate drops them. Whether that asymmetry should be a distinct classification is O10's question, not this node's."
+  ],
+  "escalations": [],
+  "changes_historical_feature_evidence": false,
+  "stop_conditions_tripped": [],
+  "could_not_establish": [
+    "Whether daily_forecast.py, once the gate lets it fire on a provisional id, produces a complete forecast for that game. Its slate builder does mint the provisional id (daily_forecast.py:561-563), but the base job was not executed by this node -- the fix was tested at the gate boundary only. Executing it would append to an append-only official chain, which this node must not do.",
+    "The exact tip time in force at each of the three firings. build_slate keeps the LATEST observed commence_time (coverage_audit.py:104-106); the measured tip 2026-08-05T02:00:00Z carries tip_moved=False, so no shift is recorded, but a per-capture as-of tip reconstruction was not performed.",
+    "Whether the 20-minute LEAD constant is adequate independently of discovery. That is defect D-d / node O13_LEAD_WINDOW_LATENCY and was not evaluated here."
+  ],
+  "contradictions_found": [
+    {
+      "statement": "The gate's own decline message is false. should_run_base.py:97-98 attributes the decline to the lead window; the measured cause is that the obligation was never constructed. The gate's module docstring (should_run_base.py:16-17) claims it exits 0 'only if at least one (game, registered cutoff) obligation is BOTH unserved AND inside its lead window' -- a claim about obligations it in fact never enumerated."
+    },
+    {
+      "statement": "PROJECT_UPDATE_2026-08-04.md:200 says 'Per-game scope does not fix this'. Confirmed: per-game scope addresses the `and not dup` conjunction (defect D-c), which was not reached at any of the three firings, because the duplicate branch takes precedence in the reason string and the logged reason was the lead-window one."
+    }
+  ],
+  "scope_notes": [
+    "The node's declared read scope is experiments/player_program/. The artifact under audit -- prospective_pair/should_run_base.py, prospective_pair/coverage_audit.py, daily_forecast.py, data/odds_capture/, data/ref_assignments/, forecasts/runner_logs/ -- exists ONLY in the repository-root worktree at C:/Users/jgallagher/wnba-betting-model on branch data-refresh-2026. The player-model-program worktree contains none of it (0 live_*.json captures, no prospective_pair/, a 70-row assignments_log against the root's 109). All reads outside the declared scope were read-only; nothing outside this node's write scope was modified.",
+    "No git command was run other than `git rev-parse --abbrev-ref HEAD` for worktree verification."
+  ]
+}

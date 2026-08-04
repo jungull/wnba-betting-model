@@ -1,0 +1,66 @@
+O11_OBLIGATION_DISCOVERY_LEAD_WINDOW -- TESTS
+
+1. the T-24h obligation really was inside the lead window at 01:45
+  PASS  label is T-24h  -- T-24h
+  PASS  cutoff is 2026-08-04T02:00:00  -- 2026-08-04T02:00:00+00:00
+  PASS  minutes_to_cutoff == 14.9 (the figure PROJECT_UPDATE:200 quotes)  -- 14.9
+  PASS  14.9 < 20-minute lead window
+
+2. DEFECT REPRODUCES: with no official game_id the current gate declines
+  PASS  01:30 fire is False
+  PASS  01:30 reason blames the lead window
+  PASS  01:30 decline is SILENT: nothing printed for the game
+  PASS  01:45 fire is False
+  PASS  01:45 reason blames the lead window
+  PASS  01:45 decline is SILENT: nothing printed for the game
+  PASS  02:00 fire is False
+  PASS  02:00 reason blames the lead window
+  PASS  02:00 decline is SILENT: nothing printed for the game
+
+3. the cause is identity, not timing: same instants, id present
+  PASS  01:30 still holds (29.9 min out, genuinely outside the window)
+  PASS  01:45 WOULD have fired had the id existed
+  PASS  02:00 WOULD have fired had the id existed
+
+4. FIX: provisional identity restores the obligation
+  PASS  01:45 fires  -- 1 unserved obligation(s) in window, none would duplicate; 1 slate game(s) have no official game_id and were served under a provisional id: GSV v TOR (2026-08-04) -> PROV-2026-08-04-TOR@GSV
+  PASS  exactly one obligation in window
+  PASS  it is the T-24h obligation at 14.9 min
+  PASS  it is flagged provisional
+
+5. FIX: 01:30 still correctly declines, and now the reason is TRUE
+  PASS  01:30 does not fire
+  PASS  the game is now visible in upcoming
+  PASS  29.9 min out  -- 29.9
+  PASS  reason names the unresolved id rather than hiding it  -- no unserved obligation inside its 20-minute lead window (1 upcoming game(s) examined); 1 slate game(s) have no official game_id and were served under a provisional id: GSV v TOR (2026-08-04) -> PROV-2026-08-04-TOR@GSV
+
+6. FIX: once served at 01:45, 02:00 does not write a second record
+  PASS  02:00 does not fire
+  PASS  it is recognised as already served
+  PASS  no duplicate would be appended
+
+7. the provisional id round-trips through coverage_audit's parser
+  PASS  format is PROV-<date>-<away>@<home>  -- PROV-2026-08-04-TOR@GSV
+  PASS  coverage_audit.py:162-163 recovers the date
+  PASS  id is stable across firings
+
+8. NO REGRESSION when every game already has an official id
+  PASS  01:30 fire identical
+  PASS  01:30 in_window identical
+  PASS  01:30 no game reported unresolved
+  PASS  01:45 fire identical
+  PASS  01:45 in_window identical
+  PASS  01:45 no game reported unresolved
+  PASS  02:00 fire identical
+  PASS  02:00 in_window identical
+  PASS  02:00 no game reported unresolved
+  PASS  current_label is untouched
+  PASS  CONTRACT_LABELS unchanged
+  PASS  LEAD unchanged
+
+9. live capture data (SKIPPED if absent -- different worktree)
+  PASS  measure_discovery_lag.py runs
+  PASS  no T-24h obligation was discoverable before its cutoff  -- {'n': 21, 'discoverable_before_cutoff': 0, 'not_discoverable': 21}
+  PASS  the T-24h failure is total, not sporadic  -- {'n': 21, 'discoverable_before_cutoff': 0, 'not_discoverable': 21}
+
+0 check(s) failed

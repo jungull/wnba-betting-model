@@ -1,0 +1,139 @@
+{
+  "schema": "player_program/u13_findings/1",
+  "node_id": "U13_MONITORING_INTERFACE",
+  "lane": "product",
+  "type": "implementation",
+  "generated_utc": "2026-08-04",
+  "worktree": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program",
+  "branch": "player-model-program",
+  "epistemic_status": "PRODUCT SCAFFOLD built against fixtures. Carries no scientific claim and must not imply a model has been promoted.",
+
+  "promotion_claim": {
+    "statement": "Nothing in this node implies a model has been promoted. The incumbent D_ewma_shrunk is frozen and no challenger exists. The monitor treats model_version and artifact hashes as opaque snapshot data and can render a frame produced by any model or by none.",
+    "mechanically_enforced_by": "TESTS.py section D: 50 arm/experiment/artifact identifiers read from arm_registry.jsonl plus the frozen incumbent's arm name plus its two MAE figures must not appear on the product surface. The check passes."
+  },
+
+  "acceptance_criteria": [
+    {
+      "criterion": "stale inputs, missing lineups and failed jobs are each individually visible",
+      "met": true,
+      "evidence": [
+        "fixtures/stale_input.json -> exactly one INPUT row STALE (odds_feed, age 2520.0 s against a 600 s limit), the other three remain OK, and no LINEUP_* or JOB_* code is raised (TESTS.py [A1], 5 checks)",
+        "fixtures/missing_lineup.json -> exactly one LINEUP row MISSING, n_players null rather than fabricated, and the OTHER team's projection still renders: the gap is entity-scoped (TESTS.py [A2], 5 checks)",
+        "fixtures/failed_job.json -> three distinct job statuses in one frame, FAILED / DID_NOT_RUN / LATE, not collapsed (TESTS.py [A3], 6 checks)"
+      ]
+    },
+    {
+      "criterion": "rollback state is visible",
+      "met": true,
+      "evidence": [
+        "ROLLBACK is its own panel carrying state, serving version, superseded version, changed_at, reason and initiator",
+        "fixtures/rollback_active.json -> ROLLBACK_ACTIVE banner raised while still serving; both version strings appear in the rendered panel",
+        "fixtures/rollback_pending.json -> a rollback in flight suppresses everything because the serving version is not established",
+        "an absent rollback block evaluates to UNKNOWN, never NONE (TESTS.py [B], 9 checks)"
+      ]
+    },
+    {
+      "criterion": "a silent failure is impossible: absence of data renders as an explicit alert",
+      "met": true,
+      "evidence": [
+        "fixtures/silent_failure_attempt.json: a snapshot carrying two plausible projections and no evidence of any kind renders zero numbers, 15 CRITICAL alerts, and the numerals 81.25 and 79.5 appear nowhere in the rendered panel",
+        "evaluate(None), evaluate({}), evaluate([1,2,3]), evaluate('everything is fine') and a wrong-schema object all return SUPPRESSED with alerts and never raise",
+        "exhaustive ablation sweep: deleting each of 132 snapshot locations in turn never increases the number of rendered numbers; 58 of the 132 deletions suppress a projection; no deletion reduces output without raising an alert",
+        "null sweep over the same 132 locations: nulling any field is never rewarded with a number",
+        "a snapshot older than its max age suppresses everything, so a frozen dashboard cannot keep showing the last good frame",
+        "an ALERT display cell does not carry the underlying value at all, so the renderer physically cannot print it"
+      ]
+    }
+  ],
+
+  "measurements": [
+    {
+      "what": "live capture sources bound in the repository",
+      "value": {"n_domains": 8, "n_bound": 0},
+      "method": "measure_repo_facts.py parses SOURCE_BINDING.json and counts domains[*].bound independently of the file's own n_bound field; both agree",
+      "citation": "experiments/player_program/data_lane/D11_LIVE_INFORMATION_CAPTURE/SOURCE_BINDING.json:442-444",
+      "consequence": "pointed at the program as it stands today, this monitor shows a wall of UNBOUND and zero projections. fixtures/unbound_reality.json reproduces exactly that: 16 CRITICAL alerts, 0 of 2 projections rendered."
+    },
+    {
+      "what": "documented prospective-capture defects",
+      "value": {"n_defects": 6, "ids": ["D-a", "D-b", "D-c", "D-d", "D-e", "D-f"]},
+      "method": "measure_repo_facts.py regex over the defect table",
+      "citation": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:197-204",
+      "consequence": "D-a and D-d are the late-record-reads-as-healthy shape; the evaluator downgrades a SUCCEEDED job that completed after its own cutoff to LATE on timestamps alone. D-b is the silent discovery miss; the expected_projections mechanism is the monitor-side analogue."
+    },
+    {
+      "what": "occurrences of 'rollback' in the program, outside this node",
+      "value": {"n_hits": 10, "n_self_referential": 10, "n_elsewhere": 0},
+      "method": "measure_repo_facts.py case-insensitive scan of experiments/player_program, excluding this node's own directory and SEALED_RESULTS",
+      "citation": "REPO_FACTS.json:rollback_mentions",
+      "consequence": "NEGATIVE RESULT. Every hit is the graph restating this node's own acceptance criterion (PROGRAM_GRAPH.json, the generated prompt, seed_graph.py, the generated status and index reports). No rollback mechanism, procedure, log, state file or version-pinning convention exists anywhere in the program. The rollback panel is therefore a specification of what a rollback record would have to contain, not a view over an existing one."
+    },
+    {
+      "what": "test suite",
+      "value": {"checks": 148, "failures": 0},
+      "method": "python TESTS.py"
+    }
+  ],
+
+  "contradictions_found": [
+    {
+      "id": "U13-C1",
+      "kind": "document vs bytes",
+      "statement": "The node brief and PROGRAM_GRAPH.json require that 'rollback state is visible', which reads as though a rollback state exists to be surfaced. It does not: zero non-self-referential occurrences of the word exist in the program.",
+      "resolved_how": "Not resolved by invention. The panel is built and specified; it is fed by fixtures only, and the report states plainly that no producer exists.",
+      "trips_stop_condition": false
+    },
+    {
+      "id": "U13-C2",
+      "kind": "sibling-node divergence, measured",
+      "statement": "The concurrently running product node U10_PREDICTION_API_SCHEMA emits warning codes INPUT_MISSING (prediction_response_schema.py:388), INPUT_STALE (:398) and JOB_FAILED (:408), which match this node's codes exactly, but uses JOB_NOT_RUN (:418) where this node uses JOB_DID_NOT_RUN. It also carries no rollback vocabulary at all.",
+      "resolved_how": "Not resolved here. U10 is in flight and unvalidated; editing it is outside this node's write scope and coupling to unvalidated concurrent output would be worse than the divergence. Recorded as a proposed shared-contract change for the coordinator.",
+      "trips_stop_condition": false
+    },
+    {
+      "id": "U13-C3",
+      "kind": "design observation, not a contradiction in the bytes",
+      "statement": "Alert SEVERITY and SUPPRESSION are separate axes, and the stale_input fixture shows why: it raises three WARNING alerts and zero CRITICAL alerts, yet serving is SUPPRESSED. A reader who equates 'no critical alerts' with 'healthy' would misread the panel.",
+      "resolved_how": "The serving banner is printed first and independently of severity counts, and the contract states the two axes explicitly (MONITOR_CONTRACT.md section 7).",
+      "trips_stop_condition": false
+    }
+  ],
+
+  "shared_contract_changes_proposed": [
+    "Align the failed-job code across the product lane: U10 uses JOB_NOT_RUN, U13 uses JOB_DID_NOT_RUN. One spelling should win. Proposed only; nothing was merged and no sibling file was touched.",
+    "Consider adopting expected_projections (an explicit per-frame obligation list) as a shared product-lane concept, so a vanished row cannot read as a complete table in the API response either. Proposed only."
+  ],
+
+  "could_not_establish": [
+    "Whether any real producer will ever write a monitor snapshot. No snapshot producer exists in the repository and building one is outside this node's write scope.",
+    "Real staleness thresholds. Every max_age_seconds in the fixtures is invented; there is no measured refresh cadence in the program to derive one from, because zero capture domains are bound.",
+    "Whether the four D11 domains this node models as 'inputs' would in practice arrive through the D11 capture ledger or through a separate path. D11's own adapters are unbuilt.",
+    "Rollback semantics in the operational system. There is nothing to reproduce; see U13-C1.",
+    "Whether the concurrently running U11_UI_SHELL renders these panels compatibly. It was not read for behaviour and this node does not import it."
+  ],
+
+  "stop_conditions": {
+    "tripped": false,
+    "statement": "Nothing in this node touches the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status. The monitor never reads a feature, a fold, a fit or a result; it reads timestamps, statuses and opaque version strings."
+  },
+
+  "frozen_artifacts_touched": [],
+  "forbidden_inputs_read": [],
+  "outputs": [
+    "REPORT.md",
+    "MONITOR_CONTRACT.md",
+    "FINDINGS.json",
+    "TESTS.py",
+    "monitor_schema.py",
+    "monitor_state.py",
+    "render_monitor.py",
+    "make_fixtures.py",
+    "build_views.py",
+    "measure_repo_facts.py",
+    "MONITOR_VIEWS.md",
+    "MONITOR_EVALUATIONS.json",
+    "REPO_FACTS.json",
+    "fixtures/*.json"
+  ]
+}

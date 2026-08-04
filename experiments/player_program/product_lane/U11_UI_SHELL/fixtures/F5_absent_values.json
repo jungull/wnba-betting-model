@@ -1,0 +1,71 @@
+{
+  "schema": "u11_view_payload/1",
+  "title": "Projection view — fresh inputs, absent and malformed values",
+  "as_of": "2026-08-04T18:00:00Z",
+  "model": {
+    "version": "FIXTURE-MODEL-A@0.0.0-fixture",
+    "artifact_sha256": {
+      "fixture_projection_table": "0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "promotion_status": "FIXTURE ONLY — no model has been promoted"
+  },
+  "inputs": [
+    {"input_id": "schedule", "label": "schedule", "captured_at": "2026-08-04T12:00:00Z", "max_age_seconds": 86400, "status": "ok"},
+    {"input_id": "rolling_features", "label": "rolling feature frame", "captured_at": "2026-08-04T17:05:00Z", "max_age_seconds": 7200, "status": "ok"}
+  ],
+  "games": [
+    {
+      "game_id": "FIXTURE-G-0005",
+      "label": "Fixture value-absence cases",
+      "tipoff": "2026-08-05T01:00:00Z",
+      "required_inputs": ["schedule", "rolling_features"],
+      "rows": [
+        {
+          "entity_id": "FIXTURE-E-06",
+          "entity_label": "explicit null projection",
+          "projection": {"value": null, "units": "reg-equiv poss"},
+          "uncertainty": {"lo": 30.0, "hi": 40.0, "level": "80%"},
+          "market": {"line": 35.0, "source": "fixture book"},
+          "components": [{"name": "base rate", "contribution": null}]
+        },
+        {
+          "entity_id": "FIXTURE-E-07",
+          "entity_label": "projection key entirely absent",
+          "uncertainty": {"lo": 31.0, "hi": 39.0, "level": "80%"},
+          "market": {"line": 35.0, "source": "fixture book"},
+          "components": [{"name": "base rate", "contribution": 35.0}]
+        },
+        {
+          "entity_id": "FIXTURE-E-08",
+          "entity_label": "non-numeric projection value",
+          "projection": {"value": "n/a", "units": "reg-equiv poss"},
+          "uncertainty": {"lo": null, "hi": 39.0, "level": "80%"},
+          "market": {"line": 35.0, "source": "fixture book"},
+          "components": []
+        },
+        {
+          "entity_id": "FIXTURE-E-09",
+          "entity_label": "value present, no market snapshot, no components",
+          "projection": {"value": 34.5, "units": "reg-equiv poss"},
+          "uncertainty": {"lo": 31.2, "hi": 37.9, "level": "80%"}
+        },
+        {
+          "entity_id": "FIXTURE-E-10",
+          "entity_label": "row carries an explicit blocker",
+          "row_blockers": ["entity did not resolve to a known identity"],
+          "projection": {"value": 33.3, "units": "reg-equiv poss"},
+          "uncertainty": {"lo": 30.0, "hi": 36.6, "level": "80%"},
+          "market": {"line": 33.0, "source": "fixture book"},
+          "components": [{"name": "base rate", "contribution": 33.3}]
+        }
+      ],
+      "notes": ["all inputs are fresh here; every suppression below is value-level, not input-level"]
+    }
+  ],
+  "audit": {
+    "payload_id": "FIXTURE-PAYLOAD-F5",
+    "generated_by": "U11_UI_SHELL fixture set (hand-authored)",
+    "source": "FIXTURE",
+    "notes": "Null, absent-key, non-numeric, partially-absent and row-blocked cases in one view."
+  }
+}

@@ -1,0 +1,273 @@
+{
+  "schema": "player_prediction_response/1",
+  "schema_version": "1.0.0",
+  "response_id": "FIXTURE_RESP_FAILED_JOB",
+  "generated_at_utc": "2026-08-05T20:50:00Z",
+  "game": {
+    "game_id": "FIXTURE_GAME_0001",
+    "game_cluster_id": "FIXTURE_CLUSTER_0001",
+    "season": 2026,
+    "home_team_id": "FIXTURE_TEAM_H",
+    "away_team_id": "FIXTURE_TEAM_A",
+    "scheduled_tip_utc": "2026-08-05T23:00:00Z",
+    "forecast_cutoff_utc": "2026-08-05T21:00:00Z"
+  },
+  "model": {
+    "model_version": "fixture_model_alpha/0.0.1",
+    "model_family": "fixture_family_synthetic",
+    "artifact_sha256": {
+      "exposure_artifact": "5f2ba22a7a6257f21c1d622f570c0a438a726bbf2e97f851d312ff82e84ab262",
+      "rate_artifact": "da600175613d7795d1906585ef0daeaafa3aaa1dbfca75811c63c08f6a52c02a"
+    },
+    "promotion_status": "no_challenger_promoted",
+    "control_pairing": "fixture_control_declared_by_producer",
+    "registry_record": null,
+    "produced_by": "fixtures/build_fixtures.py"
+  },
+  "inputs": [
+    {
+      "input_id": "team_history",
+      "source": "fixtures/team_history.parquet",
+      "sha256": "fdbd8caadd66fc08568877c4c7d94e0e73db7d96c0333a12ed91e75b0fa494cd",
+      "as_of_utc": "2026-08-05T19:00:00Z",
+      "observed_at_utc": "2026-08-05T19:05:00Z",
+      "age_seconds": 3600.0,
+      "max_age_seconds": 86400.0,
+      "job_status": "ok",
+      "freshness": "fresh",
+      "degraded": false
+    },
+    {
+      "input_id": "lineup_report",
+      "source": "fixtures/lineup_report.json",
+      "sha256": "7458bcc33ced3f440abeeb33eddfb14424b5880906ffabecb478fcd6211a233c",
+      "as_of_utc": "2026-08-05T20:30:00Z",
+      "observed_at_utc": "2026-08-05T20:31:00Z",
+      "age_seconds": 1800.0,
+      "max_age_seconds": 7200.0,
+      "job_status": "failed",
+      "freshness": "fresh",
+      "degraded": true
+    },
+    {
+      "input_id": "market_capture",
+      "source": "fixtures/market_capture.json",
+      "sha256": "447a0e2a085a4c4a4597009f7c8c1cc542803e08f071c0a9afa53e0524223cb4",
+      "as_of_utc": "2026-08-05T20:45:00Z",
+      "observed_at_utc": "2026-08-05T20:46:00Z",
+      "age_seconds": 900.0,
+      "max_age_seconds": 3600.0,
+      "job_status": "ok",
+      "freshness": "fresh",
+      "degraded": false
+    }
+  ],
+  "projections": [
+    {
+      "projection_id": "team_H_possessions",
+      "subject_type": "team",
+      "subject_id": "FIXTURE_TEAM_H",
+      "team_id": "FIXTURE_TEAM_H",
+      "target": "REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS",
+      "unit": "possessions",
+      "status": "served",
+      "withheld_reasons": [],
+      "point": 81.4,
+      "uncertainty": {
+        "sd": 3.1,
+        "p10": 77.5,
+        "p50": 81.4,
+        "p90": 85.3
+      },
+      "components": [
+        {
+          "name": "league_prior",
+          "basis": "prior",
+          "unit": "possessions",
+          "contribution": 79.9
+        },
+        {
+          "name": "team_trailing_window",
+          "basis": "trailing_window",
+          "unit": "possessions",
+          "contribution": 1.8
+        },
+        {
+          "name": "opponent_adjustment",
+          "basis": "adjustment",
+          "unit": "possessions",
+          "contribution": -0.3
+        }
+      ],
+      "depends_on": [
+        "team_history"
+      ],
+      "market": {
+        "available": true,
+        "book": "FIXTURE_BOOK",
+        "line": 80.5,
+        "over_price": -110,
+        "under_price": -110,
+        "captured_at_utc": "2026-08-05T20:45:00Z",
+        "unavailable_reason": null,
+        "edge_vs_line": 0.9
+      }
+    },
+    {
+      "projection_id": "player_0001_exposure",
+      "subject_type": "player",
+      "subject_id": "FIXTURE_PLAYER_0001",
+      "team_id": "FIXTURE_TEAM_H",
+      "target": "PLAYER_PROJECTED_OFFENSIVE_POSSESSION_EXPOSURE",
+      "unit": "possessions",
+      "status": "withheld",
+      "withheld_reasons": [
+        "degraded_input"
+      ],
+      "point": null,
+      "uncertainty": {
+        "sd": null,
+        "p10": null,
+        "p50": null,
+        "p90": null
+      },
+      "components": [
+        {
+          "name": "team_exposure_offset",
+          "basis": "offset",
+          "unit": "possessions",
+          "contribution": null
+        },
+        {
+          "name": "rotation_share_prior",
+          "basis": "prior",
+          "unit": "possessions",
+          "contribution": null
+        },
+        {
+          "name": "availability_probability",
+          "basis": "adjustment",
+          "unit": "possessions",
+          "contribution": null
+        }
+      ],
+      "depends_on": [
+        "team_history",
+        "lineup_report"
+      ],
+      "market": {
+        "available": false,
+        "book": null,
+        "line": null,
+        "over_price": null,
+        "under_price": null,
+        "captured_at_utc": null,
+        "unavailable_reason": "no_player_possession_market_in_fixture_capture",
+        "edge_vs_line": null
+      }
+    },
+    {
+      "projection_id": "player_0002_exposure",
+      "subject_type": "player",
+      "subject_id": "FIXTURE_PLAYER_0002",
+      "team_id": "FIXTURE_TEAM_A",
+      "target": "PLAYER_PROJECTED_OFFENSIVE_POSSESSION_EXPOSURE",
+      "unit": "possessions",
+      "status": "withheld",
+      "withheld_reasons": [
+        "degraded_input"
+      ],
+      "point": null,
+      "uncertainty": {
+        "sd": null,
+        "p10": null,
+        "p50": null,
+        "p90": null
+      },
+      "components": [
+        {
+          "name": "team_exposure_offset",
+          "basis": "offset",
+          "unit": "possessions",
+          "contribution": null
+        },
+        {
+          "name": "rotation_share_prior",
+          "basis": "prior",
+          "unit": "possessions",
+          "contribution": null
+        }
+      ],
+      "depends_on": [
+        "team_history",
+        "lineup_report"
+      ],
+      "market": {
+        "available": true,
+        "book": "FIXTURE_BOOK",
+        "line": 36.5,
+        "over_price": -115,
+        "under_price": -105,
+        "captured_at_utc": "2026-08-05T20:45:00Z",
+        "unavailable_reason": null,
+        "edge_vs_line": null
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "code": "JOB_FAILED",
+      "severity": "blocking",
+      "message": "the job producing 'lineup_report' failed; its last successful output is NOT reused",
+      "scope": "input:lineup_report"
+    },
+    {
+      "code": "PROJECTION_WITHHELD",
+      "severity": "blocking",
+      "message": "projection 'player_0001_exposure' withheld: depends on degraded input 'lineup_report' (freshness=fresh, job_status=failed)",
+      "scope": "projection:player_0001_exposure"
+    },
+    {
+      "code": "MARKET_UNAVAILABLE",
+      "severity": "advisory",
+      "message": "no market line for 'player_0001_exposure': no_player_possession_market_in_fixture_capture",
+      "scope": "projection:player_0001_exposure"
+    },
+    {
+      "code": "PROJECTION_WITHHELD",
+      "severity": "blocking",
+      "message": "projection 'player_0002_exposure' withheld: depends on degraded input 'lineup_report' (freshness=fresh, job_status=failed)",
+      "scope": "projection:player_0002_exposure"
+    },
+    {
+      "code": "MARKET_EDGE_SUPPRESSED",
+      "severity": "advisory",
+      "message": "a market line exists for 'player_0002_exposure' but no edge is computed against a withheld projection",
+      "scope": "projection:player_0002_exposure"
+    }
+  ],
+  "audit": {
+    "schema": "player_prediction_response/1",
+    "schema_version": "1.0.0",
+    "node_id": "U10_PREDICTION_API_SCHEMA",
+    "code_version": "U10_schema_1.0.0",
+    "fixture_mode": true,
+    "epistemic_status": "PRODUCT SCAFFOLD built against fixtures. Carries no scientific claim and must not imply a model has been promoted.",
+    "inputs_digest": "af35988af3ce3f7a3895145df4960634dabcb809b5a3496b4778d398285d8e81",
+    "request_echo": {
+      "game_id": "FIXTURE_GAME_0001",
+      "as_of_utc": "2026-08-05T20:00:00Z",
+      "subjects": [
+        "team",
+        "player"
+      ],
+      "requested_targets": [
+        "REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS",
+        "PLAYER_PROJECTED_OFFENSIVE_POSSESSION_EXPOSURE"
+      ]
+    },
+    "n_projections_served": 1,
+    "n_projections_withheld": 2,
+    "n_blocking_warnings": 3
+  }
+}

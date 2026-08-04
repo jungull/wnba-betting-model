@@ -1,0 +1,201 @@
+{
+  "node_id": "O13_LEAD_WINDOW_LATENCY",
+  "lane": "operations",
+  "type": "audit",
+  "epistemic_status": "DESIGN OR IMPLEMENTATION ANALYSIS of a documented prospective-capture defect. Isolated branch only. This lane does not block possession research unless it changes the historical feature evidence.",
+  "generated_utc": "2026-08-04",
+  "documentation_found": "DOCUMENTED",
+  "documentation_citations": [
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:202",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:266",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:571-572",
+    "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:611"
+  ],
+  "documented_defect_id": "D-d",
+  "documented_defect_text": "Lead-window execution latency. Two records created 22:45:08Z against 22:34 / 22:44 cutoffs. Distinct from D-b: discovery worked, execution was late.",
+  "documented_severity": "B",
+  "documented_remediation_target": "prospective_pair/should_run_base.py",
+  "reproduced": "REPRODUCED",
+  "reproduction": {
+    "script": "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/repro_d_d.py",
+    "command": "python repro_d_d.py C:/Users/jgallagher/wnba-betting-model",
+    "official_chain_records": 23,
+    "records_created_after_own_cutoff": 2,
+    "late_records": [
+      {
+        "record_idx": 19,
+        "game_id": "1022600223",
+        "matchup": "NYL v SEA",
+        "decision_time_label": "T-30m",
+        "cutoff_utc_latest_tip": "2026-08-03T22:34:00+00:00",
+        "created_utc": "2026-08-03T22:45:08.958486+00:00",
+        "latency_minutes_latest_tip": 11.15,
+        "asof_cutoff_utc": "2026-08-03T22:30:00+00:00",
+        "latency_minutes_asof": 15.15,
+        "genuinely_late": true
+      },
+      {
+        "record_idx": 20,
+        "game_id": "1022600222",
+        "matchup": "ATL v LVA",
+        "decision_time_label": "T-30m",
+        "cutoff_utc_latest_tip": "2026-08-03T22:44:00+00:00",
+        "created_utc": "2026-08-03T22:45:08.976775+00:00",
+        "latency_minutes_latest_tip": 1.15,
+        "asof_cutoff_utc": "2026-08-03T23:00:00+00:00",
+        "latency_minutes_asof": -14.85,
+        "genuinely_late": false,
+        "note": "on time by 14.85 min against the tip known at write; classified late only because the tip was revised -16 min afterwards"
+      }
+    ],
+    "auditor_summary_in_memory": {
+      "obligations_total": 84,
+      "not_yet_due": 22,
+      "obligations_due": 47,
+      "served": 15,
+      "coverage_served": 0.3191489361702128,
+      "operational_misses": 26,
+      "unexplained": 0,
+      "promotion_grade": false,
+      "duplicate_records_excluded": 4,
+      "matches_published_receipt": true,
+      "published_receipt_citation": "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:539-552"
+    }
+  },
+  "findings": [
+    {
+      "id": "O13-F1",
+      "severity": "A",
+      "title": "The documented mechanism is wrong: the gate declined; an ungated second scheduled task wrote the records",
+      "claim": "should_run_base.py evaluated at 2026-08-03T22:45:06.515064Z and returned fire=False; run_pair.cmd took the else branch and did not invoke daily_forecast.py. The two records were written 2.44 s later at 22:45:08.958486Z by scheduled task WNBA_DailyForecast_PM (python daily_forecast.py --live, Daily 6:45:00 PM, no repetition, last run 2026-08-03 6:45:01 PM ET = 22:45:01Z), which never calls the gate.",
+      "evidence": [
+        "forecasts/runner_logs/pair_20260803.log:862-870",
+        "forecasts/runner_logs/pair_20260803.log:872-874 (arm runner read 19 base records at 22:45:08.859Z, 0.1 s before records 19-21 existed)",
+        "schtasks /query /tn \"\\WNBA_DailyForecast_PM\" /fo LIST /v",
+        "prospective_pair/run_pair.cmd (gated base step; else branch prints '[base] skipped')"
+      ],
+      "consequence": "The remediation assigned at PROJECT_UPDATE_2026-08-04.md:611 (amend should_run_base.py) cannot fix D-d. The writer does not import, invoke or depend on that file.",
+      "measured_process_latency_seconds": 7.96
+    },
+    {
+      "id": "O13-F2",
+      "severity": "B",
+      "title": "The official chain has no late-write refusal; the challenger chain has two",
+      "claim": "prospective_pair/alt_model_log.py refuses any arm forecast created after its own cutoff, and run_prospective.py declines with late_prevented. No equivalent rule exists anywhere on the official base chain, which is why every late record in the repository is a base record.",
+      "evidence": [
+        "prospective_pair/alt_model_log.py:21-24",
+        "prospective_pair/run_prospective.py:177-183",
+        "prospective_pair/should_run_base.py:43,92,98"
+      ]
+    },
+    {
+      "id": "O13-F3",
+      "severity": "B",
+      "title": "Retroactive relabelling: a later tip revision converted an on-time record into a late_record",
+      "claim": "coverage_audit.py computes the cutoff from the LATEST captured tip. At write time (22:45:08Z) the newest capture asserted ATL v LVA tip 23:30 (T-30m cutoff 23:00), making the record 14.85 min EARLY. Captures at 23:00:02Z and 00:00:02Z revised the tip to 23:00 then 23:14, producing cutoff 22:44 and a +1.15 min late_record. NYL v SEA moved 23:00 -> 23:05 -> 23:04 and is late on both clocks.",
+      "evidence": [
+        "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/tip_drift_probe.py output over data/odds_capture/live_*.json",
+        "prospective_pair/coverage_audit.py:200 (cutoff = g.tip - timedelta(hours=hrs))",
+        "prospective_pair/coverage_audit.py:228 (late_record classification)",
+        "prospective_pair/coverage_audit.py:75 (TIP_MOVE_TOLERANCE = 30 min, so a 16-min move is not flagged)",
+        "forecasts/runner_logs/pair_20260803.log:863-866 (gate printed cutoffs 22:30 / 23:00 at 22:45:06Z)"
+      ]
+    },
+    {
+      "id": "O13-F4",
+      "severity": "B",
+      "title": "D-a's corrected operational-miss figure depends on which lateness clock the auditor uses",
+      "claim": "2026-08-03 CHI v PHX T-30m is classified missing_data_unavailable with reason 'job served 2 other game(s) on 2026-08-03 at T-30m'; those two are exactly records 19 and 20. D-a proposes excluding late records from served-evidence, giving operational misses 26 -> 27. Under the as-of rule (G2) record 20 is not late, one timely companion survives, and the count would remain 26.",
+      "evidence": [
+        "prospective_pair/coverage_audit.py:186-194 (served_at built from all official records regardless of lateness)",
+        "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:199",
+        "experiments/player_program/PROJECT_UPDATE_2026-08-04.md:558",
+        "in-memory coverage_audit.audit() row for 2026-08-03 CHI v PHX T-30m"
+      ],
+      "not_established": "The full receipt was NOT recomputed under G2; doing so requires patching coverage_audit.py, outside this node's write scope. Stated as a conditional implication for the owner of D-a."
+    },
+    {
+      "id": "O13-F5",
+      "severity": "C",
+      "title": "run_pair.cmd's at-most-once guarantee does not hold at the chain level",
+      "claim": "run_pair.cmd documents that gating makes each (game, decision time) written at most once. Two additional ungated tasks (AM 10:20 ET, PM 18:45 ET) write the same append-only chain, so the guarantee holds only for the gated path.",
+      "evidence": [
+        "prospective_pair/run_pair.cmd (header comment and gated base step)",
+        "prospective_pair/task_definition.xml (registers only the 15-minute paired task)",
+        "schtasks /query listing WNBA_DailyForecast_AM and WNBA_DailyForecast_PM"
+      ]
+    }
+  ],
+  "fix": {
+    "designed": true,
+    "tested": true,
+    "isolated": true,
+    "module": "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/late_write_guard.py",
+    "tests": "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/TESTS.py",
+    "test_command": "python TESTS.py C:/Users/jgallagher/wnba-betting-model",
+    "checks_total": 26,
+    "checks_passed": 26,
+    "exit_code": 0,
+    "wired_into_anything": false,
+    "rules": [
+      {
+        "id": "G1",
+        "name": "refuse_late",
+        "where_it_belongs": "the write site of the official chain (daily_forecast.py or a wrapper the scheduled tasks call), NOT the discovery gate",
+        "why": "schedule-independent: correct no matter which process writes or what invoked it",
+        "replay_result": "would have REFUSED record 19; would have ALLOWED record 20"
+      },
+      {
+        "id": "G2",
+        "name": "asof_cutoff",
+        "where_it_belongs": "prospective_pair/coverage_audit.py classification",
+        "why": "lateness must be judged against the tip known at write time; returns None when no capture predates the write rather than silently using the latest tip",
+        "replay_result": "record 20 flagged retroactively_relabelled, not late"
+      }
+    ]
+  },
+  "shared_contract_changes_proposed": [
+    "prospective_pair/daily_forecast.py write site (or a wrapper): adopt G1 refuse_late so no base record can be appended at or after its own cutoff. NOT APPLIED.",
+    "prospective_pair/coverage_audit.py: adopt G2 as-of cutoff for the late_record classification and separate retroactively-relabelled records from genuinely late ones. NOT APPLIED.",
+    "Scheduler: retire or subordinate WNBA_DailyForecast_AM and WNBA_DailyForecast_PM to should_run_base.py. This is a system-configuration change and was NOT made."
+  ],
+  "escalations": [
+    {
+      "to": "operations / audit owner of D-a",
+      "what": "The corrected operational-miss figure (27) depends on record 20 being genuinely late. Under the as-of rule it is not, and the figure would remain 26.",
+      "changes_historical_feature_evidence": false
+    },
+    {
+      "to": "owner of the D-d remediation assignment",
+      "what": "PROJECT_UPDATE_2026-08-04.md:611 assigns D-d to should_run_base.py. That assignment is ineffective; the producing process never reads that file.",
+      "changes_historical_feature_evidence": false
+    }
+  ],
+  "escalated_to_possession_lane": false,
+  "escalation_to_possession_lane_reason": "Nothing here touches the historical feature evidence. The artifacts involved are the prospective operational chain (forecasts/forecast_log.jsonl, data/odds_capture/live_*.json, forecasts/runner_logs/*); the possession lane's features are built from the master gamelogs.",
+  "stop_conditions_tripped": [],
+  "could_not_establish": [
+    "Whether daily_forecast.py contains any internal cutoff check (outside declared read scope; bounded from the outside instead).",
+    "Why WNBA_DailyForecast_AM / WNBA_DailyForecast_PM exist; no document in the repository registers or mentions them.",
+    "Which tip value for either game was ever correct; only the capture history is available.",
+    "Whether the AM (10:20 ET) task has ever produced a late record; the only AM record in the chain (idx 22) is 219.94 min early.",
+    "The full coverage receipt recomputed under G2."
+  ],
+  "outputs": [
+    "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/REPORT.md",
+    "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/FINDINGS.json",
+    "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/repro_d_d.py",
+    "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/tip_drift_probe.py",
+    "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/late_write_guard.py",
+    "experiments/player_program/ops_lane/O13_LEAD_WINDOW_LATENCY/TESTS.py"
+  ],
+  "constraints_observed": {
+    "git_commands_run": "none (read-only rev-parse of the branch name only)",
+    "frozen_artifacts_modified": "none",
+    "files_written_outside_write_scope": "none",
+    "shared_contract_merged": false,
+    "sealed_results_read": false,
+    "performance_peeking": false,
+    "live_repo_mutating_entrypoints_invoked": "none; coverage_audit.main() was deliberately never called because it writes into forecasts/"
+  }
+}
