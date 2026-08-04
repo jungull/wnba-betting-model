@@ -175,6 +175,12 @@ def build(deterministic: bool = False) -> dict:
             "worktree": _rel(HERE.parents[1]),
             "authoritative_lineage": ("this worktree, NOT the repository root, which is on a "
                                       "different branch"),
+            "head_is_the_commit_this_state_was_DERIVED_FROM": (
+                "A derived state file cannot record the hash of the commit that carries it -- "
+                "the hash is not known until after the file is written. So `head` is the commit "
+                "this state was derived FROM, which is the PARENT of the commit containing this "
+                "file. `--check` therefore compares substance and ignores head/tree fields; a "
+                "stale head here is expected and is not drift."),
         },
         "frozen_incumbent": dict(ledger["frozen_incumbent"],
                                  status="FROZEN — do not alter or retune"),
@@ -288,11 +294,24 @@ def main() -> int:
             print("FAIL: PROGRAM_STATE.json does not exist", file=sys.stderr)
             return 1
         cur = json.loads(OUT.read_text(encoding="utf-8"))
-        cur["generated_utc"] = state["generated_utc"]
-        if json.dumps(cur, indent=2, ensure_ascii=False) + "\n" != txt:
-            print("FAIL: PROGRAM_STATE.json is stale; re-run the generator", file=sys.stderr)
+        # Compare SUBSTANCE. The timestamp is volatile by design, and the repository block is
+        # necessarily one commit behind whenever the state file is itself committed -- see
+        # repository.head_is_the_commit_this_state_was_DERIVED_FROM.
+        want, got = dict(state), dict(cur)
+        for d in (want, got):
+            d.pop("generated_utc", None)
+            d.pop("repository", None)
+        if json.dumps(got, indent=2, ensure_ascii=False) != json.dumps(
+                want, indent=2, ensure_ascii=False):
+            print("FAIL: PROGRAM_STATE.json is substantively stale; re-run the generator",
+                  file=sys.stderr)
             return 1
-        print("PROGRAM_STATE.json is current")
+        if cur["repository"]["branch"] != state["repository"]["branch"]:
+            print("FAIL: PROGRAM_STATE.json records a different branch", file=sys.stderr)
+            return 1
+        print("PROGRAM_STATE.json is substantively current "
+              f"(derived from {cur['repository']['head_short']}, HEAD now "
+              f"{state['repository']['head_short']})")
         return 0
     OUT.write_text(txt, encoding="utf-8")
     r = state["repository"]
