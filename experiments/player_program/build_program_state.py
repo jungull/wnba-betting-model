@@ -289,7 +289,20 @@ def build(deterministic: bool = False) -> dict:
              "gap": "only possession_features.py emits a producer construction receipt. Every "
                     "other feature producer is unreceipted, so any arm fitted through one reaches "
                     "RAW_PROVENANCE_ASSERTED and is NOT a full Stage 1 pass",
-             "implemented": False},
+             "implemented": False,
+             "scope": "SCOPED, NOT GLOBAL",
+             "blocks": "any fitted arm whose feature producer emits no construction receipt",
+             "does_not_block": ["the possession-feature path (receipted, IDENTITY_VERIFIED)",
+                                "Stage 2A diagnostics and ideation, which fit nothing"],
+             "why_severity_A": (
+                 "Severity A means STOP AFFECTED WORK, not stop all work — see "
+                 "RESEARCH_CONTRACT_V1 'only Severity A interrupts unaffected parallel work'. "
+                 "An unreceipted producer cannot reach a full Stage 1 pass, so an arm fitted "
+                 "through one must stop; the possession path is not affected."),
+             "not_a_contradiction_with_green_state": (
+                 "a green program state means the state file is internally consistent and the "
+                 "suites pass, NOT that zero gaps remain open. A test asserts this gap STAYS "
+                 "open so the possession bridge cannot silently close it.")},
             {"id": "construction_receipt_forgery", "severity": "C",
              "gap": "a construction receipt is not a cryptographic attestation. Forgery must "
                     "reproduce the producer source bytes, every source artifact, the row "
