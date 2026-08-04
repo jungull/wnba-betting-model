@@ -1,0 +1,302 @@
+{
+  "epistemic_status": "POST_RULING_CONSTRAINED_DISCOVERY, frozen. The three V2 sources are independent of the original five and of one another, but NOT of the coordinator rulings: EVIDENCE_PACKET_V2 told them the target unit was settled, which strata were withdrawn, and how the controls are defined. Their agreement with the original round is post-ruling CORROBORATION and is WEAKER evidence than that round's own convergence. This is NOT a final candidate-generation wave.",
+  "failures": [],
+  "findings": {
+    "S1_master_team_minutes_is_an_exact_overtime_indicator": {
+      "affects": "CUTOFF-VALID FEATURE SET",
+      "consequence": "V2's availability table is INCOMPLETE. master_team.minutes must be named an explicitly PROHIBITED column on the target-game row, and any lagged use must be audited rather than assumed safe. A convention is not enough; this needs an enforced invariant.",
+      "measurement": {
+        "exactly_5x_game_minutes": "2990/2990",
+        "game_minutes_recoverable_by_division": "2990/2990",
+        "minutes_over_game_minutes": {
+          "max": 5.0,
+          "mean": 5.0,
+          "min": 5.0,
+          "sd": 0.0
+        },
+        "nulls": 0,
+        "rows": 2990
+      },
+      "mechanism": null,
+      "raised_by": "V2_basketball",
+      "remediation_node": "P22_POSTGAME_SURROGATE_GUARD",
+      "severity": "A \u2014 leakage",
+      "unresolved_at_freeze": true,
+      "verified_by_coordinator": false,
+      "why_it_matters": "the ruling PROHIBITS any function of game_minutes in the feature matrix, fallback logic, arm selection or prediction path. master_team.minutes IS such a function -- exactly, with zero nulls and zero variance in the ratio -- and master_team is listed in the availability table as usable when lagged. game_minutes is recoverable by dividing by five."
+    },
+    "S2_team_cities_join_hazards": {
+      "affects": "CANDIDATE UNIVERSE",
+      "consequence": null,
+      "measurement": {
+        "distinct_team_id": 15,
+        "duplicated_team_id": {
+          "1611661317": 2
+        },
+        "elevation_ft_range": [
+          20,
+          2030
+        ],
+        "last_season_dtype": "float64",
+        "last_season_nulls": "15 of 16",
+        "rows": 16,
+        "venues_above_1000ft": 4
+      },
+      "mechanism": null,
+      "raised_by": "V2_basketball",
+      "remediation_node": "P23_DIMENSION_CARDINALITY_GUARD",
+      "severity": "A \u2014 silent row corruption",
+      "unresolved_at_freeze": true,
+      "verified_by_coordinator": false,
+      "why_it_matters": "team_id 1611661317 appears twice (PHO/PHX rebrand), so a naive join fans out 1:m and duplicates that franchise's rows. last_season is float with 15 of 16 values null, so a null-unsafe filter drops every current franchise. Either failure silently changes the row set that must be BYTE-IDENTICAL across K0_FLAT, K0_MATCHED, the incumbent and every challenger."
+    },
+    "S3_injury_history_has_two_cutoff_regimes": {
+      "affects": "CUTOFF-VALID FEATURE SET",
+      "consequence": "the two regimes must be split before either can be considered, and the missed_game_* regime is presumptively an outcome, not a feature",
+      "measurement": {
+        "announcement_dated_rows": 2967,
+        "missed_game_star_rows": 5373,
+        "total_rows": 8340
+      },
+      "mechanism": null,
+      "raised_by": "V2_basketball",
+      "remediation_node": "P24_INJURY_REGIME_LEDGER",
+      "severity": "A \u2014 outcome contamination",
+      "unresolved_at_freeze": true,
+      "verified_by_coordinator": false,
+      "why_it_matters": "5,373 of 8,340 rows are missed_game_* -- CONTEMPORANEOUS with the game they describe, i.e. realised outcomes rather than pregame signals. Only 2,967 are announcement-dated transactions with a defensible pregame claim. V2 records injury_history as ONE source with unproven cutoff validity; it is TWO regimes with different cutoff status, and the larger one is a realised outcome."
+    },
+    "S4_free_SLOPE_confound_comparison_gate_has_no_dimension_for_it": {
+      "affects": "K0_MATCHED",
+      "consequence": null,
+      "measurement": null,
+      "mechanism": "K0_MATCHED is featureless with the incumbent's projection as OFFSET, so it fits offset + b0. A challenger that declares the incumbent's OWN OUTPUT as a substantive feature fits b0 + (1+b1)*projected -- a free recalibration SLOPE the control does not have. It adds ZERO information.",
+      "raised_by": "V2_adversarial",
+      "remediation_node": "P25_OFFSET_DEPENDENCY_GUARD",
+      "severity": "A",
+      "unresolved_at_freeze": true,
+      "verified_by_coordinator": false,
+      "why_it_matters": null
+    },
+    "S5_opponent_design_is_exactly_determined_by_its_own_offset": {
+      "affects": "CUTOFF-VALID FEATURE SET / identifiability",
+      "consequence": null,
+      "measurement": {
+        "corr_own_opp": 0.1977,
+        "corr_own_projected": 0.7738,
+        "gate_threshold": 0.999,
+        "identity": "own_est + opp_est == 2 * projected_team_off_possessions",
+        "max_abs_deviation": 0.0,
+        "rows": 2982
+      },
+      "mechanism": null,
+      "raised_by": "V2_adversarial",
+      "remediation_node": "P25_OFFSET_DEPENDENCY_GUARD",
+      "severity": "A",
+      "unresolved_at_freeze": true,
+      "verified_by_coordinator": true,
+      "why_it_matters": "the packet explicitly flags opponent history as cutoff-valid and unused, so 'add an opponent adjustment' is the most obvious challenger in the wave. It rebuilds the P2 three-term exact dependency -- and PASSES every existing check, because both pairwise correlations are far below 0.999 and design_rank_report runs on FEATURES ONLY, never on [X | offset]."
+    },
+    "S6_the_tier_partition_decides_the_wave_and_the_ruling_does_not_settle_it": {
+      "affects": "K0_MATCHED",
+      "consequence": null,
+      "measurement": {
+        "league_prior_all": 0.00372,
+        "pooled": 0.00187,
+        "season_openers": 0.42488,
+        "team_window_prior_season": 0.37098,
+        "team_window_same_season": 0.01034
+      },
+      "mechanism": null,
+      "raised_by": "V2_adversarial",
+      "remediation_node": "P26_ARM_SPECIFIC_K0_CONTRACT",
+      "severity": "A",
+      "unresolved_at_freeze": true,
+      "verified_by_coordinator": true,
+      "why_it_matters": "the packet's headline reading -- 'reduce dispersion, not re-centre' -- is true POOLED at 0.19% and INVERTS on the cold-start strata, where bias is 37-42% of MSE. The incumbent's largest measurable defect is therefore a LEVEL error on precisely the partition K0_MATCHED is authorised to absorb. If K0_MATCHED carries the tier structure, a cold-start challenger is DEAD ON ARRIVAL: the control already removes the bias the challenger exists to remove."
+    },
+    "S7_per_fold_degeneracy_lands_on_the_control_itself": {
+      "affects": "INFERENCE STRUCTURE",
+      "consequence": null,
+      "measurement": {
+        "league_prior_all": {
+          "2021": 28,
+          "2022": 0,
+          "2023": 0,
+          "2024": 0,
+          "2025": 3,
+          "2026": 6
+        },
+        "team_window_prior_season": {
+          "2021": 0,
+          "2022": 36,
+          "2023": 36,
+          "2024": 36,
+          "2025": 36,
+          "2026": 39
+        },
+        "team_window_same_season": {
+          "2021": 382,
+          "2022": 442,
+          "2023": 484,
+          "2024": 488,
+          "2025": 581,
+          "2026": 385
+        }
+      },
+      "mechanism": null,
+      "raised_by": "V2_adversarial",
+      "remediation_node": "P27_FOLD_LOCAL_ESTIMABILITY_GUARD",
+      "severity": "A",
+      "unresolved_at_freeze": true,
+      "verified_by_coordinator": true,
+      "why_it_matters": "a tier indicator is IDENTICALLY ZERO in four of six chronological folds: league_prior_all in 2022, 2023 and 2024; team_window_prior_season in 2021. That is a blocking zero_variance finding per fold, arising from the incumbent's own structure, ON THE AUTHORITATIVE CONTROL. It is the ws3 shape reappearing -- pooled healthy, fold degenerate."
+    },
+    "S8_availability_table_omitted_32_possession_columns": {
+      "affects": "CUTOFF-VALID FEATURE SET",
+      "consequence": null,
+      "measurement": {
+        "examples_never_adjudicated": [
+          "off_p1..off_p5",
+          "def_p1..def_p5",
+          "lineup_valid_ten",
+          "lineup_class",
+          "n_off_oncourt",
+          "n_def_oncourt",
+          "non_competitive_conservative",
+          "is_overtime",
+          "possession_kind",
+          "score_diff_offense_start",
+          "score_diff_offense_end",
+          "abs_score_diff_start",
+          "regulation_seconds_remaining",
+          "is_zero_duration",
+          "is_technical_derived"
+        ],
+        "listed_in_v1_context_availability_raw_dump": 48,
+        "named_in_the_CUTOFF_VALID_AVAILABILITY_TABLE": 0,
+        "possessions_raw_v2_columns_total": 48
+      },
+      "mechanism": null,
+      "raised_by": "V2_estimator",
+      "remediation_node": "P2A_POSSESSION_COLUMN_ADJUDICATION",
+      "severity": "A",
+      "unresolved_at_freeze": true,
+      "verified_by_coordinator": true,
+      "why_it_matters": "the packet DUMPED all 48 column names under context_availability but the cutoff-valid availability table -- the block that actually GATES which hypotheses may become arms -- named NONE of them. Two consequences pull in opposite directions. (a) OPPORTUNITY: valid ten-player lineups are present on 99.789% of 238,563 possessions, which promotes player-additive hierarchical arms and an observation-purification arm from Category B to Category A. (b) HAZARD: is_overtime, the score-differential columns and non_competitive_conservative are REALISED target-game outcomes; they are lagged-use-only and none has been adjudicated."
+    },
+    "S9_K0_MATCHED_must_differ_by_arm": {
+      "affects": "K0_MATCHED",
+      "consequence": "K0_MATCHED must be constructed per arm, by what the arm CLAIMS. An arm that dissolves the tier ladder into continuous pooling must have a control carrying continuous support weighting, not tier dummies -- otherwise the control retains the very structure the arm removed.",
+      "measurement": null,
+      "mechanism": "a uniform team-identity-permutation control would SILENTLY PASS a level-transport arm, because permuting team identities does not destroy a LEAGUE-level time signal -- which is exactly what such an arm exploits. One control construction cannot serve every arm.",
+      "raised_by": "V2_estimator",
+      "remediation_node": "P26_ARM_SPECIFIC_K0_CONTRACT",
+      "severity": "A",
+      "unresolved_at_freeze": true,
+      "verified_by_coordinator": false,
+      "why_it_matters": null
+    }
+  },
+  "findings_by_severity": {
+    "A": 9
+  },
+  "findings_count": 9,
+  "frozen_artifact_hashes": {
+    "EVIDENCE_PACKET.json": {
+      "actual": "f373e3eed710026c9d82ff88aad1e9a2cae640ee461a5d7df5208d76abaf1e4e",
+      "expected": "f373e3eed710026c9d82ff88aad1e9a2cae640ee461a5d7df5208d76abaf1e4e",
+      "match": true
+    },
+    "EVIDENCE_PACKET_V2.json": {
+      "actual": "3a35ae735333c47713d6e7cc4c35c081e4eb07364c71cba744db03709730a32c",
+      "expected": "3a35ae735333c47713d6e7cc4c35c081e4eb07364c71cba744db03709730a32c",
+      "match": true
+    },
+    "V2_GENERATION_ORDER.json": {
+      "actual": "1998d5fda12ece9554d1ace895d010e46ba647c526df0e5170ae12e1a5f340ce",
+      "expected": "1998d5fda12ece9554d1ace895d010e46ba647c526df0e5170ae12e1a5f340ce",
+      "match": true
+    },
+    "V2_HYPOTHESES_adversarial.md": {
+      "actual": "e38857002413f322887d47aac27bec770832e4f424824daeba9bafd1c07c5a92",
+      "expected": "e38857002413f322887d47aac27bec770832e4f424824daeba9bafd1c07c5a92",
+      "match": true
+    },
+    "V2_HYPOTHESES_basketball.md": {
+      "actual": "6ee4af03f99a79e1daffd9dd8208730151552561e5794742decb3043aaa32690",
+      "expected": "6ee4af03f99a79e1daffd9dd8208730151552561e5794742decb3043aaa32690",
+      "match": true
+    },
+    "V2_HYPOTHESES_estimator.md": {
+      "actual": "c4d6680612ade6c523c7a0bb592eeb999b5b14cffe0d21fa08552a0e5e8440df",
+      "expected": "c4d6680612ade6c523c7a0bb592eeb999b5b14cffe0d21fa08552a0e5e8440df",
+      "match": true
+    },
+    "V2_STOP_CONDITION.json": {
+      "actual": "a4dd090b2b38dfb4d37028e15daa10c689deb27269cde3d8b9cddd12fd92244d",
+      "expected": "a4dd090b2b38dfb4d37028e15daa10c689deb27269cde3d8b9cddd12fd92244d",
+      "match": true
+    }
+  },
+  "item_7_status": "HALTED \u2014 not attempted",
+  "node": "P21_FREEZE_V2_HALT_PACKET",
+  "ok": true,
+  "recorded_but_not_stop_conditions": {
+    "E5_scorer_mismatch_is_exploitable_not_merely_documented": "trailing OT rate is cutoff-valid and gate-passing, and its only downstream benefit channel is arbitraging the OT bias on 132 rows -- improving turnover MAE while WORSENING the primary regulation-equivalent target. Needs an ordering constraint: the primary verdict frozen before any downstream number is computed.",
+    "OT_stratum_lower_MAE_may_be_a_units_artifact": "sd ratio 0.831 against the 40/45 = 0.889 compression factor. Must be ruled out before the OT stratum's better MAE is cited as a fact about difficulty.",
+    "attenuation_is_decidable_before_any_fit": "the source derives that a team's trailing window estimates the league mean plus HALF its own deviation, because game_pace is itself a two-sided mean, and gives the closed form P = m_A + m_B - mu. It reports the optimal gain and MSE gain are computable from the packet's own variance figures WITHOUT fitting, and deliberately did not measure them. NOT verified by the coordinator.",
+    "feasibility_headline_from_V2_estimator": "propagation from possession MAE to turnover-team MAE is approximately 0.177, so moving turnover MAE by 0.05 requires a 9.7% possession-MAE improvement. The source reports that NO single arm reaches that, and that even optimistic composition lands at 0.11-0.21 against a 0.28 requirement. NOT verified by the coordinator. If it holds, the wave's realistic ceiling is below what a naive reading of WS8's +0.1033 would suggest.",
+    "overtime_rescale_is_negligible": "source measured OT accruing 3.876 possessions/min against regulation 3.965, so the linear rescale understates an OT game by ~0.19 possessions, diluting to ~0.006 in the rating. Not verified by the coordinator. If it holds, the '~7x leverage' framing in the addendum is an EXPOSURE statement that effect size does not support, and no arm should be spent repairing regulation-equivalence.",
+    "packet_nits_flagged_not_corrected": "game_clusters 1491 and games_with_one_shared_projection 1495 sit three lines apart over different universes (the 4 unresolved games). tip_times.csv is odds-derived covering 2022-2026, which sits oddly beside the packet's 'market odds unavailable historically'. Flagged as observations; the packet is frozen and is NOT edited.",
+    "retired_families_with_bounds": "count/Poisson GLMs (target dispersion ratio 0.193 -- UNDER-dispersed, because possessions tile a fixed clock), robust central tendency, two-side precision weighting (support gap is 0 in 1,174 of 1,366 games), log transforms (CV 4.93%), and within-game asymmetry (capped at ~0.016 MAE). NOT verified by the coordinator.",
+    "schedule_confounding": "source measured a full 10-game window facing only 7.29 distinct opponents on average, min 3, with 20% of windows seeing <=6. Not verified by the coordinator; schedule-only, no outcome data.",
+    "tip_times_null_mask_is_almost_exactly_fold_1": "1,219 of 1,495 games and NONE of 2021, so any tip-derived feature's null mask nearly equals the first fold -- which neither gate branch blocks (0.5 correlation threshold, non-outcome mask)."
+  },
+  "remediation_ownership": {
+    "S1_master_team_minutes_is_an_exact_overtime_indicator": "P22_POSTGAME_SURROGATE_GUARD",
+    "S2_team_cities_join_hazards": "P23_DIMENSION_CARDINALITY_GUARD",
+    "S3_injury_history_has_two_cutoff_regimes": "P24_INJURY_REGIME_LEDGER",
+    "S4_free_SLOPE_confound_comparison_gate_has_no_dimension_for_it": "P25_OFFSET_DEPENDENCY_GUARD",
+    "S5_opponent_design_is_exactly_determined_by_its_own_offset": "P25_OFFSET_DEPENDENCY_GUARD",
+    "S6_the_tier_partition_decides_the_wave_and_the_ruling_does_not_settle_it": "P26_ARM_SPECIFIC_K0_CONTRACT",
+    "S7_per_fold_degeneracy_lands_on_the_control_itself": "P27_FOLD_LOCAL_ESTIMABILITY_GUARD",
+    "S8_availability_table_omitted_32_possession_columns": "P2A_POSSESSION_COLUMN_ADJUDICATION",
+    "S9_K0_MATCHED_must_differ_by_arm": "P26_ARM_SPECIFIC_K0_CONTRACT"
+  },
+  "schema": "player_program/stage2b/v2_halt_packet/1",
+  "sources": {
+    "all_returned": true,
+    "count": 3,
+    "names": [
+      "V2_estimator",
+      "V2_basketball",
+      "V2_adversarial"
+    ],
+    "note": "V2_estimator returned AFTER the halt was declared; it is the ORIGINAL run, not a replacement -- see P20_INGEST_PENDING_ESTIMATOR/INGEST_RECEIPT.json"
+  },
+  "stop_conditions_triggered": [
+    "CUTOFF-VALID FEATURE SET (S1, S3, S5, S8)",
+    "CANDIDATE UNIVERSE (S2)",
+    "K0_MATCHED (S4, S6, S9)",
+    "INFERENCE STRUCTURE (S7)"
+  ],
+  "unresolved_at_freeze": [
+    "S1_master_team_minutes_is_an_exact_overtime_indicator",
+    "S2_team_cities_join_hazards",
+    "S3_injury_history_has_two_cutoff_regimes",
+    "S4_free_SLOPE_confound_comparison_gate_has_no_dimension_for_it",
+    "S5_opponent_design_is_exactly_determined_by_its_own_offset",
+    "S6_the_tier_partition_decides_the_wave_and_the_ruling_does_not_settle_it",
+    "S7_per_fold_degeneracy_lands_on_the_control_itself",
+    "S8_availability_table_omitted_32_possession_columns",
+    "S9_K0_MATCHED_must_differ_by_arm"
+  ],
+  "verbatim_copy_note": "recorded_but_not_stop_conditions is copied VERBATIM from V2_STOP_CONDITION.json and is NOT edited. Several entries carry the qualifier 'NOT verified by the coordinator'. That qualifier is load-bearing: it marks a figure relayed from a single source rather than a measurement the coordinator reproduced. Any downstream use must carry it.",
+  "what_this_freeze_does_not_establish": [
+    "that any finding has been remediated -- the remediation nodes are what do that",
+    "that the nine findings are exhaustive; a later source may find a tenth",
+    "that the figures in recorded_but_not_stop_conditions are correct -- most are explicitly unverified",
+    "any candidate's accuracy, which no V2 source measured and none was permitted to"
+  ]
+}
