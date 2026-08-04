@@ -134,6 +134,47 @@
       "why_it_matters": "a tier indicator is IDENTICALLY ZERO in four of six chronological folds: league_prior_all in 2022, 2023 and 2024; team_window_prior_season in 2021. That is a blocking zero_variance finding per fold, arising from the incumbent's own structure, ON THE AUTHORITATIVE CONTROL. It is the ws3 shape reappearing -- pooled healthy, fold degenerate.",
       "requirement": "GATE_INVOCATION_CONTRACT section 4 requires the fold-level fallback frozen with a numeric trigger BEFORE results are visible",
       "unresolved": true
+    },
+    "S8_availability_table_omitted_32_possession_columns": {
+      "affects": "CUTOFF-VALID FEATURE SET",
+      "severity": "A",
+      "raised_by": "V2_estimator",
+      "verified_by_coordinator": true,
+      "measurement": {
+        "possessions_raw_v2_columns_total": 48,
+        "listed_in_v1_context_availability_raw_dump": 48,
+        "named_in_the_CUTOFF_VALID_AVAILABILITY_TABLE": 0,
+        "examples_never_adjudicated": [
+          "off_p1..off_p5",
+          "def_p1..def_p5",
+          "lineup_valid_ten",
+          "lineup_class",
+          "n_off_oncourt",
+          "n_def_oncourt",
+          "non_competitive_conservative",
+          "is_overtime",
+          "possession_kind",
+          "score_diff_offense_start",
+          "score_diff_offense_end",
+          "abs_score_diff_start",
+          "regulation_seconds_remaining",
+          "is_zero_duration",
+          "is_technical_derived"
+        ]
+      },
+      "why_it_matters": "the packet DUMPED all 48 column names under context_availability but the cutoff-valid availability table -- the block that actually GATES which hypotheses may become arms -- named NONE of them. Two consequences pull in opposite directions. (a) OPPORTUNITY: valid ten-player lineups are present on 99.789% of 238,563 possessions, which promotes player-additive hierarchical arms and an observation-purification arm from Category B to Category A. (b) HAZARD: is_overtime, the score-differential columns and non_competitive_conservative are REALISED target-game outcomes; they are lagged-use-only and none has been adjudicated.",
+      "coordinator_error": true,
+      "note": "this is the same failure as the venue and injury errors: I curated an availability table by hand and did not reconcile it against the schema I had already dumped three lines above it",
+      "unresolved": true
+    },
+    "S9_K0_MATCHED_must_differ_by_arm": {
+      "affects": "K0_MATCHED",
+      "severity": "A",
+      "raised_by": "V2_estimator",
+      "mechanism": "a uniform team-identity-permutation control would SILENTLY PASS a level-transport arm, because permuting team identities does not destroy a LEAGUE-level time signal -- which is exactly what such an arm exploits. One control construction cannot serve every arm.",
+      "consequence": "K0_MATCHED must be constructed per arm, by what the arm CLAIMS. An arm that dissolves the tier ladder into continuous pooling must have a control carrying continuous support weighting, not tier dummies -- otherwise the control retains the very structure the arm removed.",
+      "interacts_with": "S6 \u2014 together these mean 'K0_MATCHED' is not one object and the ruling specifies it as though it were",
+      "unresolved": true
     }
   },
   "not_stop_conditions_but_recorded": {
@@ -142,16 +183,18 @@
     "E5_scorer_mismatch_is_exploitable_not_merely_documented": "trailing OT rate is cutoff-valid and gate-passing, and its only downstream benefit channel is arbitraging the OT bias on 132 rows -- improving turnover MAE while WORSENING the primary regulation-equivalent target. Needs an ordering constraint: the primary verdict frozen before any downstream number is computed.",
     "OT_stratum_lower_MAE_may_be_a_units_artifact": "sd ratio 0.831 against the 40/45 = 0.889 compression factor. Must be ruled out before the OT stratum's better MAE is cited as a fact about difficulty.",
     "tip_times_null_mask_is_almost_exactly_fold_1": "1,219 of 1,495 games and NONE of 2021, so any tip-derived feature's null mask nearly equals the first fold -- which neither gate branch blocks (0.5 correlation threshold, non-outcome mask).",
-    "packet_nits_flagged_not_corrected": "game_clusters 1491 and games_with_one_shared_projection 1495 sit three lines apart over different universes (the 4 unresolved games). tip_times.csv is odds-derived covering 2022-2026, which sits oddly beside the packet's 'market odds unavailable historically'. Flagged as observations; the packet is frozen and is NOT edited."
+    "packet_nits_flagged_not_corrected": "game_clusters 1491 and games_with_one_shared_projection 1495 sit three lines apart over different universes (the 4 unresolved games). tip_times.csv is odds-derived covering 2022-2026, which sits oddly beside the packet's 'market odds unavailable historically'. Flagged as observations; the packet is frozen and is NOT edited.",
+    "feasibility_headline_from_V2_estimator": "propagation from possession MAE to turnover-team MAE is approximately 0.177, so moving turnover MAE by 0.05 requires a 9.7% possession-MAE improvement. The source reports that NO single arm reaches that, and that even optimistic composition lands at 0.11-0.21 against a 0.28 requirement. NOT verified by the coordinator. If it holds, the wave's realistic ceiling is below what a naive reading of WS8's +0.1033 would suggest.",
+    "attenuation_is_decidable_before_any_fit": "the source derives that a team's trailing window estimates the league mean plus HALF its own deviation, because game_pace is itself a two-sided mean, and gives the closed form P = m_A + m_B - mu. It reports the optimal gain and MSE gain are computable from the packet's own variance figures WITHOUT fitting, and deliberately did not measure them. NOT verified by the coordinator.",
+    "retired_families_with_bounds": "count/Poisson GLMs (target dispersion ratio 0.193 -- UNDER-dispersed, because possessions tile a fixed clock), robust central tendency, two-side precision weighting (support gap is 0 in 1,174 of 1,366 games), log transforms (CV 4.93%), and within-game asymmetry (capped at ~0.016 MAE). NOT verified by the coordinator."
   },
   "item_7_status": "HALTED \u2014 not attempted",
-  "still_running_at_halt": [
-    "V2_estimator"
-  ],
+  "still_running_at_halt": [],
   "stop_conditions_triggered": [
-    "CUTOFF-VALID FEATURE SET (S1, S3, S5)",
+    "CUTOFF-VALID FEATURE SET (S1, S3, S5, S8)",
     "CANDIDATE UNIVERSE (S2)",
-    "K0_MATCHED (S4, S6)",
+    "K0_MATCHED (S4, S6, S9)",
     "INFERENCE STRUCTURE (S7)"
-  ]
+  ],
+  "all_three_v2_sources_returned": true
 }
