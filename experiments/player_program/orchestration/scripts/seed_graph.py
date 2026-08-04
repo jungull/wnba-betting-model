@@ -712,11 +712,40 @@ def build():
                                 "to the possession lane rather than fixed quietly"],
                       severity="C"))
 
+    # Remediation, created by the coordinator from a confirmed defect rather than seeded.
+    # Parent finding: O15_LOGOUT_SURVIVAL produced FINDINGS.json, TESTS.py, measurement scripts
+    # and evidence, but not its declared REPORT.md. The independent verifier scored it
+    # PASS_WITH_DEFECTS and missed that; the mechanical expected-output check caught it.
+    N.append(node(
+        "R10_O15_REPORT_REMEDIATION",
+        "Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence",
+        "operations", "documentation", ["G01_GRAPH_ENGINE"], "fast documentation engineer",
+        "REMEDIATION of a confirmed missing declared output. It writes up evidence that ALREADY "
+        "EXISTS and may not add a finding the original run did not make. Its parent finding is "
+        "O15's validation_failed event, which is preserved and not rewritten.",
+        outputs=[f"{PP}/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md"],
+        validators=[f"python -c \"import pathlib,sys;p=pathlib.Path('{PP}/ops_lane/"
+                    f"R10_O15_REPORT_REMEDIATION/REPORT.md');sys.exit(0 if p.exists() and "
+                    f"p.stat().st_size>1000 else 1)\""],
+        criteria=[
+            "the report is derived ONLY from files already present in ops_lane/O15_LOGOUT_SURVIVAL/",
+            "no new measurement is performed and no new finding is introduced",
+            "the epistemic status of the original node is carried verbatim",
+            "the report states that O15's own declared output was missing and that this is a "
+            "remediation, not the original run",
+            "nothing under ops_lane/O15_LOGOUT_SURVIVAL/ is modified",
+        ],
+        severity="C",
+    ))
+
     N.append(node(
         "O16_SHARED_SCHEMA_ADOPTION", "Merge a shared schema or contract change proposed by the operations lane",
-        "operations", "decision", [o[0] for o in ops], "USER",
+        "operations", "decision", [o[0] for o in ops] + ["R10_O15_REPORT_REMEDIATION"], "USER",
         "USER DECISION. Merging a shared schema or contract change is USER_REQUIRED: it crosses "
-        "the boundary between the isolated operations lane and contracts other threads depend on.",
+        "the boundary between the isolated operations lane and contracts other threads depend on. "
+        "Confirmed at wave 3: the operations lane's targets (prospective_pair/should_run_base.py, "
+        "coverage_audit.py) live on branch data-refresh-2026 and are ABSENT from this branch, so "
+        "adoption is a cross-branch change as well as a shared-contract one.",
         outputs=[], validators=[], criteria=[],
         stops=["reached: this node exists to stop"],
         severity="A", merge="never", human=True, status="USER_REQUIRED", retries=0,

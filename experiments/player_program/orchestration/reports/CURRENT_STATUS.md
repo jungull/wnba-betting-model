@@ -6,18 +6,20 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `6abe0cccf073fa61705e8aca7f3110c84ab103fd` |
+| HEAD | `49906a01840a5143cb5fc7418a892bd3c08fe3eb` |
 | working tree | DIRTY |
-| nodes | 57 |
-| events | 39 |
+| nodes | 58 |
+| events | 52 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
 | BLOCKED | 22 |
-| PASSED | 4 |
-| RUNNING | 29 |
+| FAILED | 1 |
+| PASSED | 13 |
+| READY | 1 |
+| RUNNING | 19 |
 | USER_REQUIRED | 2 |
 
 ## Severity A blockers
@@ -36,12 +38,6 @@ None open against a node.
 * `I11_BLINDED_RESULT_PACKAGING` — Generic sealed-result and integrity-manifest tooling
 * `I12_DESIGN_DEPENDENCY_AUDIT` — Reusable full-design offset/dependency audits without modifying frozen shared gates
 * `I13_REPRODUCIBILITY_RUNNER` — Deterministic commands, seed manifests and artifact reconciliation
-* `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
-* `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
-* `O12_PER_GAME_EXECUTION_SCOPE` — Per-game execution scope defect
-* `O13_LEAD_WINDOW_LATENCY` — Lead-window latency defect
-* `O14_OPS_ENTITY_RESOLUTION` — Entity resolution in the prospective capture path
-* `O15_LOGOUT_SURVIVAL` — Logout survival for the capture scheduler
 * `P22_POSTGAME_SURROGATE_GUARD` — S1: enforced invariant against current-game outcome-derived columns
 * `P23_DIMENSION_CARDINALITY_GUARD` — S2: merge cardinality invariants preserving the 2,982-row / 1,491-game universe
 * `P24_INJURY_REGIME_LEDGER` — S3: split injury data into explicit epistemic regimes and report cutoff-valid coverage
@@ -51,34 +47,39 @@ None open against a node.
 * `P28_PRIMARY_SECONDARY_ORDERING_CONTRACT` — Possession-first adjudication; prohibit downstream OT-mismatch arbitrage
 * `P29_TIP_TIME_AND_COVERAGE_AUDIT` — Resolve the fold-aligned tip-time null pattern and rule on tip-derived eligibility
 * `P2A_POSSESSION_COLUMN_ADJUDICATION` — S8: adjudicate the 32 possession columns the availability table never named
-* `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
-* `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
-* `U12_PREDICTION_HISTORY` — Immutable prediction-history and model-version views
-* `U13_MONITORING_INTERFACE` — Stale-input, missing-lineup, failed-job and rollback visibility
 
 ## Ready — next automatically scheduled
 
-None.
+* `R10_O15_REPORT_REMEDIATION` (operations) — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
 
 ## Passed
 
 * `G00_LIVE_RECONCILIATION` — Reconcile live repository state, ancestry and frozen artifact hashes
 * `G01_GRAPH_ENGINE` — Persistent orchestration framework: graph, ledgers, validators, dispatcher
+* `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
+* `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
+* `O12_PER_GAME_EXECUTION_SCOPE` — Per-game execution scope defect
+* `O13_LEAD_WINDOW_LATENCY` — Lead-window latency defect
+* `O14_OPS_ENTITY_RESOLUTION` — Entity resolution in the prospective capture path
 * `P20_INGEST_PENDING_ESTIMATOR` — Ingest and freeze the third V2 source (estimator) that returned after the halt
 * `P21_FREEZE_V2_HALT_PACKET` — Freeze the complete V2 halt packet: three source outputs, nine findings, scope reconciliation
+* `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
+* `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
+* `U12_PREDICTION_HISTORY` — Immutable prediction-history and model-version views
+* `U13_MONITORING_INTERFACE` — Stale-input, missing-lineup, failed-job and rollback visibility
 
 ## Human gates
 
-* `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 * `P43_CHAMPION_DECISION` — Whether to replace Arm D as the frozen champion
+* `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 
 ## By lane
 
-| lane | BLOCKED | PASSED | RUNNING | USER_REQUIRED |
-|---|---|---|---|---|
-| data | 0 | 0 | 5 | 0 |
-| future_research | 7 | 0 | 0 | 0 |
-| governance | 2 | 2 | 1 | 0 |
-| operations | 0 | 0 | 10 | 1 |
-| possession | 13 | 2 | 9 | 1 |
-| product | 0 | 0 | 4 | 0 |
+| lane | BLOCKED | FAILED | PASSED | READY | RUNNING | USER_REQUIRED |
+|---|---|---|---|---|---|---|
+| data | 0 | 0 | 0 | 0 | 5 | 0 |
+| future_research | 7 | 0 | 0 | 0 | 0 | 0 |
+| governance | 2 | 0 | 2 | 0 | 1 | 0 |
+| operations | 0 | 1 | 5 | 1 | 4 | 1 |
+| possession | 13 | 0 | 2 | 0 | 9 | 1 |
+| product | 0 | 0 | 4 | 0 | 0 | 0 |

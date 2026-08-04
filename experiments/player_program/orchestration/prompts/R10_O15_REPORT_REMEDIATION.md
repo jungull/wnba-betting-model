@@ -1,6 +1,6 @@
-# O16_SHARED_SCHEMA_ADOPTION — Merge a shared schema or contract change proposed by the operations lane
+# R10_O15_REPORT_REMEDIATION — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
 
-**Lane:** operations  |  **Type:** decision  |  **Severity on failure:** A  |  **Role:** USER
+**Lane:** operations  |  **Type:** documentation  |  **Severity on failure:** C  |  **Role:** fast documentation engineer
 
 > This file is GENERATED from the node's contract in `PROGRAM_GRAPH.json`. It is the auditable
 > record of exactly what this node's agent was told. Do not edit it by hand.
@@ -33,7 +33,7 @@
 
 ## Epistemic status of your output
 
-USER DECISION. Merging a shared schema or contract change is USER_REQUIRED: it crosses the boundary between the isolated operations lane and contracts other threads depend on. Confirmed at wave 3: the operations lane's targets (prospective_pair/should_run_base.py, coverage_audit.py) live on branch data-refresh-2026 and are ABSENT from this branch, so adoption is a cross-branch change as well as a shared-contract one.
+REMEDIATION of a confirmed missing declared output. It writes up evidence that ALREADY EXISTS and may not add a finding the original run did not make. Its parent finding is O15's validation_failed event, which is preserved and not rewritten.
 
 Write this verbatim into your report. It bounds what your output may later be cited for.
 
@@ -61,17 +61,21 @@ Write this verbatim into your report. It bounds what your output may later be ci
 
 ## Your mandate
 
-**Merge a shared schema or contract change proposed by the operations lane**
+**Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence**
 
 Deliver exactly this, to the standard the acceptance criteria below describe. The criteria are not a summary of the mandate — they *are* the mandate.
 
 ## Acceptance criteria — your output is validated against exactly these
 
-_None declared._
+* the report is derived ONLY from files already present in ops_lane/O15_LOGOUT_SURVIVAL/
+* no new measurement is performed and no new finding is introduced
+* the epistemic status of the original node is carried verbatim
+* the report states that O15's own declared output was missing and that this is a remediation, not the original run
+* nothing under ops_lane/O15_LOGOUT_SURVIVAL/ is modified
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 
-* reached: this node exists to stop
+* a finding would change the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status -- HALT and raise, do not resolve it inside the node
 
 ---
 
@@ -79,17 +83,17 @@ _None declared._
 
 **Read:** `experiments/player_program/`
 
-**Write (nothing outside this):** `experiments/player_program/ops_lane/O16_SHARED_SCHEMA_ADOPTION/`
+**Write (nothing outside this):** `experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/`
 
 **Forbidden inputs:** `experiments/player_program/stage2b/SEALED_RESULTS`
 
 **Required outputs:**
 
-* `experiments/player_program/ops_lane/O16_SHARED_SCHEMA_ADOPTION/REPORT.md`
+* `experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md`
 
 ## Validation that will be run against your output
 
-_No automated validator; a verifier context reviews the output._
+* `python -c "import pathlib,sys;p=pathlib.Path('experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md');sys.exit(0 if p.exists() and p.stat().st_size>1000 else 1)"`
 
 ---
 

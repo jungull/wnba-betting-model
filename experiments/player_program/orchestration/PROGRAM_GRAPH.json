@@ -2922,6 +2922,70 @@
       ]
     },
     {
+      "acceptance_criteria": [
+        "the report is derived ONLY from files already present in ops_lane/O15_LOGOUT_SURVIVAL/",
+        "no new measurement is performed and no new finding is introduced",
+        "the epistemic status of the original node is carried verbatim",
+        "the report states that O15's own declared output was missing and that this is a remediation, not the original run",
+        "nothing under ops_lane/O15_LOGOUT_SURVIVAL/ is modified"
+      ],
+      "agent_prompt_path": "experiments/player_program/orchestration/prompts/R10_O15_REPORT_REMEDIATION.md",
+      "agent_role": "fast documentation engineer",
+      "allowed_read_paths": [
+        "experiments/player_program/"
+      ],
+      "allowed_tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Write",
+        "Edit",
+        "Bash"
+      ],
+      "allowed_write_paths": [
+        "experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/"
+      ],
+      "dependencies": [
+        "G01_GRAPH_ENGINE"
+      ],
+      "disallowed_tools": [
+        "Agent"
+      ],
+      "epistemic_status": "REMEDIATION of a confirmed missing declared output. It writes up evidence that ALREADY EXISTS and may not add a finding the original run did not make. Its parent finding is O15's validation_failed event, which is preserved and not rewritten.",
+      "expected_outputs": [
+        "experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md"
+      ],
+      "forbidden_inputs": [
+        "experiments/player_program/stage2b/SEALED_RESULTS"
+      ],
+      "human_gate": false,
+      "id": "R10_O15_REPORT_REMEDIATION",
+      "input_artifacts": [
+        "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json",
+        "experiments/player_program/stage2a/V2_STOP_CONDITION.json",
+        "experiments/player_program/PROGRAM_STATE.json",
+        "experiments/player_program/RESEARCH_CONTRACT_V1.md",
+        "experiments/player_program/GATE_INVOCATION_CONTRACT.md"
+      ],
+      "input_hashes": {},
+      "lane": "operations",
+      "max_retries": 2,
+      "merge_policy": "auto",
+      "on_fail": [],
+      "on_pass": [],
+      "owned_files": [],
+      "severity_on_failure": "C",
+      "status": "BLOCKED",
+      "stop_conditions": [
+        "a finding would change the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status -- HALT and raise, do not resolve it inside the node"
+      ],
+      "title": "Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence",
+      "type": "documentation",
+      "validation_commands": [
+        "python -c \"import pathlib,sys;p=pathlib.Path('experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md');sys.exit(0 if p.exists() and p.stat().st_size>1000 else 1)\""
+      ]
+    },
+    {
       "acceptance_criteria": [],
       "agent_prompt_path": "experiments/player_program/orchestration/prompts/O16_SHARED_SCHEMA_ADOPTION.md",
       "agent_role": "USER",
@@ -2945,12 +3009,13 @@
         "O12_PER_GAME_EXECUTION_SCOPE",
         "O13_LEAD_WINDOW_LATENCY",
         "O14_OPS_ENTITY_RESOLUTION",
-        "O15_LOGOUT_SURVIVAL"
+        "O15_LOGOUT_SURVIVAL",
+        "R10_O15_REPORT_REMEDIATION"
       ],
       "disallowed_tools": [
         "Agent"
       ],
-      "epistemic_status": "USER DECISION. Merging a shared schema or contract change is USER_REQUIRED: it crosses the boundary between the isolated operations lane and contracts other threads depend on.",
+      "epistemic_status": "USER DECISION. Merging a shared schema or contract change is USER_REQUIRED: it crosses the boundary between the isolated operations lane and contracts other threads depend on. Confirmed at wave 3: the operations lane's targets (prospective_pair/should_run_base.py, coverage_audit.py) live on branch data-refresh-2026 and are ABSENT from this branch, so adoption is a cross-branch change as well as a shared-contract one.",
       "expected_outputs": [
         "experiments/player_program/ops_lane/O16_SHARED_SCHEMA_ADOPTION/REPORT.md"
       ],
