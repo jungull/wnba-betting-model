@@ -5,19 +5,19 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 
 | | |
 |---|---|
-| branch | `graph/G01_GRAPH_ENGINE` |
-| HEAD | `7a12e1950574d119b068664e12337199c28f7b00` |
+| branch | `player-model-program` |
+| HEAD | `6abe0cccf073fa61705e8aca7f3110c84ab103fd` |
 | working tree | DIRTY |
 | nodes | 57 |
-| events | 3 |
+| events | 39 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 51 |
-| PASSED | 1 |
-| READY | 3 |
+| BLOCKED | 22 |
+| PASSED | 4 |
+| RUNNING | 29 |
 | USER_REQUIRED | 2 |
 
 ## Severity A blockers
@@ -26,17 +26,46 @@ None open against a node.
 
 ## Running
 
-None.
+* `D10_FIELD_AVAILABILITY_LEDGER` — Field-level cutoff-validity coverage across every candidate source
+* `D11_LIVE_INFORMATION_CAPTURE` — Timestamped prospective capture with first-seen and change history
+* `D12_COACHING_HISTORY` — Retrospectively auditable coaching table
+* `D13_ARENA_TRAVEL_DIMENSION` — Unique effective-dated team/arena/travel dimension with cardinality tests
+* `D14_ENTITY_RESOLUTION_AND_COLD_START` — Tests and design artifacts for aliases, new signings, zero-history players, team transitions
+* `G02_DOCUMENT_INDEX` — Index every authoritative document, contract, task card, ledger, receipt and frozen artifact
+* `I10_GENERIC_CLUSTERED_INFERENCE` — Reusable game-clustered bootstrap and interval utilities in a task-isolated namespace
+* `I11_BLINDED_RESULT_PACKAGING` — Generic sealed-result and integrity-manifest tooling
+* `I12_DESIGN_DEPENDENCY_AUDIT` — Reusable full-design offset/dependency audits without modifying frozen shared gates
+* `I13_REPRODUCIBILITY_RUNNER` — Deterministic commands, seed manifests and artifact reconciliation
+* `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
+* `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
+* `O12_PER_GAME_EXECUTION_SCOPE` — Per-game execution scope defect
+* `O13_LEAD_WINDOW_LATENCY` — Lead-window latency defect
+* `O14_OPS_ENTITY_RESOLUTION` — Entity resolution in the prospective capture path
+* `O15_LOGOUT_SURVIVAL` — Logout survival for the capture scheduler
+* `P22_POSTGAME_SURROGATE_GUARD` — S1: enforced invariant against current-game outcome-derived columns
+* `P23_DIMENSION_CARDINALITY_GUARD` — S2: merge cardinality invariants preserving the 2,982-row / 1,491-game universe
+* `P24_INJURY_REGIME_LEDGER` — S3: split injury data into explicit epistemic regimes and report cutoff-valid coverage
+* `P25_OFFSET_DEPENDENCY_GUARD` — S4/S5: full-design offset and affine-dependency audit including own/opponent contrasts
+* `P26_ARM_SPECIFIC_K0_CONTRACT` — S6/S9: the K0_MATCHED[arm_id] contract and machine-readable schema
+* `P27_FOLD_LOCAL_ESTIMABILITY_GUARD` — S7: fold-local rank, support, variance and degeneracy checks
+* `P28_PRIMARY_SECONDARY_ORDERING_CONTRACT` — Possession-first adjudication; prohibit downstream OT-mismatch arbitrage
+* `P29_TIP_TIME_AND_COVERAGE_AUDIT` — Resolve the fold-aligned tip-time null pattern and rule on tip-derived eligibility
+* `P2A_POSSESSION_COLUMN_ADJUDICATION` — S8: adjudicate the 32 possession columns the availability table never named
+* `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
+* `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
+* `U12_PREDICTION_HISTORY` — Immutable prediction-history and model-version views
+* `U13_MONITORING_INTERFACE` — Stale-input, missing-lineup, failed-job and rollback visibility
 
 ## Ready — next automatically scheduled
 
-* `G01_GRAPH_ENGINE` (governance) — Persistent orchestration framework: graph, ledgers, validators, dispatcher
-* `G02_DOCUMENT_INDEX` (governance) — Index every authoritative document, contract, task card, ledger, receipt and frozen artifact
-* `P20_INGEST_PENDING_ESTIMATOR` (possession) — Ingest and freeze the third V2 source (estimator) that returned after the halt
+None.
 
 ## Passed
 
 * `G00_LIVE_RECONCILIATION` — Reconcile live repository state, ancestry and frozen artifact hashes
+* `G01_GRAPH_ENGINE` — Persistent orchestration framework: graph, ledgers, validators, dispatcher
+* `P20_INGEST_PENDING_ESTIMATOR` — Ingest and freeze the third V2 source (estimator) that returned after the halt
+* `P21_FREEZE_V2_HALT_PACKET` — Freeze the complete V2 halt packet: three source outputs, nine findings, scope reconciliation
 
 ## Human gates
 
@@ -45,11 +74,11 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | READY | USER_REQUIRED |
+| lane | BLOCKED | PASSED | RUNNING | USER_REQUIRED |
 |---|---|---|---|---|
-| data | 5 | 0 | 0 | 0 |
+| data | 0 | 0 | 5 | 0 |
 | future_research | 7 | 0 | 0 | 0 |
-| governance | 2 | 1 | 2 | 0 |
-| operations | 10 | 0 | 0 | 1 |
-| possession | 23 | 0 | 1 | 1 |
-| product | 4 | 0 | 0 | 0 |
+| governance | 2 | 2 | 1 | 0 |
+| operations | 0 | 0 | 10 | 1 |
+| possession | 13 | 2 | 9 | 1 |
+| product | 0 | 0 | 4 | 0 |
