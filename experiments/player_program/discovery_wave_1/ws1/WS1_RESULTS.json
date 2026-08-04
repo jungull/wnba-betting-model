@@ -1,0 +1,3220 @@
+{
+  "schema": "discovery_ws1_results/1",
+  "workstream": "ws1_repaired_projected_role",
+  "wave": "discovery_wave_1",
+  "lane": "DISCOVERY (development folds only) -- may not replace Arm D",
+  "executed_utc": "2026-08-04T13:01:54.265488Z",
+  "hypothesis": "turnover rate changes most when a player occupies a substantially DIFFERENT offensive role than normal, not simply because the role is large",
+  "sign_convention": "INCUMBENT(D) absolute error MINUS CHALLENGER absolute error; POSITIVE = challenger beats D",
+  "frozen_incumbent": {
+    "arm": "D_ewma_shrunk",
+    "operational_team_mae": 2.9675,
+    "intrinsic_team_mae": 2.896
+  },
+  "recalibration_control": {
+    "arm": "K0_intercept_only",
+    "why": "every ridge arm here has an unpenalised intercept that frozen Arm D lacks, so free recalibration alone is worth about the size of the effect being hunted",
+    "coordinator_reported_operational_team_mae": 2.96419,
+    "reproduced_operational_team_mae": 2.9641944524592625,
+    "reproduced_intrinsic_team_mae": 2.8945331375568006,
+    "standard": "vs-K0 is the honest test of whether the FEATURES add anything"
+  },
+  "verdict_block": {
+    "verdict": "falsifies",
+    "rule": "primary arm must beat the K0 recalibration control on operational team MAE with a 90% game-clustered CI excluding zero",
+    "primary_arm_evidence": {
+      "L1_linear": {
+        "operational_vs_K0": -0.00037584235693266884,
+        "operational_ci_excludes_zero": false,
+        "intrinsic_vs_K0": -0.003935086588590964,
+        "beats_K0_operationally": false,
+        "beats_K0_intrinsically": false
+      },
+      "N1_split": {
+        "operational_vs_K0": -0.0026893761298572567,
+        "operational_ci_excludes_zero": false,
+        "intrinsic_vs_K0": -0.006521572685780149,
+        "beats_K0_operationally": false,
+        "beats_K0_intrinsically": false
+      }
+    },
+    "arms_beating_K0_with_ci_excluding_zero": []
+  },
+  "estimator": {
+    "family": "Poisson ridge (IRLS, step-halving, intercept unpenalised)",
+    "ridge_lambda": 10.0,
+    "min_train_rows": 2000,
+    "offset": "log(exposure) + log(D_ewma_shrunk); beta=0 reproduces Arm D",
+    "validation": "walk-forward by season; training-fold standardisation only",
+    "implementation": "imported from experiments/player_program/run_turnover_p2.py",
+    "preregistered": true
+  },
+  "preregistered_constants": {
+    "MATERIAL_EXPANSION_LO": 0.05,
+    "MATERIAL_EXPANSION_HI": 0.1,
+    "RANK_TOL": 1e-08,
+    "COND_MAX": 1000000.0
+  },
+  "arms": {
+    "K0_intercept_only": {
+      "features": [],
+      "role": "CONTROL: intercept-only recalibration of the frozen Arm D offset. Any arm that does not beat K0 has added nothing beyond a free level shift.",
+      "identified": true,
+      "diagnostic_only": false
+    },
+    "L1_linear": {
+      "features": [
+        "proj_minutes_share",
+        "role_change",
+        "rotation_rank_change",
+        "expanded_role_bounded"
+      ],
+      "role": "PRIMARY linear arm: role level (projected share) + role change + rank change + bounded material-expansion ramp",
+      "identified": true,
+      "diagnostic_only": false
+    },
+    "N1_split": {
+      "features": [
+        "proj_minutes_share",
+        "role_change_pos",
+        "role_change_neg",
+        "rotation_rank_change",
+        "expanded_role_bounded"
+      ],
+      "role": "PRIMARY bounded nonlinear arm: the ONE preregistered nonlinear form -- role_change replaced by its positive/negative hinge split",
+      "identified": true,
+      "diagnostic_only": false
+    },
+    "D0_level_only": {
+      "features": [
+        "proj_minutes_share"
+      ],
+      "role": "role LEVEL alone -- 'the role is large'",
+      "identified": true,
+      "diagnostic_only": false
+    },
+    "D0_change_only": {
+      "features": [
+        "role_change",
+        "rotation_rank_change",
+        "expanded_role_bounded"
+      ],
+      "role": "role CHANGE alone -- 'the role is DIFFERENT than normal'",
+      "identified": true,
+      "diagnostic_only": false
+    },
+    "S1_trailing_basis": {
+      "features": [
+        "trailing_minutes_share",
+        "role_change",
+        "rotation_rank_change",
+        "expanded_role_bounded"
+      ],
+      "role": "same 4-D span as L1 with the NORMAL role as the level coordinate; a coefficient conclusion that flips between L1 and S1 is a parameterisation artefact",
+      "identified": true,
+      "diagnostic_only": false
+    },
+    "X_literal_card_set": {
+      "features": [
+        "proj_minutes_share",
+        "trailing_minutes_share",
+        "role_change",
+        "rotation_rank_change",
+        "expanded_role_bounded"
+      ],
+      "role": "the literal five-feature card set; EXACTLY rank deficient (role_change == proj - trailing). Ridge returns a finite fit anyway. Reported as evidence that the pairwise gate does not catch a three-term dependency. NOT a scientific result.",
+      "identified": false,
+      "diagnostic_only": true
+    }
+  },
+  "primary_arms": [
+    "L1_linear",
+    "N1_split"
+  ],
+  "feature_provenance": {
+    "source": "experiments/player_program/turnover_p2_v1/turnover_role_context_features_v1.parquet",
+    "source_sha256": "5ab9160078771f6857cd332da9d3a1182e83ce4ab35b5dd8c2746b0be98b2072",
+    "source_unmodified": true,
+    "share_identity_check": {
+      "claim": "proj_minutes_share and proj_off_poss_share are algebraically identical",
+      "max_abs_difference": 5.551115123125783e-17,
+      "identical": true,
+      "consequence": "proj_off_poss_share is NEVER read by this workstream"
+    },
+    "derived_columns": {
+      "rotation_rank_change": "trailing_rotation_rank - proj_rotation_rank; POSITIVE = the player is projected further UP the rotation than normal",
+      "expanded_role_bounded": "clip((role_change - 0.05) / (0.1 - 0.05), 0, 1); bounded ramp, zero unless the role expands materially",
+      "role_change_pos": "max(role_change, 0)  [nonlinear arm only]",
+      "role_change_neg": "min(role_change, 0)  [nonlinear arm only]"
+    },
+    "no_new_leakage_surface": "all derived columns are pointwise functions of P2 columns whose chronological isolation was already validated"
+  },
+  "merge_coverage": {
+    "intrinsic": {
+      "rows": 28193,
+      "rows_without_candidate_features": 894,
+      "note": "realised participants absent from the Tier A candidate universe; their standardised features are set to the training mean (0), so they receive the Arm D prediction times exp(intercept)",
+      "feature_null_fraction": {
+        "expanded_role_bounded": 0.03171,
+        "proj_minutes_share": 0.03171,
+        "role_change": 0.03171,
+        "role_change_neg": 0.03171,
+        "role_change_pos": 0.03171,
+        "rotation_rank_change": 0.03171,
+        "trailing_minutes_share": 0.03171
+      }
+    },
+    "operational": {
+      "rows": 35629,
+      "rows_without_candidate_features": 0,
+      "feature_null_fraction": {
+        "expanded_role_bounded": 0.23234,
+        "proj_minutes_share": 0.0,
+        "role_change": 0.23234,
+        "role_change_neg": 0.23234,
+        "role_change_pos": 0.23234,
+        "rotation_rank_change": 0.23234,
+        "trailing_minutes_share": 0.23234
+      }
+    }
+  },
+  "identifiability": {
+    "K0_intercept_only": {
+      "checked": true,
+      "n_complete_rows": 35629,
+      "n_features": 0,
+      "singular_values": [],
+      "numerical_rank": 0,
+      "full_rank": true,
+      "condition_number": 1.0,
+      "condition_ok": true,
+      "note": "zero-feature design is trivially identified"
+    },
+    "L1_linear": {
+      "checked": true,
+      "n_complete_rows": 27351,
+      "n_features": 4,
+      "singular_values": [
+        222.38854442,
+        164.81991705,
+        136.99104276,
+        118.38574432
+      ],
+      "numerical_rank": 4,
+      "full_rank": true,
+      "condition_number": 1.8785078025478443,
+      "condition_ok": true,
+      "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
+    },
+    "N1_split": {
+      "checked": true,
+      "n_complete_rows": 27351,
+      "n_features": 5,
+      "singular_values": [
+        240.86813443,
+        184.46820441,
+        150.1560325,
+        125.63207392,
+        79.8672103
+      ],
+      "numerical_rank": 5,
+      "full_rank": true,
+      "condition_number": 3.0158576157433794,
+      "condition_ok": true,
+      "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
+    },
+    "D0_level_only": {
+      "checked": true,
+      "n_complete_rows": 35629,
+      "n_features": 1,
+      "singular_values": [
+        188.75645684
+      ],
+      "numerical_rank": 1,
+      "full_rank": true,
+      "condition_number": 1.0,
+      "condition_ok": true,
+      "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
+    },
+    "D0_change_only": {
+      "checked": true,
+      "n_complete_rows": 27351,
+      "n_features": 3,
+      "singular_values": [
+        216.43840231,
+        145.46153995,
+        118.52577104
+      ],
+      "numerical_rank": 3,
+      "full_rank": true,
+      "condition_number": 1.8260872753716992,
+      "condition_ok": true,
+      "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
+    },
+    "S1_trailing_basis": {
+      "checked": true,
+      "n_complete_rows": 27351,
+      "n_features": 4,
+      "singular_values": [
+        238.35155859,
+        153.0203959,
+        145.39763326,
+        89.64831957
+      ],
+      "numerical_rank": 4,
+      "full_rank": true,
+      "condition_number": 2.6587398373554083,
+      "condition_ok": true,
+      "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
+    },
+    "X_literal_card_set": {
+      "checked": true,
+      "n_complete_rows": 27351,
+      "n_features": 5,
+      "singular_values": [
+        239.25086603,
+        208.27352927,
+        145.63900926,
+        122.16971429,
+        0.0
+      ],
+      "numerical_rank": 4,
+      "full_rank": false,
+      "condition_number": 197587007343653.16,
+      "condition_ok": false,
+      "note": "exact rank deficiency means ridge chooses a point in a flat direction; the coefficients are then a property of the penalty, not of the data"
+    }
+  },
+  "gate_audit_summary": {
+    "K0_intercept_only": {
+      "passed": true,
+      "n_findings_pooled": 0,
+      "blocking": [],
+      "numerical_rank": 0,
+      "n_features": 0,
+      "gate_limitation_observed": null,
+      "file": "gate_audit_K0_intercept_only.json"
+    },
+    "L1_linear": {
+      "passed": true,
+      "n_findings_pooled": 0,
+      "blocking": [],
+      "numerical_rank": 4,
+      "n_features": 4,
+      "gate_limitation_observed": null,
+      "file": "gate_audit_L1_linear.json"
+    },
+    "N1_split": {
+      "passed": true,
+      "n_findings_pooled": 0,
+      "blocking": [],
+      "numerical_rank": 5,
+      "n_features": 5,
+      "gate_limitation_observed": null,
+      "file": "gate_audit_N1_split.json"
+    },
+    "D0_level_only": {
+      "passed": true,
+      "n_findings_pooled": 0,
+      "blocking": [],
+      "numerical_rank": 1,
+      "n_features": 1,
+      "gate_limitation_observed": null,
+      "file": "gate_audit_D0_level_only.json"
+    },
+    "D0_change_only": {
+      "passed": true,
+      "n_findings_pooled": 0,
+      "blocking": [],
+      "numerical_rank": 3,
+      "n_features": 3,
+      "gate_limitation_observed": null,
+      "file": "gate_audit_D0_change_only.json"
+    },
+    "S1_trailing_basis": {
+      "passed": true,
+      "n_findings_pooled": 0,
+      "blocking": [],
+      "numerical_rank": 4,
+      "n_features": 4,
+      "gate_limitation_observed": null,
+      "file": "gate_audit_S1_trailing_basis.json"
+    },
+    "X_literal_card_set": {
+      "passed": true,
+      "n_findings_pooled": 0,
+      "blocking": [],
+      "numerical_rank": 4,
+      "n_features": 5,
+      "gate_limitation_observed": "feature_gate.audit is pairwise and returned PASSED for a design whose numerical rank is 4 of 5",
+      "file": "gate_audit_X_literal_card_set.json"
+    }
+  },
+  "input_sha256": {
+    "intrinsic": "ed73bfae7757a52a76c94d78f3221c0bbd64d7dfa1907b3e62e25aab52495567",
+    "operational": "998a293b88c7ec1e7091df08b399e5c1d2ddd6f550dcf592cc8546d4edb81c64",
+    "features": "5ab9160078771f6857cd332da9d3a1182e83ce4ab35b5dd8c2746b0be98b2072",
+    "team_recon": "446af16c237d59cc52a5294862ce60a2977522e14500370ec843cc29baae6e93",
+    "contract": "790a2cd67dafa1dafdd7bdf7797cde3e1699f3ec8ebaaa0b9957c9bf30726521",
+    "master_player": "52e084efaad5c08444b407c64c18d55b57ff5a1e13491cc908dfd960b8641dce"
+  },
+  "coefficient_stability": {
+    "intrinsic": {
+      "K0_intercept_only": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.01466,
+            "2023": -0.005242,
+            "2024": -0.00704,
+            "2025": -0.006723,
+            "2026": -0.00649
+          },
+          "mean": -0.008031,
+          "sd": 0.0033701569102936434,
+          "sign_consistent": true,
+          "sign": "negative"
+        }
+      },
+      "L1_linear": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018768,
+            "2023": -0.005724,
+            "2024": -0.009842,
+            "2025": -0.011761,
+            "2026": -0.014242
+          },
+          "mean": -0.0120674,
+          "sd": 0.004356878130037608,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "proj_minutes_share": {
+          "by_season": {
+            "2022": 0.00509,
+            "2023": -0.004415,
+            "2024": 0.007344,
+            "2025": 0.01428,
+            "2026": 0.021187
+          },
+          "mean": 0.008697199999999999,
+          "sd": 0.008647954565098039,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "role_change": {
+          "by_season": {
+            "2022": -0.032212,
+            "2023": -0.024831,
+            "2024": -0.018834,
+            "2025": -0.012564,
+            "2026": -0.014357
+          },
+          "mean": -0.0205596,
+          "sd": 0.007202816743469182,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016129,
+            "2023": 0.010425,
+            "2024": 0.004055,
+            "2025": -0.000953,
+            "2026": -0.005422
+          },
+          "mean": 0.0048468,
+          "sd": 0.007721622016131067,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.026508,
+            "2023": 0.029491,
+            "2024": 0.026716,
+            "2025": 0.025459,
+            "2026": 0.02438
+          },
+          "mean": 0.0265108,
+          "sd": 0.001707061732920049,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      },
+      "N1_split": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018584,
+            "2023": -0.005694,
+            "2024": -0.010093,
+            "2025": -0.012302,
+            "2026": -0.014351
+          },
+          "mean": -0.012204799999999998,
+          "sd": 0.004293251234204679,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "proj_minutes_share": {
+          "by_season": {
+            "2022": 0.005306,
+            "2023": -0.007721,
+            "2024": 0.008505,
+            "2025": 0.015872,
+            "2026": 0.02166
+          },
+          "mean": 0.0087244,
+          "sd": 0.010006025276801974,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "role_change_pos": {
+          "by_season": {
+            "2022": -0.010868,
+            "2023": -0.036545,
+            "2024": -0.00142,
+            "2025": 0.005151,
+            "2026": -0.000158
+          },
+          "mean": -0.008767999999999998,
+          "sd": 0.01481779669181623,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "role_change_neg": {
+          "by_season": {
+            "2022": -0.02329,
+            "2023": -0.007703,
+            "2024": -0.0169,
+            "2025": -0.014365,
+            "2026": -0.013148
+          },
+          "mean": -0.0150812,
+          "sd": 0.005086855036267497,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016229,
+            "2023": 0.009513,
+            "2024": 0.004618,
+            "2025": 4.2e-05,
+            "2026": -0.005748
+          },
+          "mean": 0.004930800000000001,
+          "sd": 0.007572065224230441,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.024146,
+            "2023": 0.045478,
+            "2024": 0.020951,
+            "2025": 0.01736,
+            "2026": 0.019908
+          },
+          "mean": 0.025568599999999997,
+          "sd": 0.010189737339107422,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      },
+      "D0_level_only": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.014585,
+            "2023": -0.003041,
+            "2024": -0.00749,
+            "2025": -0.009873,
+            "2026": -0.011601
+          },
+          "mean": -0.009318,
+          "sd": 0.0038988130501474423,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "proj_minutes_share": {
+          "by_season": {
+            "2022": 0.00443,
+            "2023": -0.009456,
+            "2024": 0.001451,
+            "2025": 0.009186,
+            "2026": 0.014562
+          },
+          "mean": 0.0040346,
+          "sd": 0.008077012952818634,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        }
+      },
+      "D0_change_only": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018623,
+            "2023": -0.007028,
+            "2024": -0.007269,
+            "2025": -0.00649,
+            "2026": -0.006455
+          },
+          "mean": -0.009173,
+          "sd": 0.004735287826521214,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "role_change": {
+          "by_season": {
+            "2022": -0.031755,
+            "2023": -0.02623,
+            "2024": -0.016279,
+            "2025": -0.00747,
+            "2026": -0.009458
+          },
+          "mean": -0.0182384,
+          "sd": 0.009417613893126007,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016277,
+            "2023": 0.010077,
+            "2024": 0.004543,
+            "2025": -7.5e-05,
+            "2026": -0.002104
+          },
+          "mean": 0.0057436,
+          "sd": 0.006732209788769212,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.026781,
+            "2023": 0.030137,
+            "2024": 0.02541,
+            "2025": 0.023028,
+            "2026": 0.021762
+          },
+          "mean": 0.0254236,
+          "sd": 0.0029395602800418976,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      },
+      "S1_trailing_basis": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018781,
+            "2023": -0.005734,
+            "2024": -0.009845,
+            "2025": -0.011762,
+            "2026": -0.014242
+          },
+          "mean": -0.0120728,
+          "sd": 0.0043576473193685595,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "trailing_minutes_share": {
+          "by_season": {
+            "2022": 0.031043,
+            "2023": -0.005897,
+            "2024": 0.008356,
+            "2025": 0.015297,
+            "2026": 0.023581
+          },
+          "mean": 0.014476,
+          "sd": 0.01273227461218144,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "role_change": {
+          "by_season": {
+            "2022": -0.001094,
+            "2023": -0.029685,
+            "2024": -0.012838,
+            "2025": -0.002224,
+            "2026": 0.002064
+          },
+          "mean": -0.0087554,
+          "sd": 0.011602856813733417,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016196,
+            "2023": 0.010418,
+            "2024": 0.004059,
+            "2025": -0.000948,
+            "2026": -0.005418
+          },
+          "mean": 0.0048614,
+          "sd": 0.007738320220823121,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.026575,
+            "2023": 0.029494,
+            "2024": 0.02672,
+            "2025": 0.025462,
+            "2026": 0.024382
+          },
+          "mean": 0.0265266,
+          "sd": 0.0017075064392265112,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      },
+      "X_literal_card_set": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018781,
+            "2023": -0.005728,
+            "2024": -0.009845,
+            "2025": -0.011763,
+            "2026": -0.014244
+          },
+          "mean": -0.012072199999999998,
+          "sd": 0.004359578208955541,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "proj_minutes_share": {
+          "by_season": {
+            "2022": 0.002609,
+            "2023": -0.010127,
+            "2024": -0.000335,
+            "2025": 0.005532,
+            "2026": 0.00981
+          },
+          "mean": 0.0014977999999999997,
+          "sd": 0.006709654757139148,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "trailing_minutes_share": {
+          "by_season": {
+            "2022": 0.016335,
+            "2023": 0.007705,
+            "2024": 0.008736,
+            "2025": 0.009377,
+            "2026": 0.01267
+          },
+          "mean": 0.0109646,
+          "sd": 0.0031579014930804912,
+          "sign_consistent": true,
+          "sign": "positive"
+        },
+        "role_change": {
+          "by_season": {
+            "2022": -0.015855,
+            "2023": -0.018505,
+            "2024": -0.012566,
+            "2025": -0.006227,
+            "2026": -0.005536
+          },
+          "mean": -0.011737800000000001,
+          "sd": 0.005143218579838894,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016158,
+            "2023": 0.010431,
+            "2024": 0.004059,
+            "2025": -0.00095,
+            "2026": -0.005421
+          },
+          "mean": 0.0048554,
+          "sd": 0.007730166895999076,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.026532,
+            "2023": 0.029496,
+            "2024": 0.02672,
+            "2025": 0.025462,
+            "2026": 0.024382
+          },
+          "mean": 0.026518399999999998,
+          "sd": 0.0017080465567425268,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      }
+    },
+    "operational": {
+      "K0_intercept_only": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.01466,
+            "2023": -0.005242,
+            "2024": -0.00704,
+            "2025": -0.006723,
+            "2026": -0.00649
+          },
+          "mean": -0.008031,
+          "sd": 0.0033701569102936434,
+          "sign_consistent": true,
+          "sign": "negative"
+        }
+      },
+      "L1_linear": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018768,
+            "2023": -0.005724,
+            "2024": -0.009842,
+            "2025": -0.011761,
+            "2026": -0.014242
+          },
+          "mean": -0.0120674,
+          "sd": 0.004356878130037608,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "proj_minutes_share": {
+          "by_season": {
+            "2022": 0.00509,
+            "2023": -0.004415,
+            "2024": 0.007344,
+            "2025": 0.01428,
+            "2026": 0.021187
+          },
+          "mean": 0.008697199999999999,
+          "sd": 0.008647954565098039,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "role_change": {
+          "by_season": {
+            "2022": -0.032212,
+            "2023": -0.024831,
+            "2024": -0.018834,
+            "2025": -0.012564,
+            "2026": -0.014357
+          },
+          "mean": -0.0205596,
+          "sd": 0.007202816743469182,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016129,
+            "2023": 0.010425,
+            "2024": 0.004055,
+            "2025": -0.000953,
+            "2026": -0.005422
+          },
+          "mean": 0.0048468,
+          "sd": 0.007721622016131067,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.026508,
+            "2023": 0.029491,
+            "2024": 0.026716,
+            "2025": 0.025459,
+            "2026": 0.02438
+          },
+          "mean": 0.0265108,
+          "sd": 0.001707061732920049,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      },
+      "N1_split": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018584,
+            "2023": -0.005694,
+            "2024": -0.010093,
+            "2025": -0.012302,
+            "2026": -0.014351
+          },
+          "mean": -0.012204799999999998,
+          "sd": 0.004293251234204679,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "proj_minutes_share": {
+          "by_season": {
+            "2022": 0.005306,
+            "2023": -0.007721,
+            "2024": 0.008505,
+            "2025": 0.015872,
+            "2026": 0.02166
+          },
+          "mean": 0.0087244,
+          "sd": 0.010006025276801974,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "role_change_pos": {
+          "by_season": {
+            "2022": -0.010868,
+            "2023": -0.036545,
+            "2024": -0.00142,
+            "2025": 0.005151,
+            "2026": -0.000158
+          },
+          "mean": -0.008767999999999998,
+          "sd": 0.01481779669181623,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "role_change_neg": {
+          "by_season": {
+            "2022": -0.02329,
+            "2023": -0.007703,
+            "2024": -0.0169,
+            "2025": -0.014365,
+            "2026": -0.013148
+          },
+          "mean": -0.0150812,
+          "sd": 0.005086855036267497,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016229,
+            "2023": 0.009513,
+            "2024": 0.004618,
+            "2025": 4.2e-05,
+            "2026": -0.005748
+          },
+          "mean": 0.004930800000000001,
+          "sd": 0.007572065224230441,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.024146,
+            "2023": 0.045478,
+            "2024": 0.020951,
+            "2025": 0.01736,
+            "2026": 0.019908
+          },
+          "mean": 0.025568599999999997,
+          "sd": 0.010189737339107422,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      },
+      "D0_level_only": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.014585,
+            "2023": -0.003041,
+            "2024": -0.00749,
+            "2025": -0.009873,
+            "2026": -0.011601
+          },
+          "mean": -0.009318,
+          "sd": 0.0038988130501474423,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "proj_minutes_share": {
+          "by_season": {
+            "2022": 0.00443,
+            "2023": -0.009456,
+            "2024": 0.001451,
+            "2025": 0.009186,
+            "2026": 0.014562
+          },
+          "mean": 0.0040346,
+          "sd": 0.008077012952818634,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        }
+      },
+      "D0_change_only": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018623,
+            "2023": -0.007028,
+            "2024": -0.007269,
+            "2025": -0.00649,
+            "2026": -0.006455
+          },
+          "mean": -0.009173,
+          "sd": 0.004735287826521214,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "role_change": {
+          "by_season": {
+            "2022": -0.031755,
+            "2023": -0.02623,
+            "2024": -0.016279,
+            "2025": -0.00747,
+            "2026": -0.009458
+          },
+          "mean": -0.0182384,
+          "sd": 0.009417613893126007,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016277,
+            "2023": 0.010077,
+            "2024": 0.004543,
+            "2025": -7.5e-05,
+            "2026": -0.002104
+          },
+          "mean": 0.0057436,
+          "sd": 0.006732209788769212,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.026781,
+            "2023": 0.030137,
+            "2024": 0.02541,
+            "2025": 0.023028,
+            "2026": 0.021762
+          },
+          "mean": 0.0254236,
+          "sd": 0.0029395602800418976,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      },
+      "S1_trailing_basis": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018781,
+            "2023": -0.005734,
+            "2024": -0.009845,
+            "2025": -0.011762,
+            "2026": -0.014242
+          },
+          "mean": -0.0120728,
+          "sd": 0.0043576473193685595,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "trailing_minutes_share": {
+          "by_season": {
+            "2022": 0.031043,
+            "2023": -0.005897,
+            "2024": 0.008356,
+            "2025": 0.015297,
+            "2026": 0.023581
+          },
+          "mean": 0.014476,
+          "sd": 0.01273227461218144,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "role_change": {
+          "by_season": {
+            "2022": -0.001094,
+            "2023": -0.029685,
+            "2024": -0.012838,
+            "2025": -0.002224,
+            "2026": 0.002064
+          },
+          "mean": -0.0087554,
+          "sd": 0.011602856813733417,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016196,
+            "2023": 0.010418,
+            "2024": 0.004059,
+            "2025": -0.000948,
+            "2026": -0.005418
+          },
+          "mean": 0.0048614,
+          "sd": 0.007738320220823121,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.026575,
+            "2023": 0.029494,
+            "2024": 0.02672,
+            "2025": 0.025462,
+            "2026": 0.024382
+          },
+          "mean": 0.0265266,
+          "sd": 0.0017075064392265112,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      },
+      "X_literal_card_set": {
+        "intercept": {
+          "by_season": {
+            "2022": -0.018781,
+            "2023": -0.005728,
+            "2024": -0.009845,
+            "2025": -0.011763,
+            "2026": -0.014244
+          },
+          "mean": -0.012072199999999998,
+          "sd": 0.004359578208955541,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "proj_minutes_share": {
+          "by_season": {
+            "2022": 0.002609,
+            "2023": -0.010127,
+            "2024": -0.000335,
+            "2025": 0.005532,
+            "2026": 0.00981
+          },
+          "mean": 0.0014977999999999997,
+          "sd": 0.006709654757139148,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "trailing_minutes_share": {
+          "by_season": {
+            "2022": 0.016335,
+            "2023": 0.007705,
+            "2024": 0.008736,
+            "2025": 0.009377,
+            "2026": 0.01267
+          },
+          "mean": 0.0109646,
+          "sd": 0.0031579014930804912,
+          "sign_consistent": true,
+          "sign": "positive"
+        },
+        "role_change": {
+          "by_season": {
+            "2022": -0.015855,
+            "2023": -0.018505,
+            "2024": -0.012566,
+            "2025": -0.006227,
+            "2026": -0.005536
+          },
+          "mean": -0.011737800000000001,
+          "sd": 0.005143218579838894,
+          "sign_consistent": true,
+          "sign": "negative"
+        },
+        "rotation_rank_change": {
+          "by_season": {
+            "2022": 0.016158,
+            "2023": 0.010431,
+            "2024": 0.004059,
+            "2025": -0.00095,
+            "2026": -0.005421
+          },
+          "mean": 0.0048554,
+          "sd": 0.007730166895999076,
+          "sign_consistent": false,
+          "sign": "MIXED"
+        },
+        "expanded_role_bounded": {
+          "by_season": {
+            "2022": 0.026532,
+            "2023": 0.029496,
+            "2024": 0.02672,
+            "2025": 0.025462,
+            "2026": 0.024382
+          },
+          "mean": 0.026518399999999998,
+          "sd": 0.0017080465567425268,
+          "sign_consistent": true,
+          "sign": "positive"
+        }
+      }
+    }
+  },
+  "mechanism_diagnostics": {
+    "intrinsic": {
+      "observed_over_expected_by_role_change_bin": {
+        "(-inf, -0.1]": {
+          "n_rows": 259,
+          "observed_turnovers": 459.0,
+          "expected_under_D": 404.8967524272661,
+          "observed_over_expected": 1.13362233025678,
+          "mean_role_change": -0.21530159289949505
+        },
+        "(-0.1, -0.05]": {
+          "n_rows": 1961,
+          "observed_turnovers": 3618.0,
+          "expected_under_D": 3553.5106330609556,
+          "observed_over_expected": 1.0181480720330627,
+          "mean_role_change": -0.06945496255543704
+        },
+        "(-0.05, -0.02]": {
+          "n_rows": 4183,
+          "observed_turnovers": 5130.0,
+          "expected_under_D": 5192.663360448925,
+          "observed_over_expected": 0.9879323275746672,
+          "mean_role_change": -0.03064641261606645
+        },
+        "(-0.02, 0.02]": {
+          "n_rows": 17625,
+          "observed_turnovers": 24810.0,
+          "expected_under_D": 25168.681986746713,
+          "observed_over_expected": 0.9857488768408458,
+          "mean_role_change": -0.0024398283582174897
+        },
+        "(0.02, 0.05]": {
+          "n_rows": 2186,
+          "observed_turnovers": 2735.0,
+          "expected_under_D": 2747.562761360604,
+          "observed_over_expected": 0.9954276708298438,
+          "mean_role_change": 0.03139668126434947
+        },
+        "(0.05, 0.1]": {
+          "n_rows": 1066,
+          "observed_turnovers": 1160.0,
+          "expected_under_D": 1142.4002209189168,
+          "observed_over_expected": 1.0154059661043537,
+          "mean_role_change": 0.06795052101911676
+        },
+        "(0.1, inf]": {
+          "n_rows": 19,
+          "observed_turnovers": 52.0,
+          "expected_under_D": 32.87190066694789,
+          "observed_over_expected": 1.5818981849225737,
+          "mean_role_change": 0.10643641561085271
+        }
+      },
+      "materially_expanded_role_segment": {
+        "n_rows": 1085,
+        "share_of_rows": 0.03848473025219026,
+        "observed_turnovers": 1212.0,
+        "expected_under_D": 1175.2721215858646,
+        "observed_over_expected": 1.031250531463791,
+        "player_mae": {
+          "A": 0.8108948997106133,
+          "D": 0.778969022347452,
+          "K0_intercept_only": 0.7786679800253784,
+          "L1_linear": 0.7807146095358357,
+          "N1_split": 0.7811867240110507,
+          "D0_level_only": 0.7780159117132485,
+          "D0_change_only": 0.7815966891607007,
+          "S1_trailing_basis": 0.7807046209704593,
+          "X_literal_card_set": 0.7807148233557357
+        }
+      },
+      "team_games_split_by_exposure_to_mechanism": {
+        "team_games_with_material_expansion": {
+          "team_games": 699,
+          "team_mae": {
+            "A": 3.063418698667949,
+            "D": 3.0520774679314915,
+            "K0_intercept_only": 3.057582152038738,
+            "L1_linear": 3.043828659367965,
+            "N1_split": 3.043608140444243,
+            "D0_level_only": 3.0547876244482204,
+            "D0_change_only": 3.0479602447323386,
+            "S1_trailing_basis": 3.044029590648939,
+            "X_literal_card_set": 3.0438263007093207
+          },
+          "paired_vs_D": {
+            "L1_linear": {
+              "mean_mae_reduction": 0.008248808563525665,
+              "ci90_game_clustered": [
+                -0.004555656491346005,
+                0.020849287524033644
+              ]
+            },
+            "N1_split": {
+              "mean_mae_reduction": 0.008469327487247987,
+              "ci90_game_clustered": [
+                -0.005472410571806604,
+                0.022335883552242725
+              ]
+            },
+            "D0_change_only": {
+              "mean_mae_reduction": 0.0041172231991532865,
+              "ci90_game_clustered": [
+                -0.008910161783494639,
+                0.016997642788093993
+              ]
+            }
+          },
+          "paired_vs_K0": {
+            "L1_linear": {
+              "mean_mae_reduction": 0.013753492670772293,
+              "ci90_game_clustered": [
+                -0.00013005457502179735,
+                0.028237235833065435
+              ]
+            },
+            "N1_split": {
+              "mean_mae_reduction": 0.013974011594494613,
+              "ci90_game_clustered": [
+                -0.0012960766542321224,
+                0.02953093346138352
+              ]
+            },
+            "D0_change_only": {
+              "mean_mae_reduction": 0.009621907306399913,
+              "ci90_game_clustered": [
+                -0.003250037847735737,
+                0.022469963913421116
+              ]
+            }
+          }
+        },
+        "team_games_without": {
+          "team_games": 2283,
+          "team_mae": {
+            "A": 2.8876303214338224,
+            "D": 2.8482340019914942,
+            "K0_intercept_only": 2.844611428786379,
+            "L1_linear": 2.8539623353058916,
+            "N1_split": 2.857408259208432,
+            "D0_level_only": 2.8478393001994347,
+            "D0_change_only": 2.8470263858793365,
+            "S1_trailing_basis": 2.8538024776441437,
+            "X_literal_card_set": 2.853974084178421
+          },
+          "paired_vs_D": {
+            "L1_linear": {
+              "mean_mae_reduction": -0.005728333314397646,
+              "ci90_game_clustered": [
+                -0.013612197271407923,
+                0.001565544993422967
+              ]
+            },
+            "N1_split": {
+              "mean_mae_reduction": -0.009174257216938184,
+              "ci90_game_clustered": [
+                -0.01865317032030706,
+                -0.0009043367829793605
+              ]
+            },
+            "D0_change_only": {
+              "mean_mae_reduction": 0.0012076161121574859,
+              "ci90_game_clustered": [
+                -0.007052440065368347,
+                0.009048172198528208
+              ]
+            }
+          },
+          "paired_vs_K0": {
+            "L1_linear": {
+              "mean_mae_reduction": -0.00935090651951296,
+              "ci90_game_clustered": [
+                -0.016390751720245858,
+                -0.003397322604506167
+              ]
+            },
+            "N1_split": {
+              "mean_mae_reduction": -0.012796830422053497,
+              "ci90_game_clustered": [
+                -0.021470867545297142,
+                -0.005440158026288249
+              ]
+            },
+            "D0_change_only": {
+              "mean_mae_reduction": -0.0024149570929578278,
+              "ci90_game_clustered": [
+                -0.007746550791758797,
+                0.0027003997219301632
+              ]
+            }
+          }
+        }
+      },
+      "reading": "observed_over_expected > 1 means the frozen Arm D rate UNDER-predicts turnovers in that bin"
+    },
+    "operational": {
+      "observed_over_expected_by_role_change_bin": {
+        "(-inf, -0.1]": {
+          "n_rows": 259,
+          "observed_turnovers": 459.0,
+          "expected_under_D": 208.14611884482986,
+          "observed_over_expected": 2.205181641374627,
+          "mean_role_change": -0.21530159289949505
+        },
+        "(-0.1, -0.05]": {
+          "n_rows": 1961,
+          "observed_turnovers": 3618.0,
+          "expected_under_D": 1927.5089158365113,
+          "observed_over_expected": 1.8770341191546913,
+          "mean_role_change": -0.06945496255543704
+        },
+        "(-0.05, -0.02]": {
+          "n_rows": 4194,
+          "observed_turnovers": 5130.0,
+          "expected_under_D": 4053.6263556466533,
+          "observed_over_expected": 1.2655335124447202,
+          "mean_role_change": -0.0306419149759135
+        },
+        "(-0.02, 0.02]": {
+          "n_rows": 17657,
+          "observed_turnovers": 24810.0,
+          "expected_under_D": 23611.644983302744,
+          "observed_over_expected": 1.0507527119582176,
+          "mean_role_change": -0.0024416085054562602
+        },
+        "(0.02, 0.05]": {
+          "n_rows": 2188,
+          "observed_turnovers": 2735.0,
+          "expected_under_D": 2882.994818716358,
+          "observed_over_expected": 0.9486662904298065,
+          "mean_role_change": 0.03139764145426232
+        },
+        "(0.05, 0.1]": {
+          "n_rows": 1073,
+          "observed_turnovers": 1160.0,
+          "expected_under_D": 1413.4322983064835,
+          "observed_over_expected": 0.8206972498009734,
+          "mean_role_change": 0.06798960005859243
+        },
+        "(0.1, inf]": {
+          "n_rows": 19,
+          "observed_turnovers": 52.0,
+          "expected_under_D": 34.865759819914835,
+          "observed_over_expected": 1.4914345842048258,
+          "mean_role_change": 0.10643641561085272
+        }
+      },
+      "materially_expanded_role_segment": {
+        "n_rows": 1092,
+        "share_of_rows": 0.03064919026635606,
+        "observed_turnovers": 1212.0,
+        "expected_under_D": 1448.2980581263985,
+        "observed_over_expected": 0.8368443175073457,
+        "player_mae": {
+          "A": 0.9729046203272437,
+          "D": 0.9554726384445636,
+          "K0_intercept_only": 0.9539755399345078,
+          "L1_linear": 0.9695647900305435,
+          "N1_split": 0.9701824230745308,
+          "D0_level_only": 0.9535220484035927,
+          "D0_change_only": 0.9707097325549897,
+          "S1_trailing_basis": 0.9695590115042299,
+          "X_literal_card_set": 0.9695640092174013
+        }
+      },
+      "team_games_split_by_exposure_to_mechanism": {
+        "team_games_with_material_expansion": {
+          "team_games": 702,
+          "team_mae": {
+            "A": 3.1598824788437097,
+            "D": 3.12559263855164,
+            "K0_intercept_only": 3.1324327615402834,
+            "L1_linear": 3.120784173133212,
+            "N1_split": 3.1217976265883918,
+            "D0_level_only": 3.1299130583256827,
+            "D0_change_only": 3.123803472702709,
+            "S1_trailing_basis": 3.1221103104815384,
+            "X_literal_card_set": 3.121590834834223
+          },
+          "paired_vs_D": {
+            "L1_linear": {
+              "mean_mae_reduction": 0.0048084654184277304,
+              "ci90_game_clustered": [
+                -0.007090318210106739,
+                0.017543818626004723
+              ]
+            },
+            "N1_split": {
+              "mean_mae_reduction": 0.003795011963248863,
+              "ci90_game_clustered": [
+                -0.008967257235385398,
+                0.01785996323722986
+              ]
+            },
+            "D0_change_only": {
+              "mean_mae_reduction": 0.0017891658489308268,
+              "ci90_game_clustered": [
+                -0.011180105188885596,
+                0.014255909577065186
+              ]
+            }
+          },
+          "paired_vs_K0": {
+            "L1_linear": {
+              "mean_mae_reduction": 0.011648588407071399,
+              "ci90_game_clustered": [
+                -0.0024371455115640484,
+                0.026234539910051285
+              ]
+            },
+            "N1_split": {
+              "mean_mae_reduction": 0.010635134951892531,
+              "ci90_game_clustered": [
+                -0.003858398039510409,
+                0.02629315867050091
+              ]
+            },
+            "D0_change_only": {
+              "mean_mae_reduction": 0.008629288837574495,
+              "ci90_game_clustered": [
+                -0.004617295076935751,
+                0.02176444754193742
+              ]
+            }
+          }
+        },
+        "team_games_without": {
+          "team_games": 2212,
+          "team_mae": {
+            "A": 2.9667964003451384,
+            "D": 2.9172625603745566,
+            "K0_intercept_only": 2.910802367027582,
+            "L1_linear": 2.9149942809922593,
+            "N1_split": 2.917720408066747,
+            "D0_level_only": 2.9139761575029444,
+            "D0_change_only": 2.9100203762274353,
+            "S1_trailing_basis": 2.914960295770271,
+            "X_literal_card_set": 2.9152238371460415
+          },
+          "paired_vs_D": {
+            "L1_linear": {
+              "mean_mae_reduction": 0.0022682793822969686,
+              "ci90_game_clustered": [
+                -0.004928184949246202,
+                0.009470907631587587
+              ]
+            },
+            "N1_split": {
+              "mean_mae_reduction": -0.0004578476921906814,
+              "ci90_game_clustered": [
+                -0.00899155785417112,
+                0.007966503479178558
+              ]
+            },
+            "D0_change_only": {
+              "mean_mae_reduction": 0.007242184147121175,
+              "ci90_game_clustered": [
+                -0.0011400156160039341,
+                0.015403453658716783
+              ]
+            }
+          },
+          "paired_vs_K0": {
+            "L1_linear": {
+              "mean_mae_reduction": -0.004191913964677179,
+              "ci90_game_clustered": [
+                -0.009868840201796233,
+                0.001474699612434546
+              ]
+            },
+            "N1_split": {
+              "mean_mae_reduction": -0.006918041039164828,
+              "ci90_game_clustered": [
+                -0.014739976840323944,
+                -8.378714873286667e-05
+              ]
+            },
+            "D0_change_only": {
+              "mean_mae_reduction": 0.0007819908001470275,
+              "ci90_game_clustered": [
+                -0.004167939637054569,
+                0.005717869184426926
+              ]
+            }
+          }
+        }
+      },
+      "reading": "observed_over_expected > 1 means the frozen Arm D rate UNDER-predicts turnovers in that bin"
+    }
+  },
+  "exposure_error_attribution": {
+    "n_rows_in_both_tracks": 27299,
+    "mean_exposure_error": 4.49287113496968,
+    "sd_exposure_error": 14.720441091251535,
+    "corr_role_change_with_exposure_error": -0.3358943126801958,
+    "corr_proj_minutes_share_with_exposure_error": -0.15978196283913898,
+    "corr_trailing_minutes_share_with_exposure_error": 0.12947758755761332,
+    "corr_rotation_rank_change_with_exposure_error": -0.3695890600452517,
+    "corr_expanded_role_bounded_with_exposure_error": -0.1456927638823417,
+    "mean_exposure_error_by_role_change_bin": {
+      "(-inf, -0.1]": {
+        "n": 259,
+        "mean_exposure_error": 22.1676851903946,
+        "mean_projected": 23.758955736246328,
+        "mean_realised": 45.92664092664093
+      },
+      "(-0.1, -0.05]": {
+        "n": 1961,
+        "mean_exposure_error": 24.28498057695905,
+        "mean_projected": 29.037303971740595,
+        "mean_realised": 53.32228454869964
+      },
+      "(-0.05, -0.02]": {
+        "n": 4183,
+        "mean_exposure_error": 8.284828964818999,
+        "mean_projected": 29.021171513306747,
+        "mean_realised": 37.306000478125746
+      },
+      "(-0.02, 0.02]": {
+        "n": 17625,
+        "mean_exposure_error": 2.6504969743017996,
+        "mean_projected": 40.70025479874785,
+        "mean_realised": 43.350751773049645
+      },
+      "(0.02, 0.05]": {
+        "n": 2186,
+        "mean_exposure_error": -1.8777125057335304,
+        "mean_projected": 40.10140875458988,
+        "mean_realised": 38.223696248856356
+      },
+      "(0.05, 0.1]": {
+        "n": 1066,
+        "mean_exposure_error": -7.426699855344517,
+        "mean_projected": 39.044898729640956,
+        "mean_realised": 31.618198874296436
+      },
+      "(0.1, inf]": {
+        "n": 19,
+        "mean_exposure_error": -3.278705829892175,
+        "mean_projected": 55.383968987786915,
+        "mean_realised": 52.10526315789474
+      }
+    },
+    "reading": "a strong monotone gradient here means the role-change features are an EXPOSURE-projection correction, not a turnover-RATE effect"
+  },
+  "results": {
+    "intrinsic": {
+      "rows": 28193,
+      "team_games": 2982,
+      "player": {
+        "A": {
+          "deviance": 1.1579069149973729,
+          "mae": 0.9371633714617655,
+          "bias": 0.010628559571889904
+        },
+        "D": {
+          "deviance": 1.088320029664709,
+          "mae": 0.8974459778886643,
+          "bias": 0.008010628781424759
+        },
+        "K0_intercept_only": {
+          "deviance": 1.0883549174116918,
+          "mae": 0.896481873118927,
+          "bias": -0.0015135440615483026
+        },
+        "L1_linear": {
+          "deviance": 1.0884090746001447,
+          "mae": 0.8959000179722486,
+          "bias": -0.0020789243380269174
+        },
+        "N1_split": {
+          "deviance": 1.088769805590196,
+          "mae": 0.8961745671622524,
+          "bias": -0.0017035960224612739
+        },
+        "D0_level_only": {
+          "deviance": 1.0886454091304443,
+          "mae": 0.8967631181562151,
+          "bias": 0.0014644092238110988
+        },
+        "D0_change_only": {
+          "deviance": 1.0883265839856846,
+          "mae": 0.8957686819372311,
+          "bias": -0.006722159256127266
+        },
+        "S1_trailing_basis": {
+          "deviance": 1.0883737886563933,
+          "mae": 0.8958592247719563,
+          "bias": -0.0024239809800189814
+        },
+        "X_literal_card_set": {
+          "deviance": 1.0884096320741579,
+          "mae": 0.8958998233000659,
+          "bias": -0.0020774028376840843
+        }
+      },
+      "team": {
+        "A": {
+          "mae": 2.9288362488941364,
+          "rmse": 3.6790853534319936,
+          "bias": 0.10048657948031256
+        },
+        "D": {
+          "mae": 2.8960162228808493,
+          "rmse": 3.621216113890661,
+          "bias": 0.07573563287548898
+        },
+        "K0_intercept_only": {
+          "mae": 2.8945331375568006,
+          "rmse": 3.621904369569436,
+          "bias": -0.014309640418253288
+        },
+        "L1_linear": {
+          "mae": 2.898468224145392,
+          "rmse": 3.6260203200062184,
+          "bias": -0.019654967760561016
+        },
+        "N1_split": {
+          "mae": 2.901054710242581,
+          "rmse": 3.62941077856456,
+          "bias": -0.0161064663518614
+        },
+        "D0_level_only": {
+          "mae": 2.896349319867409,
+          "rmse": 3.62490045218035,
+          "bias": 0.013845100351075237
+        },
+        "D0_change_only": {
+          "mae": 2.894126576133612,
+          "rmse": 3.6206727653205446,
+          "bias": -0.06355393558282899
+        },
+        "S1_trailing_basis": {
+          "mae": 2.8983929377348043,
+          "rmse": 3.6259016518374168,
+          "bias": -0.022917268869777074
+        },
+        "X_literal_card_set": {
+          "mae": 2.898476666121781,
+          "rmse": 3.6260299161848546,
+          "bias": -0.019640582898332436
+        }
+      },
+      "paired_vs_D": {
+        "K0_intercept_only": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": 0.0014830853240485812,
+          "ci90_game_clustered": [
+            -0.001701198536672643,
+            0.004701060697358115
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.002051511658475964,
+            0.004776399827486015
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1321,
+          "worsened": 1251,
+          "tied": 410
+        },
+        "L1_linear": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": -0.0024520012645423833,
+          "ci90_game_clustered": [
+            -0.008855774263077806,
+            0.0039671444701518946
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.00938814533169562,
+            0.003919499668420148
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1307,
+          "worsened": 1265,
+          "tied": 410
+        },
+        "N1_split": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": -0.005038487361731567,
+          "ci90_game_clustered": [
+            -0.012612550193658974,
+            0.0024885153347164717
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.013198518093287183,
+            0.0024487291533737236
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1300,
+          "worsened": 1272,
+          "tied": 410
+        },
+        "D0_level_only": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": -0.0003330969865601513,
+          "ci90_game_clustered": [
+            -0.003699476886931476,
+            0.003025940473801708
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.003622818816064182,
+            0.002784547174025673
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1288,
+          "worsened": 1284,
+          "tied": 410
+        },
+        "D0_change_only": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": 0.0018896467472379905,
+          "ci90_game_clustered": [
+            -0.005006971662902593,
+            0.008658365619224308
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.005355285814616345,
+            0.008786382302338573
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1306,
+          "worsened": 1266,
+          "tied": 410
+        },
+        "S1_trailing_basis": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": -0.002376714853955345,
+          "ci90_game_clustered": [
+            -0.008818826670539574,
+            0.004123358305422534
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.009438460626285724,
+            0.004022080321426244
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1308,
+          "worsened": 1264,
+          "tied": 410
+        },
+        "X_literal_card_set": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": -0.0024604432409314953,
+          "ci90_game_clustered": [
+            -0.008869161987768326,
+            0.003960609893753774
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.009396386122173242,
+            0.003913404392834102
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1306,
+          "worsened": 1266,
+          "tied": 410
+        },
+        "A": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": -0.032820026013286506,
+          "ci90_game_clustered": [
+            -0.06049128545762047,
+            -0.005492498323243917
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.061652564232647325,
+            -0.0032574517490633606
+          ],
+          "ci_excludes_zero": true,
+          "improved": 1443,
+          "worsened": 1535,
+          "tied": 4
+        }
+      },
+      "paired_vs_K0": {
+        "L1_linear": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.003935086588590964,
+          "ci90_game_clustered": [
+            -0.010011335299902632,
+            0.0020279028748645435
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.010209174994707963,
+            0.002343317973845431
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1243,
+          "worsened": 1329,
+          "tied": 410
+        },
+        "N1_split": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.006521572685780149,
+          "ci90_game_clustered": [
+            -0.013902383676399873,
+            0.0003991639799468112
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.014277199896996747,
+            0.0008292440825533649
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1242,
+          "worsened": 1330,
+          "tied": 410
+        },
+        "D0_level_only": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.0018161823106087325,
+          "ci90_game_clustered": [
+            -0.005488060838955331,
+            0.002078062294136571
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.005757965547667218,
+            0.0020809205406701844
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1250,
+          "worsened": 1322,
+          "tied": 410
+        },
+        "D0_change_only": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": 0.0004065614231894093,
+          "ci90_game_clustered": [
+            -0.00479241601371942,
+            0.005373891688414325
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.004805672669864957,
+            0.005481817815690168
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1304,
+          "worsened": 1268,
+          "tied": 410
+        },
+        "S1_trailing_basis": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.0038598001780039254,
+          "ci90_game_clustered": [
+            -0.009900929042311381,
+            0.0020367906059501374
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.010200416608491423,
+            0.0023308747964175397
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1242,
+          "worsened": 1330,
+          "tied": 410
+        },
+        "X_literal_card_set": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.003943528564980076,
+          "ci90_game_clustered": [
+            -0.010019624997927273,
+            0.0020226967408893365
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.010222014201181245,
+            0.002336277661376174
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1243,
+          "worsened": 1329,
+          "tied": 410
+        },
+        "A": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.034303111337335095,
+          "ci90_game_clustered": [
+            -0.06241978586361878,
+            -0.007385421166629074
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.06224015180684604,
+            -0.005137201119909449
+          ],
+          "ci_excludes_zero": true,
+          "improved": 1440,
+          "worsened": 1538,
+          "tied": 4
+        }
+      },
+      "by_season_team_mae": {
+        "2021": {
+          "A": 3.122029129371364,
+          "D": 3.1273552464016143,
+          "K0_intercept_only": 3.1273552464016143,
+          "L1_linear": 3.1273552464016143,
+          "N1_split": 3.1273552464016143,
+          "D0_level_only": 3.1273552464016143,
+          "D0_change_only": 3.1273552464016143,
+          "S1_trailing_basis": 3.1273552464016143,
+          "X_literal_card_set": 3.1273552464016143
+        },
+        "2022": {
+          "A": 3.0229005431418146,
+          "D": 2.9661481324401393,
+          "K0_intercept_only": 2.9709176415880787,
+          "L1_linear": 2.9679168117739794,
+          "N1_split": 2.968545131126225,
+          "D0_level_only": 2.980029382095091,
+          "D0_change_only": 2.9674021723704134,
+          "S1_trailing_basis": 2.967379327505173,
+          "X_literal_card_set": 2.9679340814271282
+        },
+        "2023": {
+          "A": 2.815773617818617,
+          "D": 2.784950516747601,
+          "K0_intercept_only": 2.7811322664184845,
+          "L1_linear": 2.7710461797117607,
+          "N1_split": 2.7785621985492615,
+          "D0_level_only": 2.7712599822558937,
+          "D0_change_only": 2.775187660929443,
+          "S1_trailing_basis": 2.7710817850218246,
+          "X_literal_card_set": 2.7710532848942884
+        },
+        "2024": {
+          "A": 2.937013174210746,
+          "D": 2.908850802669296,
+          "K0_intercept_only": 2.90468811294349,
+          "L1_linear": 2.9012661900241703,
+          "N1_split": 2.901381022427713,
+          "D0_level_only": 2.9054026455322806,
+          "D0_change_only": 2.8986749788361323,
+          "S1_trailing_basis": 2.901270782249444,
+          "X_literal_card_set": 2.9012706603019778
+        },
+        "2025": {
+          "A": 2.8701712832434065,
+          "D": 2.8649177061322857,
+          "K0_intercept_only": 2.8605351860954884,
+          "L1_linear": 2.866445538916639,
+          "N1_split": 2.8686461193153368,
+          "D0_level_only": 2.8657569173241515,
+          "D0_change_only": 2.8584503886360397,
+          "S1_trailing_basis": 2.866449301521974,
+          "X_literal_card_set": 2.8664508883952835
+        },
+        "2026": {
+          "A": 2.851413747384285,
+          "D": 2.7609880260236377,
+          "K0_intercept_only": 2.7614101567242173,
+          "L1_linear": 2.799880526041483,
+          "N1_split": 2.804717044807287,
+          "D0_level_only": 2.7674151404780156,
+          "D0_change_only": 2.780021039685863,
+          "S1_trailing_basis": 2.799901827207843,
+          "X_literal_card_set": 2.7998981197208828
+        }
+      },
+      "by_season_paired_vs_D": {
+        "2021": {
+          "K0_intercept_only": 0.0,
+          "L1_linear": 0.0,
+          "N1_split": 0.0,
+          "D0_level_only": 0.0,
+          "D0_change_only": 0.0,
+          "S1_trailing_basis": 0.0,
+          "X_literal_card_set": 0.0,
+          "A": 0.005326117030249573
+        },
+        "2022": {
+          "K0_intercept_only": -0.004769509147939451,
+          "L1_linear": -0.0017686793338398054,
+          "N1_split": -0.002396998686086076,
+          "D0_level_only": -0.013881249654951444,
+          "D0_change_only": -0.001254039930274806,
+          "S1_trailing_basis": -0.001231195065033929,
+          "X_literal_card_set": -0.0017859489869893979,
+          "A": -0.05675241070167562
+        },
+        "2023": {
+          "K0_intercept_only": 0.003818250329116243,
+          "L1_linear": 0.013904337035839851,
+          "N1_split": 0.006388318198339105,
+          "D0_level_only": 0.013690534491707065,
+          "D0_change_only": 0.009762855818157624,
+          "S1_trailing_basis": 0.013868731725776315,
+          "X_literal_card_set": 0.013897231853312542,
+          "A": -0.03082310107101626
+        },
+        "2024": {
+          "K0_intercept_only": 0.00416268972580589,
+          "L1_linear": 0.0075846126451252814,
+          "N1_split": 0.007469780241583192,
+          "D0_level_only": 0.003448157137015263,
+          "D0_change_only": 0.01017582383316319,
+          "S1_trailing_basis": 0.007580020419851568,
+          "X_literal_card_set": 0.007580142367318221,
+          "A": -0.028162371541450498
+        },
+        "2025": {
+          "K0_intercept_only": 0.00438252003679775,
+          "L1_linear": -0.0015278327843527325,
+          "N1_split": -0.0037284131830503096,
+          "D0_level_only": -0.0008392111918656956,
+          "D0_change_only": 0.0064673174962462075,
+          "S1_trailing_basis": -0.0015315953896876601,
+          "X_literal_card_set": -0.001533182262997517,
+          "A": -0.0052535771111204945
+        },
+        "2026": {
+          "K0_intercept_only": -0.00042213070058002384,
+          "L1_linear": -0.038892500017845666,
+          "N1_split": -0.04372901878364913,
+          "D0_level_only": -0.0064271144543779565,
+          "D0_change_only": -0.01903301366222577,
+          "S1_trailing_basis": -0.038913801184205066,
+          "X_literal_card_set": -0.03891009369724558,
+          "A": -0.09042572136064773
+        }
+      },
+      "by_season_paired_vs_K0": {
+        "2021": {
+          "L1_linear": 0.0,
+          "N1_split": 0.0,
+          "D0_level_only": 0.0,
+          "D0_change_only": 0.0,
+          "S1_trailing_basis": 0.0,
+          "X_literal_card_set": 0.0,
+          "A": 0.005326117030249573
+        },
+        "2022": {
+          "L1_linear": 0.0030008298140996458,
+          "N1_split": 0.0023725104618533754,
+          "D0_level_only": -0.009111740507011993,
+          "D0_change_only": 0.0035154692176646452,
+          "S1_trailing_basis": 0.003538314082905522,
+          "X_literal_card_set": 0.0029835601609500533,
+          "A": -0.05198290155373619
+        },
+        "2023": {
+          "L1_linear": 0.010086086706723608,
+          "N1_split": 0.0025700678692228626,
+          "D0_level_only": 0.009872284162590823,
+          "D0_change_only": 0.0059446054890413816,
+          "S1_trailing_basis": 0.010050481396660071,
+          "X_literal_card_set": 0.0100789815241963,
+          "A": -0.0346413514001325
+        },
+        "2024": {
+          "L1_linear": 0.0034219229193193923,
+          "N1_split": 0.0033070905157773023,
+          "D0_level_only": -0.0007145325887906266,
+          "D0_change_only": 0.006013134107357301,
+          "S1_trailing_basis": 0.0034173306940456787,
+          "X_literal_card_set": 0.003417452641512331,
+          "A": -0.032325061267256386
+        },
+        "2025": {
+          "L1_linear": -0.0059103528211504825,
+          "N1_split": -0.008110933219848059,
+          "D0_level_only": -0.005221731228663445,
+          "D0_change_only": 0.0020847974594484582,
+          "S1_trailing_basis": -0.00591411542648541,
+          "X_literal_card_set": -0.005915702299795267,
+          "A": -0.00963609714791825
+        },
+        "2026": {
+          "L1_linear": -0.038470369317265635,
+          "N1_split": -0.0433068880830691,
+          "D0_level_only": -0.006004983753797932,
+          "D0_change_only": -0.018610882961645744,
+          "S1_trailing_basis": -0.038491670483625035,
+          "X_literal_card_set": -0.03848796299666555,
+          "A": -0.09000359066006772
+        }
+      },
+      "coefficients_by_season": {
+        "2021": {
+          "fallback_to_D": true,
+          "train_rows": 0
+        },
+        "2022": {
+          "fallback_to_D": false,
+          "train_rows": 3805,
+          "test_rows": 4511,
+          "K0_intercept_only": {
+            "intercept": -0.01466
+          },
+          "L1_linear": {
+            "intercept": -0.018768,
+            "proj_minutes_share": 0.00509,
+            "role_change": -0.032212,
+            "rotation_rank_change": 0.016129,
+            "expanded_role_bounded": 0.026508
+          },
+          "N1_split": {
+            "intercept": -0.018584,
+            "proj_minutes_share": 0.005306,
+            "role_change_pos": -0.010868,
+            "role_change_neg": -0.02329,
+            "rotation_rank_change": 0.016229,
+            "expanded_role_bounded": 0.024146
+          },
+          "D0_level_only": {
+            "intercept": -0.014585,
+            "proj_minutes_share": 0.00443
+          },
+          "D0_change_only": {
+            "intercept": -0.018623,
+            "role_change": -0.031755,
+            "rotation_rank_change": 0.016277,
+            "expanded_role_bounded": 0.026781
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.018781,
+            "trailing_minutes_share": 0.031043,
+            "role_change": -0.001094,
+            "rotation_rank_change": 0.016196,
+            "expanded_role_bounded": 0.026575
+          },
+          "X_literal_card_set": {
+            "intercept": -0.018781,
+            "proj_minutes_share": 0.002609,
+            "trailing_minutes_share": 0.016335,
+            "role_change": -0.015855,
+            "rotation_rank_change": 0.016158,
+            "expanded_role_bounded": 0.026532
+          }
+        },
+        "2023": {
+          "fallback_to_D": false,
+          "train_rows": 8316,
+          "test_rows": 4889,
+          "K0_intercept_only": {
+            "intercept": -0.005242
+          },
+          "L1_linear": {
+            "intercept": -0.005724,
+            "proj_minutes_share": -0.004415,
+            "role_change": -0.024831,
+            "rotation_rank_change": 0.010425,
+            "expanded_role_bounded": 0.029491
+          },
+          "N1_split": {
+            "intercept": -0.005694,
+            "proj_minutes_share": -0.007721,
+            "role_change_pos": -0.036545,
+            "role_change_neg": -0.007703,
+            "rotation_rank_change": 0.009513,
+            "expanded_role_bounded": 0.045478
+          },
+          "D0_level_only": {
+            "intercept": -0.003041,
+            "proj_minutes_share": -0.009456
+          },
+          "D0_change_only": {
+            "intercept": -0.007028,
+            "role_change": -0.02623,
+            "rotation_rank_change": 0.010077,
+            "expanded_role_bounded": 0.030137
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.005734,
+            "trailing_minutes_share": -0.005897,
+            "role_change": -0.029685,
+            "rotation_rank_change": 0.010418,
+            "expanded_role_bounded": 0.029494
+          },
+          "X_literal_card_set": {
+            "intercept": -0.005728,
+            "proj_minutes_share": -0.010127,
+            "trailing_minutes_share": 0.007705,
+            "role_change": -0.018505,
+            "rotation_rank_change": 0.010431,
+            "expanded_role_bounded": 0.029496
+          }
+        },
+        "2024": {
+          "fallback_to_D": false,
+          "train_rows": 13205,
+          "test_rows": 4895,
+          "K0_intercept_only": {
+            "intercept": -0.00704
+          },
+          "L1_linear": {
+            "intercept": -0.009842,
+            "proj_minutes_share": 0.007344,
+            "role_change": -0.018834,
+            "rotation_rank_change": 0.004055,
+            "expanded_role_bounded": 0.026716
+          },
+          "N1_split": {
+            "intercept": -0.010093,
+            "proj_minutes_share": 0.008505,
+            "role_change_pos": -0.00142,
+            "role_change_neg": -0.0169,
+            "rotation_rank_change": 0.004618,
+            "expanded_role_bounded": 0.020951
+          },
+          "D0_level_only": {
+            "intercept": -0.00749,
+            "proj_minutes_share": 0.001451
+          },
+          "D0_change_only": {
+            "intercept": -0.007269,
+            "role_change": -0.016279,
+            "rotation_rank_change": 0.004543,
+            "expanded_role_bounded": 0.02541
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.009845,
+            "trailing_minutes_share": 0.008356,
+            "role_change": -0.012838,
+            "rotation_rank_change": 0.004059,
+            "expanded_role_bounded": 0.02672
+          },
+          "X_literal_card_set": {
+            "intercept": -0.009845,
+            "proj_minutes_share": -0.000335,
+            "trailing_minutes_share": 0.008736,
+            "role_change": -0.012566,
+            "rotation_rank_change": 0.004059,
+            "expanded_role_bounded": 0.02672
+          }
+        },
+        "2025": {
+          "fallback_to_D": false,
+          "train_rows": 18100,
+          "test_rows": 5841,
+          "K0_intercept_only": {
+            "intercept": -0.006723
+          },
+          "L1_linear": {
+            "intercept": -0.011761,
+            "proj_minutes_share": 0.01428,
+            "role_change": -0.012564,
+            "rotation_rank_change": -0.000953,
+            "expanded_role_bounded": 0.025459
+          },
+          "N1_split": {
+            "intercept": -0.012302,
+            "proj_minutes_share": 0.015872,
+            "role_change_pos": 0.005151,
+            "role_change_neg": -0.014365,
+            "rotation_rank_change": 4.2e-05,
+            "expanded_role_bounded": 0.01736
+          },
+          "D0_level_only": {
+            "intercept": -0.009873,
+            "proj_minutes_share": 0.009186
+          },
+          "D0_change_only": {
+            "intercept": -0.00649,
+            "role_change": -0.00747,
+            "rotation_rank_change": -7.5e-05,
+            "expanded_role_bounded": 0.023028
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.011762,
+            "trailing_minutes_share": 0.015297,
+            "role_change": -0.002224,
+            "rotation_rank_change": -0.000948,
+            "expanded_role_bounded": 0.025462
+          },
+          "X_literal_card_set": {
+            "intercept": -0.011763,
+            "proj_minutes_share": 0.005532,
+            "trailing_minutes_share": 0.009377,
+            "role_change": -0.006227,
+            "rotation_rank_change": -0.00095,
+            "expanded_role_bounded": 0.025462
+          }
+        },
+        "2026": {
+          "fallback_to_D": false,
+          "train_rows": 23941,
+          "test_rows": 4252,
+          "K0_intercept_only": {
+            "intercept": -0.00649
+          },
+          "L1_linear": {
+            "intercept": -0.014242,
+            "proj_minutes_share": 0.021187,
+            "role_change": -0.014357,
+            "rotation_rank_change": -0.005422,
+            "expanded_role_bounded": 0.02438
+          },
+          "N1_split": {
+            "intercept": -0.014351,
+            "proj_minutes_share": 0.02166,
+            "role_change_pos": -0.000158,
+            "role_change_neg": -0.013148,
+            "rotation_rank_change": -0.005748,
+            "expanded_role_bounded": 0.019908
+          },
+          "D0_level_only": {
+            "intercept": -0.011601,
+            "proj_minutes_share": 0.014562
+          },
+          "D0_change_only": {
+            "intercept": -0.006455,
+            "role_change": -0.009458,
+            "rotation_rank_change": -0.002104,
+            "expanded_role_bounded": 0.021762
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.014242,
+            "trailing_minutes_share": 0.023581,
+            "role_change": 0.002064,
+            "rotation_rank_change": -0.005418,
+            "expanded_role_bounded": 0.024382
+          },
+          "X_literal_card_set": {
+            "intercept": -0.014244,
+            "proj_minutes_share": 0.00981,
+            "trailing_minutes_share": 0.01267,
+            "role_change": -0.005536,
+            "rotation_rank_change": -0.005421,
+            "expanded_role_bounded": 0.024382
+          }
+        }
+      }
+    },
+    "operational": {
+      "rows": 35629,
+      "team_games": 2914,
+      "player": {
+        "A": {
+          "deviance": 1.2786148591474875,
+          "mae": 0.8707077746512113,
+          "bias": 0.012851089359465879
+        },
+        "D": {
+          "deviance": 1.2285420505227964,
+          "mae": 0.8478710366088574,
+          "bias": 0.012669440350840997
+        },
+        "K0_intercept_only": {
+          "deviance": 1.2284805101374447,
+          "mae": 0.8468519297291461,
+          "bias": 0.005339393508628094
+        },
+        "L1_linear": {
+          "deviance": 1.2276854334462115,
+          "mae": 0.8459097475782292,
+          "bias": 0.004600702956253909
+        },
+        "N1_split": {
+          "deviance": 1.2277638736980379,
+          "mae": 0.8460015114131991,
+          "bias": 0.004798053070186759
+        },
+        "D0_level_only": {
+          "deviance": 1.2285259497097425,
+          "mae": 0.8467048607953018,
+          "bias": 0.007645744437028226
+        },
+        "D0_change_only": {
+          "deviance": 1.2283677542132527,
+          "mae": 0.8465652161672974,
+          "bias": 0.0012093713193866687
+        },
+        "S1_trailing_basis": {
+          "deviance": 1.2288241854512307,
+          "mae": 0.8464711492001493,
+          "bias": 0.0049111683154414035
+        },
+        "X_literal_card_set": {
+          "deviance": 1.2285665814139937,
+          "mae": 0.8463495793406036,
+          "bias": 0.00504241494603371
+        }
+      },
+      "team": {
+        "A": {
+          "mae": 3.0133119896059473,
+          "rmse": 3.7934940539951048,
+          "bias": 0.08266007645449887
+        },
+        "D": {
+          "mae": 2.967450520182488,
+          "rmse": 3.7144396851884123,
+          "bias": 0.0804390838229629
+        },
+        "K0_intercept_only": {
+          "mae": 2.9641944524592625,
+          "rmse": 3.714745524274858,
+          "bias": -0.009184196527484445
+        },
+        "L1_linear": {
+          "mae": 2.964570294816195,
+          "rmse": 3.712809941173412,
+          "bias": -0.018216044739749276
+        },
+        "N1_split": {
+          "mae": 2.96688382858912,
+          "rmse": 3.715761948108041,
+          "bias": -0.01580307726915441
+        },
+        "D0_level_only": {
+          "mae": 2.965996646307873,
+          "rmse": 3.716124441851325,
+          "bias": 0.019015177950198577
+        },
+        "D0_change_only": {
+          "mae": 2.9615220007043197,
+          "rmse": 3.7105128932274614,
+          "bias": -0.059681300364300735
+        },
+        "S1_trailing_basis": {
+          "mae": 2.9648639712429237,
+          "rmse": 3.713006230649409,
+          "bias": -0.014420035720363131
+        },
+        "X_literal_card_set": {
+          "mae": 2.964938879142302,
+          "rmse": 3.7130285746652225,
+          "bias": -0.012815304697242597
+        }
+      },
+      "paired_vs_D": {
+        "K0_intercept_only": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": 0.003256067723225449,
+          "ci90_game_clustered": [
+            -0.0001411312547768372,
+            0.00671989700062548
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.00010564802542134755,
+            0.006415937969777519
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1309,
+          "worsened": 1199,
+          "tied": 406
+        },
+        "L1_linear": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": 0.00288022536629278,
+          "ci90_game_clustered": [
+            -0.0031629229242869476,
+            0.009001822464544076
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.0034958443776620133,
+            0.008654512650459953
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1308,
+          "worsened": 1200,
+          "tied": 406
+        },
+        "N1_split": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": 0.000566691593368193,
+          "ci90_game_clustered": [
+            -0.006957144335157112,
+            0.007664534661875011
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.007185088698369511,
+            0.007325766249045459
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1307,
+          "worsened": 1201,
+          "tied": 406
+        },
+        "D0_level_only": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": 0.0014538738746148806,
+          "ci90_game_clustered": [
+            -0.0016615779618704102,
+            0.004768664299866419
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.0016113314055494594,
+            0.004272600435336377
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1283,
+          "worsened": 1225,
+          "tied": 406
+        },
+        "D0_change_only": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": 0.005928519478167976,
+          "ci90_game_clustered": [
+            -0.0009168362415836761,
+            0.012737398088000685
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.0011386805333746897,
+            0.012800727106920764
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1306,
+          "worsened": 1202,
+          "tied": 406
+        },
+        "S1_trailing_basis": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": 0.0025865489395642417,
+          "ci90_game_clustered": [
+            -0.0035064118289455763,
+            0.008603749086871351
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.0038184119306892044,
+            0.008302631456168354
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1311,
+          "worsened": 1197,
+          "tied": 406
+        },
+        "X_literal_card_set": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": 0.002511641040185947,
+          "ci90_game_clustered": [
+            -0.0035278009664609184,
+            0.008510502097234078
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.0037783603334015205,
+            0.008229492566502544
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1302,
+          "worsened": 1206,
+          "tied": 406
+        },
+        "A": {
+          "convention": "INCUMBENT(D) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats D",
+          "mean_mae_reduction": -0.04586146942345906,
+          "ci90_game_clustered": [
+            -0.07184614294678243,
+            -0.019258177429558623
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.07227291888483288,
+            -0.020221789482325343
+          ],
+          "ci_excludes_zero": true,
+          "improved": 1374,
+          "worsened": 1540,
+          "tied": 0
+        }
+      },
+      "paired_vs_K0": {
+        "L1_linear": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.00037584235693266884,
+          "ci90_game_clustered": [
+            -0.006049696924747285,
+            0.005032321916769377
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.006176716314031089,
+            0.005094951506995344
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1267,
+          "worsened": 1241,
+          "tied": 406
+        },
+        "N1_split": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.0026893761298572567,
+          "ci90_game_clustered": [
+            -0.009706275612999821,
+            0.0037059333667834775
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.009879518559576098,
+            0.0037262704084745565
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1263,
+          "worsened": 1245,
+          "tied": 406
+        },
+        "D0_level_only": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.0018021938486105684,
+          "ci90_game_clustered": [
+            -0.005276945236554366,
+            0.001986480650537999
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.0054040007978969715,
+            0.0017740770223954178
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1219,
+          "worsened": 1289,
+          "tied": 406
+        },
+        "D0_change_only": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": 0.0026724517549425258,
+          "ci90_game_clustered": [
+            -0.0020923175819231887,
+            0.007375002073074574
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.0023225501387632666,
+            0.007471282587738786
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1298,
+          "worsened": 1210,
+          "tied": 406
+        },
+        "S1_trailing_basis": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.0006695187836612072,
+          "ci90_game_clustered": [
+            -0.006272395350975014,
+            0.004814848587755426
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.0063752252882672365,
+            0.004651510778750235
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1248,
+          "worsened": 1260,
+          "tied": 406
+        },
+        "X_literal_card_set": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.0007444266830395022,
+          "ci90_game_clustered": [
+            -0.006402740603437158,
+            0.004708043905587211
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.006449746552607259,
+            0.004618328870867736
+          ],
+          "ci_excludes_zero": false,
+          "improved": 1256,
+          "worsened": 1252,
+          "tied": 406
+        },
+        "A": {
+          "convention": "INCUMBENT(K0_intercept_only) abs error MINUS CHALLENGER abs error; POSITIVE = challenger beats K0_intercept_only",
+          "mean_mae_reduction": -0.04911753714668451,
+          "ci90_game_clustered": [
+            -0.07472541683142415,
+            -0.02237703526108151
+          ],
+          "ci90_date_clustered_sensitivity": [
+            -0.07509035075166555,
+            -0.023723938683077143
+          ],
+          "ci_excludes_zero": true,
+          "improved": 1380,
+          "worsened": 1534,
+          "tied": 0
+        }
+      },
+      "by_season_team_mae": {
+        "2021": {
+          "A": 3.209003243007808,
+          "D": 3.1726305194745557,
+          "K0_intercept_only": 3.1726305194745557,
+          "L1_linear": 3.1726305194745557,
+          "N1_split": 3.1726305194745557,
+          "D0_level_only": 3.1726305194745557,
+          "D0_change_only": 3.1726305194745557,
+          "S1_trailing_basis": 3.1726305194745557,
+          "X_literal_card_set": 3.1726305194745557
+        },
+        "2022": {
+          "A": 3.147169096475741,
+          "D": 3.0745088817924837,
+          "K0_intercept_only": 3.0755220807169894,
+          "L1_linear": 3.0622542819661227,
+          "N1_split": 3.062577667933133,
+          "D0_level_only": 3.082816322109332,
+          "D0_change_only": 3.0658940495152134,
+          "S1_trailing_basis": 3.0630781037477095,
+          "X_literal_card_set": 3.062854634375688
+        },
+        "2023": {
+          "A": 2.8309319727496214,
+          "D": 2.827291351316588,
+          "K0_intercept_only": 2.823894581082815,
+          "L1_linear": 2.815386262196851,
+          "N1_split": 2.82343349072842,
+          "D0_level_only": 2.8182449075772387,
+          "D0_change_only": 2.817366826574099,
+          "S1_trailing_basis": 2.815069086263729,
+          "X_literal_card_set": 2.8158276245483407
+        },
+        "2024": {
+          "A": 3.076943603343719,
+          "D": 3.0251670660813295,
+          "K0_intercept_only": 3.018108440408735,
+          "L1_linear": 3.0138682494890925,
+          "N1_split": 3.012893750453681,
+          "D0_level_only": 3.0190567357965747,
+          "D0_change_only": 3.01076116914387,
+          "S1_trailing_basis": 3.014498742152767,
+          "X_literal_card_set": 3.014534625552566
+        },
+        "2025": {
+          "A": 2.940987436711477,
+          "D": 2.924119427565568,
+          "K0_intercept_only": 2.9179049696595687,
+          "L1_linear": 2.917614739047059,
+          "N1_split": 2.92056834953226,
+          "D0_level_only": 2.921384892259851,
+          "D0_change_only": 2.9126507286681123,
+          "S1_trailing_basis": 2.9190151739767916,
+          "X_literal_card_set": 2.9184711297983714
+        },
+        "2026": {
+          "A": 2.9220893516631476,
+          "D": 2.8102449377229792,
+          "K0_intercept_only": 2.8082001655007316,
+          "L1_linear": 2.841808292182,
+          "N1_split": 2.8447216642332087,
+          "D0_level_only": 2.8133198528980987,
+          "D0_change_only": 2.824986586189835,
+          "S1_trailing_basis": 2.8405073796160827,
+          "X_literal_card_set": 2.841107243262279
+        }
+      },
+      "by_season_paired_vs_D": {
+        "2021": {
+          "K0_intercept_only": 0.0,
+          "L1_linear": 0.0,
+          "N1_split": 0.0,
+          "D0_level_only": 0.0,
+          "D0_change_only": 0.0,
+          "S1_trailing_basis": 0.0,
+          "X_literal_card_set": 0.0,
+          "A": -0.03637272353325282
+        },
+        "2022": {
+          "K0_intercept_only": -0.0010131989245059502,
+          "L1_linear": 0.012254599826361349,
+          "N1_split": 0.011931213859350967,
+          "D0_level_only": -0.00830744031684805,
+          "D0_change_only": 0.00861483227726994,
+          "S1_trailing_basis": 0.011430778044774017,
+          "X_literal_card_set": 0.011654247416795762,
+          "A": -0.07266021468325752
+        },
+        "2023": {
+          "K0_intercept_only": 0.0033967702337732624,
+          "L1_linear": 0.011905089119737209,
+          "N1_split": 0.00385786058816802,
+          "D0_level_only": 0.00904644373934965,
+          "D0_change_only": 0.009924524742488772,
+          "S1_trailing_basis": 0.01222226505285923,
+          "X_literal_card_set": 0.011463726768247215,
+          "A": -0.0036406214330326077
+        },
+        "2024": {
+          "K0_intercept_only": 0.00705862567259357,
+          "L1_linear": 0.0112988165922365,
+          "N1_split": 0.012273315627647836,
+          "D0_level_only": 0.006110330284754342,
+          "D0_change_only": 0.014405896937459011,
+          "S1_trailing_basis": 0.010668323928562002,
+          "X_literal_card_set": 0.010632440528763037,
+          "A": -0.05177653726238976
+        },
+        "2025": {
+          "K0_intercept_only": 0.006214457905998747,
+          "L1_linear": 0.006504688518508382,
+          "N1_split": 0.003551078033307804,
+          "D0_level_only": 0.002734535305716326,
+          "D0_change_only": 0.011468698897455486,
+          "S1_trailing_basis": 0.0051042535887760076,
+          "X_literal_card_set": 0.005648297767196248,
+          "A": -0.016868009145909198
+        },
+        "2026": {
+          "K0_intercept_only": 0.0020447722222476307,
+          "L1_linear": -0.031563354459020254,
+          "N1_split": -0.03447672651023017,
+          "D0_level_only": -0.0030749151751197643,
+          "D0_change_only": -0.014741648466855668,
+          "S1_trailing_basis": -0.03026244189310304,
+          "X_literal_card_set": -0.03086230553929966,
+          "A": -0.11184441394016874
+        }
+      },
+      "by_season_paired_vs_K0": {
+        "2021": {
+          "L1_linear": 0.0,
+          "N1_split": 0.0,
+          "D0_level_only": 0.0,
+          "D0_change_only": 0.0,
+          "S1_trailing_basis": 0.0,
+          "X_literal_card_set": 0.0,
+          "A": -0.03637272353325282
+        },
+        "2022": {
+          "L1_linear": 0.0132677987508673,
+          "N1_split": 0.012944412783856918,
+          "D0_level_only": -0.0072942413923421014,
+          "D0_change_only": 0.00962803120177589,
+          "S1_trailing_basis": 0.012443976969279966,
+          "X_literal_card_set": 0.012667446341301713,
+          "A": -0.07164701575875158
+        },
+        "2023": {
+          "L1_linear": 0.008508318885963947,
+          "N1_split": 0.00046109035439475805,
+          "D0_level_only": 0.005649673505576389,
+          "D0_change_only": 0.006527754508715509,
+          "S1_trailing_basis": 0.008825494819085969,
+          "X_literal_card_set": 0.008066956534473953,
+          "A": -0.00703739166680587
+        },
+        "2024": {
+          "L1_linear": 0.004240190919642929,
+          "N1_split": 0.005214689955054266,
+          "D0_level_only": -0.0009482953878392278,
+          "D0_change_only": 0.007347271264865441,
+          "S1_trailing_basis": 0.003609698255968432,
+          "X_literal_card_set": 0.0035738148561694667,
+          "A": -0.05883516293498333
+        },
+        "2025": {
+          "L1_linear": 0.00029023061250963534,
+          "N1_split": -0.0026633798726909425,
+          "D0_level_only": -0.0034799226002824204,
+          "D0_change_only": 0.005254240991456739,
+          "S1_trailing_basis": -0.001110204317222739,
+          "X_literal_card_set": -0.0005661601388024982,
+          "A": -0.023082467051907946
+        },
+        "2026": {
+          "L1_linear": -0.033608126681267884,
+          "N1_split": -0.0365214987324778,
+          "D0_level_only": -0.005119687397367395,
+          "D0_change_only": -0.0167864206891033,
+          "S1_trailing_basis": -0.032307214115350674,
+          "X_literal_card_set": -0.03290707776154729,
+          "A": -0.11388918616241638
+        }
+      },
+      "coefficients_by_season": {
+        "2021": {
+          "fallback_to_D": true,
+          "train_rows": 0
+        },
+        "2022": {
+          "fallback_to_D": false,
+          "train_rows": 3805,
+          "test_rows": 5563,
+          "K0_intercept_only": {
+            "intercept": -0.01466
+          },
+          "L1_linear": {
+            "intercept": -0.018768,
+            "proj_minutes_share": 0.00509,
+            "role_change": -0.032212,
+            "rotation_rank_change": 0.016129,
+            "expanded_role_bounded": 0.026508
+          },
+          "N1_split": {
+            "intercept": -0.018584,
+            "proj_minutes_share": 0.005306,
+            "role_change_pos": -0.010868,
+            "role_change_neg": -0.02329,
+            "rotation_rank_change": 0.016229,
+            "expanded_role_bounded": 0.024146
+          },
+          "D0_level_only": {
+            "intercept": -0.014585,
+            "proj_minutes_share": 0.00443
+          },
+          "D0_change_only": {
+            "intercept": -0.018623,
+            "role_change": -0.031755,
+            "rotation_rank_change": 0.016277,
+            "expanded_role_bounded": 0.026781
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.018781,
+            "trailing_minutes_share": 0.031043,
+            "role_change": -0.001094,
+            "rotation_rank_change": 0.016196,
+            "expanded_role_bounded": 0.026575
+          },
+          "X_literal_card_set": {
+            "intercept": -0.018781,
+            "proj_minutes_share": 0.002609,
+            "trailing_minutes_share": 0.016335,
+            "role_change": -0.015855,
+            "rotation_rank_change": 0.016158,
+            "expanded_role_bounded": 0.026532
+          }
+        },
+        "2023": {
+          "fallback_to_D": false,
+          "train_rows": 8316,
+          "test_rows": 6150,
+          "K0_intercept_only": {
+            "intercept": -0.005242
+          },
+          "L1_linear": {
+            "intercept": -0.005724,
+            "proj_minutes_share": -0.004415,
+            "role_change": -0.024831,
+            "rotation_rank_change": 0.010425,
+            "expanded_role_bounded": 0.029491
+          },
+          "N1_split": {
+            "intercept": -0.005694,
+            "proj_minutes_share": -0.007721,
+            "role_change_pos": -0.036545,
+            "role_change_neg": -0.007703,
+            "rotation_rank_change": 0.009513,
+            "expanded_role_bounded": 0.045478
+          },
+          "D0_level_only": {
+            "intercept": -0.003041,
+            "proj_minutes_share": -0.009456
+          },
+          "D0_change_only": {
+            "intercept": -0.007028,
+            "role_change": -0.02623,
+            "rotation_rank_change": 0.010077,
+            "expanded_role_bounded": 0.030137
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.005734,
+            "trailing_minutes_share": -0.005897,
+            "role_change": -0.029685,
+            "rotation_rank_change": 0.010418,
+            "expanded_role_bounded": 0.029494
+          },
+          "X_literal_card_set": {
+            "intercept": -0.005728,
+            "proj_minutes_share": -0.010127,
+            "trailing_minutes_share": 0.007705,
+            "role_change": -0.018505,
+            "rotation_rank_change": 0.010431,
+            "expanded_role_bounded": 0.029496
+          }
+        },
+        "2024": {
+          "fallback_to_D": false,
+          "train_rows": 13205,
+          "test_rows": 6096,
+          "K0_intercept_only": {
+            "intercept": -0.00704
+          },
+          "L1_linear": {
+            "intercept": -0.009842,
+            "proj_minutes_share": 0.007344,
+            "role_change": -0.018834,
+            "rotation_rank_change": 0.004055,
+            "expanded_role_bounded": 0.026716
+          },
+          "N1_split": {
+            "intercept": -0.010093,
+            "proj_minutes_share": 0.008505,
+            "role_change_pos": -0.00142,
+            "role_change_neg": -0.0169,
+            "rotation_rank_change": 0.004618,
+            "expanded_role_bounded": 0.020951
+          },
+          "D0_level_only": {
+            "intercept": -0.00749,
+            "proj_minutes_share": 0.001451
+          },
+          "D0_change_only": {
+            "intercept": -0.007269,
+            "role_change": -0.016279,
+            "rotation_rank_change": 0.004543,
+            "expanded_role_bounded": 0.02541
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.009845,
+            "trailing_minutes_share": 0.008356,
+            "role_change": -0.012838,
+            "rotation_rank_change": 0.004059,
+            "expanded_role_bounded": 0.02672
+          },
+          "X_literal_card_set": {
+            "intercept": -0.009845,
+            "proj_minutes_share": -0.000335,
+            "trailing_minutes_share": 0.008736,
+            "role_change": -0.012566,
+            "rotation_rank_change": 0.004059,
+            "expanded_role_bounded": 0.02672
+          }
+        },
+        "2025": {
+          "fallback_to_D": false,
+          "train_rows": 18100,
+          "test_rows": 7439,
+          "K0_intercept_only": {
+            "intercept": -0.006723
+          },
+          "L1_linear": {
+            "intercept": -0.011761,
+            "proj_minutes_share": 0.01428,
+            "role_change": -0.012564,
+            "rotation_rank_change": -0.000953,
+            "expanded_role_bounded": 0.025459
+          },
+          "N1_split": {
+            "intercept": -0.012302,
+            "proj_minutes_share": 0.015872,
+            "role_change_pos": 0.005151,
+            "role_change_neg": -0.014365,
+            "rotation_rank_change": 4.2e-05,
+            "expanded_role_bounded": 0.01736
+          },
+          "D0_level_only": {
+            "intercept": -0.009873,
+            "proj_minutes_share": 0.009186
+          },
+          "D0_change_only": {
+            "intercept": -0.00649,
+            "role_change": -0.00747,
+            "rotation_rank_change": -7.5e-05,
+            "expanded_role_bounded": 0.023028
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.011762,
+            "trailing_minutes_share": 0.015297,
+            "role_change": -0.002224,
+            "rotation_rank_change": -0.000948,
+            "expanded_role_bounded": 0.025462
+          },
+          "X_literal_card_set": {
+            "intercept": -0.011763,
+            "proj_minutes_share": 0.005532,
+            "trailing_minutes_share": 0.009377,
+            "role_change": -0.006227,
+            "rotation_rank_change": -0.00095,
+            "expanded_role_bounded": 0.025462
+          }
+        },
+        "2026": {
+          "fallback_to_D": false,
+          "train_rows": 23941,
+          "test_rows": 5531,
+          "K0_intercept_only": {
+            "intercept": -0.00649
+          },
+          "L1_linear": {
+            "intercept": -0.014242,
+            "proj_minutes_share": 0.021187,
+            "role_change": -0.014357,
+            "rotation_rank_change": -0.005422,
+            "expanded_role_bounded": 0.02438
+          },
+          "N1_split": {
+            "intercept": -0.014351,
+            "proj_minutes_share": 0.02166,
+            "role_change_pos": -0.000158,
+            "role_change_neg": -0.013148,
+            "rotation_rank_change": -0.005748,
+            "expanded_role_bounded": 0.019908
+          },
+          "D0_level_only": {
+            "intercept": -0.011601,
+            "proj_minutes_share": 0.014562
+          },
+          "D0_change_only": {
+            "intercept": -0.006455,
+            "role_change": -0.009458,
+            "rotation_rank_change": -0.002104,
+            "expanded_role_bounded": 0.021762
+          },
+          "S1_trailing_basis": {
+            "intercept": -0.014242,
+            "trailing_minutes_share": 0.023581,
+            "role_change": 0.002064,
+            "rotation_rank_change": -0.005418,
+            "expanded_role_bounded": 0.024382
+          },
+          "X_literal_card_set": {
+            "intercept": -0.014244,
+            "proj_minutes_share": 0.00981,
+            "trailing_minutes_share": 0.01267,
+            "role_change": -0.005536,
+            "rotation_rank_change": -0.005421,
+            "expanded_role_bounded": 0.024382
+          }
+        }
+      },
+      "player_appearing": {
+        "A": {
+          "n": 27351,
+          "mae": 0.9823876842305297
+        },
+        "D": {
+          "n": 27351,
+          "mae": 0.9478855224141847
+        },
+        "K0_intercept_only": {
+          "n": 27351,
+          "mae": 0.9474240204747032
+        },
+        "L1_linear": {
+          "n": 27351,
+          "mae": 0.947421819754094
+        },
+        "N1_split": {
+          "n": 27351,
+          "mae": 0.9475587558312814
+        },
+        "D0_level_only": {
+          "n": 27351,
+          "mae": 0.9478289843355954
+        },
+        "D0_change_only": {
+          "n": 27351,
+          "mae": 0.9471626010720907
+        },
+        "S1_trailing_basis": {
+          "n": 27351,
+          "mae": 0.9473820793123364
+        },
+        "X_literal_card_set": {
+          "n": 27351,
+          "mae": 0.9474217681127528
+        }
+      },
+      "player_non_appearing": {
+        "A": {
+          "n": 8278,
+          "mae": 0.5017107697099283
+        },
+        "D": {
+          "n": 8278,
+          "mae": 0.5174172795103426
+        },
+        "K0_intercept_only": {
+          "n": 8278,
+          "mae": 0.5145558130364993
+        },
+        "L1_linear": {
+          "n": 8278,
+          "mae": 0.5105078768265895
+        },
+        "N1_split": {
+          "n": 8278,
+          "mae": 0.5104503889103037
+        },
+        "D0_level_only": {
+          "n": 8278,
+          "mae": 0.5125847952057182
+        },
+        "D0_change_only": {
+          "n": 8278,
+          "mae": 0.5141855260814069
+        },
+        "S1_trailing_basis": {
+          "n": 8278,
+          "mae": 0.5130554872650891
+        },
+        "X_literal_card_set": {
+          "n": 8278,
+          "mae": 0.512401109286599
+        }
+      }
+    }
+  }
+}
