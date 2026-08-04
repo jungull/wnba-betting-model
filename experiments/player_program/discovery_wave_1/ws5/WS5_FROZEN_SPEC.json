@@ -1,0 +1,143 @@
+{
+  "schema": "ws5_frozen_spec/1",
+  "workstream": "ws5_opportunity_proxies",
+  "wave": "discovery_wave_1",
+  "status": "DISCOVERY, historical development evidence only; nothing here is promotable",
+  "frozen_at_commit": "eb1103c23d24d0c7c1d4dd703499a3919c32c60e",
+  "frozen_at": "2026-08-04T12:55:08.921452Z",
+  "frozen_before_any_feature_was_built": true,
+  "context_carried_in": "the current involvement feature is an EWMA FIELD-GOAL-ATTEMPT share, deliberately not called usage rate because it excludes turnovers and free-throw trips. As a linear main effect (P2 arm G) it IMPROVED player-level deviance and made team MAE WORSE, on both tracks. ws5 exists to find out whether that is a property of THAT proxy or of the ROLE it was given.",
+  "constants": {
+    "FT_TRIP_WEIGHT": 0.44,
+    "ALPHA_LONG": 0.1,
+    "ALPHA_SHORT": 0.35,
+    "SHRINK_K": 50.0,
+    "SHRINK_TARGET_SHARE": 0.1111111111111111,
+    "PER36_SHRINK_K_MIN": 100.0,
+    "RIDGE_LAMBDA": 10.0,
+    "MIN_TRAIN_ROWS": 2000,
+    "BOOT_SEED": 20260730
+  },
+  "ewma_convention": "state_t = (1 - alpha) * state_(t-1) + value_t, an unnormalised exponentially weighted SUM. Identical to P1/P2. Normalisation cancels in every ratio below. State is never reset at a season boundary, matching P2.",
+  "proxies": {
+    "x1_fga_share": {
+      "n": 1,
+      "formula": "(EWMA_a=0.10[player FGA] + K/9) / (EWMA_a=0.10[team FGA] + K), K=50, strictly prior games",
+      "identical_to": "turnover_p2_v1 `offensive_involvement_proxy` (arm G). Carried forward UNCHANGED so ws5 has a like-for-like incumbent proxy, not a re-tuned one.",
+      "deliberately_not_called_usage_rate": "it is a field-goal-attempt share. It excludes turnovers and free-throw trips and so does not satisfy the standard usage-rate definition.",
+      "positive_by_construction": true
+    },
+    "x2_pe_per36": {
+      "n": 2,
+      "play_ending_definition": "PE = FGA + 0.44 x FTA + TOV, per prior game",
+      "formula": "36 x (EWMA_a=0.10[player PE] + Km x r_league) / (EWMA_a=0.10[player MIN] + Km), Km=100 EWMA-weighted minutes, r_league = EWMA_a=0.10[league PE] / EWMA_a=0.10[league MIN] over strictly prior games",
+      "why_a_rate_not_a_volume": "projected offensive possessions ALREADY enter the model as the count OFFSET, so a raw EWMA volume adds no information the offset does not carry. The per-36 form asks a different question: how play-ending-dense is this player per unit of floor time.",
+      "ft_makes_not_used": "free-throw MAKES are neither required by this formula nor relied on. Only ATTEMPTS enter, through the frozen 0.44 trip weight.",
+      "positive_by_construction": true
+    },
+    "x3_pe_share": {
+      "n": 3,
+      "formula": "(EWMA_a=0.10[player PE] + K/9) / (EWMA_a=0.10[team PE] + K), K=50, strictly prior games",
+      "relation_to_x1": "the same share construction as x1 with FGA replaced by PE",
+      "positive_by_construction": true
+    },
+    "x4_pe_share_delta": {
+      "n": 4,
+      "formula": "x3 computed with ALPHA_SHORT=0.35 MINUS x3 computed with ALPHA_LONG=0.10, identical shrinkage on both legs",
+      "reads_as": "short-term involvement rising (positive) or falling (negative) vs the long run",
+      "positive_by_construction": false,
+      "consequence": "it can be negative, so it has NO frozen positive map to a pure allocation weight. Arm P4 is declared NOT CONSTRUCTIBLE here rather than being rescued with an exponential tilt invented after the fact."
+    },
+    "x5_involvement_rank": {
+      "n": 5,
+      "formula": "descending rank of x3_pe_share within (game_id, team_id) over the Tier A PROJECTED candidate set, ties broken by first occurrence",
+      "null_when": "the row is not a Tier A projected candidate for that team-game",
+      "positive_by_construction": true,
+      "allocation_map": "w = exposure / rank (frozen; rank 1 is the most involved)"
+    },
+    "x6_responsibility_share": {
+      "n": 6,
+      "formula": "x3_pe_share divided by the SUM of x3_pe_share over the Tier A projected candidates for that team-game",
+      "reads_as": "the player's share of the club's normal play-ending responsibility AFTER teammates who are not available/projected have been removed",
+      "null_when": "the row is not a Tier A projected candidate for that team-game",
+      "positive_by_construction": true
+    }
+  },
+  "mandatory_disclosure": {
+    "what_these_proxies_do_not_observe": [
+      "touches",
+      "passes",
+      "drives",
+      "time of possession",
+      "potential assists",
+      "front-court touches",
+      "elbow/post touches",
+      "seconds per touch",
+      "dribbles per touch"
+    ],
+    "statement": "NONE of the six proxies observes touches, passes, drives, time of possession or potential assists. No tracking data enters any of them. Every proxy is built only from box-score field-goal attempts, free-throw attempts, turnovers and minutes from STRICTLY PRIOR games, plus the already-frozen projected-exposure artifact. 'Play-ending involvement' therefore counts only possessions this player is recorded as having TERMINATED with a shot attempt, a shooting/foul trip, or a turnover. A possession the player initiated, advanced or created for a teammate is invisible to all six.",
+    "assists_excluded_because": "assist attribution is not validated across both source eras; the P2 registration already excluded it and ws5 does not reopen it.",
+    "free_throw_makes": "not required and not used; only FTA enters, via the frozen 0.44 weight"
+  },
+  "roles": {
+    "a_rate_predictor": {
+      "arms": "R1..R6",
+      "design": "Poisson log-link ridge, offset = log(exposure) + log(frozen Arm D rate), so beta = 0 reproduces Arm D EXACTLY. The proxy enters as a single linear main effect. lambda = 10, intercept unpenalised."
+    },
+    "b_interaction_variable": {
+      "arms": "X1..X6",
+      "design": "features [z(x_k), z(logD), z(x_k) * z(logD)] where z() is TRAINING-FOLD standardisation and logD = log(frozen Arm D rate). The product is formed AFTER standardisation, from training-fold statistics only.",
+      "interaction_partner_frozen_now": "logD, i.e. the player's own frozen EWMA turnover history. The question the interaction asks is whether opportunity load changes HOW MUCH a player's own turnover history should be weighted. This partner is chosen HERE, before any result, and is not swapped for whichever partner turns out to work.",
+      "nested_reference_arm": "Dfree = [z(logD)] alone, so the interaction is judged against a free Arm-D coefficient rather than against Arm D itself."
+    },
+    "c_player_allocation_weight": {
+      "arms": "W1..W6 (fitted, renormalised) and P1,P2,P3,P5,P6 (pure weight, unfitted)",
+      "W_design": "take the role-(a) fitted predictions and rescale them within (game_id, team_id) so the team total equals the Arm D team total exactly. This strips the LEVEL content and leaves only the WITHIN-TEAM allocation content. It introduces no new constant.",
+      "P_design": "no fit at all: pred_i = T_D(team) * w_i / sum_j w_j with w_i = exposure_i * g(x_k,i); g = identity for x1, x2, x3, x6 and g = 1/rank for x5.",
+      "P4_not_constructible": "x4 can be negative; declared unavailable as a pure weight, see above",
+      "STRUCTURAL_CONSEQUENCE_DECLARED_IN_ADVANCE": "every allocation arm preserves the Arm D team total BY CONSTRUCTION, so its team-level MAE is IDENTICAL to Arm D's to floating-point. Allocation arms can therefore only ever be judged at PLAYER level. This is a property of the role, not a result, and it is written down before the run so no team-level 'tie' is later reported as evidence."
+    }
+  },
+  "redundancy_protocol": {
+    "against": "the frozen P1 EWMA-shrunk turnover rate (Arm D)",
+    "measures": [
+      "Pearson correlation of each proxy with D_ewma_shrunk and with log(D_ewma_shrunk)",
+      "univariate R^2 of proxy regressed on log(D)",
+      "the feature_gate `deterministic_transform_of_offset` finding, since log(D) is inside the model offset",
+      "the nested contrast R_k vs Dfree: any gain that Dfree already delivers is NOT the proxy's"
+    ],
+    "falsification_condition_from_the_ledger": "all proxies are redundant with the P1 EWMA turnover rate"
+  },
+  "leakage_protocol": {
+    "why_this_is_sharp_here": "TURNOVERS appear inside proxies x2..x6. The regression target is also turnovers. A one-game slip in the history pass would let a proxy read its own target.",
+    "controls": [
+      "a single chronological forward pass that SNAPSHOTS all EWMA state at the START of each game DATE and only consumes that date's games afterwards, so same-day games cannot see each other and no row can see itself",
+      "an INDEPENDENT recomputation probe: for a random sample of rows, rebuild the proxy from a plain `game_date < target_date` filter and assert equality to the streamed value",
+      "feature_gate.audit(target=turnovers) on every arm before any fit, saved to JSON",
+      "a shift-detector: correlation of each proxy with the CURRENT-game PE quantities is reported, and must be far below the correlation a same-game leak would produce"
+    ]
+  },
+  "null_policy": "PRESERVE NULLS. A proxy is NaN wherever its denominator support is genuinely zero (no prior team games) or where the row is not a Tier A projected candidate (x5, x6). Nulls are never back-filled in the artifact. Inside a fit they are mean-imputed with TRAINING-FOLD means only, via standardise-then-fillna(0), exactly as P2 did, and the null counts are reported.",
+  "tracks": {
+    "intrinsic": "realised offensive-possession exposure. ORACLE DIAGNOSTIC ONLY.",
+    "operational": "ALL 35,629 Tier A candidate obligations with projected exposure, INCLUDING candidates who never appear. Team aggregation begins from the full pregame obligation set."
+  },
+  "sign_convention": "INCUMBENT (Arm D) absolute error MINUS CHALLENGER absolute error. POSITIVE means the challenger BEATS Arm D.",
+  "evaluation": {
+    "walk_forward": "expanding by SEASON; predict season Y from seasons strictly before Y",
+    "cold_seasons": "below MIN_TRAIN_ROWS the arm falls back to beta = 0, i.e. exactly Arm D",
+    "team_level": "player-attributed team turnovers from team_turnover_reconciliation_v1",
+    "player_level": "Poisson deviance, MAE, bias",
+    "cis": "90% cluster bootstrap, clusters = game_id, at BOTH team and player level"
+  },
+  "combined_arm_policy": "an ALL-proxy arm is attempted ONLY if feature_gate.audit passes on the full six-column matrix. If the gate blocks it, the block is recorded and NO combined arm is fitted. A combined arm is never assembled from whichever proxies won.",
+  "stop_boundary": [
+    "no modification of Arm D, the P1 shrinkage, the candidate universe or projected exposure",
+    "no append to arm_registry.jsonl",
+    "no promotion",
+    "no penalty or alpha search",
+    "no tracking-data substitute invented mid-run",
+    "no proxy added to the bounded set of six after results are visible"
+  ],
+  "preregistered_verdict_rule": "the workstream SUPPORTS its hypothesis only if some proxy, in some role, delivers a positive paired mean with a 90% CI excluding zero on the OPERATIONAL track at the level that role can be judged at. Player-level deviance alone is explicitly NOT sufficient \u2014 that is precisely the trap P2 arm G fell into."
+}
