@@ -122,6 +122,13 @@
       "n_params": 4,
       "reads": "involvement slope varies smoothly with a continuous role tier; the ridge penalty shrinks the tier-varying part toward the pooled slope, which IS the partial pooling. Tier = training-fold ECDF percentile, centred."
     },
+    "K0_intercept_only": {
+      "form": "intercept_only",
+      "spec": {},
+      "n_params": 0,
+      "reads": "zero features. Isolates the free UNPENALISED INTERCEPT that every ridge arm carries and Arm D does not. Any arm that fails to beat K0 has bought its gain with recalibration, not with its functional form.",
+      "is_baseline_not_variant": true
+    },
     "L_involvement": {
       "form": "linear_control",
       "spec": {
@@ -146,7 +153,7 @@
     }
   },
   "n_new_variants": 7,
-  "n_linear_controls": 2,
+  "n_linear_controls": 3,
   "multiplicity_statement": "7 new bounded nonlinear variants are tested on one primary metric. No correction is applied to the reported 90% CIs; instead the reader is told the count. A single nominally positive arm out of 7 at 90% is close to what chance alone delivers (expected ~0.35 false positives per tail), so no single positive arm is evidence.",
   "hard_constraints": [
     "no unrestricted player-specific slopes -- every form has <= 4 free parameters",
@@ -179,6 +186,21 @@
     "log1p_player_support": "log1p(clip(offensive_involvement_proxy * (_prior_support + 50) - 50/9, 0, None)). Inverts the P2 shrunk involvement proxy back to the player's prior EWMA field-goal attempts, i.e. how much history stands behind the involvement estimate. Built only from columns already present in the read-only P2 feature artifact, all of which are prior-games-only by construction."
   },
   "known_confounder_accepted": "log1p_player_support correlates ~0.82 with offensive_involvement_proxy on the pooled frame, exactly the 'role tiers correlate with support' confounder named in the ledger. W5 therefore cannot separate a support effect from a usage-level effect; it is reported as a joint test, not as a clean support test.",
+  "amendments": [
+    {
+      "id": 1,
+      "origin": "coordinator, after the ws7 fits had been run and inspected",
+      "added": "K0_intercept_only",
+      "what": "a second baseline. Another workstream found that every Poisson-ridge arm carries an unpenalised intercept that the unfitted Arm D does not, so free recalibration alone is worth roughly +0.0033 operational team MAE -- the same magnitude as the effects ws7 is hunting.",
+      "integrity_note": "K0 was NOT part of the frozen design and was added with the results already visible. It is a BASELINE, not a candidate: it can only make every reported arm look worse, never better, so it cannot manufacture a positive. It is excluded from NEW_VARIANTS and does not change the multiplicity count, which stays at 7.",
+      "consequence": "every arm is now reported against BOTH Arm D (as registered) and K0. vs-K0 is the honest test of whether the FUNCTIONAL FORM adds anything beyond recalibration."
+    }
+  ],
+  "second_baseline": {
+    "arm": "K0_intercept_only",
+    "why": "isolates free recalibration from functional form",
+    "rule": "an arm that beats Arm D but not K0 has demonstrated recalibration, not nonlinearity, and does NOT support the ws7 hypothesis"
+  },
   "prespecified_verdict_rule": "SUPPORTS only if a bounded nonlinear form beats Arm D on operational team MAE with a 90% game-clustered CI excluding zero, AND the same sign appears in the preregistered stratum where the mechanism predicts it. Otherwise NULL or REFUTES. In-fold-only gains or intrinsic-only gains do not count.",
-  "frozen_utc": "2026-08-04T12:54:34.682117Z"
+  "frozen_utc": "2026-08-04T13:01:35.494139Z"
 }

@@ -1,0 +1,45 @@
+{
+  "schema": "discovery_ledger_card_patch/1",
+  "target_file": "experiments/player_program/discovery_wave_1/HYPOTHESIS_LEDGER.json",
+  "target_path": "workstreams.ws7_nonlinear_heterogeneous",
+  "not_applied_by_ws7": true,
+  "why_not_applied": "HYPOTHESIS_LEDGER.json is shared by every discovery workstream running in parallel. ws7 owns only its own worktree, so it proposes the card patch here instead of editing the shared file and creating a merge hazard. The coordinator should apply it.",
+  "patch": {
+    "result": "NULL on the hypothesis; REFUTED on the operational decision metric",
+    "disposition": "DO NOT CARRY FORWARD",
+    "n_variants_tested": 7,
+    "headline": "No bounded nonlinear or heterogeneous formulation of role or involvement beats the frozen incumbent Arm D on operational team MAE, and none beats a zero-feature intercept-only recalibration baseline (K0). Verdict is unchanged after repairing a did_appear leakage defect in the shared P2 prior-role columns.",
+    "supports_hypothesis_evaluated": "NOT MET. Zero of 7 variants beat Arm D with a CI excluding zero. One (W3_expansion_contraction) had a positive point estimate vs Arm D (+0.00221, CI [-0.00569,+0.01019]) which inverts to -0.00105 against K0. Five of seven are significantly WORSE than fitting no features at all.",
+    "falsifies_or_weakens_evaluated": "PARTIALLY MET, and it does not rescue the hypothesis. W1_pw_involvement beats L_involvement by +0.00284 [+0.00045,+0.00550] and W4_inv_x_minutes by +0.00363 [+0.00092,+0.00619] on operational team MAE, so linear and nonlinear are NOT indistinguishable. But both remain below Arm D and significantly below K0: the nonlinear forms damage team accuracy LESS than the linear form does, never opening a gain.",
+    "expected_direction_evaluated": "REFUTED for primary creators -- after the leakage repair every arm is significantly NEGATIVE there (W1 -0.00204 vs K0, CI excluding zero); the leakage had been masking a real loss. SUPPORTED at player level only for secondary creators receiving expanded roles (W1 +0.00517 vs K0, 93% appearance rate, the one clean positive), but the linear arm already captures +0.00295 of it and it does not survive team aggregation.",
+    "known_confounders_evaluated": "The ledger's own 'role tiers correlate with support' confounder was measured, not assumed: log1p_player_support correlates 0.82 with offensive_involvement_proxy, so W5 is reported as a joint usage/support test rather than a clean support test. W5 was the single worst arm against K0 (-0.00873).",
+    "new_confound_found": {
+      "name": "free-intercept recalibration",
+      "detail": "Every Poisson-ridge arm carries an unpenalised intercept that the unfitted Arm D does not. K0_intercept_only -- zero features, identical pipeline, offset and folds -- reaches operational team MAE 2.9642 versus Arm D 2.9675, a free +0.00326. ws7 independently reproduced the externally measured 2.96419.",
+      "scope": "affects EVERY arm in this programme benchmarked against unfitted Arm D, not just ws7",
+      "recommendation": "K0 should become a standing second baseline for the turnover channel. The confound is the same order of magnitude as every effect discovery wave 1 is hunting."
+    },
+    "failure_analysis": {
+      "primary_mechanism": "Arm D is essentially unbiased on abrupt-role-change team-games (signed team error +0.0009) and over-predicts stable ones by +0.4254. The correction needed is stratum-specific. Every arm -- INCLUDING K0, which has no features -- applies a broadly uniform DOWNWARD shift, helping the over-predicted stable games and pushing the unbiased abrupt games into under-prediction. Against K0, has_abrupt_change is negative for six of seven variants with CIs excluding zero.",
+      "player_vs_team_divergence": "every arm improves player-row MAE (0.8479 -> ~0.8453) and Poisson deviance while worsening team MAE. Under MAE on a low-count right-skewed target, shifting mass downward reduces per-row absolute error, but team totals require the sum to be right and within-team-game shifts are correlated, so they do not cancel.",
+      "gains_track_non_appearance": "the strata where the arms look best are those with the LOWEST appearance rates (low_usage 0.62, abrupt_change 0.50). Under v1 this was flagrant: no_prior_history held 8,278 rows of which 0 appeared and showed the largest gains. Under v2 that stratum is EMPTY, proving it was an artifact of the leaky nulls, but its rows redistributed into low_usage which now carries 38% non-appearers.",
+      "frozen_threshold_caveat": "stratum cuts were frozen against the v1 distribution and were NOT retuned after the repair. The repaired role_change is differently distributed, so stratum SIZES are not comparable across v1 and v2 (has_abrupt_change team-games 1,339 -> 2,368).",
+      "not_a_multiplicity_artifact": "7 variants, 90% CIs, no correction. Zero positives against K0, so no positive requires a multiplicity defence."
+    },
+    "leads_worth_more_than_another_functional_form": [
+      "Arm D over-predicts stable team-games by +0.4254 while being near-unbiased on abrupt-role-change games; a stratum-specific correction is better targeted than any smooth function of involvement",
+      "the 8,278 non-appearing Tier A candidates carrying a mean 15.1 possessions of projected exposure -- a candidate-precision problem, not a rate-model problem"
+    ],
+    "artifacts": "experiments/player_program/discovery_wave_1/ws7/ (WS7_RESULTS.json = v2 leakage-free; WS7_RESULTS_v1_leaky.json = contaminated first pass, preserved)",
+    "lane": "DISCOVERY, development folds only; Arm D untouched; arm_registry.jsonl not appended to",
+    "second_defect_found": {
+      "name": "did_appear leakage in the P2 prior-role columns",
+      "detail": "turnover_p2_v1/turnover_role_context_features_v1.parquet columns trailing_minutes_share, role_change, trailing_rotation_rank and offensive_involvement_proxy are built by iterating the realised box score and left-merging onto the candidate universe. Null pattern is an EXACT did_appear indicator: null 8,278 = non-appearers, non-null 27,351 = appearers, zero off-diagonal. Standardise-then-fillna encodes that post-cutoff outcome into the design.",
+      "found_by": "coordinator amendment 2; ws7 had seen the crosstab and misdiagnosed it as downstream candidate-precision",
+      "repair": "build_trailing_v2.py rebuilds the same EWMA machine (alpha 0.10, strictly prior games) but READS state for every Tier A candidate, not only appearers. Non-null on all 35,629 operational rows. 'No prior history' falls from 8,278 rows (0 appeared) to 473 (71 appeared). Canonical artifact untouched.",
+      "effect_on_results": "verdict unchanged. The repair moved the arms leaning hardest on the affected columns: L_priorrole -0.00057 -> -0.00279 and W3b -0.00111 -> -0.00299. The leakage had been FLATTERING the prior-role arms.",
+      "scope": "affects any operational result in this programme that consumed those columns with null-imputation",
+      "recommendation": "add the did_appear null-pattern test to the permanent feature_gate; re-check other consumers"
+    }
+  }
+}

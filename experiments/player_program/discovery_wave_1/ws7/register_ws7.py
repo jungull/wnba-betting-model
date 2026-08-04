@@ -102,6 +102,14 @@ ARMS = {
                   "penalty shrinks the tier-varying part toward the pooled slope, which IS the "
                   "partial pooling. Tier = training-fold ECDF percentile, centred."),
     },
+    # ---- recalibration control, added by COORDINATOR AMENDMENT 1 (see AMENDMENTS below) ---- #
+    "K0_intercept_only": {
+        "form": "intercept_only", "spec": {}, "n_params": 0,
+        "reads": ("zero features. Isolates the free UNPENALISED INTERCEPT that every ridge arm "
+                  "carries and Arm D does not. Any arm that fails to beat K0 has bought its gain "
+                  "with recalibration, not with its functional form."),
+        "is_baseline_not_variant": True,
+    },
     # ---- linear reproduction controls, already published in TURNOVER_P2_RESULTS.json ---- #
     "L_involvement": {
         "form": "linear_control", "spec": {"cols": ["offensive_involvement_proxy"]},
@@ -113,8 +121,27 @@ ARMS = {
         "n_params": 3, "reads": "reproduction of P2 Arm F (-0.00057 operational)",
     },
 }
-NEW_VARIANTS = [a for a in ARMS if a.startswith("W")]
-CONTROLS = [a for a in ARMS if a.startswith("L_")]
+NEW_VARIANTS = [a for a in ARMS if a.startswith("W")]      # the 7 forms actually under test
+CONTROLS = [a for a in ARMS if not a.startswith("W")]      # baselines, not candidates
+
+# ---- amendment record. The original freeze is preserved verbatim in git at commit 58b3a91. ---- #
+AMENDMENTS = [{
+    "id": 1,
+    "origin": "coordinator, after the ws7 fits had been run and inspected",
+    "added": "K0_intercept_only",
+    "what": ("a second baseline. Another workstream found that every Poisson-ridge arm carries an "
+             "unpenalised intercept that the unfitted Arm D does not, so free recalibration alone "
+             "is worth roughly +0.0033 operational team MAE -- the same magnitude as the effects "
+             "ws7 is hunting."),
+    "integrity_note": (
+        "K0 was NOT part of the frozen design and was added with the results already visible. It "
+        "is a BASELINE, not a candidate: it can only make every reported arm look worse, never "
+        "better, so it cannot manufacture a positive. It is excluded from NEW_VARIANTS and does "
+        "not change the multiplicity count, which stays at 7."),
+    "consequence": ("every arm is now reported against BOTH Arm D (as registered) and K0. vs-K0 is "
+                    "the honest test of whether the FUNCTIONAL FORM adds anything beyond "
+                    "recalibration."),
+}]
 
 # derived helper column, an algebraic inversion of the P2 involvement proxy. Not new data.
 DERIVED = {
@@ -186,6 +213,13 @@ PREREG = {
         "frame, exactly the 'role tiers correlate with support' confounder named in the ledger. "
         "W5 therefore cannot separate a support effect from a usage-level effect; it is reported "
         "as a joint test, not as a clean support test."),
+    "amendments": AMENDMENTS,
+    "second_baseline": {
+        "arm": "K0_intercept_only",
+        "why": "isolates free recalibration from functional form",
+        "rule": ("an arm that beats Arm D but not K0 has demonstrated recalibration, not "
+                 "nonlinearity, and does NOT support the ws7 hypothesis"),
+    },
     "prespecified_verdict_rule": (
         "SUPPORTS only if a bounded nonlinear form beats Arm D on operational team MAE with a "
         "90% game-clustered CI excluding zero, AND the same sign appears in the preregistered "
