@@ -15,8 +15,15 @@ can supply.
 FAILS CLOSED. A missing required source, or a state that contradicts itself, raises rather than
 emitting a confident-looking file.
 
-Determinism: ``--deterministic`` sets ``generated_utc`` to null so two runs over an unchanged
+Determinism: ``--deterministic`` sets ``generated_at`` to null so two runs over an unchanged
 repository produce byte-identical output. Tests use that mode.
+
+Scope of authority. This file is authoritative for PROGRAM AND SCIENTIFIC state. It is **not**
+authoritative for live repository state: ``generated_from`` is PROVENANCE, describing the
+repository as it stood when the state was generated — necessarily the parent of the commit that
+carries the file, since neither that commit's hash nor its tree status exists until after the
+file is written. For live branch, HEAD and working-tree status, run this generator or its
+``--check`` command against the current repository.
 
 Run::
 
@@ -159,28 +166,33 @@ def build(deterministic: bool = False) -> dict:
 
     state = {
         "schema": SCHEMA,
-        "generated_utc": None if deterministic else
+        "generated_at": None if deterministic else
         datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "generator": _rel(Path(__file__)),
         "derived_not_maintained": (
             "every field below is derived from git, the registries, the ledger, the audit matrix "
             "and the artifact bytes. Do not hand-edit; re-run the generator."),
+        "authority": (
+            "PROGRAM_STATE.json is AUTHORITATIVE for program and scientific state. It is NOT "
+            "authoritative for live repository state. Live branch, HEAD and working-tree status "
+            "must be obtained by running build_program_state.py, or its --check command, against "
+            "the current repository."),
         "research_contract_version": RESEARCH_CONTRACT_VERSION,
-        "repository": {
+        "generated_from": {
+            "_meaning": (
+                "PROVENANCE, not current repository state. A committed generated file cannot "
+                "record the hash or clean-tree status of the commit that contains it -- neither "
+                "exists until after the file is written. These fields describe the repository as "
+                "it stood when this state was generated, i.e. the PARENT of the commit carrying "
+                "this file. For live state, run the generator."),
             "branch": _git("rev-parse", "--abbrev-ref", "HEAD"),
             "head": _git("rev-parse", "HEAD"),
             "head_short": _git("rev-parse", "--short", "HEAD"),
-            "working_tree_clean": not dirty,
+            "working_tree_state": "clean" if not dirty else "dirty",
             "dirty_paths": dirty,
             "worktree": _rel(HERE.parents[1]),
             "authoritative_lineage": ("this worktree, NOT the repository root, which is on a "
                                       "different branch"),
-            "head_is_the_commit_this_state_was_DERIVED_FROM": (
-                "A derived state file cannot record the hash of the commit that carries it -- "
-                "the hash is not known until after the file is written. So `head` is the commit "
-                "this state was derived FROM, which is the PARENT of the commit containing this "
-                "file. `--check` therefore compares substance and ignores head/tree fields; a "
-                "stale head here is expected and is not drift."),
         },
         "frozen_incumbent": dict(ledger["frozen_incumbent"],
                                  status="FROZEN — do not alter or retune"),
@@ -294,29 +306,33 @@ def main() -> int:
             print("FAIL: PROGRAM_STATE.json does not exist", file=sys.stderr)
             return 1
         cur = json.loads(OUT.read_text(encoding="utf-8"))
-        # Compare SUBSTANCE. The timestamp is volatile by design, and the repository block is
-        # necessarily one commit behind whenever the state file is itself committed -- see
-        # repository.head_is_the_commit_this_state_was_DERIVED_FROM.
+        # Compare SUBSTANCE. `generated_at` is volatile by design, and `generated_from` is
+        # provenance that is necessarily one commit behind whenever the state file is itself
+        # committed -- see generated_from._meaning.
         want, got = dict(state), dict(cur)
         for d in (want, got):
-            d.pop("generated_utc", None)
-            d.pop("repository", None)
+            d.pop("generated_at", None)
+            d.pop("generated_from", None)
         if json.dumps(got, indent=2, ensure_ascii=False) != json.dumps(
                 want, indent=2, ensure_ascii=False):
             print("FAIL: PROGRAM_STATE.json is substantively stale; re-run the generator",
                   file=sys.stderr)
             return 1
-        if cur["repository"]["branch"] != state["repository"]["branch"]:
-            print("FAIL: PROGRAM_STATE.json records a different branch", file=sys.stderr)
+        if cur["generated_from"]["branch"] != state["generated_from"]["branch"]:
+            print("FAIL: PROGRAM_STATE.json was generated from a different branch",
+                  file=sys.stderr)
             return 1
-        print("PROGRAM_STATE.json is substantively current "
-              f"(derived from {cur['repository']['head_short']}, HEAD now "
-              f"{state['repository']['head_short']})")
+        print("PROGRAM_STATE.json is substantively current.")
+        print(f"  stored provenance : generated_from.head = {cur['generated_from']['head_short']}"
+              f" ({cur['generated_from']['working_tree_state']})")
+        print(f"  LIVE repository   : HEAD = {state['generated_from']['head_short']}"
+              f" ({state['generated_from']['working_tree_state']})")
         return 0
     OUT.write_text(txt, encoding="utf-8")
-    r = state["repository"]
+    r = state["generated_from"]
     print(f"wrote {OUT.name}")
-    print(f"  branch {r['branch']} @ {r['head_short']} · clean={r['working_tree_clean']}")
+    print(f"  generated_from: branch {r['branch']} @ {r['head_short']} "
+          f"({r['working_tree_state']})  [provenance, not live HEAD]")
     print(f"  contract {state['research_contract_version']} · "
           f"authorized={state['state_of_play']['experiment_currently_authorized']} · "
           f"running={state['state_of_play']['workstream_running']}")

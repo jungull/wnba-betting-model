@@ -186,3 +186,18 @@ distinguished from work completed under the current one.
 | audit matrix | `discovery_wave_1/FINAL_AUDIT_MATRIX.json` |
 
 `PROGRAM_STATE.json` is **derived, never hand-edited**. Re-run the generator.
+
+### Scope of authority
+
+`PROGRAM_STATE.json` is **authoritative for program and scientific state** — frozen incumbent,
+canonical artifact hashes, workstream classifications, wave status, open gaps, stop boundary,
+next decision.
+
+It is **not authoritative for live repository state.** Its `generated_from` block is
+**provenance**: it describes the repository as it stood when the state was generated, which is
+necessarily the **parent** of the commit carrying the file — neither that commit's hash nor its
+tree status exists until after the file is written.
+
+**Live branch, HEAD and working-tree status must be obtained by running
+`build_program_state.py`, or its `--check` command, against the current repository.** Never quote
+`generated_from.head` as the current HEAD.

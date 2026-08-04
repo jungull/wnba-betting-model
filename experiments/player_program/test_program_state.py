@@ -41,27 +41,35 @@ def test_generator_is_deterministic() -> None:
     a = json.dumps(bps.build(deterministic=True), indent=2, ensure_ascii=False)
     b = json.dumps(bps.build(deterministic=True), indent=2, ensure_ascii=False)
     check(a == b, "build_program_state is deterministic across two runs")
-    check(json.loads(a)["generated_utc"] is None,
+    check(json.loads(a)["generated_at"] is None,
           "deterministic mode nulls the volatile timestamp")
     live = bps.build(deterministic=False)
-    check(live["generated_utc"] is not None, "normal mode stamps a timestamp")
+    check(live["generated_at"] is not None, "normal mode stamps a timestamp")
     d1, d2 = json.loads(a), dict(live)
-    d2["generated_utc"] = None
+    d2["generated_at"] = None
     check(json.dumps(d2, indent=2, ensure_ascii=False) == json.dumps(d1, indent=2,
           ensure_ascii=False),
           "timestamp is the ONLY difference between deterministic and normal output")
 
 
 # ---------------------------------------------------------------- truthfulness
-def test_state_agrees_with_git() -> None:
+def test_freshly_built_provenance_agrees_with_git() -> None:
+    """A FRESH build's provenance must equal live git. The COMMITTED file's provenance is the
+    parent commit by construction, and that is not drift -- see generated_from._meaning."""
     s = bps.build(deterministic=True)
-    r = s["repository"]
+    r = s["generated_from"]
     check(r["branch"] == git("rev-parse", "--abbrev-ref", "HEAD"),
-          f"state branch matches git ({r['branch']})")
-    check(r["head"] == git("rev-parse", "HEAD"), "state HEAD matches git")
+          f"fresh build provenance branch == live git ({r['branch']})")
+    check(r["head"] == git("rev-parse", "HEAD"), "fresh build provenance head == live git HEAD")
     dirty = [ln for ln in git("status", "--porcelain").splitlines() if ln.strip()]
-    check(r["working_tree_clean"] == (not dirty),
-          f"state working_tree_clean matches git (clean={not dirty})")
+    check(r["working_tree_state"] == ("clean" if not dirty else "dirty"),
+          f"fresh build working_tree_state == live git ({'clean' if not dirty else 'dirty'})")
+    check("repository" not in s,
+          "no field named 'repository' — provenance is not mislabelled as current state")
+    check("_meaning" in r and "PROVENANCE" in r["_meaning"],
+          "generated_from carries its provenance meaning inline")
+    check("authority" in s and "NOT" in s["authority"],
+          "state declares it is NOT authoritative for live repository state")
 
 
 def test_state_is_internally_consistent() -> None:
@@ -187,7 +195,7 @@ def main() -> int:
     print("=" * 78)
     print("coordination layer — validation")
     print("=" * 78)
-    for fn in [test_generator_is_deterministic, test_state_agrees_with_git,
+    for fn in [test_generator_is_deterministic, test_freshly_built_provenance_agrees_with_git,
                test_state_is_internally_consistent, test_generator_fails_closed,
                test_contract_sections_exist, test_templates_have_required_headings,
                test_no_scientific_artifact_changed]:
