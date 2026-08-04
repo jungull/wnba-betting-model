@@ -1053,6 +1053,37 @@ def build(worktrees_root: Path) -> tuple[dict, dict]:
             "arm_registry.jsonl. Every workstream is DISCOVERY, development folds only."
         ),
     }
+    # ------------------------------------------------------------------------------------
+    # Wave status is DELIBERATELY multi-axis.
+    #
+    # Every hypothesis card carrying a non-PENDING `result` means only that the eight
+    # discovery RUNS finished. It does NOT mean the wave is scientifically settled: the runs
+    # executed under the pre-fix eb1103c gate, no comparison-parity contract existed while
+    # they ran, and their retrospective integrity and decision classifications are still
+    # being established. Collapsing those into one COMPLETE flag is exactly the conflation
+    # this program keeps having to correct.
+    # ------------------------------------------------------------------------------------
+    out["wave_status"] = {
+        "execution_status": "COMPLETE",
+        "integrity_audit_status": "IN_PROGRESS",
+        "comparison_audit_status": "IN_PROGRESS",
+        "decision_status": "PROVISIONAL",
+        "integration_status": "IN_PROGRESS",
+        "overall": "NOT COMPLETE",
+        "statement": ("Discovery executions are complete; retrospective integrity and decision "
+                      "classifications are still in progress."),
+        "why_not_complete": (
+            "A non-PENDING result field records that a RUN finished, not that its result is "
+            "established. Until the retrospective per-fold gate audit, the Layer A / Layer B "
+            "comparison-parity results and the consolidated audit matrix are committed, every "
+            "workstream carries at most a provisional decision status and the substantive "
+            "ranking is not frozen."),
+        "unblocks_when": [
+            "every workstream carries a feature-design integrity classification with evidence",
+            "every workstream carries a decision-validity classification with evidence",
+            "the consolidated audit matrix is committed",
+        ],
+    }
     return out, {
         "schema": "discovery_ledger_merge_receipt/1",
         "wave": "discovery_wave_1",
