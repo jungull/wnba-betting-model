@@ -224,6 +224,50 @@ governs. Where an arm's registration is stricter, the stricter requirement gover
 contract and `feature_gate.py` appear to disagree about what a check does, `feature_gate.py`
 governs — it is the implementation, and this document does not modify it.
 
+## 8a. Dual-frame requirement — audit BEFORE and AFTER missing-value transformation
+
+**Status: REQUIRED BY THIS CONTRACT. NOT YET IMPLEMENTED in `gate_invocation.py` (`d58a6b2`).
+It is a standing methodological gap, not a closed class.**
+
+The ws2 defect is a different failure from a missing or defaulted argument, and the wrapper's
+`argument_is_placeholder_default` does **not** catch it. ws2's `build_constructions()` imputed
+`offensive_involvement_proxy` and `trailing_minutes_share` to `0.0` **before** the gate was
+called. What reached the gate was:
+
+* a fully populated, imputed design with no nulls at all;
+* a valid, non-placeholder `target`, `offset`, `outcome_mask` and `test_df`;
+* correctly aligned row identities.
+
+Every fold passed. The null mask had already been converted into ordinary numeric values, and it
+survived as one: `transfer_direct`, `transfer_allocated` and `transfer_role_sensitive` are
+non-zero on 25,522 / 25,522 / 9,577 appearers and on **zero** of the 8,278 non-appearers, so a
+non-zero value certifies appearance. `missingness_encodes_outcome` cannot fire on a frame with no
+missingness. **A gate that only ever sees the transformed frame is blind to this by construction.**
+
+Accordingly, every fitted design must be audited **before** missing-value transformation and
+**again** after it. The invocation receipt must bind:
+
+* raw feature-frame digest;
+* raw missingness-mask digest, **per column**;
+* the transformation or imputation specification, declared explicitly;
+* transformed feature-frame digest;
+* the transformed design audit;
+* confirmation that no feature was constructed from target-game appearance or any other
+  post-cutoff outcome.
+
+Invocation must fail **before fitting** when:
+
+* only the transformed frame is supplied;
+* raw missingness provenance is unavailable;
+* an imputation operation is not declared;
+* raw and transformed feature names or row identities do not reconcile;
+* the transformed values encode an outcome-associated raw null mask;
+* a caller audits one matrix but fits another.
+
+Until that is implemented, no claim may be made that the invocation layer closes the ws2 class.
+The wrapper closes argument omission, defaulting, misalignment, universe substitution, silent
+reordering and receipt reuse. It does **not** close pre-gate transformation.
+
 ## 9. Retrospective note
 
 Had this contract been in force at P2 (`turnover_rate_role_context_v1`), and had the gate existed in

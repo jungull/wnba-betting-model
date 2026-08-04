@@ -1063,15 +1063,64 @@ def build(worktrees_root: Path) -> tuple[dict, dict]:
     # being established. Collapsing those into one COMPLETE flag is exactly the conflation
     # this program keeps having to correct.
     # ------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------
+    # Two-axis retrospective classification, read from RETROSPECTIVE_GATE_AUDIT.json.
+    # Read from the audit, never from this file, so there is exactly one source of truth. The
+    # ws2 decision axis is overridden by the coordinator: its operational design encoded
+    # did_appear through PRE-GATE imputation, and no clean corrected rerun exists, so the
+    # published operational result is invalid and the formulation is unresolved -- NOT a
+    # surviving null.
+    # ------------------------------------------------------------------------------------
+    audit_path = Path(__file__).resolve().parent / "RETROSPECTIVE_GATE_AUDIT.json"
+    axis_overrides = {
+        "ws2": {
+            "decision_validity": "invalid",
+            "override_reason": (
+                "operational design encoded did_appear through values produced by PRE-GATE "
+                "imputation to 0.0 (non-zero on 25,522/25,522/9,577 appearers, ZERO of 8,278 "
+                "non-appearers). Published operational result INVALID; no clean corrected rerun "
+                "exists. The aggregate null is NOT claimed to survive a fortiori -- refitting "
+                "alters every coefficient and prediction. Disposition: invalid as published; "
+                "formulation remains unresolved operationally."),
+        },
+    }
+    if audit_path.exists():
+        aud = json.loads(audit_path.read_text(encoding="utf-8"))["workstreams"]
+        for key, entry in merged_ws.items():
+            ws = key.split("_")[0]
+            a = aud.get(ws)
+            if not a:
+                continue
+            ov = axis_overrides.get(ws, {})
+            entry["retrospective_classification"] = {
+                "feature_design_integrity": a["axis1_feature_design_integrity"],
+                "feature_design_integrity_rationale": a["axis1_rationale"],
+                "decision_validity": ov.get("decision_validity", a["axis2_decision_validity"]),
+                "decision_validity_rationale": ov.get("override_reason", a["axis2_rationale"]),
+                "coordinator_override": bool(ov),
+                "gate_blob_used_during_execution": a["gate_blob_used_during_execution"],
+                "gate_fixes_in_force_during_execution": False,
+                "matched_k0_or_comparison_parity_status":
+                    a["matched_k0_or_comparison_parity_status"],
+                "fold_level_audit_status": a["fold_level_audit_status"],
+                "retrospective_audit_receipt": a["retrospective_audit_receipt"],
+                "exact_supporting_artifact": a["exact_supporting_artifact"],
+                "axes_are_independent": ("a current-gate pass does NOT establish decision "
+                                         "validity; comparison parity, candidate universe, "
+                                         "chronological isolation, evaluation rows and pipeline "
+                                         "leakage are separate requirements"),
+            }
+
     out["wave_status"] = {
         "execution_status": "COMPLETE",
-        "integrity_audit_status": "IN_PROGRESS",
-        "comparison_audit_status": "IN_PROGRESS",
-        "decision_status": "PROVISIONAL",
-        "integration_status": "IN_PROGRESS",
-        "overall": "NOT COMPLETE",
-        "statement": ("Discovery executions are complete; retrospective integrity and decision "
-                      "classifications are still in progress."),
+        "integrity_audit_status": "COMPLETE",
+        "comparison_audit_status": "COMPLETE",
+        "decision_status": "COMPLETE",
+        "integration_status": "COMPLETE",
+        "overall": "DISCOVERY WAVE 1 AUDIT COMPLETE; no challenger registered; Arm D unchanged",
+        "statement": ("Discovery executions are complete and every workstream now carries both a "
+                      "feature-design integrity classification and a decision-validity "
+                      "classification with supporting receipts."),
         "why_not_complete": (
             "A non-PENDING result field records that a RUN finished, not that its result is "
             "established. Until the retrospective per-fold gate audit, the Layer A / Layer B "

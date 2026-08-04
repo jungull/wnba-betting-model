@@ -114,6 +114,98 @@
             "value": true
           }
         ]
+      },
+      "retrospective_classification": {
+        "feature_design_integrity": "manual_equivalent_checks_documented",
+        "feature_design_integrity_rationale": "At 5313ebd the current gate passes clean on the final assembled design AND on every chronological training fold of all six SCIENTIFIC arms (K0, L1, N1, D0_level, D0_change, S1); worst condition number 15.79, full rank everywhere. It BLOCKS the seventh arm, X_literal_card_set, as `rank_deficient` in 7 of 8 audits (numerical rank 4 of 5, smallest singular value 0.0, condition 7.14e14). ws1 detected exactly that itself, with an SVD rank/condition check it wrote and which feature_gate.py now names as its own reference implementation, and ACTED on it by marking the arm `identified: False, diagnostic_only: True` and excluding it from the verdict. So the gate flags something and the workstream had the equivalent check.",
+        "decision_validity": "valid_only_after_corrected_rerun",
+        "decision_validity_rationale": "The original run 3726991 imputed P2 trailing columns whose null mask is an exact did_appear indicator, so its operational numbers were contaminated. 5313ebd rebuilt the signal leak-free and the published numbers CHANGED: L1_linear operational player deviance 1.227685 -> 1.229904, non-appearer MAE 0.51051 -> 0.51545, L1 vs K0 team MAE -0.0004 -> -0.0014. The FALSIFIES verdict is unchanged, but only the corrected commit's numbers may be cited.",
+        "coordinator_override": false,
+        "gate_blob_used_during_execution": {
+          "blob": "a8a8ea6416c9613302209a4c71008ef9927d6f82",
+          "is_the_prefix_blob": true,
+          "inherited_from": "eb1103c (base commit of the wave)",
+          "rank_fix_55f4500_is_ancestor": false,
+          "missingness_fix_42af2cd_is_ancestor": false
+        },
+        "gate_fixes_in_force_during_execution": false,
+        "matched_k0_or_comparison_parity_status": {
+          "matched_k0_present": true,
+          "citation": "run_ws1.py:70-74 ARMS['K0_intercept_only'] = {'features': []}; audit persisted at ws1/gate_audit_K0_intercept_only.json",
+          "comparison_parity_receipt": "ws1/gate_audit_K0_intercept_only.json + WS1_RESULTS.json results.*.by_season_paired_vs_K0 -- zero features, identical pipeline, folds, offset and standardisation path"
+        },
+        "fold_level_audit_status": {
+          "reconstructed": true,
+          "per_arm": {
+            "K0_intercept_only": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "L1_linear": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "N1_split": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "D0_level_only": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "D0_change_only": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "S1_trailing_basis": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "X_literal_card_set": {
+              "n_audits": 8,
+              "all_passed": false,
+              "n_blocked": 7,
+              "blocking_kinds": [
+                "rank_deficient"
+              ],
+              "blocked_labels": [
+                "X_literal_card_set/fold_2022",
+                "X_literal_card_set/fold_2023",
+                "X_literal_card_set/fold_2024",
+                "X_literal_card_set/fold_2025",
+                "X_literal_card_set/fold_2026",
+                "X_literal_card_set/FINAL_ASSEMBLED_DESIGN",
+                "X_literal_card_set/OPERATIONAL_PREDICTION_FRAME"
+              ]
+            }
+          }
+        },
+        "retrospective_audit_receipt": {
+          "path": "experiments/player_program/discovery_wave_1/RETROSPECTIVE_GATE_AUDIT.json#/workstreams/ws1",
+          "produced_by": "experiments/player_program/discovery_wave_1/retrospective_gate_audit.py",
+          "audit_block_sha256": "10f18c9ac5c20c34496b22174f0c755522111856e20b0fed8dca2dceb134f861",
+          "current_gate_blob_used_for_this_audit": "b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2"
+        },
+        "exact_supporting_artifact": "experiments/player_program/discovery_wave_1/ws1/WS1_RESULTS.json (at 5313ebd)",
+        "axes_are_independent": "a current-gate pass does NOT establish decision validity; comparison parity, candidate universe, chronological isolation, evaluation rows and pipeline leakage are separate requirements"
       }
     },
     "ws2_responsibility_transfer": {
@@ -195,6 +287,88 @@
             "value": true
           }
         ]
+      },
+      "retrospective_classification": {
+        "feature_design_integrity": "posthoc_current_gate_pass",
+        "feature_design_integrity_rationale": "All seven arms reconstructed. The current gate passes clean on the final assembled design AND every chronological training fold of every arm (56 fold/final audits plus 7 operational-frame audits, zero blocking findings). Full rank everywhere; worst condition number 12.80 (T123). No correction was required and none exists.",
+        "decision_validity": "invalid",
+        "decision_validity_rationale": "operational design encoded did_appear through values produced by PRE-GATE imputation to 0.0 (non-zero on 25,522/25,522/9,577 appearers, ZERO of 8,278 non-appearers). Published operational result INVALID; no clean corrected rerun exists. The aggregate null is NOT claimed to survive a fortiori -- refitting alters every coefficient and prediction. Disposition: invalid as published; formulation remains unresolved operationally.",
+        "coordinator_override": true,
+        "gate_blob_used_during_execution": {
+          "blob": "a8a8ea6416c9613302209a4c71008ef9927d6f82",
+          "is_the_prefix_blob": true,
+          "inherited_from": "eb1103c (base commit of the wave)",
+          "rank_fix_55f4500_is_ancestor": false,
+          "missingness_fix_42af2cd_is_ancestor": false
+        },
+        "gate_fixes_in_force_during_execution": false,
+        "matched_k0_or_comparison_parity_status": {
+          "matched_k0_present": true,
+          "citation": "NOT in run_ws2_responsibility_transfer.py -- its ARMS dict has no zero-feature arm and the string 'K0' does not occur in WS2_RESULTS.json. It is supplied by a SECOND script at the same commit: failure_analysis_ws2.py:51-88 fit_k0(), 'intercept-only control arm, identical pipeline'",
+          "comparison_parity_receipt": "ws2/WS2_FAILURE_ANALYSIS.json (produced by failure_analysis_ws2.py at 863a900)"
+        },
+        "fold_level_audit_status": {
+          "reconstructed": true,
+          "per_arm": {
+            "H": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "T1": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "T2": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "T3": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "T123": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "HT2": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "HT3": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            }
+          }
+        },
+        "retrospective_audit_receipt": {
+          "path": "experiments/player_program/discovery_wave_1/RETROSPECTIVE_GATE_AUDIT.json#/workstreams/ws2",
+          "produced_by": "experiments/player_program/discovery_wave_1/retrospective_gate_audit.py",
+          "audit_block_sha256": "5e5980115e6b75df495964e240cc0bbd9c9dfee1a33a0ae99cad2b467c83404e",
+          "current_gate_blob_used_for_this_audit": "b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2"
+        },
+        "exact_supporting_artifact": "experiments/player_program/discovery_wave_1/ws2/WS2_VERDICT.json (at 863a900)",
+        "axes_are_independent": "a current-gate pass does NOT establish decision validity; comparison parity, candidate universe, chronological isolation, evaluation rows and pipeline leakage are separate requirements"
       }
     },
     "ws3_team_total_plus_allocation": {
@@ -279,6 +453,57 @@
           "a feature construction that is safe under an additive link is not automatically safe under a compositional one. P2's EWMA decays player state only on days the player appeared while team state decays every team game, so the ratio is not a share (max 1.617). A log-offset Poisson absorbs that; a within-team softmax saturated to exact 0.0 and 1.0 shares, deviance 8.2465.",
           "in every one of these failures the optimiser converged -- stage 2 in five Newton iterations in every fold."
         ]
+      },
+      "retrospective_classification": {
+        "feature_design_integrity": "manual_equivalent_checks_documented",
+        "feature_design_integrity_rationale": "Reconstructed both stages. The current gate BLOCKS stage2/fold_2022 with `impossible_scaling` (proj_off_poss_share std 7.80e-09, p_active std 5.14e-17) and BLOCKS both AS-DECLARED designs -- stage 1 with `deterministic_transform_of_offset` (log_proj_team_off_poss corr 1.0 with the offset) and stage 2 with `near_collinear` + `rank_deficient` (rank 9 of 10, smallest singular value 0.0, condition 3.33e15). Every one of those is a defect ws3 found FIRST and acted on: fold_gate() drops the degenerate features for that fold, rank_check() reports the null-space loadings, and the declared feature sets were reduced BEFORE any fit. The designs actually fitted (S1_FEATS 9 features, S2_FEATS 7 features) pass on every remaining fold.",
+        "decision_validity": "valid_as_published",
+        "decision_validity_rationale": "Comparison parity is in-pipeline (K0_total, zero features, identical folds, offset and pipeline) and the falsification is measured against it: stage-1 features add -0.00340 [-0.03975,+0.03398] over K0. Stage 2 is evaluated with the team total held EXACTLY at the D aggregate so the team metric is identical to the incumbent by construction, and the allocation constraint holds to 1.07e-14. ws3 also WITHDREW its own motivating observation on cutoff-valid grounds rather than defending it. Nothing in the current gate disturbs the NULL.",
+        "coordinator_override": false,
+        "gate_blob_used_during_execution": {
+          "blob": "a8a8ea6416c9613302209a4c71008ef9927d6f82",
+          "is_the_prefix_blob": true,
+          "inherited_from": "eb1103c (base commit of the wave)",
+          "rank_fix_55f4500_is_ancestor": false,
+          "missingness_fix_42af2cd_is_ancestor": false
+        },
+        "gate_fixes_in_force_during_execution": false,
+        "matched_k0_or_comparison_parity_status": {
+          "matched_k0_present": true,
+          "citation": "run_ws3_two_stage.py:582 T['K0_total'] and :613-617 'K0: intercept only, identical pipeline, zero features'",
+          "comparison_parity_receipt": "ws3/WS3_RESULTS.json + LEDGER_UPDATE_ws3.json.result, which quotes the K0 comparison -0.00340 CI [-0.03975,+0.03398] directly"
+        },
+        "fold_level_audit_status": {
+          "reconstructed": true,
+          "per_arm": {
+            "stage1": {
+              "n_audits": 7,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "stage2": {
+              "n_audits": 7,
+              "all_passed": false,
+              "n_blocked": 1,
+              "blocking_kinds": [
+                "impossible_scaling"
+              ],
+              "blocked_labels": [
+                "stage2/fold_2022"
+              ]
+            }
+          }
+        },
+        "retrospective_audit_receipt": {
+          "path": "experiments/player_program/discovery_wave_1/RETROSPECTIVE_GATE_AUDIT.json#/workstreams/ws3",
+          "produced_by": "experiments/player_program/discovery_wave_1/retrospective_gate_audit.py",
+          "audit_block_sha256": "439212f8c846095d0ef4ac0860cf27069f69c5c9aad292e30241ddeb178284c2",
+          "current_gate_blob_used_for_this_audit": "b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2"
+        },
+        "exact_supporting_artifact": "experiments/player_program/discovery_wave_1/ws3/LEDGER_UPDATE_ws3.json (result + disposition) and ws3/WS3_RESULTS.json (at 1e3509f)",
+        "axes_are_independent": "a current-gate pass does NOT establish decision validity; comparison parity, candidate universe, chronological isolation, evaluation rows and pipeline leakage are separate requirements"
       }
     },
     "ws4_ewma_timescale_family": {
@@ -358,6 +583,38 @@
             "value": []
           }
         ]
+      },
+      "retrospective_classification": {
+        "feature_design_integrity": "not_applicable_no_feature_fit",
+        "feature_design_integrity_rationale": "ws4_run.py estimates no coefficients. Machine-checked at the result commit: zero occurrences of feature_gate, poisson_ridge, np.linalg, lstsq, sklearn or statsmodels in the 619-line script. The seven variants are EWMA state machines that differ only in decay constant and gating rule, applied by one left-to-right pass over game dates. There is no design matrix, so the feature gate has no purchase.",
+        "decision_validity": "valid_as_published",
+        "decision_validity_rationale": "Comparison parity is structural rather than K0-shaped: every variant runs through the identical chronological state machine over the identical rows, so V0 (the frozen registered alpha=0.10) is an exactly matched incumbent. Candidate set, folds, strata, gate threshold and selection rule were frozen in PREREGISTRATION.json before any number was produced, and the verdict rule was applied mechanically. ws4 also avoided the wave's shared leak by construction: it does not consume the P2 role_change column, it rebuilds the signal reading state for every candidate. The verdict is NOT_SUPPORTED and the report explicitly refuses to promote the winner.",
+        "coordinator_override": false,
+        "gate_blob_used_during_execution": {
+          "blob": "a8a8ea6416c9613302209a4c71008ef9927d6f82",
+          "is_the_prefix_blob": true,
+          "inherited_from": "eb1103c (base commit of the wave)",
+          "rank_fix_55f4500_is_ancestor": false,
+          "missingness_fix_42af2cd_is_ancestor": false
+        },
+        "gate_fixes_in_force_during_execution": false,
+        "matched_k0_or_comparison_parity_status": {
+          "matched_k0_present": false,
+          "citation": "not applicable: with no fitted intercept there is no free-recalibration confound to control. The matched control is V0_incumbent_a010, the frozen registered alpha running through the identical state machine (ws4_run.py:44-46, INCUMBENT)",
+          "comparison_parity_receipt": "ws4/PREREGISTRATION.json (candidate set, FOLD_SEASONS [2022..2026] with 2021 as burn-in, strata, selection rule C1-C4) + ws4/WS4_VERDICT.json.rule"
+        },
+        "fold_level_audit_status": {
+          "reconstructed": false,
+          "reason": "there is no design matrix to reconstruct: ws4 fits no coefficients"
+        },
+        "retrospective_audit_receipt": {
+          "path": "experiments/player_program/discovery_wave_1/RETROSPECTIVE_GATE_AUDIT.json#/workstreams/ws4",
+          "produced_by": "experiments/player_program/discovery_wave_1/retrospective_gate_audit.py",
+          "audit_block_sha256": "ef055e34ba628495590ff83864bbcce35e650c8423aa75afbb876c2a5aef0c5d",
+          "current_gate_blob_used_for_this_audit": "b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2"
+        },
+        "exact_supporting_artifact": "experiments/player_program/discovery_wave_1/ws4/WS4_VERDICT.json (at 1b634fb)",
+        "axes_are_independent": "a current-gate pass does NOT establish decision validity; comparison parity, candidate universe, chronological isolation, evaluation rows and pipeline leakage are separate requirements"
       }
     },
     "ws5_opportunity_proxies": {
@@ -437,6 +694,144 @@
           }
         ],
         "shared_input_defect_found": "ws5 independently found the same did_appear leak in turnover_p2_v1/turnover_role_context_features_v1.parquet (offensive_involvement_proxy, trailing_minutes_share, role_change: 27,351 non-null appearers / 8,278 null non-appearers, zero off-diagonal). ws5 CONSUMES NONE OF THEM -- all six proxies are rebuilt so state is read for every Tier A candidate and are non-null on all 35,629 operational rows. ws5's x1 reproduces the canonical FGA-share formula EXACTLY where the canonical is defined (max abs diff 0.0) and supplies genuine strictly-prior values on the 8,278 non-appearers, so ws5 R1 is the CLEAN re-measurement of P2 arm G: 2.97296 vs the published 2.9725, i.e. arm G had looked marginally better than it is (~+0.0005). The P2 arm-G conclusion is robust to the defect, but the clean number is ws5 R1's. See WS5_INPUT_DEFECT_RECEIPT.json. Canonical artifact not modified."
+      },
+      "retrospective_classification": {
+        "feature_design_integrity": "posthoc_current_gate_pass",
+        "feature_design_integrity_rationale": "All 15 arms reconstructed (K0, Dfree, R1-R6, ALL, X1-X6). The current gate passes clean on the final assembled design AND every chronological training fold of every arm, plus the pooled six-proxy admissibility matrix and every operational prediction frame. Full rank everywhere; worst condition number 28.66 (the six-proxy ALL arm). Zero missingness on all 35,629 operational rows for all six proxies, so neither new missingness check has anything to fire on.",
+        "decision_validity": "valid_as_published",
+        "decision_validity_rationale": "This workstream carries the wave's only surviving positive, so the parity requirements matter most here and they are met. K0 is in-pipeline and every proxy is reported against BOTH Arm D and K0; Wfree/WKfree renormalise the NO-PROXY arm the same way, controlling for 'is the reallocation gain the proxy's, or just a relaxed Arm-D coefficient?'. The wave's shared did_appear defect was found by ws5 independently and ws5 consumes none of the affected columns -- it rebuilt all six proxies, non-null on all 35,629 operational rows, and its x1 reproduces the canonical FGA-share formula to max_abs_diff 0.0 wherever the canonical is defined. The preregistered bar was stated before results and the verdict reports which half clears it and which does not.",
+        "coordinator_override": false,
+        "gate_blob_used_during_execution": {
+          "blob": "a8a8ea6416c9613302209a4c71008ef9927d6f82",
+          "is_the_prefix_blob": true,
+          "inherited_from": "eb1103c (base commit of the wave)",
+          "rank_fix_55f4500_is_ancestor": false,
+          "missingness_fix_42af2cd_is_ancestor": false
+        },
+        "gate_fixes_in_force_during_execution": false,
+        "matched_k0_or_comparison_parity_status": {
+          "matched_k0_present": true,
+          "citation": "run_ws5.py:41 CONTROL = {'K0': []}, 'the recalibration-only control. Zero features, unpenalised intercept, same everything else'",
+          "comparison_parity_receipt": "ws5/WS5_VERDICT.json.per_proxy and .best_role_overall, both reported vs D AND vs K0; plus the Wfree/WKfree no-proxy renormalisation controls (run_ws5.py:226-235)"
+        },
+        "fold_level_audit_status": {
+          "reconstructed": true,
+          "per_arm": {
+            "K0": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "Dfree": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "R1": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "R2": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "R3": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "R4": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "R5": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "R6": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "ALL": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "X1": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "X2": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "X3": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "X4": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "X5": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "X6": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            }
+          }
+        },
+        "retrospective_audit_receipt": {
+          "path": "experiments/player_program/discovery_wave_1/RETROSPECTIVE_GATE_AUDIT.json#/workstreams/ws5",
+          "produced_by": "experiments/player_program/discovery_wave_1/retrospective_gate_audit.py",
+          "audit_block_sha256": "0c10a52abb149f3b8848b34b54dd72965e010bf526304da02c365ad98aff1b80",
+          "current_gate_blob_used_for_this_audit": "b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2"
+        },
+        "exact_supporting_artifact": "experiments/player_program/discovery_wave_1/ws5/WS5_VERDICT.json (at 6d9e3f2)",
+        "axes_are_independent": "a current-gate pass does NOT establish decision validity; comparison parity, candidate universe, chronological isolation, evaluation rows and pipeline leakage are separate requirements"
       }
     },
     "ws6_mechanism_decomposition": {
@@ -511,6 +906,179 @@
             "value": 9
           }
         ]
+      },
+      "retrospective_classification": {
+        "feature_design_integrity": "posthoc_current_gate_pass",
+        "feature_design_integrity_rationale": "CONTRARY TO THE STANDING ASSUMPTION, ws6 DOES fit feature designs: Poisson ridge and cluster-robust Poisson on offensive_involvement_proxy (and on that plus role_change) for 20 targets. Reconstructed in full from turnover_targets_v1 + turnover_p2_v1 + turnover_p1_v1 + prediction_contract_v5, since ws6 committed no feature parquet. The current gate passes clean on all 180 audits -- 4 designs x 20 targets plus 5 walk-forward folds each. Full rank everywhere; worst condition number 1.549. The raw un-imputed columns carry 894 nulls (3.17%) but the null mask correlates only -0.0075 with the target, so `missingness_informative` does not fire either.",
+        "decision_validity": "diagnostic_only",
+        "decision_validity_rationale": "Two independent reasons, neither of which is a gate finding. First, no matched K0 or any featureless control exists anywhere in ws6, so it can make a mechanism claim but not a comparison claim; it promotes nothing and registers nothing. Second, its central question presupposes the arm-G phenomenon AS MEASURED IN P2 (its own key 'arm_G_phenomenon_as_measured_in_P2'), and that measurement rests on the leaking P2 involvement column: ws3 withdrew exactly this motivating observation ('the aggregation-cancellation reading of arm G is not established on cutoff-valid inputs', leak worth 0.02180 player deviance = 15.9x the published arm-G gain of 0.00137) and ws5 measured the clean replacement. ws6's own fits are on the INTRINSIC track, where every row is an appearer and the null mask means 'first appearances', not did_appear -- so the fits are internally sound and the decomposition is arithmetically closed. The verdict is a rejection of a cause, which is legitimate diagnostic output, but it cannot carry a decision.",
+        "coordinator_override": false,
+        "gate_blob_used_during_execution": {
+          "blob": "a8a8ea6416c9613302209a4c71008ef9927d6f82",
+          "is_the_prefix_blob": true,
+          "inherited_from": "eb1103c (base commit of the wave)",
+          "rank_fix_55f4500_is_ancestor": false,
+          "missingness_fix_42af2cd_is_ancestor": false
+        },
+        "gate_fixes_in_force_during_execution": false,
+        "matched_k0_or_comparison_parity_status": {
+          "matched_k0_present": false,
+          "citation": "NONE. There is no zero-feature control in run_ws6_mechanism_decomposition.py. The reference is arm G refitted on the TOTAL through the identical protocol (:527-540 'this reproduces arm G on the TOTAL count, for reference') plus a walk-forward share_baseline (:409-423). Both are same-feature references, not featureless ones, so the free-intercept confound named by ws1/ws2/ws5/ws7 is uncontrolled here.",
+          "comparison_parity_receipt": "NONE EXISTS for a featureless baseline. The available parity receipt is protocol parity only: WS6_MECHANISM_DECOMPOSITION.json plus the docstring PROTOCOL PARITY clause ('same offset, same ridge lambda, same walk-forward-by-season split, same standardisation ... the single change that the response is a mechanism count')"
+        },
+        "fold_level_audit_status": {
+          "reconstructed": true,
+          "per_arm": {
+            "TOTAL": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "bad_pass": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "bad_pass_out_of_bounds": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "lost_ball": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "lost_ball_out_of_bounds": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "offensive_foul": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "offensive_goaltending": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "traveling": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "double_dribble": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "discontinue_dribble": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "palming": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "step_out_of_bounds": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "three_second": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "five_second": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "backcourt": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "inbound": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "lane_violation": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "jump_ball_violation": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "kicked_ball": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "unresolved": {
+              "n_audits": 9,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            }
+          }
+        },
+        "retrospective_audit_receipt": {
+          "path": "experiments/player_program/discovery_wave_1/RETROSPECTIVE_GATE_AUDIT.json#/workstreams/ws6",
+          "produced_by": "experiments/player_program/discovery_wave_1/retrospective_gate_audit.py",
+          "audit_block_sha256": "c5ebc3e22be6f651d446647348e0b024a78d894a225daec7054ef8c992616c59",
+          "current_gate_blob_used_for_this_audit": "b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2"
+        },
+        "exact_supporting_artifact": "experiments/player_program/discovery_wave_1/ws6/WS6_MECHANISM_DECOMPOSITION.json (.verdict) at 5ef1f25",
+        "axes_are_independent": "a current-gate pass does NOT establish decision validity; comparison parity, candidate universe, chronological isolation, evaluation rows and pipeline leakage are separate requirements"
       }
     },
     "ws7_nonlinear_heterogeneous": {
@@ -641,6 +1209,109 @@
             "ws5"
           ]
         }
+      },
+      "retrospective_classification": {
+        "feature_design_integrity": "corrected_after_gate_defect",
+        "feature_design_integrity_rationale": "All ten arms reconstructed for BOTH the superseded v1_leaky run and the v2_rebuilt run preserved at the same commit. On v2_rebuilt the current gate passes clean on the final assembled design AND every chronological training fold of every arm -- full rank everywhere, worst condition number 25.13 (W4_inv_x_minutes), zero missingness on all 35,629 operational rows. The reason it passes is ws7's own repair: build_trailing_v2.py rebuilt the leaking prior-role columns and run_ws7.py's leakage_check() blocks any basis whose null pattern agrees with did_appear at >= 0.999. Without that repair the same designs carry the defect the missingness fix was written to catch.",
+        "decision_validity": "valid_only_after_corrected_rerun",
+        "decision_validity_rationale": "The repair CHANGED a published conclusion, not merely the decimals: expected_direction went to 'REFUTED for primary creators -- after the leakage repair every arm is significantly NEGATIVE there (W1 -0.00204 vs K0, CI excluding zero); the leakage had been masking a real loss.' Only WS7_RESULTS.json (v2_rebuilt) may be cited; WS7_RESULTS_v1_leaky.json and gate_v1_leaky/ are preserved as the contaminated 'before' and are explicitly superseded. Comparison parity is met: K0_intercept_only is a registered arm and ws7 independently reproduced the externally measured K0 operational team MAE of 2.96419.",
+        "coordinator_override": false,
+        "gate_blob_used_during_execution": {
+          "blob": "a8a8ea6416c9613302209a4c71008ef9927d6f82",
+          "is_the_prefix_blob": true,
+          "inherited_from": "eb1103c (base commit of the wave)",
+          "rank_fix_55f4500_is_ancestor": false,
+          "missingness_fix_42af2cd_is_ancestor": false
+        },
+        "gate_fixes_in_force_during_execution": false,
+        "matched_k0_or_comparison_parity_status": {
+          "matched_k0_present": true,
+          "citation": "register_ws7.ARMS['K0_intercept_only'] (form 'intercept_only'); run_ws7.py:58-60 'zero features. The unpenalised intercept is supplied by poisson_ridge itself.'",
+          "comparison_parity_receipt": "ws7/WS7_LEDGER_UPDATE.json.patch.new_confound_found, which states the K0 figure 2.9642 vs Arm D 2.9675 and that ws7 independently reproduced the externally measured 2.96419; every arm is reported against both"
+        },
+        "fold_level_audit_status": {
+          "reconstructed": true,
+          "per_arm": {
+            "W1_pw_involvement": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "W2_rcs_involvement": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "W3_expansion_contraction": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "W3b_priorrole_asym": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "W4_inv_x_minutes": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "W5_inv_x_support": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "W6_partial_pool_tier": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "K0_intercept_only": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "L_involvement": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            },
+            "L_priorrole": {
+              "n_audits": 8,
+              "all_passed": true,
+              "n_blocked": 0,
+              "blocking_kinds": [],
+              "blocked_labels": []
+            }
+          }
+        },
+        "retrospective_audit_receipt": {
+          "path": "experiments/player_program/discovery_wave_1/RETROSPECTIVE_GATE_AUDIT.json#/workstreams/ws7",
+          "produced_by": "experiments/player_program/discovery_wave_1/retrospective_gate_audit.py",
+          "audit_block_sha256": "2ba5a04b79361aa5f20a12f038b84b749578567c0c462c25c951c7ff658ee163",
+          "current_gate_blob_used_for_this_audit": "b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2"
+        },
+        "exact_supporting_artifact": "experiments/player_program/discovery_wave_1/ws7/WS7_RESULTS.json + ws7/WS7_LEDGER_UPDATE.json (at e858e96). NOT WS7_RESULTS_v1_leaky.json.",
+        "axes_are_independent": "a current-gate pass does NOT establish decision validity; comparison parity, candidate universe, chronological isolation, evaluation rows and pipeline leakage are separate requirements"
       }
     },
     "ws8_operational_error_decomposition": {
@@ -710,6 +1381,38 @@
             "value": 0.9969
           }
         ]
+      },
+      "retrospective_classification": {
+        "feature_design_integrity": "not_applicable_no_feature_fit",
+        "feature_design_integrity_rationale": "Machine-checked at the result commit: zero occurrences of feature_gate, poisson_ridge, np.linalg, lstsq, sklearn or statsmodels in the 689-line script. Every counterfactual reuses the identical frozen per-row Arm D rate and changes only the exposure vector, so no coefficient is estimated and there is no design matrix for the gate to audit. Consistent with the operator's adjudication.",
+        "decision_validity": "diagnostic_only",
+        "decision_validity_rationale": "Self-declared and structurally true: CF2..CF5 each consume information unavailable at the forecast cutoff (who played, how much, how many possessions the game ran). The script states 'ORACLE VARIANTS ARE DIAGNOSTICS, NOT MODELS ... None of them is a forecast, none is promotion evidence, none may be registered as an arm.' Consistent with the operator's adjudication.",
+        "coordinator_override": false,
+        "gate_blob_used_during_execution": {
+          "blob": "a8a8ea6416c9613302209a4c71008ef9927d6f82",
+          "is_the_prefix_blob": true,
+          "inherited_from": "eb1103c (base commit of the wave)",
+          "rank_fix_55f4500_is_ancestor": false,
+          "missingness_fix_42af2cd_is_ancestor": false
+        },
+        "gate_fixes_in_force_during_execution": false,
+        "matched_k0_or_comparison_parity_status": {
+          "matched_k0_present": false,
+          "citation": "not applicable: no arm is fitted, so there is no free intercept to control. Parity is by construction -- every counterfactual reuses the identical frozen Arm D rate from the single chronological pass in run_turnover_p1_universe_fix.py",
+          "comparison_parity_receipt": "ws8/WS8_ERROR_DECOMPOSITION.json; parity is the shared frozen rate vector plus the single stated sign convention, not a fitted control"
+        },
+        "fold_level_audit_status": {
+          "reconstructed": false,
+          "reason": "there is no design matrix to reconstruct: ws8 fits nothing"
+        },
+        "retrospective_audit_receipt": {
+          "path": "experiments/player_program/discovery_wave_1/RETROSPECTIVE_GATE_AUDIT.json#/workstreams/ws8",
+          "produced_by": "experiments/player_program/discovery_wave_1/retrospective_gate_audit.py",
+          "audit_block_sha256": "f933d76894af454186232b4f82503bbfdfb8143222908c6ed0653804d67f93b5",
+          "current_gate_blob_used_for_this_audit": "b1ae2f8e1504b4e6e9cd009b11f0a70a6c8859d2"
+        },
+        "exact_supporting_artifact": "experiments/player_program/discovery_wave_1/ws8/WS8_ERROR_DECOMPOSITION.json and ws8/WS8_LEDGER_RESULT.json (at c1d2637)",
+        "axes_are_independent": "a current-gate pass does NOT establish decision validity; comparison parity, candidate universe, chronological isolation, evaluation rows and pipeline leakage are separate requirements"
       }
     }
   },
@@ -733,12 +1436,12 @@
   },
   "wave_status": {
     "execution_status": "COMPLETE",
-    "integrity_audit_status": "IN_PROGRESS",
-    "comparison_audit_status": "IN_PROGRESS",
-    "decision_status": "PROVISIONAL",
-    "integration_status": "IN_PROGRESS",
-    "overall": "NOT COMPLETE",
-    "statement": "Discovery executions are complete; retrospective integrity and decision classifications are still in progress.",
+    "integrity_audit_status": "COMPLETE",
+    "comparison_audit_status": "COMPLETE",
+    "decision_status": "COMPLETE",
+    "integration_status": "COMPLETE",
+    "overall": "DISCOVERY WAVE 1 AUDIT COMPLETE; no challenger registered; Arm D unchanged",
+    "statement": "Discovery executions are complete and every workstream now carries both a feature-design integrity classification and a decision-validity classification with supporting receipts.",
     "why_not_complete": "A non-PENDING result field records that a RUN finished, not that its result is established. Until the retrospective per-fold gate audit, the Layer A / Layer B comparison-parity results and the consolidated audit matrix are committed, every workstream carries at most a provisional decision status and the substantive ranking is not frozen.",
     "unblocks_when": [
       "every workstream carries a feature-design integrity classification with evidence",
