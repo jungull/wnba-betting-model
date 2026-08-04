@@ -6,56 +6,51 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `49906a01840a5143cb5fc7418a892bd3c08fe3eb` |
+| HEAD | `c42965f8d043676477bebd3ef4264e19e8880a67` |
 | working tree | DIRTY |
-| nodes | 58 |
-| events | 52 |
+| nodes | 64 |
+| events | 84 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
 | BLOCKED | 22 |
-| FAILED | 1 |
-| PASSED | 13 |
-| READY | 1 |
-| RUNNING | 19 |
+| FAILED | 6 |
+| PASSED | 27 |
+| READY | 7 |
 | USER_REQUIRED | 2 |
 
 ## Severity A blockers
 
-None open against a node.
+* **P25_OFFSET_DEPENDENCY_GUARD** — S4/S5: full-design offset and affine-dependency audit including own/opponent contrasts
+* **P27_FOLD_LOCAL_ESTIMABILITY_GUARD** — S7: fold-local rank, support, variance and degeneracy checks
 
 ## Running
 
-* `D10_FIELD_AVAILABILITY_LEDGER` — Field-level cutoff-validity coverage across every candidate source
-* `D11_LIVE_INFORMATION_CAPTURE` — Timestamped prospective capture with first-seen and change history
-* `D12_COACHING_HISTORY` — Retrospectively auditable coaching table
-* `D13_ARENA_TRAVEL_DIMENSION` — Unique effective-dated team/arena/travel dimension with cardinality tests
-* `D14_ENTITY_RESOLUTION_AND_COLD_START` — Tests and design artifacts for aliases, new signings, zero-history players, team transitions
-* `G02_DOCUMENT_INDEX` — Index every authoritative document, contract, task card, ledger, receipt and frozen artifact
-* `I10_GENERIC_CLUSTERED_INFERENCE` — Reusable game-clustered bootstrap and interval utilities in a task-isolated namespace
-* `I11_BLINDED_RESULT_PACKAGING` — Generic sealed-result and integrity-manifest tooling
-* `I12_DESIGN_DEPENDENCY_AUDIT` — Reusable full-design offset/dependency audits without modifying frozen shared gates
-* `I13_REPRODUCIBILITY_RUNNER` — Deterministic commands, seed manifests and artifact reconciliation
-* `P22_POSTGAME_SURROGATE_GUARD` — S1: enforced invariant against current-game outcome-derived columns
-* `P23_DIMENSION_CARDINALITY_GUARD` — S2: merge cardinality invariants preserving the 2,982-row / 1,491-game universe
-* `P24_INJURY_REGIME_LEDGER` — S3: split injury data into explicit epistemic regimes and report cutoff-valid coverage
-* `P25_OFFSET_DEPENDENCY_GUARD` — S4/S5: full-design offset and affine-dependency audit including own/opponent contrasts
-* `P26_ARM_SPECIFIC_K0_CONTRACT` — S6/S9: the K0_MATCHED[arm_id] contract and machine-readable schema
-* `P27_FOLD_LOCAL_ESTIMABILITY_GUARD` — S7: fold-local rank, support, variance and degeneracy checks
-* `P28_PRIMARY_SECONDARY_ORDERING_CONTRACT` — Possession-first adjudication; prohibit downstream OT-mismatch arbitrage
-* `P29_TIP_TIME_AND_COVERAGE_AUDIT` — Resolve the fold-aligned tip-time null pattern and rule on tip-derived eligibility
-* `P2A_POSSESSION_COLUMN_ADJUDICATION` — S8: adjudicate the 32 possession columns the availability table never named
+None.
 
 ## Ready — next automatically scheduled
 
 * `R10_O15_REPORT_REMEDIATION` (operations) — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
+* `R11_P25_REPORT_REMEDIATION` (possession) — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
+* `R12_P27_REPORT_REMEDIATION` (possession) — Write the missing P27_FOLD_LOCAL_ESTIMABILITY_GUARD report from its own preserved evidence
+* `R13_I12_REPORT_REMEDIATION` (operations) — Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence
+* `R14_D10_COACHING_CORRECTION` (data) — Correct D10's manufactured negative on the coaching family and re-measure its coverage
+* `R15_G02_INDEX_CLASSIFICATION` (governance) — Repair the DERIVED vs HAND-MAINTAINED classification in the document index
+* `R16_I11_SEAL_HONESTY` (operations) — Make I11's seal claim honest: obfuscation is not blinding
 
 ## Passed
 
 * `G00_LIVE_RECONCILIATION` — Reconcile live repository state, ancestry and frozen artifact hashes
 * `G01_GRAPH_ENGINE` — Persistent orchestration framework: graph, ledgers, validators, dispatcher
+* `D11_LIVE_INFORMATION_CAPTURE` — Timestamped prospective capture with first-seen and change history
+* `D12_COACHING_HISTORY` — Retrospectively auditable coaching table
+* `D13_ARENA_TRAVEL_DIMENSION` — Unique effective-dated team/arena/travel dimension with cardinality tests
+* `D14_ENTITY_RESOLUTION_AND_COLD_START` — Tests and design artifacts for aliases, new signings, zero-history players, team transitions
+* `I10_GENERIC_CLUSTERED_INFERENCE` — Reusable game-clustered bootstrap and interval utilities in a task-isolated namespace
+* `I11_BLINDED_RESULT_PACKAGING` — Generic sealed-result and integrity-manifest tooling
+* `I13_REPRODUCIBILITY_RUNNER` — Deterministic commands, seed manifests and artifact reconciliation
 * `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
 * `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
 * `O12_PER_GAME_EXECUTION_SCOPE` — Per-game execution scope defect
@@ -63,6 +58,13 @@ None open against a node.
 * `O14_OPS_ENTITY_RESOLUTION` — Entity resolution in the prospective capture path
 * `P20_INGEST_PENDING_ESTIMATOR` — Ingest and freeze the third V2 source (estimator) that returned after the halt
 * `P21_FREEZE_V2_HALT_PACKET` — Freeze the complete V2 halt packet: three source outputs, nine findings, scope reconciliation
+* `P22_POSTGAME_SURROGATE_GUARD` — S1: enforced invariant against current-game outcome-derived columns
+* `P23_DIMENSION_CARDINALITY_GUARD` — S2: merge cardinality invariants preserving the 2,982-row / 1,491-game universe
+* `P24_INJURY_REGIME_LEDGER` — S3: split injury data into explicit epistemic regimes and report cutoff-valid coverage
+* `P26_ARM_SPECIFIC_K0_CONTRACT` — S6/S9: the K0_MATCHED[arm_id] contract and machine-readable schema
+* `P28_PRIMARY_SECONDARY_ORDERING_CONTRACT` — Possession-first adjudication; prohibit downstream OT-mismatch arbitrage
+* `P29_TIP_TIME_AND_COVERAGE_AUDIT` — Resolve the fold-aligned tip-time null pattern and rule on tip-derived eligibility
+* `P2A_POSSESSION_COLUMN_ADJUDICATION` — S8: adjudicate the 32 possession columns the availability table never named
 * `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
 * `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
 * `U12_PREDICTION_HISTORY` — Immutable prediction-history and model-version views
@@ -75,11 +77,11 @@ None open against a node.
 
 ## By lane
 
-| lane | BLOCKED | FAILED | PASSED | READY | RUNNING | USER_REQUIRED |
-|---|---|---|---|---|---|---|
-| data | 0 | 0 | 0 | 0 | 5 | 0 |
-| future_research | 7 | 0 | 0 | 0 | 0 | 0 |
-| governance | 2 | 0 | 2 | 0 | 1 | 0 |
-| operations | 0 | 1 | 5 | 1 | 4 | 1 |
-| possession | 13 | 0 | 2 | 0 | 9 | 1 |
-| product | 0 | 0 | 4 | 0 | 0 | 0 |
+| lane | BLOCKED | FAILED | PASSED | READY | USER_REQUIRED |
+|---|---|---|---|---|---|
+| data | 0 | 1 | 4 | 1 | 0 |
+| future_research | 7 | 0 | 0 | 0 | 0 |
+| governance | 2 | 1 | 2 | 1 | 0 |
+| operations | 0 | 2 | 8 | 3 | 1 |
+| possession | 13 | 2 | 9 | 2 | 1 |
+| product | 0 | 0 | 4 | 0 | 0 |

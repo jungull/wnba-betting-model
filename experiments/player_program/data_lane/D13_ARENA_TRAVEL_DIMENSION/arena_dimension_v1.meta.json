@@ -1,0 +1,126 @@
+{
+  "artifact": "arena_dimension_v1.csv",
+  "declared_key": [
+    "team_id",
+    "season"
+  ],
+  "grain": "one row per (team_id, season) that the source's effective-date interval covers, restricted to seasons present in master_team",
+  "built_by": "experiments/player_program/data_lane/D13_ARENA_TRAVEL_DIMENSION/build_dimension.py",
+  "source_sha256": {
+    "team_cities_csv": {
+      "path": "data/reference/team_cities.csv",
+      "sha256": "10a544fdc52a9c80c1573437c9838b11815c9eafe6ac2cf052be17a2128ac42d",
+      "rows": 16,
+      "columns": [
+        "team_id",
+        "abbreviation",
+        "franchise",
+        "first_season",
+        "last_season",
+        "city",
+        "arena",
+        "lat",
+        "lon",
+        "elevation_ft",
+        "timezone"
+      ]
+    },
+    "master_team_parquet": {
+      "path": "data/masters/master_team.parquet",
+      "sha256": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528"
+    },
+    "team_possession_prior_v1": {
+      "path": "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+      "sha256": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18"
+    }
+  },
+  "cutoff_status": "CUTOFF_UNPROVEN_BUT_TIME_INVARIANT -- see REPORT.md. The source carries NO row-level source timestamp. Its single git commit is 2026-07-31, AFTER every game in the universe.",
+  "columns": {
+    "team_id": {
+      "derivation": "verbatim from team_cities.csv",
+      "type": "int64"
+    },
+    "season": {
+      "derivation": "EXPANDED: every season s in master_team with eff_first_season <= s <= eff_last_season",
+      "type": "int64"
+    },
+    "abbreviation": {
+      "derivation": "verbatim; effective-dated (PHO 2021-2024, PHX 2025-)",
+      "type": "str"
+    },
+    "franchise": {
+      "derivation": "verbatim",
+      "type": "str"
+    },
+    "city": {
+      "derivation": "verbatim; hand-entered 2026-07-31, city-level precision",
+      "type": "str"
+    },
+    "arena": {
+      "derivation": "verbatim; the team's PRIMARY home arena for the season. NOT a per-game venue.",
+      "type": "str"
+    },
+    "lat": {
+      "derivation": "verbatim from team_cities.csv. Producer states 'lat/lon = arena/metro, city-level precision'. Hand-entered, no upstream geocoder recorded.",
+      "type": "float degrees, WGS84 assumed but NOT stated by the source"
+    },
+    "lon": {
+      "derivation": "as lat",
+      "type": "float degrees"
+    },
+    "elevation_ft": {
+      "derivation": "verbatim. Producer states 'elevation_ft approximate'. No datum, no method, no upstream source recorded.",
+      "type": "int feet"
+    },
+    "elevation_m": {
+      "derivation": "elevation_ft * 0.3048, rounded to 0.1 m. Unit conversion only -- inherits the source's stated approximateness.",
+      "type": "float metres"
+    },
+    "timezone": {
+      "derivation": "verbatim IANA tz database identifier. Validated here by successful ZoneInfo() construction for all 16 source rows.",
+      "type": "str IANA"
+    },
+    "utc_offset_hours_jul": {
+      "derivation": "ZoneInfo(timezone).utcoffset() at the fixed reference instant 2024-07-01 12:00 local, in hours. The WNBA regular season sits inside northern summer, so this is the operative offset. It is a FIXED-INSTANT reference, not a per-game offset.",
+      "type": "float hours"
+    },
+    "utc_offset_hours_jan": {
+      "derivation": "same at 2024-01-15 12:00 local. Exists ONLY to derive observes_dst.",
+      "type": "float hours"
+    },
+    "observes_dst": {
+      "derivation": "utc_offset_hours_jul != utc_offset_hours_jan",
+      "type": "bool"
+    },
+    "venue_id": {
+      "derivation": "arena.lower() with runs of non-alphanumerics replaced by '_' and stripped. Collapses the two Phoenix abbreviation rows onto one building.",
+      "type": "str surrogate"
+    },
+    "eff_first_season": {
+      "derivation": "first_season verbatim (int)",
+      "type": "int64"
+    },
+    "eff_last_season": {
+      "derivation": "last_season, with null -> 9999 (open-ended sentinel)",
+      "type": "int64"
+    },
+    "eff_last_season_is_open": {
+      "derivation": "last_season.isna()",
+      "type": "bool"
+    }
+  },
+  "companion": {
+    "venue_pair_travel_v1.csv": {
+      "grain": "one row per ORDERED (from_venue_id, to_venue_id) pair",
+      "great_circle_km": "haversine on a sphere of radius 6371.0088 km (IUGG mean). NOT road/air distance, NOT geodesic on an ellipsoid. Inherits the city-level precision of lat/lon.",
+      "great_circle_mi": "great_circle_km * 0.621371",
+      "elevation_gain_ft": "to.elevation_ft - from.elevation_ft",
+      "tz_offset_delta_hours_jul": "to.utc_offset_hours_jul - from.utc_offset_hours_jul"
+    }
+  },
+  "NOT_provided": [
+    "per-game venue (no venue/arena column exists in master_team -- verified)",
+    "neutral-site, relocation, in-season arena change and international-game overrides",
+    "actual travel path, rest days, or trip origin -- this dimension is STATIC reference only and asserts nothing about any team's real itinerary"
+  ]
+}

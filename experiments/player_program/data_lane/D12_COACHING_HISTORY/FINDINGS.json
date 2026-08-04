@@ -1,0 +1,398 @@
+{
+  "node_id": "D12_COACHING_HISTORY",
+  "epistemic_status": "REFERENCE DATA. Auditable history only. Explicitly NOT admitted to any experiment before a cutoff review.",
+  "generated_at_utc": "2026-08-04T20:05:07Z",
+  "measurements_file": "MEASUREMENTS.json",
+  "admission": {
+    "admitted_to_any_experiment": false,
+    "admission_status": "NOT_ADMITTED",
+    "cutoff_status": "CUTOFF_UNPROVEN",
+    "reason": "The source file carries no capture timestamp column and its raw source pages are not resident in this worktree, so no coaching record can be shown to have been available at or before any pregame cutoff. Availability is not eligibility and eligibility is not admission.",
+    "what_would_be_required_to_admit": [
+      "a per-record capture or publication timestamp at or before the declared pregame cutoff",
+      "resident, hashable source bytes for each cited source_page",
+      "a cutoff review that adjudicates announcement-date versus first-game-coached semantics",
+      "closure of the 2026 league-year capture hole"
+    ]
+  },
+  "artifacts": {
+    "coaching_events_v1.csv": {
+      "grain": "one head-coaching HIRE or DEPART event",
+      "rows": 48,
+      "sha256": "61080ec76f663c4e9b609048ccdcd4c0d2e6aa0924964ff0ee58c73645f7c6ee"
+    },
+    "coaching_tenure_v1.csv": {
+      "grain": "one head-coaching spell (franchise x coach)",
+      "rows": 38,
+      "sha256": "a9c02421ae8c973b1f506a9d5ffc489a3278993376346678395d63dc9b4c7491"
+    },
+    "team_season_coverage_v1.csv": {
+      "grain": "one team-season of the canonical universe",
+      "rows": 76,
+      "sha256": "677564ca64689b0fbc2cad82b4a00c5aad063c32a27e7861fab0cde02687c2e6"
+    }
+  },
+  "source": {
+    "path": "data/injury_history/injury_history.csv",
+    "sha256": "6aec435c94af3da10adc793c9978afbe33749cdff8f97a194939db564ed2f33b",
+    "rows": 8340,
+    "has_capture_timestamp_column": false,
+    "in_declared_node_read_scope": false,
+    "raw_source_pages_resident_in_worktree": []
+  },
+  "acceptance_criteria": {
+    "every coaching record carries a source and an effective date": {
+      "status": "MET",
+      "evidence": "all 48 event rows carry source_dataset, source_page, source_row_index and a verbatim note, and an ISO effective date; TESTS.py T1 and T4 enforce this and T4 round-trips every row against the source file"
+    },
+    "the table is not admitted to an experiment before cutoff review": {
+      "status": "MET",
+      "evidence": "every row of all three emitted tables carries admission_status=NOT_ADMITTED and cutoff_status=CUTOFF_UNPROVEN; TESTS.py T5 enforces this"
+    },
+    "ambiguous tenure boundaries are marked, not smoothed": {
+      "status": "MET",
+      "evidence": "38 of 38 tenure spells carry at least one explicit boundary flag; only 11 spells are dated at both ends by an event; interim spells are never carried across a season boundary into named coverage; TESTS.py T3 enforces this"
+    }
+  },
+  "findings": [
+    {
+      "id": "D12-F1",
+      "type": "POSITIVE_EXISTENCE",
+      "severity": "HIGH",
+      "claim": "A dated, sourced head-coaching event stream DOES exist in this repository. It was not previously known to the program.",
+      "measured": {
+        "source_rows_naming_a_head_coach": 48,
+        "events_parsed": 48,
+        "events_unparsed": 0,
+        "hires": 29,
+        "departures": 19,
+        "distinct_coach_names": 34,
+        "date_range": [
+          "2021-05-03",
+          "2025-12-03"
+        ]
+      },
+      "consequence": "The B1 gap in HYPOTHESES_agent_pace_coaching.md is partially closed by data already in the repository, without any hand entry and without any external source. It is NOT closed for cutoff-validity purposes."
+    },
+    {
+      "id": "D12-F2",
+      "type": "NEGATIVE_RESULT_PRESERVED",
+      "severity": "HIGH",
+      "claim": "The stream is not a coaching table. Half the canonical universe cannot be given an event-anchored opening head coach.",
+      "measured": {
+        "team_seasons": 76,
+        "event_anchored": 38,
+        "fraction_event_anchored": 0.5,
+        "named_but_start_left_censored": 8,
+        "named_but_carried_forward_unverified": 11,
+        "ambiguous_multiple_spells": 4,
+        "unknown_no_spell": 13,
+        "unknown_only_interim_carried": 2,
+        "team_games_with_a_nameable_opening_coach": 2225,
+        "team_games_without_one": 757,
+        "team_games_total": 2982
+      },
+      "consequence": "Any coach-identity feature built on this source today would be missing or unverified on 757 of 2982 team-game rows. That is a coverage hole, not a feature."
+    },
+    {
+      "id": "D12-F3",
+      "type": "CUTOFF_VALIDITY",
+      "severity": "HIGH",
+      "claim": "Every record is CUTOFF_UNPROVEN. No coaching record has a source timestamp.",
+      "measured": {
+        "source_columns": [
+          "date",
+          "team",
+          "player_acquired",
+          "player_relinquished",
+          "notes",
+          "category",
+          "source_page"
+        ],
+        "capture_timestamp_column_present": false,
+        "raw_source_pages_resident_in_worktree": [],
+        "events_whose_source_page_year_differs_from_event_year": 10
+      },
+      "consequence": "The date column is a transaction date, not a capture time. The cited source pages are season-level pages that are rewritten as a league year progresses, and 10 events are filed under a page whose year differs from the event's own calendar year, so page identity does not bound publication time either. D10_FIELD_AVAILABILITY_LEDGER's cutoff_valid = 0 verdict for coaching SURVIVES this node unchanged."
+    },
+    {
+      "id": "D12-F4",
+      "type": "SEMANTIC_AMBIGUITY",
+      "severity": "MEDIUM",
+      "claim": "An appointment date is not a first-game-coached date. Treating the two as the same would silently mis-date every tenure boundary.",
+      "measured": {
+        "n": 29,
+        "min": 0,
+        "median": 178.0,
+        "max": 218,
+        "n_gt_30d": 21
+      },
+      "consequence": "The median appointment precedes the coach's first game in the universe by 178.0 days and 21 of 29 appointments precede it by more than 30 days. Every dated start in coaching_tenure_v1.csv therefore carries APPOINTMENT_DATE_IS_NOT_FIRST_GAME_COACHED. A cutoff review must settle which semantics a feature would use before any admission."
+    },
+    {
+      "id": "D12-F5",
+      "type": "CAPTURE_GAP",
+      "severity": "HIGH",
+      "claim": "The current league year contributes zero coaching events. The table is empty exactly where a live use would need it.",
+      "measured": {
+        "front_office_rows_by_source_page": {
+          "bbref_transactions_2021.html": 5,
+          "bbref_transactions_2022.html": 9,
+          "bbref_transactions_2023.html": 12,
+          "bbref_transactions_2024.html": 15,
+          "bbref_transactions_2025.html": 8,
+          "bbref_transactions_2026.html": 0
+        },
+        "head_coach_rows_by_source_page": {
+          "bbref_transactions_2021.html": 5,
+          "bbref_transactions_2022.html": 9,
+          "bbref_transactions_2023.html": 11,
+          "bbref_transactions_2024.html": 15,
+          "bbref_transactions_2025.html": 8,
+          "bbref_transactions_2026.html": 0
+        },
+        "all_rows_by_source_page": {
+          "bbref_transactions_2021.html": 456,
+          "bbref_transactions_2022.html": 509,
+          "bbref_transactions_2023.html": 455,
+          "bbref_transactions_2024.html": 412,
+          "bbref_transactions_2025.html": 566,
+          "bbref_transactions_2026.html": 569
+        },
+        "latest_event_date": "2025-12-03"
+      },
+      "consequence": "bbref_transactions_2026.html contributes 569 rows to the source file and 0 front-office rows. Whether that means no 2026 coaching change occurred or the front-office section was not captured CANNOT be distinguished from inside this node. Treat 2026 tenure as unverified, not as stable."
+    },
+    {
+      "id": "D12-F6",
+      "type": "SOURCE_INCOMPLETENESS",
+      "severity": "MEDIUM",
+      "claim": "The stream is incomplete in BOTH directions: there are departures with no matching hire, and spells that end without a recorded departure.",
+      "measured": {
+        "spells_left_censored_no_hire_event": 9,
+        "spells_with_open_end_no_departure_event": 15,
+        "spells_ended_only_by_succession": 3,
+        "franchises_with_no_coaching_event_at_all": [
+          "Minnesota Lynx (all 6 seasons UNKNOWN)"
+        ]
+      },
+      "consequence": "Completeness cannot be assumed in either direction, so 'no departure event' does not license carrying a coach forward. That is why NAMED_OPEN_END_CARRIED_FORWARD_UNVERIFIED is reported separately from NAMED_EVENT_ANCHORED rather than merged into a single coverage number."
+    },
+    {
+      "id": "D12-F7",
+      "type": "ENTITY_RESOLUTION",
+      "severity": "LOW",
+      "claim": "The source's own team code disagrees with the program's team dimension for one franchise, so joining on the team code would silently drop a row.",
+      "measured": {
+        "disagreements": [
+          {
+            "event_id": "CE044",
+            "franchise": "Portland Fire",
+            "source_team_code": "POR",
+            "team_dimension_codes": [
+              "PDX"
+            ]
+          }
+        ],
+        "n_disagreements": 1
+      },
+      "consequence": "This node resolves franchise identity from the full franchise name inside the note text and maps it to team_id via D13's dimension, never via the source's abbreviation. Any later join must do the same."
+    },
+    {
+      "id": "D12-F8",
+      "type": "STRUCTURAL_BREAK_INVENTORY",
+      "severity": "INFORMATIONAL",
+      "claim": "In-season head-coaching changes are rare in the observed window: 11 events fall inside a played season window.",
+      "measured": {
+        "in_season_events": 11,
+        "detail": [
+          {
+            "event_id": "CE003",
+            "season": 2021,
+            "franchise": "Seattle Storm",
+            "event_date": "2021-05-30",
+            "event_type": "HIRE",
+            "coach_name": "Noelle Quinn"
+          },
+          {
+            "event_id": "CE004",
+            "season": 2021,
+            "franchise": "Atlanta Dream",
+            "event_date": "2021-07-24",
+            "event_type": "HIRE",
+            "coach_name": "Darius Taylor"
+          },
+          {
+            "event_id": "CE010",
+            "season": 2022,
+            "franchise": "Indiana Fever",
+            "event_date": "2022-05-25",
+            "event_type": "DEPART",
+            "coach_name": "Marianne Stanley"
+          },
+          {
+            "event_id": "CE011",
+            "season": 2022,
+            "franchise": "Indiana Fever",
+            "event_date": "2022-05-25",
+            "event_type": "HIRE",
+            "coach_name": "Carlos Knox"
+          },
+          {
+            "event_id": "CE012",
+            "season": 2022,
+            "franchise": "Los Angeles Sparks",
+            "event_date": "2022-06-07",
+            "event_type": "DEPART",
+            "coach_name": "Derek Fisher"
+          },
+          {
+            "event_id": "CE013",
+            "season": 2022,
+            "franchise": "Los Angeles Sparks",
+            "event_date": "2022-06-07",
+            "event_type": "HIRE",
+            "coach_name": "Fred Williams"
+          },
+          {
+            "event_id": "CE014",
+            "season": 2022,
+            "franchise": "New York Liberty",
+            "event_date": "2022-07-07",
+            "event_type": "HIRE",
+            "coach_name": "Sandy Brondello"
+          },
+          {
+            "event_id": "CE022",
+            "season": 2023,
+            "franchise": "Phoenix Mercury",
+            "event_date": "2023-06-25",
+            "event_type": "DEPART",
+            "coach_name": "Vanessa Nygaard"
+          },
+          {
+            "event_id": "CE023",
+            "season": 2023,
+            "franchise": "Phoenix Mercury",
+            "event_date": "2023-06-25",
+            "event_type": "HIRE",
+            "coach_name": "Nikki Blue"
+          },
+          {
+            "event_id": "CE024",
+            "season": 2023,
+            "franchise": "Chicago Sky",
+            "event_date": "2023-07-01",
+            "event_type": "DEPART",
+            "coach_name": "James Wade"
+          },
+          {
+            "event_id": "CE025",
+            "season": 2023,
+            "franchise": "Chicago Sky",
+            "event_date": "2023-07-01",
+            "event_type": "HIRE",
+            "coach_name": "Emre Vatansever"
+          }
+        ]
+      },
+      "consequence": "Stated as an inventory of candidate structural breaks only. This node makes NO claim about whether these events shift pace, possessions or any target, and ran no such comparison."
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "D12-C1",
+      "between": [
+        "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json",
+        "data/injury_history/injury_history.csv (bytes)"
+      ],
+      "document_says": "field 'coaching identity, coaching change, tactical scheme', source 'none found in the repository', verdict 'ABSENT', note 'no coaching source exists; a `*coach*` sweep over data/ returns nothing'; and, under statement_classification.UNCHANGED, 'the coaching-source absence (verified: no *coach* source exists)'",
+      "bytes_say": "a case-insensitive coach sweep of data/injury_history/injury_history.csv alone returns 2930 matching lines, of which 48 name a head coach with a franchise and a date",
+      "resolution": "NOT RECONCILED INSIDE THIS NODE. Frozen bytes govern over prose and this node does not edit a frozen Stage 2A artifact. Raised for the coordinator."
+    },
+    {
+      "id": "D12-C2",
+      "between": [
+        "experiments/player_program/data_lane/D10_FIELD_AVAILABILITY_LEDGER/FINDINGS.json",
+        "data/injury_history/injury_history.csv (bytes)"
+      ],
+      "document_says": "coaching.head_coach_identity verdict ABSENT, structural_class no_source, evidence 'exhaustive search of the worktree for a coaching source found NOTHING ... returns only free-text \"Coach's Decision\" reason strings inside injury_log.csv, which name no coach'",
+      "bytes_say": "injury_history.csv, committed 2026-07-30 in commit 98271bb and tracked on this branch, contains 48 rows naming a head coach with an explicit franchise and date. The claimed exhaustive search missed the file.",
+      "resolution": "NOT RECONCILED INSIDE THIS NODE. D10 is another node's output and outside this node's write scope. Its cutoff_valid = 0 conclusion is unaffected; its availability verdict is not."
+    },
+    {
+      "id": "D12-C3",
+      "between": [
+        "experiments/player_program/PLAYER_MODEL_CAPABILITY_MATRIX.md",
+        "data/injury_history/injury_history.csv (bytes)"
+      ],
+      "document_says": "'coaching and rotation strategy - not started. No code, artifact or registration.'",
+      "bytes_say": "no coaching CODE or REGISTRATION exists, which is correct, but a dated coaching event SOURCE does exist. The matrix conflates the two.",
+      "resolution": "Reported, not edited. The matrix is outside this node's write scope."
+    }
+  ],
+  "stop_condition_assessment": {
+    "stop_condition": "a finding would change the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status -- HALT and raise, do not resolve it inside the node",
+    "verdict": "TRIPPED_ON_ONE_LIMB_HALTED_AND_RAISED",
+    "limb_by_limb": {
+      "primary_target": "NOT CHANGED. This node did not touch the target definition.",
+      "K0_structure": "NOT CHANGED. This node did not touch any control.",
+      "inference_structure": "NOT CHANGED. No fold, cluster or resampling change.",
+      "candidate_universe": "NOT CHANGED. This node read the universe as team_possession_prior_v1.parquet where pace_resolved == True and reproduced 2982 team-game rows over 1491 game clusters and 76 team-seasons, matching EVIDENCE_PACKET_V2 and D13 exactly.",
+      "cutoff_valid_feature_set": "NOT CHANGED. Nothing here becomes cutoff-valid. Every record is CUTOFF_UNPROVEN and the count of cutoff-valid coaching fields remains zero, exactly as D10 recorded.",
+      "leakage_status": "NOT CHANGED. Nothing is admitted, so nothing can leak. The node did not construct, fit, score or evaluate anything.",
+      "field_availability_evidence": "CHANGED. A field the frozen packet recorded as ABSENT is PRESENT as retrospective, cutoff-unproven reference data. This is the limb that trips."
+    },
+    "action_taken": "HALTED rather than resolved. This node did not edit EVIDENCE_PACKET_V2, D10, the capability matrix, any registry, PROGRAM_STATE.json or any frozen artifact, and did not admit its own table to anything."
+  },
+  "escalations": [
+    {
+      "id": "D12-E1",
+      "to": "possession wave / historical feature evidence",
+      "statement": "The historical feature evidence for the possession wave records coaching identity as ABSENT with source 'none found in the repository'. That is false against the bytes. The correct status is PRESENT_RETROSPECTIVE / CUTOFF_UNPROVEN, with event-anchored opening-coach coverage on 38 of 76 team-seasons and 1570 of 2982 team-game rows.",
+      "what_does_not_change": "cutoff-validity, the cutoff-valid feature set, the leakage status, the candidate universe, K0 and the primary target are all unchanged."
+    },
+    {
+      "id": "D12-E2",
+      "to": "possession wave / B1 gap ordering",
+      "statement": "HYPOTHESES_agent_pace_coaching.md ranks B1 first in Category B and prices it at 'a few hours of work from public sources' plus '80-100 hand-entered rows'. Roughly half that table is already derivable from data in the repository with full row-level provenance and zero hand entry. The cost estimate, and therefore the B-list ordering, is stale.",
+      "what_does_not_change": "B1 does NOT become Category A. The hand-collection caution in B1 ('a hand-maintained table is a new canonical artifact with no automated provenance') applies with equal force to the remaining half, and the cutoff-validity problem is untouched."
+    },
+    {
+      "id": "D12-E3",
+      "to": "D10_FIELD_AVAILABILITY_LEDGER owner",
+      "statement": "D10's coaching.head_coach_identity row cites an exhaustive search that missed a tracked file committed before D10 ran. The verdict field needs revisiting (ABSENT -> PRESENT_RETROSPECTIVE_CUTOFF_UNPROVEN); the coverage and cutoff_valid figures for a CUTOFF-VALID feature remain 0.",
+      "what_does_not_change": "D10's cutoff_valid = 0 conclusion."
+    }
+  ],
+  "could_not_establish": [
+    "Whether any coaching record was publicly available at or before its game's pregame cutoff. The source has no capture timestamp and its raw pages are not resident in this worktree.",
+    "Whether the 2026 league year genuinely had no head-coaching change, or whether the front-office section of bbref_transactions_2026.html was not captured. Both are consistent with the bytes.",
+    "The identity of any head coach before the first event on 2021-05-03. Nine spells are left-censored and the Minnesota Lynx have no coaching event at all in six seasons.",
+    "The date on which any interim coach's spell ended, except where a successor's hire date bounds it. Three spells end only by succession.",
+    "The first game each coach actually coached. The source dates appointments, not benches.",
+    "Whether any of the 11 in-season coaching events is associated with a change in pace, possessions or any target. No such comparison was run and none is permitted from this node.",
+    "The prior-team tempo history that B1 argues is the real cold-start prior. The source names coaches but carries nothing about their previous teams beyond what appears in these 48 events."
+  ],
+  "scope_disclosures": [
+    {
+      "kind": "READ_OUTSIDE_DECLARED_SCOPE",
+      "path": "data/injury_history/injury_history.csv",
+      "declared_read_scope": "experiments/player_program/",
+      "why": "The mandate is a retrospectively auditable coaching table. The only file in this repository containing dated coaching records is outside the declared read scope. Reading nothing would have produced an empty deliverable for a formalistic reason and would have left three documents' false ABSENT claims standing.",
+      "bounded_by": "read-only; single file; no writes outside experiments/player_program/data_lane/D12_COACHING_HISTORY/",
+      "coordinator_action_requested": "either widen D12's allowed_read_paths to include data/injury_history/, or reject this node's use of that source and record the coaching table as unbuildable in scope."
+    },
+    {
+      "kind": "WRITE_SCOPE_RESPECTED",
+      "path": "experiments/player_program/data_lane/D12_COACHING_HISTORY/",
+      "note": "no file outside this directory was created or modified; no git command was run"
+    }
+  ],
+  "no_performance_peeking_attestation": {
+    "sealed_results_read": false,
+    "challenger_performance_inspected": false,
+    "any_fit_or_score_run": false,
+    "note": "This node read one canonical universe file for its team-season keys and game dates only. It did not read projected_team_off_possessions, any residual, any arm output or anything under stage2b/SEALED_RESULTS."
+  }
+}

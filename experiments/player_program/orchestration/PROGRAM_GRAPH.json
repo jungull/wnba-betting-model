@@ -3117,6 +3117,265 @@
       ]
     },
     {
+      "acceptance_criteria": [
+        "the report is derived ONLY from files already present in experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/",
+        "no new measurement is performed and no new finding is introduced",
+        "the epistemic status of the original node is carried verbatim",
+        "the report states that I12_DESIGN_DEPENDENCY_AUDIT's declared output was missing and that this is a remediation, not the original run",
+        "nothing under experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/ is modified",
+        "every defect the independent verifier raised against the original node is carried into the report rather than quietly dropped"
+      ],
+      "agent_prompt_path": "experiments/player_program/orchestration/prompts/R13_I12_REPORT_REMEDIATION.md",
+      "agent_role": "documentation engineer",
+      "allowed_read_paths": [
+        "experiments/player_program/"
+      ],
+      "allowed_tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Write",
+        "Edit",
+        "Bash"
+      ],
+      "allowed_write_paths": [
+        "experiments/player_program/ops_lane/R13_I12_REPORT_REMEDIATION/"
+      ],
+      "dependencies": [
+        "G01_GRAPH_ENGINE"
+      ],
+      "disallowed_tools": [
+        "Agent"
+      ],
+      "epistemic_status": "REMEDIATION of a confirmed missing declared output. It writes up evidence that ALREADY EXISTS in ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/ and may not add a finding the original run did not make. Its parent finding is I12_DESIGN_DEPENDENCY_AUDIT's validation_failed event, which is preserved and not rewritten.",
+      "expected_outputs": [
+        "experiments/player_program/ops_lane/R13_I12_REPORT_REMEDIATION/REPORT.md"
+      ],
+      "forbidden_inputs": [
+        "experiments/player_program/stage2b/SEALED_RESULTS"
+      ],
+      "human_gate": false,
+      "id": "R13_I12_REPORT_REMEDIATION",
+      "input_artifacts": [
+        "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json",
+        "experiments/player_program/stage2a/V2_STOP_CONDITION.json",
+        "experiments/player_program/PROGRAM_STATE.json",
+        "experiments/player_program/RESEARCH_CONTRACT_V1.md",
+        "experiments/player_program/GATE_INVOCATION_CONTRACT.md"
+      ],
+      "input_hashes": {},
+      "lane": "operations",
+      "max_retries": 2,
+      "merge_policy": "auto",
+      "on_fail": [],
+      "on_pass": [],
+      "owned_files": [],
+      "severity_on_failure": "C",
+      "status": "BLOCKED",
+      "stop_conditions": [
+        "a finding would change the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status -- HALT and raise, do not resolve it inside the node"
+      ],
+      "title": "Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence",
+      "type": "documentation",
+      "validation_commands": [
+        "python -c \"import pathlib,sys;p=pathlib.Path('experiments/player_program/ops_lane/R13_I12_REPORT_REMEDIATION/REPORT.md');sys.exit(0 if p.exists() and p.stat().st_size>1000 else 1)\""
+      ]
+    },
+    {
+      "acceptance_criteria": [
+        "the 49 front_office rows in data/injury_history/injury_history.csv are enumerated and classified, and the ~2,930 COACH'S DECISION rows are explicitly excluded as noise rather than counted as coaching identity",
+        "coverage by season and by fold is RE-MEASURED, not copied from D12",
+        "the corrected verdict is PRESENT_RETROSPECTIVE / CUTOFF_UNPROVEN, and the cutoff_valid count stays 0 -- presence is not cutoff validity",
+        "the correction states how the false negative was produced, so the same search error is not repeated",
+        "D10's original ledger is NOT edited; the correction is a separate artifact"
+      ],
+      "agent_prompt_path": "experiments/player_program/orchestration/prompts/R14_D10_COACHING_CORRECTION.md",
+      "agent_role": "cutoff-validity auditor",
+      "allowed_read_paths": [
+        "experiments/player_program/"
+      ],
+      "allowed_tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Write",
+        "Edit",
+        "Bash"
+      ],
+      "allowed_write_paths": [
+        "experiments/player_program/data_lane/R14_D10_COACHING_CORRECTION/"
+      ],
+      "dependencies": [
+        "G01_GRAPH_ENGINE"
+      ],
+      "disallowed_tools": [
+        "Agent"
+      ],
+      "epistemic_status": "REMEDIATION of a confirmed FALSE NEGATIVE. D10 reported the coaching family ABSENT with 0 coverage on an assertion contradicted by the bytes of a file it had itself loaded. This node RE-MEASURES; it may not simply restate D12's numbers, because relaying an unverified figure is the failure mode that produced the defect.",
+      "expected_outputs": [
+        "experiments/player_program/data_lane/R14_D10_COACHING_CORRECTION/CORRECTION.json",
+        "experiments/player_program/data_lane/R14_D10_COACHING_CORRECTION/REPORT.md"
+      ],
+      "forbidden_inputs": [
+        "experiments/player_program/stage2b/SEALED_RESULTS"
+      ],
+      "human_gate": false,
+      "id": "R14_D10_COACHING_CORRECTION",
+      "input_artifacts": [
+        "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json",
+        "experiments/player_program/stage2a/V2_STOP_CONDITION.json",
+        "experiments/player_program/PROGRAM_STATE.json",
+        "experiments/player_program/RESEARCH_CONTRACT_V1.md",
+        "experiments/player_program/GATE_INVOCATION_CONTRACT.md"
+      ],
+      "input_hashes": {},
+      "lane": "data",
+      "max_retries": 2,
+      "merge_policy": "auto",
+      "on_fail": [],
+      "on_pass": [],
+      "owned_files": [],
+      "severity_on_failure": "B",
+      "status": "BLOCKED",
+      "stop_conditions": [
+        "a finding would change the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status -- HALT and raise, do not resolve it inside the node"
+      ],
+      "title": "Correct D10's manufactured negative on the coaching family and re-measure its coverage",
+      "type": "audit",
+      "validation_commands": [
+        "python -c \"import json;json.load(open('experiments/player_program/data_lane/R14_D10_COACHING_CORRECTION/CORRECTION.json'))\""
+      ]
+    },
+    {
+      "acceptance_criteria": [
+        "classification is evidenced per file -- a generator that writes it, or a header declaring it -- never inferred from the file extension alone",
+        "RESEARCH_CONTRACT_V1.md, GRAPH_POLICY.md, README.md and the handoffs are corrected to HAND_MAINTAINED",
+        "a file claiming DERIVED names the generator that produces it",
+        "the self-reference case is handled: the index itself is DERIVED",
+        "the original DOCUMENT_INDEX.json is NOT edited; the correction is separate"
+      ],
+      "agent_prompt_path": "experiments/player_program/orchestration/prompts/R15_G02_INDEX_CLASSIFICATION.md",
+      "agent_role": "documentation engineer",
+      "allowed_read_paths": [
+        "experiments/player_program/"
+      ],
+      "allowed_tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Write",
+        "Edit",
+        "Bash"
+      ],
+      "allowed_write_paths": [
+        "experiments/player_program/orchestration/reports/DOCUMENT_INDEX_CORRECTION.json"
+      ],
+      "dependencies": [
+        "G01_GRAPH_ENGINE"
+      ],
+      "disallowed_tools": [
+        "Agent"
+      ],
+      "epistemic_status": "REMEDIATION of a confirmed misclassification. The index exists and is useful; the criterion it failed is the one that makes it safe to ACT on, since treating a hand-maintained contract as regenerable invites someone to regenerate it.",
+      "expected_outputs": [
+        "experiments/player_program/orchestration/reports/DOCUMENT_INDEX_CORRECTION.json"
+      ],
+      "forbidden_inputs": [
+        "experiments/player_program/stage2b/SEALED_RESULTS"
+      ],
+      "human_gate": false,
+      "id": "R15_G02_INDEX_CLASSIFICATION",
+      "input_artifacts": [
+        "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json",
+        "experiments/player_program/stage2a/V2_STOP_CONDITION.json",
+        "experiments/player_program/PROGRAM_STATE.json",
+        "experiments/player_program/RESEARCH_CONTRACT_V1.md",
+        "experiments/player_program/GATE_INVOCATION_CONTRACT.md"
+      ],
+      "input_hashes": {},
+      "lane": "governance",
+      "max_retries": 2,
+      "merge_policy": "auto",
+      "on_fail": [],
+      "on_pass": [],
+      "owned_files": [],
+      "severity_on_failure": "C",
+      "status": "BLOCKED",
+      "stop_conditions": [
+        "a finding would change the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status -- HALT and raise, do not resolve it inside the node"
+      ],
+      "title": "Repair the DERIVED vs HAND-MAINTAINED classification in the document index",
+      "type": "implementation",
+      "validation_commands": [
+        "python -c \"import json;json.load(open('experiments/player_program/orchestration/reports/DOCUMENT_INDEX_CORRECTION.json'))\""
+      ]
+    },
+    {
+      "acceptance_criteria": [
+        "the reconstruction attack is reproduced as an executable test that PASSES when the plaintext is recoverable -- the defect is demonstrated, not described",
+        "the criterion 'a sealed directory cannot be read by the writing process' is either MET by a mechanism that survives the attack, or explicitly WITHDRAWN and replaced by the process-separation guarantee the graph actually enforces",
+        "no claim of cryptographic blinding survives that the test does not support",
+        "the manifest binding, which was sound, is retained",
+        "I11's own artifacts are NOT edited"
+      ],
+      "agent_prompt_path": "experiments/player_program/orchestration/prompts/R16_I11_SEAL_HONESTY.md",
+      "agent_role": "blinding infrastructure engineer",
+      "allowed_read_paths": [
+        "experiments/player_program/"
+      ],
+      "allowed_tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Write",
+        "Edit",
+        "Bash"
+      ],
+      "allowed_write_paths": [
+        "experiments/player_program/ops_lane/R16_I11_SEAL_HONESTY/"
+      ],
+      "dependencies": [
+        "G01_GRAPH_ENGINE"
+      ],
+      "disallowed_tools": [
+        "Agent"
+      ],
+      "epistemic_status": "REMEDIATION of an OVERSTATED ACCEPTANCE CRITERION. An independent verifier reconstructed the plaintext of both sealed payloads in about ten lines from public inputs. Blinding for the possession experiment rests on PROCESS separation enforced by the graph, not on cryptography; this node removes the temptation to treat the crypto as a second line of defence when it is not one.",
+      "expected_outputs": [
+        "experiments/player_program/ops_lane/R16_I11_SEAL_HONESTY/REPORT.md",
+        "experiments/player_program/ops_lane/R16_I11_SEAL_HONESTY/TESTS.py"
+      ],
+      "forbidden_inputs": [
+        "experiments/player_program/stage2b/SEALED_RESULTS"
+      ],
+      "human_gate": false,
+      "id": "R16_I11_SEAL_HONESTY",
+      "input_artifacts": [
+        "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json",
+        "experiments/player_program/stage2a/V2_STOP_CONDITION.json",
+        "experiments/player_program/PROGRAM_STATE.json",
+        "experiments/player_program/RESEARCH_CONTRACT_V1.md",
+        "experiments/player_program/GATE_INVOCATION_CONTRACT.md"
+      ],
+      "input_hashes": {},
+      "lane": "operations",
+      "max_retries": 2,
+      "merge_policy": "auto",
+      "on_fail": [],
+      "on_pass": [],
+      "owned_files": [],
+      "severity_on_failure": "B",
+      "status": "BLOCKED",
+      "stop_conditions": [
+        "a finding would change the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status -- HALT and raise, do not resolve it inside the node"
+      ],
+      "title": "Make I11's seal claim honest: obfuscation is not blinding",
+      "type": "implementation",
+      "validation_commands": [
+        "python experiments/player_program/ops_lane/R16_I11_SEAL_HONESTY/TESTS.py"
+      ]
+    },
+    {
       "acceptance_criteria": [],
       "agent_prompt_path": "experiments/player_program/orchestration/prompts/O16_SHARED_SCHEMA_ADOPTION.md",
       "agent_role": "USER",

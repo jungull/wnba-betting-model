@@ -1,0 +1,490 @@
+{
+  "cited_artifacts": {
+    "EVIDENCE_PACKET_V2": {
+      "bytes": 30883,
+      "path": "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json",
+      "sha256": "3a35ae735333c47713d6e7cc4c35c081e4eb07364c71cba744db03709730a32c"
+    },
+    "PLAYER_MODEL_CAPABILITY_MATRIX": {
+      "bytes": 24354,
+      "path": "experiments/player_program/PLAYER_MODEL_CAPABILITY_MATRIX.md",
+      "sha256": "9d91fa3427bc29a7e77580684e3799bb3c36b13fad90c0e7ddad2e1981e57f8d"
+    },
+    "PREDICTION_CONTRACT_V5_SPEC": {
+      "bytes": 17737,
+      "path": "experiments/player_program/PREDICTION_CONTRACT_V5_SPEC.md",
+      "sha256": "0877a89280d29dfc46ed7673a0236f2cc10b7a685ba8ee242476f1eb28f32f65"
+    },
+    "ROSTER_SOURCE_AUDIT_RECEIPT": {
+      "bytes": 13637,
+      "path": "experiments/player_program/ROSTER_SOURCE_AUDIT_RECEIPT.json",
+      "sha256": "e70579b5ca69fdf5d432ed1e496bdc62459495e2af6a059cc105752d358559e5"
+    },
+    "V2_STOP_CONDITION": {
+      "bytes": 14555,
+      "path": "experiments/player_program/stage2a/V2_STOP_CONDITION.json",
+      "sha256": "a4dd090b2b38dfb4d37028e15daa10c689deb27269cde3d8b9cddd12fd92244d"
+    }
+  },
+  "domains": {
+    "coaching_change": {
+      "absence_search": {
+        "files_scanned": 327,
+        "hits": [],
+        "hits_outside_orchestration": [],
+        "n_hits": 0,
+        "n_hits_outside_orchestration": 0,
+        "n_hits_self_referential_orchestration": 0,
+        "pattern": "data/[a-z0-9_]*coach",
+        "self_referential_note": "hits under orchestration/ are this graph's own node contract and generated prompt restating D11's acceptance criterion; they are not evidence that a source exists"
+      },
+      "bound": false,
+      "candidate_source_named_in_program_docs": null,
+      "contract_criterion": "coaching changes",
+      "packet_evidence": {
+        "coverage": null,
+        "note": "no coaching source exists; a `*coach*` sweep over data/ returns nothing",
+        "packet_bucket": "unavailable_or_insufficient",
+        "packet_field": "coaching identity, coaching change, tactical scheme",
+        "source": "none found in the repository",
+        "verdict": "ABSENT"
+      },
+      "what_would_bind_it": "a coach-by-team-season table, hand-maintained and timestamped.",
+      "why_not_bound": "NEGATIVE RESULT confirmed by the frozen packet: no coaching source exists. Note the packet records this as the one candidate whose minimum viable collection is a hand-maintained table and whose prospective_only_validation is FALSE -- i.e. it is the only one of the eight that could in principle be reconstructed historically. Reconstructing it is NOT this node's mandate.",
+      "wishlist_evidence": {
+        "caution": null,
+        "minimum_viable_collection": "a small hand-maintained coach-by-team-season table",
+        "missing_input": "coaching identity and coaching-change events",
+        "prospective_only_validation": false
+      }
+    },
+    "injury_designation": {
+      "audit_evidence": {
+        "n_rows": 551,
+        "q1_seasons_covered": {
+          "report_date_range": [
+            "2026-07-30",
+            "2026-08-01"
+          ],
+          "verdict": "2026-07-30 onward ONLY"
+        },
+        "q2_timestamps": {
+          "capture_utc": "per row, the moment the artifact was fetched",
+          "distinguishable": true,
+          "verdict": "publication and observation are BOTH pinned per row"
+        },
+        "q3_as_of_reconstructable": {
+          "answer": "YES, within its span",
+          "why": "capture_utc is the observation time and it is recorded on every row"
+        },
+        "q5_corrections_overwrite_history": {
+          "answer": "NO",
+          "why": "each capture is a separate timestamped row and revisions are preserved rather than overwritten"
+        },
+        "q6_regime": {
+          "consequence_for_v5": "TIER A, but only from 2026-07-30. This is the only source in the repository that can create a verified obligation for a player with no prior box row.",
+          "verdict": "D-eligible (and A-legitimate within its span)"
+        },
+        "source": "data/injury_capture/injury_log.csv"
+      },
+      "bound": false,
+      "candidate_source_named_in_program_docs": "data/injury_capture/injury_log.csv",
+      "contract_criterion": "injury designation changes",
+      "packet_evidence": {
+        "coverage": "2026-07-30 .. 2026-08-04 only (6 days of a 5-season span)",
+        "note": "confirms the standing caution that availability before 2026-07-30 is not a genuine captured pregame feed",
+        "packet_bucket": "unavailable_or_insufficient",
+        "packet_field": "injury / availability report",
+        "source": "data/injury_capture/injury_log.csv",
+        "verdict": "UNAVAILABLE HISTORICALLY"
+      },
+      "what_would_bind_it": "widen D11's read scope to data/injury_capture/, then implement an adapter that maps each report line to the injury_designation payload with observed_at_utc = the row's capture_utc, and re-run the ledger self-test against real rows.",
+      "why_not_bound": "the file lives under the repository's data/ tree, which is outside this node's allowed_read_paths (experiments/player_program/). This node cannot open it, cannot verify its schema, and therefore may not declare an adapter that claims to parse it.",
+      "wishlist_evidence": {
+        "caution": null,
+        "minimum_viable_collection": "persist the existing injury capture forward from 2026-07-30 and backfill from an archival source if one can be licensed",
+        "missing_input": "pregame injury / availability feed with historical depth",
+        "prospective_only_validation": true
+      }
+    },
+    "lineup": {
+      "absence_search": {
+        "files_scanned": 327,
+        "hits": [
+          {
+            "line": 14,
+            "path": "experiments/player_program/arm_registry.jsonl",
+            "text": "{\"schema\": \"player_program_arm_registry/1\", \"kind\": \"amendment\", \"experiment_id\": \"exposure_bridge__amendment_matchup_interaction_track\", \"applies_to\": \"projected_player_possessions_v1\", \"amended_by\":"
+          },
+          {
+            "line": 221,
+            "path": "experiments/player_program/register_projected_exposure.py",
+            "text": "\"-- projected lineup strength minus the team's trailing personnel baseline -- rather \""
+          },
+          {
+            "line": 321,
+            "path": "experiments/player_program/stage2a/build_evidence_packet.py",
+            "text": "{\"missing_input\": \"announced starting lineup / expected rotation\","
+          },
+          {
+            "line": 573,
+            "path": "experiments/player_program/stage2a/EVIDENCE_PACKET.json",
+            "text": "\"missing_input\": \"announced starting lineup / expected rotation\","
+          },
+          {
+            "line": 614,
+            "path": "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json",
+            "text": "\"missing_input\": \"announced starting lineup / expected rotation\","
+          },
+          {
+            "line": 653,
+            "path": "experiments/player_program/stage2a/HYPOTHESES_agent_adversarial.md",
+            "text": "| B5 | Any personnel signal (injury/availability, coaching, announced lineup) | As the packet records: injury capture covers 2026-07-30..2026-08-04 only; no coaching source exists; no pregame lineup f"
+          },
+          {
+            "line": 781,
+            "path": "experiments/player_program/stage2a/HYPOTHESES_agent_pace_coaching.md",
+            "text": "lineup will play tonight* is not available pregame (packet: announced lineups UNAVAILABLE). This"
+          },
+          {
+            "line": 908,
+            "path": "experiments/player_program/stage2a/HYPOTHESES_agent_pace_coaching.md",
+            "text": "### B4 \u2014 Announced starting lineup and pregame rest designations"
+          },
+          {
+            "line": 167,
+            "path": "experiments/player_program/stage2a/HYPOTHESES_coordinator.md",
+            "text": "### B3. Announced starting lineup / expected rotation"
+          },
+          {
+            "line": 172,
+            "path": "experiments/player_program/stage2a/SYNTHESIS.md",
+            "text": "pregame injury capture persisted forward; announced lineups."
+          },
+          {
+            "line": 695,
+            "path": "experiments/player_program/stage2a/V2_HYPOTHESES_adversarial.md",
+            "text": "**B4 \u2014 Prospective-only families.** Injury/availability feed, announced lineups, market totals: [P]"
+          },
+          {
+            "line": 463,
+            "path": "experiments/player_program/stage2a/V2_HYPOTHESES_basketball.md",
+            "text": "## B5 \u2014 Announced starting lineups and rest designations"
+          }
+        ],
+        "hits_outside_orchestration": [
+          {
+            "line": 14,
+            "path": "experiments/player_program/arm_registry.jsonl",
+            "text": "{\"schema\": \"player_program_arm_registry/1\", \"kind\": \"amendment\", \"experiment_id\": \"exposure_bridge__amendment_matchup_interaction_track\", \"applies_to\": \"projected_player_possessions_v1\", \"amended_by\":"
+          },
+          {
+            "line": 221,
+            "path": "experiments/player_program/register_projected_exposure.py",
+            "text": "\"-- projected lineup strength minus the team's trailing personnel baseline -- rather \""
+          },
+          {
+            "line": 321,
+            "path": "experiments/player_program/stage2a/build_evidence_packet.py",
+            "text": "{\"missing_input\": \"announced starting lineup / expected rotation\","
+          },
+          {
+            "line": 573,
+            "path": "experiments/player_program/stage2a/EVIDENCE_PACKET.json",
+            "text": "\"missing_input\": \"announced starting lineup / expected rotation\","
+          },
+          {
+            "line": 614,
+            "path": "experiments/player_program/stage2a/EVIDENCE_PACKET_V2.json",
+            "text": "\"missing_input\": \"announced starting lineup / expected rotation\","
+          },
+          {
+            "line": 653,
+            "path": "experiments/player_program/stage2a/HYPOTHESES_agent_adversarial.md",
+            "text": "| B5 | Any personnel signal (injury/availability, coaching, announced lineup) | As the packet records: injury capture covers 2026-07-30..2026-08-04 only; no coaching source exists; no pregame lineup f"
+          },
+          {
+            "line": 781,
+            "path": "experiments/player_program/stage2a/HYPOTHESES_agent_pace_coaching.md",
+            "text": "lineup will play tonight* is not available pregame (packet: announced lineups UNAVAILABLE). This"
+          },
+          {
+            "line": 908,
+            "path": "experiments/player_program/stage2a/HYPOTHESES_agent_pace_coaching.md",
+            "text": "### B4 \u2014 Announced starting lineup and pregame rest designations"
+          },
+          {
+            "line": 167,
+            "path": "experiments/player_program/stage2a/HYPOTHESES_coordinator.md",
+            "text": "### B3. Announced starting lineup / expected rotation"
+          },
+          {
+            "line": 172,
+            "path": "experiments/player_program/stage2a/SYNTHESIS.md",
+            "text": "pregame injury capture persisted forward; announced lineups."
+          },
+          {
+            "line": 695,
+            "path": "experiments/player_program/stage2a/V2_HYPOTHESES_adversarial.md",
+            "text": "**B4 \u2014 Prospective-only families.** Injury/availability feed, announced lineups, market totals: [P]"
+          },
+          {
+            "line": 463,
+            "path": "experiments/player_program/stage2a/V2_HYPOTHESES_basketball.md",
+            "text": "## B5 \u2014 Announced starting lineups and rest designations"
+          }
+        ],
+        "n_hits": 12,
+        "n_hits_outside_orchestration": 12,
+        "n_hits_self_referential_orchestration": 0,
+        "pattern": "(announced|projected|posted)[ _-]?(starting[ _-]?)?lineup",
+        "self_referential_note": "hits under orchestration/ are this graph's own node contract and generated prompt restating D11's acceptance criterion; they are not evidence that a source exists"
+      },
+      "bound": false,
+      "candidate_source_named_in_program_docs": null,
+      "contract_criterion": "lineups",
+      "packet_evidence": {
+        "coverage": null,
+        "note": "realised lineups are target-game outcomes",
+        "packet_bucket": "unavailable_or_insufficient",
+        "packet_field": "starting lineup / rotation announced pregame",
+        "source": "no captured pregame feed",
+        "verdict": "UNAVAILABLE"
+      },
+      "what_would_bind_it": "capture a pregame lineup posting forward from today.",
+      "why_not_bound": "no pregame lineup feed exists anywhere in the program record. The only lineup artifact named (derive_lineups.py -> data/derived/stints.parquet, starters.csv) is REALISED and is an explicit must-not-reuse.",
+      "wishlist_evidence": {
+        "caution": null,
+        "minimum_viable_collection": "capture pregame lineup postings",
+        "missing_input": "announced starting lineup / expected rotation",
+        "prospective_only_validation": true
+      }
+    },
+    "minute_restriction": {
+      "absence_search": {
+        "files_scanned": 327,
+        "hits": [
+          {
+            "line": 550,
+            "path": "experiments/player_program/build_projected_exposure.py",
+            "text": "raise ProducerFailure(\"a player exceeds the 40 minute cap\")"
+          },
+          {
+            "line": 2038,
+            "path": "experiments/player_program/orchestration/PROGRAM_GRAPH.json",
+            "text": "\"capture covers injury designation changes, lineups, starters, minute restrictions, transactions, coaching changes, odds and attributable news\","
+          },
+          {
+            "line": 1323,
+            "path": "experiments/player_program/projected_exposure_v1/PROJECTED_EXPOSURE_VALIDATION.json",
+            "text": "\"player_cap\": \"a player exceeds the 40 minute cap\","
+          },
+          {
+            "line": 70,
+            "path": "experiments/player_program/orchestration/prompts/D11_LIVE_INFORMATION_CAPTURE.md",
+            "text": "* capture covers injury designation changes, lineups, starters, minute restrictions, transactions, coaching changes, odds and attributable news"
+          },
+          {
+            "line": 621,
+            "path": "experiments/player_program/orchestration/scripts/seed_graph.py",
+            "text": "[\"capture covers injury designation changes, lineups, starters, minute restrictions, \""
+          }
+        ],
+        "hits_outside_orchestration": [
+          {
+            "line": 550,
+            "path": "experiments/player_program/build_projected_exposure.py",
+            "text": "raise ProducerFailure(\"a player exceeds the 40 minute cap\")"
+          },
+          {
+            "line": 1323,
+            "path": "experiments/player_program/projected_exposure_v1/PROJECTED_EXPOSURE_VALIDATION.json",
+            "text": "\"player_cap\": \"a player exceeds the 40 minute cap\","
+          }
+        ],
+        "n_hits": 5,
+        "n_hits_outside_orchestration": 2,
+        "n_hits_self_referential_orchestration": 3,
+        "pattern": "minute[s]?[ _-]?(restriction|cap|limit)",
+        "self_referential_note": "hits under orchestration/ are this graph's own node contract and generated prompt restating D11's acceptance criterion; they are not evidence that a source exists"
+      },
+      "bound": false,
+      "candidate_source_named_in_program_docs": null,
+      "contract_criterion": "minute restrictions",
+      "packet_evidence": null,
+      "what_would_bind_it": "a structured pregame restriction feed, or an extraction layer over attributable news. Neither exists.",
+      "why_not_bound": "NEGATIVE RESULT. No source of pregame minute restrictions is named anywhere in this node's read scope -- the frozen availability table does not list the field at all, so it has never been adjudicated even as unavailable."
+    },
+    "news": {
+      "audit_evidence": {
+        "n_rows": 2265,
+        "q1_seasons_covered": {
+          "published_range": [
+            "2026-05-20T12:03:06Z",
+            "2026-08-01T15:30:14Z"
+          ],
+          "verdict": "2026-05-20 onward only"
+        },
+        "q2_timestamps": {
+          "verdict": "published_utc and capture_utc per row \u2014 genuinely point-in-time"
+        },
+        "q3_as_of_reconstructable": {
+          "answer": "YES within span, but the CONTENT is prose"
+        },
+        "q5_corrections_overwrite_history": null,
+        "q6_regime": {
+          "verdict": "UNUSABLE as a roster source without an extraction layer",
+          "why": "headlines are speculative ('Moves to watch ahead of the trade deadline'); a rumour is not a transaction. W1 extraction exists but is graded for availability, not affiliation."
+        },
+        "source": "data/news_capture/news_items.csv"
+      },
+      "bound": false,
+      "candidate_source_named_in_program_docs": "data/news_capture/news_items.csv",
+      "contract_criterion": "attributable news",
+      "what_would_bind_it": "an extraction layer that turns a prose item into an attributed claim, plus read access to the capture.",
+      "why_not_bound": "outside read scope; and the audited verdict is UNUSABLE without an extraction layer because the content is prose. This node's news domain therefore REQUIRES a non-empty attributed_to and a claim_type, so an unattributed headline is refused rather than silently stored as if it were a fact."
+    },
+    "odds": {
+      "bound": false,
+      "candidate_source_named_in_program_docs": "data/odds_capture/",
+      "contract_criterion": "odds",
+      "packet_evidence": {
+        "coverage": "2026-07-31 .. 2026-08-06 only",
+        "note": "capture begins after the modelling span; also a market feature, which raises separate questions about what is being learned",
+        "packet_bucket": "unavailable_or_insufficient",
+        "packet_field": "market odds / totals",
+        "source": "data/odds_capture/",
+        "verdict": "UNAVAILABLE HISTORICALLY"
+      },
+      "what_would_bind_it": "widen read scope to data/odds_capture/ and adapt it.",
+      "why_not_bound": "outside read scope. Additionally the packet records a standing caution that a market feature changes what the model is; binding this domain to the prediction path is a scientific decision, not a capture decision.",
+      "wishlist_evidence": {
+        "caution": "a market feature changes what the model is: it would no longer be a pure pace projection",
+        "minimum_viable_collection": "persist odds capture forward",
+        "missing_input": "market total / pace-implied market expectation with history",
+        "prospective_only_validation": true
+      }
+    },
+    "starter": {
+      "bound": false,
+      "candidate_source_named_in_program_docs": null,
+      "contract_criterion": "starters",
+      "packet_evidence": {
+        "coverage": null,
+        "note": "realised lineups are target-game outcomes",
+        "packet_bucket": "unavailable_or_insufficient",
+        "packet_field": "starting lineup / rotation announced pregame",
+        "source": "no captured pregame feed",
+        "verdict": "UNAVAILABLE"
+      },
+      "what_would_bind_it": "capture a pregame starter announcement forward from today.",
+      "why_not_bound": "same absence as lineup. data/derived/starters.csv is derived from play-by-play and is a target-game outcome, not a pregame announcement."
+    },
+    "transaction": {
+      "audit_evidence": {
+        "n_rows": 8340,
+        "q1_seasons_covered": {
+          "by_year": {
+            "2021": 1151,
+            "2022": 1261,
+            "2023": 1299,
+            "2024": 1383,
+            "2025": 1785,
+            "2026": 1461
+          },
+          "range": [
+            "2021-01-07",
+            "2026-07-29"
+          ],
+          "verdict": "2021-2026, complete"
+        },
+        "q2_timestamps": {
+          "distinguishable": false,
+          "effective_date": "the `date` column \u2014 the date the transaction took effect",
+          "observation_time": "a SINGLE retrospective scrape. The CSV was committed 2026-07-30 13:42 -0400 in 98271bb, so every record \u2014 including 2021 ones \u2014 was observed on 2026-07-30",
+          "publication_time": null,
+          "verdict": "effective dates are real and per-row; publication and observation times are NOT recoverable. Observation time is one constant for all 8,340 rows."
+        },
+        "q3_as_of_reconstructable": {
+          "answer": "NO, not provably",
+          "roadmap_precedent": "ROADMAP.md already rules on exactly this class: 'the historical injury archive records what was eventually known, not what was knowable at a historical cutoff. W1 backtests are regime-B only.'",
+          "why": "the archive records what EVENTUALLY happened, not what was knowable at a cutoff. A signing effective 2021-05-14 is a true fact about 2021-05-14, and league-wire moves are in practice reported same-day \u2014 but this artifact cannot PROVE any record was public before 2026-07-30, and the raw HTML that might have carried a fetch timestamp is gitignored (.gitignore: data/injury_history/raw/) and absent from the repository."
+        },
+        "q5_corrections_overwrite_history": {
+          "answer": "YES",
+          "mitigation": "if this source is used, the parsed CSV must be treated as a frozen, hash-pinned artifact and any re-fetch registered as a new version",
+          "why": "Basketball-Reference edits its transaction pages in place. Only one snapshot was ever taken and the raw HTML is gitignored, so a re-scrape cannot be diffed against what was parsed. A correction made after 2026-07-30 would silently change the archive on the next fetch."
+        },
+        "q6_regime": {
+          "consequence_for_v5": "Tier B, not Tier A. It may create a FALLBACK candidate carrying its evidence time and confidence; it may not create a verified obligation.",
+          "reasoning": "every fact in it is true and its effective dates are per-row and real, which is far more than prior-season affiliation offers. But its observation time is a single retrospective moment, so it cannot support a Regime-A claim of walk-forward legitimacy. Regime B is exactly the category ROADMAP.md defines for this: usable, reported with coverage, applying to the covered subset and nothing wider.",
+          "verdict": "B"
+        },
+        "source": "data/injury_history/injury_history.csv"
+      },
+      "bound": false,
+      "candidate_source_named_in_program_docs": "data/injury_history/injury_history.csv",
+      "contract_criterion": "transactions",
+      "packet_evidence": {
+        "coverage": null,
+        "note": null,
+        "packet_bucket": "CORRECTED_availability_yes_cutoff_unproven",
+        "packet_field": "injury / transaction history",
+        "source": "data/injury_history/injury_history.csv (8,340 rows, 2021-01-07 .. 2026-07-29, full contract span)",
+        "verdict": "AVAILABILITY ESTABLISHED; CUTOFF VALIDITY NOT ESTABLISHED"
+      },
+      "what_would_bind_it": "a live transaction wire fetched and timestamped by this repository going forward. prediction_contract_v5 reserves S4 for exactly this and declares it UNAVAILABLE; no implementation may substitute another source for it.",
+      "why_not_bound": "outside read scope; and even in scope it is the wrong regime for THIS node. It was observed in a single retrospective scrape, so every record would enter the ledger as retrospective=true / CUTOFF_UNPROVEN and could never admit at a cutoff. A prospective transaction capture is a different source."
+    }
+  },
+  "epistemic_status": "PROSPECTIVE CAPTURE INFRASTRUCTURE. Builds the record that would make future features cutoff-provable. Creates no historical evidence and repairs no historical gap.",
+  "generated_by": "build_source_binding.py",
+  "headline": "ZERO of the eight domains is bound to a live source by this node. The capture mechanism is implemented and tested; it has captured no real observation.",
+  "n_bound": 0,
+  "n_domains": 8,
+  "node": "D11_LIVE_INFORMATION_CAPTURE",
+  "read_scope": "experiments/player_program/",
+  "registry_for_ledger": {
+    "coaching_change": {
+      "bound": false,
+      "observation_provable": false,
+      "reason": "no adapter; source outside read scope or absent"
+    },
+    "injury_designation": {
+      "bound": false,
+      "observation_provable": false,
+      "reason": "no adapter; source outside read scope or absent"
+    },
+    "lineup": {
+      "bound": false,
+      "observation_provable": false,
+      "reason": "no adapter; source outside read scope or absent"
+    },
+    "minute_restriction": {
+      "bound": false,
+      "observation_provable": false,
+      "reason": "no adapter; source outside read scope or absent"
+    },
+    "news": {
+      "bound": false,
+      "observation_provable": false,
+      "reason": "no adapter; source outside read scope or absent"
+    },
+    "odds": {
+      "bound": false,
+      "observation_provable": false,
+      "reason": "no adapter; source outside read scope or absent"
+    },
+    "starter": {
+      "bound": false,
+      "observation_provable": false,
+      "reason": "no adapter; source outside read scope or absent"
+    },
+    "transaction": {
+      "bound": false,
+      "observation_provable": false,
+      "reason": "no adapter; source outside read scope or absent"
+    }
+  },
+  "schema": "player_program/live_capture_source_binding/1"
+}

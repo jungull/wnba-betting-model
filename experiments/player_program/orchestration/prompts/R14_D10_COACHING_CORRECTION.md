@@ -1,6 +1,6 @@
-# R10_O15_REPORT_REMEDIATION — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
+# R14_D10_COACHING_CORRECTION — Correct D10's manufactured negative on the coaching family and re-measure its coverage
 
-**Lane:** operations  |  **Type:** documentation  |  **Severity on failure:** C  |  **Role:** documentation engineer
+**Lane:** data  |  **Type:** audit  |  **Severity on failure:** B  |  **Role:** cutoff-validity auditor
 
 > This file is GENERATED from the node's contract in `PROGRAM_GRAPH.json`. It is the auditable
 > record of exactly what this node's agent was told. Do not edit it by hand.
@@ -33,7 +33,7 @@
 
 ## Epistemic status of your output
 
-REMEDIATION of a confirmed missing declared output. It writes up evidence that ALREADY EXISTS in ops_lane/O15_LOGOUT_SURVIVAL/ and may not add a finding the original run did not make. Its parent finding is O15_LOGOUT_SURVIVAL's validation_failed event, which is preserved and not rewritten.
+REMEDIATION of a confirmed FALSE NEGATIVE. D10 reported the coaching family ABSENT with 0 coverage on an assertion contradicted by the bytes of a file it had itself loaded. This node RE-MEASURES; it may not simply restate D12's numbers, because relaying an unverified figure is the failure mode that produced the defect.
 
 Write this verbatim into your report. It bounds what your output may later be cited for.
 
@@ -61,18 +61,17 @@ Write this verbatim into your report. It bounds what your output may later be ci
 
 ## Your mandate
 
-**Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence**
+**Correct D10's manufactured negative on the coaching family and re-measure its coverage**
 
 Deliver exactly this, to the standard the acceptance criteria below describe. The criteria are not a summary of the mandate — they *are* the mandate.
 
 ## Acceptance criteria — your output is validated against exactly these
 
-* the report is derived ONLY from files already present in experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/
-* no new measurement is performed and no new finding is introduced
-* the epistemic status of the original node is carried verbatim
-* the report states that O15_LOGOUT_SURVIVAL's declared output was missing and that this is a remediation, not the original run
-* nothing under experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/ is modified
-* every defect the independent verifier raised against the original node is carried into the report rather than quietly dropped
+* the 49 front_office rows in data/injury_history/injury_history.csv are enumerated and classified, and the ~2,930 COACH'S DECISION rows are explicitly excluded as noise rather than counted as coaching identity
+* coverage by season and by fold is RE-MEASURED, not copied from D12
+* the corrected verdict is PRESENT_RETROSPECTIVE / CUTOFF_UNPROVEN, and the cutoff_valid count stays 0 -- presence is not cutoff validity
+* the correction states how the false negative was produced, so the same search error is not repeated
+* D10's original ledger is NOT edited; the correction is a separate artifact
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 
@@ -84,17 +83,18 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 **Read:** `experiments/player_program/`
 
-**Write (nothing outside this):** `experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/`
+**Write (nothing outside this):** `experiments/player_program/data_lane/R14_D10_COACHING_CORRECTION/`
 
 **Forbidden inputs:** `experiments/player_program/stage2b/SEALED_RESULTS`
 
 **Required outputs:**
 
-* `experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md`
+* `experiments/player_program/data_lane/R14_D10_COACHING_CORRECTION/CORRECTION.json`
+* `experiments/player_program/data_lane/R14_D10_COACHING_CORRECTION/REPORT.md`
 
 ## Validation that will be run against your output
 
-* `python -c "import pathlib,sys;p=pathlib.Path('experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md');sys.exit(0 if p.exists() and p.stat().st_size>1000 else 1)"`
+* `python -c "import json;json.load(open('experiments/player_program/data_lane/R14_D10_COACHING_CORRECTION/CORRECTION.json'))"`
 
 ---
 

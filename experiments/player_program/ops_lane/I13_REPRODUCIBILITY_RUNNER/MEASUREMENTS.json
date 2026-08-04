@@ -1,0 +1,260 @@
+{
+  "epistemic_status": "INFRASTRUCTURE. Makes a run rerunnable and checkable. Proves nothing scientific.",
+  "generated_utc": "2026-08-04T20:39:00.683464Z",
+  "measurements": [
+    {
+      "claim": "the real recorded run reproduces byte-identically from its manifest",
+      "how_measured": "repro_runner.verify(runs/universe_census/MANIFEST.json)",
+      "value": {
+        "blocking_findings": 0,
+        "byte_identical": true,
+        "context_findings": 1,
+        "output_sha256": {
+          "cluster_bootstrap.csv": "00c75f760f650ffa58b19d4596437430685a96b7a2444a56bceca8ca8612d847",
+          "universe_census.json": "fac42f723041530cf277ab2c7f3196cbe82add766c5f3eaca976ebe29dfb515a"
+        },
+        "outputs_compared": 2,
+        "outputs_matching": 2,
+        "verdict": "PASS_WITH_CONTEXT_FINDINGS"
+      }
+    },
+    {
+      "claim": "a second independent replay returns the same bytes again",
+      "how_measured": "repro_runner.verify(...) called twice, replay_outputs compared",
+      "value": {
+        "identical_to_first_replay": true,
+        "replay_sha256": {
+          "cluster_bootstrap.csv": "00c75f760f650ffa58b19d4596437430685a96b7a2444a56bceca8ca8612d847",
+          "universe_census.json": "fac42f723041530cf277ab2c7f3196cbe82add766c5f3eaca976ebe29dfb515a"
+        },
+        "verdict": "PASS_WITH_CONTEXT_FINDINGS"
+      }
+    },
+    {
+      "claim": "changing ONLY the recorded seed changes the recorded bytes, so the seed binding is load-bearing rather than decorative",
+      "how_measured": "copy the manifest, increment seeds.seed by 1, re-sign, verify",
+      "value": {
+        "outputs_that_diverged": [
+          "cluster_bootstrap.csv"
+        ],
+        "outputs_that_held": [
+          "universe_census.json"
+        ],
+        "seed_recorded": 20260804,
+        "seed_tried": 20260805,
+        "verdict": "FAIL"
+      }
+    },
+    {
+      "claim": "bindings carried by the recorded manifest",
+      "how_measured": "read runs/universe_census/MANIFEST.json",
+      "value": {
+        "branch": "player-model-program",
+        "commit": "b6228a17d974691e21bdc0afa8226ce613461eac",
+        "inputs_bound": 5,
+        "manifest_digest": "e9e1f067ba9f8a717a64709f33190d937f5822ca2f9f81579d5f58dc369c5ebc",
+        "outputs_bound": 2,
+        "python_hash_seed": 0,
+        "run_id": "c9ef486f-8fa2-4f40-93ba-54d2b12522d0",
+        "seed": 20260804,
+        "sources": [
+          "experiments/player_program/construction_receipt.py",
+          "experiments/player_program/ops_lane/I13_REPRODUCIBILITY_RUNNER/_repro_exec.py",
+          "experiments/player_program/ops_lane/I13_REPRODUCIBILITY_RUNNER/payload_universe_census.py",
+          "experiments/player_program/possession_features.py"
+        ],
+        "sources_bound": 4,
+        "sources_declared_by_caller": [
+          "experiments/player_program/ops_lane/I13_REPRODUCIBILITY_RUNNER/_repro_exec.py",
+          "experiments/player_program/ops_lane/I13_REPRODUCIBILITY_RUNNER/payload_universe_census.py"
+        ],
+        "sources_discovered_by_measuring_the_import_closure": [
+          "experiments/player_program/construction_receipt.py",
+          "experiments/player_program/possession_features.py"
+        ]
+      }
+    },
+    {
+      "claim": "four-way reconciliation of every input the run consumed (manifest / disk / PROGRAM_STATE.json / the artifact's own receipt)",
+      "how_measured": "repro_runner.reconcile(runs/universe_census/MANIFEST.json)",
+      "value": {
+        "n_disagreements": 0,
+        "n_inputs": 5,
+        "n_registered_canonical": 1,
+        "n_uncorroborated": 3,
+        "rows": [
+          {
+            "independent_hashes": 1,
+            "path": "experiments/player_program/projected_exposure_v1/PROJECTED_EXPOSURE_RECEIPT.json",
+            "registered_canonical": false,
+            "verdict": "UNCORROBORATED"
+          },
+          {
+            "independent_hashes": 1,
+            "path": "experiments/player_program/projected_exposure_v1/PROJECTED_EXPOSURE_VALIDATION.json",
+            "registered_canonical": false,
+            "verdict": "UNCORROBORATED"
+          },
+          {
+            "independent_hashes": 2,
+            "path": "experiments/player_program/possessions_v2/possessions_raw_v2.parquet",
+            "registered_canonical": false,
+            "verdict": "AGREE"
+          },
+          {
+            "independent_hashes": 1,
+            "path": "experiments/player_program/possessions_v2/POSSESSION_INTEGRITY_RECEIPT_V2.json",
+            "registered_canonical": false,
+            "verdict": "UNCORROBORATED"
+          },
+          {
+            "independent_hashes": 3,
+            "path": "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+            "registered_canonical": true,
+            "verdict": "AGREE"
+          }
+        ],
+        "verdict": "PASS"
+      }
+    },
+    {
+      "claim": "PROGRAM_STATE.json publishes a frozen hash for 3 artifact families; the possessions artifact the primary target is computed from is not among them",
+      "how_measured": "read PROGRAM_STATE.json and POSSESSION_INTEGRITY_RECEIPT_V2.json; sha256 both parquets",
+      "value": {
+        "canonical_artifacts_published": [
+          "canonical_player_events/1",
+          "player_turnover_targets/1",
+          "projected_player_possessions/1"
+        ],
+        "on_disk_sha256": "7200881fd811db9d0d6b10ea0a19b01ec7b6d027ee4567b9ef963241b15a4b1a",
+        "possessions_raw_v2_mentioned_anywhere_in_PROGRAM_STATE": false,
+        "possessions_v2_has_its_own_receipt_on_disk": true,
+        "receipt_matches_disk": true,
+        "receipt_recorded_sha256": "7200881fd811db9d0d6b10ea0a19b01ec7b6d027ee4567b9ef963241b15a4b1a",
+        "sibling_artifact_with_no_hash_in_that_receipt": "possessions_v2/player_season_possessions_v2.parquet",
+        "sibling_on_disk_sha256": "62ad07849ebd832f4852e314ad2368cfc08c2103871c14b06452c811022d3a58"
+      }
+    },
+    {
+      "claim": "PROGRAM_STATE.json's published shared-contract hashes still match the bytes on disk",
+      "how_measured": "sha256 each path in PROGRAM_STATE.shared_contracts",
+      "value": {
+        "all_agree": true,
+        "detail": {
+          "comparison_gate": {
+            "agree": true,
+            "on_disk": "c2d242581cc7551c6ce7d3aaf554f0cc18fd9b1f72677edd61ba95f91a7b5b92",
+            "published": "c2d242581cc7551c6ce7d3aaf554f0cc18fd9b1f72677edd61ba95f91a7b5b92"
+          },
+          "feature_gate": {
+            "agree": true,
+            "on_disk": "b064c2c4675d354ec5cb5c6647782634c8139ca4233a5d732f408b6c2532f9a7",
+            "published": "b064c2c4675d354ec5cb5c6647782634c8139ca4233a5d732f408b6c2532f9a7"
+          },
+          "gate_invocation": {
+            "agree": true,
+            "on_disk": "5c144b12c67910a4996aafe08e86e8939a2a1878168431850a99d22754ff9ded",
+            "published": "5c144b12c67910a4996aafe08e86e8939a2a1878168431850a99d22754ff9ded"
+          },
+          "receipt_integrity": {
+            "agree": true,
+            "on_disk": "8c88617407d6dfb50c394ad5888ff77cd2464b590242a35c5f97a1320e05751d",
+            "published": "8c88617407d6dfb50c394ad5888ff77cd2464b590242a35c5f97a1320e05751d"
+          }
+        }
+      }
+    },
+    {
+      "claim": "PROGRAM_STATE.generated_from records the commit it was generated at, not live state; the runner therefore reads the commit from git, never from PROGRAM_STATE",
+      "how_measured": "git rev-parse HEAD (read-only) vs PROGRAM_STATE.generated_from.head",
+      "value": {
+        "live_branch": "player-model-program",
+        "live_head": "7c5fe7d247b6f785b7449310dd59aeeef2d252ce",
+        "program_state_generated_from_head": "64ebf722bee91392e09674254364bfab53785ae8",
+        "program_state_generated_from_working_tree_state": "clean",
+        "program_state_says_so_itself": "PROGRAM_STATE.json is AUTHORITATIVE for program and scientific state. It is NOT authoritative for live repository state....",
+        "same": false
+      }
+    },
+    {
+      "claim": "the recorded run's census of the team-game universe",
+      "how_measured": "runs/universe_census/outputs/universe_census.json, produced by payload_universe_census.py via possession_features.load_universe() (read-only)",
+      "value": {
+        "cluster_size_distribution": {
+          "2": 1491
+        },
+        "game_clusters": 1491,
+        "row_universe_digest": "raw_index_membership:n=2982:sha256=61f69db015f3270c7f0fd182a92e0371",
+        "seasons": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "target_column": "realised_team_off_possessions_reg_equiv",
+        "target_summary": {
+          "max": 94.0,
+          "mean": 79.28757732,
+          "min": 66.0,
+          "n": 2982,
+          "std_ddof1": 3.90806733
+        },
+        "team_game_rows": 2982,
+        "universe_contract_id": "team_possession_universe/1"
+      }
+    },
+    {
+      "claim": "seeds in this program are literals inside source files; what else on disk binds a seed alongside a commit and hashes",
+      "how_measured": "regex scan of experiments/player_program/**/*.py for default_rng( | np.random.seed( | random.seed(, excluding this node and stage2b/SEALED_RESULTS",
+      "value": {
+        "examples": [
+          "experiments/player_program/ops_lane/I10_GENERIC_CLUSTERED_INFERENCE/clustered_inference.py",
+          "experiments/player_program/ops_lane/I10_GENERIC_CLUSTERED_INFERENCE/measure.py",
+          "experiments/player_program/ops_lane/I10_GENERIC_CLUSTERED_INFERENCE/TESTS.py",
+          "experiments/player_program/ops_lane/I11_BLINDED_RESULT_PACKAGING/demo_seal.py",
+          "experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/MEASURE.py",
+          "experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/TESTS.py",
+          "experiments/player_program/score_v14_v15.py",
+          "experiments/player_program/stage2b/P25_OFFSET_DEPENDENCY_GUARD/TESTS.py"
+        ],
+        "other_files_named_MANIFEST.json": {
+          "experiments/player_program/data_lane/D11_LIVE_INFORMATION_CAPTURE/ledger/MANIFEST.json": {
+            "mentions_commit": false,
+            "mentions_seed": false,
+            "mentions_sha256": true
+          },
+          "experiments/player_program/data_lane/D11_LIVE_INFORMATION_CAPTURE/selftest/MANIFEST.json": {
+            "mentions_commit": false,
+            "mentions_seed": false,
+            "mentions_sha256": true
+          },
+          "experiments/player_program/ops_lane/I11_BLINDED_RESULT_PACKAGING/demo_seal/MANIFEST.json": {
+            "mentions_commit": true,
+            "mentions_seed": true,
+            "mentions_sha256": true
+          },
+          "experiments/player_program/product_lane/U11_UI_SHELL/MANIFEST.json": {
+            "mentions_commit": false,
+            "mentions_seed": false,
+            "mentions_sha256": true
+          }
+        },
+        "program_py_files_that_construct_an_RNG": 13,
+        "snapshot_caveat": "sibling lane nodes were writing concurrently during this wave; this is a snapshot at generated_utc, taken with the command below. It is a keyword scan, NOT a claim about what those manifests verify."
+      }
+    },
+    {
+      "claim": "the node's own test suite",
+      "how_measured": "python TESTS.py, counting PASS/FAIL/SKIP lines",
+      "value": {
+        "checks_failed": 0,
+        "checks_passed": 61,
+        "checks_skipped": 0,
+        "exit_code": 0
+      }
+    }
+  ],
+  "schema": "i13_measurements/1"
+}

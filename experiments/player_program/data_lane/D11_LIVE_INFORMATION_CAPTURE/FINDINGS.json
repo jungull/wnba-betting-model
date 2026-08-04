@@ -1,0 +1,340 @@
+{
+  "acceptance_criteria": {
+    "a record is never backdated": {
+      "evidence": "11 rejection cases all raised the expected code and none wrote a byte; five distinct backdating rules enforced at append and re-derived by verify()",
+      "status": "MET"
+    },
+    "capture covers injury designation changes, lineups, starters, minute restrictions, transactions, coaching changes, odds and attributable news": {
+      "evidence": "8/8 domains declared and exercised end to end over a synthetic corpus",
+      "limitation": "no domain is bound to a live source; the capture has captured nothing",
+      "status": "MET_AS_MECHANISM_ONLY"
+    },
+    "first-seen timestamp and full change history are preserved, never overwritten": {
+      "evidence": "first_seen copied forward on every record; 0 entities with more than one first_seen value; change/reaffirmation records appended; verify() detects an overwritten first_seen, an in-place payload edit and a deleted intermediate record",
+      "status": "MET"
+    },
+    "the capture writes only under its own lane directory": {
+      "evidence": "assert_in_scope() on every write path; constructing a ledger outside the lane raises SCOPE_VIOLATION; a test walks every file this node wrote and asserts it resolves inside the lane directory",
+      "status": "MET"
+    }
+  },
+  "contradictions": [
+    {
+      "id": "C1_odds_coverage_span_ends_after_the_observation_moment",
+      "measured": "the stated coverage end 2026-08-06 is 2 days after the current date 2026-08-04, whereas the injury row in the same table ends 2026-08-04, exactly today",
+      "resolved_here": "no. The packet is frozen and is NOT edited. This node's schema separates observed_at_utc from effective_at_utc so the conflation cannot recur inside the capture.",
+      "severity": "B -- interpretation exceeding the evidence",
+      "text": "2026-07-31 .. 2026-08-06 only",
+      "where": "stage2a/EVIDENCE_PACKET_V2.json, cutoff_valid_availability_table_CORRECTED, field 'market odds / totals'",
+      "why_it_matters": "one 'coverage' column is carrying two different kinds of span: an OBSERVATION span for the injury row and an EVENT-DATE span for the odds row. A line posted today for a game on 2026-08-06 is observed today. Reading the odds row as an observation span would credit the repository with having seen two days of the future."
+    },
+    {
+      "id": "C2_injury_capture_span_differs_between_two_in_scope_receipts",
+      "measured": "the two spans differ by three days; the earlier receipt carries an explicit generation timestamp and the packet does not",
+      "resolved_here": "no. Not verifiable from inside this node's read scope; both files describe data/ which this node may not open.",
+      "severity": "C -- record for the next contract version",
+      "where": "ROSTER_SOURCE_AUDIT_RECEIPT.json (generated 2026-08-03T21:26:32Z) reports report_date_range 2026-07-30..2026-08-01 over 551 rows; EVIDENCE_PACKET_V2.json reports 2026-07-30..2026-08-04",
+      "why_it_matters": "this is consistent with a live capture that grew between the two measurements, and is NOT presented as a defect. It is recorded because neither figure can be cited as the capture's span without naming the moment it was measured -- which is the same failure mode as C1 one step removed."
+    },
+    {
+      "id": "C3_node_read_scope_cannot_reach_the_sources_the_node_must_capture",
+      "measured": "all eight domains' candidate sources named anywhere in the program record live under the repository's data/ tree (data/injury_capture/, data/injury_history/, data/news_capture/, data/odds_capture/); 0 of 8 is reachable under the declared read scope",
+      "resolved_here": "no. An agent may not broaden its own read or write scope. Raised for the coordinator.",
+      "severity": "B -- a contract defect, not a scientific one",
+      "where": "orchestration/PROGRAM_GRAPH.json, node D11_LIVE_INFORMATION_CAPTURE, allowed_read_paths = ['experiments/player_program/']",
+      "why_it_matters": "the node is contracted to build capture covering eight domains, and is scoped so that it cannot open, parse or verify a single one of them. The mechanism can be built and tested -- it was -- but no adapter can honestly be written against a file that was never read, so the node ships with zero bindings."
+    }
+  ],
+  "could_not_establish": [
+    "whether the existing live captures (data/injury_capture/, data/news_capture/, data/odds_capture/, data/ref_assignments/) actually preserve first-seen and change history, or whether any of them overwrites. The node's read scope stops at experiments/player_program/. The only in-scope statement is ROSTER_SOURCE_AUDIT_RECEIPT.json's q5 for data/injury_capture/injury_log.csv -- 'corrections overwrite history: NO' -- which is another node's measurement, not this node's.",
+    "the current row counts, spans or schemas of any live capture. Every such figure in this output is quoted from a frozen in-scope receipt with its sha256, and is labelled as someone else's measurement.",
+    "whether any historical odds exist. V2_STOP_CONDITION records, unresolved, that tip_times.csv is odds-derived and covers 2022-2026 while the packet says market odds are unavailable historically. tip_times.csv is outside this node's read scope and was not opened.",
+    "the real-world latency between a designation change happening and this repository observing it. That is measurable only after a source is bound and has run for a while; the ledger records exactly the fields needed to measure it later (published_at_utc vs observed_at_utc).",
+    "whether any captured field would improve any model. This node performs no fit, no score and no comparison, and read nothing under stage2b/SEALED_RESULTS/."
+  ],
+  "epistemic_status": "PROSPECTIVE CAPTURE INFRASTRUCTURE. Builds the record that would make future features cutoff-provable. Creates no historical evidence and repairs no historical gap.",
+  "escalations": [
+    {
+      "changes_historical_evidence": "potentially -- it changes how an availability verdict should be read, not what the underlying data is",
+      "item": "C1 above. The frozen availability table's 'coverage' column mixes an observation span (injury row, ends today) with an event-date span (odds row, ends two days after today). Any future reader who treats the odds row as an observation span will over-credit the historical record by the length of the forward-dated tail. The packet is frozen; this node did not edit it.",
+      "to": "possession wave / historical feature evidence"
+    },
+    {
+      "changes_historical_evidence": "possibly, and it is unresolved in the frozen halt packet already",
+      "item": "V2_STOP_CONDITION's already-recorded, unresolved nit that tip_times.csv is odds-derived over 2022-2026 while market odds are declared historically unavailable. D11 confirms this matters and cannot settle it: it decides whether the odds domain has ANY pre-2026-07-31 evidence, and if it does, whether that evidence is a single retrospective pull (the S-TX regime, CUTOFF_UNPROVEN) or something better. NOT MEASURED HERE -- tip_times.csv is outside this node's read scope.",
+      "to": "possession wave / historical feature evidence"
+    },
+    {
+      "changes_historical_evidence": "no",
+      "item": "C3 above. D11's allowed_read_paths cannot reach any of the eight sources it is contracted to capture. Either widen the read scope for a follow-up binding node, or record that D11 delivers mechanism only. This node did not broaden its own scope.",
+      "to": "coordinator / graph contract"
+    }
+  ],
+  "frozen_artifacts_touched": [],
+  "generated_by": "build_findings.py",
+  "generated_utc": "2026-08-04T20:07:21Z",
+  "headline": "The capture mechanism is built, tested and enforces first-seen, full change history, no backdating and lane-only writes. It is bound to ZERO live sources and has captured ZERO real observations, because every candidate source lies outside this node's declared read scope or does not exist at all.",
+  "lane": "data",
+  "measurements": [
+    {
+      "claim": "the capture accepts all eight domains the contract enumerates",
+      "how_measured": "python selftest_capture.py -> SELFTEST_RECEIPT.json .counts.domains_exercised; python TESTS.py test 'domains: exactly the eight contract criteria, one domain each'",
+      "value": "8 of 8 domains exercised; 8 contract criteria, one domain each"
+    },
+    {
+      "claim": "records appended by the synthetic self-test corpus",
+      "how_measured": "SELFTEST_RECEIPT.json .counts",
+      "value": "13 records over 9 entities (9 first_seen, 3 change, 1 reaffirmation)"
+    },
+    {
+      "claim": "first_seen is never overwritten",
+      "how_measured": "SELFTEST_RECEIPT.json .first_seen_immutability; independently in TESTS.py 'verify: catches an overwritten first_seen_at_utc'",
+      "value": "9 entities checked, 0 with more than one first_seen value"
+    },
+    {
+      "claim": "full change history is preserved rather than collapsed",
+      "how_measured": "SELFTEST_RECEIPT.json .change_history_example.trace",
+      "value": "the worked injury entity carries 3 records (QUESTIONABLE -> OUT -> OUT reaffirmed) with change_index 0,1,1 and all prior payloads still present"
+    },
+    {
+      "claim": "every write extends the ledger without rewriting it",
+      "how_measured": "SELFTEST_RECEIPT.json .append_only (bytes-before is a prefix of bytes-after on every append)",
+      "value": "13 writes checked, all prefix-preserving: True"
+    },
+    {
+      "claim": "a record is never backdated",
+      "how_measured": "SELFTEST_RECEIPT.json .rejections / .rejection_summary; codes FUTURE_OBSERVATION, BACKDATED_OBSERVATION, BACKDATED_ENTITY_OBSERVATION, RETROSPECTIVE_CLAIMS_EARLY_OBSERVATION, PUBLISHED_AFTER_OBSERVED",
+      "value": "11 rejection cases, 11 raised the expected code, 0 modified the ledger"
+    },
+    {
+      "claim": "the derived index is a pure function of the ledger",
+      "how_measured": "SELFTEST_RECEIPT.json .replay_determinism (delete both derived files, reconstruct the ledger from observations.jsonl, regenerate, compare)",
+      "value": "STATE_INDEX byte-identical after replay: True; WATERMARKS: True"
+    },
+    {
+      "claim": "the ledger is internally consistent under independent re-derivation",
+      "how_measured": "SELFTEST_RECEIPT.json .integrity_verify",
+      "value": "verify(): ok=True, 0 violations over 13 records"
+    },
+    {
+      "claim": "cutoff admission is strict and refuses unproven observation",
+      "how_measured": "SELFTEST_RECEIPT.json .cutoff_admission and .cutoff_unproven_never_admitted",
+      "value": "0 entities admissible at a cutoff equal to the first observation time; 8 at T0+31min returning designation QUESTIONABLE; 8 at T0+120min returning OUT; 1 CUTOFF_UNPROVEN record admitted at a 2030 cutoff: 0"
+    },
+    {
+      "claim": "the test suite passes",
+      "how_measured": "python TESTS.py",
+      "value": "24/24 tests, exit code 0"
+    },
+    {
+      "claim": "live sources bound to the capture",
+      "how_measured": "python build_source_binding.py -> SOURCE_BINDING.json .n_bound",
+      "value": "0 of 8"
+    },
+    {
+      "claim": "real observations captured by this node",
+      "how_measured": "ledger/MANIFEST.json .n_records; os.stat on the ledger file",
+      "value": "0 records in the production ledger ledger/observations.jsonl (0 bytes)"
+    },
+    {
+      "claim": "no source of pregame minute restrictions is named anywhere in the node's read scope",
+      "how_measured": "build_source_binding.grep_count(r'minute[s]?[ _-]?(restriction|cap|limit)') over experiments/player_program/, this node's own directory excluded; hits enumerated in SOURCE_BINDING.json",
+      "value": "5 lines match over 327 files; 3 are this graph restating D11's own acceptance criterion and the remaining 2 are a 40-minute exposure validation cap in build_projected_exposure.py and its validation receipt. Zero name a source."
+    },
+    {
+      "claim": "no coaching source exists in the node's read scope",
+      "how_measured": "build_source_binding.grep_count(r'data/[a-z0-9_]*coach'); EVIDENCE_PACKET_V2.json .cutoff_valid_availability_table_CORRECTED",
+      "value": "0 hits for a data/*coach* path over 327 files; independently, the frozen packet records verdict 'ABSENT'"
+    },
+    {
+      "claim": "no captured pregame lineup or starter feed exists",
+      "how_measured": "EVIDENCE_PACKET_V2.json availability table; build_source_binding.grep_count(r'(announced|projected|posted)[ _-]?(starting[ _-]?)?lineup'), hits enumerated in SOURCE_BINDING.json for audit",
+      "value": "the frozen packet's verdict for 'starting lineup / rotation announced pregame' is 'UNAVAILABLE' with source 'no captured pregame feed'; a text search returns 12 mentions, all of which are program prose recording the absence or a derived 'projected lineup strength' feature, none a capture path"
+    },
+    {
+      "claim": "the two frozen artifacts this node leans on are unchanged",
+      "how_measured": "hashlib.sha256 over the files in build_source_binding.py, compared against RECONCILIATION.json .checks.frozen_hashes",
+      "value": "EVIDENCE_PACKET_V2.json sha256 3a35ae735333c47713d6e7cc4c35c081e4eb07364c71cba744db03709730a32c and V2_STOP_CONDITION.json sha256 a4dd090b2b38dfb4d37028e15daa10c689deb27269cde3d8b9cddd12fd92244d both equal the values pinned in orchestration/nodes/G00_LIVE_RECONCILIATION/RECONCILIATION.json"
+    }
+  ],
+  "negative_results_preserved": [
+    "NO source of pregame minute restrictions exists anywhere in the node's read scope, and the frozen availability table does not list the field at all -- it has never been adjudicated, even as unavailable.",
+    "NO coaching source exists (frozen packet verdict ABSENT; a data/*coach* search returns 0 hits in scope).",
+    "NO captured pregame lineup or starter feed exists; the only lineup artifacts in the repository are realised and are an explicit must-not-reuse.",
+    "The production ledger is EMPTY and is committed empty. That is the honest state.",
+    "Capturing forward from today can never retro-fit history. Nothing this node builds creates evidence about any game already played."
+  ],
+  "node": "D11_LIVE_INFORMATION_CAPTURE",
+  "outputs": {
+    "CAPTURE_CONTRACT.md": {
+      "bytes": 7775,
+      "sha256": "ed268475072bfdf221c8040d810ac4ebf90cb126994eb4dc4a09c89e00c8c31e"
+    },
+    "REPORT.md": {
+      "bytes": 16536,
+      "sha256": "b64eeff292b81971afc73c0e01d5a4e459fd371cff8a6ff706a64eff7f6acf4a"
+    },
+    "SELFTEST_RECEIPT.json": {
+      "bytes": 9835,
+      "sha256": "1378c53e99cfba0933bc240303315ebfdf96882db3afd8915d696fca46eaa799"
+    },
+    "SOURCE_BINDING.json": {
+      "bytes": 26138,
+      "sha256": "1f7bb65fadf6268cf91b9ff4f3c3cbf1b7ed4934fd6ae4daed3ec060ba73d24b"
+    },
+    "TESTS.py": {
+      "bytes": 19205,
+      "sha256": "c189c815561128e24d0ece0995105ec0207de0743b7fb56bccd1b3939532f090"
+    },
+    "build_findings.py": {
+      "bytes": 25438,
+      "sha256": "56fbb3674562e05bb9e91ba73e02974a786a7957316409abe7aa0673cd4695f7"
+    },
+    "build_source_binding.py": {
+      "bytes": 15110,
+      "sha256": "eedbcf945ba7d2fb54bad63f6669316cb85cbae9cecad5d9cc4bffe653a19dfc"
+    },
+    "capture_ledger.py": {
+      "bytes": 21666,
+      "sha256": "2a7685eb5b58159fb47dd189027eb665203b6e2e09d62a1499d8bee58c27c401"
+    },
+    "capture_schema.py": {
+      "bytes": 13567,
+      "sha256": "efe84d74b25d4de3029cd7436afab174a9f73e4d112f6760b6e6ab732ed59d65"
+    },
+    "ledger/MANIFEST.json": {
+      "bytes": 429,
+      "sha256": "58e6693994bd27012e7f2173fd71370d7484afc75159a799d6d4203421da177e"
+    },
+    "ledger/README.md": {
+      "bytes": 352,
+      "sha256": "aeea753859caa016ee96f2f1cdd7b04f64b359a69944320bbbe3d32e93c94da4"
+    },
+    "ledger/STATE_INDEX.json": {
+      "bytes": 326,
+      "sha256": "31d561bc306968597777c068f52477262a8421964cf730dc5ed81d4b165d0032"
+    },
+    "ledger/WATERMARKS.json": {
+      "bytes": 145,
+      "sha256": "f06404c78bb86df97907d56f7f05ec5d7b1d4a9ae9845d67bdd843ed348ee519"
+    },
+    "ledger/observations.jsonl": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "selftest/MANIFEST.json": {
+      "bytes": 714,
+      "sha256": "8f65fff4eada00010c081747d5586c454524df760b24b3a75145b43cf65d6709"
+    },
+    "selftest/STATE_INDEX.json": {
+      "bytes": 9856,
+      "sha256": "645f02738eab41159c4f932b65fd1fd4ceff65db0d4bf12a942843e9a56d1ce7"
+    },
+    "selftest/WATERMARKS.json": {
+      "bytes": 253,
+      "sha256": "42313a3bc52901540307a088e7690771b7e93545878a217bc3b1ba740d4ac69b"
+    },
+    "selftest/observations.jsonl": {
+      "bytes": 11622,
+      "sha256": "4c0a48677a11da9def7b2f5ec22aa5e4da0bcb5ccb4939c02b58828920f8bbf9"
+    },
+    "selftest_capture.py": {
+      "bytes": 20076,
+      "sha256": "1a4605ff8651d10e5bba088672101b6ebccf9eb2099d8046ebbd1beacd44112b"
+    }
+  },
+  "schema": "player_program/data_lane_findings/1",
+  "source_binding": {
+    "n_bound": 0,
+    "n_domains": 8,
+    "per_domain": {
+      "coaching_change": {
+        "bound": false,
+        "candidate_source": null,
+        "why_not_bound": "NEGATIVE RESULT confirmed by the frozen packet: no coaching source exists. Note the packet records this as the one candidate whose minimum viable collection is a hand-maintained table and whose prospective_only_validation is FALSE -- i.e. it is the only one of the eight that could in principle be reconstructed historically. Reconstructing it is NOT this node's mandate."
+      },
+      "injury_designation": {
+        "bound": false,
+        "candidate_source": "data/injury_capture/injury_log.csv",
+        "why_not_bound": "the file lives under the repository's data/ tree, which is outside this node's allowed_read_paths (experiments/player_program/). This node cannot open it, cannot verify its schema, and therefore may not declare an adapter that claims to parse it."
+      },
+      "lineup": {
+        "bound": false,
+        "candidate_source": null,
+        "why_not_bound": "no pregame lineup feed exists anywhere in the program record. The only lineup artifact named (derive_lineups.py -> data/derived/stints.parquet, starters.csv) is REALISED and is an explicit must-not-reuse."
+      },
+      "minute_restriction": {
+        "bound": false,
+        "candidate_source": null,
+        "why_not_bound": "NEGATIVE RESULT. No source of pregame minute restrictions is named anywhere in this node's read scope -- the frozen availability table does not list the field at all, so it has never been adjudicated even as unavailable."
+      },
+      "news": {
+        "bound": false,
+        "candidate_source": "data/news_capture/news_items.csv",
+        "why_not_bound": "outside read scope; and the audited verdict is UNUSABLE without an extraction layer because the content is prose. This node's news domain therefore REQUIRES a non-empty attributed_to and a claim_type, so an unattributed headline is refused rather than silently stored as if it were a fact."
+      },
+      "odds": {
+        "bound": false,
+        "candidate_source": "data/odds_capture/",
+        "why_not_bound": "outside read scope. Additionally the packet records a standing caution that a market feature changes what the model is; binding this domain to the prediction path is a scientific decision, not a capture decision."
+      },
+      "starter": {
+        "bound": false,
+        "candidate_source": null,
+        "why_not_bound": "same absence as lineup. data/derived/starters.csv is derived from play-by-play and is a target-game outcome, not a pregame announcement."
+      },
+      "transaction": {
+        "bound": false,
+        "candidate_source": "data/injury_history/injury_history.csv",
+        "why_not_bound": "outside read scope; and even in scope it is the wrong regime for THIS node. It was observed in a single retrospective scrape, so every record would enter the ledger as retrospective=true / CUTOFF_UNPROVEN and could never admit at a cutoff. A prospective transaction capture is a different source."
+      }
+    }
+  },
+  "stop_conditions": {
+    "declared": "a finding would change the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status",
+    "reasoning": "this node adjudicates no field, promotes no field, and touches no historical row. The payload blocklist is a restriction on what may be CAPTURED; it neither widens nor narrows the cutoff-valid feature set. The contradictions found are documentation defects and a contract scope defect, and are raised rather than resolved.",
+    "tripped": false
+  },
+  "test_run": {
+    "command": "python TESTS.py",
+    "exit_code": 0,
+    "n_failed": 0,
+    "n_passed": 24,
+    "n_tests": 24,
+    "test_names": [
+      "ledger: append never rewrites -- the file only ever grows by a prefix-preserving write",
+      "schema: attributable news requires a non-empty attribution",
+      "no backdating: an entity may not be observed before its own first sighting, cross-source",
+      "no backdating: four distinct rejections, and none of them writes a byte",
+      "SOURCE_BINDING cites artifacts whose sha256 still matches the bytes on disk",
+      "blocklist: every realised-outcome key and prefix is refused in every domain",
+      "ledger: first_seen -> change -> reaffirmation, with first_seen copied forward unchanged",
+      "derived files carry no wall-clock field: regenerating twice is byte-identical",
+      "digest: stable to key order, sensitive to content; entity_key needs its key fields",
+      "domains: exactly the eight contract criteria, one domain each",
+      "schema: value outside the declared enum is refused",
+      "scope: every file this node wrote is inside the lane directory",
+      "production ledger exists, is empty, and no source is bound",
+      "derived files are a pure function of the ledger: delete and replay reproduces them",
+      "schema: required field missing is refused",
+      "retrospective records are CUTOFF_UNPROVEN and are never admitted at any cutoff",
+      "scope: a ledger rooted outside the lane directory is refused",
+      "self-test corpus: all ten end-to-end checks pass and the receipt is reproducible",
+      "admission is strict: observed_at == cutoff does not admit; observed_at < cutoff does",
+      "verify: catches a record whose observed_at was pushed backwards",
+      "verify: catches a deleted intermediate record (the chain breaks)",
+      "verify: catches an overwritten first_seen_at_utc",
+      "verify: catches a payload edited in place",
+      "schema: undeclared field is refused"
+    ]
+  },
+  "type": "implementation",
+  "what_was_built": [
+    "capture_schema.py -- eight domains, one per contract criterion, with declared fields, enumerations, and a call-site blocklist refusing realised target-game outcomes and their surrogates",
+    "capture_ledger.py -- append-only JSONL ledger with immutable first_seen, appended change history, five no-backdating rules, a derived-and-replayable state index, an independent verify() that catches hand editing, and strict-inequality cutoff admission that refuses CUTOFF_UNPROVEN records",
+    "SOURCE_BINDING.json -- per-domain declaration of why no source is bound, every verdict extracted programmatically from a frozen in-scope artifact with its sha256",
+    "selftest_capture.py + SELFTEST_RECEIPT.json -- a synthetic corpus exercising all eight domains and every rejection path",
+    "TESTS.py -- standalone suite (pytest is not installed); main() returns 1 on failure",
+    "CAPTURE_CONTRACT.md -- the specification, with the code named as governing"
+  ]
+}

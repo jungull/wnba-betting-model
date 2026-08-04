@@ -1,6 +1,6 @@
-# R10_O15_REPORT_REMEDIATION — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
+# R16_I11_SEAL_HONESTY — Make I11's seal claim honest: obfuscation is not blinding
 
-**Lane:** operations  |  **Type:** documentation  |  **Severity on failure:** C  |  **Role:** documentation engineer
+**Lane:** operations  |  **Type:** implementation  |  **Severity on failure:** B  |  **Role:** blinding infrastructure engineer
 
 > This file is GENERATED from the node's contract in `PROGRAM_GRAPH.json`. It is the auditable
 > record of exactly what this node's agent was told. Do not edit it by hand.
@@ -33,7 +33,7 @@
 
 ## Epistemic status of your output
 
-REMEDIATION of a confirmed missing declared output. It writes up evidence that ALREADY EXISTS in ops_lane/O15_LOGOUT_SURVIVAL/ and may not add a finding the original run did not make. Its parent finding is O15_LOGOUT_SURVIVAL's validation_failed event, which is preserved and not rewritten.
+REMEDIATION of an OVERSTATED ACCEPTANCE CRITERION. An independent verifier reconstructed the plaintext of both sealed payloads in about ten lines from public inputs. Blinding for the possession experiment rests on PROCESS separation enforced by the graph, not on cryptography; this node removes the temptation to treat the crypto as a second line of defence when it is not one.
 
 Write this verbatim into your report. It bounds what your output may later be cited for.
 
@@ -61,18 +61,17 @@ Write this verbatim into your report. It bounds what your output may later be ci
 
 ## Your mandate
 
-**Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence**
+**Make I11's seal claim honest: obfuscation is not blinding**
 
 Deliver exactly this, to the standard the acceptance criteria below describe. The criteria are not a summary of the mandate — they *are* the mandate.
 
 ## Acceptance criteria — your output is validated against exactly these
 
-* the report is derived ONLY from files already present in experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/
-* no new measurement is performed and no new finding is introduced
-* the epistemic status of the original node is carried verbatim
-* the report states that O15_LOGOUT_SURVIVAL's declared output was missing and that this is a remediation, not the original run
-* nothing under experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/ is modified
-* every defect the independent verifier raised against the original node is carried into the report rather than quietly dropped
+* the reconstruction attack is reproduced as an executable test that PASSES when the plaintext is recoverable -- the defect is demonstrated, not described
+* the criterion 'a sealed directory cannot be read by the writing process' is either MET by a mechanism that survives the attack, or explicitly WITHDRAWN and replaced by the process-separation guarantee the graph actually enforces
+* no claim of cryptographic blinding survives that the test does not support
+* the manifest binding, which was sound, is retained
+* I11's own artifacts are NOT edited
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 
@@ -84,17 +83,18 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 **Read:** `experiments/player_program/`
 
-**Write (nothing outside this):** `experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/`
+**Write (nothing outside this):** `experiments/player_program/ops_lane/R16_I11_SEAL_HONESTY/`
 
 **Forbidden inputs:** `experiments/player_program/stage2b/SEALED_RESULTS`
 
 **Required outputs:**
 
-* `experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md`
+* `experiments/player_program/ops_lane/R16_I11_SEAL_HONESTY/REPORT.md`
+* `experiments/player_program/ops_lane/R16_I11_SEAL_HONESTY/TESTS.py`
 
 ## Validation that will be run against your output
 
-* `python -c "import pathlib,sys;p=pathlib.Path('experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md');sys.exit(0 if p.exists() and p.stat().st_size>1000 else 1)"`
+* `python experiments/player_program/ops_lane/R16_I11_SEAL_HONESTY/TESTS.py`
 
 ---
 

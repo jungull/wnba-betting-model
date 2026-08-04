@@ -1,0 +1,564 @@
+{
+  "schema": "d14_entity_resolution_and_cold_start_findings/1",
+  "node_id": "D14_ENTITY_RESOLUTION_AND_COLD_START",
+  "lane": "data",
+  "type": "implementation",
+  "severity_on_failure": "B",
+  "generated_utc": "2026-08-04T20:09:04.125668Z",
+  "worktree": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program",
+  "branch": "player-model-program",
+  "epistemic_status": "DESIGN ARTIFACT + TESTS. Defines behaviour at the boundaries. Establishes no effect.",
+  "scope_declaration": {
+    "nothing_fitted_tuned_scored_or_promoted": true,
+    "no_forecast_compared_to_any_outcome": true,
+    "sealed_results_read": false,
+    "frozen_artifacts_modified": [],
+    "git_commands_run": [
+      "read-only: git rev-parse --abbrev-ref HEAD"
+    ],
+    "postgame_use": "realised box membership is used ONLY to audit the pregame universe's own counters (tests B5, C9), which PREDICTION_CONTRACT_V5_SPEC.md section 6 expressly permits. No candidate is created from it.",
+    "coverage_means": "obligation completeness, never statistical coverage"
+  },
+  "outputs": [
+    "experiments/player_program/data_lane/D14_ENTITY_RESOLUTION_AND_COLD_START/REPORT.md",
+    "experiments/player_program/data_lane/D14_ENTITY_RESOLUTION_AND_COLD_START/FINDINGS.json",
+    "experiments/player_program/data_lane/D14_ENTITY_RESOLUTION_AND_COLD_START/IDENTITY_AND_COLD_START_CONTRACT.md",
+    "experiments/player_program/data_lane/D14_ENTITY_RESOLUTION_AND_COLD_START/TESTS.py",
+    "experiments/player_program/data_lane/D14_ENTITY_RESOLUTION_AND_COLD_START/TEST_RESULTS.json"
+  ],
+  "artifacts_measured": [
+    "experiments/player_program/projected_exposure_v1/projected_player_possessions_v1.parquet",
+    "experiments/player_program/projected_exposure_v1/projected_team_rotations_v1.parquet",
+    "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+    "experiments/player_program/projected_exposure_v1/PROJECTED_EXPOSURE_VALIDATION.json",
+    "experiments/player_program/event_contract_v1/canonical_player_events_v1.parquet",
+    "experiments/player_program/turnover_targets_v1/player_turnover_targets_v1.parquet",
+    "experiments/player_program/turnover_targets_v1/team_turnover_reconciliation_v1.parquet",
+    "experiments/player_program/possessions_v2/player_season_possessions_v2.parquet",
+    "experiments/player_program/possessions_v2/possessions_raw_v2.parquet"
+  ],
+  "tests": {
+    "runner": "TESTS.py (standalone; pytest is not installed; main() returns 1 on failure)",
+    "n_tests": 25,
+    "n_passed": 25,
+    "n_failed": 0,
+    "n_invariant": 22,
+    "n_pinned_gap": 3,
+    "pinned_gap_ids": [
+      "A3",
+      "B5",
+      "C9"
+    ]
+  },
+  "universe_grain": {
+    "exposure_artifact_rows": 120262,
+    "distinct_obligations_row_uid": 44843,
+    "note": "the artifact repeats each obligation once per evidence regime; all counts in this file are over distinct row_uid unless stated otherwise",
+    "players": 386,
+    "games": 1495,
+    "team_games": 2988
+  },
+  "acceptance_criteria": [
+    {
+      "criterion": "transferred-player aliases resolve to one identity with evidence",
+      "verdict": "MET IN PART, WITH A NAMED LIMIT",
+      "evidence": {
+        "identity_key": "integer player_id on every registered player artifact",
+        "free_text_name_columns_found": [],
+        "orphan_identities_from_realised_artifacts": 0,
+        "transfer_is_one_id_carrying_two_team_ids__registered": 82,
+        "transfer_is_one_id_carrying_two_team_ids__recomputed_from_raw_lineups": 82,
+        "quoted_prior_evidence_not_recomputed_here": {
+          "source": "ROSTER_SOURCE_AUDIT_RECEIPT.json",
+          "acquisition_name_resolution_rate": 0.8034,
+          "release_name_resolution_rate": 0.6753,
+          "n_ambiguous_names_mapping_to_multiple_ids": 0,
+          "team_abbreviation_aliases": [
+            "POR->PDX",
+            "PHO->PHX"
+          ]
+        }
+      },
+      "limit": "no free-text name column exists in any in-scope artifact, so an ID SPLIT (one person under two player_ids) is undetectable from these bytes. The criterion is met for the transfer case and NOT established for the id-minting case.",
+      "tests": [
+        "A1",
+        "A2",
+        "A5",
+        "B1"
+      ]
+    },
+    {
+      "criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "verdict": "MET",
+      "evidence": {
+        "cold_start_obligations": 8300,
+        "cold_start_share_pct": 18.51,
+        "tier_A_cold_start": 1280,
+        "tier_A_obligations": 35629,
+        "tier_B_cold_start": 7020,
+        "tier_B_obligations": 9214,
+        "zero_history_rows_served_by_fitted_conditional_estimator": 0,
+        "cold_start_rows_with_null_or_negative_projected_minutes": 0,
+        "s3_the_only_tier_A_route_for_a_player_with_no_prior_box_row": {
+          "obligations": 18,
+          "distinct_players": 18,
+          "earliest_admission": "2026-07-30",
+          "era_rule_holds": true
+        },
+        "reserved_source_S4_occurrences": 0
+      },
+      "tests": [
+        "C1",
+        "C2",
+        "C6",
+        "C7",
+        "C8",
+        "D1",
+        "D2",
+        "D3"
+      ]
+    },
+    {
+      "criterion": "team-history transitions are handled explicitly",
+      "verdict": "MET FOR DUAL OBLIGATION; A GRAIN DEFECT IS OPEN",
+      "evidence": {
+        "dual_claim_obligations": 1232,
+        "distinct_player_games_claimed_by_two_clubs": 616,
+        "clubs_per_claimed_player_game": {
+          "2": 616
+        },
+        "flag_disagreements_with_the_condition": 0,
+        "multi_club_player_seasons_by_tier": {
+          "A": {
+            "player_seasons": 1058,
+            "gt_one_team": 91,
+            "max_teams_in_one_season": 3
+          },
+          "B": {
+            "player_seasons": 1496,
+            "gt_one_team": 678,
+            "max_teams_in_one_season": 7
+          }
+        },
+        "realised_multi_club_player_seasons": 82,
+        "team_transition_debut_obligations": 75,
+        "team_transition_debuts_flagged_cold_start": 0
+      },
+      "open_defect": "F3 / X1 \u2014 see contradictions",
+      "tests": [
+        "B1",
+        "B2",
+        "B3",
+        "B4",
+        "B5"
+      ]
+    },
+    {
+      "criterion": "cold-start behaviour is a declared fallback, never a silent default",
+      "verdict": "MET",
+      "evidence": {
+        "is_cold_start_definition_exceptions": 0,
+        "is_fallback_vs_level_disagreements_p_active": 0,
+        "is_fallback_vs_level_disagreements_e_minutes": 0,
+        "pred_is_fallback_disagreements": 0,
+        "declaration_fields_checked": 17,
+        "null_values_across_declaration_fields": 0,
+        "null_projected_off_possessions_rows": 51,
+        "their_declared_reason": {
+          "team_game_status": [
+            "minutes_only_no_pace"
+          ],
+          "pace_source": [
+            "unresolved_no_prior_games"
+          ]
+        },
+        "season_openers_with_zero_tier_A_candidates": 76,
+        "declared_unresolved_rather_than_manufactured": true
+      },
+      "tests": [
+        "C1",
+        "C2",
+        "C3",
+        "C4",
+        "C5",
+        "C8",
+        "D4",
+        "D5",
+        "D6"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "title": "player1_id in canonical_player_events/1 is a polymorphic actor id; only one of its four non-player classes is handled anywhere",
+      "severity": "B",
+      "kind": "undeclared hazard, prospective",
+      "measurement": {
+        "nonnull_player1_values": 574295,
+        "distinct_player1_ids": 1064,
+        "resolve_to_universe_player": 381,
+        "team_actor_ids": 15,
+        "team_actor_rows": 38726,
+        "team_actor_families": {
+          "rebound": 23131,
+          "timeout": 12227,
+          "turnover": 2803,
+          "violation": 520,
+          "foul": 45
+        },
+        "official_shaped_ids": 629,
+        "official_shaped_rows": 3117,
+        "non_roster_person_ids": 39,
+        "non_roster_person_rows": 187,
+        "unresolved_row_share_pct": 7.3185
+      },
+      "already_declared": "EVENT_LIMITATIONS.md gap 1 declares the team-id-in-person-field behaviour FOR REBOUNDS ONLY (23,131 rows)",
+      "extension_measured_here": "15,595 further rows across timeout (12,227), turnover (2,803), violation (520) and foul (45); plus 629 official-shaped ids over 3,117 rows and 39 non-roster person ids over 187 rows, neither class declared anywhere",
+      "no_existing_artifact_shown_corrupted": true,
+      "counter_evidence_that_the_pattern_is_achievable": {
+        "team_actor_turnover_events": 2803,
+        "team_unattributed_in_reconciliation": 2803,
+        "player_attributed": 39278,
+        "team_total": 42081
+      },
+      "escalated_as": "E3"
+    },
+    {
+      "id": "F2",
+      "title": "cold start is two orthogonal axes wearing one word: player history and fold degeneracy",
+      "severity": "B",
+      "kind": "structural, measured",
+      "measurement": {
+        "level4_rows": 4989,
+        "level4_seasons": [
+          2021
+        ],
+        "all_2021_obligations": 4989,
+        "level4_is_cold_start_false": 4658,
+        "median_n_prior_appearances_on_level4": 12.0,
+        "target_disagreements": 0
+      },
+      "statement": "fallback_level == 4 is an exact indicator function of the 2021 fold (4,989 of 4,989 obligations, both targets, zero rows elsewhere), and 13,944 regime-expanded level-4 rows carry is_cold_start = False with a median of 12 prior appearances",
+      "escalated_as": "E2"
+    },
+    {
+      "id": "F3",
+      "title": "the implemented is_cold_start is player-season; the spec defines it player-team-season",
+      "severity": "B",
+      "kind": "document vs bytes",
+      "measurement": {
+        "team_transition_debut_obligations": 75,
+        "of_which_is_cold_start_false": 75,
+        "distinct_players": 60,
+        "by_season": {
+          "2021": 12,
+          "2022": 14,
+          "2023": 9,
+          "2024": 9,
+          "2025": 25,
+          "2026": 6
+        },
+        "by_tier": {
+          "B": 44,
+          "A": 31
+        },
+        "audited_obligations": 28107
+      },
+      "consequence": "75 obligations that are a player's debut for a new club, after she has already played elsewhere that season, all carry is_cold_start = False",
+      "escalated_as": "E1",
+      "resolved_in_node": false
+    },
+    {
+      "id": "F4",
+      "title": "is_cold_start is a statement about admitted evidence, not about the player",
+      "severity": "C",
+      "kind": "semantics, measured bound",
+      "measurement": {
+        "audited_obligations": 28107,
+        "counter_mismatches": 474,
+        "mismatch_direction_contract_minus_realised": {
+          "-1": 474
+        },
+        "false_cold_start_rows": 2,
+        "false_cold_start_rate_pct": 0.00712
+      },
+      "statement": "n_prior_appearances counts ADMITTED prior appearances; 474 of 28,107 audited obligations (1.69%) carry a value exactly one below reality, in that direction on every row. False-cold-start rate: 2 obligations."
+    },
+    {
+      "id": "F5",
+      "title": "the conditional-minutes fallback ladder rule is undeclared in every readable artifact",
+      "severity": "C",
+      "kind": "documentation gap",
+      "measurement": {
+        "level3_rows_ex_2021": 8170,
+        "rows_with_n_prior_appearances_le_1": 9867,
+        "n_prior_appearances_max_on_level3": 1,
+        "n_prior_appearances_eq_1_by_level": {
+          "2": 1697,
+          "3": 201
+        },
+        "converse_holds": false,
+        "ladder_rule_source_readable_in_scope": false
+      },
+      "statement": "level 3 implies n_prior_appearances <= 1, but of 1,898 ex-2021 obligations with exactly one prior appearance, 1,697 sit at level 2 and 201 at level 3. The discriminating field is not emitted and cbs_v15 is outside this node's read scope."
+    },
+    {
+      "id": "F6",
+      "title": "the structural full-team cold start is handled correctly and is the pattern the rest of the fallback surface should follow",
+      "severity": "none \u2014 positive finding",
+      "kind": "confirmation",
+      "measurement": {
+        "tier_A_only": {
+          "team_games_in_universe": 2990,
+          "team_games_with_no_tier_A_candidate": 76,
+          "unresolved_tier_A_rotations": 76,
+          "by_season": {
+            "2021": 12,
+            "2022": 12,
+            "2023": 12,
+            "2024": 12,
+            "2025": 13,
+            "2026": 15
+          },
+          "note": "one per club per season; league size 12/12/12/12/13/15"
+        },
+        "widest_regime": {
+          "unresolved_under_widest_regime": 2,
+          "seasons": [
+            2021
+          ],
+          "dates": [
+            "2021-05-14",
+            "2021-05-15"
+          ],
+          "n_candidates": [
+            4,
+            4
+          ],
+          "n_allocated": [
+            0,
+            0
+          ]
+        },
+        "stranded": {
+          "contract_obligations_declared": 44851,
+          "obligations_present_in_exposure_artifact": 44843,
+          "stranded": 8,
+          "stranded_declared_in_validation_receipt": true
+        }
+      },
+      "statement": "every club's season opener carries zero Tier A candidates (76 team-games, exactly league size each season) and is declared unresolved rather than given a manufactured rotation. The weak tiers rescue 74; the two that remain are both 2021 openers, the hard floor of this program's cold start."
+    },
+    {
+      "id": "F7",
+      "title": "multi-club candidacy must be reported per tier or it misdescribes transfers by a factor of five",
+      "severity": "C",
+      "kind": "reporting rule",
+      "measurement": {
+        "A": {
+          "player_seasons": 1058,
+          "gt_one_team": 91,
+          "max_teams_in_one_season": 3
+        },
+        "B": {
+          "player_seasons": 1496,
+          "gt_one_team": 678,
+          "max_teams_in_one_season": 7
+        }
+      },
+      "statement": "Tier A: 91 of 1,058 player-seasons (8.6%), max 3 clubs, against a realised 82 of 1,039 (7.9%). Tier B: 678 of 1,496 (45.3%), max 7 clubs. The Tier B figure is candidate inflation, not movement."
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "X1",
+      "between": [
+        "PREDICTION_CONTRACT_V5_SPEC.md section 3",
+        "projected_player_possessions_v1.parquet"
+      ],
+      "statement": "the spec defines is_cold_start as 'no prior appearance for THIS TEAM this season'; the bytes implement (n_prior_appearances == 0) at the player-season grain",
+      "rows_affected": 75,
+      "status": "UNRESOLVED \u2014 this node did not choose a winner"
+    },
+    {
+      "id": "X2",
+      "between": [
+        "PREDICTION_CONTRACT_V5_SPEC.md section 3",
+        "projected_player_possessions_v1.parquet"
+      ],
+      "statement": "the spec states every Tier B row carries candidate_published_time, candidate_observed_time, candidate_evidence_time, is_fallback and exclusion_reason 'without exception'; none of the five is present in the exposure artifact, and the keep list in build_projected_exposure.py lines 218-222 does not select them",
+      "status": "PROPAGATION GAP, NOT NECESSARILY A CONTRACT DEFECT \u2014 the upstream contract parquet is at experiments/prediction_contract_v5/, outside this node's read scope, so whether IT carries them is unestablished"
+    },
+    {
+      "id": "X3",
+      "between": [
+        "PREDICTION_CONTRACT_V5_SPEC.md section 9",
+        "projected_player_possessions_v1.parquet"
+      ],
+      "statement": "the spec requires all three history fields on every emitted forecast; n_prior_candidate_obligations is absent from the artifact, so the spec's own check n_prior_appearances <= n_prior_candidate_obligations is not computable from it",
+      "status": "PROPAGATION GAP, same cause as X2"
+    },
+    {
+      "id": "X4",
+      "between": [
+        "build_projected_exposure.py line 118 / PROJECTED_EXPOSURE_RECEIPT.json / PROJECTED_EXPOSURE_VALIDATION.json / P3_EXPERIMENT_SUMMARY.md",
+        "projected_player_possessions_v1.parquet"
+      ],
+      "statement": "four documents assert 'All 4,169 B_transaction_sensitivity rows'; the artifact carries 4,161",
+      "status": "RECONCILED, BENIGN \u2014 the same validation file records the contract count 4,169, \"stranded\": 8 and \"closes_to\": 44851. 4,169 is the CONTRACT count and the prose describes it as the ARTIFACT count. Wording, not arithmetic, but it is the kind of eight-row slippage that later gets cited as a row count.",
+      "contract_obligations": 44851,
+      "artifact_obligations": 44843,
+      "stranded": 8
+    },
+    {
+      "id": "X5",
+      "between": [
+        "event_contract_v1/EVENT_LIMITATIONS.md gap 1",
+        "canonical_player_events_v1.parquet"
+      ],
+      "statement": "the team-id-in-person-field hazard is declared for rebounds only; it affects 15,595 further rows across timeout, turnover, violation and foul, plus 629 official-shaped ids and 39 non-roster person ids that are declared nowhere",
+      "status": "INCOMPLETE DECLARATION \u2014 see F1 / E3"
+    }
+  ],
+  "escalations": [
+    {
+      "id": "E1",
+      "to": "possession wave",
+      "affects": "CANDIDATE UNIVERSE labelling / stratum definition",
+      "trips_stop_condition": true,
+      "resolved_in_node": false,
+      "statement": "V2_STOP_CONDITION.json finding S6 records that the incumbent's largest measurable defect is a level error ON THE COLD-START STRATA (bias 37.1% of MSE on team_window_prior_season, 42.5% on season_openers, against 0.19% pooled) and that whether K0_MATCHED carries the tier structure decides the wave. Any construction stratifying by a cold-start indicator inherits the X1 grain question: under the spec's team-scoped definition 75 obligations move stratum; under the implemented player-scoped one they do not. The definition must be settled BEFORE any stratum is frozen into a control. This does not change which rows are in the universe, only which stratum counts them.",
+      "evidence": {
+        "team_transition_debut_obligations": 75,
+        "of_which_is_cold_start_false": 75,
+        "distinct_players": 60,
+        "by_season": {
+          "2021": 12,
+          "2022": 14,
+          "2023": 9,
+          "2024": 9,
+          "2025": 25,
+          "2026": 6
+        },
+        "by_tier": {
+          "B": 44,
+          "A": 31
+        },
+        "audited_obligations": 28107
+      }
+    },
+    {
+      "id": "E2",
+      "to": "possession wave",
+      "affects": "INFERENCE STRUCTURE",
+      "trips_stop_condition": true,
+      "resolved_in_node": false,
+      "statement": "V2_STOP_CONDITION.json finding S7 raises per-fold degeneracy for the TEAM PACE ladder \u2014 a tier indicator identically zero in four of six chronological folds, landing on the authoritative control. The same shape is present on the PLAYER ladder and S7 does not name it. fallback_level == 4 is not merely degenerate in some folds; it is an EXACT indicator function of the 2021 fold, 4,989 of 4,989, for both targets. A design matrix carrying both a fold effect and a player fallback-level dummy is rank-deficient by construction, not by accident of sparsity.",
+      "evidence": {
+        "level4_rows": 4989,
+        "level4_seasons": [
+          2021
+        ],
+        "all_2021_obligations": 4989,
+        "level4_is_cold_start_false": 4658,
+        "median_n_prior_appearances_on_level4": 12.0,
+        "target_disagreements": 0
+      },
+      "what_this_node_did_not_do": "no rank or estimability check was run on any design matrix; feature_gate.py, comparison_gate.py and gate_invocation.py were not touched"
+    },
+    {
+      "id": "E3",
+      "to": "possession wave",
+      "affects": "CUTOFF-VALID FEATURE SET, prospectively",
+      "trips_stop_condition": true,
+      "resolved_in_node": false,
+      "statement": "every granular event channel the wave might build \u2014 turnovers by mechanism, rebounds, fouls \u2014 reads player1_id. A naive join attributes 7.32% of actor-bearing rows to non-existent players, and the largest affected family is rebound (23,131 rows), which EVENT_LIMITATIONS.md already flags as carrying rebound_type = unresolved on all 125,309 rows. NO EXISTING ARTIFACT WAS SHOWN TO BE CORRUPTED: player_turnover_targets/1 handles the team class exactly (2,803 = 2,803) and player_possessions/2 derives from stints rather than a player1_id join. This is a prospective hazard on the feature set, not a retrospective defect, escalated so it is closed before an event-channel arm is written rather than after.",
+      "evidence": {
+        "actor_partition": {
+          "nonnull_player1_values": 574295,
+          "distinct_player1_ids": 1064,
+          "resolve_to_universe_player": 381,
+          "team_actor_ids": 15,
+          "team_actor_rows": 38726,
+          "team_actor_families": {
+            "rebound": 23131,
+            "timeout": 12227,
+            "turnover": 2803,
+            "violation": 520,
+            "foul": 45
+          },
+          "official_shaped_ids": 629,
+          "official_shaped_rows": 3117,
+          "non_roster_person_ids": 39,
+          "non_roster_person_rows": 187,
+          "unresolved_row_share_pct": 7.3185
+        },
+        "existing_correct_handling": {
+          "team_actor_turnover_events": 2803,
+          "team_unattributed_in_reconciliation": 2803,
+          "player_attributed": 39278,
+          "team_total": 42081
+        }
+      }
+    }
+  ],
+  "not_escalated": {
+    "primary_target_unchanged": "REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS",
+    "k0_structure_unchanged": true,
+    "candidate_universe_membership_unchanged": true,
+    "leakage_status_unchanged": true,
+    "no_same_game_surrogate_introduced_for": [
+      "realised overtime",
+      "game_minutes",
+      "duration",
+      "overtime periods"
+    ]
+  },
+  "could_not_establish": [
+    {
+      "claim": "that no two player_ids denote the same person",
+      "why": "no free-text name column exists in any registered player artifact and every name-keyed source lies outside this node's read scope (experiments/player_program/ only). An ID SPLIT would be invisible here.",
+      "consequence": "the alias acceptance criterion is met for the TRANSFER case (one id carrying two team_ids, verified against raw lineups) and NOT established for the ID-MINTING case"
+    },
+    {
+      "claim": "the name-to-id resolution rate of the ingest sources",
+      "why": "data/injury_history/ and data/injury_capture/ are outside the read scope; the 80.34% / 67.53% / 0-ambiguous figures are QUOTED from ROSTER_SOURCE_AUDIT_RECEIPT.json and were not recomputed by this node"
+    },
+    {
+      "claim": "the numeric rule separating fallback levels 2 and 3",
+      "why": "the discriminating field is not emitted in any registered artifact and cbs_v15, which assigns the levels, is outside the read scope",
+      "measured_instead": {
+        "level3_rows_ex_2021": 8170,
+        "rows_with_n_prior_appearances_le_1": 9867,
+        "n_prior_appearances_max_on_level3": 1,
+        "n_prior_appearances_eq_1_by_level": {
+          "2": 1697,
+          "3": 201
+        },
+        "converse_holds": false,
+        "ladder_rule_source_readable_in_scope": false
+      }
+    },
+    {
+      "claim": "the author-intended meaning of fallback level 2 versus level 3",
+      "why": "the assigning code was not read; only the partition was measured"
+    },
+    {
+      "claim": "whether the upstream contract carries the five Tier-B evidence-time columns and n_prior_candidate_obligations",
+      "why": "experiments/prediction_contract_v5/ is outside the read scope; the exposure builder's producer check only covers columns in its own keep list, which excludes them, so its passing is uninformative here"
+    },
+    {
+      "claim": "the tier, players or cold-start status of the 8 stranded obligations",
+      "why": "they are absent from the exposure artifact by construction; the validation receipt declares the count and the two unresolved team-games but does not enumerate the rows"
+    },
+    {
+      "claim": "any performance, accuracy or calibration property of any fallback stratum",
+      "why": "prohibited by the no-performance-peeking rule and out of scope for this node"
+    },
+    {
+      "claim": "that the 39 non-roster person ids are coaches",
+      "why": "evidence is strongly consistent \u2014 180 fouls of which 64 are explicitly Technical, 7 ejections, ids in the person range, no other event family \u2014 but no roster or staff table is in scope to confirm it. Recorded as 'non-roster person', not as 'coach'."
+    }
+  ]
+}

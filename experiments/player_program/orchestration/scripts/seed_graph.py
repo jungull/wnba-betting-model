@@ -727,6 +727,7 @@ def build():
         ("R10_O15_REPORT_REMEDIATION", "O15_LOGOUT_SURVIVAL", "ops_lane", "operations"),
         ("R11_P25_REPORT_REMEDIATION", "P25_OFFSET_DEPENDENCY_GUARD", "stage2b", "possession"),
         ("R12_P27_REPORT_REMEDIATION", "P27_FOLD_LOCAL_ESTIMABILITY_GUARD", "stage2b", "possession"),
+        ("R13_I12_REPORT_REMEDIATION", "I12_DESIGN_DEPENDENCY_AUDIT", "ops_lane", "operations"),
     ]
     for nid, parent, sub, lane in REPORT_REMEDIATION:
         root = LANE_ROOT[lane]
@@ -753,6 +754,82 @@ def build():
             ],
             severity="C",
         ))
+
+    # Substantive remediations -- these correct a WRONG CLAIM, not a missing file, so each one
+    # must re-measure rather than re-narrate.
+    N.append(node(
+        "R14_D10_COACHING_CORRECTION",
+        "Correct D10's manufactured negative on the coaching family and re-measure its coverage",
+        "data", "audit", ["G01_GRAPH_ENGINE"], "cutoff-validity auditor",
+        "REMEDIATION of a confirmed FALSE NEGATIVE. D10 reported the coaching family ABSENT with "
+        "0 coverage on an assertion contradicted by the bytes of a file it had itself loaded. "
+        "This node RE-MEASURES; it may not simply restate D12's numbers, because relaying an "
+        "unverified figure is the failure mode that produced the defect.",
+        outputs=[f"{PP}/data_lane/R14_D10_COACHING_CORRECTION/CORRECTION.json",
+                 f"{PP}/data_lane/R14_D10_COACHING_CORRECTION/REPORT.md"],
+        validators=[f"python -c \"import json;json.load(open('{PP}/data_lane/"
+                    f"R14_D10_COACHING_CORRECTION/CORRECTION.json'))\""],
+        criteria=[
+            "the 49 front_office rows in data/injury_history/injury_history.csv are enumerated "
+            "and classified, and the ~2,930 COACH'S DECISION rows are explicitly excluded as noise "
+            "rather than counted as coaching identity",
+            "coverage by season and by fold is RE-MEASURED, not copied from D12",
+            "the corrected verdict is PRESENT_RETROSPECTIVE / CUTOFF_UNPROVEN, and the "
+            "cutoff_valid count stays 0 -- presence is not cutoff validity",
+            "the correction states how the false negative was produced, so the same search error "
+            "is not repeated",
+            "D10's original ledger is NOT edited; the correction is a separate artifact",
+        ],
+        severity="B",
+    ))
+
+    N.append(node(
+        "R15_G02_INDEX_CLASSIFICATION",
+        "Repair the DERIVED vs HAND-MAINTAINED classification in the document index",
+        "governance", "implementation", ["G01_GRAPH_ENGINE"], "documentation engineer",
+        "REMEDIATION of a confirmed misclassification. The index exists and is useful; the "
+        "criterion it failed is the one that makes it safe to ACT on, since treating a "
+        "hand-maintained contract as regenerable invites someone to regenerate it.",
+        outputs=[f"{ORCH_REL}/reports/DOCUMENT_INDEX_CORRECTION.json"],
+        validators=[f"python -c \"import json;json.load(open('{ORCH_REL}/reports/"
+                    f"DOCUMENT_INDEX_CORRECTION.json'))\""],
+        criteria=[
+            "classification is evidenced per file -- a generator that writes it, or a header "
+            "declaring it -- never inferred from the file extension alone",
+            "RESEARCH_CONTRACT_V1.md, GRAPH_POLICY.md, README.md and the handoffs are corrected "
+            "to HAND_MAINTAINED",
+            "a file claiming DERIVED names the generator that produces it",
+            "the self-reference case is handled: the index itself is DERIVED",
+            "the original DOCUMENT_INDEX.json is NOT edited; the correction is separate",
+        ],
+        severity="C",
+        writes=[f"{ORCH_REL}/reports/DOCUMENT_INDEX_CORRECTION.json"],
+    ))
+
+    N.append(node(
+        "R16_I11_SEAL_HONESTY",
+        "Make I11's seal claim honest: obfuscation is not blinding",
+        "operations", "implementation", ["G01_GRAPH_ENGINE"], "blinding infrastructure engineer",
+        "REMEDIATION of an OVERSTATED ACCEPTANCE CRITERION. An independent verifier reconstructed "
+        "the plaintext of both sealed payloads in about ten lines from public inputs. Blinding for "
+        "the possession experiment rests on PROCESS separation enforced by the graph, not on "
+        "cryptography; this node removes the temptation to treat the crypto as a second line of "
+        "defence when it is not one.",
+        outputs=[f"{PP}/ops_lane/R16_I11_SEAL_HONESTY/REPORT.md",
+                 f"{PP}/ops_lane/R16_I11_SEAL_HONESTY/TESTS.py"],
+        validators=[f"python {PP}/ops_lane/R16_I11_SEAL_HONESTY/TESTS.py"],
+        criteria=[
+            "the reconstruction attack is reproduced as an executable test that PASSES when the "
+            "plaintext is recoverable -- the defect is demonstrated, not described",
+            "the criterion 'a sealed directory cannot be read by the writing process' is either "
+            "MET by a mechanism that survives the attack, or explicitly WITHDRAWN and replaced by "
+            "the process-separation guarantee the graph actually enforces",
+            "no claim of cryptographic blinding survives that the test does not support",
+            "the manifest binding, which was sound, is retained",
+            "I11's own artifacts are NOT edited",
+        ],
+        severity="B",
+    ))
 
     N.append(node(
         "O16_SHARED_SCHEMA_ADOPTION", "Merge a shared schema or contract change proposed by the operations lane",

@@ -1,0 +1,137 @@
+{
+ "node_id": "I12_DESIGN_DEPENDENCY_AUDIT",
+ "epistemic_status": "INFRASTRUCTURE. Call-site enforcement. feature_gate.py is not touched.",
+ "REPORT_md_not_written": {
+  "what_happened": "the contract lists REPORT.md as a required output. The execution harness refused the write with 'Subagents should return findings as text, not write report files', so the prose report was returned to the coordinator in the node's structured return value instead of being written here.",
+  "consequence": "the coordinator must materialise experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/REPORT.md from the returned summary. This file carries the epistemic-status line verbatim and every measurement the report cites; MEASUREMENTS.json carries the raw numbers.",
+  "not_a_measurement_gap": "no number was lost; only the prose container"
+ },
+ "artifact": {
+  "module": "experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/design_dependency_audit.py",
+  "algorithm_id": "design_dependency_audit_v1",
+  "entry_points": ["Design", "audit_design", "assert_design_identified", "affine_relations",
+                   "reconstruction_r2", "minimal_reconstructing_subset", "frozen_gate_status",
+                   "audit_receipt", "offset_tie_group_probe"],
+  "accepts": "the complete design declared as three blocks: [X (substantive) | offset (fixed coefficient) | nuisance (controls)], with optional fold and cluster columns",
+  "reuses_frozen": ["feature_gate.design_rank_report", "feature_gate.RANK_TOL",
+                    "feature_gate.COND_MAX", "feature_gate.audit", "feature_gate.BLOCKING"],
+  "modifies_frozen": [],
+  "adoption": "NONE. No existing module imports it. Adoption at a real fit call site is a separate decision this node does not make."
+ },
+ "acceptance_criteria": [
+  {"criterion": "the audit accepts the complete design [X | offset | nuisance]",
+   "status": "MET",
+   "evidence": "design_dependency_audit.Design(frame, x=..., offset=..., nuisance=...); six real designs audited in MEASUREMENTS.audits, three of which place a column in the nuisance block; TESTS t13, t19, t22, t23, t24"},
+  {"criterion": "augmented rank, condition number and affine-reconstruction checks are included",
+   "status": "MET",
+   "evidence": "augmented_rank (numerical_rank / n_columns / condition_number / singular_values, produced by feature_gate.design_rank_report on [X|offset|nuisance]), affine_reconstruction.r2_column_on_rest, affine_reconstruction.null_space_relations, offset_reconstruction.{r2_on_x,r2_on_nuisance,r2_on_design,minimal_reconstructing_subset}; TESTS t10, t19, t21"},
+  {"criterion": "feature_gate.py, comparison_gate.py and gate_invocation.py are byte-unchanged",
+   "status": "MET",
+   "evidence": "live sha256 == pinned == PROGRAM_STATE.shared_contracts == G00 RECONCILIATION expected, before and after every run; MEASUREMENTS.frozen_gate_status, program_state_vs_live, g00_recorded_vs_live, frozen_gates_unchanged_after_run; TESTS t01, t26"}
+ ],
+ "measured": {
+  "frozen_gates": {
+   "feature_gate.py": {"sha256": "b064c2c4675d354ec5cb5c6647782634c8139ca4233a5d732f408b6c2532f9a7", "bytes": 10812},
+   "comparison_gate.py": {"sha256": "c2d242581cc7551c6ce7d3aaf554f0cc18fd9b1f72677edd61ba95f91a7b5b92", "bytes": 86383},
+   "gate_invocation.py": {"sha256": "5c144b12c67910a4996aafe08e86e8939a2a1878168431850a99d22754ff9ded", "bytes": 173072},
+   "receipt_integrity.py": {"sha256": "8c88617407d6dfb50c394ad5888ff77cd2464b590242a35c5f97a1320e05751d"},
+   "three_way_agreement": ["live bytes", "PROGRAM_STATE.shared_contracts", "G00_LIVE_RECONCILIATION.checks.frozen_hashes"]
+  },
+  "universe": {"team_game_rows": 2982, "game_clusters": 1491, "rows_per_cluster": [2],
+               "prior_artifact_rows": 2990, "prior_artifact_games": 1495, "unresolved_rows": 8,
+               "target_nulls": 0},
+  "the_gap_reproduced": {
+   "design": "X={own_est, opp_est}, offset=projected_team_off_possessions",
+   "feature_gate_alone": {"passed": true, "findings": [], "columns_seen_by_rank_report": 2,
+                          "feature_only_numerical_rank": 2, "feature_only_condition_number": 1.221776},
+   "pairwise_correlations": {"own_vs_offset": 0.773844, "opp_vs_offset": 0.773844,
+                             "own_vs_opp": 0.197669, "feature_gate_corr_threshold": 0.999},
+   "augmented_audit": {"passed": false, "numerical_rank": 2, "n_columns": 3,
+                       "singular_values": [80.9533805, 48.91370142, 0.0],
+                       "r2_offset_on_design": 1.0,
+                       "minimal_reconstructing_subset": ["own_est", "opp_est"],
+                       "recovered_relation": "0.5*own_est + 0.5*opp_est - projected_team_off_possessions == 0",
+                       "relation_max_abs_deviation_in_data_units": 0.0,
+                       "folds_rank_deficient": ["2021", "2022", "2023", "2024", "2025", "2026"],
+                       "clusters_split_across_folds": 0}
+  },
+  "no_false_positive": {"design": "X={own_est - opp_est contrast}, offset=projection",
+                        "r2_offset_on_design": 0.0, "numerical_rank": "2 of 2",
+                        "condition_number": 1.0, "passed": true,
+                        "folds_full_rank": ["2021", "2022", "2023", "2024", "2025", "2026"]},
+  "nuisance_attribution": {"design": "X={own_est}, nuisance={opp_est}, offset=projection",
+                           "feature_gate_columns_seen": 1, "feature_gate_passed": true,
+                           "r2_offset_on_x_alone": 0.598834643468,
+                           "r2_offset_on_nuisance_alone": 0.598834643468,
+                           "r2_offset_on_design": 1.0, "passed": false},
+  "tier_designs": {
+   "full_dummy_set": {"numerical_rank": 4, "n_columns": 5,
+                      "recovered_relation": "src_league_prior_all + src_team_window_prior_season + src_team_window_same_season == 1",
+                      "max_abs_deviation": 6.661338147750939e-16},
+   "reference_level_dropped": {"pooled_numerical_rank": 4, "pooled_n_columns": 4,
+                               "pooled_condition_number": 4.676472,
+                               "folds_rank_deficient": ["2021", "2022", "2023", "2024"],
+                               "fold_zero_variance": {"2021": ["src_team_window_prior_season"]}},
+   "duplicate_encoding": {"numerical_rank": 4, "n_columns": 5,
+                          "recovered_relation": "pace_level + src_team_window_prior_season + 2*src_team_window_same_season == 3",
+                          "max_abs_deviation": 2.886579864025407e-15,
+                          "pace_level_bijective_with_pace_source": true}
+  },
+  "condition_number_is_not_a_stable_number_on_a_singular_design": {
+   "row_permutations": 8, "min": 13687184752868.996, "max": 218207030724608.38,
+   "relative_spread": 14.94, "numerical_rank_invariant": "2/3",
+   "r2_offset_on_design_invariant": 1.0,
+   "p25_recorded": 18252184946655.66, "i12_measured": 18249415043526.08,
+   "relative_difference": 0.00015175734508922776
+  },
+  "cross_check_vs_P25": {
+   "both_block_the_same_real_design": true,
+   "p25_blocking_kinds": ["augmented_rank_deficient", "design_reconstructs_offset",
+                          "pair_reconstructs_offset"],
+   "i12_blocking_kinds": ["affine_reconstruction", "augmented_rank_deficient",
+                          "fold_local_offset_reconstructed", "fold_local_rank_deficient",
+                          "offset_reconstructed_by_design", "offset_reconstructed_by_x"],
+   "shared_scalars_all_agree": true,
+   "shared_scalars": ["rows 2982", "clusters 1491", "identity max abs deviation 0.0",
+                      "corr own~projected 0.773844", "r2 offset on own alone 0.598834643468",
+                      "offset tie groups >=2: 1014", "tie groups where own_est constant: 9"]
+  },
+  "tests": {"checks_passed": 112, "checks_failed": 0,
+            "command": "python experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/TESTS.py"}
+ },
+ "could_not_establish": [
+  "cutoff validity of any audited column. The audit sees an assembled matrix and no timestamps; a column with no source timestamp remains CUTOFF_UNPROVEN whatever this audit returns.",
+  "eligibility or admission of any design. Passing here is an identifiability statement only: availability is not eligibility and eligibility is not admission.",
+  "absence of exact NONLINEAR redundancy. All reconstruction tests are affine. The tie-group probe returned informative=True on the real design (1014 offset tie groups of size >= 2, own_est constant in 9 of them, so NOT exactly determined) — that is a negative on one narrow test, not evidence of nonlinear independence.",
+  "adoption. No module in the program imports design_dependency_audit; measured by grep over experiments/player_program/**.py. Nothing is enforced anywhere until a call site calls it.",
+  "agreement with P25's guard beyond one shared real design and seven shared scalars. The two modules have different finding vocabularies and were not proved equivalent.",
+  "any performance consequence of any finding. No arm was fitted, scored or compared; no challenger performance was inspected."
+ ],
+ "contradictions": [
+  {"between": "GATE_INVOCATION_CONTRACT.md section 3 (and section 7) and the bytes of feature_gate.py",
+   "document_says": "check 1 is the 'Numerical rank of the standardised complete-case design', and section 7's list of what the gate does NOT catch names nonlinear dependency, comparison properties and construction provenance",
+   "bytes_say": "feature_gate.audit calls design_rank_report(df, names) where names is the substantive feature list, so the offset and every nuisance column are outside the audited matrix; the offset is tested only pairwise at |r| >= 0.999",
+   "measured_consequence": "feature_gate.audit(d, ['own_est','opp_est'], offset=projection, target=y) returns findings=[] passed=True on a design of numerical rank 2 of 3 whose offset is reconstructed with R^2 = 1.0",
+   "status": "already raised as V2_STOP_CONDITION S5, still unresolved in the documents; this node did not change either the gate or the contract"},
+  {"between": "PROGRAM_STATE.json open_methodological_gaps and V2_STOP_CONDITION.json S5",
+   "measurement": "9 gap entries; none of their text contains 'offset', 'augmented' or 'identifiab' (measured in MEASURE.py, key program_state_open_gaps)",
+   "why_it_matters": "S5 is a severity-A unresolved finding whose subject is design identifiability under an offset, and the program's own open-gap list does not represent it. The list does carry a 'nonlinear_dependency' entry, so the omission is specific.",
+   "status": "reported, not resolved — PROGRAM_STATE.json is frozen and outside this node's write scope"},
+  {"between": "P25 MEASUREMENTS.json augmented_rank.condition_number and this node's measurement",
+   "p25": 18252184946655.66, "i12": 18249415043526.08, "relative_difference": 0.00015,
+   "adjudication": "NOT a substantive disagreement. On an exactly singular design the smallest singular value is rounding noise, so the condition number is noise-dominated: under 8 row permutations of the same 2,982 rows it ranges over 1.37e13 to 2.18e14, a factor of 15.9, while the rank finding (2 of 3) and R^2(offset ~ design) = 1.0 are invariant. Neither node asserts on the value; no downstream check should."}
+ ],
+ "flagged_for_the_possession_lane": [
+  {"id": "I12-E1",
+   "claim": "Dropping the reference level does not repair the tier design fold-locally.",
+   "measured": "With nuisance = the pace_source dummy set minus its reference level, the POOLED design is full rank (4 of 4, condition 4.676), and the FOLD-LOCAL design is rank deficient in 2021, 2022, 2023 and 2024 (rank 3 of 4). Cause, measured: whenever a tier level is empty inside a fold, the surviving indicators sum to a constant inside that fold and coincide with the intercept. 2021 additionally has an outright constant column (src_team_window_prior_season).",
+   "relation_to_existing_findings": "S7 records fold-level ZERO VARIANCE of a tier indicator in four of six folds and that is reproduced here exactly. The addition is that the standard reparameterisation (drop one dummy) removes the zero-variance finding in 2022-2024 but leaves the fold rank deficient, so 'drop a reference level' is not an available fallback.",
+   "why_escalated": "it bears on the K0_MATCHED / control structure and on the fold-level fallback that GATE_INVOCATION_CONTRACT section 4 requires to be frozen with a numeric trigger before results are visible. That is a stop condition for this node: not resolved here.",
+   "not_claimed": "no remedy is proposed, no arm or control is specified, and nothing about which tier partition is correct is established"}
+ ],
+ "stop_conditions_triggered": ["I12-E1 is raised, not resolved. No change was made to the primary target, the K0 structure, the inference structure, the candidate universe, the cutoff-valid feature set or the leakage status."],
+ "reproduce": [
+  "python experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/MEASURE.py",
+  "python experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/TESTS.py"
+ ]
+}

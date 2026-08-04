@@ -1,4 +1,4 @@
-# R10_O15_REPORT_REMEDIATION — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
+# R13_I12_REPORT_REMEDIATION — Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence
 
 **Lane:** operations  |  **Type:** documentation  |  **Severity on failure:** C  |  **Role:** documentation engineer
 
@@ -33,7 +33,7 @@
 
 ## Epistemic status of your output
 
-REMEDIATION of a confirmed missing declared output. It writes up evidence that ALREADY EXISTS in ops_lane/O15_LOGOUT_SURVIVAL/ and may not add a finding the original run did not make. Its parent finding is O15_LOGOUT_SURVIVAL's validation_failed event, which is preserved and not rewritten.
+REMEDIATION of a confirmed missing declared output. It writes up evidence that ALREADY EXISTS in ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/ and may not add a finding the original run did not make. Its parent finding is I12_DESIGN_DEPENDENCY_AUDIT's validation_failed event, which is preserved and not rewritten.
 
 Write this verbatim into your report. It bounds what your output may later be cited for.
 
@@ -61,17 +61,17 @@ Write this verbatim into your report. It bounds what your output may later be ci
 
 ## Your mandate
 
-**Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence**
+**Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence**
 
 Deliver exactly this, to the standard the acceptance criteria below describe. The criteria are not a summary of the mandate — they *are* the mandate.
 
 ## Acceptance criteria — your output is validated against exactly these
 
-* the report is derived ONLY from files already present in experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/
+* the report is derived ONLY from files already present in experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/
 * no new measurement is performed and no new finding is introduced
 * the epistemic status of the original node is carried verbatim
-* the report states that O15_LOGOUT_SURVIVAL's declared output was missing and that this is a remediation, not the original run
-* nothing under experiments/player_program/ops_lane/O15_LOGOUT_SURVIVAL/ is modified
+* the report states that I12_DESIGN_DEPENDENCY_AUDIT's declared output was missing and that this is a remediation, not the original run
+* nothing under experiments/player_program/ops_lane/I12_DESIGN_DEPENDENCY_AUDIT/ is modified
 * every defect the independent verifier raised against the original node is carried into the report rather than quietly dropped
 
 ## Stop conditions — HALT and report rather than resolving these yourself
@@ -84,17 +84,17 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 **Read:** `experiments/player_program/`
 
-**Write (nothing outside this):** `experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/`
+**Write (nothing outside this):** `experiments/player_program/ops_lane/R13_I12_REPORT_REMEDIATION/`
 
 **Forbidden inputs:** `experiments/player_program/stage2b/SEALED_RESULTS`
 
 **Required outputs:**
 
-* `experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md`
+* `experiments/player_program/ops_lane/R13_I12_REPORT_REMEDIATION/REPORT.md`
 
 ## Validation that will be run against your output
 
-* `python -c "import pathlib,sys;p=pathlib.Path('experiments/player_program/ops_lane/R10_O15_REPORT_REMEDIATION/REPORT.md');sys.exit(0 if p.exists() and p.stat().st_size>1000 else 1)"`
+* `python -c "import pathlib,sys;p=pathlib.Path('experiments/player_program/ops_lane/R13_I12_REPORT_REMEDIATION/REPORT.md');sys.exit(0 if p.exists() and p.stat().st_size>1000 else 1)"`
 
 ---
 

@@ -1,0 +1,479 @@
+{
+  "schema": "d14_entity_resolution_and_cold_start_tests/1",
+  "epistemic_status": "DESIGN ARTIFACT + TESTS. Defines behaviour at the boundaries. Establishes no effect.",
+  "generated_utc": "2026-08-04T20:09:17.250807Z",
+  "scope": "structural and identity assertions over existing artifacts only. Nothing is fitted, tuned, scored or compared to any outcome. No arm performance is read.",
+  "postgame_use_declaration": "realised box membership is used ONLY to audit the pregame universe's own counters, per PREDICTION_CONTRACT_V5_SPEC section 6. No candidate is created from it.",
+  "n_tests": 25,
+  "n_passed": 25,
+  "n_failed": 0,
+  "failed_test_ids": [],
+  "tests": [
+    {
+      "test_id": "A1",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "transferred-player aliases resolve to one identity with evidence",
+      "description": "player identity is a positive integer player_id on every registered player artifact, and no free-text name column exists to be aliased",
+      "passed": true,
+      "measured": {
+        "projected_player_possessions_v1": {
+          "dtype": "int64",
+          "min": 100720,
+          "all_positive": true
+        },
+        "player_turnover_targets_v1": {
+          "dtype": "Int64",
+          "min": 100720,
+          "all_positive": true
+        },
+        "player_season_possessions_v2": {
+          "dtype": "int64",
+          "min": 100720,
+          "all_positive": true
+        },
+        "free_text_name_columns_found": []
+      }
+    },
+    {
+      "test_id": "A2",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "transferred-player aliases resolve to one identity with evidence",
+      "description": "every realised player id resolves into the candidate universe (no orphan identity)",
+      "passed": true,
+      "measured": {
+        "universe_players": 386,
+        "turnover_target_players": 384,
+        "possession_players": 384,
+        "orphan_from_turnovers": [],
+        "orphan_from_possessions": []
+      }
+    },
+    {
+      "test_id": "A3",
+      "kind": "PINNED_GAP",
+      "acceptance_criterion": "transferred-player aliases resolve to one identity with evidence",
+      "description": "player1_id in canonical_player_events/1 is a polymorphic actor id spanning four entity classes; the exact partition is pinned so a silent change is detectable",
+      "passed": true,
+      "measured": {
+        "nonnull_player1_values": 574295,
+        "distinct_player1_ids": 1064,
+        "resolve_to_universe_player": 381,
+        "team_actor_ids": 15,
+        "team_actor_rows": 38726,
+        "team_actor_families": {
+          "rebound": 23131,
+          "timeout": 12227,
+          "turnover": 2803,
+          "violation": 520,
+          "foul": 45
+        },
+        "official_shaped_ids": 629,
+        "official_shaped_rows": 3117,
+        "non_roster_person_ids": 39,
+        "non_roster_person_rows": 187,
+        "unresolved_row_share_pct": 7.3185
+      }
+    },
+    {
+      "test_id": "A4",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "transferred-player aliases resolve to one identity with evidence",
+      "description": "team-actor turnovers are reconciled as team_unattributed, never attributed to a player",
+      "passed": true,
+      "measured": {
+        "team_actor_turnover_events": 2803,
+        "team_unattributed_in_reconciliation": 2803,
+        "player_attributed": 39278,
+        "team_total": 42081
+      }
+    },
+    {
+      "test_id": "A5",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "transferred-player aliases resolve to one identity with evidence",
+      "description": "row_uid is unique and one obligation exists per (player_id, game_id, team_id)",
+      "passed": true,
+      "measured": {
+        "obligations": 44843,
+        "duplicate_player_game_team": 0
+      }
+    },
+    {
+      "test_id": "B1",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "team-history transitions are handled explicitly",
+      "description": "the registered per-player-season team count is reproducible from the raw possession lineups, so a mid-season transfer is one player_id carrying two team_ids",
+      "passed": true,
+      "measured": {
+        "player_seasons": 1039,
+        "multi_team_player_seasons_registered": 82,
+        "multi_team_player_seasons_recomputed": 82,
+        "distribution_registered": {
+          "1": 957,
+          "2": 75,
+          "3": 7
+        }
+      }
+    },
+    {
+      "test_id": "B2",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "team-history transitions are handled explicitly",
+      "description": "a player claimed by more than one club for one game yields exactly two distinct obligations, both present",
+      "passed": true,
+      "measured": {
+        "dual_claim_rows": 1232,
+        "distinct_player_games": 616,
+        "teams_per_claimed_player_game": {
+          "2": 616
+        },
+        "players": 147,
+        "games": 153,
+        "by_tier": {
+          "B": 995,
+          "A": 237
+        },
+        "by_team_assignment_source": {
+          "S2": 512,
+          "S_TX": 483,
+          "S1": 237
+        }
+      }
+    },
+    {
+      "test_id": "B3",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "team-history transitions are handled explicitly",
+      "description": "candidate_claimed_by_multiple_teams equals the >1-club condition on every row",
+      "passed": true,
+      "measured": {
+        "mismatched_rows": 0
+      }
+    },
+    {
+      "test_id": "B4",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "team-history transitions are handled explicitly",
+      "description": "multi-club candidacy is separable by tier; Tier A stays near the realised transfer rate while the weak tiers inflate it, so a blended figure would misdescribe transitions",
+      "passed": true,
+      "measured": {
+        "A": {
+          "player_seasons": 1058,
+          "gt_one_team": 91,
+          "max_teams_in_one_season": 3
+        },
+        "B": {
+          "player_seasons": 1496,
+          "gt_one_team": 678,
+          "max_teams_in_one_season": 7
+        }
+      }
+    },
+    {
+      "test_id": "B5",
+      "kind": "PINNED_GAP",
+      "acceptance_criterion": "team-history transitions are handled explicitly",
+      "description": "team-transition debut rows (prior appearance elsewhere, none for this club) are NOT flagged cold start; the implemented definition is player-season, the spec's wording is player-team-season",
+      "passed": true,
+      "measured": {
+        "team_transition_debut_obligations": 75,
+        "of_which_is_cold_start_false": 75,
+        "distinct_players": 60,
+        "by_season": {
+          "2021": 12,
+          "2022": 14,
+          "2023": 9,
+          "2024": 9,
+          "2025": 25,
+          "2026": 6
+        },
+        "by_tier": {
+          "B": 44,
+          "A": 31
+        },
+        "audited_obligations": 28107
+      }
+    },
+    {
+      "test_id": "C1",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "is_cold_start is exactly (n_prior_appearances == 0), with no exceptions",
+      "passed": true,
+      "measured": {
+        "obligations": 44843,
+        "is_cold_start_true": 8300,
+        "n_prior_appearances_zero": 8300,
+        "disagreements": 0
+      }
+    },
+    {
+      "test_id": "C2",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "cold-start behaviour is a declared fallback, never a silent default",
+      "description": "every zero-history obligation carries a declared conditional-minutes fallback level (> 0); none is served silently by the fitted estimator",
+      "passed": true,
+      "measured": {
+        "cold_start_rows": 8300,
+        "cold_start_with_level_0": 0,
+        "e_min_level_on_cold_start": {
+          "3": 7969,
+          "4": 331
+        }
+      }
+    },
+    {
+      "test_id": "C3",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "cold-start behaviour is a declared fallback, never a silent default",
+      "description": "is_fallback and fallback_level agree in both directions on both targets, and pred_is_fallback is their disjunction",
+      "passed": true,
+      "measured": {
+        "p_active_disagreements": 0,
+        "e_min_disagreements": 0,
+        "pred_is_fallback_disagreements": 0
+      }
+    },
+    {
+      "test_id": "C4",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "cold-start behaviour is a declared fallback, never a silent default",
+      "description": "every entity-resolution and cold-start declaration field is present and non-null on every obligation",
+      "passed": true,
+      "measured": {
+        "fields_checked": 17,
+        "null_counts": {
+          "universe_tier": 0,
+          "evaluation_tier": 0,
+          "candidate_source": 0,
+          "team_assignment_source": 0,
+          "team_assignment_confidence": 0,
+          "roster_evidence_regime": 0,
+          "cutoff_source": 0,
+          "cutoff_policy": 0,
+          "is_cold_start": 0,
+          "contract_version": 0,
+          "n_prior_appearances": 0,
+          "n_prior_team_games": 0,
+          "p_active_is_fallback": 0,
+          "p_active_fallback_level": 0,
+          "e_min_is_fallback": 0,
+          "e_min_fallback_level": 0,
+          "candidate_claimed_by_multiple_teams": 0
+        }
+      }
+    },
+    {
+      "test_id": "C5",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "cold-start behaviour is a declared fallback, never a silent default",
+      "description": "fallback level 4 is a fold-level degeneracy (season 2021, no prior season to fit on), not a player-history property: it fires on every 2021 obligation and on no other",
+      "passed": true,
+      "measured": {
+        "level4_rows": 4989,
+        "level4_seasons": [
+          2021
+        ],
+        "all_2021_obligations": 4989,
+        "level4_is_cold_start_false": 4658,
+        "median_n_prior_appearances_on_level4": 12.0,
+        "target_disagreements": 0
+      }
+    },
+    {
+      "test_id": "C6",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "availability and conditional minutes ask different history questions: a candidate with prior obligations but no appearance keeps a fitted p_active and must fall back for conditional minutes",
+      "passed": true,
+      "measured": {
+        "ex_2021_obligations": 39854,
+        "cold_start_with_fitted_p_active": 4501,
+        "median_n_prior_team_games_there": 3.0,
+        "cold_start_with_fitted_e_minutes": 0
+      }
+    },
+    {
+      "test_id": "C7",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "outside the degenerate 2021 fold, conditional-minutes level 3 implies at most one prior appearance; the converse does not hold and the ladder rule is not derivable from the emitted fields",
+      "passed": true,
+      "measured": {
+        "level3_rows_ex_2021": 8170,
+        "rows_with_n_prior_appearances_le_1": 9867,
+        "n_prior_appearances_max_on_level3": 1,
+        "n_prior_appearances_eq_1_by_level": {
+          "2": 1697,
+          "3": 201
+        },
+        "converse_holds": false,
+        "ladder_rule_source_readable_in_scope": false
+      }
+    },
+    {
+      "test_id": "C8",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "a zero-history obligation receives a finite non-negative minutes projection; where possessions cannot be formed they are null with a declared status and pace_source, never imputed",
+      "passed": true,
+      "measured": {
+        "cold_start_rows": 8300,
+        "null_projected_minutes_on_cold_start": 0,
+        "negative_projected_minutes_on_cold_start": 0,
+        "max_projected_minutes_on_cold_start": 40.0,
+        "rows_with_null_projected_off_possessions": 51,
+        "their_team_game_status": [
+          "minutes_only_no_pace"
+        ],
+        "their_pace_source": [
+          "unresolved_no_prior_games"
+        ],
+        "of_which_also_null_minutes": 0
+      }
+    },
+    {
+      "test_id": "C9",
+      "kind": "PINNED_GAP",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "n_prior_appearances counts admitted prior appearances, so it under-counts true prior appearances wherever an earlier game was a candidate-universe miss; the resulting false-cold-start rate is bounded here",
+      "passed": true,
+      "measured": {
+        "audited_obligations": 28107,
+        "counter_mismatches": 474,
+        "mismatch_direction_contract_minus_realised": {
+          "-1": 474
+        },
+        "false_cold_start_rows": 2,
+        "false_cold_start_rate_pct": 0.00712
+      }
+    },
+    {
+      "test_id": "D1",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "tier integrity: Tier A is assigned only by S1/S3, Tier B only by S_TX/S2, and the reserved S4 appears nowhere",
+      "passed": true,
+      "measured": {
+        "tier_A_rows": 35629,
+        "tier_B_rows": 9214,
+        "A_assignment_sources": [
+          "S1",
+          "S3"
+        ],
+        "B_assignment_sources": [
+          "S2",
+          "S_TX"
+        ],
+        "all_candidate_source_tokens": [
+          "S1",
+          "S2",
+          "S3",
+          "S_TX"
+        ]
+      }
+    },
+    {
+      "test_id": "D2",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "team_assignment_source determines team_assignment_confidence and roster_evidence_regime exactly one-to-one",
+      "passed": true,
+      "measured": {
+        "mapping": [
+          {
+            "team_assignment_source": "S1",
+            "team_assignment_confidence": "verified",
+            "roster_evidence_regime": "captured_asof"
+          },
+          {
+            "team_assignment_source": "S2",
+            "team_assignment_confidence": "weak",
+            "roster_evidence_regime": "weak_prior_season"
+          },
+          {
+            "team_assignment_source": "S3",
+            "team_assignment_confidence": "verified",
+            "roster_evidence_regime": "captured_asof"
+          },
+          {
+            "team_assignment_source": "S_TX",
+            "team_assignment_confidence": "probable",
+            "roster_evidence_regime": "retrospective_effective_date"
+          }
+        ]
+      }
+    },
+    {
+      "test_id": "D3",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "the captured-report source S3 never admits a candidate before 2026-07-30",
+      "passed": true,
+      "measured": {
+        "s3_rows": 18,
+        "earliest_s3_game_date": "2026-07-30",
+        "s3_players": 18
+      }
+    },
+    {
+      "test_id": "D4",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "season openers carry zero Tier A candidates and are declared unresolved rather than given a manufactured rotation",
+      "passed": true,
+      "measured": {
+        "team_games_in_universe": 2990,
+        "team_games_with_no_tier_A_candidate": 76,
+        "unresolved_tier_A_rotations": 76,
+        "by_season": {
+          "2021": 12,
+          "2022": 12,
+          "2023": 12,
+          "2024": 12,
+          "2025": 13,
+          "2026": 15
+        },
+        "note": "one per club per season; league size 12/12/12/12/13/15"
+      }
+    },
+    {
+      "test_id": "D5",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "adding the weak evidence tiers resolves all but two team-games, both 2021 openers, where no prior season exists for S2 to reach into",
+      "passed": true,
+      "measured": {
+        "unresolved_under_widest_regime": 2,
+        "seasons": [
+          2021
+        ],
+        "dates": [
+          "2021-05-14",
+          "2021-05-15"
+        ],
+        "n_candidates": [
+          4,
+          4
+        ],
+        "n_allocated": [
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "test_id": "D6",
+      "kind": "INVARIANT",
+      "acceptance_criterion": "new signings and players with no historical rows have declared, tested behaviour",
+      "description": "obligations stranded in an unresolved team-game are declared, not dropped silently",
+      "passed": true,
+      "measured": {
+        "contract_obligations_declared": 44851,
+        "obligations_present_in_exposure_artifact": 44843,
+        "stranded": 8,
+        "stranded_declared_in_validation_receipt": true
+      }
+    }
+  ]
+}
