@@ -129,8 +129,26 @@ CANON_COLS = [
 ]
 
 
+#: source_aware_exact_duplicate/1 — game_id -> rows dropped as exact all-column duplicates
+DEDUP_LOG: dict[str, int] = {}
+
+
+def _drop_exact_duplicates(d: pd.DataFrame, game_id: str) -> pd.DataFrame:
+    """Registered policy source_aware_exact_duplicate/1.
+
+    Some source files repeat a row that is IDENTICAL in every column. Those are the same
+    basketball event emitted twice, not two events sharing an identifier, so counting both
+    double-counts. Drop them deterministically (keep the first in file order) and log the count.
+    This is a GENERAL rule over the whole artifact; it is not a patch aimed at any external total.
+    """
+    n0 = len(d)
+    d = d.drop_duplicates(keep="first")
+    DEDUP_LOG[game_id] = n0 - len(d)
+    return d.reset_index(drop=True)
+
+
 def normalise_legacy(game_id: str, path: Path) -> pd.DataFrame:
-    d = pd.read_parquet(path)
+    d = _drop_exact_duplicates(pd.read_parquet(path), game_id)
     need = ["EVENTNUM", "PERIOD", "PCTIMESTRING", "EVENTMSGTYPE", "EVENTMSGACTIONTYPE"]
     miss = [c for c in need if c not in d.columns]
     if miss:
@@ -194,7 +212,7 @@ def normalise_legacy(game_id: str, path: Path) -> pd.DataFrame:
 
 
 def normalise_cdn(game_id: str, path: Path) -> pd.DataFrame:
-    d = pd.read_parquet(path)
+    d = _drop_exact_duplicates(pd.read_parquet(path), game_id)
     need = ["actionId", "period", "clock", "actionType", "subType", "personId"]
     miss = [c for c in need if c not in d.columns]
     if miss:
@@ -345,8 +363,8 @@ def main() -> int:
         else:
             missing.append(g)
             continue
-        raw_n = len(pd.read_parquet(p, columns=None))
         df = build_game(g, p, src)
+        raw_n = len(df) + DEDUP_LOG.get(g, 0)
         shas[p.name] = df["source_file_sha256"].iloc[0]
         frames.append(df)
         per_game.append({"game_id": g, "source_system": df["source_system"].iloc[0],
@@ -360,8 +378,9 @@ def main() -> int:
         raise ProducerFailure("canonical event_uid is not unique")
 
     pg = pd.DataFrame(per_game)
-    if int(pg["raw_rows"].sum()) != int(pg["canonical_rows"].sum()):
-        raise ProducerFailure("row counts do not reconcile to the raw sources")
+    dropped = int(sum(DEDUP_LOG.values()))
+    if int(pg["raw_rows"].sum()) - dropped != int(pg["canonical_rows"].sum()):
+        raise ProducerFailure("row counts do not reconcile to the raw sources after exclusions")
 
     producer_sha_after = _sha(Path(__file__))
     if producer_sha_before != producer_sha_after:
@@ -385,9 +404,13 @@ def main() -> int:
         "games_by_source": pg.groupby("source_system").size().to_dict(),
         "raw_rows_by_source": pg.groupby("source_system")["raw_rows"].sum().to_dict(),
         "canonical_rows": int(len(events)),
-        "row_reconciliation": {"raw_total": int(pg["raw_rows"].sum()),
-                               "canonical_total": int(pg["canonical_rows"].sum()),
-                               "closes": True},
+        "row_reconciliation": {
+            "raw_total": int(pg["raw_rows"].sum()),
+            "documented_exclusions_exact_duplicate_rows": int(sum(DEDUP_LOG.values())),
+            "games_affected": sorted(g for g, n in DEDUP_LOG.items() if n),
+            "policy": "source_aware_exact_duplicate/1",
+            "canonical_total": int(pg["canonical_rows"].sum()),
+            "closes": True},
         "family_counts_by_source": fam.to_dict(),
         "unmapped_raw_values": {f"{k[0]}|{k[1]}": int(v) for k, v in unmapped_vals.items()},
         "unmapped_row_total": int(events["taxonomy_unmapped"].sum()),

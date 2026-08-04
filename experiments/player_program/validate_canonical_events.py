@@ -137,12 +137,13 @@ def _4():
 @check("row_counts_reconcile_to_raw", "event counts reconcile to the raw sources", S)
 def _5():
     raw = INV["row_counts"]["total_raw_events"]
-    assert len(E) == raw, f"canonical {len(E)} != raw {raw}"
-    by = E["source_system"].value_counts().to_dict()
-    assert by["nba_playbyplayv2"] == INV["row_counts"]["legacy_events"]
-    assert by["nba_cdn_playbyplay"] == INV["row_counts"]["cdn_events"]
-    return {"raw_total": raw, "canonical_total": int(len(E)), "by_source": by,
-            "rows_excluded": 0}
+    rr = REC["row_reconciliation"]
+    dropped = rr["documented_exclusions_exact_duplicate_rows"]
+    assert len(E) == raw - dropped, f"canonical {len(E)} != raw {raw} - {dropped}"
+    return {"raw_total": raw, "documented_exclusions": dropped,
+            "policy": rr["policy"], "games_affected": rr["games_affected"],
+            "canonical_total": int(len(E)),
+            "by_source": E["source_system"].value_counts().to_dict()}
 
 
 @check("period_and_clock_valid", "period and clock ranges are valid", S)

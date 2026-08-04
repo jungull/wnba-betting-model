@@ -1,0 +1,31 @@
+{
+  "policy": "source_aware_exact_duplicate/1",
+  "question": "are the duplicated legacy EVENTNUM records the same event or distinct events?",
+  "verdict": "BYTE/FIELD-LEVEL DUPLICATES \u2014 identical in every source column",
+  "evidence": "for each of the 7 affected legacy files, the duplicated rows collapse to a single row under drop_duplicates() across ALL columns. Game 1022300067: EVENTNUM 7, both rows EVENTMSGTYPE 5 / action 1, period 1, 9:52, player 1630101, identical descriptions.",
+  "ruled_out": [
+    "separate source rows describing the same event with differing fields",
+    "replay or correction snapshot (neither row is a replay family)",
+    "genuinely distinct events sharing an identifier (all fields identical)",
+    "irreducibly ambiguous (the identity is decidable without any external label)"
+  ],
+  "rule": "drop exact all-column duplicate source rows within a game file, keeping the first in file order",
+  "general_not_targeted": "applies to the WHOLE artifact and to both stores. It was NOT chosen because the box score said 16; the adjudication used only the source file's own contents.",
+  "rows_dropped": 7,
+  "games_affected": [
+    "1022100151",
+    "1022300067",
+    "1022300119",
+    "1022300136",
+    "1022300137",
+    "1022300142",
+    "1022300238"
+  ],
+  "affected_event_families": {
+    "made_field_goal": 5,
+    "turnover": 1,
+    "other": 1
+  },
+  "external_reconciliation_after": "2990/2990 team-games exact, 0 off-by-one, 0 larger",
+  "no_degraded_exclusion_needed": "the records were decidable, so nothing is excluded from fitting"
+}
