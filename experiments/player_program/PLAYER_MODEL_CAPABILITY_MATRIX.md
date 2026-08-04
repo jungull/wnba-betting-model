@@ -27,7 +27,16 @@ Generated at commit — see the commit that adds this file. Worktree `player-mod
 
 ## 1. Data and reconstruction layer
 
-### raw play-by-play — `canonical`, with a **hard schema split**
+### raw play-by-play — `canonical`; the schema split is now **NORMALISED**
+
+> **UPDATE.** The blocker described below is RESOLVED by `canonical_player_events/1`
+> (`event_contract_v1/`), registered and validated 18/18. 589,130 events over 1,495 games, zero
+> unmapped raw values. See `EVENT_LIMITATIONS.md`. Two corrections to what follows: the boundary is
+> **two-dimensional** (every 2021-2025 playoff game is CDN, plus a clean 2025-06-29/2025-07-03
+> regular-season date split), not "mid-2025"; and shot-chart coverage is **1,489 of 1,495**, with
+> the 6 missing games carrying coordinates in the CDN event stream anyway.
+
+### raw play-by-play — original assessment
 
 | field | value |
 |---|---|
@@ -161,16 +170,24 @@ more candidates than that roster allows.
 
 ---
 
-## 3. Event channels — all `not started`, all behind one blocker
+### canonical events — `canonical` ✅ **normalisation complete**
 
-**None of the six granular channels below has any code, artifact or registration.** All are
-derivable in principle from the play-by-play stream, and all are blocked on the same dependency:
-**the event-schema normalisation layer**, plus a registered opportunity-denominator contract per
-channel.
+| field | value |
+|---|---|
+| code | `experiments/player_program/build_canonical_events.py` |
+| artifact | `canonical_player_events/1` — `event_contract_v1/canonical_player_events_v1.parquet` |
+| registration | `canonical_player_events_v1` + 2 errata |
+| validation | **18/18**; deterministic rebuild through one shared code path; runtime provenance instrumented |
+| reusable | one event stream over the full universe: 589,130 rows, 16 families, zero unmapped values, `source_subtype_raw` preserved on every row |
+| **must not reuse** | steal/block/assist counts ACROSS stores without a registered linkage rule; `rebound_type` (unresolved on all 125,309 rebound rows); free-throw outcome (not supplied by either store) |
+| next dependency | per-channel opportunity-denominator contracts |
 
-The legacy store encodes events in `EVENTMSGTYPE` / `EVENTMSGACTIONTYPE` with `PLAYER1/2/3`
-attribution; the modern store uses `actionType` / `subType` / `personId`. Both carry enough to
-separate mechanisms — but only after normalisation.
+## 3. Event channels — the schema blocker is cleared; denominators remain
+
+**None of the six granular channels below has code, an artifact or a registration.** The
+event-schema blocker is now cleared — `canonical_player_events/1` supplies one stream over all
+1,495 games. What remains per channel is a registered **opportunity-denominator contract**, and for
+some channels a registered derivation for information neither store supplies structurally.
 
 | capability | state | derivable from | opportunity denominator needed | notes |
 |---|---|---|---|---|
@@ -294,9 +311,11 @@ missed shots, assists relate to made field goals, makes ≤ attempts.
 
 ## 6. Major blockers
 
-1. **Event-schema split.** Two play-by-play formats with zero shared columns and a hard changeover
-   mid-2025. Full universe coverage exists (1,495/1,495) but cannot be used as one stream. **Every
-   granular event channel is behind this.** This is the single highest-value unblocking task.
+1. ~~**Event-schema split.**~~ **RESOLVED** by `canonical_player_events/1` (18/18). One stream,
+   589,130 events, 1,495 games, zero unmapped raw values. Residual asymmetries are labelled per row
+   rather than eliminated: steals/blocks are attributions in legacy and standalone rows in CDN;
+   CDN supplies no incoming substitute and no assist attribution; neither store supplies
+   free-throw outcome or offensive-versus-defensive rebound type.
 2. **Opportunity denominators do not exist.** Rebound opportunities, potential assists, blockable
    attempts and touches are not derivable from the possession stream and are only partly derivable
    from the event stream. Weaker proxies must be registered explicitly, never presented as

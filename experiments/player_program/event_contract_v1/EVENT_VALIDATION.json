@@ -1,0 +1,374 @@
+{
+  "schema": "canonical_event_validation/1",
+  "artifact_id": "canonical_player_events/1",
+  "validated_utc": "2026-08-04T11:41:05.763227Z",
+  "nothing_fitted": true,
+  "nothing_scored": true,
+  "artifact_sha256": "14b4b9471e8065cd9ffe10d54080d9bc2d52a833b8c3381f5be6f54e7bce088c",
+  "producer_sha256": "1c290d2835723ae99f356049a667c8cf2c2037469f412fbeab20afc481703694",
+  "validator_sha256": "c882eba3b51cdf0312354ebeb323987fbcc5a1e2178352d9571b545f9544fad2",
+  "checks_total": 18,
+  "checks_passed": 18,
+  "checks_failed": 0,
+  "verdict": "PASS",
+  "pass_fail_table": [
+    {
+      "check": "all_universe_games_accounted",
+      "result": "PASS"
+    },
+    {
+      "check": "store_exclusivity_reconciles",
+      "result": "PASS"
+    },
+    {
+      "check": "canonical_keys_unique",
+      "result": "PASS"
+    },
+    {
+      "check": "deterministic_rebuild",
+      "result": "PASS"
+    },
+    {
+      "check": "row_counts_reconcile_to_raw",
+      "result": "PASS"
+    },
+    {
+      "check": "period_and_clock_valid",
+      "result": "PASS"
+    },
+    {
+      "check": "score_progression_coherent",
+      "result": "PASS"
+    },
+    {
+      "check": "scoring_reconciles_where_supported",
+      "result": "PASS"
+    },
+    {
+      "check": "substitutions_valid_where_supplied",
+      "result": "PASS"
+    },
+    {
+      "check": "no_impossible_player_team_mappings",
+      "result": "PASS"
+    },
+    {
+      "check": "taxonomy_covers_all_raw_values",
+      "result": "PASS"
+    },
+    {
+      "check": "coordinate_rules_valid",
+      "result": "PASS"
+    },
+    {
+      "check": "postseason_and_overtime_included",
+      "result": "PASS"
+    },
+    {
+      "check": "fail_closed_on_store_collision",
+      "result": "PASS"
+    },
+    {
+      "check": "no_information_from_outside_the_event_file",
+      "result": "PASS"
+    },
+    {
+      "check": "no_future_information_used",
+      "result": "PASS"
+    },
+    {
+      "check": "stratified_audit_sample",
+      "result": "PASS"
+    },
+    {
+      "check": "structural_comparison_with_possessions",
+      "result": "PASS"
+    }
+  ],
+  "checks": [
+    {
+      "check": "all_universe_games_accounted",
+      "section": "gates",
+      "requirement": "all 1,495 universe games accounted for",
+      "result": "PASS",
+      "detail": {
+        "games": 1495,
+        "events": 589130
+      }
+    },
+    {
+      "check": "store_exclusivity_reconciles",
+      "section": "gates",
+      "requirement": "source-store overlap and exclusivity reconcile",
+      "result": "PASS",
+      "detail": {
+        "games_by_source": {
+          "nba_playbyplayv2": 996,
+          "nba_cdn_playbyplay": 499
+        },
+        "inventory_arithmetic": "996 + 499 + 0 + 0 = 1495",
+        "partition_exact_and_disjoint": true
+      }
+    },
+    {
+      "check": "canonical_keys_unique",
+      "section": "gates",
+      "requirement": "canonical keys are unique",
+      "result": "PASS",
+      "detail": {
+        "rows": 589130,
+        "key_fallback_rows": 14,
+        "duplicate_source_key_rows": 14,
+        "note": "7 of 996 legacy files carry one duplicate EVENTNUM each; the registered fallback keys those rows on (period, clock, row index) and degrades them"
+      }
+    },
+    {
+      "check": "deterministic_rebuild",
+      "section": "gates",
+      "requirement": "deterministic byte-identical rebuilds",
+      "result": "PASS",
+      "detail": {
+        "rows_compared": 589130
+      }
+    },
+    {
+      "check": "row_counts_reconcile_to_raw",
+      "section": "gates",
+      "requirement": "event counts reconcile to the raw sources",
+      "result": "PASS",
+      "detail": {
+        "raw_total": 589130,
+        "canonical_total": 589130,
+        "by_source": {
+          "nba_playbyplayv2": 383377,
+          "nba_cdn_playbyplay": 205753
+        },
+        "rows_excluded": 0
+      }
+    },
+    {
+      "check": "period_and_clock_valid",
+      "section": "gates",
+      "requirement": "period and clock ranges are valid",
+      "result": "PASS",
+      "detail": {
+        "max_period": 8,
+        "clock_unparsed_rows": 0,
+        "elapsed_range": [
+          0.0,
+          3600.0
+        ],
+        "overtime_rows": 3909,
+        "overtime_games": 66
+      }
+    },
+    {
+      "check": "score_progression_coherent",
+      "section": "gates",
+      "requirement": "score progression is coherent where score data exists",
+      "result": "PASS",
+      "detail": {
+        "games_with_score_fields": 499,
+        "rows_with_score": 50603,
+        "games_with_a_score_regression": 12,
+        "regressing_rows_all_flagged": 12,
+        "regressing_rows_unflagged": 0,
+        "by_event_family": {
+          "free_throw": 9,
+          "made_field_goal": 1,
+          "period_start": 1,
+          "replay_or_administrative": 1
+        },
+        "source_property_not_a_defect": "replay rows carry a post-correction score snapshot, and technical free throws at a period boundary are emitted before the period_start row that carries the pre-technical score. v1 PRESERVES source order and LABELS the rows (score_out_of_sequence, quality degraded) rather than reordering them, per the registered ordering and amended-event policies.",
+        "legacy_supplies_score_fields": false
+      }
+    },
+    {
+      "check": "scoring_reconciles_where_supported",
+      "section": "gates",
+      "requirement": "made shots and free throws reconcile with scoring totals where supported",
+      "result": "PASS",
+      "detail": {
+        "games_checked": 499,
+        "games_within_bound": 499,
+        "rate": 1.0,
+        "identity_tested": "0 <= (final total - sum of made-FG shot_value) <= free-throw attempts",
+        "why_a_bound_and_not_an_equality": "free-throw made/missed is NOT structurally supplied. CDN shotResult is empty on all free-throw rows and legacy has no result field. free_throw_result_supported is False on every row and the canonical shot_made is NULL for free throws.",
+        "legacy_not_covered": "the legacy store supplies no score fields; v1 does not parse them"
+      }
+    },
+    {
+      "check": "substitutions_valid_where_supplied",
+      "section": "gates",
+      "requirement": "substitutions have valid in/out identities where the source supplies them",
+      "result": "PASS",
+      "detail": {
+        "legacy_subs": 39421,
+        "cdn_subs": 21692,
+        "cdn_incoming_player": "canonical NULL by registration; text parsing not done in v1"
+      }
+    },
+    {
+      "check": "no_impossible_player_team_mappings",
+      "section": "gates",
+      "requirement": "no impossible player-team mappings introduced",
+      "result": "PASS",
+      "detail": {
+        "distinct_game_team_pairs": 2990,
+        "invalid": 0
+      }
+    },
+    {
+      "check": "taxonomy_covers_all_raw_values",
+      "section": "gates",
+      "requirement": "event subtype mappings cover all raw values or label them unresolved",
+      "result": "PASS",
+      "detail": {
+        "unmapped_rows": 0,
+        "families_present": [
+          "block",
+          "ejection",
+          "foul",
+          "free_throw",
+          "jump_ball",
+          "made_field_goal",
+          "missed_field_goal",
+          "period_end",
+          "period_start",
+          "rebound",
+          "replay_or_administrative",
+          "steal",
+          "substitution",
+          "timeout",
+          "turnover",
+          "violation"
+        ],
+        "rows_typed_from_description_text": 11251,
+        "from_text_families": {
+          "steal": 7230,
+          "block": 4021
+        },
+        "from_text_field_origin": "parsed \u2014 CDN standalone STEAL/BLOCK rows carry an empty actionType",
+        "source_subtype_raw_preserved_on_every_row": true
+      }
+    },
+    {
+      "check": "coordinate_rules_valid",
+      "section": "gates",
+      "requirement": "coordinate ranges and orientation rules are valid",
+      "result": "PASS",
+      "detail": {
+        "rows_with_coordinates": 68141,
+        "legacy_rows_with_coordinates": 0,
+        "x_range": [
+          -249.0,
+          249.0
+        ],
+        "y_range": [
+          -50.0,
+          764.0
+        ],
+        "field_goal_rows_at_origin": 6,
+        "sentinel_rule": "(0,0) on a NON-shot row is a null sentinel and is dropped to NULL",
+        "no_reorientation_applied": true
+      }
+    },
+    {
+      "check": "postseason_and_overtime_included",
+      "section": "gates",
+      "requirement": "postseason and overtime games are included",
+      "result": "PASS",
+      "detail": {
+        "games_by_season_type": {
+          "Regular Season": 1389,
+          "Playoffs": 106
+        },
+        "overtime_games": 66
+      }
+    },
+    {
+      "check": "fail_closed_on_store_collision",
+      "section": "gates",
+      "requirement": "parser failures produce no partial artifact",
+      "result": "PASS",
+      "detail": {
+        "violations_rejected": {
+          "wrong_schema": "pbp_1022500109.parquet: missing legacy columns ['EVENTNUM', 'PERIOD', 'PCTIMESTRING', 'EVE"
+        },
+        "store_collision_gate": "asserted in main() before any row is built",
+        "row_reconciliation_gate": "asserted before the artifact is written"
+      }
+    },
+    {
+      "check": "no_information_from_outside_the_event_file",
+      "section": "gates",
+      "requirement": "no target-game information from outside the event file is introduced",
+      "result": "PASS",
+      "detail": {
+        "distinct_files_read": 1495,
+        "event_files": 1495,
+        "non_event_files": [],
+        "note": "the contract parquet supplies only the GAME LIST; no roster, transaction, availability or outcome column is read",
+        "method": "pandas.read_parquet instrumented during the rebuild"
+      }
+    },
+    {
+      "check": "no_future_information_used",
+      "section": "gates",
+      "requirement": "no future roster, transaction or availability data reinterprets historical events",
+      "result": "PASS",
+      "detail": {
+        "rows_traceable_to_own_game_file": 589130,
+        "parser_version": "canonical_player_events/1",
+        "contract_version": "player_event_contract/1",
+        "provenance_fields": [
+          "source_system",
+          "source_file",
+          "source_file_sha256",
+          "source_event_id",
+          "source_row_index",
+          "mapping_rule_id"
+        ]
+      }
+    },
+    {
+      "check": "stratified_audit_sample",
+      "section": "gates",
+      "requirement": "a stratified sample is materialised for manual audit",
+      "result": "PASS",
+      "detail": {
+        "strata": {
+          "early_2021_legacy": 3,
+          "late_legacy_before_changeover": 3,
+          "first_cdn_after_changeover": 3,
+          "2026_games": 3,
+          "playoff_games": 3,
+          "overtime_games": 3,
+          "high_substitution_games": 3,
+          "games_missing_shot_coordinates": 6,
+          "administrative_or_ejection_games": 3,
+          "technical_foul_games": 3
+        },
+        "written_to": "EVENT_AUDIT_SAMPLE.json"
+      }
+    },
+    {
+      "check": "structural_comparison_with_possessions",
+      "section": "gates",
+      "requirement": "compare structurally only; player_possessions/2 is not modified",
+      "result": "PASS",
+      "detail": {
+        "same_game_coverage": true,
+        "games": 1495,
+        "possession_rows": 238563,
+        "event_rows": 589130,
+        "corr_events_vs_possessions_per_game": 0.5674,
+        "max_period_agreement_games": 1495,
+        "known_503_invalid_lineup_possessions": "unchanged; this artifact does not touch them",
+        "contradictions": [],
+        "possessions_artifact_modified": false,
+        "authority": "player_possessions/2 remains canonical for realised possessions; canonical_player_events/1 is canonical for events. No linkage is asserted."
+      }
+    }
+  ]
+}
