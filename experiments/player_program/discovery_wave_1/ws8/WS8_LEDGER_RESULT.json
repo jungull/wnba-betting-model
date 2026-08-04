@@ -1,0 +1,51 @@
+{
+  "schema": "discovery_hypothesis_ledger_result_patch/1",
+  "note": "PATCH ONLY. The shared HYPOTHESIS_LEDGER.json is deliberately NOT modified here: eight discovery workstreams run in parallel worktrees off the same base commit eb1103c, and eight concurrent edits to one JSON file is a guaranteed merge conflict. The owner of the wave should apply this object to workstreams.ws8_operational_error_decomposition.",
+  "apply_to": "workstreams.ws8_operational_error_decomposition",
+  "patch": {
+    "result": "COMPLETE — clear ordering obtained; one source dominates; two sources NULL; one source REVERSED",
+    "disposition": "expected_direction NOT supported in LEVEL terms, SUPPORTED in ADDRESSABLE terms; falsifier (diffuse contributions) NOT met",
+    "evidence": "experiments/player_program/discovery_wave_1/ws8/WS8_ERROR_DECOMPOSITION.json",
+    "code": "experiments/player_program/discovery_wave_1/ws8/run_ws8_error_decomposition.py",
+    "sign_convention": "delta = MAE(before the fix) MINUS MAE(after the fix); POSITIVE means the fix REDUCES team MAE, i.e. that source contributes error; NEGATIVE means the fix INCREASES team MAE, i.e. that source was net compensating",
+    "support": "2914 team-games common to every counterfactual; target player_attributed; frozen operational 2.9675 reproduced exactly by CF1",
+    "counterfactual_team_mae": {
+      "CF1_full_operational": 2.967451,
+      "CF2_oracle_appearance": 2.9708,
+      "CF3_plus_missing_participants": 2.971143,
+      "CF4_oracle_allocation": 2.989249,
+      "CF5_realised_exposure": 2.885903
+    },
+    "incremental_deltas_primary_ordering": {
+      "availability_candidate_appearance": {"delta": -0.00335, "ci90": [-0.01269, 0.006232], "verdict": "NULL"},
+      "missing_actual_participants": {"delta": -0.000342, "ci90": [-0.002028, 0.001287], "verdict": "NULL"},
+      "within_team_minutes_possession_allocation": {"delta": -0.018106, "ci90": [-0.027573, -0.008861], "verdict": "SIGNIFICANTLY NEGATIVE (oracle allocation is WORSE)"},
+      "team_possession_total_projection": {"delta": 0.103346, "ci90": [0.083268, 0.124435], "verdict": "SIGNIFICANTLY POSITIVE — the only addressable source"}
+    },
+    "ranked_ordering_by_absolute_magnitude": [
+      "team possession-total projection (+0.1033, SIG)",
+      "within-team minutes / possession allocation (-0.0181, SIG, REVERSED)",
+      "availability / candidate appearance (-0.0034, NULL)",
+      "missing actual participants (-0.0003, NULL)"
+    ],
+    "conditional_rate_contribution": {
+      "team_mae_with_perfect_exposure": 2.885903,
+      "share_of_operational_team_mae": 0.972519,
+      "poisson_mad_floor_at_those_predictions": 2.894872,
+      "ratio_to_floor": 0.9969,
+      "reading": "the frozen Arm D rate given oracle exposure is AT the irreducible count noise of the target; the 97.25% share is not modelling error and is not addressable"
+    },
+    "structural_finding": "sum of projected_off_possessions over a team-game's Tier A candidates equals EXACTLY 5x projected_team_off_possessions (max abs dev 1.1e-13). Team prediction = T_team x exposure-weighted mean rate. T_team does not depend on the candidate list, so candidate-set and allocation errors cannot change forecast VOLUME, only the weighted mean rate. Only the possession total and the rate can move the team forecast.",
+    "path_dependence_check": "a genuinely different ordering (possession total applied first) reproduces the ranking and every sign: +0.10731 / -0.00760 / +0.00069 / -0.01886",
+    "recommendation": "team possession (pace) projection — team_possession_prior_v1 / projected_team_off_possessions — and nowhere else in this decomposition. Realistic value: a 25-50% reduction in possession projection error buys +0.036 to +0.065 team MAE (1.2-2.2% of operational MAE). Small.",
+    "scope_limit": "TEAM-level only. The 5x identity gives no cancellation at the player level: the 8278 non-appearing candidate rows carry 4283.18 predicted turnovers against 0 realised and are 14.18% of player-level absolute error. Deprioritising availability work is valid ONLY for the team total.",
+    "oracle_disclosure": "CF2..CF5 consume post-cutoff information and are LABELLED DIAGNOSTICS ONLY — not forecasts, not models, not promotion evidence, not registrable arms",
+    "constraints_honoured": {
+      "arm_D_retuned": false,
+      "projected_player_possessions_v1_altered": false,
+      "arm_registry_jsonl_appended": false,
+      "canonical_artifacts_modified": false,
+      "development_only": true
+    }
+  }
+}
