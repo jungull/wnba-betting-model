@@ -1,0 +1,710 @@
+{
+  "schema": "stage2a_evidence_packet/2",
+  "task": "TEAM_POSSESSION_PRIOR_V2 Stage 2A (corrected)",
+  "lane": "DIAGNOSTIC ONLY \u2014 nothing fitted, selected, tuned or scored",
+  "supersedes": {
+    "file": "EVIDENCE_PACKET.json",
+    "sha256": "f373e3eed710026c9d82ff88aad1e9a2cae640ee461a5d7df5208d76abaf1e4e",
+    "status": "IMMUTABLE AND PRESERVED \u2014 v1 is not modified, deleted or corrected in place. Its hash is unchanged. V2 composes v1's VALID contents with the correction addendum and the coordinator rulings."
+  },
+  "correction_addendum": {
+    "file": "CORRECTION_ADDENDUM.json",
+    "sha256": "6c475e6a98d7add4c436d5260cc8ba2a22fff7786cf5ce7fa19073dab1edd4dc"
+  },
+  "possession_unit_ruling": {
+    "authoritative_target": "REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS",
+    "ruled_by": "coordinator",
+    "basis": "the experiment's COMPONENT BOUNDARY, not observed performance",
+    "reasoning": [
+      "Stage 2 improves the existing regulation-equivalent possession-prior component",
+      "raw full-game possessions combine regulation pace with REALISED overtime",
+      "realised overtime and game duration are unavailable pregame and are PROHIBITED as predictive inputs",
+      "an expected-raw-possession target would require a separate preregistered overtime-probability component, which is OUTSIDE this wave"
+    ],
+    "use_the_frozen_canonical_target": true,
+    "do_not_regenerate_canonical_artifact": true,
+    "permitted_use_of_realised_duration": "historical realised duration MAY be used solely to construct or normalise the COMPLETED-GAME regulation-equivalent outcome \u2014 which is what build_pace already does over strictly earlier games",
+    "prohibited_use_of_realised_duration": "it may NOT enter the fitted feature matrix, fallback logic, arm selection, or the prediction path. game_minutes is an exact overtime indicator; any function of it used predictively is target leakage"
+  },
+  "downstream_operational_boundary": {
+    "frozen_scorer_unchanged": true,
+    "recorded_pairing": {
+      "exposure": "regulation-equivalent projected possessions",
+      "outcome": "RAW full-game turnovers",
+      "consumer": "run_turnover_p1_universe_fix.py:149, operational track",
+      "status": "A KNOWN, DOCUMENTED MISMATCH on overtime games"
+    },
+    "measured_mismatch": {
+      "regulation": {
+        "n_rows": 2850,
+        "n_game_clusters": 1425,
+        "mae_vs_reg_equiv_target": 2.92806,
+        "mae_vs_RAW_target": 2.92806,
+        "bias_vs_reg_equiv": 0.14147,
+        "bias_vs_RAW": 0.14147,
+        "mean_realised_reg_equiv": 79.3053,
+        "mean_realised_raw": 79.3053
+      },
+      "overtime": {
+        "n_rows": 132,
+        "n_game_clusters": 66,
+        "mae_vs_reg_equiv_target": 2.36744,
+        "mae_vs_RAW_target": 10.51782,
+        "bias_vs_reg_equiv": 0.54129,
+        "bias_vs_RAW": -10.5151,
+        "mean_realised_reg_equiv": 78.9057,
+        "mean_realised_raw": 89.9621
+      }
+    },
+    "what_stage2_may_claim": "Stage 2 MAY evaluate whether an improved regulation-equivalent exposure improves RAW turnover MAE through the FROZEN downstream scorer.",
+    "what_stage2_may_NOT_claim": "it may NOT claim to resolve the overtime mismatch. OT and non-OT downstream diagnostics are SECONDARY and cannot overturn the primary registered decision.",
+    "reporting_requirement": "report OT and non-OT downstream diagnostics separately"
+  },
+  "inference_specification": {
+    "team_game_rows": 2982,
+    "game_clusters": 1491,
+    "do_not_substitute": "do NOT replace the row count with 'effective n = 1491'. Report BOTH the row count and the dependence structure.",
+    "dependence_structure": {
+      "team_game_rows": 2982,
+      "game_clusters": 1491,
+      "games_with_one_shared_projection": 1495,
+      "games_with_two_distinct_projections": 0,
+      "within_game_target_gap_mean": 0.88,
+      "between_game_variance": 14.9884,
+      "within_game_half_spread_variance": 0.1519,
+      "game_level_share_of_variance": 0.9778
+    },
+    "row_weighting": "equal per team-game row, unless the task card PROSPECTIVELY specifies otherwise",
+    "fold_construction": "chronological, nested by season; a game is NEVER split across folds \u2014 both team-rows always fall in the same fold",
+    "resampling": "game-clustered: resample the 1,491 game clusters with replacement, carrying BOTH team-rows of a sampled game together; never resample team-rows independently",
+    "shared_across_arms": "identical rows, weights, folds AND target units for K0_FLAT, K0_MATCHED, the frozen incumbent and every challenger"
+  },
+  "control_specification": {
+    "K0_FLAT": {
+      "definition": "intercept-only",
+      "role": "DIAGNOSTIC REFERENCE",
+      "promotion_value": "NONE \u2014 beating K0_FLAT alone has no promotion value"
+    },
+    "K0_MATCHED": {
+      "definition": "identical pipeline, folds, offsets, fallback tiers, switching rules and allowed estimation flexibility as the challenger",
+      "excludes": [
+        "basketball",
+        "opponent",
+        "schedule",
+        "roster",
+        "injury",
+        "travel",
+        "venue",
+        "coaching",
+        "any contextual predictor"
+      ],
+      "role": "AUTHORITATIVE PROMOTION CONTROL",
+      "tier_partition_rule": "a tier or fallback partition may appear in K0_MATCHED ONLY when it reproduces architecture already present in the incumbent or challenger comparison path",
+      "label": "MATCHED STRUCTURAL CONTROL \u2014 not a literally featureless model",
+      "why_this_is_not_feature_absorption": "pace_level > 1 is algebraically identical to game_no_in_season <= 3 (2982/2982, zero off-diagonal), so a tier indicator encodes ONLY the incumbent's own switching rule and carries no information the incumbent lacks. The risk runs the other way: if K0 OMITS the tier structure, an intercept-plus-tier-dummy challenger beats a straw control by removing stratum bias with no substantive features at all"
+    },
+    "decision_rule": "a challenger must beat K0_MATCHED"
+  },
+  "sources": {
+    "team_possession_prior_v1.parquet": {
+      "path": "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+      "sha256": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18"
+    },
+    "possessions_raw_v2.parquet": {
+      "path": "experiments/player_program/possessions_v2/possessions_raw_v2.parquet",
+      "sha256": "7200881fd811db9d0d6b10ea0a19b01ec7b6d027ee4567b9ef963241b15a4b1a"
+    },
+    "team_turnover_reconciliation_v1.parquet": {
+      "path": "experiments/player_program/turnover_targets_v1/team_turnover_reconciliation_v1.parquet",
+      "sha256": "446af16c237d59cc52a5294862ce60a2977522e14500370ec843cc29baae6e93"
+    },
+    "projected_player_possessions_v1.parquet": {
+      "path": "experiments/player_program/projected_exposure_v1/projected_player_possessions_v1.parquet",
+      "sha256": "1f47f1f169955cae5c65457f1db30665ac6da20e821e458257d21276646df50f"
+    }
+  },
+  "incumbent": {
+    "artifact_id": "team_possession_prior/1",
+    "formula": [
+      "pace is a property of the GAME: game_pace = mean of the two sides' regulation-equivalent offensive possession counts",
+      "regulation-equivalent = n_off_poss * 40.0 / game_minutes, where game_minutes = 40 + 5 * max(0, max_period - 4)",
+      "team_pace_estimate = unweighted mean of the team's last WINDOW_K=10 game_pace values on STRICTLY EARLIER dates in the SAME season, if at least MIN_HISTORY_M=3 such games exist (level 1)",
+      "else the same over the PRIOR season (level 2)",
+      "else the league mean of game_pace over all strictly earlier dates (level 3)",
+      "else unresolved (level 4)",
+      "projected_team_off_possessions = mean of the two sides' team_pace_estimate; unresolved if EITHER side is unresolved"
+    ],
+    "constants": {
+      "WINDOW_K": 10,
+      "MIN_HISTORY_M": 3,
+      "REGULATION_MIN": 40.0
+    },
+    "assumptions": [
+      "pace is symmetric: both teams in a game receive the IDENTICAL projection, so the model carries no team-vs-team differentiation within a game",
+      "the trailing window is UNWEIGHTED and UNSHRUNK \u2014 the 10th-most-recent game counts exactly as much as the most recent",
+      "no opponent adjustment: the opponent's own pace tendency never enters",
+      "no home/away, rest, travel or schedule-density term",
+      "no roster, injury, coaching or lineup term",
+      "a season boundary resets the window; prior-season history is used only as a fallback and never blended with same-season history",
+      "overtime is removed by regulation-equivalence, so OT games are modelled as if regulation-length",
+      "the league prior is a cumulative all-history mean, not a recent-window mean"
+    ]
+  },
+  "coverage": {
+    "team_games_total": 2990,
+    "resolved": 2982,
+    "unresolved": 8,
+    "resolved_with_realised": 2982,
+    "by_pace_level": {
+      "league_prior_all": 37,
+      "team_window_prior_season": 183,
+      "team_window_same_season": 2762,
+      "unresolved_no_prior_games": 8
+    }
+  },
+  "chronological_possession_error": {
+    "definition": "err = projected_team_off_possessions - realised_off_poss (positive = OVER-projection)",
+    "overall": {
+      "n": 2982,
+      "mae": 2.90325,
+      "rmse": 3.67708,
+      "bias": 0.15917,
+      "sd": 3.67425,
+      "p05": -5.875,
+      "p50": 0.1764,
+      "p95": 6.1465
+    },
+    "by_season": [
+      {
+        "stratum": "season",
+        "key": "2021",
+        "n": 410,
+        "mae": 3.13383,
+        "bias": 0.72021,
+        "sd": 3.83686
+      },
+      {
+        "stratum": "season",
+        "key": "2026",
+        "n": 430,
+        "mae": 3.12151,
+        "bias": -0.26668,
+        "sd": 3.94826
+      },
+      {
+        "stratum": "season",
+        "key": "2025",
+        "n": 620,
+        "mae": 2.89019,
+        "bias": 0.13949,
+        "sd": 3.68593
+      },
+      {
+        "stratum": "season",
+        "key": "2022",
+        "n": 478,
+        "mae": 2.83634,
+        "bias": 0.10259,
+        "sd": 3.60388
+      },
+      {
+        "stratum": "season",
+        "key": "2023",
+        "n": 520,
+        "mae": 2.79793,
+        "bias": 0.06214,
+        "sd": 3.5629
+      },
+      {
+        "stratum": "season",
+        "key": "2024",
+        "n": 524,
+        "mae": 2.7247,
+        "bias": 0.24084,
+        "sd": 3.4221
+      }
+    ],
+    "realised_target": {
+      "n": 2982,
+      "mean": 79.28758,
+      "sd": 3.90807,
+      "p05": 73.0,
+      "p50": 79.0,
+      "p95": 86.0
+    }
+  },
+  "bias_variance": {
+    "residual_variance": 13.50014,
+    "target_variance": 15.27299,
+    "variance_explained_vs_target": 0.11608,
+    "squared_bias": 0.025335,
+    "bias_share_of_mse": 0.001874,
+    "reading": "squared bias is a negligible share of MSE, so the incumbent's error is overwhelmingly VARIANCE, not systematic level error. A better point estimate must reduce dispersion, not re-centre."
+  },
+  "downstream_turnover_team_error": {
+    "available": true,
+    "n_team_games": 2982,
+    "note": "mechanical propagation of the possession error at the realised team turnover rate. NOT a fitted result and NOT a challenger score: it is the turnover-team error attributable to possession mis-projection holding the rate fixed.",
+    "implied_team_tov_rate": {
+      "n": 2982,
+      "mean": 0.17733,
+      "sd": 0.04893,
+      "p05": 0.1013,
+      "p50": 0.175,
+      "p95": 0.2597
+    },
+    "propagated_turnover_team_error": {
+      "n": 2982,
+      "mean": 0.01796,
+      "sd": 0.68613,
+      "p05": -1.1045,
+      "p50": 0.0298,
+      "p95": 1.0901
+    },
+    "mean_abs_propagated": 0.51744
+  },
+  "error_strata_CORRECTED": {
+    "note": "strata the correction addendum found defective are REPLACED here; the rest are carried forward unchanged from v1",
+    "carried_forward_unchanged": {
+      "by_pace_level": [
+        {
+          "stratum": "pace_source",
+          "key": "league_prior_all",
+          "n": 37,
+          "mae": 3.90215,
+          "bias": -0.2956,
+          "sd": 4.9035
+        },
+        {
+          "stratum": "pace_source",
+          "key": "team_window_prior_season",
+          "n": 183,
+          "mae": 3.69342,
+          "bias": -2.84451,
+          "sd": 3.71408
+        },
+        {
+          "stratum": "pace_source",
+          "key": "team_window_same_season",
+          "n": 2762,
+          "mae": 2.83751,
+          "bias": 0.36428,
+          "sd": 3.56514
+        }
+      ],
+      "by_season_type": [
+        {
+          "stratum": "season_type",
+          "key": "Regular Season",
+          "n": 2770,
+          "mae": 2.94005,
+          "bias": 0.17703,
+          "sd": 3.71201
+        },
+        {
+          "stratum": "season_type",
+          "key": "Playoffs",
+          "n": 212,
+          "mae": 2.42241,
+          "bias": -0.07424,
+          "sd": 3.13771
+        }
+      ],
+      "by_overtime": [
+        {
+          "stratum": "went_ot",
+          "key": "False",
+          "n": 2850,
+          "mae": 2.92806,
+          "bias": 0.14147,
+          "sd": 3.69921
+        },
+        {
+          "stratum": "went_ot",
+          "key": "True",
+          "n": 132,
+          "mae": 2.36744,
+          "bias": 0.54129,
+          "sd": 3.07361
+        }
+      ]
+    },
+    "REPLACED_days_rest": {
+      "v1_status": "WITHDRAWN \u2014 computed across season boundaries",
+      "v1_defect": {
+        "season_openers": 76,
+        "their_original_days_rest_median": 234.0,
+        "original_7plus_stratum_n": 162,
+        "of_which_season_openers": 61
+      },
+      "corrected_within_season": [
+        {
+          "stratum": "days_rest",
+          "key": "7+",
+          "n_rows": 101,
+          "n_game_clusters": 80,
+          "mae": 2.98238,
+          "bias": 0.1363,
+          "sd": 3.81504
+        },
+        {
+          "stratum": "days_rest",
+          "key": "0-1 (b2b)",
+          "n_rows": 89,
+          "n_game_clusters": 84,
+          "mae": 2.97065,
+          "bias": 0.49654,
+          "sd": 3.75246
+        },
+        {
+          "stratum": "days_rest",
+          "key": "3",
+          "n_rows": 759,
+          "n_game_clusters": 592,
+          "mae": 2.95031,
+          "bias": 0.1771,
+          "sd": 3.68163
+        },
+        {
+          "stratum": "days_rest",
+          "key": "4-6",
+          "n_rows": 525,
+          "n_game_clusters": 429,
+          "mae": 2.94842,
+          "bias": 0.10751,
+          "sd": 3.73778
+        },
+        {
+          "stratum": "days_rest",
+          "key": "2",
+          "n_rows": 1432,
+          "n_game_clusters": 975,
+          "mae": 2.77953,
+          "bias": 0.34192,
+          "sd": 3.51234
+        }
+      ],
+      "season_openers_separated": [
+        {
+          "stratum": "season_opener",
+          "key": "season_opener",
+          "n_rows": 76,
+          "n_game_clusters": 41,
+          "mae": 4.26806,
+          "bias": -3.47113,
+          "sd": 4.0653
+        }
+      ]
+    },
+    "REPLACED_support": {
+      "v1_status": "WITHDRAWN \u2014 built on a column with two meanings",
+      "source_column_semantics": {
+        "team_window_same_season": "n_history_games = TEAM games, range 3-10",
+        "team_window_prior_season": "n_history_games = TEAM games, always exactly 10",
+        "league_prior_all": "n_history_games = CUMULATIVE LEAGUE games (4-1300); TEAM support is ZERO",
+        "unresolved_no_prior_games": "n_history_games = 0"
+      },
+      "corrected_team_support_only": [
+        {
+          "stratum": "team_support",
+          "key": "3-4",
+          "n_rows": 152,
+          "n_game_clusters": 106,
+          "mae": 3.17437,
+          "bias": 1.35075,
+          "sd": 3.72032
+        },
+        {
+          "stratum": "team_support",
+          "key": "5-9",
+          "n_rows": 380,
+          "n_game_clusters": 224,
+          "mae": 3.06164,
+          "bias": 1.14865,
+          "sd": 3.64582
+        },
+        {
+          "stratum": "team_support",
+          "key": "10 (full)",
+          "n_rows": 2413,
+          "n_game_clusters": 1239,
+          "mae": 2.84591,
+          "bias": -0.06474,
+          "sd": 3.61578
+        }
+      ],
+      "zero_team_support_rows": [
+        {
+          "stratum": "zero_team_support",
+          "key": "league_prior (ZERO team support)",
+          "n_rows": 37,
+          "n_game_clusters": 26,
+          "mae": 3.90215,
+          "bias": -0.2956,
+          "sd": 4.9035
+        }
+      ]
+    },
+    "WITHDRAWN_game_no_in_season": {
+      "reason": "algebraically identical to pace_level > 1 (2982/2982). Reporting both was double-counting ONE partition",
+      "evidence": {
+        "classification": "CORRECTED (new finding, not in the original packet)",
+        "found_by": "adversarial",
+        "measurement": "pace_level > 1 is algebraically equivalent to game_no_in_season <= 3: agree 2982/2982, zero off-diagonal",
+        "consequence": "the packet's by_pace_level and by_game_no_in_season strata are ONE partition under two names. No design may carry both; in threshold form feature_gate's linear rank check may not see it"
+      }
+    }
+  },
+  "overtime_window_contamination": {
+    "classification": "CORRECTED (understated in the original packet)",
+    "found_by": "pace_coaching",
+    "ot_games": 66,
+    "total_games": 1495,
+    "ot_game_rate": 0.04415,
+    "team_games_whose_10_game_window_contains_an_OT_game": 0.3284,
+    "n_evaluated": 2914,
+    "consequence": "a 4.4% event contaminates ~33% of trailing windows; any OT-handling correction has ~7x the leverage the raw OT count suggests"
+  },
+  "cutoff_valid_availability_table_CORRECTED": {
+    "rule": "a field is CUTOFF-VALID only if its value is knowable strictly BEFORE the target game tips. A realised box-score column is cutoff-valid ONLY as LAGGED history over strictly earlier games, never for the target game.",
+    "warning": "this table records AVAILABILITY and COVERAGE. It does NOT prove cutoff validity \u2014 a construction receipt binds that declaration but cannot verify it (PROGRAM_STATE gap `cutoff_validity_asserted`). Each entry still requires scientific review before it may back a registered arm.",
+    "available": [
+      {
+        "field": "game_id / team_id / opponent identity",
+        "source": "contract schedule",
+        "coverage": "2990/2990 team-games",
+        "cutoff_valid": true,
+        "basis": "schedule identity, fixed before tip"
+      },
+      {
+        "field": "game_date, season, season_type",
+        "source": "contract schedule",
+        "coverage": "2990/2990",
+        "cutoff_valid": true,
+        "basis": "schedule"
+      },
+      {
+        "field": "is_home",
+        "source": "data/masters/master_team.parquet",
+        "coverage": "2990/2990 team-games (key overlap verified)",
+        "cutoff_valid": true,
+        "basis": "schedule-determined, known pregame"
+      },
+      {
+        "field": "days_rest, back-to-back, game_no_in_season, schedule density",
+        "source": "derived from contract schedule dates",
+        "coverage": "2990/2990",
+        "cutoff_valid": true,
+        "basis": "derived from prior dates only"
+      },
+      {
+        "field": "own realised game_pace over strictly earlier games",
+        "source": "possessions_raw_v2",
+        "coverage": "2982 resolved",
+        "cutoff_valid": true,
+        "basis": "the incumbent's own input; lagged by construction"
+      },
+      {
+        "field": "OPPONENT realised game_pace over strictly earlier games",
+        "source": "possessions_raw_v2 + schedule",
+        "coverage": "2982 resolved",
+        "cutoff_valid": true,
+        "basis": "same lagged construction as own history; NOT used by the incumbent"
+      },
+      {
+        "field": "team prior-game box aggregates (fga, fta, oreb, tov, ...)",
+        "source": "data/masters/master_team.parquet",
+        "coverage": "2990/2990",
+        "cutoff_valid": "ONLY LAGGED",
+        "basis": "65 columns; 7 are schedule/identity, the remaining 58 are REALISED target-game outcomes and are cutoff-valid only over earlier games"
+      },
+      {
+        "field": "possession-level end_reason, duration_sec, period",
+        "source": "possessions_raw_v2",
+        "coverage": "all contract games",
+        "cutoff_valid": "ONLY LAGGED",
+        "basis": "realised; lagged use only"
+      }
+    ],
+    "CORRECTED_now_available": [
+      {
+        "field": "venue, travel distance, elevation, time zone",
+        "source": "data/reference/team_cities.csv (16 rows: team_id, franchise, first_season, last_season, city, arena, lat, lon, elevation_ft)",
+        "v1_verdict": "ABSENT \u2014 WITHDRAWN, this was a coordinator error",
+        "v2_verdict": "AVAILABLE \u2014 Category A",
+        "cutoff_valid": true,
+        "basis": "static reference; venue is schedule-determined and known pregame"
+      }
+    ],
+    "CORRECTED_availability_yes_cutoff_unproven": [
+      {
+        "field": "injury / transaction history",
+        "source": "data/injury_history/injury_history.csv (8,340 rows, 2021-01-07 .. 2026-07-29, full contract span)",
+        "v1_verdict": "UNAVAILABLE HISTORICALLY \u2014 WITHDRAWN, coordinator error",
+        "v2_verdict": "AVAILABILITY ESTABLISHED; CUTOFF VALIDITY NOT ESTABLISHED",
+        "reason": "no observation timestamp; cutoff status rests on `date` being an event date rather than a compilation date",
+        "category": "B \u2014 on cutoff grounds, NOT availability grounds"
+      }
+    ],
+    "unavailable_or_insufficient": [
+      {
+        "field": "referee / official assignments",
+        "source": "data/ref_assignments/",
+        "coverage": "0 of 1495 contract games overlap",
+        "verdict": "UNAVAILABLE",
+        "note": "officials_master.csv carries no game_id join at all"
+      },
+      {
+        "field": "injury / availability report",
+        "source": "data/injury_capture/injury_log.csv",
+        "coverage": "2026-07-30 .. 2026-08-04 only (6 days of a 5-season span)",
+        "verdict": "UNAVAILABLE HISTORICALLY",
+        "note": "confirms the standing caution that availability before 2026-07-30 is not a genuine captured pregame feed"
+      },
+      {
+        "field": "market odds / totals",
+        "source": "data/odds_capture/",
+        "coverage": "2026-07-31 .. 2026-08-06 only",
+        "verdict": "UNAVAILABLE HISTORICALLY",
+        "note": "capture begins after the modelling span; also a market feature, which raises separate questions about what is being learned"
+      },
+      {
+        "field": "coaching identity, coaching change, tactical scheme",
+        "source": "none found in the repository",
+        "verdict": "ABSENT",
+        "note": "no coaching source exists; a `*coach*` sweep over data/ returns nothing"
+      },
+      {
+        "field": "starting lineup / rotation announced pregame",
+        "source": "no captured pregame feed",
+        "verdict": "UNAVAILABLE",
+        "note": "realised lineups are target-game outcomes"
+      },
+      {
+        "field": "travel distance / time-zone change",
+        "source": "not present; would need venue geocoding",
+        "verdict": "ABSENT",
+        "note": "derivable in principle from a venue table that does not exist here"
+      }
+    ],
+    "capture_provenance_caution": {
+      "classification": "CORRECTED (a source's count corrected; its conclusion stands)",
+      "found_by": "pace_coaching",
+      "source_claim": "master_team has two distinct observed_time values",
+      "measured": "TEN distinct values, in two bulk windows (2026-07-31 20:42:42-45Z and 2026-08-04 12:30:09-22Z) covering game dates from 2021-05-14",
+      "conclusion": "the count was wrong; the conclusion is right. master_team is a RETROSPECTIVE BULK SCRAPE, not per-game pregame capture. Any master_team column is cutoff-valid only under a LAG argument, never under a CAPTURE argument, and carries revision risk. possessions_raw_v2 carries no capture timestamp at all."
+    }
+  },
+  "unavailable_but_potentially_valuable": {
+    "note": "recorded so the current data inventory does not silently narrow the scientific imagination. These may NOT enter TEAM_POSSESSION_PRIOR_V2 as arms; they belong to a data and capability roadmap.",
+    "candidates": [
+      {
+        "missing_input": "pregame injury / availability feed with historical depth",
+        "why_it_may_matter": "pace is partly a personnel property; a missing primary ball-handler plausibly shifts a team's possession rate",
+        "minimum_viable_collection": "persist the existing injury capture forward from 2026-07-30 and backfill from an archival source if one can be licensed",
+        "prospective_only_validation": true
+      },
+      {
+        "missing_input": "coaching identity and coaching-change events",
+        "why_it_may_matter": "pace is among the most coach-determined team properties; a coaching change is a plausible structural break the trailing window cannot see",
+        "minimum_viable_collection": "a small hand-maintained coach-by-team-season table",
+        "prospective_only_validation": false
+      },
+      {
+        "missing_input": "announced starting lineup / expected rotation",
+        "why_it_may_matter": "distinguishes a rested-starters game from a full-strength one before tip",
+        "minimum_viable_collection": "capture pregame lineup postings",
+        "prospective_only_validation": true
+      },
+      {
+        "missing_input": "venue table with location for travel and time-zone deltas",
+        "why_it_may_matter": "travel burden is a standard schedule-fatigue channel",
+        "minimum_viable_collection": "a static 12-team venue table with coordinates",
+        "prospective_only_validation": false
+      },
+      {
+        "missing_input": "market total / pace-implied market expectation with history",
+        "why_it_may_matter": "a market total is an external consensus pace signal",
+        "minimum_viable_collection": "persist odds capture forward",
+        "prospective_only_validation": true,
+        "caution": "a market feature changes what the model is: it would no longer be a pure pace projection"
+      }
+    ]
+  },
+  "UNRESOLVED_do_not_force": {
+    "head_to_head_coverage": {
+      "status": "UNRESOLVED \u2014 preserve as unresolved unless independently reproduced",
+      "detail": {
+        "classification": "UNRESOLVED (discrepancy NOT reconciled)",
+        "original_discrepancy": "pace_coaching reported 70.2%; the coordinator measured 85.1%; the synthesis refused to quote either",
+        "measured_under_several_definitions": {
+          "all_team_games_ge1_prior_meeting": {
+            "n": 2545,
+            "of": 2990,
+            "pct": 85.1
+          },
+          "RESOLVED_rows_only_ge1_prior_meeting": {
+            "n": 2541,
+            "of": 2982,
+            "pct": 85.2
+          },
+          "LEVEL_1_rows_only_ge1_prior_meeting": {
+            "n": 2415,
+            "of": 2762,
+            "pct": 87.4
+          },
+          "playoffs_ge3_prior_meetings": {
+            "n": 212,
+            "of": 212,
+            "pct": 100.0
+          }
+        },
+        "resolution": "NOT RECONCILED. I tested four denominators (all team-games, resolved rows only, level-1 rows only, playoffs with >=3 prior meetings) and NONE reproduces 70.2%; they span 85.1-87.4%, and playoffs come out at 100.0% against the source's 99.1%. The discrepancy is therefore NOT a denominator difference, which is what I first assumed and could not substantiate. Either the source used a different meeting definition (e.g. excluding the current game's own prior meetings, or counting within the trailing window rather than the season), or one of the two computations is wrong. UNRESOLVED \u2014 no figure may be quoted in a task card until reconciled directly with the source.",
+        "classification_override": "UNRESOLVED"
+      },
+      "instruction": "do NOT force reconciliation. No head-to-head coverage figure may be quoted in a task card until independently reproduced."
+    },
+    "game_no_in_season_defect_claim": {
+      "classification": "UNRESOLVED \u2014 claim NOT reproduced",
+      "source_claim": "adversarial reported the packet's game_no_in_season wrong on 266 of 2982 rows",
+      "coordinator_measurement": "0 of 2990 rows differ from a deterministic (team, season, game_date, game_id) ordering",
+      "disposition": "NOT ADOPTED and NOT DISMISSED. The definitions of 'correct' may differ. Must be reconciled with the source before the stratum is used."
+    }
+  },
+  "statement_classification": {
+    "UNCHANGED": [
+      "the incumbent formula, constants and assumption list",
+      "coverage counts (2990 team-games, 2982 resolved, 8 unresolved, by pace level)",
+      "overall chronological possession error: MAE 2.90325, bias 0.15917, sd 3.67425",
+      "by-season error table",
+      "bias/variance decomposition: squared bias 0.19% of MSE, variance explained 0.116",
+      "by_pace_level and by_season_type strata",
+      "the downstream propagation figure (mean |propagated| 0.51744)",
+      "the coaching-source absence (verified: no *coach* source exists)",
+      "referee assignment unavailability (0 of 1495 games overlap)",
+      "market odds unavailability (capture begins 2026-07-31)"
+    ],
+    "CORRECTED": [
+      "days_rest strata (C1)",
+      "support strata (C2)",
+      "OT contamination scale (C4)",
+      "venue/travel/elevation/timezone availability (C7)",
+      "injury/transaction availability (C8)",
+      "master_team capture provenance (C9)",
+      "effective sample size and inference (C11)"
+    ],
+    "WITHDRAWN": [
+      "'travel distance / time-zone change: ABSENT' (C7)",
+      "'injury: UNAVAILABLE HISTORICALLY' as an availability verdict (C8)",
+      "the '>10 support' stratum as a HIGH-support stratum (C2)",
+      "the '7+ days rest' stratum as a rest effect (C1)",
+      "coordinator hypothesis A6 (schedule-gap staleness), which rested on C1",
+      "coordinator hypothesis A7 (home/away), subsumed and bounded"
+    ],
+    "UNRESOLVED": [
+      "the operational possession unit (C5) \u2014 returned for coordinator ruling",
+      "head-to-head coverage (C6) \u2014 70.2% vs 85.1%, NOT explained by denominator",
+      "game_no_in_season defect claim (C10) \u2014 not reproduced, not dismissed"
+    ]
+  }
+}
