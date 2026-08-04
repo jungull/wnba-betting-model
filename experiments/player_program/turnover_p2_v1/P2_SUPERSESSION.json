@@ -1,0 +1,335 @@
+{
+  "schema": "player_program_supersession/1",
+  "document": "P2_SUPERSESSION",
+  "applies_to": "turnover_rate_role_context_v1",
+  "arm_id": "turnover_rate_role_context/1",
+  "p2_registered_at_commit": "7cbfa9d79897cf715c097df1f9b53404129fe807",
+  "p2_executed_utc": "2026-08-04T12:32:37.732848Z",
+  "p2_results_file": "experiments/player_program/turnover_p2_v1/TURNOVER_P2_RESULTS.json",
+  "prepared_utc": "2026-08-04T13:59:19Z",
+  "prepared_at_commit": "0397fbd8f870f17b6e3ced82a30a31680b20eb1f",
+  "prepared_by": "integrity workstream D (supersession records)",
+  "human_readable_form": "experiments/player_program/turnover_p2_v1/P2_SUPERSESSION.md",
+
+  "what_this_document_is": "a forward-recorded supersession. It states, per arm, which P2 conclusions stand and which are withdrawn.",
+  "what_this_document_is_not": {
+    "no_commit_rewriting": "no commit is amended, rebased or rewritten. Supersession is recorded FORWARD. The P2 registration, its results JSON, its prediction parquets and its feature artifact are left exactly as they were.",
+    "no_repair_and_rerun": "no arm is repaired and re-run in this wave. Dropping a duplicated column, rebuilding a leaking column or matching an intercept AFTER results are visible is a post-result design change. Every repair named here must be registered as a NEW frozen challenger in a later wave.",
+    "registry_not_modified": "arm_registry.jsonl is NOT modified by this document. Proposed records are staged in PROPOSED_REGISTRY_RECORDS.jsonl for the coordinator, who is the single writer.",
+    "artifacts_untouched": "Arm D, the canonical exposure artifact, the canonical turnover target and feature_gate.py are untouched."
+  },
+
+  "artifact_integrity_at_preparation": {
+    "features_parquet": "turnover_p2_v1/turnover_role_context_features_v1.parquet",
+    "sha256_observed": "5ab9160078771f6857cd332da9d3a1182e83ce4ab35b5dd8c2746b0be98b2072",
+    "sha256_in_results_receipt": "5ab9160078771f6857cd332da9d3a1182e83ce4ab35b5dd8c2746b0be98b2072",
+    "matches": true
+  },
+
+  "arm_status": {
+    "A": {
+      "features": "league constant (frozen from P1)",
+      "status": "VALID",
+      "note": "control arm, carries no P2 feature; unchanged by this record"
+    },
+    "D": {
+      "features": "frozen P1 EWMA-shrunk incumbent, unfitted",
+      "status": "VALID and UNCHANGED",
+      "note": "not a P2 arm. Not altered, not retuned, not re-adjudicated here."
+    },
+    "E": {
+      "features": "group 1, projected role (5 columns)",
+      "status": "INVALID",
+      "reason": "algebraic non-identifiability"
+    },
+    "F": {
+      "features": "group 2, prior role (3 columns)",
+      "status_operational": "INVALID",
+      "reason": "missingness encoded did_appear"
+    },
+    "G": {
+      "features": "group 3, offensive involvement (1 column)",
+      "status_player_level_published_improvement": "INVALID AS PUBLISHED EVIDENCE",
+      "reason": "the leaking feature effect exceeds the reported gain"
+    },
+    "H": {
+      "features": "group 4, teammate context (1 column)",
+      "status_null_mask_defect": "NOT AFFECTED",
+      "status_original_comparison_against_arm_D": "CONTAMINATED by unmatched intercept treatment"
+    },
+    "I": {
+      "features": "groups 1-4 united (10 columns)",
+      "status": "INVALID",
+      "reason": "algebraic non-identifiability"
+    }
+  },
+
+  "arms_E_and_I": {
+    "status": "INVALID",
+    "defect": "algebraic non-identifiability. Group 1 registered BOTH proj_minutes_share AND proj_off_poss_share. Under the v1 minutes-to-possession mapping projected possessions are exactly pace * minutes / 40, so the two are THE SAME COLUMN.",
+    "measured_column_identity": {
+      "artifact": "turnover_p2_v1/turnover_role_context_features_v1.parquet",
+      "rows": 35629,
+      "max_abs_difference_between_the_two_columns": 5.551115123125783e-17,
+      "difference_note": "floating-point representation noise only",
+      "pearson_correlation": 1.0,
+      "std_ddof1_both_columns": 0.048326312796813625,
+      "std_ddof0_both_columns": 0.04832563460416304,
+      "min_both_columns": 0.00037672499999999995,
+      "max_both_columns": 0.2
+    },
+    "measured_rank": {
+      "method": "feature_gate.design_rank_report at commit 0397fbd, on the standardised complete-case design",
+      "arm_E": {
+        "n_features": 5,
+        "numerical_rank": 4,
+        "full_rank": false,
+        "smallest_singular_value": 0.0,
+        "condition_number": 1401211466904307.8,
+        "n_complete_rows": 35629
+      },
+      "arm_I": {
+        "n_features": 10,
+        "numerical_rank": 8,
+        "full_rank": false,
+        "smallest_two_singular_values": [0.0, 0.0],
+        "condition_number": 1.1737729127252736e+16,
+        "n_complete_rows": 27351,
+        "second_independent_dependency": {
+          "identity": "role_change == proj_minutes_share - trailing_minutes_share",
+          "rows_where_role_change_is_defined": 27351,
+          "max_abs_deviation_from_the_identity": 0.0
+        }
+      }
+    },
+    "consequence": "arms E and I carry a rank-deficient design on top of an offset that already contains log(exposure). Their fitted predictions diverge; the reported deviance and team MAE are NOT scientific results and must not be cited, compared, ranked or plotted.",
+    "measured_divergence": {
+      "max_fitted_prediction_per_row_operational": 485165195.4097903,
+      "mean_fitted_prediction_per_row_operational": 21079338.594414316,
+      "median_fitted_prediction_per_row_operational_arm_E": 0.9581076053090474,
+      "reading": "the divergence is concentrated: the median row is ordinary and the peak row is ~4.85e8"
+    },
+    "reported_figures_that_are_withdrawn": {
+      "intrinsic_player_deviance_E_and_I": 20409539.43147066,
+      "intrinsic_team_mae_E": 96479867.6236525,
+      "intrinsic_team_mae_I": 96479867.63301578,
+      "operational_player_deviance_E": 42158681.967888825,
+      "operational_team_mae_E": 257733604.67694223,
+      "operational_team_mae_I": 257733604.68427804
+    },
+    "root_cause_is_the_registration_not_the_solver": true,
+    "solver_note": "a damped IRLS with step-halving was added and the fit CONVERGES. The explosion is the collinear design, not optimiser divergence.",
+    "what_remains_valid": "nothing from E or I. A rank-deficient design's coefficients are a property of the ridge penalty, not of the data, so there is no partial result to salvage.",
+    "relationship_to_the_existing_erratum": "arm_registry.jsonl already carries p2__erratum_arms_E_and_I_invalid_collinear_registration. This record CONFIRMS and EXTENDS it with the measured rank deficiency and the second dependency in arm I. It does not contradict or replace it."
+  },
+
+  "arm_F_operational": {
+    "status": "INVALID",
+    "defect": "missingness encoded did_appear. trailing_minutes_share, trailing_rotation_rank, role_change and offensive_involvement_proxy were built from the REALISED box score and left-merged onto the Tier A candidate universe, so their null mask is an exact post-cutoff appearance indicator.",
+    "measured": {
+      "source": "turnover_p2_v1/turnover_p2_predictions_operational.parquet, recomputed at commit 0397fbd",
+      "operational_rows": 35629,
+      "did_appear_true": 27351,
+      "did_appear_false": 8278,
+      "columns": {
+        "trailing_minutes_share": {"non_null": 27351, "null": 8278, "null_and_appeared": 0, "non_null_and_did_not_appear": 0, "off_diagonal": 0},
+        "trailing_rotation_rank": {"non_null": 27351, "null": 8278, "null_and_appeared": 0, "non_null_and_did_not_appear": 0, "off_diagonal": 0},
+        "role_change": {"non_null": 27351, "null": 8278, "null_and_appeared": 0, "non_null_and_did_not_appear": 0, "off_diagonal": 0},
+        "offensive_involvement_proxy": {"non_null": 27351, "null": 8278, "null_and_appeared": 0, "non_null_and_did_not_appear": 0, "off_diagonal": 0}
+      },
+      "independently_confirmed_by": [
+        "discovery_wave_1/ws3 leakage_audit (branch tip 1e3509f)",
+        "discovery_wave_1/ws5 shared_input_defect (branch tip 6d9e3f2)"
+      ]
+    },
+    "consequence": "any fillna launders the outcome into the design. P2's operational fit mean-imputes those nulls inside the fold, which encodes a post-cutoff appearance oracle into the design matrix. The P2 registration's own feature boundary forbids post-cutoff availability, so arm F's operational result violates the arm's declared boundary.",
+    "why_the_value_based_checks_missed_it": "value-based leakage checks only ever see the non-null subset. Only a null-mask-versus-outcome test catches this. That test now exists in feature_gate.py as missingness_encodes_outcome (added at 42af2cd); it did not exist when P2 was fitted.",
+    "gate_reproduction_at_this_commit": {
+      "call": "feature_gate.audit(operational, group_2, target=turnovers, outcome_mask=did_appear)",
+      "result": "BLOCKED",
+      "blocking_kinds": [
+        "missingness_encodes_outcome :: trailing_minutes_share",
+        "missingness_encodes_outcome :: trailing_rotation_rank",
+        "missingness_encodes_outcome :: role_change"
+      ]
+    },
+    "what_is_withdrawn": {
+      "every_published_arm_F_operational_number": true,
+      "operational_paired_F_vs_D_team_mae": -0.0005743996126941918,
+      "operational_paired_F_vs_D_ci90": [-0.004406236396276847, 0.0031465982517154428],
+      "operational_team_mae_F": 2.968024919795182,
+      "operational_player_deviance_F": 1.2283879578781853
+    },
+    "what_this_record_does_NOT_do": "it makes no finding that clears the INTRINSIC track. The intrinsic frame is realised-participant rows only and carries no did_appear column; its 894 nulls on every P2-merged feature arise from left-merge non-matches, not from the appearance mask. The intrinsic track is neither invalidated nor independently re-validated here.",
+    "direction_note": "the DIRECTION of the P2 F conclusion -- that the registered prior-role formulation added no stable incremental value -- is not established by arm F. Any such claim must cite clean evidence, not this arm."
+  },
+
+  "arm_G_published_player_level_improvement": {
+    "status": "INVALID AS PUBLISHED EVIDENCE",
+    "scope_of_the_finding": "the PLAYER-LEVEL improvement claim only. The arithmetic in TURNOVER_P2_RESULTS.json is correct; it is the ATTRIBUTION that fails.",
+    "defect": "offensive_involvement_proxy carries the same exact did_appear null mask (27,351 non-null / 8,278 null, zero off-diagonal), and the leaking feature effect exceeds the reported gain.",
+    "the_decisive_comparison": {
+      "leaking_feature_effect_deviance": 0.0218,
+      "leaking_feature_effect_deviance_full_precision": 0.021804146249029932,
+      "reported_gain_deviance": 0.00137,
+      "reported_gain_deviance_full_precision": 0.0013726932561086702,
+      "ratio": 15.915435218271519,
+      "verdict": "the leaking feature effect exceeds the reported gain by roughly a factor of sixteen"
+    },
+    "provenance_of_the_leak_measurement": {
+      "source_file": "discovery_wave_1/ws3/WS3_RESULTS.json :: motivating_premise_retest.value_of_the_leak_alone",
+      "workstream": "ws3 (branch tip 1e3509f)",
+      "key": "deviance_advantage_of_the_leaking_column_over_the_clean_one",
+      "construction": "the same one-feature arm refitted through an identical pipeline, once on the canonical LEAKING column and once on a cutoff-valid rebuild, with identical training rows",
+      "measured_arms": {
+        "involve_canonical_LEAKING": {"player_poisson_deviance": 1.2631277277244133, "nulls_mean_imputed": 8278},
+        "involve_ws3_clean": {"player_poisson_deviance": 1.2849318739734432, "nulls_mean_imputed": 769}
+      },
+      "arithmetic_check_at_this_commit": "1.2849318739734432 - 1.2631277277244133 = 0.0218041462490299",
+      "ws3_pipeline_note": "both variants were refitted on the OPERATIONAL track walk-forward (P2 trained on the intrinsic frame), so absolute levels need not reproduce P2. The leaking-vs-clean CONTRAST is the measurement."
+    },
+    "reported_gain_reproduced_at_this_commit": {
+      "operational_player_deviance_D": 1.2285420505227964,
+      "operational_player_deviance_G": 1.2271693572666877,
+      "difference": 0.0013726932561086702
+    },
+    "independent_corroboration_computed_at_this_commit": {
+      "method": "decompose the published D-minus-G operational player deviance by appearance status",
+      "appearing_rows": {"n": 27351, "deviance_D": 1.28716917986558, "deviance_G": 1.288786757767423, "D_minus_G": -0.0016175779018430259},
+      "non_appearing_rows": {"n": 8278, "deviance_D": 1.034834559020685, "deviance_G": 1.0235818335779203, "D_minus_G": 0.011252725442764788},
+      "reading": "the entire published gain originates on the 8,278 rows whose feature value is an imputation determined by the outcome-encoding null mask. On the 27,351 rows where the feature is actually observed, arm G is WORSE than arm D."
+    },
+    "consequence": "the reported player-level improvement cannot be attributed to the basketball content of the involvement proxy. Arm G may not be cited as evidence that offensive involvement adds player-level turnover-rate information.",
+    "what_is_NOT_claimed": "this record does not claim the involvement proxy is worthless. It claims that P2 arm G does not establish its value. Per player_event_failure_analysis_policy_v1, a failed registered formulation is not a finding about the underlying basketball information.",
+    "what_is_not_withdrawn": {
+      "team_level_result": "the G-versus-D operational team-level LOSS (-0.005055505634143039, ci90 [-0.009645679763657248, -0.0006143227264758999]) is a separately reproduced phenomenon and is not withdrawn by this record.",
+      "reproduced_by": "discovery_wave_1/ws6 (branch tip 5ef1f25) reproduces the reference involvement coefficient beta = 0.024297, z = 4.8938."
+    },
+    "what_is_withdrawn": "the published arm G PLAYER-LEVEL improvement claim and every downstream statement resting on it."
+  },
+
+  "arm_H": {
+    "null_mask_defect": {
+      "status": "NOT AFFECTED",
+      "reason": "displaced_involvement is fully populated",
+      "measured": {
+        "feature_artifact_rows": 35629,
+        "displaced_involvement_non_null": 35629,
+        "displaced_involvement_null": 0,
+        "operational_predictions_non_null": 35629,
+        "operational_predictions_null": 0,
+        "note": "the column carries no null mask at all, so it cannot encode did_appear through missingness"
+      },
+      "gate_reproduction_at_this_commit": {
+        "call": "feature_gate.audit(operational, ['displaced_involvement'], target=turnovers, outcome_mask=did_appear)",
+        "result": "PASSED",
+        "findings": [],
+        "numerical_rank": 1,
+        "n_features": 1,
+        "condition_number": 1.0
+      }
+    },
+    "original_comparison_against_arm_D": {
+      "status": "CONTAMINATED",
+      "defect": "unmatched intercept treatment. The fitted challenger carried an unpenalised intercept that the unfitted incumbent Arm D lacked.",
+      "size_of_the_contamination": {
+        "value_operational_team_mae": 0.0033,
+        "full_precision": 0.003256067723225449,
+        "measured_as": "K0 -- an unpenalised intercept and ZERO features, fitted through the identical walk-forward pipeline on the identical offset and folds -- paired against frozen Arm D",
+        "K0_operational_team_mae": 2.9641944524592625,
+        "frozen_arm_D_operational_team_mae": 2.967450520182488,
+        "ci90": [-0.0001411312547768372, 0.00671989700062548],
+        "ci_excludes_zero": false,
+        "reproduced_independently_by": [
+          "discovery_wave_1/ws1 (branch tip 5313ebd), paired_vs_D.K0_intercept_only",
+          "discovery_wave_1/ws5 (branch tip 6d9e3f2), paired_vs_D_team.K0",
+          "discovery_wave_1/ws7 (branch tip e858e96), K0_intercept_only team MAE 2.964194"
+        ]
+      },
+      "arm_H_published_effects_for_scale": {
+        "operational_paired_H_vs_D_team_mae": -0.0006947945281796608,
+        "operational_paired_H_vs_D_ci90": [-0.005397928491706854, 0.0036294348551550236],
+        "intrinsic_paired_H_vs_D_team_mae": -0.001993530627650341,
+        "intrinsic_paired_H_vs_D_ci90": [-0.0061450623035337595, 0.002267450982109088],
+        "operational_player_deviance_D_minus_H": -8.194891410284733e-05,
+        "intrinsic_player_deviance_D_minus_H": -0.0001914589759763885,
+        "operational_team_mae_H": 2.9681453147106676
+      },
+      "consequence": "a comparison whose unmatched intercept term is worth about +0.0033 operational team MAE cannot adjudicate effects of this size in EITHER direction. The original arm H challenger-versus-D conclusion is withdrawn as an ADJUDICATION, not as arithmetic.",
+      "what_remains_valid": [
+        "the arm H FEATURE is clean and may be reused without missingness remediation",
+        "the arm H numbers are arithmetically correct and may be quoted as descriptive statistics",
+        "the NON-PROMOTION of arm H stands; nothing here argues arm H should have been promoted"
+      ],
+      "what_is_required_before_re_adjudication": "a re-run against an intercept-matched incumbent, registered as a NEW frozen challenger in a later wave. Not a re-analysis of the existing fit.",
+      "related_work": "the general form of this defect is the subject of comparison_gate.py, integrity workstream A. This record neither specifies nor assumes that module's interface."
+    }
+  },
+
+  "clean_discovery_results_are_separate_evidence": {
+    "rule": "the clean WS5 and WS6 discovery results are SEPARATE EVIDENCE and MUST NOT be backfilled into the original P2 registration. P2 stands SUPERSEDED AS RUN. It is not retroactively repaired.",
+    "workstreams": {
+      "ws5_opportunity_proxies": {
+        "branch_tip": "6d9e3f2",
+        "freeze": "059db0d",
+        "status": "DISCOVERY, historical development evidence only; nothing promotable",
+        "verdict": "SPLIT. As rate predictors and as interaction variables all six clean opportunity proxies FAIL against K0. As player-allocation weights five of six deliver a small, season-stable player-level gain over K0 at zero team-level cost (x1 allocation weight: +0.00175 vs K0 player, ci90 [0.0015, 0.00198]). The ledger's expected direction -- that play-ending involvement beats FGA share -- is FALSIFIED (r = 0.994, identical performance in every role)."
+      },
+      "ws6_mechanism_decomposition": {
+        "branch_tip": "5ef1f25",
+        "status": "DISCOVERY ONLY -- development evidence; nothing promoted, nothing registered",
+        "verdict": "REJECTED_AS_CAUSE__HETEROGENEITY_REAL_BUT_NOT_OFFSETTING"
+      }
+    },
+    "also_separate": {
+      "ws3_total_plus_allocation": {
+        "branch_tip": "1e3509f",
+        "status": "DISCOVERY; premise contaminated; verdict null",
+        "note": "ws3 supplies the leaking-versus-clean measurement quoted under arm G. That measurement is cited here as ws3's finding, on ws3's evidence, at ws3's commit. It is not imported into the P2 registration."
+      }
+    },
+    "why_separate": [
+      "DIFFERENT LANE. P2 is a registered promotion-style comparison against a frozen incumbent. ws3, ws5 and ws6 are DISCOVERY, on development folds, explicitly non-promotable.",
+      "DIFFERENT INPUTS. ws3 and ws5 rebuilt the leaking columns. Their numbers are measured on inputs the P2 registration never used.",
+      "DIFFERENT REGISTRATION STATUS. None of them was registered before execution as a P2 challenger. Inserting their results into P2 would convert post-hoc discovery into pre-registered confirmation -- the exact substitution the program's registration discipline exists to prevent.",
+      "BACKFILLING WOULD LAUNDER A NULL. P2's honest outcome is that no registered role feature added stable value, with several arms invalid. Grafting a clean discovery result onto that record would convert a null into an apparent success that no pre-registered test produced."
+    ],
+    "where_to_cite_them_from": "their own workstream records, at their own commits, under their own DISCOVERY status."
+  },
+
+  "gate_invocation_contract": {
+    "file": "experiments/player_program/GATE_INVOCATION_CONTRACT.md",
+    "clause": "feature audits must run separately on EVERY chronological training fold and again on the final assembled design. A pooled audit cannot establish that every training fold is identified.",
+    "motivating_case": "ws3 stage-2 2022 training fold: proj_off_poss_share std 7.80108356964482e-09 and p_active std 5.13611574504531e-17, while the POOLED audit over the same 35,629 rows passed both columns with zero findings. |X.gamma| reached 6.9e4 and the within-team softmax saturated to exact 0/1 shares. The optimiser converged in five Newton iterations in every fold.",
+    "retrospective_note": "had the contract and the current gate been in force at P2, arms E and I would have been blocked pre-fit on near_collinear and rank_deficient, and arms F and G on missingness_encodes_outcome. This is an observation about invocation timing, NOT a licence to repair and re-run inside the P2 wave."
+  },
+
+  "verification": {
+    "recomputed_at_commit_0397fbd_against_the_frozen_p2_files": [
+      "arm E numerical rank 4 of 5, smallest singular value 0.0, condition 1.4012e15, via feature_gate.design_rank_report",
+      "arm I numerical rank 8 of 10, two zero singular values, condition 1.1738e16",
+      "duplicate-column identity, max absolute difference 5.551115123125783e-17, correlation 1.0",
+      "role_change identity max absolute deviation 0.0 over 27,351 defined rows",
+      "null-mask versus did_appear cross-tabulation for all four affected columns, zero off-diagonal in every case",
+      "displaced_involvement 35,629 non-null / 0 null on both the feature artifact and the operational predictions",
+      "feature_gate.audit re-run per arm design: E BLOCKED, F BLOCKED, G BLOCKED, H PASSED, I BLOCKED",
+      "arm G published gain 1.2285420505227964 - 1.2271693572666877 = 0.0013726932561086702",
+      "arm G gain decomposed by appearance status (appearing -0.0016182933, non-appearing +0.0112531009)",
+      "E/I maximum fitted operational prediction 485165195.4 per row",
+      "feature artifact sha256 matches its results receipt"
+    ],
+    "quoted_from_other_workstreams_not_re_derived_here": [
+      "ws3 leaking-versus-clean deviance advantage 0.021804146249029932 (WS3_RESULTS.json, branch tip 1e3509f) -- located and arithmetically checked against ws3's own two reported deviances, but the two ws3 fits were not re-executed",
+      "ws3 |X.gamma| 6.9e4, softmax saturation, five Newton iterations",
+      "ws5 verdict and per-proxy allocation figures (branch tip 6d9e3f2)",
+      "ws6 verdict and reference coefficient beta 0.024297, z 4.8938 (branch tip 5ef1f25)"
+    ],
+    "K0_verified_in_two_independent_workstream_artifacts": "ws1 paired_vs_D.K0_intercept_only and ws5 paired_vs_D_team.K0 both report mean_mae_reduction 0.003256067723225449 with ci90 [-0.0001411312547768372, 0.00671989700062548]"
+  },
+
+  "proposed_registry_records": {
+    "file": "experiments/player_program/turnover_p2_v1/PROPOSED_REGISTRY_RECORDS.jsonl",
+    "count": 6,
+    "appended_by": "the coordinator only. This workstream does not write arm_registry.jsonl."
+  }
+}
