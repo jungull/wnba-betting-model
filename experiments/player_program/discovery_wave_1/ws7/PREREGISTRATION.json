@@ -1,0 +1,184 @@
+{
+  "schema": "discovery_ws7_preregistration/1",
+  "workstream": "ws7_nonlinear_heterogeneous",
+  "wave": "discovery_wave_1",
+  "lane": "DISCOVERY (development folds only)",
+  "frozen_before_results": true,
+  "hypothesis": "role and involvement effects may be hidden by LINEAR POOLING. The prior linear main-effect arms were null or negative on operational team MAE versus the frozen incumbent Arm D.",
+  "prior_linear_arms_being_re_examined": {
+    "prior_role_F": {
+      "mean_mae_reduction": -0.00057,
+      "ci90": [
+        -0.004406,
+        0.003147
+      ]
+    },
+    "involvement_G": {
+      "mean_mae_reduction": -0.00506,
+      "ci90": [
+        -0.009646,
+        -0.000614
+      ]
+    },
+    "teammate_context_H": {
+      "mean_mae_reduction": -0.00069,
+      "ci90": [
+        -0.005398,
+        0.003629
+      ]
+    },
+    "note": "read from turnover_p2_v1/TURNOVER_P2_RESULTS.json, operational track"
+  },
+  "frozen_incumbent": {
+    "arm": "D_ewma_shrunk",
+    "operational_team_mae": 2.9675,
+    "intrinsic_team_mae": 2.896,
+    "must_not_be_modified": true
+  },
+  "estimator": {
+    "family": "Poisson",
+    "penalty": "ridge lambda=10.0, intercept unpenalised",
+    "offset": "log(exposure) + log(frozen Arm D rate), so beta=0 reproduces Arm D",
+    "validation": "walk-forward by season; every fold statistic from the training fold only",
+    "standardisation": "training-fold mean/sd; missing -> training-fold mean (as in P2)",
+    "solver": "IRLS with step-halving; non-convergence falls back to Arm D and is reported"
+  },
+  "tracks": {
+    "intrinsic": "realised exposure. ORACLE DIAGNOSTIC ONLY -- not a decision metric.",
+    "operational": "ALL 35,629 Tier A candidates including non-appearers. The decision metric."
+  },
+  "sign_convention": "INCUMBENT(D) absolute error MINUS CHALLENGER absolute error. POSITIVE = challenger beats D.",
+  "primary_metric": "operational team-game MAE, game-clustered 90% bootstrap CI",
+  "arms": {
+    "W1_pw_involvement": {
+      "form": "piecewise_linear",
+      "spec": {
+        "var": "offensive_involvement_proxy",
+        "knot_quantiles": [
+          0.3333333333333333,
+          0.6666666666666666
+        ]
+      },
+      "n_params": 3,
+      "reads": "does the involvement effect change slope across the usage range?"
+    },
+    "W2_rcs_involvement": {
+      "form": "restricted_cubic_spline",
+      "spec": {
+        "var": "offensive_involvement_proxy",
+        "knot_quantiles": [
+          0.1,
+          0.5,
+          0.9
+        ]
+      },
+      "n_params": 2,
+      "reads": "smooth nonlinearity in involvement with 3 preregistered knots"
+    },
+    "W3_expansion_contraction": {
+      "form": "asymmetric_split",
+      "spec": {
+        "var": "role_change"
+      },
+      "n_params": 2,
+      "reads": "is role EXPANSION a different effect from role CONTRACTION?"
+    },
+    "W3b_priorrole_asym": {
+      "form": "asymmetric_split_plus_group",
+      "spec": {
+        "var": "role_change",
+        "extra": [
+          "trailing_minutes_share",
+          "trailing_rotation_rank"
+        ]
+      },
+      "n_params": 4,
+      "reads": "direct comparator to linear Arm F: was F null because the two signs cancelled?"
+    },
+    "W4_inv_x_minutes": {
+      "form": "interaction",
+      "spec": {
+        "a": "offensive_involvement_proxy",
+        "b": "proj_minutes_share"
+      },
+      "n_params": 3,
+      "reads": "does involvement matter more for players projected heavy minutes?"
+    },
+    "W5_inv_x_support": {
+      "form": "interaction",
+      "spec": {
+        "a": "offensive_involvement_proxy",
+        "b": "log1p_player_support"
+      },
+      "n_params": 3,
+      "reads": "does involvement matter more where the involvement estimate is well supported?"
+    },
+    "W6_partial_pool_tier": {
+      "form": "partial_pool_continuous_tier",
+      "spec": {
+        "var": "offensive_involvement_proxy",
+        "tier_var": "trailing_minutes_share"
+      },
+      "n_params": 4,
+      "reads": "involvement slope varies smoothly with a continuous role tier; the ridge penalty shrinks the tier-varying part toward the pooled slope, which IS the partial pooling. Tier = training-fold ECDF percentile, centred."
+    },
+    "L_involvement": {
+      "form": "linear_control",
+      "spec": {
+        "cols": [
+          "offensive_involvement_proxy"
+        ]
+      },
+      "n_params": 1,
+      "reads": "reproduction of P2 Arm G (-0.00506 operational)"
+    },
+    "L_priorrole": {
+      "form": "linear_control",
+      "spec": {
+        "cols": [
+          "trailing_minutes_share",
+          "trailing_rotation_rank",
+          "role_change"
+        ]
+      },
+      "n_params": 3,
+      "reads": "reproduction of P2 Arm F (-0.00057 operational)"
+    }
+  },
+  "n_new_variants": 7,
+  "n_linear_controls": 2,
+  "multiplicity_statement": "7 new bounded nonlinear variants are tested on one primary metric. No correction is applied to the reported 90% CIs; instead the reader is told the count. A single nominally positive arm out of 7 at 90% is close to what chance alone delivers (expected ~0.35 false positives per tail), so no single positive arm is evidence.",
+  "hard_constraints": [
+    "no unrestricted player-specific slopes -- every form has <= 4 free parameters",
+    "role tiers and spline knots are recomputed inside each chronological training fold",
+    "proj_minutes_share and proj_off_poss_share are algebraically identical under the v1 exposure mapping; they are NEVER both included and the gate is asked to prove it",
+    "feature_gate.audit() runs per arm per fold before any fit and its JSON is saved",
+    "canonical artifacts and Arm D are read-only; nothing is appended to arm_registry.jsonl"
+  ],
+  "reporting_strata_player": {
+    "primary_creator": "offensive_involvement_proxy >= 0.145",
+    "secondary_creator": "0.060 <= offensive_involvement_proxy < 0.145",
+    "low_usage": "offensive_involvement_proxy < 0.060",
+    "secondary_expanded": "0.060 <= offensive_involvement_proxy < 0.145 and role_change >= +0.020",
+    "role_expansion": "role_change >= +0.020",
+    "role_contraction": "role_change <= -0.020",
+    "abrupt_change": "abs(role_change) >= 0.050",
+    "stable_role": "abs(role_change) < 0.050",
+    "no_prior_history": "offensive_involvement_proxy is null"
+  },
+  "reporting_strata_teamgame": {
+    "has_abrupt_change": "any candidate with abs(role_change) >= 0.050",
+    "no_abrupt_change": "no such candidate",
+    "high_displacement": "displaced_involvement >= 0.50",
+    "low_displacement": "displaced_involvement < 0.50",
+    "top_heavy": "proj_top5_concentration >= 0.70",
+    "not_top_heavy": "proj_top5_concentration < 0.70"
+  },
+  "strata_provenance": "absolute thresholds fixed here from the marginal feature distribution before any fit; they are reporting cuts, never model inputs, and are not re-tuned after results",
+  "derived_columns": {
+    "log1p_player_support": "log1p(clip(offensive_involvement_proxy * (_prior_support + 50) - 50/9, 0, None)). Inverts the P2 shrunk involvement proxy back to the player's prior EWMA field-goal attempts, i.e. how much history stands behind the involvement estimate. Built only from columns already present in the read-only P2 feature artifact, all of which are prior-games-only by construction."
+  },
+  "known_confounder_accepted": "log1p_player_support correlates ~0.82 with offensive_involvement_proxy on the pooled frame, exactly the 'role tiers correlate with support' confounder named in the ledger. W5 therefore cannot separate a support effect from a usage-level effect; it is reported as a joint test, not as a clean support test.",
+  "prespecified_verdict_rule": "SUPPORTS only if a bounded nonlinear form beats Arm D on operational team MAE with a 90% game-clustered CI excluding zero, AND the same sign appears in the preregistered stratum where the mechanism predicts it. Otherwise NULL or REFUTES. In-fold-only gains or intrinsic-only gains do not count.",
+  "frozen_utc": "2026-08-04T12:54:34.682117Z"
+}
