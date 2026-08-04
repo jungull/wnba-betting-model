@@ -6,19 +6,20 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `c42965f8d043676477bebd3ef4264e19e8880a67` |
+| HEAD | `cb097b29d9fe399879848bb59cc699147f174f87` |
 | working tree | DIRTY |
 | nodes | 64 |
-| events | 84 |
+| events | 92 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
 | BLOCKED | 22 |
-| FAILED | 6 |
+| FAILED | 5 |
 | PASSED | 27 |
-| READY | 7 |
+| RUNNING | 7 |
+| SUPERSEDED | 1 |
 | USER_REQUIRED | 2 |
 
 ## Severity A blockers
@@ -28,17 +29,17 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 
 ## Running
 
-None.
+* `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
+* `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
+* `R12_P27_REPORT_REMEDIATION` — Write the missing P27_FOLD_LOCAL_ESTIMABILITY_GUARD report from its own preserved evidence
+* `R13_I12_REPORT_REMEDIATION` — Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence
+* `R14_D10_COACHING_CORRECTION` — Correct D10's manufactured negative on the coaching family and re-measure its coverage
+* `R15_G02_INDEX_CLASSIFICATION` — Repair the DERIVED vs HAND-MAINTAINED classification in the document index
+* `R16_I11_SEAL_HONESTY` — Make I11's seal claim honest: obfuscation is not blinding
 
 ## Ready — next automatically scheduled
 
-* `R10_O15_REPORT_REMEDIATION` (operations) — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
-* `R11_P25_REPORT_REMEDIATION` (possession) — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
-* `R12_P27_REPORT_REMEDIATION` (possession) — Write the missing P27_FOLD_LOCAL_ESTIMABILITY_GUARD report from its own preserved evidence
-* `R13_I12_REPORT_REMEDIATION` (operations) — Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence
-* `R14_D10_COACHING_CORRECTION` (data) — Correct D10's manufactured negative on the coaching family and re-measure its coverage
-* `R15_G02_INDEX_CLASSIFICATION` (governance) — Repair the DERIVED vs HAND-MAINTAINED classification in the document index
-* `R16_I11_SEAL_HONESTY` (operations) — Make I11's seal claim honest: obfuscation is not blinding
+None.
 
 ## Passed
 
@@ -77,11 +78,11 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | FAILED | PASSED | READY | USER_REQUIRED |
-|---|---|---|---|---|---|
-| data | 0 | 1 | 4 | 1 | 0 |
-| future_research | 7 | 0 | 0 | 0 | 0 |
-| governance | 2 | 1 | 2 | 1 | 0 |
-| operations | 0 | 2 | 8 | 3 | 1 |
-| possession | 13 | 2 | 9 | 2 | 1 |
-| product | 0 | 0 | 4 | 0 | 0 |
+| lane | BLOCKED | FAILED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|---|
+| data | 0 | 1 | 4 | 1 | 0 | 0 |
+| future_research | 7 | 0 | 0 | 0 | 0 | 0 |
+| governance | 2 | 0 | 2 | 1 | 1 | 0 |
+| operations | 0 | 2 | 8 | 3 | 0 | 1 |
+| possession | 13 | 2 | 9 | 2 | 0 | 1 |
+| product | 0 | 0 | 4 | 0 | 0 | 0 |

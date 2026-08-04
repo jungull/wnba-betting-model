@@ -188,7 +188,7 @@ def build():
     N.append(node(
         "G03_FROZEN_PATH_GUARD",
         "Task-specific tests proving the frozen-path guard fails closed",
-        "governance", "implementation", ["G01_GRAPH_ENGINE", "G02_DOCUMENT_INDEX"],
+        "governance", "implementation", ["G01_GRAPH_ENGINE", "R15_G02_INDEX_CLASSIFICATION"],
         "fast test engineer",
         "INFRASTRUCTURE. Demonstrates the guard rejects what it must reject. Does not modify "
         "any shared gate: enforcement is added at the call site, never inside feature_gate.py.",
@@ -207,7 +207,7 @@ def build():
     N.append(node(
         "G04_PROGRAM_ROADMAP_EXTRACTION",
         "Convert documented remaining program into graph nodes; unknown work becomes NEEDS_TARGET_CONTRACT",
-        "governance", "documentation", ["G02_DOCUMENT_INDEX"],
+        "governance", "documentation", ["R15_G02_INDEX_CLASSIFICATION"],
         "roadmap extractor",
         "VERIFIED_READ_ONLY_DERIVATION of what the documents already commit to. Where "
         "documentation is absent the node must record NEEDS_TARGET_CONTRACT and must NOT "
