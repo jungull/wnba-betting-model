@@ -1,0 +1,209 @@
+{
+  "schema": "ws4_ewma_timescale_family_preregistration/1",
+  "workstream": "ws4_ewma_timescale_family",
+  "wave": "discovery_wave_1",
+  "lane": "DISCOVERY",
+  "status": "FROZEN BEFORE EXECUTION. No result was computed before this file was written and committed.",
+  "development_only": true,
+  "promotes_nothing": true,
+  "does_not_touch": [
+    "experiments/player_program/arm_registry.jsonl",
+    "experiments/player_program/turnover_p1_v1/*",
+    "experiments/player_program/turnover_p2_v1/*",
+    "experiments/player_program/turnover_targets_v1/*",
+    "experiments/player_program/projected_exposure_v1/*",
+    "experiments/player_program/discovery_wave_1/HYPOTHESIS_LEDGER.json"
+  ],
+
+  "hypothesis": {
+    "basketball_mechanism": "one decay rate cannot suit both stable and unstable roles",
+    "expected_direction": "faster adaptation helps after role shifts and team changes; slow decay remains better for stable roles",
+    "supports_hypothesis": "a GATED or DUAL-timescale variant beats alpha=0.10 in the unstable-role strata AND is non-inferior in the stable stratum",
+    "falsifies_or_weakens": "no variant beats the incumbent anywhere, or gains vanish out of fold"
+  },
+
+  "incumbent": {
+    "id": "D_ewma_shrunk (turnover_rate_pooled_baseline_v1)",
+    "estimator": "r = (x_ewma + K * r_league_prior) / (n_ewma + K)",
+    "K": 200.0,
+    "alpha": 0.10,
+    "alpha_status": "FROZEN. alpha=0.10 remains the registered incumbent regardless of what this workstream finds. Failure of the incumbent here would NOT establish that all decay rates fail, and success of a challenger here promotes nothing.",
+    "decay_grain": "per player APPEARANCE (not per calendar day): ew_x <- (1-alpha)*ew_x + x, ew_n <- (1-alpha)*ew_n + n",
+    "effective_window_convention": "span = 2/alpha - 1 appearances; half_life = ln(0.5)/ln(1-alpha) appearances"
+  },
+
+  "candidate_family": {
+    "policy": "SMALL, BASKETBALL-MOTIVATED, described in effective half-life / effective-window language. NOT a dense alpha sweep. The set below is CLOSED: no variant may be added, removed or retuned after any result is visible. No alpha may be read off a final aggregate and presented as confirmed.",
+    "n_variants_including_incumbent": 7,
+    "variants": [
+      {
+        "id": "V0_incumbent_a010",
+        "role": "INCUMBENT / reference, not a challenger",
+        "alpha": 0.10,
+        "half_life_appearances": 6.58,
+        "effective_window_appearances": 19.0,
+        "basketball_motivation": "about half a WNBA regular season of memory"
+      },
+      {
+        "id": "V1_slow_season_memory",
+        "role": "challenger",
+        "alpha": 0.05,
+        "half_life_appearances": 13.51,
+        "effective_window_appearances": 39.0,
+        "basketball_motivation": "a full WNBA regular season of memory: 'this is who the player is'"
+      },
+      {
+        "id": "V3_fast_role_responsive",
+        "role": "challenger",
+        "alpha": 0.20,
+        "half_life_appearances": 3.11,
+        "effective_window_appearances": 9.0,
+        "basketball_motivation": "roughly two to three weeks of games; can absorb a role change inside one road trip"
+      },
+      {
+        "id": "V4_dual_equal",
+        "role": "challenger",
+        "form": "0.5 * r_shrunk(alpha=0.05) + 0.5 * r_shrunk(alpha=0.20)",
+        "basketball_motivation": "dual timescale: half the estimate is who the player has been, half is what she is doing now. Weight fixed at 0.5 in advance, never fitted."
+      },
+      {
+        "id": "V5_dual_precision",
+        "role": "challenger",
+        "form": "rel_c = n_ewma_c / (n_ewma_c + K) for c in {fast=0.20, slow=0.05}; w_fast = rel_fast / (rel_fast + rel_slow); r = w_fast*r_fast + (1-w_fast)*r_slow; if rel_fast+rel_slow == 0 then w_fast = 0.5",
+        "basketball_motivation": "dual timescale where the short window earns weight only when the player's RECENT offensive exposure is itself well measured (a workhorse), and the long window carries a thin-minutes player. Formula fully specified in advance, nothing fitted."
+      },
+      {
+        "id": "V6_gate_instant",
+        "role": "challenger",
+        "form": "r = r_shrunk(alpha=0.20) if TRIGGER else r_shrunk(alpha=0.05)",
+        "basketball_motivation": "role-change-GATED decay: rapid adaptation activates ONLY on a documented projected or historical role shift; otherwise long memory. Memoryless switch."
+      },
+      {
+        "id": "V7_gate_persist10",
+        "role": "challenger",
+        "form": "r = r_shrunk(alpha=0.20) if (TRIGGER or fast_mode_counter > 0) else r_shrunk(alpha=0.05); a fired TRIGGER sets fast_mode_counter = 10 and it decrements on each subsequent realised appearance",
+        "basketball_motivation": "the same gate with an adaptation PERIOD: after a documented shift the player is re-learned over the following ~10 appearances (about a quarter season) and then reverts to long memory"
+      }
+    ],
+    "shrinkage": "every variant is empirical-Bayes shrunk to the SAME prior-games league rate with the SAME K=200 offensive possessions, exactly as the incumbent. K is not varied in this workstream.",
+    "clipping": "all rates clipped to [0,1] exactly as the incumbent",
+    "prediction": "mu = rate * exposure, exactly as the incumbent"
+  },
+
+  "gate_trigger": {
+    "id": "ws4_documented_role_shift/1",
+    "frozen_before_results": true,
+    "definition": "TRIGGER fires on a row iff ( role_shift_ws4 is not null AND |role_shift_ws4| >= 0.05 ) OR ( the player's team_id for this row differs from the team_id of her most recent PRIOR realised appearance )",
+    "threshold_units": "share of team minutes",
+    "threshold_rationale": "0.05 of a ~200-minute team game is ~10 minutes per game, roughly a quarter of a starter's load. Chosen in basketball units BEFORE any error metric was computed. The feature's own distribution was inspected only for coverage sizing; no error, deviance or MAE was computed before this threshold was fixed.",
+    "null_policy": "role_shift_ws4 null (no trailing team-minutes history at all) does NOT fire the projected-shift half of the trigger. Such rows have essentially no long-memory state either, so the two timescales coincide there by construction. They are reported in the cold-start stratum."
+  },
+
+  "role_shift_signal": {
+    "id": "role_shift_ws4",
+    "why_not_the_p2_feature": "BLOCKING LEAKAGE DEFECT in the canonical P2 artifact. experiments/player_program/turnover_p2_v1/turnover_role_context_features_v1.parquet builds trailing_minutes_share by iterating the REALISED box score (data/masters/master_player.parquet filtered to minutes.notna()) and left-merging onto the candidate universe. A Tier A candidate who did not appear therefore has no box-score row for that game and receives NULL. Verified: role_change.notna() equals did_appear EXACTLY (27,351 non-null == 27,351 appearers; 8,278 null == 8,278 non-appearers, zero off-diagonal). Using role_change as an operational gate would leak the appearance outcome perfectly. WS4 therefore rebuilds the signal.",
+    "reconstruction": "identical EWMA state machine and identical constant (alpha = INVOLVE_ALPHA = 0.10 on minutes) as run_turnover_p2.py, but the state is READ for every Tier A candidate on that date rather than only for players who appear in that date's box score. State is advanced from realised box scores strictly AFTER all predictions for the date.",
+    "formula": "trailing_minutes_share_ws4 = ewma_player_minutes / ewma_team_minutes (state strictly prior to the game date); role_shift_ws4 = proj_minutes_share - trailing_minutes_share_ws4",
+    "proj_minutes_share": "projected_minutes / sum(projected_minutes) within (game_id, team_id) over the tier_a_only candidate set, from projected_exposure_v1 (cutoff-valid)",
+    "canonical_artifact_untouched": true
+  },
+
+  "folds": {
+    "policy": "NESTED CHRONOLOGICAL DEVELOPMENT FOLDS ONLY. No shuffling, no random split, no unrestricted sweep, no out-of-time refit. Every prediction in every fold comes from one single left-to-right pass whose state contains strictly earlier games only, so fold k's history strictly contains fold k-1's history by construction.",
+    "burn_in": {"season": 2021, "use": "REPORTED but NEVER used for selection; the league prior is still forming"},
+    "nested_folds": [
+      {"fold": 1, "evaluate_season": 2022, "history": "2021"},
+      {"fold": 2, "evaluate_season": 2023, "history": "2021-2022"},
+      {"fold": 3, "evaluate_season": 2024, "history": "2021-2023"},
+      {"fold": 4, "evaluate_season": 2025, "history": "2021-2024"},
+      {"fold": 5, "evaluate_season": 2026, "history": "2021-2025 (2026 is a partial season through 2026-07-31)"}
+    ]
+  },
+
+  "sign_convention": {
+    "statement": "delta = |error of INCUMBENT alpha=0.10| - |error of CHALLENGER|",
+    "positive_means": "CHALLENGER BETTER",
+    "applied_at": ["player row (turnover count)", "team-game (summed turnover count)"]
+  },
+
+  "uncertainty": {
+    "method": "percentile cluster bootstrap, clusters = game_id, 2000 resamples, seed 20260730, 90% interval",
+    "implementation": "evalharness.compare.cluster_bootstrap_ci (unmodified)"
+  },
+
+  "selection_rule": {
+    "frozen_before_results": true,
+    "statement": "A variant is DECLARED SUPERIOR to alpha=0.10 in a given stratum and track only if ALL FOUR hold:",
+    "conditions": [
+      "C1 pooled paired improvement in that stratum > 0",
+      "C2 the 90% game-clustered bootstrap CI on that pooled paired improvement has low > 0",
+      "C3 the paired improvement is > 0 in at least 4 of the 5 nested chronological folds (2021 excluded)",
+      "C4 no single nested fold degrades by more than 50% of the magnitude of the pooled improvement"
+    ],
+    "applied_identically_to": "every variant, every stratum, both tracks",
+    "prohibited": [
+      "reading an alpha off the final aggregate and presenting it as confirmed",
+      "adding, dropping or retuning a variant after any result is visible",
+      "selecting a stratum after seeing which stratum a variant happens to win"
+    ],
+    "hypothesis_verdict_rule": {
+      "SUPPORTED": "a GATED (V6/V7) or DUAL (V4/V5) variant satisfies C1-C4 in the unstable_role stratum AND is non-inferior in stable_role (pooled improvement >= -0.002 turnovers per player row AND CI low >= -0.005)",
+      "PARTIAL": "a gated or dual variant satisfies C1-C4 in the unstable-role stratum but loses materially in stable_role, or wins only in one track",
+      "NOT_SUPPORTED": "no variant satisfies C1-C4 in any unstable stratum, or the gains do not hold across the nested folds"
+    }
+  },
+
+  "strata": {
+    "frozen_before_results": true,
+    "definitions": {
+      "all": "every scored row",
+      "stable_role": "|role_shift_ws4| < 0.02 AND no team change within the player's last 5 appearances AND prior career realised offensive possessions >= 500",
+      "unstable_role": "|role_shift_ws4| >= 0.05",
+      "moderate_shift": "0.03 <= |role_shift_ws4| < 0.05",
+      "shift_up": "role_shift_ws4 >= +0.05",
+      "shift_down": "role_shift_ws4 <= -0.05",
+      "post_team_change_5": "the player's appearance index since her most recent team change is <= 5 (a first-ever appearance is not a team change)",
+      "post_trade_in_season": "post_team_change_5 AND the change happened within the same season",
+      "offseason_team_change": "post_team_change_5 AND the change happened across seasons",
+      "cold_start": "prior career realised offensive possessions == 0",
+      "rookie_low_history": "prior career realised offensive possessions < 200 (below K, so shrinkage dominates)",
+      "established": "prior career realised offensive possessions >= 1000",
+      "regular_season": "season_type == Regular Season",
+      "playoffs": "season_type == Playoffs",
+      "season_YYYY": "one stratum per season 2021..2026"
+    }
+  },
+
+  "tracks": {
+    "intrinsic": {
+      "rows": "realised appearances with realised_off_possessions > 0",
+      "exposure": "realised_off_possessions",
+      "status": "ORACLE DIAGNOSTIC ONLY. Realised exposure is not knowable at the forecast cutoff. Never cite intrinsic numbers as operational performance."
+    },
+    "operational": {
+      "rows": "all 35,629 Tier A candidate obligations including non-appearers",
+      "exposure": "projected_off_possessions, regime tier_a_only",
+      "status": "the decision-relevant track"
+    }
+  },
+
+  "preservation": {
+    "every_variant_preserved": true,
+    "negative_results_preserved": true,
+    "nulls_preserved": true,
+    "statement": "Every variant in the closed set is scored and reported on every stratum in both tracks whether it wins, ties or loses. Nothing is dropped for losing."
+  },
+
+  "inputs_read_only": [
+    "experiments/player_program/turnover_targets_v1/player_turnover_targets_v1.parquet",
+    "experiments/player_program/turnover_targets_v1/team_turnover_reconciliation_v1.parquet",
+    "experiments/player_program/turnover_p1_v1/turnover_p1_predictions_intrinsic.parquet",
+    "experiments/player_program/turnover_p1_v1/turnover_p1_predictions_operational_corrected.parquet",
+    "experiments/player_program/turnover_p2_v1/turnover_role_context_features_v1.parquet",
+    "experiments/player_program/projected_exposure_v1/projected_player_possessions_v1.parquet",
+    "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+    "experiments/prediction_contract_v5/player_game_enriched.parquet",
+    "data/masters/master_player.parquet",
+    "evalharness/compare.py"
+  ]
+}
