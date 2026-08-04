@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "player_program/orchestration/node_contract/1",
+  "title": "Program graph node contract",
+  "description": "Every node in PROGRAM_GRAPH.json must satisfy this contract. The schema is enforced by scripts/validate_graph.py, which implements it directly and does not require the jsonschema package to be installed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "lane",
+    "type",
+    "status",
+    "dependencies",
+    "input_artifacts",
+    "input_hashes",
+    "forbidden_inputs",
+    "allowed_read_paths",
+    "allowed_write_paths",
+    "owned_files",
+    "allowed_tools",
+    "disallowed_tools",
+    "agent_role",
+    "agent_prompt_path",
+    "epistemic_status",
+    "expected_outputs",
+    "validation_commands",
+    "acceptance_criteria",
+    "stop_conditions",
+    "severity_on_failure",
+    "max_retries",
+    "merge_policy",
+    "human_gate",
+    "on_pass",
+    "on_fail"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{2,63}$",
+      "description": "Unique stable id. Never reused, never renamed. A superseded node keeps its id and gains status SUPERSEDED."
+    },
+    "title": { "type": "string", "minLength": 3 },
+    "lane": {
+      "enum": ["governance", "possession", "data", "operations", "product", "future_research"]
+    },
+    "type": {
+      "enum": ["audit", "decision", "implementation", "experiment", "integration", "documentation"]
+    },
+    "status": {
+      "enum": [
+        "BLOCKED",
+        "READY",
+        "RUNNING",
+        "VERIFYING",
+        "PASSED",
+        "FAILED",
+        "HALTED",
+        "SUPERSEDED",
+        "USER_REQUIRED"
+      ],
+      "description": "Declared seed status only. The AUTHORITATIVE status is derived by graphctl.py state from GRAPH_EVENTS.jsonl plus dependency closure. Where the two disagree, the derived value governs and validate_graph.py reports the divergence."
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Node ids that must reach PASSED (or SUPERSEDED-by-a-passed-successor) before this node becomes READY."
+    },
+    "input_artifacts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Repository-relative paths this node consumes as evidence. Each must be hashed into ARTIFACT_LEDGER.jsonl and frozen BEFORE the node's agent is launched."
+    },
+    "input_hashes": {
+      "type": "object",
+      "description": "path -> sha256, frozen at launch. Empty at seed time; populated by the input-frozen event. Rederived at validation; a mismatch fails the node."
+    },
+    "forbidden_inputs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Paths the node's agent must not read. For scientific ideation nodes this is the structural independence guarantee and is enforced by physical isolation, not by instruction alone."
+    },
+    "allowed_read_paths": { "type": "array", "items": { "type": "string" } },
+    "allowed_write_paths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Path prefixes this node may write. No agent may broaden its own write scope. Enforced at integration by scripts/integrate_node.py against the actual changed-file list."
+    },
+    "owned_files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Exact files this node owns. Two nodes that are simultaneously RUNNING may never share an owned file or an overlapping allowed_write_path. Enforced by dispatch_ready.py."
+    },
+    "allowed_tools": { "type": "array", "items": { "type": "string" } },
+    "disallowed_tools": { "type": "array", "items": { "type": "string" } },
+    "agent_role": { "type": "string" },
+    "agent_prompt_path": { "type": "string" },
+    "epistemic_status": {
+      "type": "string",
+      "description": "What kind of evidence this node's output is, and what it is NOT. Free text, but must be present and must not be empty: a node whose evidential standing is unstated cannot be integrated."
+    },
+    "expected_outputs": { "type": "array", "items": { "type": "string" } },
+    "validation_commands": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Commands run by a verifier context, not by the implementing agent. All must exit 0."
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Each entry states a machine-verifiable condition. A node may pass automatically only when every criterion is machine-verifiable; otherwise merge_policy must be coordinator or never."
+    },
+    "stop_conditions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Conditions under which the node halts rather than completing. A tripped stop condition is a HALTED event, never a silent scope reduction."
+    },
+    "severity_on_failure": {
+      "enum": ["A", "B", "C"],
+      "description": "A stops the affected descendants. B automatically creates a remediation node. C is documented and scheduled without halting unrelated work. Per RESEARCH_CONTRACT_V1, only Severity A interrupts unaffected parallel work."
+    },
+    "max_retries": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "merge_policy": {
+      "enum": ["auto", "coordinator", "never"],
+      "description": "auto: integrate on all validators passing plus an independent verifier. coordinator: a coordinator context must adjudicate. never: output is evidence only and is not merged as authority."
+    },
+    "human_gate": {
+      "type": "boolean",
+      "description": "True only for nodes whose decision is reserved to the user under GRAPH_POLICY.md section 6. A human_gate node must carry status USER_REQUIRED."
+    },
+    "on_pass": { "type": "array", "items": { "type": "string" } },
+    "on_fail": { "type": "array", "items": { "type": "string" } }
+  },
+  "invariants_enforced_beyond_this_schema": [
+    "the dependency graph is acyclic",
+    "every id in dependencies, on_pass and on_fail resolves to a declared node",
+    "no two nodes that can be READY at the same time share an owned_file or an overlapping allowed_write_path",
+    "no allowed_write_path intersects a frozen path listed in GRAPH_POLICY.md section 3",
+    "human_gate true implies status USER_REQUIRED and merge_policy never",
+    "merge_policy auto implies at least one validation_command and at least one acceptance_criterion",
+    "an experiment-type node depends, transitively, on a frozen preregistration node"
+  ]
+}
