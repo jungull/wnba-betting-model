@@ -7,14 +7,14 @@
     "team_possession_prior_v1"
   ],
   "registry": "experiments/player_program/arm_registry.jsonl",
-  "generated_utc": "2026-08-04T02:40:18.825600Z",
-  "finished_utc": "2026-08-04T02:42:13.423811Z",
+  "generated_utc": "2026-08-04T03:07:03.390923Z",
+  "finished_utc": "2026-08-04T03:08:54.234797Z",
   "nothing_fitted": true,
   "nothing_scored": true,
   "producer": {
     "path": "experiments/player_program/build_projected_exposure.py",
-    "sha256_before": "eb1fa8cdb239095668dc807d47730f7240713cf3c3eac72c2aae75bb6c0619cd",
-    "sha256_after": "eb1fa8cdb239095668dc807d47730f7240713cf3c3eac72c2aae75bb6c0619cd"
+    "sha256_before": "1baea0742d259b57ef03ffc6fca57cb30ff1cbcd9adb38310c6b9ab82912e5b0",
+    "sha256_after": "1baea0742d259b57ef03ffc6fca57cb30ff1cbcd9adb38310c6b9ab82912e5b0"
   },
   "config": {
     "WINDOW_K": 10,
@@ -42,17 +42,26 @@
       "tier_a_only": {
         "evidence_class": "primary",
         "roster_evidence_basis": "captured_asof",
-        "operationally_achievable": true
+        "information_available_at_cutoff": true,
+        "historically_captured_asof": true,
+        "operationally_plausible": true,
+        "production_eligible": false
       },
       "tier_a_plus_tx_b": {
         "evidence_class": "sensitivity_transaction",
         "roster_evidence_basis": "captured_asof + retrospective_effective_date",
-        "operationally_achievable": false
+        "information_available_at_cutoff": false,
+        "historically_captured_asof": false,
+        "operationally_plausible": false,
+        "production_eligible": false
       },
       "tier_a_plus_tx_b_plus_s2": {
         "evidence_class": "weak_diagnostic_s2",
         "roster_evidence_basis": "captured_asof + retrospective_effective_date + weak_prior_season",
-        "operationally_achievable": false
+        "information_available_at_cutoff": true,
+        "historically_captured_asof": false,
+        "operationally_plausible": false,
+        "production_eligible": false
       }
     },
     "STANDARD_ACTIVE_ROSTER": 12,
@@ -61,7 +70,7 @@
       1.25
     ]
   },
-  "config_hash": "84c58fe556d588e78680aae1fdb6b59a8dd4ebca67584e94d8e37b47c7c4c170",
+  "config_hash": "4f138daed88b5b89430f70d81ddaafb7a159fa392c29b409381d7cc77fd427b5",
   "inputs": {
     "contract_v5": {
       "path": "experiments/prediction_contract_v5/player_game_enriched.parquet",
@@ -198,7 +207,36 @@
       "evidence": {
         "evidence_class": "primary",
         "roster_evidence_basis": "captured_asof",
-        "operationally_achievable": true
+        "information_available_at_cutoff": true,
+        "historically_captured_asof": true,
+        "operationally_plausible": true,
+        "production_eligible": false
+      },
+      "evidence_reasons": {
+        "information_available_at_cutoff": "all 35,629 A_primary rows carry candidate_evidence_time, candidate_published_time and candidate_observed_time at or before the forecast cutoff; zero rows were observed after it",
+        "historically_captured_asof": "roster_evidence_regime == captured_asof on every row",
+        "operationally_plausible": "median effective rotation size 8.97, consistent with a real WNBA rotation",
+        "plausibility_limitation": "MAXIMUM effective rotation size is 14.2, which EXCEEDS the 12-player standard active roster, and 994 of 2,914 allocated team-games name more candidates than that roster allows. The primary regime is plausible AT THE MEDIAN, not uniformly. This is a limitation of v1, not a blocker for the registered experiment, and it stays visible.",
+        "production_eligible": "research artifact only. Not promoted. Production eligibility requires downstream validation and explicit authorisation."
+      },
+      "reconciliation": {
+        "team_game_rows": 2990,
+        "allocated_rows": 2914,
+        "unresolved_rows": 76,
+        "complete_two_team_games": 1456,
+        "one_sided_games": 2,
+        "zero_sided_games": 37,
+        "player_obligations_allocated": 35629,
+        "player_obligations_stranded": 0,
+        "player_obligations_total": 35629,
+        "games_with_both_clubs_normal": 1456,
+        "directed_possession_reconciliation_checks": 2912,
+        "identities": [
+          "allocated_rows + unresolved_rows == team_game_rows",
+          "2*complete_two_team_games + one_sided_games == allocated_rows",
+          "complete_two_team_games + one_sided_games + zero_sided_games == games",
+          "player_obligations_allocated + player_obligations_stranded == player_obligations_total"
+        ]
       },
       "status_counts": {
         "normal": 2914,
@@ -371,7 +409,35 @@
       "evidence": {
         "evidence_class": "sensitivity_transaction",
         "roster_evidence_basis": "captured_asof + retrospective_effective_date",
-        "operationally_achievable": false
+        "information_available_at_cutoff": false,
+        "historically_captured_asof": false,
+        "operationally_plausible": false,
+        "production_eligible": false
+      },
+      "evidence_reasons": {
+        "information_available_at_cutoff": "NO. All 4,169 B_transaction_sensitivity rows carry candidate_observed_time 2026-07-30T17:42Z -- after every one of their cutoffs -- and candidate_published_time is null. The transaction evidence was retrospectively scraped, so it was not available at the historical decision time regardless of its backdated effective date.",
+        "historically_captured_asof": "NO. src_asof_roster is null on every row.",
+        "operationally_plausible": "NO. 1,271 of 2,988 allocated team-games exceed the standard active roster, 225 show extreme scaling, and the maximum allocation reaches 44 players.",
+        "production_eligible": "NO, on both grounds independently."
+      },
+      "reconciliation": {
+        "team_game_rows": 2990,
+        "allocated_rows": 2988,
+        "unresolved_rows": 2,
+        "complete_two_team_games": 1493,
+        "one_sided_games": 2,
+        "zero_sided_games": 0,
+        "player_obligations_allocated": 39790,
+        "player_obligations_stranded": 8,
+        "player_obligations_total": 39798,
+        "games_with_both_clubs_normal": 1490,
+        "directed_possession_reconciliation_checks": 2980,
+        "identities": [
+          "allocated_rows + unresolved_rows == team_game_rows",
+          "2*complete_two_team_games + one_sided_games == allocated_rows",
+          "complete_two_team_games + one_sided_games + zero_sided_games == games",
+          "player_obligations_allocated + player_obligations_stranded == player_obligations_total"
+        ]
       },
       "status_counts": {
         "normal": 2981,
@@ -545,7 +611,36 @@
       "evidence": {
         "evidence_class": "weak_diagnostic_s2",
         "roster_evidence_basis": "captured_asof + retrospective_effective_date + weak_prior_season",
-        "operationally_achievable": false
+        "information_available_at_cutoff": true,
+        "historically_captured_asof": false,
+        "operationally_plausible": false,
+        "production_eligible": false
+      },
+      "evidence_reasons": {
+        "information_available_at_cutoff": "YES for the S2 component itself. All 5,053 B_s2_weak_fallback rows carry candidate_evidence_time and candidate_observed_time at season-start markers, and ZERO rows were observed after their cutoff. Prior-season affiliation was knowable at the decision time. The S2 SOURCE contains no retrospective contamination. NOTE: this regime is cumulative and also contains the transaction rows, which are not cutoff-available; the availability verdict here is about the S2 component.",
+        "historically_captured_asof": "NO. src_asof_roster and candidate_published_time are null; this is not a captured point-in-time roster feed, it is a derived prior-season affiliation.",
+        "operationally_plausible": "NO. Maximum 70 allocated players, maximum effective rotation size 67.8, and at the 5th percentile only ONE player clears 10 projected minutes. This is not a rotation.",
+        "production_eligible": "NO.",
+        "correction": "an earlier record labelled S2 non-achievable for the same reason as transaction Tier B. That was wrong. S2 is cutoff-AVAILABLE but operationally IMPLAUSIBLE; transaction Tier B is neither."
+      },
+      "reconciliation": {
+        "team_game_rows": 2990,
+        "allocated_rows": 2988,
+        "unresolved_rows": 2,
+        "complete_two_team_games": 1493,
+        "one_sided_games": 2,
+        "zero_sided_games": 0,
+        "player_obligations_allocated": 44843,
+        "player_obligations_stranded": 8,
+        "player_obligations_total": 44851,
+        "games_with_both_clubs_normal": 1490,
+        "directed_possession_reconciliation_checks": 2980,
+        "identities": [
+          "allocated_rows + unresolved_rows == team_game_rows",
+          "2*complete_two_team_games + one_sided_games == allocated_rows",
+          "complete_two_team_games + one_sided_games + zero_sided_games == games",
+          "player_obligations_allocated + player_obligations_stranded == player_obligations_total"
+        ]
       },
       "status_counts": {
         "normal": 2981,
@@ -735,11 +830,11 @@
     },
     "projected_team_rotations_v1.parquet": {
       "rows": 8970,
-      "sha256": "8f7195ba85813492e34e868e7e79cbe557021f5a63ca02d9057c3d97fb28c13c"
+      "sha256": "d2c4011382eddc82e66eaa16b12ca67fe82f540f86c04b4411c45952bb096128"
     },
     "projected_player_possessions_v1.parquet": {
       "rows": 120262,
-      "sha256": "8e8496b5c40d8469569549c76c1cc83297a61d8523c33c5f9b29223aedc836c9"
+      "sha256": "1f47f1f169955cae5c65457f1db30665ac6da20e821e458257d21276646df50f"
     }
   },
   "primary_regime_headline": {

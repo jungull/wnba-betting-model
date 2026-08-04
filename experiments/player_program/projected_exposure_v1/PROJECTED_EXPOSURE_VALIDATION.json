@@ -2,14 +2,14 @@
   "schema": "projected_exposure_validation/2",
   "artifact_id": "projected_player_possessions/1",
   "pace_artifact_id": "team_possession_prior/1",
-  "validated_utc": "2026-08-04T02:44:08.357844Z",
+  "validated_utc": "2026-08-04T03:10:48.202969Z",
   "nothing_scored": true,
   "no_accuracy_computed": "this validator compares no projection against any realised minute, possession, margin or outcome",
-  "validator_sha256": "b0fa6f046ac5717f57d2ccdb5124e1b0b13e76312140f11c6ff0ec0b8d85d969",
-  "producer_sha256": "eb1fa8cdb239095668dc807d47730f7240713cf3c3eac72c2aae75bb6c0619cd",
+  "validator_sha256": "f2657b2c908705ac95cc370d74c324b7e5edfda09bbf2f43b86bf3d98e12c793",
+  "producer_sha256": "1baea0742d259b57ef03ffc6fca57cb30ff1cbcd9adb38310c6b9ab82912e5b0",
   "artifact_sha256": {
-    "projected_player_possessions_v1.parquet": "8e8496b5c40d8469569549c76c1cc83297a61d8523c33c5f9b29223aedc836c9",
-    "projected_team_rotations_v1.parquet": "8f7195ba85813492e34e868e7e79cbe557021f5a63ca02d9057c3d97fb28c13c",
+    "projected_player_possessions_v1.parquet": "1f47f1f169955cae5c65457f1db30665ac6da20e821e458257d21276646df50f",
+    "projected_team_rotations_v1.parquet": "d2c4011382eddc82e66eaa16b12ca67fe82f540f86c04b4411c45952bb096128",
     "team_possession_prior_v1.parquet": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18"
   },
   "registry_records": [
@@ -19,8 +19,8 @@
     "exposure_offdef__erratum_projection_assumption",
     "exposure_s2__policy_weak_evidence_diagnostic"
   ],
-  "checks_total": 34,
-  "checks_passed": 34,
+  "checks_total": 35,
+  "checks_passed": 35,
   "checks_failed": 0,
   "verdict": "PASS",
   "pass_fail_table": [
@@ -32,6 +32,11 @@
     {
       "section": "1. grain reconciliation and uniqueness",
       "check": "grain_arithmetic_reconciles",
+      "result": "PASS"
+    },
+    {
+      "section": "1. grain reconciliation and uniqueness",
+      "check": "per_regime_reconciliation_closes",
       "result": "PASS"
     },
     {
@@ -91,7 +96,7 @@
     },
     {
       "section": "3. regime evidence and S2 degradation",
-      "check": "operational_achievability_labelled",
+      "check": "evidence_availability_distinguished_from_forecast_plausibility",
       "result": "PASS"
     },
     {
@@ -286,6 +291,75 @@
       }
     },
     {
+      "check": "per_regime_reconciliation_closes",
+      "section": "1. grain reconciliation and uniqueness",
+      "requirement": "total, allocated, unresolved, pairs, one-sided and obligation counts close arithmetically",
+      "result": "PASS",
+      "detail": {
+        "games": 1495,
+        "by_regime": {
+          "tier_a_only": {
+            "team_game_rows": 2990,
+            "allocated_rows": 2914,
+            "unresolved_rows": 76,
+            "complete_two_team_games": 1456,
+            "one_sided_games": 2,
+            "zero_sided_games": 37,
+            "player_obligations_allocated": 35629,
+            "player_obligations_stranded": 0,
+            "player_obligations_total": 35629,
+            "games_with_both_clubs_normal": 1456,
+            "directed_possession_reconciliation_checks": 2912
+          },
+          "tier_a_plus_tx_b": {
+            "team_game_rows": 2990,
+            "allocated_rows": 2988,
+            "unresolved_rows": 2,
+            "complete_two_team_games": 1493,
+            "one_sided_games": 2,
+            "zero_sided_games": 0,
+            "player_obligations_allocated": 39790,
+            "player_obligations_stranded": 8,
+            "player_obligations_total": 39798,
+            "games_with_both_clubs_normal": 1490,
+            "directed_possession_reconciliation_checks": 2980
+          },
+          "tier_a_plus_tx_b_plus_s2": {
+            "team_game_rows": 2990,
+            "allocated_rows": 2988,
+            "unresolved_rows": 2,
+            "complete_two_team_games": 1493,
+            "one_sided_games": 2,
+            "zero_sided_games": 0,
+            "player_obligations_allocated": 44843,
+            "player_obligations_stranded": 8,
+            "player_obligations_total": 44851,
+            "games_with_both_clubs_normal": 1490,
+            "directed_possession_reconciliation_checks": 2980
+          }
+        },
+        "totals": {
+          "team_game_rows": 8970,
+          "allocated_rows": 8890,
+          "unresolved_rows": 80,
+          "complete_two_team_games": 4442,
+          "one_sided_games": 6,
+          "zero_sided_games": 37,
+          "player_obligations_allocated": 120262,
+          "player_obligations_stranded": 16,
+          "player_obligations_total": 120278,
+          "games_with_both_clubs_normal": 4436,
+          "directed_possession_reconciliation_checks": 8872
+        },
+        "identities_asserted": [
+          "allocated + unresolved == team_game_rows == 2 * games",
+          "2*complete_two_team_games + one_sided_games == allocated_rows",
+          "complete_two_team_games + one_sided_games + zero_sided_games == games",
+          "obligations_allocated + obligations_stranded == obligations_total"
+        ]
+      }
+    },
+    {
       "check": "v4_v5_universe_reconciliation",
       "section": "1. grain reconciliation and uniqueness",
       "requirement": "35,627 and 35,629 are different universes, not one count measured twice",
@@ -422,19 +496,21 @@
       "requirement": "team A's defensive mass equals team B's offensive mass, within the same canonical game",
       "result": "PASS",
       "detail": {
-        "opposing_pairs_reconciled": 8872,
+        "directed_possession_reconciliation_checks": 8872,
+        "what_that_counts": "ORDERED (club, opponent) pairs. Each game-regime whose two clubs are BOTH status 'normal' is checked in both directions, so this is 2 x the unordered pair count. It is not a count of games, team-games or allocated rows.",
+        "unordered_game_regimes_with_both_clubs_normal": 4436,
         "worst_abs_error": 1.1368683772161603e-13,
+        "team_game_rows_total": 8970,
+        "allocated_rows": 8890,
+        "normal_rows": 8876,
+        "minutes_only_no_pace_rows": 14,
+        "unresolved_rows": 80,
         "game_regimes_with_both_clubs_allocated": 4442,
         "game_regimes_with_one_club_allocated": 6,
         "game_regimes_with_neither_club_allocated": 37,
-        "one_sided_examples": {
-          "1022100001": 4,
-          "1022100002": 2,
-          "1022100003": 2,
-          "1022100004": 2
-        },
+        "why_allocated_pairs_exceed_normal_pairs": "a club with unresolved pace is allocated (minutes stand) but has no possessions to reconcile, so its game-regime is counted as allocated but not as both-normal",
         "absent_clubs_all_explicitly_unresolved": true,
-        "note": "a one-sided game-regime is not a defect: the absent club has fewer than five viable candidates and carries unresolved_insufficient_candidates. Reconciliation is asserted on the pairs where both clubs are allocated."
+        "note": "a one-sided game-regime is not a defect: the absent club has fewer than five viable candidates and carries unresolved_insufficient_candidates."
       }
     },
     {
@@ -524,32 +600,94 @@
       }
     },
     {
-      "check": "operational_achievability_labelled",
+      "check": "evidence_availability_distinguished_from_forecast_plausibility",
       "section": "3. regime evidence and S2 degradation",
-      "requirement": "only evidence captured before the cutoff supports a live-achievable rotation",
+      "requirement": "cutoff availability, point-in-time capture, plausibility and production eligibility are recorded as four separate facts",
       "result": "PASS",
       "detail": {
-        "tier_a_only": "captured_asof only -- operationally achievable",
-        "tier_a_plus_tx_b": "adds retrospective_effective_date evidence, reconstructed AFTER the cutoff -- NOT live-achievable, sensitivity only",
-        "tier_a_plus_tx_b_plus_s2": "adds weak_prior_season affiliation -- NOT live-achievable, weak diagnostic only",
-        "caveat_on_the_primary_regime": "captured_asof concerns ROSTER membership. Availability remains information-limited before 2026-07-30; that limitation lives in the bound v15 p_active and is inherited here unchanged.",
-        "labels": {
+        "fields": {
           "tier_a_only": {
             "evidence_class": "primary",
             "roster_evidence_basis": "captured_asof",
-            "operationally_achievable": true
+            "information_available_at_cutoff": true,
+            "historically_captured_asof": true,
+            "operationally_plausible": true,
+            "production_eligible": false
           },
           "tier_a_plus_tx_b": {
             "evidence_class": "sensitivity_transaction",
             "roster_evidence_basis": "captured_asof + retrospective_effective_date",
-            "operationally_achievable": false
+            "information_available_at_cutoff": false,
+            "historically_captured_asof": false,
+            "operationally_plausible": false,
+            "production_eligible": false
           },
           "tier_a_plus_tx_b_plus_s2": {
             "evidence_class": "weak_diagnostic_s2",
             "roster_evidence_basis": "captured_asof + retrospective_effective_date + weak_prior_season",
-            "operationally_achievable": false
+            "information_available_at_cutoff": true,
+            "historically_captured_asof": false,
+            "operationally_plausible": false,
+            "production_eligible": false
           }
-        }
+        },
+        "reasons": {
+          "tier_a_only": {
+            "information_available_at_cutoff": "all 35,629 A_primary rows carry candidate_evidence_time, candidate_published_time and candidate_observed_time at or before the forecast cutoff; zero rows were observed after it",
+            "historically_captured_asof": "roster_evidence_regime == captured_asof on every row",
+            "operationally_plausible": "median effective rotation size 8.97, consistent with a real WNBA rotation",
+            "plausibility_limitation": "MAXIMUM effective rotation size is 14.2, which EXCEEDS the 12-player standard active roster, and 994 of 2,914 allocated team-games name more candidates than that roster allows. The primary regime is plausible AT THE MEDIAN, not uniformly. This is a limitation of v1, not a blocker for the registered experiment, and it stays visible.",
+            "production_eligible": "research artifact only. Not promoted. Production eligibility requires downstream validation and explicit authorisation."
+          },
+          "tier_a_plus_tx_b": {
+            "information_available_at_cutoff": "NO. All 4,169 B_transaction_sensitivity rows carry candidate_observed_time 2026-07-30T17:42Z -- after every one of their cutoffs -- and candidate_published_time is null. The transaction evidence was retrospectively scraped, so it was not available at the historical decision time regardless of its backdated effective date.",
+            "historically_captured_asof": "NO. src_asof_roster is null on every row.",
+            "operationally_plausible": "NO. 1,271 of 2,988 allocated team-games exceed the standard active roster, 225 show extreme scaling, and the maximum allocation reaches 44 players.",
+            "production_eligible": "NO, on both grounds independently."
+          },
+          "tier_a_plus_tx_b_plus_s2": {
+            "information_available_at_cutoff": "YES for the S2 component itself. All 5,053 B_s2_weak_fallback rows carry candidate_evidence_time and candidate_observed_time at season-start markers, and ZERO rows were observed after their cutoff. Prior-season affiliation was knowable at the decision time. The S2 SOURCE contains no retrospective contamination. NOTE: this regime is cumulative and also contains the transaction rows, which are not cutoff-available; the availability verdict here is about the S2 component.",
+            "historically_captured_asof": "NO. src_asof_roster and candidate_published_time are null; this is not a captured point-in-time roster feed, it is a derived prior-season affiliation.",
+            "operationally_plausible": "NO. Maximum 70 allocated players, maximum effective rotation size 67.8, and at the 5th percentile only ONE player clears 10 projected minutes. This is not a rotation.",
+            "production_eligible": "NO.",
+            "correction": "an earlier record labelled S2 non-achievable for the same reason as transaction Tier B. That was wrong. S2 is cutoff-AVAILABLE but operationally IMPLAUSIBLE; transaction Tier B is neither."
+          }
+        },
+        "derived_from_contract_timestamps": {
+          "A_primary": {
+            "rows": 35629,
+            "evidence_time_before_cutoff": 35629,
+            "observed_after_cutoff": 0,
+            "has_captured_asof_roster": 35629,
+            "has_published_time": 35629,
+            "roster_evidence_regime": {
+              "captured_asof": 35629
+            }
+          },
+          "B_transaction_sensitivity": {
+            "rows": 4169,
+            "evidence_time_before_cutoff": 4169,
+            "observed_after_cutoff": 4169,
+            "has_captured_asof_roster": 0,
+            "has_published_time": 0,
+            "roster_evidence_regime": {
+              "retrospective_effective_date": 4169
+            }
+          },
+          "B_s2_weak_fallback": {
+            "rows": 5053,
+            "evidence_time_before_cutoff": 5053,
+            "observed_after_cutoff": 0,
+            "has_captured_asof_roster": 0,
+            "has_published_time": 0,
+            "roster_evidence_regime": {
+              "weak_prior_season": 5053
+            }
+          }
+        },
+        "correction": "S2 is CUTOFF-AVAILABLE but operationally IMPLAUSIBLE. It does NOT share the transaction tier's defect: zero S2 rows were observed after their cutoff, whereas all 4,169 transaction rows were. Prior-season affiliation was knowable at the decision time; it is simply very weak evidence of current roster membership.",
+        "primary_regime_limitation": "MAXIMUM effective rotation size is 14.2, which EXCEEDS the 12-player standard active roster, and 994 of 2,914 allocated team-games name more candidates than that roster allows. The primary regime is plausible AT THE MEDIAN, not uniformly. This is a limitation of v1, not a blocker for the registered experiment, and it stays visible.",
+        "caveat_on_the_primary_regime": "captured_asof concerns ROSTER membership. AVAILABILITY remains information-limited before 2026-07-30; that limitation lives in the bound v15 p_active and is inherited here unchanged."
       }
     },
     {
@@ -789,6 +927,14 @@
               "degraded_extreme_scaling": 8
             }
           }
+        },
+        "primary_regime_limitation": {
+          "median_effective_rotation_size": 8.969098813829413,
+          "max_effective_rotation_size": 14.210187440157386,
+          "exceeds_standard_roster": true,
+          "team_games_over_roster": 994,
+          "of_allocated": 2914,
+          "statement": "Tier A's concentration is NOT uniformly realistic. Its MEDIAN effective rotation size is plausible, but its MAXIMUM of 14.21 exceeds the 12-player standard active roster, and 994 of 2914 allocated team-games name more candidates than that roster allows. This is a limitation of v1, not a blocker for the registered experiment, and it must remain visible."
         }
       }
     },
@@ -1023,11 +1169,13 @@
           "forecast_cutoff",
           "game_date",
           "game_id",
+          "historically_captured_asof",
+          "information_available_at_cutoff",
           "is_cold_start",
           "n_prior_appearances",
           "n_prior_team_games",
           "obligation_uid",
-          "operationally_achievable",
+          "operationally_plausible",
           "opp_pace_level",
           "opp_pace_source",
           "opp_team_id",
@@ -1038,6 +1186,7 @@
           "pace_source",
           "player_id",
           "pred_is_fallback",
+          "production_eligible",
           "projected_def_possessions",
           "projected_minutes",
           "projected_minutes_micro",
@@ -1130,8 +1279,8 @@
       "result": "PASS",
       "detail": {
         "sha256": {
-          "projected_player_possessions_v1.parquet": "8e8496b5c40d8469569549c76c1cc83297a61d8523c33c5f9b29223aedc836c9",
-          "projected_team_rotations_v1.parquet": "8f7195ba85813492e34e868e7e79cbe557021f5a63ca02d9057c3d97fb28c13c",
+          "projected_player_possessions_v1.parquet": "1f47f1f169955cae5c65457f1db30665ac6da20e821e458257d21276646df50f",
+          "projected_team_rotations_v1.parquet": "d2c4011382eddc82e66eaa16b12ca67fe82f540f86c04b4411c45952bb096128",
           "team_possession_prior_v1.parquet": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18"
         }
       }

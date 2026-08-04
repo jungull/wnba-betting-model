@@ -218,6 +218,58 @@ def _g2():
     }
 
 
+@check("per_regime_reconciliation_closes",
+       "total, allocated, unresolved, pairs, one-sided and obligation counts close arithmetically", S)
+def _g4():
+    games = sorted(PACE["game_id"].unique())
+    n_games = len(games)
+    rows, totals = {}, {}
+    for regime, tiers in M.REGIMES.items():
+        t = TEAMS[TEAMS["regime"] == regime]
+        alloc = t[t["status"].isin(ALLOCATED)]
+        cnt = alloc.groupby("game_id").size().reindex(games, fill_value=0)
+        p2, p1, p0 = int((cnt == 2).sum()), int((cnt == 1).sum()), int((cnt == 0).sum())
+        obl = int((PLAYERS["regime"] == regime).sum())
+        stranded = int(t.loc[t["status"] == "unresolved_insufficient_candidates",
+                             "n_candidates"].sum())
+        obl_total = int(CONTRACT["evaluation_tier"].isin(tiers).sum())
+        nn = (PLAYERS[(PLAYERS["regime"] == regime) & (PLAYERS["team_game_status"] == "normal")]
+              .groupby("game_id")["team_id"].nunique())
+        both_normal = int((nn == 2).sum())
+
+        assert len(alloc) + (len(t) - len(alloc)) == len(t) == 2 * n_games
+        assert 2 * p2 + p1 == len(alloc), \
+            f"{regime}: 2*{p2} + {p1} != {len(alloc)} allocated rows"
+        assert p2 + p1 + p0 == n_games, f"{regime}: game pairing does not close"
+        assert obl + stranded == obl_total, \
+            f"{regime}: {obl} allocated + {stranded} stranded != {obl_total} obligations"
+
+        rows[regime] = {
+            "team_game_rows": int(len(t)),
+            "allocated_rows": int(len(alloc)),
+            "unresolved_rows": int(len(t) - len(alloc)),
+            "complete_two_team_games": p2,
+            "one_sided_games": p1,
+            "zero_sided_games": p0,
+            "player_obligations_allocated": obl,
+            "player_obligations_stranded": stranded,
+            "player_obligations_total": obl_total,
+            "games_with_both_clubs_normal": both_normal,
+            "directed_possession_reconciliation_checks": both_normal * 2,
+        }
+    keys = list(next(iter(rows.values())).keys())
+    totals = {k: sum(r[k] for r in rows.values()) for k in keys}
+    assert totals["team_game_rows"] == len(TEAMS)
+    assert totals["player_obligations_allocated"] == len(PLAYERS)
+    return {"games": n_games, "by_regime": rows, "totals": totals,
+            "identities_asserted": [
+                "allocated + unresolved == team_game_rows == 2 * games",
+                "2*complete_two_team_games + one_sided_games == allocated_rows",
+                "complete_two_team_games + one_sided_games + zero_sided_games == games",
+                "obligations_allocated + obligations_stranded == obligations_total",
+            ]}
+
+
 @check("v4_v5_universe_reconciliation",
        "35,627 and 35,629 are different universes, not one count measured twice", S)
 def _g3():
@@ -388,16 +440,35 @@ def _a7():
           zip(PLAYERS["opp_team_id"], PLAYERS["team_id"], exp)]
     assert all(ok), "an opponent id is not the other club of that canonical game"
 
-    return {"opposing_pairs_reconciled": int(len(m)), "worst_abs_error": float(d.max()),
+    normal_n = (PLAYERS[PLAYERS["team_game_status"] == "normal"]
+                .groupby(["game_id", "regime"])["team_id"].nunique().reindex(idx, fill_value=0))
+    both_normal = int((normal_n == 2).sum())
+    assert len(m) == 2 * both_normal, "the directed-pair count is not twice the both-normal count"
+    normal_rows = int((TEAMS["status"] == "normal").sum())
+    assert normal_rows == 2 * both_normal + int((normal_n == 1).sum()), \
+        "normal team-game rows do not close against the pair counts"
+
+    return {"directed_possession_reconciliation_checks": int(len(m)),
+            "what_that_counts": (
+                "ORDERED (club, opponent) pairs. Each game-regime whose two clubs are BOTH status "
+                "'normal' is checked in both directions, so this is 2 x the unordered pair count. "
+                "It is not a count of games, team-games or allocated rows."),
+            "unordered_game_regimes_with_both_clubs_normal": both_normal,
+            "worst_abs_error": float(d.max()),
+            "team_game_rows_total": int(len(TEAMS)),
+            "allocated_rows": int(alloc_n.sum()),
+            "normal_rows": normal_rows,
+            "minutes_only_no_pace_rows": int((TEAMS["status"] == "minutes_only_no_pace").sum()),
+            "unresolved_rows": int(len(absent)),
             "game_regimes_with_both_clubs_allocated": int((alloc_n == 2).sum()),
             "game_regimes_with_one_club_allocated": int((alloc_n == 1).sum()),
             "game_regimes_with_neither_club_allocated": int((alloc_n == 0).sum()),
-            "one_sided_examples": (TEAMS[~TEAMS["status"].isin(ALLOCATED)]
-                                   .groupby("game_id").size().head(4).to_dict()),
+            "why_allocated_pairs_exceed_normal_pairs": (
+                "a club with unresolved pace is allocated (minutes stand) but has no possessions "
+                "to reconcile, so its game-regime is counted as allocated but not as both-normal"),
             "absent_clubs_all_explicitly_unresolved": True,
             "note": ("a one-sided game-regime is not a defect: the absent club has fewer than five "
-                     "viable candidates and carries unresolved_insufficient_candidates. "
-                     "Reconciliation is asserted on the pairs where both clubs are allocated.")}
+                     "viable candidates and carries unresolved_insufficient_candidates.")}
 
 
 @check("no_invented_players", "no player is invented; unresolved is explicit", S)
@@ -458,30 +529,62 @@ def _r1():
                 ["regime", "roster_evidence_regime"]).size().unstack(fill_value=0).to_dict()}
 
 
-@check("operational_achievability_labelled",
-       "only evidence captured before the cutoff supports a live-achievable rotation", S)
+@check("evidence_availability_distinguished_from_forecast_plausibility",
+       "cutoff availability, point-in-time capture, plausibility and production eligibility are "
+       "recorded as four separate facts", S)
 def _r2():
     for regime, ev in M.REGIME_EVIDENCE.items():
         sub = PLAYERS[PLAYERS["regime"] == regime]
-        assert (sub["operationally_achievable"] == ev["operationally_achievable"]).all()
-        assert (sub["evidence_class"] == ev["evidence_class"]).all()
-    prim = PLAYERS[PLAYERS["regime"] == M.PRIMARY_REGIME]
-    assert set(prim["roster_evidence_regime"].unique()) == {"captured_asof"}, \
-        "the primary regime rests on evidence that was not captured before the cutoff"
-    for regime in ("tier_a_plus_tx_b", "tier_a_plus_tx_b_plus_s2"):
-        sub = PLAYERS[PLAYERS["regime"] == regime]
-        assert not M.REGIME_EVIDENCE[regime]["operationally_achievable"]
-        assert (sub["roster_evidence_regime"] != "captured_asof").any()
-    return {"tier_a_only": "captured_asof only -- operationally achievable",
-            "tier_a_plus_tx_b": ("adds retrospective_effective_date evidence, reconstructed AFTER "
-                                 "the cutoff -- NOT live-achievable, sensitivity only"),
-            "tier_a_plus_tx_b_plus_s2": ("adds weak_prior_season affiliation -- NOT live-achievable, "
-                                         "weak diagnostic only"),
+        for field, want in ev.items():
+            assert (sub[field] == want).all(), f"{regime}: {field} not stamped on every row"
+
+    # the availability verdicts are derived from the contract's own timestamps, not asserted
+    ct = CONTRACT
+    by_tier = {}
+    for tier in ("A_primary", "B_transaction_sensitivity", "B_s2_weak_fallback"):
+        s = ct[ct["evaluation_tier"] == tier]
+        observed_after = int((s["candidate_observed_time"] > s["forecast_cutoff"]).sum())
+        evidence_before = int((s["candidate_evidence_time"] < s["forecast_cutoff"]).sum())
+        by_tier[tier] = {
+            "rows": int(len(s)),
+            "evidence_time_before_cutoff": evidence_before,
+            "observed_after_cutoff": observed_after,
+            "has_captured_asof_roster": int(s["src_asof_roster"].notna().sum()),
+            "has_published_time": int(s["candidate_published_time"].notna().sum()),
+            "roster_evidence_regime": s["roster_evidence_regime"].value_counts().to_dict(),
+        }
+    # A_primary: genuinely point-in-time
+    assert by_tier["A_primary"]["observed_after_cutoff"] == 0
+    assert by_tier["A_primary"]["has_captured_asof_roster"] == by_tier["A_primary"]["rows"]
+    # transaction Tier B: retrospectively scraped -- every row observed after its own cutoff
+    assert by_tier["B_transaction_sensitivity"]["observed_after_cutoff"] == \
+        by_tier["B_transaction_sensitivity"]["rows"], \
+        "transaction Tier B is no longer uniformly retrospective"
+    assert by_tier["B_transaction_sensitivity"]["has_captured_asof_roster"] == 0
+    # S2: cutoff-AVAILABLE -- no row was observed after its cutoff -- but not captured as-of
+    assert by_tier["B_s2_weak_fallback"]["observed_after_cutoff"] == 0, \
+        "the S2 source contains retrospective contamination; its availability label must change"
+    assert by_tier["B_s2_weak_fallback"]["evidence_time_before_cutoff"] == \
+        by_tier["B_s2_weak_fallback"]["rows"]
+    assert by_tier["B_s2_weak_fallback"]["has_captured_asof_roster"] == 0
+
+    assert not any(ev["production_eligible"] for ev in M.REGIME_EVIDENCE.values()), \
+        "a regime claims production eligibility; nothing here is promoted"
+
+    return {"fields": M.REGIME_EVIDENCE,
+            "reasons": M.REGIME_EVIDENCE_REASONS,
+            "derived_from_contract_timestamps": by_tier,
+            "correction": (
+                "S2 is CUTOFF-AVAILABLE but operationally IMPLAUSIBLE. It does NOT share the "
+                "transaction tier's defect: zero S2 rows were observed after their cutoff, whereas "
+                "all 4,169 transaction rows were. Prior-season affiliation was knowable at the "
+                "decision time; it is simply very weak evidence of current roster membership."),
+            "primary_regime_limitation": (
+                M.REGIME_EVIDENCE_REASONS["tier_a_only"]["plausibility_limitation"]),
             "caveat_on_the_primary_regime": (
-                "captured_asof concerns ROSTER membership. Availability remains information-limited "
+                "captured_asof concerns ROSTER membership. AVAILABILITY remains information-limited "
                 "before 2026-07-30; that limitation lives in the bound v15 p_active and is "
-                "inherited here unchanged."),
-            "labels": M.REGIME_EVIDENCE}
+                "inherited here unchanged.")}
 
 
 @check("rotation_cardinality_and_concentration_all_regimes",
@@ -506,10 +609,28 @@ def _r3():
     s2 = out["tier_a_plus_tx_b_plus_s2"]
     assert s2["n_allocated"]["max"] > M.STANDARD_ACTIVE_ROSTER, \
         "the S2 regime no longer shows the implausible cardinality it was degraded for"
+    prim = out[M.PRIMARY_REGIME]
+    prim_max_eff = prim["effective_rotation_size"]["max"]
     return {"thresholds": {"standard_active_roster": M.STANDARD_ACTIVE_ROSTER,
                            "scale_band": list(M.SCALE_BAND),
                            "note": "labels only; neither changes an allocated minute"},
-            "by_regime": out}
+            "by_regime": out,
+            "primary_regime_limitation": {
+                "median_effective_rotation_size": prim["effective_rotation_size"]["p50"],
+                "max_effective_rotation_size": prim_max_eff,
+                "exceeds_standard_roster": bool(prim_max_eff > M.STANDARD_ACTIVE_ROSTER),
+                "team_games_over_roster": prim["exceeds_standard_active_roster"],
+                "of_allocated": prim["allocated_team_games"],
+                "statement": (
+                    "Tier A's concentration is NOT uniformly realistic. Its MEDIAN effective "
+                    "rotation size is plausible, but its MAXIMUM of "
+                    f"{prim_max_eff:.2f} exceeds the {M.STANDARD_ACTIVE_ROSTER}-player standard "
+                    "active roster, and "
+                    f"{prim['exceeds_standard_active_roster']} of {prim['allocated_team_games']} "
+                    "allocated team-games name more candidates than that roster allows. This is a "
+                    "limitation of v1, not a blocker for the registered experiment, and it must "
+                    "remain visible."),
+            }}
 
 
 # =========================================================================== #

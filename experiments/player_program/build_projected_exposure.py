@@ -61,24 +61,89 @@ REGIMES = {
 }
 PRIMARY_REGIME = "tier_a_only"
 
-#: policy s2_weak_evidence_diagnostic/1. Only the primary regime rests on roster evidence that was
-#: CAPTURED before the cutoff; both sensitivity regimes rest on evidence reconstructed afterwards
-#: and are therefore not live-achievable, for different reasons.
+#: policy s2_weak_evidence_diagnostic/1, as corrected by
+#: exposure_evidence__erratum_availability_vs_plausibility.
+#:
+#: EVIDENCE AVAILABILITY and FORECAST PLAUSIBILITY are different questions and are recorded
+#: separately. A regime can be cutoff-available and still produce unusable rotations (S2); another
+#: can be unavailable at the cutoff regardless of how its rotations look (transaction Tier B).
 REGIME_EVIDENCE = {
     "tier_a_only": {
         "evidence_class": "primary",
         "roster_evidence_basis": "captured_asof",
-        "operationally_achievable": True,
+        "information_available_at_cutoff": True,
+        "historically_captured_asof": True,
+        "operationally_plausible": True,
+        "production_eligible": False,
     },
     "tier_a_plus_tx_b": {
         "evidence_class": "sensitivity_transaction",
         "roster_evidence_basis": "captured_asof + retrospective_effective_date",
-        "operationally_achievable": False,
+        "information_available_at_cutoff": False,
+        "historically_captured_asof": False,
+        "operationally_plausible": False,
+        "production_eligible": False,
     },
     "tier_a_plus_tx_b_plus_s2": {
         "evidence_class": "weak_diagnostic_s2",
         "roster_evidence_basis": "captured_asof + retrospective_effective_date + weak_prior_season",
-        "operationally_achievable": False,
+        "information_available_at_cutoff": True,
+        "historically_captured_asof": False,
+        "operationally_plausible": False,
+        "production_eligible": False,
+    },
+}
+
+#: prose for the receipt only; not written per row
+REGIME_EVIDENCE_REASONS = {
+    "tier_a_only": {
+        "information_available_at_cutoff": (
+            "all 35,629 A_primary rows carry candidate_evidence_time, candidate_published_time and "
+            "candidate_observed_time at or before the forecast cutoff; zero rows were observed "
+            "after it"),
+        "historically_captured_asof": "roster_evidence_regime == captured_asof on every row",
+        "operationally_plausible": (
+            "median effective rotation size 8.97, consistent with a real WNBA rotation"),
+        "plausibility_limitation": (
+            "MAXIMUM effective rotation size is 14.2, which EXCEEDS the 12-player standard active "
+            "roster, and 994 of 2,914 allocated team-games name more candidates than that roster "
+            "allows. The primary regime is plausible AT THE MEDIAN, not uniformly. This is a "
+            "limitation of v1, not a blocker for the registered experiment, and it stays visible."),
+        "production_eligible": (
+            "research artifact only. Not promoted. Production eligibility requires downstream "
+            "validation and explicit authorisation."),
+    },
+    "tier_a_plus_tx_b": {
+        "information_available_at_cutoff": (
+            "NO. All 4,169 B_transaction_sensitivity rows carry candidate_observed_time "
+            "2026-07-30T17:42Z -- after every one of their cutoffs -- and candidate_published_time "
+            "is null. The transaction evidence was retrospectively scraped, so it was not "
+            "available at the historical decision time regardless of its backdated effective date."),
+        "historically_captured_asof": "NO. src_asof_roster is null on every row.",
+        "operationally_plausible": (
+            "NO. 1,271 of 2,988 allocated team-games exceed the standard active roster, 225 show "
+            "extreme scaling, and the maximum allocation reaches 44 players."),
+        "production_eligible": "NO, on both grounds independently.",
+    },
+    "tier_a_plus_tx_b_plus_s2": {
+        "information_available_at_cutoff": (
+            "YES for the S2 component itself. All 5,053 B_s2_weak_fallback rows carry "
+            "candidate_evidence_time and candidate_observed_time at season-start markers, and ZERO "
+            "rows were observed after their cutoff. Prior-season affiliation was knowable at the "
+            "decision time. The S2 SOURCE contains no retrospective contamination. NOTE: this "
+            "regime is cumulative and also contains the transaction rows, which are not "
+            "cutoff-available; the availability verdict here is about the S2 component."),
+        "historically_captured_asof": (
+            "NO. src_asof_roster and candidate_published_time are null; this is not a captured "
+            "point-in-time roster feed, it is a derived prior-season affiliation."),
+        "operationally_plausible": (
+            "NO. Maximum 70 allocated players, maximum effective rotation size 67.8, and at the "
+            "5th percentile only ONE player clears 10 projected minutes. This is not a rotation."),
+        "production_eligible": "NO.",
+        "correction": (
+            "an earlier record labelled S2 non-achievable for the same reason as transaction "
+            "Tier B. That was wrong. S2 is cutoff-AVAILABLE but operationally IMPLAUSIBLE; "
+            "transaction Tier B is neither."),
     },
 }
 
@@ -593,9 +658,36 @@ def main() -> int:
         norm = t[t["status"] == "normal"]
         fb = norm[(norm["pace_level"] > 1) | (norm["n_fallback_predictions"] > 0)]
         alloc = t[t["status"].isin(("normal", "minutes_only_no_pace"))]
+        cnt = (alloc.groupby("game_id").size()
+               .reindex(sorted(teams["game_id"].unique()), fill_value=0))
+        contract_rows = int(contract["evaluation_tier"].isin(REGIMES[regime]).sum())
+        stranded = int(t.loc[t["status"] == "unresolved_insufficient_candidates",
+                             "n_candidates"].sum())
+        nn = p[p["team_game_status"] == "normal"].groupby("game_id")["team_id"].nunique()
         return {
             "team_games": int(len(t)),
             "evidence": REGIME_EVIDENCE[regime],
+            "evidence_reasons": REGIME_EVIDENCE_REASONS[regime],
+            "reconciliation": {
+                "team_game_rows": int(len(t)),
+                "allocated_rows": int(len(alloc)),
+                "unresolved_rows": int(len(t) - len(alloc)),
+                "complete_two_team_games": int((cnt == 2).sum()),
+                "one_sided_games": int((cnt == 1).sum()),
+                "zero_sided_games": int((cnt == 0).sum()),
+                "player_obligations_allocated": int(len(p)),
+                "player_obligations_stranded": stranded,
+                "player_obligations_total": contract_rows,
+                "games_with_both_clubs_normal": int((nn == 2).sum()),
+                "directed_possession_reconciliation_checks": int((nn == 2).sum()) * 2,
+                "identities": [
+                    "allocated_rows + unresolved_rows == team_game_rows",
+                    "2*complete_two_team_games + one_sided_games == allocated_rows",
+                    "complete_two_team_games + one_sided_games + zero_sided_games == games",
+                    "player_obligations_allocated + player_obligations_stranded "
+                    "== player_obligations_total",
+                ],
+            },
             "status_counts": t["status"].value_counts().to_dict(),
             "rotation_plausibility_counts": t["rotation_plausibility"].value_counts().to_dict(),
             "plausibility_diagnostics_over_allocated_team_games": {
