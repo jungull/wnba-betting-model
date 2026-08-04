@@ -192,7 +192,7 @@ some channels a registered derivation for information neither store supplies str
 | capability | state | derivable from | opportunity denominator needed | notes |
 |---|---|---|---|---|
 | **shot attempts and scoring** | `prototype` | v15 `attempts_usage` and `player_scoring_distribution` targets **exist and are predicted**; `data/shotcharts/shots_*.parquet` covers ~1,485 of 1,495 games with locations | attempts by shot type/location; makes conditional on attempts | the only channel with existing predictions. `build_zone_maps.py`, `w2_zone_channel_integration_v1` registered |
-| **steals and turnovers** | `not started` | pbp turnover events with cause sub-type | turnovers per touch/possession-used; steals per defensive possession | must separate live-ball/steal-related turnovers from travels and offensive fouls |
+| **steals and turnovers** | turnovers `canonical` (P0 targets, 15/15); steals `not started` | pbp turnover events with cause sub-type | turnovers per touch/possession-used; steals per defensive possession | must separate live-ball/steal-related turnovers from travels and offensive fouls |
 | **rebounds** | `not started` | pbp rebound events | **rebound opportunities**, not total possessions | the known blocker: opportunity denominators require the event stream, not the possession stream |
 | **blocks and rim events** | `not started` | pbp block events; shot distance/coordinates | blockable opponent attempts / rim attempts | rim-defence attribution is weakly supported — `PLAYER3` credits the blocker only |
 | **assists** | `not started` | pbp `PLAYER2` on made field goals | potential assists / teammate conversion opportunities | true "potential assists" are **not** in this data; a weaker proxy must be registered explicitly |

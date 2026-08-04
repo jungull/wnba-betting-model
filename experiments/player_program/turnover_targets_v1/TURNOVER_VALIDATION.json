@@ -1,0 +1,390 @@
+{
+  "schema": "turnover_target_validation/1",
+  "artifact_id": "player_turnover_targets/1",
+  "experiment_id": "turnover_target_contract_v1",
+  "validated_utc": "2026-08-04T11:54:25.359600Z",
+  "nothing_fitted": true,
+  "nothing_scored": true,
+  "artifact_sha256": {
+    "player": "a360e5d8d000256224739d76c1d9f0902fe36aadb1c667af6a90f1d612f7f9d0",
+    "team": "6544744941be425aba219216f224252866c68f7eccb73fbac87eff649d39fabf"
+  },
+  "producer_sha256": "df2e05dfa5188df74df7c7b04823f41ceec8d94632cc4eba899e36eb0ab3222c",
+  "checks_total": 15,
+  "checks_passed": 15,
+  "checks_failed": 0,
+  "verdict": "PASS",
+  "pass_fail_table": [
+    {
+      "check": "mechanism_sums_to_player_total",
+      "result": "PASS"
+    },
+    {
+      "check": "components_sum_to_team_total",
+      "result": "PASS"
+    },
+    {
+      "check": "one_disposition_per_event",
+      "result": "PASS"
+    },
+    {
+      "check": "player_sum_matches_team_component",
+      "result": "PASS"
+    },
+    {
+      "check": "no_player_on_both_teams",
+      "result": "PASS"
+    },
+    {
+      "check": "zero_turnover_rows_retained",
+      "result": "PASS"
+    },
+    {
+      "check": "no_duplicate_grain",
+      "result": "PASS"
+    },
+    {
+      "check": "universe_excludes_non_appearances",
+      "result": "PASS"
+    },
+    {
+      "check": "exposure_coverage",
+      "result": "PASS"
+    },
+    {
+      "check": "by_source_distributions",
+      "result": "PASS"
+    },
+    {
+      "check": "mechanism_taxonomy_complete",
+      "result": "PASS"
+    },
+    {
+      "check": "external_team_reconciliation",
+      "result": "PASS"
+    },
+    {
+      "check": "external_player_reconciliation",
+      "result": "PASS"
+    },
+    {
+      "check": "no_double_counting",
+      "result": "PASS"
+    },
+    {
+      "check": "turnover_heavy_and_degraded_audit",
+      "result": "PASS"
+    }
+  ],
+  "checks": [
+    {
+      "check": "mechanism_sums_to_player_total",
+      "requirement": "mechanism counts sum exactly to player-attributed totals",
+      "result": "PASS",
+      "detail": {
+        "mechanism_columns": 19,
+        "player_rows": 28328,
+        "total_from_mechanisms": 39279,
+        "total_turnovers": 39279
+      }
+    },
+    {
+      "check": "components_sum_to_team_total",
+      "requirement": "player-attributed plus team/unattributed == team total",
+      "result": "PASS",
+      "detail": {
+        "team_games": 2990,
+        "player_attributed": 39279,
+        "team_unattributed": 2803,
+        "team_total": 42082
+      }
+    },
+    {
+      "check": "one_disposition_per_event",
+      "requirement": "every turnover event has exactly one final disposition",
+      "result": "PASS",
+      "detail": {
+        "dispositions": {
+          "player_attributed": 39279,
+          "team_unattributed": 2803,
+          "unresolved_no_team": 1
+        },
+        "turnover_events": 42083,
+        "unresolved_no_team_preserved": 1
+      }
+    },
+    {
+      "check": "player_sum_matches_team_component",
+      "requirement": "player artifact sums to the team-attributed component",
+      "result": "PASS",
+      "detail": {
+        "team_games": 2990,
+        "mismatched": 0,
+        "orphan_attributions": 0,
+        "note": "a nonzero mismatch equals turnovers attributed to a player with no box row; counted, never dropped",
+        "mismatch_total": 0
+      }
+    },
+    {
+      "check": "no_player_on_both_teams",
+      "requirement": "no player turnover is assigned to both clubs in a game",
+      "result": "PASS",
+      "detail": {
+        "players_with_turnovers": 19181
+      }
+    },
+    {
+      "check": "zero_turnover_rows_retained",
+      "requirement": "zero-turnover player-game rows are retained",
+      "result": "PASS",
+      "detail": {
+        "zero_turnover_rows": 9147,
+        "nonzero_rows": 19181,
+        "share_zero": 0.3229
+      }
+    },
+    {
+      "check": "no_duplicate_grain",
+      "requirement": "the player grain is unique",
+      "result": "PASS",
+      "detail": {
+        "player_rows": 28328,
+        "team_rows": 2990
+      }
+    },
+    {
+      "check": "universe_excludes_non_appearances",
+      "requirement": "inactive candidates are not zero-turnover rows",
+      "result": "PASS",
+      "detail": {
+        "box_rows": 33712,
+        "appeared_rows": 28328,
+        "excluded_did_not_appear": 5384,
+        "rule": "a candidate who did not appear is NOT a zero-turnover observation"
+      }
+    },
+    {
+      "check": "exposure_coverage",
+      "requirement": "offensive-possession exposure is reported, not assumed complete",
+      "result": "PASS",
+      "detail": {
+        "rows_with_positive_exposure": 28271,
+        "rows_zero_reconstructed_exposure": 57,
+        "rate_defined_rows": 28271,
+        "denominator_name": "offensive-possession exposure",
+        "explicitly_not": "a complete turnover-opportunity denominator; it does not observe touches, passes, drives or ball-handler responsibility",
+        "realised_only": "for historical rates and conditional diagnostics only",
+        "operational_requires": "projected offensive possessions from projected_player_possessions_v1"
+      }
+    },
+    {
+      "check": "by_source_distributions",
+      "requirement": "report turnover structure by source; do not read it as an effect",
+      "result": "PASS",
+      "detail": {
+        "by_source": {
+          "nba_cdn_playbyplay": {
+            "team_games": 998,
+            "turnovers": 13599,
+            "player_attributed": 12669,
+            "team_unattributed": 930,
+            "team_unattributed_share": 0.06839,
+            "turnovers_per_100_team_off_poss": 17.1666
+          },
+          "nba_playbyplayv2": {
+            "team_games": 1992,
+            "turnovers": 28483,
+            "player_attributed": 26610,
+            "team_unattributed": 1873,
+            "team_unattributed_share": 0.06576,
+            "turnovers_per_100_team_off_poss": 17.8751
+          }
+        },
+        "mechanism_share_by_source": {
+          "nba_cdn_playbyplay": {
+            "bad_pass": 0.36503,
+            "lost_ball": 0.1756,
+            "bad_pass_out_of_bounds": 0.13626,
+            "offensive_foul": 0.11935,
+            "shot_clock": 0.06456,
+            "traveling": 0.05155,
+            "lost_ball_out_of_bounds": 0.04486,
+            "step_out_of_bounds": 0.015,
+            "three_second": 0.00802,
+            "backcourt": 0.00662,
+            "double_dribble": 0.00316,
+            "eight_second": 0.00213,
+            "five_second": 0.00162,
+            "jump_ball_violation": 0.00132,
+            "inbound": 0.00118,
+            "discontinue_dribble": 0.00118,
+            "kicked_ball": 0.00088,
+            "palming": 0.00081,
+            "lane_violation": 0.00044,
+            "unresolved": 0.00029,
+            "offensive_goaltending": 7e-05,
+            "excess_timeout": 7e-05
+          },
+          "nba_playbyplayv2": {
+            "bad_pass": 0.35922,
+            "lost_ball": 0.16251,
+            "bad_pass_out_of_bounds": 0.13049,
+            "offensive_foul": 0.12593,
+            "traveling": 0.06853,
+            "shot_clock": 0.06295,
+            "lost_ball_out_of_bounds": 0.04417,
+            "step_out_of_bounds": 0.01759,
+            "three_second": 0.00716,
+            "backcourt": 0.00635,
+            "double_dribble": 0.00372,
+            "discontinue_dribble": 0.00253,
+            "five_second": 0.00193,
+            "palming": 0.00147,
+            "inbound": 0.00119,
+            "kicked_ball": 0.00095,
+            "unresolved": 0.00091,
+            "eight_second": 0.00091,
+            "jump_ball_violation": 0.00074,
+            "lane_violation": 0.00063,
+            "excess_timeout": 7e-05,
+            "offensive_goaltending": 4e-05
+          }
+        },
+        "unresolved_rate_by_source": {
+          "nba_cdn_playbyplay": 0.000294,
+          "nba_playbyplayv2": 0.000913
+        },
+        "CONFOUNDING_WARNING": "ALL 2021-2025 playoff games are CDN and the 2025 regular season changes source mid-season, so source and season type are PARTIALLY CONFOUNDED. A raw legacy-versus-CDN rate difference must NOT be read as a basketball effect.",
+        "source_as_production_feature": "PROHIBITED; diagnostics only"
+      }
+    },
+    {
+      "check": "mechanism_taxonomy_complete",
+      "requirement": "every raw subtype maps or is explicitly unresolved",
+      "result": "PASS",
+      "detail": {
+        "mechanisms": 22,
+        "unmapped_raw_subtypes": 0,
+        "unresolved_mechanism_events": 30,
+        "mechanism_distribution": {
+          "bad_pass": 15196,
+          "lost_ball": 7017,
+          "bad_pass_out_of_bounds": 5570,
+          "offensive_foul": 5210,
+          "shot_clock": 2671,
+          "traveling": 2653,
+          "lost_ball_out_of_bounds": 1868,
+          "step_out_of_bounds": 705,
+          "three_second": 313,
+          "backcourt": 271,
+          "double_dribble": 149,
+          "discontinue_dribble": 88,
+          "five_second": 77,
+          "eight_second": 55,
+          "palming": 53,
+          "inbound": 50,
+          "kicked_ball": 39,
+          "jump_ball_violation": 39,
+          "unresolved": 30,
+          "lane_violation": 24,
+          "excess_timeout": 3,
+          "offensive_goaltending": 2
+        },
+        "group_distribution": {
+          "bad_pass": 20766,
+          "lost_ball": 8885,
+          "offensive_foul": 5212,
+          "travel_footwork": 3648,
+          "shot_clock": 2671,
+          "other_violation": 871,
+          "unknown": 30
+        },
+        "derivation": "modal description text per legacy action code, matched to CDN subtype",
+        "no_forced_equivalence": "legacy 5/0 ('Turnover Turnover', 26 rows) and the CDN empty subType (4 rows) are the same generic non-specific turnover and BOTH map to 'unresolved', never to a real mechanism",
+        "unmapped_are_all_unresolved": true
+      }
+    },
+    {
+      "check": "external_team_reconciliation",
+      "requirement": "reconcile against frozen box-score team totals",
+      "result": "PASS",
+      "detail": {
+        "source": "data/masters/master_team.parquet column 'tov'",
+        "trustworthy_frozen_source": true,
+        "team_games": 2990,
+        "exact": 2989,
+        "off_by_one": 1,
+        "larger": 0,
+        "missing_external": 0,
+        "exact_rate": 0.999666,
+        "disagreements": [
+          {
+            "game_id": "1022300067",
+            "team_id": 1611661321,
+            "team_turnovers_total": 17,
+            "external_team_tov": 16,
+            "team_unattributed": 0,
+            "source_system": "nba_playbyplayv2"
+          }
+        ],
+        "no_parser_tuning": "the parser was NOT tuned to force agreement"
+      }
+    },
+    {
+      "check": "external_player_reconciliation",
+      "requirement": "reconcile against frozen box-score player totals",
+      "result": "PASS",
+      "detail": {
+        "rows_compared": 28328,
+        "exact": 28327,
+        "off_by_one": 1,
+        "larger": 0,
+        "exact_rate": 0.999965,
+        "missing_external": 0,
+        "worst_examples": [],
+        "expected_cause_of_any_gap": "team/unattributed turnovers are never assigned to players, and the box score counts only player turnovers, so player rows should agree closely"
+      }
+    },
+    {
+      "check": "no_double_counting",
+      "requirement": "replay, administrative and repeated identifiers do not double count",
+      "result": "PASS",
+      "detail": {
+        "turnover_events": 42083,
+        "unique_event_uids": 42083,
+        "replay_rows_counted_as_turnovers": 0,
+        "degraded_turnover_rows": 2,
+        "score_out_of_sequence_turnover_rows": 0,
+        "families_present_in_events": {
+          "rebound": 125309,
+          "missed_field_goal": 113922,
+          "made_field_goal": 89896,
+          "substitution": 61113,
+          "free_throw": 55071,
+          "foul": 54482,
+          "turnover": 42083,
+          "timeout": 14790,
+          "steal": 7230,
+          "period_start": 6054,
+          "period_end": 6054,
+          "block": 4021,
+          "jump_ball": 3908,
+          "replay_or_administrative": 3273,
+          "violation": 1886,
+          "ejection": 38
+        }
+      }
+    },
+    {
+      "check": "turnover_heavy_and_degraded_audit",
+      "requirement": "materialise an audit sample",
+      "result": "PASS",
+      "detail": {
+        "written": "TURNOVER_DISCREPANCY_AUDIT.json",
+        "heavy_games": 5,
+        "degraded_rows": 2,
+        "external_disagreements": 1
+      }
+    }
+  ]
+}
