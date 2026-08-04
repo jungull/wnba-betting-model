@@ -226,8 +226,16 @@ governs — it is the implementation, and this document does not modify it.
 
 ## 8a. Dual-frame requirement — audit BEFORE and AFTER missing-value transformation
 
-**Status: REQUIRED BY THIS CONTRACT. NOT YET IMPLEMENTED in `gate_invocation.py` (`d58a6b2`).
-It is a standing methodological gap, not a closed class.**
+**Status: IMPLEMENTED under `PLAYER_DUAL_FRAME_AUDIT_v2`. Dual-frame provenance is MANDATORY for
+every fitted feature design — not conditional on a transformation being declared or detected,
+because a fully populated transformed frame cannot reveal that a raw frame was withheld.**
+
+One residual limitation, stated rather than papered over: **no feature producer in this repository
+emits a construction receipt or input manifest.** A caller who does not hand-build `provenance=`
+therefore reaches `RAW_PROVENANCE_ASSERTED`, which is **not** a full pass. `IDENTITY_VERIFIED` and
+`TRANSFORMATION_VERIFIED` are reachable and tested, but only when provenance is supplied
+explicitly. Migrating the producers is the remaining work; the assurance levels were **not**
+redefined to make the repository look compliant.
 
 The ws2 defect is a different failure from a missing or defaulted argument, and the wrapper's
 `argument_is_placeholder_default` does **not** catch it. ws2's `build_constructions()` imputed
