@@ -17,7 +17,8 @@ import numpy as np, pandas as pd                                               #
 
 BLOCKING = {"exact_duplicate", "near_collinear", "deterministic_transform_of_offset",
             "zero_variance", "non_finite", "impossible_scaling", "schema_mismatch",
-            "target_derived", "rank_deficient", "ill_conditioned"}
+            "target_derived", "rank_deficient", "ill_conditioned",
+            "missingness_encodes_outcome", "missingness_informative"}
 
 #: multivariate identifiability thresholds
 RANK_TOL = 1e-8      # relative singular-value tolerance
@@ -70,7 +71,9 @@ class FeatureGateFailure(RuntimeError):
 def audit(df: pd.DataFrame, names: list[str], offset: np.ndarray | None = None,
           target: np.ndarray | None = None, test_df: pd.DataFrame | None = None,
           adjudicated: dict | None = None, corr_threshold: float = 0.999,
-          target_corr_threshold: float = 0.98) -> dict:
+          target_corr_threshold: float = 0.98,
+          outcome_mask: np.ndarray | None = None,
+          missingness_corr_threshold: float = 0.5) -> dict:
     adjudicated = adjudicated or {}
     X = df[names]
     findings: list[dict] = []
@@ -137,6 +140,46 @@ def audit(df: pd.DataFrame, names: list[str], offset: np.ndarray | None = None,
         miss = [c for c in names if c not in test_df.columns]
         if miss:
             findings.append({"kind": "schema_mismatch", "missing_in_test": miss})
+
+    # informative missingness -- a null MASK can encode an outcome even when the VALUES do not.
+    # Found by ws1: trailing_minutes_share was non-null on exactly the 27,351 appearers and null on
+    # exactly the 8,278 non-appearers, zero off-diagonal, because it was built from the realised box
+    # score and left-merged onto the candidate universe. Imputing those nulls encodes did_appear.
+    # The value-based checks above are blind to this: they only ever see the non-null subset.
+    for c in names:
+        miss = X[c].isna().to_numpy()
+        n_miss = int(miss.sum())
+        if n_miss == 0 or n_miss == len(miss):
+            continue
+        rec = {"feature": c, "n_missing": n_miss,
+               "missing_rate": round(n_miss / len(miss), 6)}
+        if outcome_mask is not None:
+            om = np.asarray(outcome_mask, bool)
+            off_diag = int(np.sum(miss & om) + np.sum(~miss & ~om))
+            off_diag = min(off_diag, len(miss) - off_diag)
+            if off_diag == 0:
+                findings.append({"kind": "missingness_encodes_outcome", **rec,
+                                 "off_diagonal_rows": 0,
+                                 "detail": "the null mask is an EXACT outcome indicator"})
+                continue
+        if target is not None:
+            y = np.asarray(target, float)
+            m = np.isfinite(y)
+            if m.sum() > 10 and np.std(y[m]) > 0:
+                ymiss, yobs = y[miss & m], y[~miss & m]
+                if len(ymiss) > 5 and len(yobs) > 5 and np.std(ymiss) == 0 and np.std(yobs) > 0:
+                    findings.append({"kind": "missingness_encodes_outcome", **rec,
+                                     "target_on_missing_rows": float(ymiss[0]),
+                                     "detail": "every missing row shares one target value while "
+                                               "observed rows vary"})
+                    continue
+                r = float(np.corrcoef(miss[m].astype(float), y[m])[0, 1])
+                if abs(r) >= missingness_corr_threshold:
+                    findings.append({"kind": "missingness_informative", **rec,
+                                     "corr_null_mask_with_target": round(r, 6)})
+                    continue
+        findings.append({"kind": "missingness_present", **rec,
+                         "detail": "not shown to be informative; impute deliberately, never by default"})
 
     # multivariate identifiability -- the pairwise checks above cannot see c = a - b
     rank = design_rank_report(df, names)
