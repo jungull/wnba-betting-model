@@ -264,11 +264,42 @@ def build(deterministic: bool = False) -> dict:
             "[0.0833, 0.1244]). Its honest prize is small: 1.2–2.2% of operational MAE. Any "
             "such task must be issued as a versioned specification under "
             f"{RESEARCH_CONTRACT_VERSION}."),
+        "provenance_status": {
+            "dual_frame_framework": "implemented",
+            "general_feature_producer_provenance": "incomplete",
+            "stage2_possession_feature_provenance": "verified",
+            "canonical_possession_prior_original_construction_provenance": "legacy_receipts_only",
+            "_meaning": (
+                "The dual-frame framework is in force for every fitted design. Only "
+                "possession_features.py emits a producer construction receipt, so every OTHER "
+                "feature producer still caps at RAW_PROVENANCE_ASSERTED, which is not a full "
+                "pass — the general gap is NOT closed by the possession bridge. The Stage 2 "
+                "possession feature path reaches IDENTITY_VERIFIED from frozen, hash-verified "
+                "source artifacts through a producer-emitted receipt. That says nothing about "
+                "how team_possession_prior_v1.parquet was ORIGINALLY built: it remains attested "
+                "by its own artifact and validation receipts only."),
+        },
         "open_methodological_gaps": [
             {"id": "dual_frame_audit", "severity": "A",
-             "gap": "designs are not audited before AND after missing-value transformation; the "
-                    "invocation layer does NOT close the ws2 pre-gate-imputation class",
-             "specified_in": "GATE_INVOCATION_CONTRACT.md §8a", "implemented": False},
+             "gap": "designs are audited before AND after missing-value transformation; "
+                    "dual-frame provenance is mandatory for every fitted design",
+             "specified_in": "GATE_INVOCATION_CONTRACT.md §8a", "implemented": True,
+             "closed_by": "PLAYER_DUAL_FRAME_AUDIT_v2"},
+            {"id": "general_feature_producer_provenance", "severity": "A",
+             "gap": "only possession_features.py emits a producer construction receipt. Every "
+                    "other feature producer is unreceipted, so any arm fitted through one reaches "
+                    "RAW_PROVENANCE_ASSERTED and is NOT a full Stage 1 pass",
+             "implemented": False},
+            {"id": "construction_receipt_forgery", "severity": "C",
+             "gap": "a construction receipt is not a cryptographic attestation. Forgery must "
+                    "reproduce the producer source bytes, every source artifact, the row "
+                    "universe, the column order and the frame values, and survive re-derivation "
+                    "— expensive, but not impossible for anyone with write access",
+             "implemented": False},
+            {"id": "cutoff_validity_asserted", "severity": "B",
+             "gap": "cutoff_valid is asserted per source and bound into the receipt forever, but "
+                    "it is a property of upstream construction and cannot be verified from bytes",
+             "implemented": False},
             {"id": "validator_lineage", "severity": "B",
              "gap": "validate_turnover_targets.py records the producer hash but not its own; the "
                     "receipt chain is NOT cryptographically closed", "implemented": False},

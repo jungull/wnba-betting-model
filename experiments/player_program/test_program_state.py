@@ -88,9 +88,20 @@ def test_state_is_internally_consistent() -> None:
     check(s["stop_boundary"]["in_force"] is True, "stop boundary in force")
     check(bool(s["next_decision_requiring_authorization"]), "next decision field is populated")
     check(len(s["open_methodological_gaps"]) >= 5, "open gaps enumerated")
-    check(any(g["id"] == "dual_frame_audit" and g["implemented"] is False
-              for g in s["open_methodological_gaps"]),
-          "dual-frame gap recorded as NOT implemented")
+    gaps = {g["id"]: g for g in s["open_methodological_gaps"]}
+    check(gaps["dual_frame_audit"]["implemented"] is True,
+          "dual-frame audit recorded as IMPLEMENTED (closed by PLAYER_DUAL_FRAME_AUDIT_v2)")
+    # The possession bridge must NOT be allowed to erase the repository-wide gap.
+    check(gaps["general_feature_producer_provenance"]["implemented"] is False,
+          "general feature-producer provenance remains OPEN despite the possession bridge")
+    p = s["provenance_status"]
+    check(p["dual_frame_framework"] == "implemented", "provenance_status: framework implemented")
+    check(p["general_feature_producer_provenance"] == "incomplete",
+          "provenance_status: general producer provenance incomplete")
+    check(p["stage2_possession_feature_provenance"] == "verified",
+          "provenance_status: stage 2 possession path verified")
+    check(p["canonical_possession_prior_original_construction_provenance"] == "legacy_receipts_only",
+          "provenance_status: canonical prior's ORIGINAL construction stays legacy_receipts_only")
     fam = s["canonical_artifacts"]
     check(len(fam) == 3, "three canonical artifact families pinned")
     for aid, blk in fam.items():
