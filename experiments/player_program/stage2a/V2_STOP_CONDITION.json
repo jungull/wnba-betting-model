@@ -1,0 +1,157 @@
+{
+  "schema": "stage2a_v2_stop_condition/1",
+  "task": "STAGE2A_PHASE0A_RESOLUTION_v1 \u2014 item 7 HALTED",
+  "raised_by": "V2_basketball (fresh post-ruling source)",
+  "verified_by": "coordinator, directly against the frozen artifacts",
+  "stop_rule_invoked": "a fresh source identified unresolved issues that change the CUTOFF-VALID FEATURE SET and threaten the CANDIDATE UNIVERSE",
+  "findings": {
+    "S1_master_team_minutes_is_an_exact_overtime_indicator": {
+      "affects": "CUTOFF-VALID FEATURE SET",
+      "severity": "A \u2014 leakage",
+      "measurement": {
+        "rows": 2990,
+        "nulls": 0,
+        "minutes_over_game_minutes": {
+          "mean": 5.0,
+          "sd": 0.0,
+          "min": 5.0,
+          "max": 5.0
+        },
+        "exactly_5x_game_minutes": "2990/2990",
+        "game_minutes_recoverable_by_division": "2990/2990"
+      },
+      "why_it_matters": "the ruling PROHIBITS any function of game_minutes in the feature matrix, fallback logic, arm selection or prediction path. master_team.minutes IS such a function -- exactly, with zero nulls and zero variance in the ratio -- and master_team is listed in the availability table as usable when lagged. game_minutes is recoverable by dividing by five.",
+      "consequence": "V2's availability table is INCOMPLETE. master_team.minutes must be named an explicitly PROHIBITED column on the target-game row, and any lagged use must be audited rather than assumed safe. A convention is not enough; this needs an enforced invariant.",
+      "unresolved": true
+    },
+    "S2_team_cities_join_hazards": {
+      "affects": "CANDIDATE UNIVERSE",
+      "severity": "A \u2014 silent row corruption",
+      "measurement": {
+        "rows": 16,
+        "distinct_team_id": 15,
+        "duplicated_team_id": {
+          "1611661317": 2
+        },
+        "last_season_dtype": "float64",
+        "last_season_nulls": "15 of 16",
+        "elevation_ft_range": [
+          20,
+          2030
+        ],
+        "venues_above_1000ft": 4
+      },
+      "why_it_matters": "team_id 1611661317 appears twice (PHO/PHX rebrand), so a naive join fans out 1:m and duplicates that franchise's rows. last_season is float with 15 of 16 values null, so a null-unsafe filter drops every current franchise. Either failure silently changes the row set that must be BYTE-IDENTICAL across K0_FLAT, K0_MATCHED, the incumbent and every challenger.",
+      "note": "V2 promoted venue/travel/elevation/timezone to Category A on availability grounds. Availability is confirmed; SAFE JOINABILITY is not. The source also reports elevation as a dead feature: I measure 4 venues above 1000 ft, not 3 -- a minor discrepancy, and the substantive point stands.",
+      "unresolved": true
+    },
+    "S3_injury_history_has_two_cutoff_regimes": {
+      "affects": "CUTOFF-VALID FEATURE SET",
+      "severity": "A \u2014 outcome contamination",
+      "measurement": {
+        "total_rows": 8340,
+        "missed_game_star_rows": 5373,
+        "announcement_dated_rows": 2967
+      },
+      "why_it_matters": "5,373 of 8,340 rows are missed_game_* -- CONTEMPORANEOUS with the game they describe, i.e. realised outcomes rather than pregame signals. Only 2,967 are announcement-dated transactions with a defensible pregame claim. V2 records injury_history as ONE source with unproven cutoff validity; it is TWO regimes with different cutoff status, and the larger one is a realised outcome.",
+      "consequence": "the two regimes must be split before either can be considered, and the missed_game_* regime is presumptively an outcome, not a feature",
+      "unresolved": true
+    },
+    "S4_free_SLOPE_confound_comparison_gate_has_no_dimension_for_it": {
+      "affects": "K0_MATCHED",
+      "severity": "A",
+      "raised_by": "V2_adversarial",
+      "mechanism": "K0_MATCHED is featureless with the incumbent's projection as OFFSET, so it fits offset + b0. A challenger that declares the incumbent's OWN OUTPUT as a substantive feature fits b0 + (1+b1)*projected -- a free recalibration SLOPE the control does not have. It adds ZERO information.",
+      "why_the_gate_misses_it": "Layer A PASSES: both sides declare an identical exposure_offset, and the difference sits in substantive_features, which is exactly where differences are SUPPOSED to sit. comparison_gate has no dimension for calibration SLOPE. _headline_judgment would print FEATURE VALUE DEMONSTRATED.",
+      "evidence_the_slope_is_not_1": "var(projected)/var(target) = 0.157 against 0.116 variance explained",
+      "note": "this is the P2 free-INTERCEPT defect one derivative up",
+      "unresolved": true
+    },
+    "S5_opponent_design_is_exactly_determined_by_its_own_offset": {
+      "affects": "CUTOFF-VALID FEATURE SET / identifiability",
+      "severity": "A",
+      "raised_by": "V2_adversarial",
+      "verified_by_coordinator": true,
+      "measurement": {
+        "identity": "own_est + opp_est == 2 * projected_team_off_possessions",
+        "rows": 2982,
+        "max_abs_deviation": 0.0,
+        "corr_own_projected": 0.7738,
+        "corr_own_opp": 0.1977,
+        "gate_threshold": 0.999
+      },
+      "why_it_matters": "the packet explicitly flags opponent history as cutoff-valid and unused, so 'add an opponent adjustment' is the most obvious challenger in the wave. It rebuilds the P2 three-term exact dependency -- and PASSES every existing check, because both pairwise correlations are far below 0.999 and design_rank_report runs on FEATURES ONLY, never on [X | offset].",
+      "fix_direction": "augmented-rank check over [X | offset]; a CALL-SITE policy change requiring no edit to feature_gate.py",
+      "unresolved": true
+    },
+    "S6_the_tier_partition_decides_the_wave_and_the_ruling_does_not_settle_it": {
+      "affects": "K0_MATCHED",
+      "severity": "A",
+      "raised_by": "V2_adversarial",
+      "verified_by_coordinator": true,
+      "measurement_bias_share_of_MSE": {
+        "pooled": 0.00187,
+        "team_window_same_season": 0.01034,
+        "league_prior_all": 0.00372,
+        "team_window_prior_season": 0.37098,
+        "season_openers": 0.42488
+      },
+      "why_it_matters": "the packet's headline reading -- 'reduce dispersion, not re-centre' -- is true POOLED at 0.19% and INVERTS on the cold-start strata, where bias is 37-42% of MSE. The incumbent's largest measurable defect is therefore a LEVEL error on precisely the partition K0_MATCHED is authorised to absorb. If K0_MATCHED carries the tier structure, a cold-start challenger is DEAD ON ARRIVAL: the control already removes the bias the challenger exists to remove.",
+      "the_ruling_states_one_risk_but_not_the_converse": "omitting the tier gives a straw control -- true. Including it neutralises the wave's largest real defect -- also true. The ruling as written does not settle which.",
+      "unresolved": true
+    },
+    "S7_per_fold_degeneracy_lands_on_the_control_itself": {
+      "affects": "INFERENCE STRUCTURE",
+      "severity": "A",
+      "raised_by": "V2_adversarial",
+      "verified_by_coordinator": true,
+      "measurement_pace_source_by_season": {
+        "league_prior_all": {
+          "2021": 28,
+          "2022": 0,
+          "2023": 0,
+          "2024": 0,
+          "2025": 3,
+          "2026": 6
+        },
+        "team_window_prior_season": {
+          "2021": 0,
+          "2022": 36,
+          "2023": 36,
+          "2024": 36,
+          "2025": 36,
+          "2026": 39
+        },
+        "team_window_same_season": {
+          "2021": 382,
+          "2022": 442,
+          "2023": 484,
+          "2024": 488,
+          "2025": 581,
+          "2026": 385
+        }
+      },
+      "why_it_matters": "a tier indicator is IDENTICALLY ZERO in four of six chronological folds: league_prior_all in 2022, 2023 and 2024; team_window_prior_season in 2021. That is a blocking zero_variance finding per fold, arising from the incumbent's own structure, ON THE AUTHORITATIVE CONTROL. It is the ws3 shape reappearing -- pooled healthy, fold degenerate.",
+      "requirement": "GATE_INVOCATION_CONTRACT section 4 requires the fold-level fallback frozen with a numeric trigger BEFORE results are visible",
+      "unresolved": true
+    }
+  },
+  "not_stop_conditions_but_recorded": {
+    "schedule_confounding": "source measured a full 10-game window facing only 7.29 distinct opponents on average, min 3, with 20% of windows seeing <=6. Not verified by the coordinator; schedule-only, no outcome data.",
+    "overtime_rescale_is_negligible": "source measured OT accruing 3.876 possessions/min against regulation 3.965, so the linear rescale understates an OT game by ~0.19 possessions, diluting to ~0.006 in the rating. Not verified by the coordinator. If it holds, the '~7x leverage' framing in the addendum is an EXPOSURE statement that effect size does not support, and no arm should be spent repairing regulation-equivalence.",
+    "E5_scorer_mismatch_is_exploitable_not_merely_documented": "trailing OT rate is cutoff-valid and gate-passing, and its only downstream benefit channel is arbitraging the OT bias on 132 rows -- improving turnover MAE while WORSENING the primary regulation-equivalent target. Needs an ordering constraint: the primary verdict frozen before any downstream number is computed.",
+    "OT_stratum_lower_MAE_may_be_a_units_artifact": "sd ratio 0.831 against the 40/45 = 0.889 compression factor. Must be ruled out before the OT stratum's better MAE is cited as a fact about difficulty.",
+    "tip_times_null_mask_is_almost_exactly_fold_1": "1,219 of 1,495 games and NONE of 2021, so any tip-derived feature's null mask nearly equals the first fold -- which neither gate branch blocks (0.5 correlation threshold, non-outcome mask).",
+    "packet_nits_flagged_not_corrected": "game_clusters 1491 and games_with_one_shared_projection 1495 sit three lines apart over different universes (the 4 unresolved games). tip_times.csv is odds-derived covering 2022-2026, which sits oddly beside the packet's 'market odds unavailable historically'. Flagged as observations; the packet is frozen and is NOT edited."
+  },
+  "item_7_status": "HALTED \u2014 not attempted",
+  "still_running_at_halt": [
+    "V2_estimator"
+  ],
+  "stop_conditions_triggered": [
+    "CUTOFF-VALID FEATURE SET (S1, S3, S5)",
+    "CANDIDATE UNIVERSE (S2)",
+    "K0_MATCHED (S4, S6)",
+    "INFERENCE STRUCTURE (S7)"
+  ]
+}
