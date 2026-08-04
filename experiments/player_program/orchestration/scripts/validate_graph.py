@@ -71,13 +71,18 @@ def main():
                     continue
                 break
 
-    # 4. an audit node may not be the implementation node it audits
+    # 4. an audit node may not be the node whose work it audits.
+    #    Covers every type that PRODUCES work an audit examines, not implementation alone.
+    #    Found by R16_I11_SEAL_HONESTY: restricting this to "implementation" silently skipped
+    #    P38_BLINDED_FIT -> P39_RESULT_INTEGRITY, which is the single most important
+    #    independence edge in the whole graph -- the runner must not audit its own results.
+    AUDITABLE = {"implementation", "experiment", "integration"}
     for n in nodes:
         if n["type"] != "audit":
             continue
         for d in n["dependencies"]:
             dep = idx[d]
-            if dep["type"] != "implementation":
+            if dep["type"] not in AUDITABLE:
                 continue
             if n["agent_prompt_path"] and n["agent_prompt_path"] == dep["agent_prompt_path"]:
                 errs.append(f"{n['id']} audits {d} but shares its agent_prompt_path")

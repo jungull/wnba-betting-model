@@ -538,7 +538,20 @@ def build():
                   "the exact code commit, data hashes, row universe, folds, K0 pairing and seeds "
                   "are recorded in the manifest"],
         writes=[f"{PP}/stage2b/SEALED_RESULTS/"], severity="A", merge="coordinator",
-        forbidden=[], retries=1,
+        # P38 WRITES the sealed directory, so it cannot be forbidden from its own output path.
+        # But an empty forbidden list rendered "Forbidden inputs: _none_" in its generated
+        # prompt -- on the one node where blinding is load-bearing. Found by R16. What the
+        # runner must not consult is the comparative record, so name that explicitly.
+        forbidden=[
+            f"{PP}/stage2b/P40_PRIMARY_ADJUDICATION/",
+            f"{PP}/stage2b/P41_DOWNSTREAM_TURNOVER_CONFIRMATION/",
+            f"{PP}/stage2b/P42_SCIENTIFIC_COMPLETION/",
+            f"{PP}/discovery_wave_1/",
+            f"{PP}/fits_v1/",
+            "any comparative performance figure for any arm, including the incumbent's, "
+            "beyond what the frozen preregistration requires the runner to compute",
+        ],
+        retries=1,
     ))
     N.append(node(
         "P39_RESULT_INTEGRITY", "Verify sealed outputs without interpreting which arm won",

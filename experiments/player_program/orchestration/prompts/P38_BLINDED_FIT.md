@@ -82,7 +82,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 **Write (nothing outside this):** `experiments/player_program/stage2b/SEALED_RESULTS/`
 
-**Forbidden inputs:** _none_
+**Forbidden inputs:** `experiments/player_program/stage2b/P40_PRIMARY_ADJUDICATION/`, `experiments/player_program/stage2b/P41_DOWNSTREAM_TURNOVER_CONFIRMATION/`, `experiments/player_program/stage2b/P42_SCIENTIFIC_COMPLETION/`, `experiments/player_program/discovery_wave_1/`, `experiments/player_program/fits_v1/`, `any comparative performance figure for any arm, including the incumbent's, beyond what the frozen preregistration requires the runner to compute`
 
 **Required outputs:**
 

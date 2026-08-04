@@ -6,19 +6,19 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `cb097b29d9fe399879848bb59cc699147f174f87` |
+| HEAD | `e82ee721f6aef78f3013952af043e2ba60ecd06e` |
 | working tree | DIRTY |
 | nodes | 64 |
-| events | 92 |
+| events | 101 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 22 |
+| BLOCKED | 20 |
 | FAILED | 5 |
-| PASSED | 27 |
-| RUNNING | 7 |
+| PASSED | 34 |
+| READY | 2 |
 | SUPERSEDED | 1 |
 | USER_REQUIRED | 2 |
 
@@ -29,17 +29,12 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 
 ## Running
 
-* `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
-* `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
-* `R12_P27_REPORT_REMEDIATION` — Write the missing P27_FOLD_LOCAL_ESTIMABILITY_GUARD report from its own preserved evidence
-* `R13_I12_REPORT_REMEDIATION` — Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence
-* `R14_D10_COACHING_CORRECTION` — Correct D10's manufactured negative on the coaching family and re-measure its coverage
-* `R15_G02_INDEX_CLASSIFICATION` — Repair the DERIVED vs HAND-MAINTAINED classification in the document index
-* `R16_I11_SEAL_HONESTY` — Make I11's seal claim honest: obfuscation is not blinding
+None.
 
 ## Ready — next automatically scheduled
 
-None.
+* `G03_FROZEN_PATH_GUARD` (governance) — Task-specific tests proving the frozen-path guard fails closed
+* `G04_PROGRAM_ROADMAP_EXTRACTION` (governance) — Convert documented remaining program into graph nodes; unknown work becomes NEEDS_TARGET_CONTRACT
 
 ## Passed
 
@@ -66,6 +61,13 @@ None.
 * `P28_PRIMARY_SECONDARY_ORDERING_CONTRACT` — Possession-first adjudication; prohibit downstream OT-mismatch arbitrage
 * `P29_TIP_TIME_AND_COVERAGE_AUDIT` — Resolve the fold-aligned tip-time null pattern and rule on tip-derived eligibility
 * `P2A_POSSESSION_COLUMN_ADJUDICATION` — S8: adjudicate the 32 possession columns the availability table never named
+* `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
+* `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
+* `R12_P27_REPORT_REMEDIATION` — Write the missing P27_FOLD_LOCAL_ESTIMABILITY_GUARD report from its own preserved evidence
+* `R13_I12_REPORT_REMEDIATION` — Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence
+* `R14_D10_COACHING_CORRECTION` — Correct D10's manufactured negative on the coaching family and re-measure its coverage
+* `R15_G02_INDEX_CLASSIFICATION` — Repair the DERIVED vs HAND-MAINTAINED classification in the document index
+* `R16_I11_SEAL_HONESTY` — Make I11's seal claim honest: obfuscation is not blinding
 * `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
 * `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
 * `U12_PREDICTION_HISTORY` — Immutable prediction-history and model-version views
@@ -78,11 +80,11 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | FAILED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED |
+| lane | BLOCKED | FAILED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
 |---|---|---|---|---|---|---|
-| data | 0 | 1 | 4 | 1 | 0 | 0 |
+| data | 0 | 1 | 5 | 0 | 0 | 0 |
 | future_research | 7 | 0 | 0 | 0 | 0 | 0 |
-| governance | 2 | 0 | 2 | 1 | 1 | 0 |
-| operations | 0 | 2 | 8 | 3 | 0 | 1 |
-| possession | 13 | 2 | 9 | 2 | 0 | 1 |
+| governance | 0 | 0 | 3 | 2 | 1 | 0 |
+| operations | 0 | 2 | 11 | 0 | 0 | 1 |
+| possession | 13 | 2 | 11 | 0 | 0 | 1 |
 | product | 0 | 0 | 4 | 0 | 0 | 0 |
