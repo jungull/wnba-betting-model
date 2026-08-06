@@ -109,6 +109,44 @@ def test_dependency_closure_gates_readiness():
     print("  ok    readiness requires the full dependency closure")
 
 
+def test_supersession_satisfies_even_when_the_successor_sorts_after_the_dependent():
+    """Regression for the P30/R11 defect found live on 2026-08-04.
+
+    Supersession pointers are not dependency edges, so the successor can sit later in the
+    topological order than a node that depends on the superseded one ('P30…' < 'R11…'
+    alphabetically, and no edge forces R11 earlier). A single topological pass consulted the
+    successor's status before it was assigned and left the dependent BLOCKED with an empty
+    blocking list. The fixed-point pass must converge regardless of ordering.
+    """
+    ev = [{"event": "node_passed", "node": "G00_LIVE_RECONCILIATION"},
+          {"event": "node_passed", "node": "G01_GRAPH_ENGINE"},
+          {"event": "node_passed", "node": "P20_INGEST_PENDING_ESTIMATOR"},
+          {"event": "node_passed", "node": "P21_FREEZE_V2_HALT_PACKET"},
+          {"event": "node_passed", "node": "P2B_MARKET_ODDS_ELIGIBILITY"},
+          {"event": "node_passed", "node": "P22_POSTGAME_SURROGATE_GUARD"},
+          {"event": "node_passed", "node": "P23_DIMENSION_CARDINALITY_GUARD"},
+          {"event": "node_passed", "node": "P24_INJURY_REGIME_LEDGER"},
+          {"event": "node_passed", "node": "P26_ARM_SPECIFIC_K0_CONTRACT"},
+          {"event": "node_passed", "node": "P28_PRIMARY_SECONDARY_ORDERING_CONTRACT"},
+          {"event": "node_passed", "node": "P29_TIP_TIME_AND_COVERAGE_AUDIT"},
+          {"event": "node_passed", "node": "P2A_POSSESSION_COLUMN_ADJUDICATION"},
+          {"event": "validation_failed", "node": "P25_OFFSET_DEPENDENCY_GUARD"},
+          {"event": "node_superseded", "node": "P25_OFFSET_DEPENDENCY_GUARD",
+           "superseded_by": "R11_P25_REPORT_REMEDIATION"},
+          {"event": "validation_failed", "node": "P27_FOLD_LOCAL_ESTIMABILITY_GUARD"},
+          {"event": "node_superseded", "node": "P27_FOLD_LOCAL_ESTIMABILITY_GUARD",
+           "superseded_by": "R12_P27_REPORT_REMEDIATION"},
+          {"event": "node_passed", "node": "R11_P25_REPORT_REMEDIATION"},
+          {"event": "node_passed", "node": "R12_P27_REPORT_REMEDIATION"}]
+    st = G.derive_state(GRAPH, ev)
+    check(st["status"]["P30_EVIDENCE_PACKET_V3"] == "READY",
+          "P30 must be READY when every dependency is PASSED or SUPERSEDED-by-a-PASSED "
+          f"successor (got {st['status']['P30_EVIDENCE_PACKET_V3']})")
+    check(st["blocked_on"].get("P30_EVIDENCE_PACKET_V3") is None,
+          "a READY node carries no blocked_on entry")
+    print("  ok    supersession satisfies across the topological-order boundary")
+
+
 def test_superseded_alone_does_not_satisfy_a_dependency():
     ev = [{"event": "node_superseded", "node": "G00_LIVE_RECONCILIATION",
            "superseded_by": "G02_DOCUMENT_INDEX"}]
@@ -310,6 +348,7 @@ def main():
         test_state_is_deterministic,
         test_state_on_disk_matches_the_derivation,
         test_dependency_closure_gates_readiness,
+        test_supersession_satisfies_even_when_the_successor_sorts_after_the_dependent,
         test_superseded_alone_does_not_satisfy_a_dependency,
         test_a_failure_is_never_silently_lost,
         test_retry_resets_status_but_keeps_the_failure_in_the_ledger,

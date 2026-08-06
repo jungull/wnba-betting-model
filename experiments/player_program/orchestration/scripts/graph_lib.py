@@ -262,6 +262,25 @@ def derive_state(graph, events):
         blocking = [d for d in deps if not satisfied(d)]
         status[nid] = "BLOCKED" if blocking else "READY"
 
+    # Supersession pointers are NOT dependency edges, so a successor may sit LATER in the
+    # topological order than a node depending on the superseded one (P30 vs R11: 'P' sorts
+    # before 'R', and nothing forces R11 earlier). A single topological pass then consults the
+    # successor's status before it exists and wrongly leaves the dependent BLOCKED. Iterate to
+    # a fixed point; the result is order-independent and therefore still deterministic.
+    changed = True
+    while changed:
+        changed = False
+        for nid in order:
+            node = idx[nid]
+            if nid in forced or node.get("human_gate"):
+                continue
+            if node.get("status") in ("SUPERSEDED", "HALTED", "USER_REQUIRED"):
+                continue
+            new = "BLOCKED" if [d for d in node["dependencies"] if not satisfied(d)] else "READY"
+            if status[nid] != new:
+                status[nid] = new
+                changed = True
+
     counts = {s: 0 for s in sorted(ALL_STATUSES)}
     for s in status.values():
         counts[s] += 1

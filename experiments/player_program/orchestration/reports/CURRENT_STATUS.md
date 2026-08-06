@@ -6,22 +6,20 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `4374f7c548bbac7589df3cacc0dbeed3d7a8e1e1` |
+| HEAD | `4dacb8e265186768cdcbd3763930d791ab3b1687` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 133 |
+| events | 145 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 13 |
-| FAILED | 3 |
-| PASSED | 41 |
-| READY | 2 |
-| SUPERSEDED | 3 |
+| BLOCKED | 12 |
+| PASSED | 44 |
+| READY | 1 |
+| SUPERSEDED | 6 |
 | USER_REQUIRED | 2 |
-| VERIFYING | 1 |
 
 ## Severity A blockers
 
@@ -29,12 +27,11 @@ None open against a node.
 
 ## Running
 
-* `P2B_MARKET_ODDS_ELIGIBILITY` — Adjudicate the market-odds family: the stated exclusion ground is factually wrong
+None.
 
 ## Ready — next automatically scheduled
 
-* `F15_PROSPECTIVE_VALIDATION` (future_research) — Prospective validation design
-* `F16_PLAYER_PROPS` (future_research) — Player props — last, by design
+* `P30_EVIDENCE_PACKET_V3` (possession) — Build and freeze EVIDENCE_PACKET_V3 with an immutable correction addendum
 
 ## Passed
 
@@ -61,6 +58,7 @@ None open against a node.
 * `P28_PRIMARY_SECONDARY_ORDERING_CONTRACT` — Possession-first adjudication; prohibit downstream OT-mismatch arbitrage
 * `P29_TIP_TIME_AND_COVERAGE_AUDIT` — Resolve the fold-aligned tip-time null pattern and rule on tip-derived eligibility
 * `P2A_POSSESSION_COLUMN_ADJUDICATION` — S8: adjudicate the 32 possession columns the availability table never named
+* `P2B_MARKET_ODDS_ELIGIBILITY` — Adjudicate the market-odds family: the stated exclusion ground is factually wrong
 * `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
 * `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
 * `R12_P27_REPORT_REMEDIATION` — Write the missing P27_FOLD_LOCAL_ESTIMABILITY_GUARD report from its own preserved evidence
@@ -74,6 +72,8 @@ None open against a node.
 * `F12_OFF_DEF_STRENGTH_COMPONENTS` — Offensive and defensive strength components
 * `F13_SCORE_MARGIN_TOTAL_DISTRIBUTIONS` — Score, margin and total distributions
 * `F14_DECISION_TIME_MARKET_COMPARISON` — Decision-time market comparison
+* `F15_PROSPECTIVE_VALIDATION` — Prospective validation design
+* `F16_PLAYER_PROPS` — Player props — last, by design
 * `R16_I11_SEAL_HONESTY` — Make I11's seal claim honest: obfuscation is not blinding
 * `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
 * `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
@@ -87,11 +87,11 @@ None open against a node.
 
 ## By lane
 
-| lane | BLOCKED | FAILED | PASSED | READY | SUPERSEDED | USER_REQUIRED | VERIFYING |
-|---|---|---|---|---|---|---|---|
-| data | 0 | 1 | 5 | 0 | 0 | 0 | 0 |
-| future_research | 0 | 0 | 5 | 2 | 0 | 0 | 0 |
-| governance | 0 | 0 | 5 | 0 | 1 | 0 | 0 |
-| operations | 0 | 2 | 11 | 0 | 0 | 1 | 0 |
-| possession | 13 | 0 | 11 | 0 | 2 | 1 | 1 |
-| product | 0 | 0 | 4 | 0 | 0 | 0 | 0 |
+| lane | BLOCKED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 1 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 1 | 0 |
+| operations | 0 | 11 | 0 | 2 | 1 |
+| possession | 12 | 12 | 1 | 2 | 1 |
+| product | 0 | 4 | 0 | 0 | 0 |

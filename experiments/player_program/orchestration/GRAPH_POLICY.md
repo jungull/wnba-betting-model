@@ -197,6 +197,14 @@ The program branch `player-model-program` is pushed to `origin` after each integ
 owned by this graph, never rewrite published history. A push is a backup of committed work, not a
 deployment.
 
+**Pushes require a quiescent tree** (`D018`). The repository's pre-push hook runs `verify_all`
+(~10 min, 35 checks), and `test_run_player_oof_v14` check 10 asserts the dirty-path count is
+stable across its own runtime — a deliberate refusal to certify a tree that changed while being
+measured. A push attempted while agents are writing fails that check *by design*. Therefore: a
+push happens only after the running wave has completed, its outputs are committed, and no agent
+holds a write scope in the worktree. Never bypass the hook (`--no-verify` is prohibited); if the
+gate fails, the tree was not quiescent or something real broke — investigate, never override.
+
 ## 11. Severity and blocking
 
 A blocker in one lane blocks **descendants in that lane**, not independent work elsewhere. Severity
