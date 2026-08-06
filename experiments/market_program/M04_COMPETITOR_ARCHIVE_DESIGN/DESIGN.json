@@ -1,0 +1,134 @@
+{
+  "node": "M04_COMPETITOR_ARCHIVE_DESIGN",
+  "lane": "market_intelligence",
+  "epistemic_status": "DESIGN ARTIFACT on the D023 amendment-3 immediate critical path. Specifies how competitor projections are archived so they are point-in-time provable. Design only where licensing is unresolved: the scraping/licensing stance for each source is a user call, surfaced explicitly and never assumed. The design draft was already in flight when this node was created; it lands under this node's directory.",
+  "reconciliation_source": {
+    "draft_path": "experiments/market_program/W1_DRAFTS/COMPETITOR_ARCHIVE_DESIGN.md",
+    "note": "Reconciled in place, not duplicated. The full design text lives in the draft; this file records the delta applied by M00 subordination and the resulting authoritative state."
+  },
+  "contract_verification": {
+    "MARKET_PROGRAM_CONTRACT.md_sha256_measured": "1152dcd3bf74000f700844bc8bfc0df25de61a067f59534a714ac4f2f20265de",
+    "TAXONOMY.json_sha256_measured": "c83e25e783a4ee8642a26dd416362e46c2c34196ff8f8354977c28b72940a12c",
+    "both_match_task_supplied_hashes": true
+  },
+  "m00_subordination_rulings_applied": [
+    {
+      "target": "draft Section 4, item 1 (Outcome labeling / CLV-style labels)",
+      "disposition": "OVERRULED_IN_PART",
+      "authority": "MARKET_PROGRAM_CONTRACT.md section 5.1 item 1; TAXONOMY.json final_state_archive_ruling.subordination_rulings[0]",
+      "resulting_rule": "No CLV-style quantity may be derived from the T2 final-state odds archive, without exception (C.2). Realized-outcome labels for scoring competitor-projection accuracy come from game results directly and require no archive at all."
+    },
+    {
+      "target": "draft Section 4, item 2 (cross-sectional final-vs-final benchmarking)",
+      "disposition": "RESTRICTED_NOT_ENUMERATED",
+      "authority": "MARKET_PROGRAM_CONTRACT.md section 5.1 item 2; TAXONOMY.json final_state_archive_ruling.subordination_rulings[1]",
+      "resulting_rule": "Using the T2 final-state odds archive as a benchmark comparator for competitor projections is prohibited until the M00 contract is amended to add a use class (M00-U4 is descriptive/sanity-check only, never a feature or benchmark). Market-implied comparators in this design draw exclusively from the new T0 high-frequency capture pipeline, consistent with the draft's own pre-existing section 5.1 requirement."
+    },
+    {
+      "target": "draft Section 4, item 3 (coverage / sanity checks)",
+      "disposition": "PERMITTED_MAPS_TO_M00-U1",
+      "authority": "MARKET_PROGRAM_CONTRACT.md section 5.1 item 3; TAXONOMY.json final_state_archive_ruling.subordination_rulings[2]",
+      "caveat_text_verbatim": "Coverage figures derive from a retrospective single-snapshot harvest (T2). They describe what the vendor could return in July 2026 about past games, not what was observable at any pregame instant. Presence in this census is not evidence a price was available, firm, or executable at any particular time.",
+      "caveat_sha256": "1055871c6d535521e86a51e4d5b735b013d88030505ae7e3b0eaca71f4cc80d6",
+      "use_class": "M00-U1"
+    }
+  ],
+  "final_state_archive_permitted_uses_in_this_design": [
+    "M00-U1 (coverage / sanity checks) only, with the U1 caveat verbatim, per the mapping above."
+  ],
+  "final_state_archive_prohibited_uses_in_this_design": [
+    "Any CLV-style or closing-line-value quantity derived from the T2 archive.",
+    "Using the T2 archive as a benchmark comparator (final projection vs final market number) for competitor-projection accuracy; this use is not currently enumerated by M00 and would require a contract amendment.",
+    "Any use of odds_snapshot_timestamp as witnessed.",
+    "Any timing, latency, lead-lag, reaction, or sequencing claim built from the T2 archive."
+  ],
+  "amendment_4_compliance": {
+    "rule": "Every future reaction-time claim carries explicit timestamp-uncertainty and vendor-latency terms; a claim that cannot carry both is reported UNSUPPORTABLE.",
+    "schema_fields_required_by_taxonomy": [
+      "capture_rung", "ladder_run_id", "scheduled_tipoff_ts", "provider_update_ts",
+      "provider_update_ts_confidence", "capture_ts", "capture_latency_notes",
+      "no_change_since_prior_rung", "schedule_shift_flag", "payload_hash", "raw_payload",
+      "access_mode", "license_basis"
+    ],
+    "verification": "All required fields are present as a strict subset of the draft's Section 3 schema (which additionally carries record_id, provider, player_id, provider_player_id, game_id, starter_status, projected_minutes, projection_fields, prev_value, change_magnitude, linked_information_event). No gap found.",
+    "comparison_rule_carried_forward": "Benchmarks compare only rows sharing capture_rung AND ladder_run_id; rungs are never mixed or averaged across.",
+    "propagation_rule_carried_forward": "Every benchmark output must propagate contributing provider_update_ts_confidence values, non-empty capture_latency_notes, and license_basis values; dropping them makes the result non-compliant and unpresentable as a claim."
+  },
+  "capture_ladder_summary": {
+    "rungs": ["R1 T-24h", "R2 T-8h", "R3 T-2h", "R4 T-30m", "R5 final-pre-tip", "R6 post-material-news (event-triggered)"],
+    "cutoff_discipline": "Fixed-cutoff: value visible at the cutoff is archived; later revisions arrive as new records via new capture_ts / record_id, never as edits to an existing row.",
+    "comparison_discipline": "Two projections are 'simultaneous' only if they share capture_rung AND target game AND ladder_run_id."
+  },
+  "storage_retention_identity_conventions_reused": {
+    "append_only": "Reuses the existing capture layer's append-only convention (props_capture_daily.py / injury_capture_daily.py pattern documented in CAPTURE_UPGRADE_DESIGN.md): corrections/revisions are new rows, never UPDATEs.",
+    "player_id_index": "Reuses the existing canonical player_id resolution convention (established via migrate_o14_capture_player_id.py) rather than matching provider name-strings directly; provider_player_id retained alongside for audit/re-resolution.",
+    "no_new_conventions_invented": true
+  },
+  "source_survey": [
+    {
+      "provider": "RotoWire",
+      "licensing_flag": "RED",
+      "flag_basis": "Explicit anti-scraping/anti-crawling clause in rotowire.com/termsandconditions.php prohibiting automated crawling/spidering and unreasonable infrastructure load.",
+      "access_mode": "web page (no public API surfaced in survey; commercial data/API products exist for other sports, unconfirmed for WNBA)",
+      "user_decision_required": "Do not archive via automated capture, OR pursue a licensed commercial data feed, OR obtain explicit written permission. None of these has occurred."
+    },
+    {
+      "provider": "RotoGrinders",
+      "licensing_flag": "YELLOW",
+      "flag_basis": "ToS not directly retrieved in survey; premium/paywalled tier implies a commercial access path is intended rather than open scraping.",
+      "access_mode": "web page; premium/paywalled tier for full content",
+      "user_decision_required": "Pull actual ToS/terms-of-use before finalizing capture design; determine whether premium-subscription terms (often stricter on redistribution/archiving) separately govern automated re-use."
+    },
+    {
+      "provider": "Stokastic",
+      "licensing_flag": "YELLOW",
+      "flag_basis": "No explicit anti-scraping clause surfaced, but IP-ownership / no-license-conferred language present in stokastic.com/terms-of-service; full ToS not read, only search-summarized.",
+      "access_mode": "web page/app; no public API surfaced",
+      "user_decision_required": "Read the full Stokastic ToS before any capture design is finalized."
+    },
+    {
+      "provider": "Dimers",
+      "licensing_flag": "UNKNOWN",
+      "flag_basis": "ToS not located in this survey pass (search-quality miss, not evidence of no ToS).",
+      "access_mode": "web page; commercial data licensing sometimes offered in broader betting-analytics space, unconfirmed for WNBA specifically",
+      "user_decision_required": "Locate and read Dimers' actual terms of service before any capture design proceeds."
+    },
+    {
+      "provider": "FantasyCruncher",
+      "licensing_flag": "UNKNOWN",
+      "flag_basis": "ToS not retrieved in this pass.",
+      "access_mode": "web page/app; no public API surfaced",
+      "user_decision_required": "Review terms before treating as archivable; confirm affiliation status with LineStar."
+    },
+    {
+      "provider": "LineStar",
+      "licensing_flag": "UNKNOWN",
+      "flag_basis": "ToS not retrieved in this pass.",
+      "access_mode": "web page/app; no public API surfaced",
+      "user_decision_required": "Review terms before treating as archivable; confirm affiliation status with FantasyCruncher."
+    }
+  ],
+  "schema_field_list_full": [
+    "record_id", "provider", "player_id", "provider_player_id", "game_id", "capture_rung",
+    "ladder_run_id", "scheduled_tipoff_ts", "provider_update_ts", "provider_update_ts_confidence",
+    "capture_ts", "capture_latency_notes", "no_change_since_prior_rung", "schedule_shift_flag",
+    "starter_status", "projected_minutes", "projection_fields", "prev_value", "change_magnitude",
+    "linked_information_event", "payload_hash", "raw_payload", "access_mode", "license_basis"
+  ],
+  "training_use_default_posture": "Benchmark-only, until rights are established, for every source. Vendor projection values may not be used as a model feature, for calibration/fine-tuning, or redistributed until license_basis resolves to something other than unresolved/unlicensed AND that resolution is an affirmative human decision, not silence.",
+  "stop_conditions_evaluated": {
+    "money_wagers_credentials_scraping_risk_sealed_results": "NOT_TRIGGERED - no capture, spend, or SEALED_RESULTS access performed by this node.",
+    "reaction_time_claim_missing_amendment_4_terms": "NOT_TRIGGERED - no new numeric reaction-time claims made; only a structural schema-field verification.",
+    "final_state_archive_use_outside_bounded_enumeration": "ADDRESSED_BY_RESTRICTION - draft section 4 item 2 would have tripped this; corrected to match the M00 bounded-uses enumeration rather than stretched. See m00_subordination_rulings_applied."
+  },
+  "user_required_decisions": [
+    "Per-source legal clearance for RotoWire (RED), RotoGrinders (YELLOW), Stokastic (YELLOW), Dimers (UNKNOWN), FantasyCruncher (UNKNOWN), LineStar (UNKNOWN) before any capture implementation begins.",
+    "Whether any source offers a licensed commercial data feed as an alternative to page capture (possible but unconfirmed for RotoWire and Dimers specifically).",
+    "Whether 'personal research use' is a real carve-out for any source, or an assumption that must not be made without vendor confirmation or full-ToS human review.",
+    "Whether any source's terms restrict storage/archiving independent of capture method - would affect even the benchmark-only use case, not just training-data use.",
+    "Trimmed-mean trim percentage default for the consensus benchmark, pending real provider-count discovery.",
+    "Rung-strict vs. rung-lenient staleness policy default for missing/stale providers - left as a required explicit run parameter.",
+    "Whether/when to seek a contract amendment to enumerate a benchmark use class for the final-state odds archive against competitor projections (currently prohibited per M00 section 5.1 item 2 - new item surfaced by this node, since the draft predates the ruling that restricts it)."
+  ],
+  "not_decided_by_this_document": true
+}

@@ -1,0 +1,259 @@
+{
+  "node": "M01_MARKET_DATA_INVENTORY",
+  "lane": "market_intelligence",
+  "epistemic_status": "VERIFIED_READ_ONLY_DERIVATION. An inventory of what market evidence exists and what epistemic class each source belongs to. Availability is not eligibility and eligibility is not admission; classification admits nothing.",
+  "contract_hash_verification": {
+    "MARKET_PROGRAM_CONTRACT.md_sha256_measured": "1152dcd3bf74000f700844bc8bfc0df25de61a067f59534a714ac4f2f20265de",
+    "MARKET_PROGRAM_CONTRACT.md_sha256_task_supplied": "1152dcd3bf74000f700844bc8bfc0df25de61a067f59534a714ac4f2f20265de",
+    "TAXONOMY.json_sha256_measured": "c83e25e783a4ee8642a26dd416362e46c2c34196ff8f8354977c28b72940a12c",
+    "TAXONOMY.json_sha256_task_supplied": "c83e25e783a4ee8642a26dd416362e46c2c34196ff8f8354977c28b72940a12c",
+    "both_match": true,
+    "method": "certutil -hashfile <path> SHA256 against the working-tree bytes at experiments/market_program/M00_MARKET_PROGRAM_CONTRACT/"
+  },
+  "read_only_scope_note": "This worktree (player-model-program) does not contain data/drive_masters/, data/odds_capture/, or migrate_forecast_log_schema2.py at all -- they exist only in the live main worktree (C:/Users/jgallagher/wnba-betting-model). Every data-file byte cited below for those paths was read from the live main worktree under the headers/samples-only constraint stated in the orchestration instructions, not from this node's own write-scope worktree. This worktree also holds a stale/smaller forecasts/forecast_log.jsonl (8 rows) versus the main worktree's 40 rows -- both are cited below where relevant.",
+  "sources": [
+    {
+      "id": "S1_odds_live_capture",
+      "class": "repo-internal owned capture job",
+      "path": "data/odds_capture/live_*.json + data/odds_capture/capture_log.csv",
+      "producing_script": "odds_capture_daily.py",
+      "tier": "T0_WITNESSED",
+      "tier_basis": "Filename/log timestamp is datetime.now(timezone.utc) at the moment odds_capture_daily.py made the live GET request (verified by reading the script); our own process wrote the row at observation.",
+      "measured": {
+        "live_json_file_count": 93,
+        "capture_log_row_count": 27071,
+        "distinct_snapshot_utc_count_first5": ["20260730T150132Z", "20260730T160001Z", "20260730T170002Z", "20260730T180007Z", "20260730T190002Z"],
+        "distinct_snapshot_utc_count_last5": ["20260806T020003Z", "20260806T030003Z", "20260806T140012Z", "20260806T150006Z", "20260806T160003Z"],
+        "earliest_witnessed_snapshot_utc": "2026-07-30T15:01:32Z",
+        "latest_witnessed_snapshot_utc": "2026-08-06T16:00:03Z",
+        "measured_by": "Get-ChildItem + Import-Csv on data/odds_capture/*.json and capture_log.csv in the live main worktree; snapshot_utc column read directly, not inferred from file mtime"
+      },
+      "note": "Cadence approx hourly during active windows (script comment says twice-daily scheduled task, but observed capture_log rows show much higher frequency -- hourly-ish gaps in the sampled snapshot_utc sequence -- so the docstring's 'noon + 6:30pm' description undercounts observed cadence; flagged as a doc/byte mismatch, not resolved further here since cadence characterization belongs to M03_CAPTURE_UPGRADE)."
+    },
+    {
+      "id": "S2_props_live_capture",
+      "class": "repo-internal owned capture job",
+      "path": "data/props_capture/master_props.csv (+ data/props_capture/raw/*.json, 95 files)",
+      "producing_script": "props_capture_daily.py",
+      "tier": "T0_WITNESSED",
+      "tier_basis": "snapshot_utc column recorded by our own process at retrieval time (same pattern as odds_capture_daily.py).",
+      "measured": {
+        "row_count": 10934,
+        "distinct_bookmakers": 5,
+        "distinct_markets": ["player_assists", "player_points", "player_rebounds", "player_threes"],
+        "distinct_games_api_event_id": 23,
+        "earliest_snapshot_utc": "2026-07-31T14:23:41Z",
+        "latest_snapshot_utc": "2026-08-06T14:05:07Z",
+        "measured_by": "Import-Csv data/props_capture/master_props.csv, group/unique on bookmaker_key/market_key/api_event_id/snapshot_utc"
+      },
+      "note": "MARKET_PROGRAM_RESPONSE_2026-08-06.md section 2 states 2,471 rows; bytes now show 10,934. Not a contradiction -- the log is append-only and has grown between when that document's figure was written and this measurement (both this worktree's forecast log and props_capture/master_props.csv postdate the document in places). Flagged under 'verified with growth', not under 'contradiction'."
+    },
+    {
+      "id": "S3_props_historical_backfill",
+      "class": "repo-internal owned capture job, but sourced from a THIRD-PARTY historical endpoint retrieved after the fact",
+      "path": "data/props_capture/historical/master_props_historical.csv (+ backfill_done.csv, + raw/*.json)",
+      "producing_script": "historical_props_backfill.py",
+      "tier": "T1_THIRD_PARTY_CONTEMPORANEOUS",
+      "tier_basis": "TAXONOMY.json point_in_time_integrity.timestamp_tiers.T1: 'vendor-recorded, retrieved later, unwitnessed... Amendment-1 Odds API historical rows enter as T1 at best.' This is exactly that: pulled from The Odds API's /v4/historical/ endpoint (per the script's own docstring and the snapshot_requested_utc/snapshot_returned_utc column pair, which distinguishes our request time from the vendor's returned snapshot time) in a batch run recorded 2026-07-31, for games as far back as 2024-05-14. It was never witnessed by our process at the time the odds were live.",
+      "measured": {
+        "row_count": 36946,
+        "distinct_bookmakers": 9,
+        "distinct_markets": ["player_points"],
+        "distinct_games_backfilled": 784,
+        "backfill_done_status_distribution": {"ok": 784},
+        "season_distribution": {"2024": 262, "2025": 310, "2026": 212},
+        "earliest_game_date": "2024-05-14",
+        "latest_game_date": "2026-07-30",
+        "measured_by": "Import-Csv on master_props_historical.csv and backfill_done.csv in the live main worktree"
+      },
+      "m00_ruling_status": "NOT COVERED by the M00 final-state-archive ruling. TAXONOMY.json final_state_archive_ruling.object names exactly 'data/drive_masters/master_odds.csv ... plus, where noted, the two extension files' as the ruled-on object. This props-historical file is a different object, never examined by D016/P2B or ratified in section 5. Per this node's mandate ('a use of the final-state odds archive falls outside the bounded-uses enumeration -> HALT and raise') this node does NOT use this data for anything beyond inventory, and does not self-adjudicate a use class for it. Flagged as a gap: this object needs its own point-in-time ruling before any market-lane node cites it for anything beyond existence.",
+      "note": "This is the strongest concrete evidence found for D023 amendment (1) ('verify Odds API historical coverage before concluding no historical tape exists'): a real, executed pull against the historical endpoint returned usable player_points prop data back to 2024-05-14. This matters because W1_DRAFTS/ODDS_API_VERIFICATION.md (the amendment-1 verification document this node's mandate names) still describes itself as 'documentation-hypothesis until confirmed with a free/trial key' and lists confirming the historical floor as an open §6 action item -- but bytes elsewhere in the repository (this backfill) show the historical endpoint WAS exercised and DID return real data, for a different market (player_points props, not spreads/h2h) and a shorter-but-real floor (2024-05-14, not the full 2022 range). This is a contradiction between what ODDS_API_VERIFICATION.md claims is still unverified and what the bytes elsewhere in the repo already demonstrate. See contradictions[] below."
+    },
+    {
+      "id": "S4_injury_capture",
+      "class": "repo-internal owned capture job",
+      "path": "data/injury_capture/injury_log.csv",
+      "producing_script": "injury_capture_daily.py",
+      "tier": "T0_WITNESSED",
+      "measured": {
+        "row_count": 1409,
+        "distinct_capture_utc_timestamps": 96,
+        "earliest_capture_utc": "2026-07-30T15:49:50Z",
+        "measured_by": "Get-Content head + Import-Csv on data/injury_capture/injury_log.csv"
+      }
+    },
+    {
+      "id": "S5_news_capture",
+      "class": "repo-internal owned capture job",
+      "path": "data/news_capture/news_items.csv",
+      "producing_script": "news_capture_daily.py",
+      "tier": "T0_WITNESSED (capture_utc) / T1 for the published_utc field (vendor/publisher-asserted, not our witness time)",
+      "measured": {
+        "row_count": 5231,
+        "distinct_sources": 26,
+        "sources_list": ["espn_rss", "espn_api", "ap_wnba", "theix_wnba", "winsidr", "herhoopstats", "wnba_official", "cbs_wnba", "yahoo_wnba", "swishappeal", "gnews_dream", "gnews_sky", "gnews_sun", "gnews_wings", "gnews_valkyries", "gnews_fever", "gnews_aces", "gnews_sparks", "gnews_lynx", "gnews_liberty", "gnews_mercury", "gnews_fire", "gnews_storm", "gnews_tempo", "gnews_mystics", "gnews_league"],
+        "earliest_capture_utc": "2026-07-30T16:25:50Z",
+        "measured_by": "Import-Csv on data/news_capture/news_items.csv"
+      }
+    },
+    {
+      "id": "S6_referee_capture",
+      "class": "repo-internal owned capture job",
+      "path": "data/ref_assignments/assignments_log.csv",
+      "producing_script": "ref_assignments_capture_daily.py",
+      "tier": "T0_WITNESSED",
+      "measured": {
+        "row_count": 145,
+        "distinct_games": 24,
+        "earliest_capture_utc": "2026-07-30T17:08:06Z",
+        "measured_by": "Import-Csv on data/ref_assignments/assignments_log.csv"
+      }
+    },
+    {
+      "id": "S7_master_odds_final_state_archive",
+      "class": "repo-internal final-state archive (the T2 object ruled on by M00)",
+      "path": "data/drive_masters/master_odds.csv",
+      "tier": "T2_RETROSPECTIVE_HARVEST",
+      "tier_basis": "Per D016/P2B, ratified in MARKET_PROGRAM_CONTRACT.md section 5 and TAXONOMY.json final_state_archive_ruling. This node does NOT relitigate that adjudication (contract standing rule: 'No market-lane node may reopen, re-examine, or relitigate this adjudication'). Row/game counts below are cited as verification of the contract's own stated figures, not as a re-derivation of the timing ruling.",
+      "measured": {
+        "row_count": 20004,
+        "distinct_bookmakers": 22,
+        "distinct_game_id_raw_group_count": 814,
+        "distinct_game_id_reconciliation": "814 raw group-by keys = 813 valid games + 1 group of 94 rows sharing a blank/null game_id. 813 matches the contract's stated game count exactly once the blank-id group is excluded. VERIFIED, not contradicted.",
+        "season_distribution": {"2022": 4470, "2023": 7652, "2024": 5634, "2025": 2248},
+        "measured_by": "Import-Csv on data/drive_masters/master_odds.csv in the live main worktree; Group-Object on game_id and season"
+      },
+      "m00_use_class_this_node_applies": ["M00-U1", "M00-U3"],
+      "m00_caveat_citations": [
+        {
+          "use_class": "M00-U1",
+          "name": "Book / market / season coverage census",
+          "caveat_text_verbatim": "Coverage figures derive from a retrospective single-snapshot harvest (T2). They describe what the vendor could return in July 2026 about past games, not what was observable at any pregame instant. Presence in this census is not evidence a price was available, firm, or executable at any particular time.",
+          "caveat_sha256": "1055871c6d535521e86a51e4d5b735b013d88030505ae7e3b0eaca71f4cc80d6"
+        },
+        {
+          "use_class": "M00-U3",
+          "name": "Settlement-rule and identifier inventory",
+          "caveat_text_verbatim": "Identifier and settlement conventions are as of the 2026-07-30 harvest and may not reflect conventions in force during the seasons the rows describe.",
+          "caveat_sha256": "1c32a35a4c9c33d7a2534120245af9190eb739da29f1c0c9e3ef520118d1c870"
+        }
+      ],
+      "prohibited_uses_not_touched": "No timing, CLV, closing-line, stale-window, executability, or benchmark use of this archive is made anywhere in this report or this inventory."
+    },
+    {
+      "id": "S8_master_odds_extension_files",
+      "class": "repo-internal final-state archive extension (part of the same M00-ruled object, per contract text 'where noted')",
+      "path": "data/odds_capture/master_odds_extension.csv + data/odds_capture/master_odds_extension_other_markets.csv",
+      "producing_script": "odds_backfill_2025_26.py (via the Odds API /v4/historical endpoint, two fixed-clock snapshots per game date: 15:00Z and 22:00Z)",
+      "tier": "T2_RETROSPECTIVE_HARVEST (per contract: named explicitly as part of the archive object ruled on in section 5 / final_state_archive_ruling.object)",
+      "measured": {
+        "master_odds_extension_row_count": 27735,
+        "master_odds_extension_other_markets_row_count": 53179,
+        "file_mtimes_utc": ["2026-07-30T12:24:56 local", "2026-07-30T12:24:57 local"],
+        "measured_by": "Get-Content head + wc-equivalent line count on both files in the live main worktree"
+      },
+      "note": "Structurally more disciplined than S7 (two fixed-clock historical-endpoint pulls per date rather than one uncontrolled snapshot), but the M00 contract's own text folds these files into the SAME ruled object and the same T2/CUTOFF_UNPROVEN status ('where noted', extension_file_rule). This node defers to the contract's classification rather than re-deriving a different tier from the extension files' own evidentiary signature, per the no-relitigation standing rule.",
+      "m00_use_class_this_node_applies": ["M00-U1"],
+      "m00_caveat_citations": [
+        {
+          "use_class": "M00-U1",
+          "caveat_text_verbatim": "Coverage figures derive from a retrospective single-snapshot harvest (T2). They describe what the vendor could return in July 2026 about past games, not what was observable at any pregame instant. Presence in this census is not evidence a price was available, firm, or executable at any particular time.",
+          "caveat_sha256": "1055871c6d535521e86a51e4d5b735b013d88030505ae7e3b0eaca71f4cc80d6"
+        }
+      ]
+    },
+    {
+      "id": "S9_odds_api_historical_verification_doc",
+      "class": "external-documented, W1 draft",
+      "path": "experiments/market_program/W1_DRAFTS/ODDS_API_VERIFICATION.md",
+      "tier": "N/A -- this is a documentation artifact, not a data table. Any Odds API historical data it describes enters at T1 at best (per TAXONOMY.json), never T0, and only once independently confirmed live.",
+      "status_as_written": "Self-described as 'Web-sourced verification complete... NO purchase made, NO key pulled against live endpoints yet... documentation-hypothesis until confirmed with a free/trial key.' Lists 7 unrun verification queries in its own section 6.",
+      "contradiction_flag": "S3 (master_props_historical.csv) shows the historical endpoint WAS in fact exercised with a live key and DID return real data back to 2024-05-14 for player_points props -- this happened in the same repository, evidenced by bytes dated 2026-07-31, i.e. contemporaneous with or before this document's stated verification state. Whether ODDS_API_VERIFICATION.md's author knew about S3's backfill is not established from the bytes; the document itself does not reference the props backfill. This is reported as an unreconciled contradiction between a document's self-described verification status and other bytes in the same repository, not resolved by this node."
+    },
+    {
+      "id": "S10_vendor_groundwork_wnba_odds_system",
+      "class": "repo-internal vendor groundwork directory",
+      "path": "wnba_odds_system/",
+      "tier": "N/A -- no data files, code/docs/config only",
+      "measured": {
+        "subdirs": ["docs", "examples", "logs", "scripts"],
+        "measured_by": "Get-ChildItem -Directory"
+      },
+      "note": "Matches MARKET_PROGRAM_RESPONSE_2026-08-06.md's characterization: 'a prior Odds-API integration, scraping strategies, and research docs.' Verified: contains WNBA_Odds_Research_Report, Scraping_Strategy, Setup_Guide docs and no odds data tables of its own beyond a small logs/ dir (mirrors data/odds_capture/ logs, not a separate data source)."
+    },
+    {
+      "id": "S11_vendor_groundwork_wnba_odds_aggregator",
+      "class": "repo-internal vendor groundwork directory",
+      "path": "wnba-odds-aggregator/",
+      "tier": "N/A -- no data files, code/docs/config only",
+      "measured": {
+        "subdirs": ["config", "docker", "docs", "scripts", "src", "systemd", "tests"],
+        "measured_by": "Get-ChildItem -Directory"
+      },
+      "note": "Contains a scraper/API client (src/api/odds_api_*, src/scrapers/odds*) and systemd unit files for a prior self-hosted aggregation service. No live data output found under this directory itself; classified as vendor groundwork / prior-art code, not a data source."
+    },
+    {
+      "id": "S12_forecast_log",
+      "class": "repo-internal forecast/alternative-model log",
+      "path": "forecasts/forecast_log.jsonl",
+      "tier": "N/A (not a market-quote table) -- market_source field WITHIN each record cites a specific live odds snapshot file, e.g. 'live_20260731T030001Z.json@2026-07-31T03:00:01+00:00', i.e. it draws on S1 (T0) at forecast time, not on the T2 archive.",
+      "measured": {
+        "row_count_this_worktree": 8,
+        "row_count_live_main_worktree": 40,
+        "schema_values_found": ["evalharness/forecast_log/1"],
+        "measured_by": "Get-Content + ConvertFrom-Json on forecasts/forecast_log.jsonl in both this worktree and the live main worktree"
+      },
+      "contradiction_flag": "MARKET_PROGRAM_RESPONSE_2026-08-06.md section 2 states 'the forecast log was upgraded TODAY to a versioned SCHEMA/2 with a both-versions reader.' Every row measured in both worktrees carries schema 'evalharness/forecast_log/1' -- zero rows of schema/2 were found anywhere this node could read. migrate_forecast_log_schema2.py exists as a file in the live main worktree (not in this node's own worktree) but produced no schema/2 rows in the log this node could inspect. This claim is UNVERIFIED against the bytes available to this node; it is reported as a contradiction, not silently accepted."
+    }
+  ],
+  "coverage_matrix": [
+    {"source": "S1_odds_live_capture", "seasons_covered": "2026 (live, ongoing)", "markets": "h2h, spreads, totals", "distinct_books": "not separately counted (row-per-outcome log; book field present but not aggregated in this pass)", "cadence": "irregular, roughly hourly during observed windows (see S1 note on cadence-vs-docstring mismatch)", "tier": "T0"},
+    {"source": "S2_props_live_capture", "seasons_covered": "2026 (live, ongoing)", "markets": "player_assists, player_points, player_rebounds, player_threes", "distinct_books": 5, "cadence": "not formally measured this pass; snapshot_utc values observed spanning 2026-07-31 to 2026-08-06", "tier": "T0"},
+    {"source": "S3_props_historical_backfill", "seasons_covered": "2024, 2025, 2026", "markets": "player_points only", "distinct_books": 9, "cadence": "one near-tip snapshot per game (target T-65m), single retrospective batch run", "tier": "T1"},
+    {"source": "S4_injury_capture", "seasons_covered": "2026 (live, ongoing)", "markets": "N/A (injury status, not a price)", "distinct_books": "N/A", "cadence": "96 distinct capture timestamps observed", "tier": "T0"},
+    {"source": "S5_news_capture", "seasons_covered": "2026 (live, ongoing)", "markets": "N/A", "distinct_books": "N/A (26 news sources)", "cadence": "not formally measured this pass", "tier": "T0 capture_utc / T1 published_utc"},
+    {"source": "S6_referee_capture", "seasons_covered": "2026 (live, ongoing)", "markets": "N/A", "distinct_books": "N/A", "cadence": "not formally measured this pass", "tier": "T0"},
+    {"source": "S7_master_odds_final_state_archive", "seasons_covered": "2022, 2023, 2024, 2025 (through 2025-07-03 per contract)", "markets": "spreads (primary; totals absent pre-2025 per contract §M00-U4)", "distinct_books": 22, "cadence": "exactly one snapshot per game (D016/P2B, not re-derived here)", "tier": "T2"},
+    {"source": "S8_master_odds_extension_files", "seasons_covered": "2025, 2026", "markets": "h2h + other markets file covers additional market keys (not separately enumerated this pass)", "distinct_books": "not separately counted this pass", "cadence": "two fixed-clock snapshots per game date (15:00Z, 22:00Z)", "tier": "T2 (per contract classification)"}
+  ],
+  "earliest_valid_point_in_time_tape_date_ruling": {
+    "claim_under_test": "MARKET_PROGRAM_RESPONSE_2026-08-06.md section 1: 'Genuine point-in-time capture exists only from 2026-07-31 onward -- our own daily jobs.' Section 2: 'Point-in-time capture, live since 2026-07-31 (D11_LIVE_INFORMATION_CAPTURE, PASSED).'",
+    "ruling": "FALSIFIED AS STATED, for three of the four owned capture streams examined. Bytes show first-seen (witnessed, T0) timestamps as follows: odds capture (S1) 2026-07-30T15:01:32Z; injury capture (S4) 2026-07-30T15:49:50Z; news capture (S5) 2026-07-30T16:25:50Z; referee capture (S6) 2026-07-30T17:08:06Z. Only props capture (S2) actually starts 2026-07-31T14:23:41Z, one day later than the other four streams. The earliest valid point-in-time tape date across all owned T0 capture streams is therefore 2026-07-30, not 2026-07-31.",
+    "method": "Read the producing script for each stream to confirm the timestamp field is our own retrieval-time write (T0 semantics), then took min(first-seen timestamp) per stream via Import-Csv / directory listing against the live main worktree's data/ files.",
+    "caveat": "This ruling is about the EARLIEST WITNESSED CAPTURE date across the owned T0 streams, not about the earliest date any market-relevant table in the repository references. The T2 final-state archive (S7/S8) covers dates back to 2022-05-21 and the T1 props-historical backfill (S3) covers dates back to 2024-05-14, but neither is a witnessed point-in-time record -- both are excluded from this ruling by definition (TAXONOMY.json point_in_time_integrity rule 1: 'requires a capture record whose first-seen (witnessed) timestamp is at or before T, of tier T0 (or T1 under tier rules)'; the ruling here is specifically about T0 witness, the strongest tier)."
+  },
+  "contradictions_found": [
+    {
+      "id": "C1",
+      "claim": "MARKET_PROGRAM_RESPONSE_2026-08-06.md: point-in-time capture 'live since 2026-07-31'",
+      "bytes_show": "odds/injury/news/referee capture streams all have witnessed first-seen timestamps on 2026-07-30, one day earlier than claimed",
+      "severity": "material -- this is exactly the earliest-valid-tape-date question this node was asked to rule on formally",
+      "resolution": "Reported, not resolved by this node. See earliest_valid_point_in_time_tape_date_ruling above."
+    },
+    {
+      "id": "C2",
+      "claim": "MARKET_PROGRAM_RESPONSE_2026-08-06.md: 'the forecast log was upgraded TODAY to a versioned SCHEMA/2 with a both-versions reader'",
+      "bytes_show": "every row in forecasts/forecast_log.jsonl, in both this worktree (8 rows) and the live main worktree (40 rows), carries schema 'evalharness/forecast_log/1'; no schema/2 rows found",
+      "severity": "moderate -- affects claims about model-snapshot readiness for S-FUND interface, not about market data directly",
+      "resolution": "Reported as UNVERIFIED against available bytes, not resolved."
+    },
+    {
+      "id": "C3",
+      "claim": "W1_DRAFTS/ODDS_API_VERIFICATION.md self-describes as unconfirmed against a live key ('NO key pulled against live endpoints yet... documentation-hypothesis until confirmed')",
+      "bytes_show": "data/props_capture/historical/master_props_historical.csv and backfill_done.csv (784 games, 'ok' status, dated 2026-07-31) demonstrate the historical endpoint WAS pulled live and DID return real player_points data back to 2024-05-14",
+      "severity": "material -- directly bears on D023 amendment (1), which this node's mandate names as an input to verify",
+      "resolution": "Reported as an unreconciled contradiction between the verification document's self-described status and other bytes in the same repository. This node does not determine which artifact is more current or who owns reconciling them; that is flagged as a gap for the coordinator, not resolved here."
+    }
+  ],
+  "could_not_establish": [
+    "Full per-book, per-market breakdown for S1 (odds live capture) and S8 (extension files) -- capture_log.csv and the extension CSVs were read for row/column counts and header structure but a full Group-Object across book x market x season was not run for every source in the interest of the 'headers/counts only' acceptance bound; flagged rather than fabricated.",
+    "Whether S3's tier should be T1 or something stricter -- this node applied the taxonomy's explicit general rule for amendment-1 Odds API historical rows ('T1 at best') but did NOT issue a formal ruling comparable to D016/P2B's examination of S7, because that is outside this node's mandate (inventory and classification, not adjudication of a new object). Flagged as a gap requiring a future ruling before any market-lane node uses S3 for anything beyond existence.",
+    "Whether the cadence descriptions in odds_capture_daily.py's docstring ('scheduled twice daily... noon + 6:30pm local') match the observed near-hourly capture_log.csv cadence -- observed timestamps are denser than the docstring describes; not reconciled here, flagged for M03_CAPTURE_UPGRADE.",
+    "Exact market-key breakdown of master_odds_extension_other_markets.csv beyond its header row -- not enumerated to stay within 'headers/counts only'."
+  ],
+  "stop_condition_flags": [
+    "None of this node's findings required spending money, placing a wager, entering credentials, accepting scraping/licensing risk, or reading sealed possession results.",
+    "No reaction-time or timing claim was made in this report beyond the earliest-witnessed-capture ruling, which carries no sub-grid precision claim and is not a reaction-time claim under section 6's definition (it is a point-in-time-integrity ruling about capture-stream start dates, not a latency/reaction claim).",
+    "No use of the final-state odds archive (S7/S8) outside the M00-U1/M00-U3 enumeration was made anywhere in this inventory."
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "m02_build_vs_buy": {
+    "node": "M02_BUILD_VS_BUY",
+    "epistemic_status": "DECISION PREPARATION. Produces the evidence and the costed options for a purchase decision that is NOT this node's to make: every line item that spends money routes to the M02B_VENDOR_PURCHASE_DECISION human gate. The Odds API verification was already running when this node was created (D023 amendment 1); its output is an INPUT to this node and lands under this node's directory.",
+    "contract_hash_verified": {
+      "MARKET_PROGRAM_CONTRACT.md_sha256": "1152dcd3bf74000f700844bc8bfc0df25de61a067f59534a714ac4f2f20265de",
+      "TAXONOMY.json_sha256": "c83e25e783a4ee8642a26dd416362e46c2c34196ff8f8354977c28b72940a12c",
+      "verified_against_working_tree": true
+    },
+    "inputs_consumed": {
+      "ODDS_API_VERIFICATION.md": {
+        "path": "experiments/market_program/W1_DRAFTS/ODDS_API_VERIFICATION.md",
+        "sha256_working_tree_measured_this_node": "9f36ce41f5dd7380278b0515d8978b450e34d4ec7e8a2a5917c4a98c409da882",
+        "note": "Not in TAXONOMY.json input_hashes_working_tree (that list only froze VENUE_EXECUTION_RESEARCH, CAPTURE_UPGRADE_DESIGN, COMPETITOR_ARCHIVE_DESIGN at contract time); this file was still being produced by a parallel D023-amendment-1 role when M00 froze, and is consumed here as a live input per this node's mandate, not re-run."
+      },
+      "CAPTURE_UPGRADE_DESIGN.md": {
+        "path": "experiments/market_program/W1_DRAFTS/CAPTURE_UPGRADE_DESIGN.md",
+        "sha256_working_tree_measured_this_node": "cb83a0b4d6386a3b0f5eb00f3eb870308d98d9e15b3febc71dc59b25a5001a15",
+        "matches_taxonomy_frozen_hash": true
+      },
+      "wnba_odds_system_legacy_docs": {
+        "paths": ["wnba_odds_system/README.md", "wnba_odds_system/CURRENT_STATUS.md"],
+        "note": "Not a market_program artifact; a pre-existing, undated-relative-to-lane-freeze legacy scraper handoff doc (dated 2025-07-02) found by repo-wide search for 'wnba_odds_system'. Read as the 'fallback vendor notes' source per this node's mandate. Not hash-frozen by M00; treated as informational, low-trust legacy documentation, not a verified vendor source."
+      }
+    },
+    "m00_archive_citation": {
+      "use_class": "M00-U1",
+      "object": "data/drive_masters/master_odds.csv (20,004 rows, 813 games, event dates 2022-05-21 to 2025-07-03)",
+      "caveat_text_verbatim": "Coverage figures derive from a retrospective single-snapshot harvest (T2). They describe what the vendor could return in July 2026 about past games, not what was observable at any pregame instant. Presence in this census is not evidence a price was available, firm, or executable at any particular time.",
+      "caveat_sha256": "1055871c6d535521e86a51e4d5b735b013d88030505ae7e3b0eaca71f4cc80d6",
+      "used_for": "Comparator row in the vendor matrix only (coverage-census framing) -- not used as a benchmark or feature, per M00-U4/subordination rulings."
+    },
+    "coverage_conflict_reported_not_reconciled": {
+      "claim_a": "the-odds-api.com general historical-odds page: featured markets (h2h/spreads/totals) from 2020-06-06, all sports.",
+      "claim_b": "the-odds-api.com WNBA-specific product page: featured markets from May 2022 for basketball_wnba specifically.",
+      "status": "UNRESOLVED. ODDS_API_VERIFICATION.md section 1c treats May-2022 as the working assumption (more conservative, sport-specific) but states this must be confirmed with a live/trial key before any backfill budgeting. This node does not resolve it -- reported per the standing rule that a document contradiction is never silently reconciled."
+    },
+    "vendors": [
+      {
+        "vendor_id": "THE_ODDS_API_HISTORY_TIER",
+        "category": "BUY",
+        "already_integrated": true,
+        "cost": {
+          "live_tier_recommended": "20K plan, $30/month (per CAPTURE_UPGRADE_DESIGN.md (c), already the recommendation for the live ladder+burst capture upgrade, independent of the historical-endpoint decision)",
+          "historical_backfill_cost": "UNKNOWN -- cannot be priced from documentation alone. Formula (credits, not dollars, pending confirmed per-credit tier pricing): featured_markets_credits = 10 x markets x regions x snapshots_pulled; player_props_credits = 10 x markets x regions x events x snapshots_pulled (charged per event, not per slate). Every input (confirmed WNBA historical floor date, number of snapshots actually wanted per game-window, event count) is unresolved pending live-key verification per ODDS_API_VERIFICATION.md section 6.",
+          "verification_cost": "$0 -- free Starter tier (500 credits/mo) covers verification queries 1-3 and 6-7 of ODDS_API_VERIFICATION.md section 6; query 4 (latency diff) is cheap; query 5 (real credit deduction check) needs a live paid-tier account, which is the one step in the verification plan that is not free."
+        },
+        "labor_saved": "HIGH -- already the vendor this program's existing capture scripts (odds_capture_daily.py, props_capture_daily.py) are built against; api_key() loader is already reused across scripts per CAPTURE_UPGRADE_DESIGN.md (f). No new integration labor for live capture. Historical endpoint uses the same auth/client pattern, so integration labor for historical pulls is low if the coverage floor proves usable.",
+        "retrospective_coverage": {
+          "verdict": "CONFLICTING_UNVERIFIED",
+          "featured_markets_claim": "2020-06-06 (general) vs May 2022 (WNBA-specific page) -- see coverage_conflict_reported_not_reconciled",
+          "player_props_claim": "2023-05-03, INFERRED not independently confirmed for WNBA (general 'additional markets' policy applied to WNBA by analogy, not stated on the WNBA-specific page)",
+          "snapshot_granularity": "10-minute intervals pre-Sep-2022, 5-minute intervals post-Sep-2022, per DOCUMENTED vendor pages (fetch-tool paraphrase, not independently re-verified against a live key by this node)",
+          "per_snapshot_observation_timestamps": "YES, DOCUMENTED -- the historical endpoint returns a distinct `timestamp` field per pull at the stated grid granularity, unlike the owned final-state archive's single snapshot per game. This is a materially different point-in-time integrity shape than the owned archive even before live-key confirmation."
+        },
+        "point_in_time_integrity_verdict": "T1_VENDOR_ASSERTED_TIMESTAMPED -- per TAXONOMY.json, amendment-1 Odds API historical rows enter as T1 at best; the `timestamp` field is documented as the vendor's own snapshot-capture time, not book-publication time. Distinct from CUTOFF_UNPROVEN (T2): this vendor's history has genuine per-snapshot timestamps at a stated grid, even though those timestamps are vendor-asserted and unwitnessed by our own process. vendor_ts_semantics must default to unknown_unverified per contract Section 6.3 until vendor documentation or support confirms whether `timestamp` means book-change time or vendor-ingest time.",
+        "prospective_value": "HIGH -- already the vendor supplying the live ladder+burst design in CAPTURE_UPGRADE_DESIGN.md; no alternative vendor is proposed for the prospective/live capture critical path (D023 amendment 3). Prospective value is not contingent on the historical-endpoint conflict.",
+        "licensing_rights": {
+          "personal_internal_analytical_use": "PERMITTED, documented in vendor terms (fetch-tool paraphrase, not independently re-verified verbatim by this node)",
+          "resale_redistribution": "PROHIBITED -- explicit per documented terms",
+          "storage_retention_rights_after_pull": "NOT ADDRESSED in terms found -- a real gap, not an inferred yes",
+          "model_training_rights": "NOT ADDRESSED in terms found -- a real gap, not an inferred yes",
+          "resolution_required": "A written confirmation from the vendor (email to team@the-odds-api.com per ODDS_API_VERIFICATION.md section 6.7) is the proposed resolution path. Any acceptance of ambiguous licensing terms as sufficient is a legal/risk-acceptance action -- USER_REQUIRED per contract Section 9.7, not resolvable inside this node."
+        },
+        "reliability": "HIGH for live capture -- already in production use by this program's existing daily jobs (odds_capture_daily.py, props_capture_daily.py) with no documented outages in this node's inputs. Historical endpoint reliability is UNVERIFIED (never called live by this program to date).",
+        "vendor_latency_bound": "UNBOUNDED -- no numeric latency SLA published; only a general 'errors or additional delays may be present' liability disclaimer found. Per contract Section 6, any reaction-time claim built on this vendor's historical timestamps must carry this UNBOUNDED term and cannot be sharper than the grid (5-10 min) plus this unbounded vendor-latency term.",
+        "uniqueness": "Sole vendor already wired into this program's live-capture code path. No alternative is integrated.",
+        "replaceability": "LOW in the near term for live capture (switching vendors means rewriting odds_capture_daily.py / props_capture_daily.py's auth and response-parsing layers); MODERATE for historical-only use (a historical backfill could in principle come from a different vendor than the live-capture vendor without touching the live jobs)."
+      },
+      {
+        "vendor_id": "OWNED_FINAL_STATE_ARCHIVE",
+        "category": "ALREADY_OWNED_NOT_A_BUY_OPTION",
+        "already_integrated": true,
+        "cost": {"acquisition_cost": "$0, already owned", "backfill_cost": "N/A -- fixed dataset, cannot be extended"},
+        "labor_saved": "N/A -- comparator row only, not a candidate for the build-vs-buy decision. Included per acceptance criteria to state the CUTOFF_UNPROVEN classification comparison explicitly.",
+        "retrospective_coverage": {
+          "verdict": "FIXED, EXHAUSTIVE FOR ITS TIER",
+          "detail": "20,004 rows, 813 games, 2022-05-21 to 2025-07-03. Exactly ONE snapshot per game across all 813 games (D016/P2B, permanently settled, not relitigated by this node)."
+        },
+        "point_in_time_integrity_verdict": "T2_CUTOFF_UNPROVEN -- permanently, per D016/P2B, never relitigated. This is the baseline against which vendor history is measured per this node's acceptance criteria: 'vendor history that is a retrospective rebuild without per-snapshot observation timestamps is classified CUTOFF_UNPROVEN exactly like the owned final-state archive.' No vendor evaluated in this matrix has yet been confirmed to fail that test (The Odds API's historical product does carry per-snapshot timestamps per documentation, unlike this archive's single per-game snapshot); the fallback vendors (SportsDataIO, OpticOdds) have not been verified either way.",
+        "prospective_value": "NONE -- single retrospective burst, not an ongoing feed.",
+        "licensing_rights": "Already owned; not re-evaluated here (out of this node's scope).",
+        "reliability": "N/A -- static file.",
+        "vendor_latency_bound": "N/A -- not a live vendor relationship.",
+        "uniqueness": "N/A -- comparator only.",
+        "replaceability": "N/A -- comparator only."
+      },
+      {
+        "vendor_id": "SPORTSDATAIO",
+        "category": "FALLBACK_BUY_CANDIDATE",
+        "already_integrated": false,
+        "cost": {
+          "documented_by_this_node": "NOT VERIFIED against primary vendor pricing pages by this node. A legacy internal doc (wnba_odds_system/README.md, dated 2025-07-02, pre-dates this lane) states '$99/month (professional)' -- STALE, UNVERIFIED, do not budget from this figure without re-confirmation."
+        },
+        "labor_saved": "UNKNOWN -- no integration exists in this codebase; would require new client/auth/schema-mapping work if pursued.",
+        "retrospective_coverage": {
+          "verdict": "UNVERIFIED_CLAIMED",
+          "detail": "ODDS_API_VERIFICATION.md section 7 (shallow search-summary level only, not fetched from primary docs): 'historical betting lines from 2019 onwards across major sports with props and futures from 2020,' WNBA claimed among covered leagues, connected to a 'Data Warehouse' product. If true this would be a materially deeper historical floor than The Odds API's WNBA May-2022 figure -- but this is a search-summary claim, not primary-source verified, per the same standard applied to The Odds API in section 1."
+        },
+        "point_in_time_integrity_verdict": "UNVERIFIED -- whether SportsDataIO's historical product carries per-snapshot observation timestamps (making it T1-like) or is a retrospective final-state rebuild (making it CUTOFF_UNPROVEN like the owned archive) has not been established. Per this node's acceptance criteria this vendor cannot be scored on the point-in-time axis until verified; presumptively it is NOT assumed CUTOFF_UNPROVEN or T1 -- it is UNVERIFIED, a distinct state from either.",
+        "prospective_value": "UNKNOWN -- not evaluated for live/prospective capture in any input document.",
+        "licensing_rights": "UNVERIFIED -- not examined by any input document.",
+        "reliability": "UNVERIFIED.",
+        "vendor_latency_bound": "UNVERIFIED / effectively UNBOUNDED until sourced.",
+        "uniqueness": "Named as 'the first fallback worth a real primary-source verification pass' in ODDS_API_VERIFICATION.md section 7, specifically IF The Odds API's WNBA floor turns out to genuinely block pre-2022 backfill needs.",
+        "replaceability": "Not evaluated -- no integration exists to replace."
+      },
+      {
+        "vendor_id": "OPTICODDS",
+        "category": "FALLBACK_BUY_CANDIDATE",
+        "already_integrated": false,
+        "cost": {"documented_by_this_node": "NOT FOUND in any input document. No pricing information available. Not independently re-fetched from OpticOdds' own site by this node in this pass."},
+        "labor_saved": "UNKNOWN -- no integration exists.",
+        "retrospective_coverage": {
+          "verdict": "UNVERIFIED_CLAIMED",
+          "detail": "ODDS_API_VERIFICATION.md section 7 (shallow search-summary only): claims 'years of historical sports betting odds across 200+ sportsbooks with timestamped, normalized data for backtesting, CLV analysis, and quantitative research,' WNBA listed among covered leagues for LIVE odds. 'Historical WNBA-specific depth not confirmed in this pass.'"
+        },
+        "point_in_time_integrity_verdict": "UNVERIFIED -- vendor's own marketing claims 'timestamped' data, which if independently verified would place it closer to T1 than the owned archive's T2, but this is an unverified marketing claim, not primary-source-confirmed, and this node does not elevate it on that basis. Its own stated framing ('CLV analysis') is the most direct match to this program's reaction-time use case of any name surveyed -- the priority reason to verify it next, not evidence it is already usable.",
+        "prospective_value": "UNKNOWN -- not evaluated.",
+        "licensing_rights": "UNVERIFIED.",
+        "reliability": "UNVERIFIED.",
+        "vendor_latency_bound": "UNVERIFIED / effectively UNBOUNDED until sourced.",
+        "uniqueness": "Not established.",
+        "replaceability": "Not evaluated -- no integration exists."
+      },
+      {
+        "vendor_id": "SPORTSDATAIO",
+        "category": "FALLBACK_BUY_CANDIDATE",
+        "already_integrated": false,
+        "note_on_duplicate_row": "A second, less-detailed SPORTSDATAIO row appears earlier in this array from a prior pass over the same inputs; both are retained rather than silently merged/deleted because this row adds NEW bytes this node fetched live in this pass (below) that the earlier row did not have. Do not treat this as a second distinct vendor.",
+        "cost": {
+          "documented_by_this_node": "This node's own WebSearch pass (2026-08-06) and a direct WebFetch of sportsdata.io/historical-sports-odds-data (which returned HTTP 404 in this pass -- URL likely stale/restructured) found no disclosed self-serve historical-odds pricing. Both this node's search and the legacy wnba_odds_system research report describe SportsDataIO as requiring direct sales contact ('Enterprise pricing') for historical/WNBA data -- no free or trial tier confirmed, unlike The Odds API's free Starter tier. This is a material verification-cost difference: The Odds API's 7 verification queries can mostly be run for $0; SportsDataIO's cannot be run at all without a sales conversation this node is not authorized to initiate."
+        },
+        "retrospective_coverage_this_node_own_fetch": {
+          "verdict": "T1_CANDIDATE_UNVERIFIED, STRONGER-WORDED THAN PRIOR PASS BUT STILL NOT PRIMARY-SOURCE CONFIRMED",
+          "detail": "This node's own WebSearch (query: 'SportsDataIO WNBA historical odds API pricing point-in-time snapshot', 2026-08-06) returned search-engine-summarized language stating SportsDataIO 'ingests all markets from legal sportsbooks, normalizing them into a structure that tracks opening and closing lines plus all price changes in between,' that futures markets carry 'timestamps for opening price, all line movement changes, and closing price,' and that 'all betting odds older than 30 days [are] stored in our Historical API data warehouse... for WNBA as well.' A direct WebFetch of the vendor's own Historical Data Guide support article (support.sportsdata.io/hc/en-us/articles/4405005816215) to confirm this verbatim returned HTTP 403 (blocked) in this pass -- so this remains a SEARCH-SUMMARY claim, one level below the confidence of ODDS_API_VERIFICATION.md's own direct-page fetches, not a primary-source read.",
+          "open_question_not_resolved": "Whether the >30-day 'Historical API data warehouse' preserves the SAME per-change timestamp granularity described for the live/recent-30-day product, or collapses to closing-line-only once data ages into the warehouse, was NOT determinable from what could be fetched in this pass. This is the single most consequential open question for this vendor's point-in-time verdict and is exactly the kind of thing a live-key/trial verification pass (analogous to ODDS_API_VERIFICATION.md section 6) would need to resolve before any spend."
+        },
+        "cross_check_against_older_legacy_claim": "wnba_odds_system/docs/WNBA_Odds_Research_Report.md (dated January 2025, unverified marketing-style third-party report) separately claims 'Historical odds from 2019 onwards' for SportsDataIO -- a materially deeper floor than either of The Odds API's two conflicting WNBA floors (2020-06-06 / May-2022). This 2019 claim was not cross-checked against SportsDataIO's own current site beyond the shallow search summary above and should not be treated as confirmed."
+      },
+      {
+        "vendor_id": "SPORTS_GAME_ODDS_SGO",
+        "category": "FALLBACK_BUY_CANDIDATE_CONTRADICTION_FOUND",
+        "already_integrated": false,
+        "cost": {"documented_by_this_node": "This node's own direct WebFetch of sportsgameodds.com (2026-08-06) found 'Historical data' listed only as a feature of a Pro tier priced at $299/month, with live update rate stated as '30-60 seconds' / 'sub-minute' for CURRENT odds -- no separate historical-data pricing or granularity disclosed."},
+        "retrospective_coverage": {
+          "verdict": "CONTRADICTION_FOUND_BETWEEN_SOURCES, NOT RECONCILED",
+          "detail": "wnba_odds_system/docs/WNBA_Odds_Research_Report.md (Jan 2025, third-party, uncited) names SGO as 'Best Value' and states 'WNBA included in their basketball offerings.' This node's own direct WebFetch of sportsgameodds.com's current site (2026-08-06) lists '67+ leagues' by name -- NFL, NBA, MLB, NHL, MLS, Premier League, Champions League, and others -- and WNBA does NOT appear among them. Per this node's standing rule to report contradictions rather than silently reconcile them: this is flagged as an open contradiction, not resolved. Three explanations are possible and none is confirmed: (1) the January 2025 report was already wrong or describing a different/confused product at the time it was written; (2) SportsGameOdds has since dropped WNBA from its lineup; (3) WNBA exists in SGO's catalog but simply wasn't rendered on the specific page this node's fetch tool retrieved (a fetch-tool sampling gap, not a vendor fact)."
+        },
+        "point_in_time_integrity_verdict": "UNKNOWN_INSUFFICIENT_INFO -- cannot even be scored on point-in-time integrity until WNBA coverage itself is confirmed or denied directly by the vendor; the historical-data feature's snapshot-vs-closing-only shape is also undisclosed on the page fetched.",
+        "recommendation_for_this_vendor": "Do not prioritize ahead of SportsDataIO or OpticOdds. If pursued at all, the WNBA-coverage contradiction above must be the FIRST thing resolved, before any point-in-time or pricing verification is attempted."
+      },
+      {
+        "vendor_id": "UNABATED",
+        "category": "FALLBACK_BUY_CANDIDATE_WEAK",
+        "already_integrated": false,
+        "cost": {"documented_by_this_node": "NOT FOUND. No pricing information available."},
+        "labor_saved": "UNKNOWN.",
+        "retrospective_coverage": {
+          "verdict": "NO_HISTORICAL_PRODUCT_FOUND",
+          "detail": "ODDS_API_VERIFICATION.md section 7: 'describes live WNBA odds/props comparison tooling ... but nothing found describing a historical archive/API product ... may be more of a live consumer tool than a historical data vendor.'"
+        },
+        "point_in_time_integrity_verdict": "NOT_APPLICABLE_PENDING_VERIFICATION -- no historical product confirmed to exist; nothing to score on this axis yet.",
+        "prospective_value": "POSSIBLE for live/consensus tooling only, not evaluated in depth by any input document.",
+        "licensing_rights": "UNVERIFIED.",
+        "reliability": "UNVERIFIED.",
+        "vendor_latency_bound": "UNVERIFIED.",
+        "uniqueness": "Not established.",
+        "replaceability": "Not evaluated."
+      },
+      {
+        "vendor_id": "BUILD_WNBA_ODDS_SYSTEM_SCRAPER_STACK",
+        "category": "BUILD_CANDIDATE_STOP_CONDITION_TRIPPED",
+        "already_integrated": "PARTIALLY -- pre-existing, dormant legacy code under wnba_odds_system/, last touched per its own docs on 2025-07-02, predating this lane and this node's authorization entirely.",
+        "cost": {
+          "direct_dollar_cost": "$0 claimed by design (scraping, not a paid API), but the same legacy doc names 'API options if scraping fails ($10-99/month)' as its own fallback, i.e. even this doc does not treat scraping as free of eventual API cost.",
+          "labor_cost": "SUBSTANTIAL and ongoing -- the collection strategy documented in wnba_odds_system/README.md and CURRENT_STATUS.md requires 3-4 hour manual collection runs with 45-60s inter-request delays and 15-20 minute breaks specifically to avoid IP bans, active monitoring (`monitor_wnba_collection.py --watch`), and manual restart-on-block handling. This is recurring human labor, not a one-time integration cost."
+        },
+        "labor_saved": "NEGATIVE -- this option consumes labor rather than saving it, relative to the already-integrated Odds API vendor.",
+        "retrospective_coverage": {
+          "verdict": "UNVERIFIED_CLAIMED, LOW CONFIDENCE",
+          "detail": "Legacy doc claims sources OddsPortal (primary), VegasInsider, BetInf.com, targeting 2021-2025 WNBA coverage, '500-1,500 game records' as a stated target range, not a confirmed delivered count. No verification that this target was ever met; CURRENT_STATUS.md is a mid-run handoff document, not a completion report."
+        },
+        "point_in_time_integrity_verdict": "LIKELY_CUTOFF_UNPROVEN_OR_WORSE -- the documented output schema (README.md 'Data Structure') stores `data_type: closing_odds / live_odds / results` with no documented per-poll observation-timestamp chain, no `payload_hash`, no `prev_snapshot_ref`, and no amendment-4 field set at all. Nothing in the legacy docs indicates this scraper produces genuinely point-in-time-witnessed data rather than another retrospective, final-state-per-game harvest -- if built out further without redesign, it would very plausibly reproduce the exact CUTOFF_UNPROVEN shape D016/P2B already ruled on for the owned archive, at the cost of ongoing scraping labor and legal risk this node is not authorized to accept.",
+        "prospective_value": "NOT APPLICABLE as designed -- this is a historical-backfill scraper, not a prospective/live capture design, and amendment 3 names live capture as the immediate critical path, already served by the already-integrated Odds API vendor.",
+        "licensing_rights": "HIGH RISK, UNRESOLVED -- scraping OddsPortal, VegasInsider, and BetInf.com is a ToS/licensing question this node is not authorized to resolve. Contract Section 9.7 and Section 7's venue policy both name 'scraping or licensing risk' and 'ToS interpretation' as USER_REQUIRED legal/risk-acceptance actions exclusively.",
+        "reliability": "LOW, per the legacy doc's own framing -- 'Rate Limiting' and 'IP Blocked' are named as expected, recurring failure modes requiring manual intervention, not edge cases.",
+        "vendor_latency_bound": "NOT APPLICABLE -- not a timing-claim-bearing vendor relationship as designed; scraped closing/live odds snapshots would need the same amendment-4 field set as any other market-snapshot table before any timing claim could be built on them, which this scraper does not currently produce.",
+        "uniqueness": "None identified -- covers the same WNBA odds domain as The Odds API and the fallback vendors, via a materially higher-risk, higher-labor acquisition method.",
+        "replaceability": "HIGH -- fully replaceable by any of the BUY options above; no unique capability identified that a paid vendor lacks.",
+        "stop_condition_triggered": "This candidate trips the node's own stop condition: 'a finding would require ... accepting scraping or licensing risk ... HALT and raise to a USER_REQUIRED gate, do not resolve it inside the node.' This node does not recommend pursuing this path and raises it to M02B_VENDOR_PURCHASE_DECISION as a HALT item, not a costed recommendation."
+        }
+    ],
+    "this_node_own_web_verification_pass": {
+      "note": "Beyond consuming ODDS_API_VERIFICATION.md and CAPTURE_UPGRADE_DESIGN.md as inputs (per this node's mandate: consume, check, don't blindly re-run), this node additionally ran its own shallow WebSearch/WebFetch pass (2026-08-06) against the fallback vendors named in the wnba_odds_system research docs and in section 7 of the odds-API verification, since those were left at 'shallow, not deep-verified' by the prior work. Findings: (1) SportsDataIO's own search-indexed language is more specific than the legacy report suggested (per-change timestamps described for at least the <30-day product; the >30-day warehouse's timestamp granularity is unresolved) but the primary support-doc URL returned HTTP 403 and could not be read directly; (2) SportsGameOdds' current live site does not list WNBA among its 67+ covered leagues, directly contradicting the legacy report's 'WNBA included' claim -- flagged as an unresolved contradiction, not silently reconciled; (3) SportsDataIO's own historical-odds product page returned HTTP 404 when fetched directly. None of this required spending money, entering credentials, or accepting scraping/licensing risk -- all sources fetched were public marketing/search-indexed pages."
+    },
+    "recommendation": {
+      "summary": "BUY, incrementally, from the already-integrated vendor (The Odds API). Do not purchase anything yet. No dollar spend is authorized by this node.",
+      "line_items_for_m02b_gate": [
+        {
+          "item": "Live/prospective capture ladder+burst tier commitment",
+          "action": "Upgrade The Odds API from free Starter to the 20K plan, $30/month",
+          "rationale": "CAPTURE_UPGRADE_DESIGN.md (c): free tier (500 credits/mo) is already exceeded by the CURRENT pre-upgrade cadence; 20K plan covers every modeled ladder+burst scenario (low/mid/high) with 3-11x headroom. This spend is independent of the historical-endpoint conflict and would be needed even if The Odds API's historical product is never used.",
+          "cost": "$30/month recurring",
+          "routes_to": "M02B_VENDOR_PURCHASE_DECISION",
+          "purchase_made_by_this_node": false
+        },
+        {
+          "item": "Historical-coverage verification pass",
+          "action": "Run ODDS_API_VERIFICATION.md section 6, queries 1-3 and 6-7, against the free Starter tier or a short trial key",
+          "rationale": "Resolves the 2020-06-06 vs May-2022 conflict and the WNBA player-props floor before any historical-backfill dollar figure can be computed",
+          "cost": "$0 (free tier / trial key, no purchase)",
+          "routes_to": "M02B_VENDOR_PURCHASE_DECISION for the trial-key credential provisioning step only (credential acquisition is a USER_REQUIRED action per contract Section 9.3, even for a free key)",
+          "purchase_made_by_this_node": false
+        },
+        {
+          "item": "One-month low-tier trial for empirical latency + credit-cost confirmation",
+          "action": "ODDS_API_VERIFICATION.md section 6, queries 4-5, requiring a live paid-tier account",
+          "rationale": "The only verification step that requires spending money; needed to replace the UNKNOWN historical-backfill cost formula in this matrix with real numbers",
+          "cost": "~$30/month, one month, UNCONFIRMED against live checkout (vendor pricing page and third-party summaries disagree per ODDS_API_VERIFICATION.md section 3)",
+          "routes_to": "M02B_VENDOR_PURCHASE_DECISION",
+          "purchase_made_by_this_node": false
+        },
+        {
+          "item": "Historical backfill itself (if the May-2022-or-later floor is confirmed usable and sufficient)",
+          "action": "Not sized -- cost formula given, no dollar figure computable without live-key numbers from the item above",
+          "rationale": "Acceptance criteria requires this line item exist and route to the gate even though it cannot be priced yet",
+          "cost": "UNKNOWN, pending live-key verification (see historical_backfill_sizing_formula below)",
+          "routes_to": "M02B_VENDOR_PURCHASE_DECISION",
+          "purchase_made_by_this_node": false
+        },
+        {
+          "item": "SportsDataIO deep verification pass (contingent)",
+          "action": "Only if the Odds API WNBA floor is confirmed to block a genuinely needed pre-2022 backfill (D023 amendment 1: acquiring historical point-in-time data by another route becomes a program priority in that case, not dropped)",
+          "rationale": "Named as the first fallback worth a real primary-source verification pass in ODDS_API_VERIFICATION.md section 7",
+          "cost": "$0 for a documentation/verification pass; any subscription decision is a separate, later gate",
+          "routes_to": "M02B_VENDOR_PURCHASE_DECISION",
+          "purchase_made_by_this_node": false
+        }
+      ],
+      "not_recommended": [
+        "wnba_odds_system scraper stack (BUILD_WNBA_ODDS_SYSTEM_SCRAPER_STACK) -- stop condition tripped (scraping/licensing risk), high recurring labor, likely reproduces the same CUTOFF_UNPROVEN shape as the archive this program already owns, no unique capability identified"
+      ]
+    }
+  }
+}
