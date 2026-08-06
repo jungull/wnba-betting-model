@@ -25,6 +25,8 @@ BASELINE = os.path.join(ROOT, "experiments/market_program/BOOKIE_BASELINE/baseli
 UNIVERSE_AUDIT = os.path.join(ROOT, "experiments/player_program/turnover_p1_v1/TURNOVER_P1_UNIVERSE_AUDIT.json")
 PROGRAM_STATE = os.path.join(ROOT, "experiments/player_program/PROGRAM_STATE.json")
 ARTIFACT_LEDGER = os.path.join(ROOT, "experiments/player_program/orchestration/ARTIFACT_LEDGER.jsonl")
+LEGACY_VERIFIED = os.path.join(HERE, "granular", "legacy_verified_metrics.json")  # READ-ONLY per D038 task grant
+MODEL_VS_MARKET = os.path.join(ROOT, "experiments/market_program/MODEL_VS_MARKET/model_vs_market.json")  # READ-ONLY
 
 
 def sha256_file(path):
@@ -49,6 +51,8 @@ def main():
     baseline = load(BASELINE)
     audit = load(UNIVERSE_AUDIT)
     pstate = load(PROGRAM_STATE)
+    legacy = load(LEGACY_VERIFIED)
+    mvm = load(MODEL_VS_MARKET)
 
     # Latest coordinator-recorded HEAD in the artifact ledger (no git allowed here).
     last_head, last_head_ts = None, None
@@ -157,6 +161,86 @@ def main():
             "ci95_reason": "the baseline artifact carries point metrics and Ns but no interval estimates; game-clustered CIs are a declared follow-up, not invented here",
         },
         "provenance": prov_baseline,
+    })
+
+    # ---- Legacy player-points model (D038 leaderboard integration) -----------
+    # Values are selected VERBATIM from two READ-ONLY, already-verified
+    # artifacts -- nothing here is recomputed:
+    #   - granular/legacy_verified_metrics.json: RECEIPTED (7-check PROBE_LEGACY.md
+    #     provenance checklist) legacy points MAE, headline window = pooled_2022_2026
+    #     on tier A_primary (legacy["headline_note"]).
+    #   - MODEL_VS_MARKET/model_vs_market.json: PRELIMINARY matched-universe O/U
+    #     accuracy comparison against the market's own over/under calls (headline
+    #     block, A_primary pooled 2024-2026). This is NOT a Brier comparison --
+    #     the legacy artifact is a point prediction, not a probability, so no
+    #     model Brier exists (model_vs_market.json market_brier_note). The paired
+    #     accuracy difference and its CI are copied as-is; never recomputed here.
+    legacy_points = legacy["our_model"]["points"]["tiers"]["A_primary"]["pooled_2022_2026"]
+    mvm_headline = mvm["headline"]
+    prov_legacy = {
+        "source_artifact": {"path": rel(LEGACY_VERIFIED), "sha256": sha256_file(LEGACY_VERIFIED)},
+        "corroborating_artifact": {"path": rel(MODEL_VS_MARKET), "sha256": sha256_file(MODEL_VS_MARKET)},
+        "commit_lineage": {
+            "recorded_head": None,
+            "note": commit_note_uncommitted.replace(
+                "artifact not present in ARTIFACT_LEDGER.jsonl",
+                "neither source artifact is row-listed in ARTIFACT_LEDGER.jsonl"),
+        },
+        "legacy_verification": {
+            "overall_verdict": legacy["verification"]["overall_verdict"],
+            "checklist_source": legacy["verification"]["checklist_source"],
+            "legacy_run_id": legacy["legacy_run"]["run_id"],
+            "legacy_config_hash": legacy["legacy_run"]["config_hash"],
+        },
+        "model_vs_market_result_hash": mvm.get("result_hash"),
+        "model_vs_market_m00_bounded_use": mvm.get("m00_bounded_use", {}).get("m00_use_class"),
+        "computed_at_source_utc": legacy["generated_utc"],
+        "computation_timestamp_utc": now,
+    }
+    rows.append({
+        "row_id": "legacy_player_points",
+        "section": "predictive",
+        "status": "MEASURED",
+        "evidence_class": (
+            "MEASURED_LEGACY_RECEIPTED_RETROSPECTIVE — legacy-receiptable per D037 PROBE_LEGACY.md "
+            "7-check verification (verdict: " + legacy["verification"]["overall_verdict"] + "); scored fresh "
+            "by a verification node from committed generation-only OOF artifacts, not by the producing run; "
+            "not a preregistered evaluation endpoint (D034)"
+        ),
+        "model_version": legacy_points["model_version"],
+        "target": "points (player_scoring_distribution pred_point)",
+        "cutoff": legacy_points["cutoff"],
+        "universe": legacy_points["universe"],
+        "date_range": legacy_points["date_range"],
+        "metrics": {
+            "mae": legacy_points["mae"],
+            "rmse": legacy_points["rmse"],
+            "bias": legacy_points["bias"],
+            "n_player_games": legacy_points["n_player_games"],
+            "ci95": [legacy_points["mae_ci95"]["lo"], legacy_points["mae_ci95"]["hi"]],
+            "ci95_reason": "mae_ci95 from legacy_verified_metrics.json, method=" + legacy_points["mae_ci95"]["method"],
+        },
+        "headline_window_note": legacy["our_model"]["headline_note"],
+        "improvement_vs_basic_model": "PENDING_MATCHED_UNIVERSE — the paired legacy-vs-baseline run on the "
+            "IDENTICAL universe has not been done; this score/improvement stays TBD and is never derived from "
+            "the unmatched naive-baseline universe in granular/player_granular_metrics.json (D036 point 6, never invented)",
+        "market_comparison": {
+            "metric": "ou_accuracy_paired_diff",
+            "metric_label": "O/U accuracy",
+            "question": mvm_headline["question"],
+            "verdict": mvm_headline["verdict"],
+            "model_value": mvm_headline["model_ou_accuracy"],
+            "market_value": mvm_headline["market_ou_accuracy"],
+            "advantage": mvm_headline["paired_diff"],
+            "advantage_ci95": mvm_headline["paired_diff_ci95"],
+            "n": mvm_headline["n"],
+            "universe": mvm_headline["universe"],
+            "market_brier_note": mvm["cells"]["A_primary"]["pooled_2024_2026"]["market_brier_note"],
+            "timing_advisory": "market snapshot timestamps are VENDOR_ASSERTED, unwitnessed (T1); never a "
+                "timing/CLV/reaction claim (" + mvm["timing_advisory_vendor_asserted"]["channel"] + ")",
+            "source": {"path": rel(MODEL_VS_MARKET), "sha256": sha256_file(MODEL_VS_MARKET)},
+        },
+        "provenance": prov_legacy,
     })
 
     # ---- Naive baselines: declared pending, never invented -------------------

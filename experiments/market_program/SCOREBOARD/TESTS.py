@@ -626,8 +626,14 @@ def run_real_input_tests(tmp):
     check("real: leaderboard has 13 target rows", len(scores) == 13, len(scores))
     check("real/AC3: NO numeric Prediction Score exists yet (our model unevaluated everywhere)",
           all(v == "" for _, v in scores))
-    check("real/AC7: evaluated-without-score incumbent leads; unevaluated afterward",
-          scores[0][0] == "team_attributed_turnovers", scores[0][0])
+    # D038 leaderboard integration: legacy_player_points (metrics.json, via
+    # build_metrics.py) now gives player_points a MEASURED, evaluated-without-
+    # score row -- registry order (player_points id 0) puts it ahead of
+    # team_attributed_turnovers (id 8) within the same "evaluated, no score
+    # yet" / PRELIMINARY-badge sort group.
+    check("real/AC7: evaluated-without-score PRELIMINARY group leads with player_points, "
+          "then team_attributed_turnovers (registry order); unevaluated targets afterward",
+          scores[0][0] == "player_points" and scores[1][0] == "team_attributed_turnovers", scores[:2])
     check("real: Betting Edge card = Not yet demonstrated (never accuracy-as-profitability)",
           "Betting Edge" in h1 and h1.count("Not yet demonstrated") >= 2)
     check("real: player leaderboard locked state",
@@ -635,6 +641,31 @@ def run_real_input_tests(tmp):
     check("real: no naive baseline is ever presented as our model",
           "our model has not been evaluated on this target yet" in h1.lower()
           or "no evaluated model run exists" in h1)
+
+    # ---------------------------------------------- legacy_player_points row
+    pp_start = h1.index('id="lb-player_points"')
+    pp_next = h1.find('<tr class="lb-row"', pp_start + 1)
+    pp_block = h1[pp_start:pp_next if pp_next != -1 else pp_start + 12000]
+
+    check("real/legacy row: player_points carries NO Prediction Score yet",
+          dict(scores)["player_points"] == "")
+    check("real/legacy row: PRELIMINARY evidence badge on player_points",
+          'data-evidence="2"' in pp_block and ">PRELIMINARY<" in pp_block)
+    check("real/legacy row: Typical Miss shown as 1dp MAE from legacy_verified_metrics (pooled_2022_2026, A_primary)",
+          "4.3 points" in pp_block)
+    check("real/legacy row: Improvement vs Basic Model is pending-matched-universe, never faked from unmatched numbers",
+          "Pending — matched universe" in pp_block and "paired legacy-vs-baseline run" in pp_block)
+    check("real/legacy row: Market Advantage = Market currently better, -3.3 O/U accuracy points",
+          "Market currently better" in pp_block and "-3.3 O/U accuracy points" in pp_block)
+    check("real/legacy row: Market Advantage CI matches model_vs_market.json headline verbatim ([-4.95, -1.76] pts)",
+          "[-4.95, -1.76] pts" in pp_block)
+    check("real/legacy row: Market Advantage N=5,737 shown",
+          "n=5,737" in pp_block)
+    check("real/legacy row: hover carries the raw model-vs-market comparison and its provenance",
+          "raw comparison: model 0.4938" in pp_block and "market 0.5268" in pp_block
+          and "model_vs_market.json" in pp_block and "sha256=" in pp_block)
+    check("real/legacy row: Betting Edge is never substituted for this predictive-accuracy row",
+          "Betting Edge" in h1)
 
 
 def main():

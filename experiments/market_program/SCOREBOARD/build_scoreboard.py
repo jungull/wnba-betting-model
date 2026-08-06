@@ -465,18 +465,20 @@ def resolve_model(tcfg, metrics, gm):
         try:
             r = get_row(metrics, row_id)
         except KeyError:
-            return None
-        if r.get("status") != "MEASURED":
-            return None
-        m = r["metrics"]
-        return {
-            "error": m.get("mae"), "rmse": m.get("rmse"), "bias": m.get("bias"),
-            "n": m.get("n_team_games") or m.get("n_player_games") or m.get("n"),
-            "universe": r.get("universe"), "cutoff": r.get("cutoff"),
-            "evidence_class": r.get("evidence_class"), "row": r,
-            "title": prov_title("our model", r),
-            "updated": (r.get("provenance", {}).get("computation_timestamp_utc") or "")[:10],
-        }
+            r = None
+        if r is not None and r.get("status") == "MEASURED":
+            m = r["metrics"]
+            return {
+                "error": m.get("mae"), "rmse": m.get("rmse"), "bias": m.get("bias"),
+                "n": m.get("n_team_games") or m.get("n_player_games") or m.get("n"),
+                "universe": r.get("universe"), "cutoff": r.get("cutoff"),
+                "evidence_class": r.get("evidence_class"), "row": r,
+                "title": prov_title("our model", r),
+                "updated": (r.get("provenance", {}).get("computation_timestamp_utc") or "")[:10],
+            }
+        # else: fall through to the granular our_model pathway below -- a
+        # metrics.json model_row is preferred when MEASURED but its absence
+        # (e.g. fixtures without the row) never masks a granular evaluated result.
     stat = tcfg.get("granular_stat")
     om = gm.get("our_model", {})
     if stat and isinstance(om.get("rows"), dict) and stat in om["rows"]:
@@ -648,6 +650,15 @@ def build_leaderboard_rows(cfg, coverage, metrics, lifecycle, gm, gc):
         elif model is not None and baseline.get("pending"):
             improve_display = chip("tbd", "Pending", imp_cfg["labels"]["pending_baseline"] + " | " + str(baseline["title"]))
             improve_display += '<span class="sub">baseline declared, not yet computed on this universe</span>'
+        elif model is not None and not baseline.get("pending") and not universes_match(model, baseline):
+            # Model evaluated, baseline evaluated -- but NOT on the identical universe.
+            # Never faked from the unmatched numbers (D036 point 6 / D038): stays TBD.
+            improve_display = chip("tbd", "Pending — matched universe", imp_cfg["labels"]["pending_universe_mismatch"]
+                                   + " | model universe: " + str(model["universe"])
+                                   + " | baseline universe: " + str(baseline["universe"]))
+            improve_display += (f'<span class="sub">unmatched-universe reference only, never compared: our model '
+                                f'{fmt1(model["error"])} {esc(unit)} vs {esc(baseline["name"])} '
+                                f'{fmt1(baseline["error"])} {esc(unit)} (n={baseline["n"]:,})</span>')
         else:
             improve_display = chip("tbd", "Pending", imp_cfg["labels"]["pending_model"])
             if not baseline.get("pending"):
@@ -657,7 +668,34 @@ def build_leaderboard_rows(cfg, coverage, metrics, lifecycle, gm, gc):
         # ---- market advantage (matched universes + cutoffs only, and NEVER
         # across metrics: the model must carry the market's own metric)
         market_num = None
-        if market.get("state") == "measured":
+        mc = model["row"].get("market_comparison") if model is not None else None
+        if mc is not None:
+            # A pre-computed, already-matched-universe comparison selected verbatim
+            # from metrics.json (itself selected verbatim from MODEL_VS_MARKET/
+            # model_vs_market.json by build_metrics.py) -- never recomputed here,
+            # and on a metric (paired O/U accuracy) the generic devig_brier path
+            # cannot use because no model probability/Brier exists for this row.
+            adv = mc["advantage"]
+            label = advantage_label(adv, cfg)
+            kind = "ok" if adv > cfg["market_advantage"]["label_thresholds"]["market_level_abs_max"] else ("warn" if label == "Market currently better" else "run")
+            market_num = round(adv * 100, 1)
+            ci = mc.get("advantage_ci95")
+            ci_txt = f' · 95% CI [{ci[0] * 100:+.2f}, {ci[1] * 100:+.2f}] pts' if ci else ""
+            mc_src = mc.get("source", {})
+            mc_title = (
+                f'{mc.get("question", "")} verdict: {mc.get("verdict", "")} | metric: {mc["metric_label"]} '
+                f'(paired difference, positive = model better) | model {mc["metric_label"]}: {mc["model_value"]:.4f} '
+                f'| market {mc["metric_label"]}: {mc["market_value"]:.4f} | raw comparison: model {mc["model_value"]:.4f} '
+                f'vs market {mc["market_value"]:.4f} = {adv * 100:+.2f} pts{ci_txt} | n={mc["n"]:,} | '
+                f'universe: {mc.get("universe")} | {mc.get("market_brier_note", "")} | {mc.get("timing_advisory", "")} | '
+                f'source: {mc_src.get("path")} sha256={mc_src.get("sha256")}'
+            )
+            market_display = (
+                chip(kind, label, mc_title) +
+                f'<span class="sub">{adv * 100:+.1f} {esc(mc["metric_label"])} points vs market'
+                f'{ci_txt} · n={mc["n"]:,} (matched-universe paired comparison; hover for the raw comparison)</span>'
+            )
+        elif market.get("state") == "measured":
             matched = model is not None and universes_match(model, {"universe": market.get("universe"), "n": market.get("n")}) and cutoffs_match(model, market)
             model_market_error = None
             if model is not None:
@@ -738,7 +776,7 @@ def build_leaderboard_rows(cfg, coverage, metrics, lifecycle, gm, gc):
             "sample_n": sample_n, "sample_display": sample_display,
             "badge": badge, "badge_title": badge_title, "badge_rank": BADGE_RANK[badge],
             "updated": updated,
-            "market_covered": 1 if market.get("state") == "measured" else 0,
+            "market_covered": 1 if (mc is not None or market.get("state") == "measured") else 0,
             "verified": 1 if badge == "VERIFIED" else 0,
         })
     return rows

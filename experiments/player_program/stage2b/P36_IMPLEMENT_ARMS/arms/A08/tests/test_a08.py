@@ -22,6 +22,7 @@ import pandas as pd
 
 HERE = Path(__file__).resolve().parent
 ARM_DIR = HERE.parent
+ARMS_DIR = ARM_DIR.parent                        # .../P36_IMPLEMENT_ARMS/arms
 RUNNER = ARM_DIR.parents[1] / "runner"
 for p in (str(ARM_DIR), str(RUNNER)):
     if p not in sys.path:
@@ -32,6 +33,29 @@ import features as feat                          # noqa: E402
 import guard_harness as gh                        # noqa: E402  (frozen; read-only import)
 import runner_constants as rc                     # noqa: E402  (frozen; read-only import)
 import runner_interface as ri                      # noqa: E402  (frozen; read-only import)
+
+# ------------------------------------------------------------------------------------------------
+# READ-ONLY cross-arm parity imports (P37 finding A-1 remediation). This suite reads A09's and
+# A10's feature_construction.py files ONLY to prove A08's d_t is byte-identical to theirs on a
+# tie-heavy fixture -- it writes nothing to those directories (OWNERSHIP is unaffected: this file
+# lives under arms/A08/tests/, the only bytes it writes are A08_TEST_RECEIPT.json in ARM_DIR).
+# Both A09 and A10 name their module `feature_construction.py`, so each is loaded under a distinct
+# synthetic module name via spec_from_file_location -- a plain `sys.path` + `import` would collide
+# on the shared name and silently rebind one arm's module object to the other's file.
+import importlib.util as _ilu
+
+
+def _load_module_from_path(module_name: str, file_path: Path):
+    spec = _ilu.spec_from_file_location(module_name, file_path)
+    mod = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+a09_fc = _load_module_from_path("a08_tests_a09_feature_construction",
+                                ARMS_DIR / "A09" / "feature_construction.py")
+a10_fc = _load_module_from_path("a08_tests_a10_feature_construction",
+                                ARMS_DIR / "A10" / "feature_construction.py")
 
 RESULTS = []
 
@@ -91,6 +115,37 @@ def build_universe(history: pd.DataFrame, frac: float = 1.0, seed: int = 99) -> 
 
 def targets_from_universe(universe: pd.DataFrame) -> pd.DataFrame:
     return universe[["game_date", "game_id", "team_id"]].copy()
+
+
+def build_tie_heavy_history(n_dates: int = 40, games_per_date: int = 3, n_teams: int = 6,
+                            seed: int = 71) -> pd.DataFrame:
+    """A synthetic contract-schedule table with MULTIPLE games per calendar date -- the exact
+    shape (three games per date, 40 dates, 6 teams) the P37 audit used to measure the old
+    rank-strict code's divergence (156/240 rows differing from the date-strict siblings).
+
+    `n_teams` teams play exactly `games_per_date` games (2*games_per_date team-rows) on every one
+    of `n_dates` calendar dates, each team paired with a different opponent each date (round-robin
+    rotation), so every date has real ties in `game_id` ordering that must NOT be treated as
+    "strictly earlier" than each other.
+    """
+    assert n_teams == 2 * games_per_date, "fixture requires n_teams == 2 * games_per_date"
+    rng = np.random.Generator(np.random.PCG64(seed))
+    rows = []
+    gid = 700_000
+    for d in range(n_dates):
+        date_val = 20300101 + d
+        order = list(range(n_teams))
+        rng.shuffle(order)
+        for k in range(games_per_date):
+            gid += 1
+            home, away = order[2 * k], order[2 * k + 1]
+            for team_id in (home, away):
+                rows.append({
+                    "game_id": gid, "game_date": date_val, "team_id": team_id,
+                    "season": 9001,
+                    "pace": float(rng.normal(loc=75.0, scale=5.0)),
+                })
+    return pd.DataFrame(rows)
 
 
 # ------------------------------------------------------------------------------------- tests
@@ -340,6 +395,97 @@ def t10_p22_dependency_battery_runs():
     return {"blocking": rec.get("blocking", [])}
 
 
+def t11_tie_heavy_date_strictness():
+    """P37 finding A-1 regression guard. On a fixture with multiple games per calendar date, a
+    same-date sibling game (however its game_id compares) must NEVER count as 'strictly earlier'
+    for either d_t or L_t/n_prior_league -- the exact defect the audit measured (156/240 divergent
+    rows on this fixture shape under the old rank-strict code)."""
+    hist = build_tie_heavy_history()
+    tgt = hist[["game_date", "game_id", "team_id"]].copy()
+    K = 10
+    out = feat.compute_features(hist, tgt, K=K)
+
+    dates = hist["game_date"].to_numpy()
+    game_ids = hist["game_id"].to_numpy()
+
+    # (a) n_prior_league must equal the number of DISTINCT games at strictly earlier dates only,
+    #     for every row -- never incremented by a same-date sibling regardless of game_id order.
+    distinct_games = hist[["game_date", "game_id"]].drop_duplicates()
+    expected_n_prior_league = np.array([
+        int((distinct_games["game_date"] < d).sum()) for d in dates
+    ])
+    check(np.array_equal(out["n_prior_league"], expected_n_prior_league),
+          "n_prior_league must count only STRICTLY-EARLIER-DATED games, never same-date siblings "
+          "(P37 finding A-1)")
+
+    # (b) pick a row whose game has same-date siblings with SMALLER game_id and perturb one such
+    #     sibling's pace by a large amount: d_t and L_raw for the target row must NOT move, because
+    #     a same-date game (even with a smaller game_id) is never "strictly before" this row.
+    df_idx = pd.DataFrame({"date": dates, "gid": game_ids})
+    min_gid_by_date = df_idx.groupby("date")["gid"].transform("min")
+    has_smaller_sibling = df_idx["gid"] > min_gid_by_date          # not the earliest game of its date
+    check(has_smaller_sibling.any(), "fixture must contain a row with a same-date sibling of a "
+                                     "smaller game_id")
+    i = int(np.argmax(has_smaller_sibling.to_numpy()))
+    row_date, row_gid = dates[i], game_ids[i]
+    sibling_mask = (dates == row_date) & (game_ids < row_gid)
+    check(sibling_mask.any(), "chosen row must have a same-date sibling with a smaller game_id")
+    sibling_gid = int(game_ids[sibling_mask][0])
+
+    hist_perturbed = hist.copy()
+    hist_perturbed.loc[hist_perturbed["game_id"] == sibling_gid, "pace"] += 5000.0
+    out_pert = feat.compute_features(hist_perturbed, tgt, K=K)
+
+    check(abs(out_pert["d_t"][i] - out["d_t"][i]) < 1e-9,
+          "perturbing a SAME-DATE sibling game (smaller game_id) must NOT change d_t for a row on "
+          "that date -- date-granular strictness (P37 finding A-1, construction_pins."
+          "d_t_league_mean_pin)")
+    check(abs(out_pert["L_raw"][i] - out["L_raw"][i]) < 1e-9,
+          "perturbing a SAME-DATE sibling game must NOT change L_raw -- date-granular window "
+          "membership (P37 finding A-1, construction_pins.a08_window_tie_break)")
+    check(out["windowed_defined"][i] == out_pert["windowed_defined"][i],
+          "windowed_defined must be unaffected by a same-date sibling")
+    return {"row_checked": {"game_date": int(row_date), "game_id": int(row_gid)},
+           "sibling_game_id": sibling_gid,
+           "n_rows_with_smaller_sibling": int(has_smaller_sibling.sum())}
+
+
+def t12_cross_arm_d_t_parity_tie_heavy():
+    """P37 finding A-1 remediation proof. On the SAME tie-heavy fixture the audit used (three
+    games per date, 40 dates, 6 teams), A08's d_t must be BITWISE IDENTICAL to A09's and A10's --
+    the K4 shared-null invariant (construction_pins.d_t_league_mean_pin: 'd_t is therefore ONE
+    shared column across A08/A09/A10'). n_off_poss/max_period are chosen (max_period=4.0) so A09's
+    and A10's own `lagged_pace` formula reduces to the identity (denominator 40+5*max(0,0)=40,
+    pace_out = n_off_poss), so supplying n_off_poss := this fixture's `pace` column feeds A09/A10
+    the EXACT SAME pace values A08 consumes directly -- an apples-to-apples byte comparison."""
+    hist = build_tie_heavy_history()
+    tgt = hist[["game_date", "game_id", "team_id"]].copy()
+
+    a08_out = feat.compute_features(hist, tgt, K=10)
+    a08_d_t = a08_out["d_t"]
+
+    team_id = hist["team_id"].to_numpy()
+    game_date = hist["game_date"].to_numpy()
+    pace = hist["pace"].to_numpy()
+    max_period = np.full(len(hist), 4.0)          # denom == 40 -> lagged_pace(n_off_poss,.) == n_off_poss
+
+    a09_n_t, a09_d_t = a09_fc.compute_n_t_d_t(team_id, game_date, pace, max_period)
+    a10_n_t, a10_d_t, _dev = a10_fc.compute_n_t_d_t_dev(team_id, game_date, pace, max_period)
+
+    check(a08_d_t.tobytes() == a09_d_t.tobytes(),
+          "A08 d_t must be BYTE-IDENTICAL to A09 d_t on the tie-heavy fixture (P37 finding A-1 "
+          "regression guard; the audit measured max|diff|=2.6818, 156/240 rows differing under "
+          "the old rank-strict A08 code)")
+    check(a08_d_t.tobytes() == a10_d_t.tobytes(),
+          "A08 d_t must be BYTE-IDENTICAL to A10 d_t on the tie-heavy fixture")
+    check(a09_d_t.tobytes() == a10_d_t.tobytes(), "sanity: A09 and A10 must themselves agree")
+    check(np.array_equal(a08_out["n_prior_own"], a09_n_t.astype(int)),
+          "A08's n_prior_own must equal A09's n_t exactly (same date-strict own-team count)")
+    check(np.array_equal(a09_n_t, a10_n_t), "sanity: A09 and A10 n_t must themselves agree")
+    n_diff = int((a08_d_t != a09_d_t).sum())
+    return {"n_rows": len(hist), "n_diff_a08_vs_a09": n_diff, "max_abs_diff": 0.0}
+
+
 TESTS = [
     ("T01_feature_determinism", t01_feature_determinism),
     ("T02_strict_lagging", t02_strict_lagging),
@@ -351,6 +497,8 @@ TESTS = [
     ("T08_franchise_continuity_receipt", t08_franchise_continuity_receipt),
     ("T09_optional_hooks_shape", t09_optional_hooks_shape),
     ("T10_p22_dependency_battery_runs", t10_p22_dependency_battery_runs),
+    ("T11_tie_heavy_date_strictness", t11_tie_heavy_date_strictness),
+    ("T12_cross_arm_d_t_parity_tie_heavy", t12_cross_arm_d_t_parity_tie_heavy),
 ]
 
 
