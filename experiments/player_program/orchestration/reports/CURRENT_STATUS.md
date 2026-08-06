@@ -6,20 +6,21 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `4dacb8e265186768cdcbd3763930d791ab3b1687` |
+| HEAD | `c0aae3a55f2b3d3e2a308587271f98de218f143c` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 145 |
+| events | 150 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 12 |
+| BLOCKED | 11 |
 | PASSED | 44 |
-| READY | 1 |
+| RUNNING | 1 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 2 |
+| VERIFYING | 1 |
 
 ## Severity A blockers
 
@@ -27,11 +28,12 @@ None open against a node.
 
 ## Running
 
-None.
+* `P30_EVIDENCE_PACKET_V3` — Build and freeze EVIDENCE_PACKET_V3 with an immutable correction addendum
+* `P31_FINAL_V3_IDEATION` — Final clean ideation wave: six independent roles, V3 only, no source sees another output
 
 ## Ready — next automatically scheduled
 
-* `P30_EVIDENCE_PACKET_V3` (possession) — Build and freeze EVIDENCE_PACKET_V3 with an immutable correction addendum
+None.
 
 ## Passed
 
@@ -87,11 +89,11 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 1 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 1 | 0 |
-| operations | 0 | 11 | 0 | 2 | 1 |
-| possession | 12 | 12 | 1 | 2 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 |
+| lane | BLOCKED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED | VERIFYING |
+|---|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 1 | 0 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 1 | 0 | 0 |
+| operations | 0 | 11 | 0 | 2 | 1 | 0 |
+| possession | 11 | 12 | 1 | 2 | 1 | 1 |
+| product | 0 | 4 | 0 | 0 | 0 | 0 |
