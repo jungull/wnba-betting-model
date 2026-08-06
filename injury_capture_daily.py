@@ -25,7 +25,15 @@ Every run ALWAYS saves the raw payload first:
     data/injury_capture/raw/<source>_<UTC yyyymmddTHHMMSSZ>.<pdf|json>
 then appends normalized rows (one per player-designation) to
     data/injury_capture/injury_log.csv
-schema: capture_utc, report_date, game_date, team, player, status, reason, source
+schema v1: capture_utc, report_date, game_date, team, player, status, reason, source
+schema v2 (O14/D022): v1 + player_id — the capture name resolved at capture
+time against the cross-season identity index + alias table
+(entity_resolution.py); the raw `player` string is always retained; blank when
+unresolved. LIVE-DATA RULE: this writer never rewrites existing rows. On a
+fresh log it writes the v2 header; on an existing v1-header log it keeps
+appending v1-shape rows (a ragged CSV would break every reader) until the
+shipped migration script (migrate_o14_capture_player_id.py) is deliberately
+run to upgrade header + history atomically.
 
 Exit 0 with a one-line summary when either source succeeds (a structurally
 valid but empty report - e.g. every team NOT YET SUBMITTED - is success);
@@ -53,6 +61,8 @@ RAWDIR = OUTDIR / "raw"
 LOGCSV = OUTDIR / "injury_log.csv"
 CSV_HEADER = ["capture_utc", "report_date", "game_date", "team", "player",
               "status", "reason", "source"]
+# O14/D022 schema v2: resolved identity appended; raw capture string retained.
+CSV_HEADER_V2 = CSV_HEADER + ["player_id"]
 
 PDF_BASE = ("https://ak-static.cms.nba.com/referee/wnba_injury/"
             "Injury-Report_{date}_{slot}.pdf")
@@ -364,21 +374,65 @@ def save_raw(stamp, source, ext, data):
     return p
 
 
-def append_log(stamp, rows, source):
+def _log_header(path):
+    """First line of an existing log as a list, or None if no file."""
+    if not path.exists():
+        return None
+    with open(path, newline="", encoding="utf-8") as f:
+        return next(csv.reader(f), None)
+
+
+def append_log(stamp, rows, source, name_to_id=None):
+    """Append normalized rows.  O14/D022: on a v2-header log (or a fresh log,
+    which is created v2) each row carries a resolved player_id; on a legacy
+    v1-header log rows stay v1-shaped — existing rows are NEVER rewritten and
+    the CSV is never made ragged.  Resolution failure never kills a capture:
+    player_id degrades to blank with an explicit warning."""
     OUTDIR.mkdir(parents=True, exist_ok=True)
-    new = not LOGCSV.exists()
+    hdr = _log_header(LOGCSV)
+    write_v2 = hdr is None or "player_id" in hdr
+    if hdr is not None and "player_id" not in hdr:
+        print("NOTE: injury_log.csv still has the pre-O14 v1 header; "
+              "appending v1-shape rows (no player_id). Run "
+              "migrate_o14_capture_player_id.py to upgrade the artifact.",
+              file=sys.stderr)
+
+    resolver = None
+    if write_v2:
+        try:
+            from entity_resolution import (resolve_player_id,
+                                           try_load_capture_index)
+            if name_to_id is None:
+                name_to_id = try_load_capture_index()
+            resolver = resolve_player_id
+        except Exception as e:
+            print(f"WARNING: entity resolution unavailable "
+                  f"({type(e).__name__}: {e}); player_id left blank",
+                  file=sys.stderr)
 
     def clean(v):                      # keep the CSV one physical line/row
         return re.sub(r"\s+", " ", str(v)).strip()
 
+    unresolved = set()
     with open(LOGCSV, "a", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        if new:
-            w.writerow(CSV_HEADER)
+        if hdr is None:
+            w.writerow(CSV_HEADER_V2)
         for r in rows:
-            w.writerow([stamp] + [clean(r[k]) for k in
-                                  ("report_date", "game_date", "team",
-                                   "player", "status", "reason")] + [source])
+            rec = [stamp] + [clean(r[k]) for k in
+                             ("report_date", "game_date", "team",
+                              "player", "status", "reason")] + [source]
+            if write_v2:
+                pid = (resolver(r["player"], name_to_id)
+                       if resolver and name_to_id else None)
+                if pid is None and r["player"]:
+                    unresolved.add(r["player"])
+                rec.append("" if pid is None else str(pid))
+            w.writerow(rec)
+    if write_v2 and unresolved:        # explicit, never silent
+        print(f"NOTE: {len(unresolved)} capture name(s) resolve to no "
+              f"player_id in any season (cold start or unlisted alias): "
+              f"{sorted(unresolved)}", file=sys.stderr)
 
 
 def capture_official(sess, stamp):

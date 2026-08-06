@@ -66,6 +66,17 @@ Usage:
   python daily_forecast.py                     # slate = today (ET), cutoff = now
   python daily_forecast.py --slate-date 2026-07-30 --cutoff 2026-07-30T21:30:00Z
   python daily_forecast.py --no-log            # compute + report, skip chain writes
+  python daily_forecast.py --game-id 1022600225   # per-game scope (D-c): only
+                                               # this game; exclusions DECLARED
+                                               # in scope_declaration.json
+
+Per-game execution scope + obligation-keyed dedup (defect D-c, decision D-4,
+adopted 2026-08-06 under D022): each slate game is an independent execution
+unit — one failing game degrades explicitly and never aborts the rest — and a
+record is refused when its obligation (game_id, decision_time_label,
+model_version_hash) is already in the chain, regardless of the wall-clock
+forecast_cutoff. Chain records are written as schema evalharness/forecast_log/2
+(additive optional alt_model_predictions; /1 records stand).
 """
 from __future__ import annotations
 
@@ -75,8 +86,10 @@ import math
 import re
 import sys
 import unicodedata
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Sequence
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -91,6 +104,7 @@ from evalharness.forecast_log import (  # noqa: E402  (path guard below)
     hash_dataframe,
     hash_model_config,
     log_forecast,
+    read_forecasts,
     verify_chain,
 )
 
@@ -147,7 +161,13 @@ class Gaps:
         self.items: list[dict] = []
 
     def add(self, severity: str, component: str, message: str) -> None:
-        assert severity in ("FATAL", "WARN", "INFO")
+        # BLOCK (O14/D022, fix F4, applied per ops_adoption_tests/O14/
+        # B_HANDOFF.md): an unbindable Out/Doubtful designation marks the
+        # AVAILABILITY estimate untrustworthy for the affected team — the
+        # player layer fails closed. Documented ruling: while the player
+        # layer is informational in v0, BLOCK does NOT abort the team
+        # forecast; Gaps.fatal() stays FATAL-only.
+        assert severity in ("FATAL", "BLOCK", "WARN", "INFO")
         self.items.append({"severity": severity, "component": component,
                            "message": message})
         # console may be cp1252; files stay utf-8
@@ -600,6 +620,155 @@ def nearest_label(hours_to_tip: float) -> str:
 
 
 # ---------------------------------------------------------------------------
+# per-game execution scope + obligation-keyed dedup (defect D-c; decision D-4,
+# adopted 2026-08-06 under D022 from the O12 design:
+# experiments/player_program/ops_lane/O12_PER_GAME_EXECUTION_SCOPE/)
+# ---------------------------------------------------------------------------
+# The single idea (O12 REPORT.md §4): the thing a run owes is an OBLIGATION —
+# (game_id, decision_time_label, model_version_hash) — not an instant.
+# ``forecast_cutoff`` keeps its existing, correct meaning as the as-of data
+# boundary (never in the future; enforced in main()). It is no longer the
+# deduplication identity: a scheduled run's cutoff is a microsecond wall
+# clock, so the chain's (game_id, forecast_cutoff, model_version_hash) key
+# could never collide (D-c limb 2). The chain's own DuplicateForecastError
+# stays in place underneath as a second line of defence.
+#
+# KNOWN LIMIT (O12 REPORT.md §3/§6, finding O12-1 / proposal P3, NOT adopted
+# here): decision_time_label is still assigned by nearest_label(hours_to_tip)
+# from the firing instant, with no proximity bound. Until P3 (label as the
+# dispatched obligation, a registered-contract change) is ruled on, a badly
+# timed firing can claim a label and cause the obligation guard to refuse a
+# later, correctly timed serving. The guard errs on the side of refusing —
+# never double-serving.
+
+class ObligationAlreadyServedError(Exception):
+    """This (game, decision label, model version) obligation is already in the chain.
+
+    Distinct from ``DuplicateForecastError``: that one asks "did we already
+    log this exact instant", which is always false for a wall-clock cutoff.
+    This one asks "did we already discharge this obligation", which is the
+    question the coverage audit actually grades.
+    """
+
+
+class OutOfScopeError(Exception):
+    """A run scoped to one game tried to log a record for a different game."""
+
+
+@dataclass
+class ScopeDeclaration:
+    """What a scoped run deliberately did not forecast, and why.
+
+    The COMPLETENESS RULE frozen 2026-07-31 (see the chain-write loop) says
+    every slate game gets a chain record, because logging only some games
+    makes the chain a filtered sample of its own slate. Per-game scope is in
+    tension with that rule. This object resolves the tension by making the
+    filter DECLARED rather than silent: a scoped run states its scope and
+    names every game it excluded, so a later grader can tell a scoped run
+    apart from a run that dropped games. It is a declaration, NOT a chain
+    record, and NOT a schema change.
+    """
+    scoped_to_game_ids: list
+    excluded_game_ids: list
+    slate_date: str
+    reason: str
+    fired_at_utc: str
+    excluded_are_other_obligations: bool = True
+    notes: list = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {
+            "scope": "per_game",
+            "scoped_to_game_ids": sorted(self.scoped_to_game_ids),
+            "excluded_game_ids": sorted(self.excluded_game_ids),
+            "n_slate_games": len(self.scoped_to_game_ids) + len(self.excluded_game_ids),
+            "slate_date": self.slate_date,
+            "reason": self.reason,
+            "fired_at_utc": self.fired_at_utc,
+            "excluded_are_other_obligations": self.excluded_are_other_obligations,
+            "notes": list(self.notes),
+        }
+
+    def write(self, path: Path) -> Path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(self.to_dict(), indent=2, sort_keys=True),
+                        encoding="utf-8")
+        return path
+
+
+def served_obligation_keys(records) -> set:
+    """Obligation keys already discharged, read from chain records on disk.
+
+    Works on schema /1 AND /2 records: the obligation triple is derivable
+    from fields both schemas carry — no schema change was needed for it.
+    """
+    out: set = set()
+    for r in records:
+        gid, lab, mh = (r.get("game_id"), r.get("decision_time_label"),
+                        r.get("model_version_hash"))
+        if gid is not None and lab is not None and mh is not None:
+            out.add((str(gid), str(lab), str(mh)))
+    return out
+
+
+def scope_slate_to_games(slate: Sequence[dict], game_ids,
+                         slate_date: str, fired_at_utc: datetime, reason: str):
+    """Restrict a slate to the named games and declare what was excluded.
+
+    ``game_ids=None`` means an unscoped (whole-slate) run: the slate is
+    returned unchanged and no declaration is produced, so existing behaviour
+    is exactly preserved when the new option is not used.
+    """
+    if game_ids is None:
+        return list(slate), None
+    want = {str(g) for g in game_ids}
+    have = {str(g["game_id"]) for g in slate}
+    missing = sorted(want - have)
+    kept = [g for g in slate if str(g["game_id"]) in want]
+    excluded = sorted(have - want)
+    decl = ScopeDeclaration(
+        scoped_to_game_ids=sorted(want & have),
+        excluded_game_ids=excluded,
+        slate_date=slate_date,
+        reason=reason,
+        fired_at_utc=fired_at_utc.astimezone(timezone.utc).isoformat(),
+        notes=([f"requested game_ids absent from the discovered slate: {missing}"]
+               if missing else []),
+    )
+    return kept, decl
+
+
+def obligation_guard(log_path: Path, *, game_id: str, decision_time_label: str,
+                     model_version_hash: str,
+                     scoped_to_game_ids=None) -> None:
+    """Refuse a repeat serving of an obligation BEFORE touching the chain.
+
+    Raises OutOfScopeError if a scoped run tries to log a game outside its
+    declared scope, and ObligationAlreadyServedError if the (game_id,
+    decision_time_label, model_version_hash) obligation is already
+    discharged in the chain — regardless of the wall-clock forecast_cutoff.
+    This wrapper only ever ADDS a refusal; it can never permit something the
+    chain itself would refuse.
+    """
+    if scoped_to_game_ids is not None and str(game_id) not in {
+            str(g) for g in scoped_to_game_ids}:
+        raise OutOfScopeError(
+            f"run is scoped to {sorted(map(str, scoped_to_game_ids))} but "
+            f"tried to log game_id={game_id!r}"
+        )
+    served = served_obligation_keys(read_forecasts(log_path))
+    key = (str(game_id), str(decision_time_label), str(model_version_hash))
+    if key in served:
+        raise ObligationAlreadyServedError(
+            f"obligation already discharged: game_id={game_id!r} "
+            f"decision_time_label={decision_time_label!r} under "
+            f"model_version_hash={model_version_hash!r}. A second serving of "
+            "the same obligation is not a new prediction; it is the same "
+            "decision re-timestamped."
+        )
+
+
+# ---------------------------------------------------------------------------
 # player layer (informational in v0)
 # ---------------------------------------------------------------------------
 
@@ -639,125 +808,311 @@ def load_injuries_at_cutoff(cutoff: datetime, gaps: Gaps) -> tuple[pd.DataFrame,
 
 def player_layer(slate: list[dict], season: int, slate_date, cutoff: datetime,
                  gaps: Gaps) -> tuple[dict, dict]:
-    """Recency dressed roster + minutes EWMA(0.30) + the Phase-3 rule gate:
-    latest captured designation 'Out' at the cutoff => excluded. Informational
-    only in v0: never modifies the team forecast."""
+    """Identity-resolved roster + minutes EWMA(0.30) + the Phase-3 rule gate
+    (O14/D022): minutes history is keyed on player_id across the season (F1);
+    rosters are single-tenant per identity as of the cutoff, each entry
+    recording assignment_source last_game vs designation_transfer (F2);
+    designations bind by identity via the cross-season index + alias table,
+    never by (franchise-name, spelling) pair (F3); an unbindable Out/Doubtful
+    raises BLOCK and materialises an explicit unresolved cold-start object —
+    the availability estimate fails closed (F4). Informational only in v0:
+    never modifies the team forecast."""
+    from entity_resolution import player_layer_resolved
     inj, inj_prov = load_injuries_at_cutoff(cutoff, gaps)
-    have_inj = len(inj) > 0
-    p = pd.read_parquet(MASTER_PLAYER)
-    p = p[(p.season == season)
-          & (pd.to_datetime(p.game_date).dt.date < slate_date)].copy()
+    p_all = pd.read_parquet(MASTER_PLAYER)
+    p = p_all[(p_all.season == season)
+              & (pd.to_datetime(p_all.game_date).dt.date < slate_date)].copy()
     p["game_date"] = pd.to_datetime(p.game_date)
     abbr_to_name = {v: k for k, v in TEAMS.items()}
-    out: dict = {}
-    for team_ab in sorted({g["home"] for g in slate} | {g["away"] for g in slate}):
-        tp = p[p.team_abbreviation == team_ab]
-        if not len(tp):
-            gaps.add("WARN", "player-layer", f"{team_ab}: no season rows in "
-                     "master_player — roster unknown")
-            out[team_ab] = {"available": [], "out": [], "unknown_roster": True}
-            continue
-        # recency dressed roster: anyone on the roster (played or DNP row) in
-        # the team's last RECENCY_GAMES games
-        tgames = sorted(tp.game_id.unique(),
-                        key=lambda gid: tp[tp.game_id == gid].game_date.iloc[0])
-        recent = set(tgames[-RECENCY_GAMES:])
-        roster = tp[tp.game_id.isin(recent)].player_name.unique()
-        # injury designations for this team
-        team_inj = (inj[inj.team == abbr_to_name.get(team_ab, "?")]
-                    if len(inj) else pd.DataFrame())
-        inj_by_norm = ({_norm_name(r.player): r for r in team_inj.itertuples()}
-                       if len(team_inj) else {})
-        matched_norms = set()
-        avail, outs = [], []
-        for name in sorted(roster):
-            hist = (tp[(tp.player_name == name) & (tp.minutes.notna())
-                       & (tp.minutes > 0)].sort_values(["game_date", "game_id"]))
-            rec = {"player": name,
-                   "games_played": int(len(hist)),
-                   "min_ewma": (float(hist.minutes.ewm(alpha=MINUTES_ALPHA,
-                                                       adjust=True).mean().iloc[-1])
-                                if len(hist) else None),
-                   "last_played": (str(hist.game_date.max().date())
-                                   if len(hist) else None),
-                   "cold_start": len(hist) == 0,
-                   "designation": None, "reason": None}
-            hit = inj_by_norm.get(_norm_name(name))
-            if hit is not None:
-                matched_norms.add(_norm_name(name))
-                rec["designation"] = hit.status
-                rec["reason"] = str(hit.reason)
-            if rec["designation"] == "Out":
-                outs.append(rec)       # Phase-3 rule gate: excluded
-            else:
-                avail.append(rec)
-        # injury-report rows that matched no recency-roster player fall into
-        # two very different cases; neither is silently dropped:
-        #   (a) player exists in the team's season history but was not dressed
-        #       in the last RECENCY_GAMES games -> a long-term absentee the
-        #       recency roster already excludes (expected; INFO);
-        #   (b) player unknown to the season entirely -> possible new signing
-        #       or a name mismatch, i.e. the Out gate may have FAILED to fire
-        #       on someone rostered under another spelling (WARN).
-        season_by_norm = {_norm_name(n): n for n in tp.player_name.unique()}
-        report_only = []
-        for n, r in inj_by_norm.items():
-            if n in matched_norms:
-                continue
-            season_name = season_by_norm.get(n)
-            if season_name is not None:
-                last_rostered = str(tp[tp.player_name == season_name]
-                                    .game_date.max().date())
-                report_only.append({"player": r.player, "status": r.status,
-                                    "in_season_history": True,
-                                    "last_rostered": last_rostered})
-                if r.status == "Out":
-                    gaps.add("INFO", "player-layer", f"{team_ab}: {r.player} "
-                             f"(Out) is on the injury report but outside the "
-                             f"{RECENCY_GAMES}-game recency roster (last "
-                             f"rostered {last_rostered}) — long-term absentee, "
-                             "already excluded from the availability estimate")
-                else:
-                    gaps.add("WARN", "player-layer", f"{team_ab}: {r.player} "
-                             f"({r.status}) is outside the {RECENCY_GAMES}-game "
-                             f"recency roster (last rostered {last_rostered}) "
-                             "but NOT Out — a possible RETURN the recency "
-                             "roster cannot see; the availability estimate may "
-                             "understate tonight's rotation")
-            else:
-                report_only.append({"player": r.player, "status": r.status,
-                                    "in_season_history": False,
-                                    "last_rostered": None})
-                gaps.add("WARN", "player-layer", f"{team_ab}: injury-report "
-                         f"player {r.player!r} ({r.status}) matches NO ONE in "
-                         "the team's season history — new signing or name "
-                         "mismatch; if the status is Out and the player is "
-                         "rostered under another spelling, the gate did NOT fire")
-        ewma_avail = [a["min_ewma"] for a in avail if a["min_ewma"] is not None]
-        out[team_ab] = {
-            "availability_data": have_inj,   # False = designations UNKNOWN,
-                                             # not "no one is out"
-            "available": avail, "out": outs,
-            "n_roster": len(roster), "n_out": len(outs),
-            "n_cold_start": sum(1 for a in avail if a["cold_start"]),
-            "sum_min_ewma_available": float(np.nansum(ewma_avail)) if ewma_avail else None,
-            "vacated_min_ewma": float(np.nansum([o["min_ewma"] for o in outs
-                                                 if o["min_ewma"] is not None])),
-            "designations_counts": {},
-            "report_only": report_only,
-            "unmatched_injury_rows": [f"{r['player']} ({r['status']})"
-                                      for r in report_only
-                                      if not r["in_season_history"]],
-            "roster_last_game": (str(tp[tp.game_id.isin(recent)].game_date.max().date())
-                                 if len(recent) else None),
-            "unknown_roster": False,
-        }
-        dc: dict = {}
-        for a in avail + outs:
-            if a["designation"]:
-                dc[a["designation"]] = dc.get(a["designation"], 0) + 1
-        out[team_ab]["designations_counts"] = dc
+    teams = sorted({g["home"] for g in slate} | {g["away"] for g in slate})
+    out = player_layer_resolved(teams, p, inj, abbr_to_name, gaps,
+                                p_all=p_all, season=season)
     return out, inj_prov
+
+
+# ---------------------------------------------------------------------------
+# per-game forecast units (D-c: each game is an independent execution unit —
+# one failing game must not abort or contaminate the remaining slate)
+# ---------------------------------------------------------------------------
+
+_NULL_MARKET = {"n_books_spread": 0, "home_spread_median": None,
+                "home_spread_price_median": None, "total_median": None,
+                "n_books_total": 0, "h2h_home_price_median": None,
+                "books_last_update_max": None,
+                "spread_min": None, "spread_max": None}
+
+
+def forecast_one_game(g: dict, *, state: dict, lg: dict, params: dict,
+                      players: dict, cutoff: datetime, season: int,
+                      gaps: Gaps) -> tuple[dict, list[dict]]:
+    """Forecast ONE slate game — the independent execution unit (D-c).
+
+    May raise on an unexpected internal failure; forecast_slate() catches
+    per game so the rest of the slate is untouched. Returns (row, its
+    feature-snapshot rows)."""
+    home, away = g["home"], g["away"]
+    hs, as_ = state.get(home), state.get(away)
+    tip = g["event_time"]
+    hours_to_tip = ((tip - cutoff).total_seconds() / 3600.0
+                    if tip is not None else None)
+    label = nearest_label(hours_to_tip) if hours_to_tip is not None else "unknown-tip"
+    skip = None
+    if hs is None or as_ is None:
+        skip = f"no season-{season} master rows for " + \
+               ", ".join(ab for ab, st in ((home, hs), (away, as_)) if st is None)
+        gaps.add("WARN", "forecast", f"{away} @ {home}: {skip}")
+    elif hours_to_tip is not None and hours_to_tip <= 0:
+        skip = "tip already passed at the cutoff — a post-tip 'forecast' " \
+               "violates the prediction contract"
+        gaps.add("WARN", "forecast", f"{away} @ {home}: {skip}")
+    fc = (structural_forecast(hs, as_, lg, params)
+          if skip is None else None)
+    if fc is None and skip is None:
+        skip = "team below eligibility floor (see gaps)"
+    mk = g["market"]
+    row = {
+        "game_id": g["game_id"], "home": home, "away": away,
+        "tip_utc": tip.isoformat() if tip else None,
+        "tip_et": (tip.astimezone(ET).strftime("%Y-%m-%d %H:%M")
+                   if tip else "unknown"),
+        "hours_to_tip": hours_to_tip, "label": label,
+        "forecast": fc, "market": mk, "crew": g["crew"],
+        "players": players, "skip_reason": skip,
+        "game_id_provisional": g["game_id_provisional"],
+        "api_event_id": g["api_event_id"],
+    }
+    game_snap_rows = []
+    for side, st in (("home", hs), ("away", as_)):
+        if st is None or st.get("ineligible"):
+            continue
+        game_snap_rows.append({
+            "game_id": g["game_id"], "side": side, "team": st["abbr"],
+            "prior_games": st["prior_games"], "fallback": st["fallback"],
+            **{k: st[k] for k in ("raw_ft", "raw_3pt", "raw_paint",
+                                  "raw_np2", "fta_t", "ftpct_t", "pf_t",
+                                  "fg3a_t", "fg3m_t", "fg3a_allow_t",
+                                  "paint_allow_t", "np2_allow_t")
+               if k in st},
+            "lg_pf": lg["lg_pf"], "lg_fg3a": lg["lg_fg3a"],
+            "lg_paint": lg["lg_paint"], "lg_np2": lg["lg_np2"],
+            "market_home_spread_median": mk["home_spread_median"],
+            "market_total_median": mk["total_median"],
+            "n_books_spread": mk["n_books_spread"],
+            "n_out_players": (players.get(st["abbr"], {}) or {}).get("n_out"),
+            "event_time": tip.isoformat() if tip else None,
+            "forecast_cutoff": cutoff.isoformat(),
+        })
+    return row, game_snap_rows
+
+
+def failure_row(g: dict, cutoff: datetime, exc: BaseException,
+                players: dict) -> dict:
+    """COMPLETENESS RULE: a game whose per-game unit crashed still gets a row
+    (and hence a NO_FORECAST chain record) with an explicit reason — never a
+    silent drop from its own slate."""
+    tip = g.get("event_time")
+    try:
+        hours = ((tip - cutoff).total_seconds() / 3600.0
+                 if tip is not None else None)
+    except Exception:
+        hours = None
+    return {
+        "game_id": g.get("game_id"), "home": g.get("home"), "away": g.get("away"),
+        "tip_utc": tip.isoformat() if tip else None,
+        "tip_et": (tip.astimezone(ET).strftime("%Y-%m-%d %H:%M")
+                   if tip else "unknown"),
+        "hours_to_tip": hours,
+        "label": nearest_label(hours) if hours is not None else "unknown-tip",
+        "forecast": None,
+        "market": g.get("market") or dict(_NULL_MARKET),
+        "crew": g.get("crew"), "players": players,
+        "skip_reason": (f"unhandled per-game failure: "
+                        f"{type(exc).__name__}: {exc}"),
+        "game_id_provisional": bool(g.get("game_id_provisional", True)),
+        "api_event_id": g.get("api_event_id"),
+    }
+
+
+def forecast_slate(slate: list[dict], *, state: dict, lg: dict, params: dict,
+                   players: dict, cutoff: datetime, season: int,
+                   gaps: Gaps) -> tuple[list[dict], list[dict]]:
+    """Per-game execution scope (D-c): every game is forecast in isolation.
+    One failing game degrades EXPLICITLY (WARN + NO_FORECAST row) and the
+    remaining slate continues uncontaminated."""
+    rows, snap_rows = [], []
+    for g in slate:
+        try:
+            row, srows = forecast_one_game(
+                g, state=state, lg=lg, params=params, players=players,
+                cutoff=cutoff, season=season, gaps=gaps)
+        except Exception as exc:
+            gaps.add("WARN", "forecast",
+                     f"{g.get('away')} @ {g.get('home')}: unhandled per-game "
+                     f"failure ({type(exc).__name__}: {exc}) — game isolated; "
+                     "remaining slate continues (D-c per-game execution scope)")
+            row, srows = failure_row(g, cutoff, exc, players), []
+        rows.append(row)
+        snap_rows.extend(srows)
+    return rows, snap_rows
+
+
+def log_row_to_chain(r: dict, *, players: dict, cutoff: datetime,
+                     model_hash: str, snapshot_hash: str, snapshot_desc: str,
+                     generated_at: str, observed_time, git_head: str,
+                     odds_prov: dict, live: bool, log_path: Path,
+                     scoped_game_ids, gaps: Gaps) -> str:
+    """Write ONE game's chain record; never raises (D-c per-game isolation).
+
+    The obligation guard runs before every log_forecast call: a second
+    serving of (game_id, decision_time_label, model_version_hash) is refused
+    regardless of the wall-clock forecast_cutoff — deduplication no longer
+    keys on `now` (D-c limb 2). The chain's own DuplicateForecastError stays
+    underneath as a second line of defence.
+
+    Returns 'logged' | 'skipped_obligation' | 'skipped_duplicate' | 'failed'.
+    """
+    try:
+        obligation_guard(log_path, game_id=str(r["game_id"]),
+                         decision_time_label=r["label"],
+                         model_version_hash=model_hash,
+                         scoped_to_game_ids=scoped_game_ids)
+        # COMPLETENESS RULE (frozen 2026-07-31): every slate game gets a
+        # chain record, including ones we cannot forecast. Logging only
+        # successful forecasts would make the chain a filtered sample of
+        # its own slate; graded later, that is survivorship selection.
+        # A no-forecast record carries status + reason and null predictions.
+        if r["forecast"] is None or r["tip_utc"] is None:
+            reason = (r["skip_reason"] if r["forecast"] is None
+                      else "no event_time — provenance incomplete")
+            gaps.add("INFO", "chain", f"{r['away']} @ {r['home']}: logged as "
+                     f"NO_FORECAST ({reason})")
+            log_forecast(
+                game_id=str(r["game_id"]),
+                forecast_cutoff=cutoff,
+                decision_time_label=r["label"],
+                model_version_hash=model_hash,
+                data_snapshot_hash=snapshot_hash,
+                core_only_prediction={
+                    "model": "structural_channels_v2_daily_v0",
+                    "status": "NO_FORECAST",
+                    "no_forecast_reason": reason,
+                    "home_team": r["home"], "away_team": r["away"],
+                    "margin": None, "total": None,
+                    "home_score": None, "away_score": None,
+                    "p_home_cover_gauss_at_cutoff": None,
+                    "market_total_median_at_cutoff":
+                        r["market"]["total_median"],
+                    "game_id_provisional": r["game_id_provisional"],
+                    "provenance": {
+                        "event_time": r["tip_utc"],
+                        "published_time": generated_at,
+                        "observed_time": observed_time,
+                        "forecast_cutoff": cutoff.isoformat(),
+                        "source": SOURCE_NAME_LIVE if live else SOURCE_NAME,
+                        "source_version": f"git:{git_head}",
+                        "data_snapshot": snapshot_desc,
+                    },
+                },
+                w1_extraction=None,
+                market_line=(r["market"]["home_spread_median"]
+                             if r["market"]["home_spread_median"] is not None
+                             else None),
+                log_path=log_path,
+            )
+            return "logged"
+        f, mk = r["forecast"], r["market"]
+        pl_home = players.get(r["home"], {})
+        pl_away = players.get(r["away"], {})
+        # frozen distribution (dist_margin_cover_v1): Gaussian(margin, SIGMA_V0);
+        # P(home covers) = P(margin_true > -spread) = Phi((margin + spread)/sigma)
+        sp = mk["home_spread_median"]
+        p_cover = (0.5 * (1.0 + math.erf(
+            (f["margin"] + sp) / (SIGMA_V0 * math.sqrt(2.0))))
+            if sp is not None else None)
+        core = {
+            "model": "structural_channels_v2_daily_v0",
+            "margin_sigma": SIGMA_V0,
+            "p_home_cover_gauss_at_cutoff": (round(p_cover, 4)
+                                             if p_cover is not None else None),
+            "home_team": r["home"], "away_team": r["away"],
+            "home_score": round(f["home_score"], 3),
+            "away_score": round(f["away_score"], 3),
+            "margin": round(f["margin"], 3),
+            "total": round(f["total"], 3),
+            "margin_from_scores": round(f["margin_from_scores"], 3),
+            "channels_home": {k: round(v, 3) for k, v in f["channels_home"].items()},
+            "channels_away": {k: round(v, 3) for k, v in f["channels_away"].items()},
+            "any_fallback": f["any_fallback"],
+            "hours_to_tip_at_cutoff": round(r["hours_to_tip"], 3),
+            "player_layer_informational": {
+                "note": "v0: does NOT modify the team forecast",
+                "home": {k: pl_home.get(k) for k in
+                         ("n_roster", "n_out", "vacated_min_ewma",
+                          "sum_min_ewma_available", "n_cold_start")},
+                "away": {k: pl_away.get(k) for k in
+                         ("n_roster", "n_out", "vacated_min_ewma",
+                          "sum_min_ewma_available", "n_cold_start")},
+                "out_home": [o["player"] for o in pl_home.get("out", [])],
+                "out_away": [o["player"] for o in pl_away.get("out", [])],
+            },
+            "market_total_median_at_cutoff": mk["total_median"],
+            "referee_crew": r["crew"],
+            "game_id_provisional": r["game_id_provisional"],
+            "provenance": {
+                "event_time": r["tip_utc"],
+                "published_time": generated_at,
+                "observed_time": observed_time,
+                "forecast_cutoff": cutoff.isoformat(),
+                "source": SOURCE_NAME_LIVE if live else SOURCE_NAME,
+                "source_version": f"git:{git_head}",
+                "data_snapshot": snapshot_desc,
+            },
+        }
+        has_line = mk["home_spread_median"] is not None
+        log_forecast(
+            game_id=str(r["game_id"]),
+            forecast_cutoff=cutoff,
+            decision_time_label=r["label"],
+            model_version_hash=model_hash,
+            data_snapshot_hash=snapshot_hash,
+            core_only_prediction=core,
+            w1_extraction=None,             # W1 did not run in v0
+            core_plus_w1_prediction=None,
+            market_line=mk["home_spread_median"],
+            market_price=mk["home_spread_price_median"] if has_line else None,
+            market_book=(f"consensus:median_of_{mk['n_books_spread']}_books"
+                         if has_line else None),
+            market_source=(f"the_odds_api live snapshot "
+                           f"{odds_prov.get('snapshot_file')}@"
+                           f"{odds_prov.get('snapshot_ts_utc')} "
+                           "(nearest prior to cutoff); home spread, "
+                           "median across books"
+                           if has_line else None),
+            predicted_close=None,
+            intended_bet_decision="not_applicable",
+            paper_stake=0.0,
+            log_path=log_path,
+        )
+        return "logged"
+    except ObligationAlreadyServedError:
+        gaps.add("INFO", "chain", f"{r['away']} @ {r['home']}: obligation "
+                 f"(game {r['game_id']}, {r['label']}, this model version) "
+                 "already served — refused by the obligation guard (D-c: "
+                 "dedup no longer keys on the wall-clock cutoff); a second "
+                 "serving is the same decision re-timestamped, not a new "
+                 "prediction")
+        return "skipped_obligation"
+    except DuplicateForecastError:
+        gaps.add("INFO", "chain", f"{r['away']} @ {r['home']}: already "
+                 "logged at this (game, cutoff, model) — duplicate "
+                 "refused by the chain, skipped (re-logging a "
+                 "prospective prediction is never a silent overwrite)")
+        return "skipped_duplicate"
+    except Exception as exc:
+        gaps.add("WARN", "chain", f"{r['away']} @ {r['home']}: chain write "
+                 f"failed ({type(exc).__name__}: {exc}) — game isolated; "
+                 "remaining slate continues (D-c per-game execution scope)")
+        return "failed"
 
 
 # ---------------------------------------------------------------------------
@@ -887,6 +1242,15 @@ def main() -> int:
                          "tasks pass this; bare runs stay in the scratch chain.")
     ap.add_argument("--no-log", action="store_true",
                     help="compute + write CSV/report, skip scratch-chain writes")
+    ap.add_argument("--game-id", action="append", dest="game_ids", default=None,
+                    metavar="GAME_ID",
+                    help="scope this run to the named game_id (repeatable). "
+                         "Per-game execution scope (defect D-c, decision D-4): "
+                         "the slate is restricted to these games and every "
+                         "excluded game is DECLARED in scope_declaration.json "
+                         "+ the manifest, so a scoped run is distinguishable "
+                         "from a run that silently dropped games "
+                         "(COMPLETENESS RULE honoured by declaration).")
     args = ap.parse_args()
 
     gaps = Gaps()
@@ -929,6 +1293,25 @@ def main() -> int:
     slate, odds_prov = discover_slate(slate_date, cutoff, gaps)
     if gaps.fatal():
         return 1
+
+    # ---- per-game execution scope (D-c adoption, decision D-4) ------------
+    slate, scope_decl = scope_slate_to_games(
+        slate, args.game_ids, str(slate_date), now,
+        reason="--game-id per-game execution scope (defect D-c, decision D-4)")
+    if scope_decl is not None:
+        if not slate:
+            gaps.add("FATAL", "scope", "no requested --game-id is present in "
+                     f"the discovered slate (requested {args.game_ids}); "
+                     "nothing to forecast")
+            return 1
+        decl_path = DRYRUN_DIR / "scope_declaration.json"
+        scope_decl.write(decl_path)
+        gaps.add("INFO", "scope", "run scoped to game_ids "
+                 f"{sorted(scope_decl.scoped_to_game_ids)}; "
+                 f"{len(scope_decl.excluded_game_ids)} slate game(s) excluded "
+                 f"— scope DECLARED in {decl_path.name} and the manifest "
+                 "(COMPLETENESS RULE honoured by declaration, not evaded)")
+
     players, inj_prov = player_layer(slate, season, slate_date, cutoff, gaps)
 
     # per-slate-team trend staleness (a long schedule gap is legitimate, but
@@ -973,60 +1356,10 @@ def main() -> int:
     }
     model_hash = hash_model_config(model_config)
 
-    # ---- per-game forecasts ----------------------------------------------
-    rows, snap_rows = [], []
-    for g in slate:
-        home, away = g["home"], g["away"]
-        hs, as_ = state.get(home), state.get(away)
-        tip = g["event_time"]
-        hours_to_tip = ((tip - cutoff).total_seconds() / 3600.0
-                        if tip is not None else None)
-        label = nearest_label(hours_to_tip) if hours_to_tip is not None else "unknown-tip"
-        skip = None
-        if hs is None or as_ is None:
-            skip = f"no season-{season} master rows for " + \
-                   ", ".join(ab for ab, st in ((home, hs), (away, as_)) if st is None)
-            gaps.add("WARN", "forecast", f"{away} @ {home}: {skip}")
-        elif hours_to_tip is not None and hours_to_tip <= 0:
-            skip = "tip already passed at the cutoff — a post-tip 'forecast' " \
-                   "violates the prediction contract"
-            gaps.add("WARN", "forecast", f"{away} @ {home}: {skip}")
-        fc = (structural_forecast(hs, as_, lg, params)
-              if skip is None else None)
-        if fc is None and skip is None:
-            skip = "team below eligibility floor (see gaps)"
-        mk = g["market"]
-        rows.append({
-            "game_id": g["game_id"], "home": home, "away": away,
-            "tip_utc": tip.isoformat() if tip else None,
-            "tip_et": (tip.astimezone(ET).strftime("%Y-%m-%d %H:%M")
-                       if tip else "unknown"),
-            "hours_to_tip": hours_to_tip, "label": label,
-            "forecast": fc, "market": mk, "crew": g["crew"],
-            "players": players, "skip_reason": skip,
-            "game_id_provisional": g["game_id_provisional"],
-            "api_event_id": g["api_event_id"],
-        })
-        for side, st in (("home", hs), ("away", as_)):
-            if st is None or st.get("ineligible"):
-                continue
-            snap_rows.append({
-                "game_id": g["game_id"], "side": side, "team": st["abbr"],
-                "prior_games": st["prior_games"], "fallback": st["fallback"],
-                **{k: st[k] for k in ("raw_ft", "raw_3pt", "raw_paint",
-                                      "raw_np2", "fta_t", "ftpct_t", "pf_t",
-                                      "fg3a_t", "fg3m_t", "fg3a_allow_t",
-                                      "paint_allow_t", "np2_allow_t")
-                   if k in st},
-                "lg_pf": lg["lg_pf"], "lg_fg3a": lg["lg_fg3a"],
-                "lg_paint": lg["lg_paint"], "lg_np2": lg["lg_np2"],
-                "market_home_spread_median": mk["home_spread_median"],
-                "market_total_median": mk["total_median"],
-                "n_books_spread": mk["n_books_spread"],
-                "n_out_players": (players.get(st["abbr"], {}) or {}).get("n_out"),
-                "event_time": tip.isoformat() if tip else None,
-                "forecast_cutoff": cutoff.isoformat(),
-            })
+    # ---- per-game forecasts (each game an independent execution unit) -----
+    rows, snap_rows = forecast_slate(
+        slate, state=state, lg=lg, params=params, players=players,
+        cutoff=cutoff, season=season, gaps=gaps)
 
     # ---- data snapshot hash + description --------------------------------
     snap_df = pd.DataFrame(snap_rows)
@@ -1049,141 +1382,27 @@ def main() -> int:
     ] if v]
     observed_time = max(observed_times) if observed_times else None
 
-    # ---- chain writes (scratch ONLY) -------------------------------------
-    n_logged = n_skipped = 0
+    # ---- chain writes ------------------------------------------------------
+    # Per-game execution scope (D-c): every game's record is written in
+    # isolation via log_row_to_chain(); one failing write never aborts the
+    # remaining slate, and the obligation guard replaces wall-clock dedup.
+    n_logged = n_skipped = n_failed = 0
     if args.no_log:
         chain_note = "chain writes skipped (--no-log)"
     else:
         for r in rows:
-            # COMPLETENESS RULE (frozen 2026-07-31): every slate game gets a
-            # chain record, including ones we cannot forecast. Logging only
-            # successful forecasts would make the chain a filtered sample of
-            # its own slate; graded later, that is survivorship selection.
-            # A no-forecast record carries status + reason and null predictions.
-            if r["forecast"] is None or r["tip_utc"] is None:
-                reason = (r["skip_reason"] if r["forecast"] is None
-                          else "no event_time — provenance incomplete")
-                gaps.add("INFO", "chain", f"{r['away']} @ {r['home']}: logged as "
-                         f"NO_FORECAST ({reason})")
-                try:
-                    log_forecast(
-                        game_id=str(r["game_id"]),
-                        forecast_cutoff=cutoff,
-                        decision_time_label=r["label"],
-                        model_version_hash=model_hash,
-                        data_snapshot_hash=snapshot_hash,
-                        core_only_prediction={
-                            "model": "structural_channels_v2_daily_v0",
-                            "status": "NO_FORECAST",
-                            "no_forecast_reason": reason,
-                            "home_team": r["home"], "away_team": r["away"],
-                            "margin": None, "total": None,
-                            "home_score": None, "away_score": None,
-                            "p_home_cover_gauss_at_cutoff": None,
-                            "market_total_median_at_cutoff":
-                                r["market"]["total_median"],
-                            "game_id_provisional": r["game_id_provisional"],
-                            "provenance": {
-                                "event_time": r["tip_utc"],
-                                "published_time": generated_at,
-                                "observed_time": observed_time,
-                                "forecast_cutoff": cutoff.isoformat(),
-                                "source": SOURCE_NAME_LIVE if args.live else SOURCE_NAME,
-                                "source_version": f"git:{git_head}",
-                                "data_snapshot": snapshot_desc,
-                            },
-                        },
-                        w1_extraction=None,
-                        market_line=(r["market"]["home_spread_median"]
-                                     if r["market"]["home_spread_median"] is not None
-                                     else None),
-                        log_path=log_path,
-                    )
-                    n_logged += 1
-                except DuplicateForecastError:
-                    n_skipped += 1
-                continue
-            f, mk = r["forecast"], r["market"]
-            pl_home = players.get(r["home"], {})
-            pl_away = players.get(r["away"], {})
-            # frozen distribution (dist_margin_cover_v1): Gaussian(margin, SIGMA_V0);
-            # P(home covers) = P(margin_true > -spread) = Phi((margin + spread)/sigma)
-            sp = mk["home_spread_median"]
-            p_cover = (0.5 * (1.0 + math.erf(
-                (f["margin"] + sp) / (SIGMA_V0 * math.sqrt(2.0))))
-                if sp is not None else None)
-            core = {
-                "model": "structural_channels_v2_daily_v0",
-                "margin_sigma": SIGMA_V0,
-                "p_home_cover_gauss_at_cutoff": (round(p_cover, 4)
-                                                 if p_cover is not None else None),
-                "home_team": r["home"], "away_team": r["away"],
-                "home_score": round(f["home_score"], 3),
-                "away_score": round(f["away_score"], 3),
-                "margin": round(f["margin"], 3),
-                "total": round(f["total"], 3),
-                "margin_from_scores": round(f["margin_from_scores"], 3),
-                "channels_home": {k: round(v, 3) for k, v in f["channels_home"].items()},
-                "channels_away": {k: round(v, 3) for k, v in f["channels_away"].items()},
-                "any_fallback": f["any_fallback"],
-                "hours_to_tip_at_cutoff": round(r["hours_to_tip"], 3),
-                "player_layer_informational": {
-                    "note": "v0: does NOT modify the team forecast",
-                    "home": {k: pl_home.get(k) for k in
-                             ("n_roster", "n_out", "vacated_min_ewma",
-                              "sum_min_ewma_available", "n_cold_start")},
-                    "away": {k: pl_away.get(k) for k in
-                             ("n_roster", "n_out", "vacated_min_ewma",
-                              "sum_min_ewma_available", "n_cold_start")},
-                    "out_home": [o["player"] for o in pl_home.get("out", [])],
-                    "out_away": [o["player"] for o in pl_away.get("out", [])],
-                },
-                "market_total_median_at_cutoff": mk["total_median"],
-                "referee_crew": r["crew"],
-                "game_id_provisional": r["game_id_provisional"],
-                "provenance": {
-                    "event_time": r["tip_utc"],
-                    "published_time": generated_at,
-                    "observed_time": observed_time,
-                    "forecast_cutoff": cutoff.isoformat(),
-                    "source": SOURCE_NAME_LIVE if args.live else SOURCE_NAME,
-                    "source_version": f"git:{git_head}",
-                    "data_snapshot": snapshot_desc,
-                },
-            }
-            has_line = mk["home_spread_median"] is not None
-            try:
-                log_forecast(
-                    game_id=str(r["game_id"]),
-                    forecast_cutoff=cutoff,
-                    decision_time_label=r["label"],
-                    model_version_hash=model_hash,
-                    data_snapshot_hash=snapshot_hash,
-                    core_only_prediction=core,
-                    w1_extraction=None,             # W1 did not run in v0
-                    core_plus_w1_prediction=None,
-                    market_line=mk["home_spread_median"],
-                    market_price=mk["home_spread_price_median"] if has_line else None,
-                    market_book=(f"consensus:median_of_{mk['n_books_spread']}_books"
-                                 if has_line else None),
-                    market_source=(f"the_odds_api live snapshot "
-                                   f"{odds_prov.get('snapshot_file')}@"
-                                   f"{odds_prov.get('snapshot_ts_utc')} "
-                                   "(nearest prior to cutoff); home spread, "
-                                   "median across books"
-                                   if has_line else None),
-                    predicted_close=None,
-                    intended_bet_decision="not_applicable",
-                    paper_stake=0.0,
-                    log_path=log_path,
-                )
+            status = log_row_to_chain(
+                r, players=players, cutoff=cutoff, model_hash=model_hash,
+                snapshot_hash=snapshot_hash, snapshot_desc=snapshot_desc,
+                generated_at=generated_at, observed_time=observed_time,
+                git_head=git_head, odds_prov=odds_prov, live=args.live,
+                log_path=log_path, scoped_game_ids=args.game_ids, gaps=gaps)
+            if status == "logged":
                 n_logged += 1
-            except DuplicateForecastError:
+            elif status in ("skipped_obligation", "skipped_duplicate"):
                 n_skipped += 1
-                gaps.add("INFO", "chain", f"{r['away']} @ {r['home']}: already "
-                         "logged at this (game, cutoff, model) — duplicate "
-                         "refused by the chain, skipped (re-logging a "
-                         "prospective prediction is never a silent overwrite)")
+            else:
+                n_failed += 1
         rep = verify_chain(log_path)
         which = "OFFICIAL" if args.live else "scratch"
         chain_note = (f"{which} chain verified ({log_path.name}): ok={rep.ok}, "
@@ -1266,7 +1485,10 @@ def main() -> int:
                                     ("lg_pf", "lg_fg3a", "lg_paint", "lg_np2",
                                      "n_league_rows")}},
         "chain": {"path": str(log_path), "n_logged_this_run": n_logged,
-                  "n_duplicates_skipped": n_skipped, "note": chain_note},
+                  "n_skipped_already_served": n_skipped,
+                  "n_failed_writes": n_failed, "note": chain_note},
+        "scope": (scope_decl.to_dict() if scope_decl is not None
+                  else {"scope": "whole_slate"}),
         "gaps": gaps.items,
         "snapshot_description": snapshot_desc,
     }
@@ -1278,7 +1500,8 @@ def main() -> int:
     print(f"\nwrote {csv_path}")
     print(f"wrote {DRYRUN_DIR / 'REPORT.md'}, feature_snapshot.csv, "
           f"snapshot_manifest.json")
-    print(f"chain: {n_logged} logged, {n_skipped} duplicates refused")
+    print(f"chain: {n_logged} logged, {n_skipped} already-served refused "
+          f"(obligation-keyed dedup, D-c), {n_failed} failed writes")
 
     # console slate table
     print("\n== slate ==")

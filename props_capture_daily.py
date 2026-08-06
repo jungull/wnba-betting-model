@@ -18,6 +18,15 @@ Writes one raw JSON per event per snapshot to data/props_capture/raw/
 data/props_capture/master_props.csv. Idempotent per (event, book, market,
 player, line, snapshot). Credit headers printed every call. Explicit counts on
 empty slates and missing/suspended markets - never silent.
+
+O14/D022 schema v2: a resolved player_id column is appended, populated at
+capture time against the cross-season identity index + alias table
+(entity_resolution.py); the raw player_name string is always retained; blank
+when unresolved. LIVE-DATA RULE: this writer never rewrites existing rows.
+On a fresh master it writes the v2 header; on an existing v1-header master it
+keeps appending v1-shape rows (a ragged CSV would break every reader) until
+the shipped migration script (migrate_o14_capture_player_id.py) is
+deliberately run to upgrade header + history atomically.
 API key: ODDS_API_KEY env var, else .env at repo root (git-ignored, never logged).
 """
 import csv
@@ -41,6 +50,8 @@ WINDOW_HOURS = 36
 COLUMNS = ["api_event_id", "home_team", "away_team", "commence_time",
            "bookmaker_key", "market_key", "player_name", "line",
            "over_price", "under_price", "snapshot_utc", "last_update"]
+# O14/D022 schema v2: resolved identity appended; raw capture string retained.
+COLUMNS_V2 = COLUMNS + ["player_id"]
 
 
 def log_credits(r, label):
@@ -112,6 +123,63 @@ def flatten(ev_json, stamp):
     return rows
 
 
+def _csv_header(path):
+    """First line of an existing CSV as a list, or None if no file."""
+    if not path.exists():
+        return None
+    with open(path, newline="", encoding="utf-8") as f:
+        return next(csv.reader(f), None)
+
+
+def resolve_player_ids(rows, name_to_id=None):
+    """O14/D022: set row['player_id'] on every flattened row ('' when
+    unresolved). Resolution failure never kills a capture (props cannot be
+    backfilled) - it degrades to blank ids with an explicit warning."""
+    resolver = None
+    try:
+        from entity_resolution import resolve_player_id, try_load_capture_index
+        if name_to_id is None:
+            name_to_id = try_load_capture_index()
+        resolver = resolve_player_id
+    except Exception as e:
+        print(f"WARNING: entity resolution unavailable "
+              f"({type(e).__name__}: {e}); player_id left blank",
+              file=sys.stderr)
+    unresolved = set()
+    for row in rows:
+        pid = (resolver(row.get("player_name"), name_to_id)
+               if resolver and name_to_id else None)
+        row["player_id"] = "" if pid is None else str(pid)
+        if pid is None and row.get("player_name"):
+            unresolved.add(row["player_name"])
+    if unresolved:                     # explicit, never silent
+        print(f"  NOTE: {len(unresolved)} prop player name(s) resolve to no "
+              f"player_id in any season (cold start or unlisted alias): "
+              f"{sorted(unresolved)}")
+    return rows
+
+
+def append_master(new_rows, master_path=None):
+    """Append rows to master_props.csv. On a v2-header master (or a fresh
+    master, created v2) rows carry player_id; on a legacy v1-header master
+    rows stay v1-shaped - existing rows are NEVER rewritten and the CSV is
+    never made ragged. Returns (n_written, wrote_v2)."""
+    path = MASTER if master_path is None else Path(master_path)
+    hdr = _csv_header(path)
+    v2 = hdr is None or "player_id" in hdr
+    if hdr is not None and "player_id" not in hdr:
+        print("NOTE: master_props.csv still has the pre-O14 v1 header; "
+              "appending v1-shape rows (no player_id). Run "
+              "migrate_o14_capture_player_id.py to upgrade the artifact.")
+    fields = COLUMNS_V2 if v2 else COLUMNS
+    with open(path, "a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        if hdr is None:
+            w.writeheader()
+        w.writerows(new_rows)
+    return len(new_rows), v2
+
+
 def existing_keys_for_snapshot(stamp):
     """Guard against double-append if an invocation is somehow repeated."""
     keys = set()
@@ -159,14 +227,10 @@ def main():
     norm = lambda v: "" if v is None else str(v)
     new_rows = [v for k, v in all_rows.items()
                 if tuple(norm(x) for x in k) not in dup] if dup else list(all_rows.values())
-    is_new = not MASTER.exists()
-    with open(MASTER, "a", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS)
-        if is_new:
-            w.writeheader()
-        w.writerows(new_rows)
+    resolve_player_ids(new_rows)               # O14/D022 capture-time identity
+    n_written, _ = append_master(new_rows)
     print(f"{stamp}: {fetched}/{len(events)} events fetched "
-          f"({no_props} with no props posted), {len(new_rows)} rows appended "
+          f"({no_props} with no props posted), {n_written} rows appended "
           f"({len(all_rows) - len(new_rows)} already present) -> {MASTER}")
 
 

@@ -17,6 +17,14 @@ record; ``prospective_start()`` reads the regime-D start date off it (the
 two-dates rule: the capture start proves nothing — the first immutably
 logged forecast starts the prospective clock).
 
+Schema versions (D-4 bundled cross-thread amendment, adopted under D022):
+``evalharness/forecast_log/2`` adds one additive OPTIONAL field,
+``alt_model_predictions``, to the /1 shape. New records are written as /2;
+/1 records stand exactly as logged (never rewritten — see the ledger
+discipline below), and the reader accepts chains mixing both versions.
+``migrate_forecast_log_schema2.py`` (repo root) is the shipped migration /
+census tool; it is deliberately non-rewriting.
+
 Ledger discipline (matches evalharness/registry.py):
   * append-only JSONL, one record per line; every append is fsync'd — the
     record is durable on disk before ``log_forecast()`` returns;
@@ -84,7 +92,17 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
-SCHEMA = "evalharness/forecast_log/1"
+#: Schema lineage. SCHEMA/2 (decision D-4, adopted 2026-08-06 under D022) is
+#: an ADDITIVE amendment: it adds exactly one optional field,
+#: ``alt_model_predictions``, to the /1 record shape. The writer emits /2
+#: going FORWARD; every existing /1 record stands untouched — the log is an
+#: append-only hash chain, so rewriting a historical line is both forbidden
+#: and self-evidencing. ``verify_chain()`` / ``read_forecasts()`` accept
+#: chains containing any mix of /1 and /2 records.
+SCHEMA_V1 = "evalharness/forecast_log/1"
+SCHEMA_V2 = "evalharness/forecast_log/2"
+SCHEMA = SCHEMA_V2                     # what log_forecast() writes from now on
+KNOWN_SCHEMAS = (SCHEMA_V1, SCHEMA_V2)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_FORECAST_LOG = REPO_ROOT / "forecasts" / "forecast_log.jsonl"
 
@@ -99,6 +117,8 @@ BET_DECISIONS = ("bet_home", "bet_away", "no_bet", "not_applicable")
 
 #: Every field is always present on every record (nullables present-as-null),
 #: so a schema drift or hand-forged record is visible to verify_chain().
+#: REQUIRED_FIELDS is the schema-/1 base set; /2 additionally requires
+#: ``alt_model_predictions`` (present-as-null when no alternative model ran).
 REQUIRED_FIELDS = frozenset({
     "schema",
     "record_idx",
@@ -120,6 +140,9 @@ REQUIRED_FIELDS = frozenset({
     "intended_bet_decision",
     "paper_stake",
 })
+
+#: Schema-/2 required set: the /1 base plus the D-4 additive field.
+REQUIRED_FIELDS_V2 = frozenset(REQUIRED_FIELDS | {"alt_model_predictions"})
 
 
 # ---------------------------------------------------------------------------
@@ -505,9 +528,25 @@ def verify_chain(log_path: "Path | str | None" = None) -> ChainReport:
                 "no whitespace variance) — edited by hand or written by a "
                 "foreign tool.",
             )
-        missing = sorted(REQUIRED_FIELDS - rec.keys())
+        schema = rec.get("schema")
+        if schema not in KNOWN_SCHEMAS:
+            return bad(
+                i,
+                f"record {i}: unknown schema {schema!r}; this reader accepts "
+                f"{list(KNOWN_SCHEMAS)} (schema-/1 records stand; /2 is the "
+                "additive D-4 amendment).",
+            )
+        required = REQUIRED_FIELDS_V2 if schema == SCHEMA_V2 else REQUIRED_FIELDS
+        missing = sorted(required - rec.keys())
         if missing:
             return bad(i, f"record {i}: missing required fields {missing}")
+        if schema == SCHEMA_V1 and "alt_model_predictions" in rec:
+            return bad(
+                i,
+                f"record {i}: schema-/1 record carries the /2-only field "
+                "'alt_model_predictions' — schema drift or a hand-forged "
+                "record (a /1 record was never written with this field).",
+            )
         if rec["record_idx"] != i:
             return bad(
                 i,
@@ -575,6 +614,7 @@ def log_forecast(
     core_only_prediction: Mapping,
     w1_extraction: Optional[Mapping] = None,
     core_plus_w1_prediction: Optional[Mapping] = None,
+    alt_model_predictions: Optional[Mapping] = None,
     market_line: Optional[float] = None,
     market_price: Optional[float] = None,
     market_book: Optional[str] = None,
@@ -604,6 +644,14 @@ def log_forecast(
                                  w1_extraction to be recorded (not None) —
                                  core-only and core+W1 run simultaneously on
                                  the same future games (regime D).
+      alt_model_predictions      SCHEMA/2 (D-4 amendment): OPTIONAL object of
+                                 alternative-model predictions logged at the
+                                 same cutoff (e.g. a registered challenger arm
+                                 keyed by its model id). None (recorded as
+                                 null) when no alternative model ran; {} is
+                                 permitted (alternative layer ran, produced
+                                 nothing). Additive: /1 records stand and
+                                 never carried this field.
       market_line/price/book     the line available AT the cutoff (nullable);
       market_source              provenance — required if any market field is
                                  given (a line whose source cannot be
@@ -654,6 +702,8 @@ def log_forecast(
                                 required=True)
     w1 = _prediction_obj(w1_extraction, "w1_extraction", allow_empty=True)
     core_w1 = _prediction_obj(core_plus_w1_prediction, "core_plus_w1_prediction")
+    alt_preds = _prediction_obj(alt_model_predictions, "alt_model_predictions",
+                                allow_empty=True)
     if core_w1 is not None and w1 is None:
         raise ForecastValidationError(
             "core_plus_w1_prediction requires w1_extraction to be recorded: "
@@ -721,6 +771,7 @@ def log_forecast(
         "w1_extraction": w1,
         "core_only_prediction": core_only,
         "core_plus_w1_prediction": core_w1,
+        "alt_model_predictions": alt_preds,
         "market_line": line_v,
         "market_price": price_v,
         "market_book": book_v,
