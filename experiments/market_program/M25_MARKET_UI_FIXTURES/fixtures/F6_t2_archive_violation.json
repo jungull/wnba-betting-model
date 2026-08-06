@@ -1,0 +1,50 @@
+{
+  "schema": "m25_market_view_payload/1",
+  "title": "Market screen -- T2 archive misuse, exercised structurally against fixtures only",
+  "as_of": "2026-08-06T18:00:00+00:00",
+  "mode": "SHADOW",
+  "model": {"version": "market_view_fixture_v0", "artifact_sha256": {"fixture": "0000000000000000000000000000000000000000000000000000000000000000"}, "promotion_status": "SCAFFOLD_ONLY"},
+  "inputs": [
+    {"input_id": "book_feed_dk", "label": "DraftKings feed", "status": "ok", "captured_at": "2026-08-06T17:59:00+00:00", "max_age_seconds": 120, "tier": "T0"}
+  ],
+  "opportunities": [
+    {
+      "opportunity_id": "OPP-0006",
+      "label": "SEA vs LA -- team total points (T2-misuse drill, no real archive touched)",
+      "tipoff": "2026-08-06T23:00:00+00:00",
+      "required_inputs": ["book_feed_dk"],
+      "evidence_ladder": {"held_labels": ["MARKET_MECHANISM_SUPPORTED"]},
+      "consensus": {"value": 82.0, "units": "points", "method": "T2 census, no use class declared",
+        "n_books": 1, "as_of": "2026-08-06T17:59:00+00:00", "max_age_seconds": 300, "tier": "T2"},
+      "cross_book_quotes": [
+        {"book": "DraftKings", "price": -110, "line": 82.0, "captured_at": "2026-08-06T17:59:00+00:00", "max_age_seconds": 120, "tier": "T0"},
+        {"book": "ArchiveBookA", "price": -105, "line": 82.5, "captured_at": "2026-07-30T00:00:00+00:00",
+         "max_age_seconds": 120, "tier": "T2", "m00_use_class": "M00-U2",
+         "m00_caveat_text": "Calibration is of a snapshot whose capture time is vendor-asserted and unwitnessed (P2B: CUTOFF_UNPROVEN). Results characterize an unknown-time pregame price level and must not be read as closing-line calibration, opening-line calibration, or calibration at T−64 minutes. No CLV, timing, or line-movement inference may be built on this result."},
+        {"book": "ArchiveBookB", "price": -102, "line": 83.0, "captured_at": "2026-07-30T00:00:00+00:00",
+         "max_age_seconds": 120, "tier": "T2", "m00_use_class": "M00-U4",
+         "m00_caveat_text": "This caveat text has been altered and does not hash to the frozen caveat for M00-U4."}
+      ],
+      "line_history": [
+        {"captured_at": "2026-08-06T17:59:00+00:00", "value": 82.0, "tier": "T0"},
+        {"captured_at": "2026-07-30T00:00:00+00:00", "value": 81.0, "tier": "T2", "m00_use_class": "M00-U4",
+         "m00_caveat_text": "Season-level price distributions from a T2 harvest describe one unknown-time snapshot per game. Cross-season comparisons may confound market drift with harvest-selection effects; the 2022 season's 75.3% coverage has an undocumented selection rule (P2B §10.3)."}
+      ],
+      "information_events": [],
+      "our_projection": {"value": 83.0, "units": "points", "as_of": "2026-08-06T17:55:00+00:00", "max_age_seconds": 600},
+      "edge_estimate": {"value": 1.0, "units": "points", "uncertainty": {"lo": -1.0, "hi": 3.0, "level": "p10-p90"},
+        "as_of": "2026-08-06T17:55:00+00:00", "max_age_seconds": 600},
+      "opportunity_first_detected_at": "2026-08-06T17:40:00+00:00",
+      "execution_warnings": [],
+      "row_blockers": [],
+      "notes": [
+        "fixture: every T2 value here is a deliberately-malformed archive use, exercised only to prove the render-time gate suppresses it. No real archive file was read to build this fixture.",
+        "consensus: tier T2 with no m00_use_class -> M00_USE_CLASS_MISSING",
+        "ArchiveBookA quote: tier T2, M00-U2 -- not the accepted on-screen use class -> M00_USE_CLASS_UNACCEPTED",
+        "ArchiveBookB quote: tier T2, M00-U4 claimed but caveat text altered -> M00_CAVEAT_HASH_MISMATCH",
+        "line_history's T2 point: even though it declares a valid M00-U4 caveat verbatim, section C.2 prohibits ANY line-movement/timing use of the archive without exception -- this point is suppressed unconditionally, not because the caveat is wrong"
+      ]
+    }
+  ],
+  "audit": {"payload_id": "fixture-F6", "generated_by": "M25 fixture author", "source": "FIXTURE", "notes": "synthetic; no live archive data; exercises the M00 use-class gate structurally"}
+}
