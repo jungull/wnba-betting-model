@@ -75,31 +75,48 @@ def assess(now=None) -> dict:
     served = {(prov.get(str(r["game_id"]), str(r["game_id"])), r["decision_time_label"])
               for r in official}
 
-    new, dup, upcoming = [], [], []
+    new, dup, upcoming, unresolved = [], [], [], []
     for g in slate.itertuples():
-        gid = str(g.game_id) if pd.notna(g.game_id) else None
-        if gid is None or g.tip <= now:
+        if g.tip <= now:
             continue                      # already tipped: cannot be forecast now
+        # Identity must match the job this gate guards. daily_forecast.py:561-563
+        # mints PROV-<slate_date>-<away>@<home> when the ref-assignment id is not
+        # published yet, and coverage_audit.py:148-168 resolves it retroactively.
+        # Skipping the row instead made every T-24h obligation undiscoverable,
+        # because ref assignments arrive ~12 h AFTER the T-24h cutoff.
+        provisional = not pd.notna(g.game_id)
+        gid = (f"PROV-{g.game_date}-{g.away}@{g.home}" if provisional
+               else str(g.game_id))
+        if provisional:
+            unresolved.append(f"{g.home} v {g.away} ({g.game_date}) -> {gid}")
         hrs = (g.tip - now).total_seconds() / 3600.0
         label = current_label(hrs)
         cutoff = g.tip - timedelta(hours=dict(CONTRACT_LABELS)[label])
         item = {"game": f"{g.home} v {g.away}", "game_id": gid, "label": label,
                 "cutoff": cutoff.isoformat(), "hours_to_tip": round(hrs, 2),
-                "minutes_to_cutoff": round((cutoff - now).total_seconds() / 60, 1)}
+                "minutes_to_cutoff": round((cutoff - now).total_seconds() / 60, 1),
+                "game_id_provisional": provisional}
         upcoming.append(item)
         (dup if (gid, label) in served else new).append(item)
 
     in_window = [i for i in new if -0.5 <= i["minutes_to_cutoff"] <= LEAD.total_seconds() / 60]
     fire = bool(in_window) and not dup
+    note = ("; %d slate game(s) have no official game_id and were served under a "
+            "provisional id: %s" % (len(unresolved), ", ".join(unresolved))
+            ) if unresolved else ""
     if dup:
         reason = ("would duplicate %d already-served obligation(s); the base job cannot be "
-                  "scoped to one game" % len(dup))
+                  "scoped to one game%s" % (len(dup), note))
     elif not in_window:
-        reason = "no unserved obligation inside its %d-minute lead window" % (LEAD.total_seconds() / 60)
+        reason = ("no unserved obligation inside its %d-minute lead window "
+                  "(%d upcoming game(s) examined)%s"
+                  % (LEAD.total_seconds() / 60, len(upcoming), note))
     else:
-        reason = "%d unserved obligation(s) in window, none would duplicate" % len(in_window)
+        reason = ("%d unserved obligation(s) in window, none would duplicate%s"
+                  % (len(in_window), note))
     return {"fire": fire, "reason": reason, "new": new, "in_window": in_window,
-            "would_duplicate": dup, "upcoming": upcoming, "now": now.isoformat()}
+            "would_duplicate": dup, "upcoming": upcoming, "unresolved": unresolved,
+            "now": now.isoformat()}
 
 
 def due_obligations(now=None):
