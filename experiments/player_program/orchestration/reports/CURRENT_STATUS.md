@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `5140d6a8801f91ba3ef707cd59b972f3b9bfdc36` |
+| HEAD | `e5490741bbe3a09003c437424dd3539b57fb7b64` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 182 |
+| events | 184 |
 
 ## Counts by status
 
@@ -17,8 +17,7 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 9 |
 | PASSED | 47 |
-| READY | 1 |
-| RUNNING | 1 |
+| RUNNING | 2 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 1 |
 
@@ -28,11 +27,12 @@ None open against a node.
 
 ## Running
 
+* `P33_PREREGISTRATION_DRAFT` — Freeze every retained arm's complete specification
 * `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 
 ## Ready — next automatically scheduled
 
-* `P33_PREREGISTRATION_DRAFT` (possession) — Freeze every retained arm's complete specification
+None.
 
 ## Passed
 
@@ -90,11 +90,11 @@ None open against a node.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | READY | RUNNING | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 0 | 1 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 0 | 1 | 0 |
-| operations | 0 | 11 | 0 | 1 | 2 | 0 |
-| possession | 9 | 15 | 1 | 0 | 2 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 | 0 |
+| lane | BLOCKED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 1 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 1 | 0 |
+| operations | 0 | 11 | 1 | 2 | 0 |
+| possession | 9 | 15 | 1 | 2 | 1 |
+| product | 0 | 4 | 0 | 0 | 0 |
