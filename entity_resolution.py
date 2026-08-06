@@ -250,7 +250,7 @@ def player_layer_resolved(teams: list, p, inj, abbr_to_name: dict, gaps,
             rec = {"player": id_to_name.get(pid, str(pid)), "player_id": pid,
                    "games_played": int(len(hist)),
                    "min_ewma": _ewma(hist.minutes),
-                   "last_played": (str(hist.game_date.max().date())
+                   "last_played": (str(pd.to_datetime(hist.game_date).max().date())
                                    if len(hist) else None),
                    "cold_start": len(hist) == 0,
                    "history_spans_teams": teams_this_season,
@@ -282,7 +282,7 @@ def player_layer_resolved(teams: list, p, inj, abbr_to_name: dict, gaps,
             if assign.get(pid) != team_ab or pid in roster_ids:
                 continue
             ph = p[p.player_id == pid]
-            last_rostered = (str(ph.game_date.max().date())
+            last_rostered = (str(pd.to_datetime(ph.game_date).max().date())
                              if len(ph) else None)
             report_only.append({"player": d["claim_name"],
                                 "status": d["status"],
@@ -320,8 +320,8 @@ def player_layer_resolved(teams: list, p, inj, abbr_to_name: dict, gaps,
                                       for u in unbound if u["abbr"] == team_ab],
             "designation_transfers_in": [t for t in transfers
                                          if t["to"] == team_ab],
-            "roster_last_game": (str(tp[tp.game_id.isin(recent)]
-                                     .game_date.max().date())
+            "roster_last_game": (str(pd.to_datetime(tp[tp.game_id.isin(recent)]
+                                                    .game_date).max().date())
                                  if len(recent) else None),
             "unknown_roster": False,
         }
