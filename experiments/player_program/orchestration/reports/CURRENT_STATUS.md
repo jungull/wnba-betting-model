@@ -6,18 +6,19 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `9b1ec99c98ace58f6d6a15ff042dc97483892a28` |
+| HEAD | `5140d6a8801f91ba3ef707cd59b972f3b9bfdc36` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 178 |
+| events | 182 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 10 |
-| PASSED | 46 |
-| RUNNING | 2 |
+| BLOCKED | 9 |
+| PASSED | 47 |
+| READY | 1 |
+| RUNNING | 1 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 1 |
 
@@ -27,12 +28,11 @@ None open against a node.
 
 ## Running
 
-* `P32_CANDIDATE_SYNTHESIS` — Deduplicate into mechanistically distinct families; return complete arm definitions
 * `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 
 ## Ready — next automatically scheduled
 
-None.
+* `P33_PREREGISTRATION_DRAFT` (possession) — Freeze every retained arm's complete specification
 
 ## Passed
 
@@ -62,6 +62,7 @@ None.
 * `P2B_MARKET_ODDS_ELIGIBILITY` — Adjudicate the market-odds family: the stated exclusion ground is factually wrong
 * `P30_EVIDENCE_PACKET_V3` — Build and freeze EVIDENCE_PACKET_V3 with an immutable correction addendum
 * `P31_FINAL_V3_IDEATION` — Final clean ideation wave: six independent roles, V3 only, no source sees another output
+* `P32_CANDIDATE_SYNTHESIS` — Deduplicate into mechanistically distinct families; return complete arm definitions
 * `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
 * `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
 * `R12_P27_REPORT_REMEDIATION` — Write the missing P27_FOLD_LOCAL_ESTIMABILITY_GUARD report from its own preserved evidence
@@ -89,11 +90,11 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 1 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 1 | 0 |
-| operations | 0 | 11 | 1 | 2 | 0 |
-| possession | 10 | 14 | 1 | 2 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 |
+| lane | BLOCKED | PASSED | READY | RUNNING | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 0 | 1 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 0 | 1 | 0 |
+| operations | 0 | 11 | 0 | 1 | 2 | 0 |
+| possession | 9 | 15 | 1 | 0 | 2 | 1 |
+| product | 0 | 4 | 0 | 0 | 0 | 0 |
