@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `4b0133041ed9ee7fe044bc64dad966695729291c` |
+| HEAD | `df20524f53d790603cb0aa82386bcd0653f53a8e` |
 | working tree | DIRTY |
 | nodes | 87 |
-| events | 217 |
+| events | 219 |
 
 ## Counts by status
 
@@ -17,8 +17,8 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 24 |
 | PASSED | 49 |
-| READY | 5 |
-| RUNNING | 1 |
+| READY | 4 |
+| RUNNING | 2 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 2 |
 
@@ -28,11 +28,11 @@ None open against a node.
 
 ## Running
 
+* `M00_MARKET_PROGRAM_CONTRACT` — Freeze the market lane's taxonomy, evidence ladder, system separation and archive-use bounds
 * `P34_PREREGISTRATION_RED_TEAM` — Independent adversarial review of the preregistration
 
 ## Ready — next automatically scheduled
 
-* `M00_MARKET_PROGRAM_CONTRACT` (market_intelligence) — Freeze the market lane's taxonomy, evidence ladder, system separation and archive-use bounds
 * `M02_BUILD_VS_BUY` (market_intelligence) — Vendor matrix with verified Odds API historical coverage; costed build-vs-buy recommendation
 * `M03_CAPTURE_UPGRADE` (market_intelligence) — High-frequency live odds capture: cadence measurement, event-driven bursts, latency fields
 * `M04_COMPETITOR_ARCHIVE_DESIGN` (market_intelligence) — Fixed-cutoff competitor-projection archive design with explicit licensing surface
@@ -102,7 +102,7 @@ None open against a node.
 | data | 0 | 5 | 0 | 0 | 1 | 0 |
 | future_research | 0 | 7 | 0 | 0 | 0 | 0 |
 | governance | 0 | 5 | 0 | 0 | 1 | 0 |
-| market_intelligence | 16 | 0 | 5 | 0 | 0 | 1 |
+| market_intelligence | 16 | 0 | 4 | 1 | 0 | 1 |
 | operations | 0 | 12 | 0 | 0 | 2 | 0 |
 | possession | 8 | 16 | 0 | 1 | 2 | 1 |
 | product | 0 | 4 | 0 | 0 | 0 | 0 |
