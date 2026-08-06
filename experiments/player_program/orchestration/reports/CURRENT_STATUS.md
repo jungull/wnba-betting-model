@@ -6,21 +6,20 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `c0aae3a55f2b3d3e2a308587271f98de218f143c` |
+| HEAD | `968bc040c512cd97f0cbfae658e0a43be8131430` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 150 |
+| events | 161 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 11 |
-| PASSED | 44 |
-| RUNNING | 1 |
+| BLOCKED | 10 |
+| PASSED | 46 |
+| READY | 1 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 2 |
-| VERIFYING | 1 |
 
 ## Severity A blockers
 
@@ -28,12 +27,11 @@ None open against a node.
 
 ## Running
 
-* `P30_EVIDENCE_PACKET_V3` — Build and freeze EVIDENCE_PACKET_V3 with an immutable correction addendum
-* `P31_FINAL_V3_IDEATION` — Final clean ideation wave: six independent roles, V3 only, no source sees another output
+None.
 
 ## Ready — next automatically scheduled
 
-None.
+* `P32_CANDIDATE_SYNTHESIS` (possession) — Deduplicate into mechanistically distinct families; return complete arm definitions
 
 ## Passed
 
@@ -61,6 +59,8 @@ None.
 * `P29_TIP_TIME_AND_COVERAGE_AUDIT` — Resolve the fold-aligned tip-time null pattern and rule on tip-derived eligibility
 * `P2A_POSSESSION_COLUMN_ADJUDICATION` — S8: adjudicate the 32 possession columns the availability table never named
 * `P2B_MARKET_ODDS_ELIGIBILITY` — Adjudicate the market-odds family: the stated exclusion ground is factually wrong
+* `P30_EVIDENCE_PACKET_V3` — Build and freeze EVIDENCE_PACKET_V3 with an immutable correction addendum
+* `P31_FINAL_V3_IDEATION` — Final clean ideation wave: six independent roles, V3 only, no source sees another output
 * `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
 * `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
 * `R12_P27_REPORT_REMEDIATION` — Write the missing P27_FOLD_LOCAL_ESTIMABILITY_GUARD report from its own preserved evidence
@@ -89,11 +89,11 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED | VERIFYING |
-|---|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 1 | 0 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 1 | 0 | 0 |
-| operations | 0 | 11 | 0 | 2 | 1 | 0 |
-| possession | 11 | 12 | 1 | 2 | 1 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 | 0 |
+| lane | BLOCKED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 1 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 1 | 0 |
+| operations | 0 | 11 | 0 | 2 | 1 |
+| possession | 10 | 14 | 1 | 2 | 1 |
+| product | 0 | 4 | 0 | 0 | 0 |
