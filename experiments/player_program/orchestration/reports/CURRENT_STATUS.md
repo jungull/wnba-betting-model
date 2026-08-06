@@ -6,20 +6,21 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `a899cb220aae55ea91481b2ae2dd4869a169d94c` |
+| HEAD | `4b0133041ed9ee7fe044bc64dad966695729291c` |
 | working tree | DIRTY |
-| nodes | 65 |
-| events | 195 |
+| nodes | 87 |
+| events | 217 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 8 |
+| BLOCKED | 24 |
 | PASSED | 49 |
+| READY | 5 |
 | RUNNING | 1 |
 | SUPERSEDED | 6 |
-| USER_REQUIRED | 1 |
+| USER_REQUIRED | 2 |
 
 ## Severity A blockers
 
@@ -31,7 +32,11 @@ None open against a node.
 
 ## Ready — next automatically scheduled
 
-None.
+* `M00_MARKET_PROGRAM_CONTRACT` (market_intelligence) — Freeze the market lane's taxonomy, evidence ladder, system separation and archive-use bounds
+* `M02_BUILD_VS_BUY` (market_intelligence) — Vendor matrix with verified Odds API historical coverage; costed build-vs-buy recommendation
+* `M03_CAPTURE_UPGRADE` (market_intelligence) — High-frequency live odds capture: cadence measurement, event-driven bursts, latency fields
+* `M04_COMPETITOR_ARCHIVE_DESIGN` (market_intelligence) — Fixed-cutoff competitor-projection archive design with explicit licensing surface
+* `M05_EVENT_MARKET_LINKAGE` (market_intelligence) — Deterministic event-to-quote linkage with explicit censoring intervals
 
 ## Passed
 
@@ -87,15 +92,17 @@ None.
 
 ## Human gates
 
+* `M02B_VENDOR_PURCHASE_DECISION` — Whether to buy vendor market data: purchases, subscriptions and credentials are the user's alone
 * `P43_CHAMPION_DECISION` — Whether to replace Arm D as the frozen champion
 
 ## By lane
 
-| lane | BLOCKED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 1 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 1 | 0 |
-| operations | 0 | 12 | 0 | 2 | 0 |
-| possession | 8 | 16 | 1 | 2 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 |
+| lane | BLOCKED | PASSED | READY | RUNNING | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 0 | 1 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 0 | 1 | 0 |
+| market_intelligence | 16 | 0 | 5 | 0 | 0 | 1 |
+| operations | 0 | 12 | 0 | 0 | 2 | 0 |
+| possession | 8 | 16 | 0 | 1 | 2 | 1 |
+| product | 0 | 4 | 0 | 0 | 0 | 0 |

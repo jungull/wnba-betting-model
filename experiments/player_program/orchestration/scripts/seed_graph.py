@@ -29,6 +29,9 @@ LANE_ROOT = {
     "product": f"{PP}/product_lane",
     "future_research": f"{PP}/future_research",
     "governance": f"{ORCH_REL}/nodes",
+    # Market lane authorized by decision D023 (2026-08-06). It lives OUTSIDE
+    # experiments/player_program so it can never contend with the possession critical path.
+    "market_intelligence": "experiments/market_program",
 }
 
 # Read-only evidence every scientific node is entitled to.
@@ -946,6 +949,496 @@ def build():
                                 "cutoff-valid evidence is inventoried, not assumed",
                                 "the draft states explicitly that it does not authorise fitting"],
                       severity="C", merge="coordinator"))
+
+    # ---------------------------------------------------------------- market intelligence lane
+    # Created under user authorization D023 (2026-08-06), which carries FOUR USER AMENDMENTS
+    # binding on every node in this lane:
+    #   (1) The Odds API historical coverage is VERIFIED, never assumed absent; historical
+    #       point-in-time data is declared critical to this arm.
+    #   (2) The final-state odds archive (one retrospective snapshot per game, 813 games, ruled
+    #       permanently CUTOFF_UNPROVEN for timing claims by D016/P2B) gets its BOUNDED
+    #       legitimate uses ENUMERATED -- it is neither written off entirely nor rehabilitated.
+    #   (3) The immediate critical path is high-frequency live capture, event-to-market linkage
+    #       and competitor projection archiving -- ahead of retrospective studies.
+    #   (4) Every future reaction-time claim carries explicit timestamp-uncertainty and
+    #       vendor-latency terms.
+    # Standing constraints: no purchase, no wager, no credential without a USER_REQUIRED gate
+    # (M02B); sealed possession results are forbidden inputs; the possession critical path is
+    # never delayed -- this lane writes only under experiments/market_program/.
+    MP = LANE_ROOT["market_intelligence"]
+    MARKET_EVIDENCE = [
+        f"{ORCH_REL}/reports/MARKET_PROGRAM_RESPONSE_2026-08-06.md",
+        f"{ORCH_REL}/GRAPH_POLICY.md",
+        f"{PP}/RESEARCH_CONTRACT_V1.md",
+    ]
+    M00_CONTRACT = f"{MP}/M00_MARKET_PROGRAM_CONTRACT/MARKET_PROGRAM_CONTRACT.md"
+    MARKET_STOPS = [
+        "a finding would require spending money, placing a wager, entering credentials, "
+        "accepting scraping or licensing risk, or reading sealed possession results -- HALT "
+        "and raise to a USER_REQUIRED gate, do not resolve it inside the node",
+        "a reaction-time or timing claim cannot carry its explicit timestamp-uncertainty and "
+        "vendor-latency terms (D023 amendment 4) -- report the claim as UNSUPPORTABLE rather "
+        "than stating it without them",
+        "a use of the final-state odds archive falls outside the bounded-uses enumeration of "
+        "the M00 contract -- HALT and raise, do not stretch the enumeration",
+    ]
+
+    def mnode(nid, title, ntype, deps, role, epis, criteria, outputs=None, validators=None,
+              severity="B", merge="auto", human=False, status="BLOCKED", retries=2):
+        inputs = list(MARKET_EVIDENCE)
+        if nid != "M00_MARKET_PROGRAM_CONTRACT":
+            # Every market node cites the frozen lane contract. The file does not exist at
+            # seed time; its hash is frozen into input_hashes once M00 passes.
+            inputs.append(M00_CONTRACT)
+        return node(
+            nid, title, "market_intelligence", ntype, deps, role, epis,
+            outputs=outputs, validators=validators, criteria=criteria,
+            stops=MARKET_STOPS, reads=["experiments/"], inputs=inputs,
+            severity=severity, merge=merge, human=human, status=status, retries=retries,
+        )
+
+    # ---- wave 1. M00, M02, M03, M04, M05 have no unmet dependencies and seed READY.
+    # M02's Odds API verification and the M03/M04/M05 design drafts are ALREADY-RUNNING
+    # research efforts launched with the D023 directive, so those nodes cannot depend on M00;
+    # their in-flight outputs land under their node directories now that the nodes exist.
+    # M01 and M25 depend on M00 (they consume its frozen taxonomy) and become READY the
+    # moment it passes.
+    N.append(mnode(
+        "M00_MARKET_PROGRAM_CONTRACT",
+        "Freeze the market lane's taxonomy, evidence ladder, system separation and archive-use bounds",
+        "documentation", [], "market program methodologist",
+        "CONTRACT. Freezes what the market lane may claim and how claims are labelled. It is a "
+        "specification, not evidence: it decides no signal's fate and admits no data source. "
+        "Every other market node cites it; a market claim that cannot be stated in this "
+        "contract's vocabulary is not a claim this program makes.",
+        [
+            "the opportunity taxonomy separates true arbitrage, middles, stale-line, "
+            "model-value, vendor-value and microstructure -- each with a definition, the "
+            "mechanism that would make it real, and what evidence would falsify it",
+            "the evidence ladder is frozen from MARKET_MECHANISM_SUPPORTED through "
+            "PRODUCTION_ELIGIBLE, every intermediate label defined with explicit promotion "
+            "criteria, and no label is skippable",
+            "the four-system separation -- fundamental model / market-reaction / execution / "
+            "decision -- is frozen with the explicit interface each system exposes to the next",
+            "point-in-time requirements are frozen: a claim about market state at time T "
+            "requires a capture record whose first-seen timestamp is at or before T; "
+            "reconstructed or final-state data is never presented as point-in-time",
+            "the BOUNDED FINAL-STATE ARCHIVE USES ruling (D023 amendment 2) is frozen: the "
+            "813-game one-snapshot-per-game archive, ruled permanently CUTOFF_UNPROVEN for "
+            "timing by D016/P2B, gets its legitimate uses ENUMERATED (candidates: market/book/"
+            "game universe census, join-key and schema scaffolding, long-run closing-level "
+            "description, fixture data) and its permanently unsupported uses ENUMERATED "
+            "(event timing, latency, lead-lag, stale windows, any 'we could have seen this at "
+            "time T' claim) -- the archive is neither written off entirely nor rehabilitated",
+            "the timestamp-uncertainty discipline (D023 amendment 4) is frozen: every future "
+            "reaction-time claim carries explicit timestamp-uncertainty and vendor-latency "
+            "terms, and a reaction-time figure missing either term is a defect, not a result",
+            "the contract cites decision D023 and its four user amendments verbatim and does "
+            "not relitigate D016/P2B",
+        ],
+        outputs=[f"{MP}/M00_MARKET_PROGRAM_CONTRACT/MARKET_PROGRAM_CONTRACT.md",
+                 f"{MP}/M00_MARKET_PROGRAM_CONTRACT/TAXONOMY.json"],
+        validators=[f"python -c \"import json;json.load(open('{MP}/M00_MARKET_PROGRAM_CONTRACT/TAXONOMY.json'))\""],
+        severity="A", merge="coordinator", status="READY",
+    ))
+
+    N.append(mnode(
+        "M01_MARKET_DATA_INVENTORY",
+        "Classify every market-relevant source by point-in-time class; rule on the earliest valid tape date",
+        "audit", ["M00_MARKET_PROGRAM_CONTRACT"], "market data auditor",
+        "VERIFIED_READ_ONLY_DERIVATION. An inventory of what market evidence exists and what "
+        "epistemic class each source belongs to. Availability is not eligibility and "
+        "eligibility is not admission; classification admits nothing.",
+        [
+            "every market-relevant source is classified against the bytes, not relayed: the "
+            "final-state archive, the owned capture jobs (odds, props, injuries, news, "
+            "referees), the vendor groundwork directories (wnba_odds_system/, "
+            "wnba-odds-aggregator/) and the forecast/alternative model logs",
+            "a coverage matrix is produced by source, market, book and season",
+            "the earliest valid point-in-time tape date is ruled formally from first-seen "
+            "timestamps (the 2026-07-31 claim is verified, not quoted)",
+            "the final-state archive is inventoried ONLY under the bounded-uses categories "
+            "frozen by the M00 contract, never as point-in-time evidence",
+            "every factual claim in MARKET_PROGRAM_RESPONSE_2026-08-06.md sections 1-2 that "
+            "this node relies on is verified against the bytes or marked UNVERIFIED",
+        ],
+        outputs=[f"{MP}/M01_MARKET_DATA_INVENTORY/REPORT.md",
+                 f"{MP}/M01_MARKET_DATA_INVENTORY/INVENTORY.json"],
+        validators=[f"python -c \"import json;json.load(open('{MP}/M01_MARKET_DATA_INVENTORY/INVENTORY.json'))\""],
+    ))
+
+    N.append(mnode(
+        "M02_BUILD_VS_BUY",
+        "Vendor matrix with verified Odds API historical coverage; costed build-vs-buy recommendation",
+        "decision", [], "vendor evaluation analyst",
+        "DECISION PREPARATION. Produces the evidence and the costed options for a purchase "
+        "decision that is NOT this node's to make: every line item that spends money routes to "
+        "the M02B_VENDOR_PURCHASE_DECISION human gate. The Odds API verification was already "
+        "running when this node was created (D023 amendment 1); its output is an INPUT to this "
+        "node and lands under this node's directory.",
+        [
+            "The Odds API historical coverage is VERIFIED against the vendor's actual API and "
+            "documentation, never assumed absent (D023 amendment 1): date span, sports/markets/"
+            "books covered, snapshot granularity, whether per-snapshot observation timestamps "
+            "survive, and price are all recorded with evidence",
+            "the verification effort already running in this wave is consumed as an input -- "
+            "its output lands under this node's directory and is checked, not re-run blindly "
+            "and not contradicted without bytes",
+            "a vendor matrix covers at least The Odds API history tier plus the alternatives "
+            "named in the wnba_odds_system research docs, each with a point-in-time integrity "
+            "verdict: vendor history that is a retrospective rebuild without per-snapshot "
+            "observation timestamps is classified CUTOFF_UNPROVEN exactly like the owned "
+            "final-state archive",
+            "if The Odds API lacks usable history, acquiring historical point-in-time data by "
+            "another route is treated as a program priority (D023 amendment 1), not dropped",
+            "the recommendation ends in explicit build-vs-buy line items with exact costs, "
+            "each routed to M02B_VENDOR_PURCHASE_DECISION",
+            "this node makes NO purchase, opens NO subscription and enters NO credential",
+        ],
+        outputs=[f"{MP}/M02_BUILD_VS_BUY/REPORT.md",
+                 f"{MP}/M02_BUILD_VS_BUY/VENDOR_MATRIX.json"],
+        validators=[f"python -c \"import json;json.load(open('{MP}/M02_BUILD_VS_BUY/VENDOR_MATRIX.json'))\""],
+        merge="coordinator", status="READY",
+    ))
+
+    N.append(mnode(
+        "M02B_VENDOR_PURCHASE_DECISION",
+        "Whether to buy vendor market data: purchases, subscriptions and credentials are the user's alone",
+        "decision", ["M02_BUILD_VS_BUY"], "USER",
+        "USER DECISION. Spending money -- any vendor purchase, subscription tier, or "
+        "credential -- is reserved to the user under GRAPH_POLICY.md section 6 and D023. This "
+        "gate holds M02's costed line items until the user rules; the same gate pattern "
+        "governs any future wager or real-money activation in this lane.",
+        [],
+        outputs=[], validators=[],
+        merge="never", human=True, status="USER_REQUIRED", retries=0,
+    ))
+
+    N.append(mnode(
+        "M03_CAPTURE_UPGRADE",
+        "High-frequency live odds capture: cadence measurement, event-driven bursts, latency fields",
+        "implementation", [], "capture infrastructure engineer",
+        "PROSPECTIVE CAPTURE INFRASTRUCTURE on the D023 amendment-3 immediate critical path. "
+        "Builds the tape that makes future market claims provable. Creates no historical "
+        "evidence and repairs no historical gap: every week without the upgraded tape is a "
+        "week of event studies that can never be run. The design draft was already in flight "
+        "when this node was created; it lands under this node's directory.",
+        [
+            "current capture cadence is MEASURED against the requirement (T-24h through final "
+            "plus event-driven bursts), with actual request-quota arithmetic, not estimates",
+            "event-driven burst polling is designed and wired to the existing first-seen "
+            "injury/news capture events as triggers",
+            "every captured quote carries capture first-seen timestamp, source fetch timestamp "
+            "and a vendor-latency bound field -- the D023 amendment-4 terms are mandatory at "
+            "the schema level, not annotations added later",
+            "no record is ever backdated and change history is never overwritten",
+            "anything requiring paid quota returns as a costed USER_REQUIRED line item routed "
+            "to M02B_VENDOR_PURCHASE_DECISION; nothing is spent",
+            "the design draft already in flight from the pre-node research effort lands under "
+            "this node's directory and is reconciled, not duplicated",
+            "the existing daily capture jobs keep running; the upgrade is additive and "
+            "reversible, and no possession-lane file is touched",
+        ],
+        outputs=[f"{MP}/M03_CAPTURE_UPGRADE/REPORT.md",
+                 f"{MP}/M03_CAPTURE_UPGRADE/TESTS.py"],
+        validators=[f"python {MP}/M03_CAPTURE_UPGRADE/TESTS.py"],
+        status="READY",
+    ))
+
+    N.append(mnode(
+        "M04_COMPETITOR_ARCHIVE_DESIGN",
+        "Fixed-cutoff competitor-projection archive design with explicit licensing surface",
+        "documentation", [], "competitor intelligence archivist",
+        "DESIGN ARTIFACT on the D023 amendment-3 immediate critical path. Specifies how "
+        "competitor projections are archived so they are point-in-time provable. Design only "
+        "where licensing is unresolved: the scraping/licensing stance for each source is a "
+        "user call, surfaced explicitly and never assumed. The design draft was already in "
+        "flight when this node was created; it lands under this node's directory.",
+        [
+            "the archive schema binds every projection to its first-seen capture timestamp, "
+            "source, retrieval method and (where published) the competitor's own stated "
+            "update time, with the two timestamps never conflated",
+            "capture is fixed-cutoff: what was visible at the cutoff is archived; later "
+            "revisions arrive as new records, never as edits",
+            "the scraping and licensing stance for every named source is surfaced as an "
+            "explicit USER_REQUIRED question with the terms-of-service evidence attached; no "
+            "source is scraped before the user rules on it",
+            "the design draft already in flight from the pre-node research effort lands under "
+            "this node's directory and is reconciled, not duplicated",
+            "storage, retention and identity resolution reuse the existing capture-layer "
+            "conventions (player_id index, append-only history) rather than inventing new ones",
+        ],
+        outputs=[f"{MP}/M04_COMPETITOR_ARCHIVE_DESIGN/REPORT.md",
+                 f"{MP}/M04_COMPETITOR_ARCHIVE_DESIGN/DESIGN.json"],
+        validators=[f"python -c \"import json;json.load(open('{MP}/M04_COMPETITOR_ARCHIVE_DESIGN/DESIGN.json'))\""],
+        status="READY",
+    ))
+
+    N.append(mnode(
+        "M05_EVENT_MARKET_LINKAGE",
+        "Deterministic event-to-quote linkage with explicit censoring intervals",
+        "implementation", [], "event-linkage engineer",
+        "INFRASTRUCTURE, methodologically load-bearing (severity A): the linkage defines which "
+        "quote movements may ever be attributed to which information events. A wrong or "
+        "optimistic join silently fabricates reaction-time evidence downstream, which is "
+        "exactly what D023 amendment 4 exists to prevent. On the amendment-3 immediate "
+        "critical path. The design draft was already in flight when this node was created; it "
+        "lands under this node's directory.",
+        [
+            "linkage between information events and market quotes is deterministic and keyed "
+            "on first-seen capture timestamps on BOTH sides; no fuzzy time matching",
+            "every linked pair carries the censoring interval implied by capture cadence: a "
+            "daily snapshot cannot time a four-minute move, and the linkage records the "
+            "interval, never a fabricated point time (D023 amendment 4)",
+            "entity resolution reuses the adopted capture-layer identity index; no fuzzy "
+            "fallback is introduced",
+            "an unlinkable event fails closed and is reported, never silently dropped",
+            "the linkage is validated on synthetic fixtures whose true event-to-quote "
+            "assignment is known by construction",
+            "the design draft already in flight from the pre-node research effort lands under "
+            "this node's directory and is reconciled, not duplicated",
+        ],
+        outputs=[f"{MP}/M05_EVENT_MARKET_LINKAGE/REPORT.md",
+                 f"{MP}/M05_EVENT_MARKET_LINKAGE/TESTS.py"],
+        validators=[f"python {MP}/M05_EVENT_MARKET_LINKAGE/TESTS.py"],
+        severity="A", status="READY",
+    ))
+
+    N.append(mnode(
+        "M25_MARKET_UI_FIXTURES",
+        "Market screen shell against fixtures, extending the existing U11/U13 pattern",
+        "implementation", ["M00_MARKET_PROGRAM_CONTRACT"], "product engineer",
+        "PRODUCT SCAFFOLD built against fixtures. Carries no market claim and must not imply "
+        "that any edge, signal or tradable opportunity exists: fixtures render as fixtures.",
+        [
+            "the UI runs entirely against fixtures or frozen outputs; no live quote is wired",
+            "the shell extends the existing U11/U13 pattern rather than forking it",
+            "a stale or absent input renders as a warning, never as a number",
+            "every displayed signal fixture carries its evidence-ladder label from the M00 "
+            "contract verbatim, and nothing below PRODUCTION_ELIGIBLE renders as actionable",
+        ],
+        outputs=[f"{MP}/M25_MARKET_UI_FIXTURES/REPORT.md",
+                 f"{MP}/M25_MARKET_UI_FIXTURES/TESTS.py"],
+        validators=[f"python {MP}/M25_MARKET_UI_FIXTURES/TESTS.py"],
+    ))
+
+    # ---- wave 2+: BLOCKED stubs. Studies (audit type) unlock as point-in-time tape accrues
+    # on infrastructure the wave-1 nodes build; execution-chain nodes unlock in the frozen
+    # order M21 -> M22 -> M23 -> M24. Every stub depends on M00 because every claim must be
+    # stated in the frozen contract's vocabulary.
+    market_stubs = [
+        ("M06_INJURY_REACTION_STUDY",
+         "Injury-news reaction-time event study on point-in-time tape only",
+         "audit", ["M00_MARKET_PROGRAM_CONTRACT", "M03_CAPTURE_UPGRADE", "M05_EVENT_MARKET_LINKAGE"],
+         "market event-study analyst",
+         "PROSPECTIVE EVENT STUDY. Measures how fast books react to injury news, on evidence "
+         "that can actually support timing claims. Gated on a preregistered minimum of usable "
+         "events; power accrues with the tape, not with patience for weaker evidence.",
+         ["only point-in-time evidence is used: the owned tape, or vendor history whose "
+          "per-snapshot observation timestamps M02 verified; the final-state archive is never "
+          "used for timing",
+          "a preregistered minimum count of usable linked events is declared before any "
+          "estimate is computed, and the study does not run below it",
+          "every reaction-time estimate carries explicit timestamp-uncertainty and "
+          "vendor-latency terms (D023 amendment 4)",
+          "interval censoring is honest: estimates are stated as bounds implied by capture "
+          "cadence, never as point times the tape cannot support"]),
+        ("M07_BOOK_LEAD_LAG",
+         "Which book moves first: lead-lag measurement across synchronized captures",
+         "audit", ["M00_MARKET_PROGRAM_CONTRACT", "M03_CAPTURE_UPGRADE"],
+         "market microstructure analyst",
+         "PROSPECTIVE MEASUREMENT. Lead-lag ordering between books is claimable only from "
+         "synchronized multi-book capture; ordering below the capture cadence or clock-skew "
+         "bound is unknowable and must be reported as such.",
+         ["lead-lag claims are made only between quotes captured under a common clock with "
+          "measured skew bounds",
+          "every lead-lag figure carries explicit timestamp-uncertainty and vendor-latency "
+          "terms (D023 amendment 4)",
+          "an ordering finer than the capture cadence supports is reported UNRESOLVED, not "
+          "estimated",
+          "book identity and market identity are joined through the M05 linkage keys, never "
+          "re-derived ad hoc"]),
+        ("M08_STALE_WINDOW",
+         "Stale-line window measurement conditional on demonstrated lead-lag structure",
+         "audit", ["M00_MARKET_PROGRAM_CONTRACT", "M03_CAPTURE_UPGRADE", "M07_BOOK_LEAD_LAG"],
+         "market microstructure analyst",
+         "PROSPECTIVE MEASUREMENT. A stale window exists only where a fresher cross-book "
+         "quote was demonstrably capturable at time T; without that, staleness is an artifact "
+         "of the observer's own cadence.",
+         ["a line is called stale only against a fresher quote that was actually captured at "
+          "or before the claim time",
+          "window durations carry explicit timestamp-uncertainty and vendor-latency terms "
+          "(D023 amendment 4) and are stated as bounds under the capture cadence",
+          "the analysis distinguishes book-is-slow from we-polled-slowly explicitly",
+          "no executable-opportunity claim is made: execution feasibility belongs to M21"]),
+        ("M09_TRUE_ARB_SCANNER",
+         "True-arbitrage scanner over live multi-book capture: flags only, never orders",
+         "implementation", ["M00_MARKET_PROGRAM_CONTRACT", "M03_CAPTURE_UPGRADE"],
+         "market scanner engineer",
+         "SCANNING INFRASTRUCTURE. Detects candidate true arbitrage as defined by the M00 "
+         "taxonomy. A flag is a measurement of quoted prices at capture timestamps, not a "
+         "claim of executable profit; execution realism belongs to M21 and any order ever "
+         "belongs behind a USER_REQUIRED gate.",
+         ["true arbitrage is computed exactly as the M00 taxonomy defines it, with fees and "
+          "posted limits included in the inequality",
+          "every flag records both legs' capture timestamps and the inter-leg latency window",
+          "the scanner runs on live capture only; it never flags from the final-state archive",
+          "the scanner places no order and prepares no order; output is an append-only flag "
+          "log"]),
+        ("M10_MIDDLES",
+         "Middle-opportunity detection with per-book push semantics",
+         "implementation", ["M00_MARKET_PROGRAM_CONTRACT", "M09_TRUE_ARB_SCANNER"],
+         "market scanner engineer",
+         "SCANNING INFRASTRUCTURE. Middles are probabilistic, not risk-free: detection uses "
+         "the M00 taxonomy's definition and the EV arithmetic must model push/no-push "
+         "semantics per book rule set, never a generic template.",
+         ["middles are detected per the M00 taxonomy definition, distinct from true arbitrage",
+          "EV computation models push and half-point semantics per book's actual rules",
+          "every flag records both legs' capture timestamps and the inter-leg latency window",
+          "no order is placed or prepared; output is an append-only flag log"]),
+        ("M11_CONSENSUS_MODEL",
+         "Multi-book consensus / fair-value model with preregistered vig treatment",
+         "implementation", ["M00_MARKET_PROGRAM_CONTRACT", "M01_MARKET_DATA_INVENTORY", "M03_CAPTURE_UPGRADE"],
+         "market modelling engineer",
+         "MARKET-REACTION SYSTEM COMPONENT under the four-system separation. Estimates a "
+         "consensus fair line from multi-book quotes. It models the market, not the game; its "
+         "output is never a fundamental prediction and is labelled per the M00 ladder.",
+         ["the vig-removal method is preregistered before evaluation, not tuned on results",
+          "any book weighting is fitted only on data strictly before the evaluation window",
+          "consensus output carries the capture timestamps of every contributing quote",
+          "output is labelled with its M00 evidence-ladder status and never presented as a "
+          "fundamental model prediction"]),
+        ("M13_PLAYER_VALUE_TRANSLATION",
+         "Translate frozen fundamental-model outputs into priceable market terms",
+         "implementation", ["M00_MARKET_PROGRAM_CONTRACT", "M11_CONSENSUS_MODEL"],
+         "model-market interface engineer",
+         "INTERFACE COMPONENT under the four-system separation: fundamental system out, "
+         "market terms in. Consumes only frozen, versioned model snapshots from the forecast "
+         "log; it never reads sealed possession results and never reaches into a model's "
+         "internals.",
+         ["inputs are frozen versioned model snapshots (forecast log SCHEMA/2), pinned by "
+          "hash; sealed possession results are never read",
+          "the translation from model distribution to fair line/probability is an explicit, "
+          "versioned, deterministic function",
+          "every translated fair line records the model version and snapshot timestamp it "
+          "came from",
+          "translation uncertainty is propagated, not discarded"]),
+        ("M14_MODEL_MARKET_RESIDUAL",
+         "Model-vs-market residual analysis at matched point-in-time snapshots",
+         "audit", ["M00_MARKET_PROGRAM_CONTRACT", "M11_CONSENSUS_MODEL", "M13_PLAYER_VALUE_TRANSLATION"],
+         "market residual analyst",
+         "DIAGNOSTIC MEASUREMENT. Residuals between the translated fundamental fair line and "
+         "the market consensus, both pinned to point-in-time snapshots. A residual is a "
+         "discrepancy, not an edge; promotion beyond diagnostic status runs through the M00 "
+         "ladder and the shadow-trading chain, never through this node.",
+         ["model snapshot and market quote in every residual pair are matched at explicit "
+          "timestamps with the mismatch window recorded (D023 amendment 4)",
+          "residual analysis is labelled diagnostic; no PRODUCTION_ELIGIBLE or tradability "
+          "claim is made",
+          "residual distributions are reported by market, book and season, never pooled "
+          "silently",
+          "the analysis states what would falsify a claimed model edge, not only what would "
+          "support it"]),
+        ("M16_RELATED_MARKET_COHERENCE",
+         "Coherence checks across related markets (moneyline, spread, total, props)",
+         "audit", ["M00_MARKET_PROGRAM_CONTRACT", "M05_EVENT_MARKET_LINKAGE", "M11_CONSENSUS_MODEL"],
+         "market coherence analyst",
+         "DIAGNOSTIC MEASUREMENT. Tests whether related quotes jointly satisfy the "
+         "no-arbitrage relations the M00 taxonomy implies. An incoherence is a timestamped "
+         "observation about quotes, not an executable opportunity claim.",
+         ["coherence relations are stated as explicit inequalities before scanning",
+          "every incoherence flag records all contributing quotes' capture timestamps and "
+          "the cross-quote latency window (D023 amendment 4)",
+          "quotes are joined through the M05 linkage keys",
+          "no executable-opportunity claim is made; execution feasibility belongs to M21"]),
+        ("M17_SUSPENSION_REOPENING",
+         "Market suspension and reopening microstructure on the high-frequency tape",
+         "audit", ["M00_MARKET_PROGRAM_CONTRACT", "M03_CAPTURE_UPGRADE"],
+         "market microstructure analyst",
+         "PROSPECTIVE MEASUREMENT. Characterises when books suspend and how they reopen "
+         "around information events. A gap in our own capture is not a suspension; the two "
+         "must be distinguished by evidence, not assumption.",
+         ["a suspension is claimed only from capture evidence that distinguishes "
+          "book-suspended from we-failed-to-poll",
+          "suspension and reopening times carry explicit timestamp-uncertainty and "
+          "vendor-latency terms (D023 amendment 4)",
+          "reopening price jumps are measured against the last pre-suspension capture with "
+          "the censoring interval stated",
+          "coverage is reported per book and per market before any pooled statement"]),
+        ("M21_EXECUTION_REALISM",
+         "Execution realism: limits, slippage and decision-to-executable latency, measured",
+         "audit", ["M00_MARKET_PROGRAM_CONTRACT", "M03_CAPTURE_UPGRADE"],
+         "execution measurement analyst",
+         "EXECUTION SYSTEM MEASUREMENT under the four-system separation. Measures what stands "
+         "between a signal and a filled bet: posted limits, price movement between decision "
+         "and action, account frictions. Reuses the ops lane's latency measurement "
+         "discipline, pointed at sportsbooks. No wager is placed.",
+         ["decision-to-executable-price latency is measured on the owned tape with explicit "
+          "timestamp-uncertainty and vendor-latency terms (D023 amendment 4)",
+          "posted limits and their movement are captured per book and market where visible",
+          "slippage assumptions are stated as measured distributions, never single optimistic "
+          "constants",
+          "no wager is placed and no account credential is used; anything requiring an "
+          "account routes to a USER_REQUIRED gate"]),
+        ("M22_CAPACITY",
+         "Capacity analysis: how much money the measured opportunity classes can absorb",
+         "audit", ["M00_MARKET_PROGRAM_CONTRACT", "M21_EXECUTION_REALISM"],
+         "capacity analyst",
+         "DECISION-SYSTEM INPUT. Bounds strategy capacity from measured limits, liquidity and "
+         "frequency. A capacity number is an upper bound under stated assumptions, never a "
+         "revenue projection.",
+         ["capacity is derived from M21's measured limits and frequencies, with every "
+          "assumption named",
+          "capacity bounds are reported per opportunity class of the M00 taxonomy, never as "
+          "one blended figure",
+          "sensitivity of the bound to each assumption is reported",
+          "no projection of realised profit is made"]),
+        ("M23_SHADOW_TRADING",
+         "Shadow trading: paper decisions logged against capturable prices, append-only",
+         "implementation", ["M00_MARKET_PROGRAM_CONTRACT", "M14_MODEL_MARKET_RESIDUAL", "M22_CAPACITY"],
+         "shadow trading engineer",
+         "DECISION-SYSTEM VALIDATION WITHOUT MONEY. Every paper decision is committed with a "
+         "pre-decision timestamp against a price that was capturable at that moment, with "
+         "M21/M22 execution assumptions applied. Shadow results earn at most the M00 ladder "
+         "status the contract assigns them; they are never a licence to trade.",
+         ["every shadow decision is logged BEFORE its outcome window opens, with the decision "
+          "timestamp, the quote it acted on and that quote's capture timestamp",
+          "the shadow ledger is append-only; a revised decision is a new record",
+          "M21 slippage and M22 capacity assumptions are applied to every fill, and the "
+          "unadjusted number is retained beside the adjusted one",
+          "no real order is placed; real-money activation is a USER_REQUIRED decision "
+          "outside this node",
+          "results are labelled per the M00 evidence ladder and never presented as realised "
+          "profit"]),
+        ("M24_STAKING",
+         "Staking policy specification: sizing, exposure and drawdown rules",
+         "documentation", ["M00_MARKET_PROGRAM_CONTRACT", "M23_SHADOW_TRADING"],
+         "staking policy author",
+         "DECISION-SYSTEM SPECIFICATION. A staking policy is a frozen rule set evaluated in "
+         "shadow before any real-money question is even well-posed. This node specifies and "
+         "backtests-in-shadow; activating any policy with money is USER_REQUIRED and is not "
+         "this node's decision.",
+         ["sizing rules (including any Kelly fraction) are stated with their inputs' "
+          "uncertainty explicitly propagated",
+          "exposure caps per game, market, book and day are explicit",
+          "drawdown and stop rules are frozen before evaluation on the shadow ledger",
+          "the policy is evaluated only against the M23 shadow ledger under M21/M22 "
+          "assumptions",
+          "real-money activation is stated to be USER_REQUIRED and outside this node"]),
+    ]
+    for nid, title, ntype, deps, role, epis, crit in market_stubs:
+        N.append(mnode(
+            nid, title, ntype, deps, role, epis, crit,
+            outputs=[f"{MP}/{nid}/REPORT.md", f"{MP}/{nid}/FINDINGS.json"]
+            if ntype == "audit" else
+            ([f"{MP}/{nid}/REPORT.md", f"{MP}/{nid}/TESTS.py"] if ntype == "implementation"
+             else [f"{MP}/{nid}/REPORT.md", f"{MP}/{nid}/SPEC.json"]),
+            validators=[f"python -c \"import json;json.load(open('{MP}/{nid}/FINDINGS.json'))\""]
+            if ntype == "audit" else
+            ([f"python {MP}/{nid}/TESTS.py"] if ntype == "implementation"
+             else [f"python -c \"import json;json.load(open('{MP}/{nid}/SPEC.json'))\""]),
+            merge="coordinator" if ntype == "documentation" else "auto",
+        ))
 
     return {
         "schema": "player_program/orchestration/program_graph/1",
