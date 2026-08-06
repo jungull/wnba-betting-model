@@ -1,0 +1,517 @@
+{
+ "schema": "player_program/p34_red_team/1",
+ "node": "P34_PREREGISTRATION_RED_TEAM",
+ "inputs_reviewed": {
+  "P33_SPEC_sha256": "066b2a046021db119a75e2c847c325f6f4e40bb6e418bc7b31c8d072d347d093",
+  "P33_REPORT_sha256": "6d945b8663323526ba29fc74cdf963c800ff26d12bac846e12ef69d1681248ab"
+ },
+ "reviewers": {
+  "leakage": {
+   "verdict": "ACCEPT_WITH_REQUIRED_CHANGES",
+   "checked_hashes": "ALL_MATCH",
+   "stop_condition_concern": false,
+   "review_file": "REVIEW_LEAKAGE.md",
+   "findings": [
+    {
+     "severity": "B",
+     "title": "L1: A16 archive-retrievability claim contradicted by bytes; dev window undefined over opening-day history",
+     "detail": "Draft says team_possession_prior_v1.parquet carries projected_team_off_possessions for all 2,990 team-games; measured 2,982 non-null / 8 NULL (pace_resolved=False, game_ids 1022100001-4, 2021 opening day). Those completed games sit in the trailing k=5 windows of early-2021 rows, so per-game dev is undefined there and the claim 'defined on all 2,982 rows in every fold' is false as written. Not leakage (no forward information), but a frozen-claim-vs-bytes contradiction plus an undeclared construction convention P36 would improvise. Fix: correct the claim and freeze the unresolved-prior-game handling identically in arm and null."
+    },
+    {
+     "severity": "B",
+     "title": "L2: A23 bundle_AI 'previous SCHEDULED game' has no receipted pre-tip source (A06-parity violation)",
+     "detail": "The archive contains only played games at played dates; scheduled-but-not-completed games do not exist in any receipted artifact (the draft itself measured no schedule artifact in scope when conditioning A06). bundle_AI is therefore unimplementable as written; an implementation silently substitutes the completed-game definition (= bundle_OM's), making the claimed bundle distinction vacuous. No forward leakage either way, but the same evidentiary standard that made A06 INADMISSIBLE-UNTIL-RECEIPTED must apply: redefine to COMPLETED games or make bundle_AI conditional on the schedule receipt."
+    },
+    {
+     "severity": "B",
+     "title": "L3: A06 repair path (b) admits an unreviewed feature definition after the red team",
+     "detail": "Path (a) and the PREREGISTERED_CONDITIONAL_NOT_FIT exclusion are decidable and leak-free; path (b) ('redefinition from past-only schedule facts') names no concrete formula, so its leak status cannot be adjudicated today. P35 must bind path (b) to a hash-pinned formula, per-column S8/P2A adjudication, P22 invocation, and a permanent record that the P34 leakage review did not see it."
+    },
+    {
+     "severity": "B",
+     "title": "L4: A13 centering constant cbar_F not pinned to training-only computation",
+     "detail": "A01/A04 pin m_bar as training-fold-only; A13's (cont_i - cbar_F)*dev_prev treatment never defines cbar_F in SPEC.json or REPORT.md. If computed over the whole fold it would embed post-cutoff lineup information in training features \u2014 the only remaining construction where a cutoff violation is possible by omission. Fix is one frozen sentence: cbar_F and the n=0 imputation constant are TRAINING-row means, identical in arm and null."
+    },
+    {
+     "severity": "C",
+     "title": "L5: A19 live-ball dictionary question is decidable now \u2014 withdrawal will fire",
+     "detail": "Measured end_reason levels (9 total) include a single undifferentiated 'turnover' level and no live-ball/steal distinction; A19's E_LB subset cannot be expressed and its preregistered withdrawal-as-design-failure fires at P35. A20 unaffected. Fail-closed behavior is leak-free; denominator consequence belongs to the multiplicity reviewer."
+    },
+    {
+     "severity": "C",
+     "title": "L6: two leak-free determinism gaps (A26 LOO as-of date; A08 last-K date tie-break)",
+     "detail": "Both readings in each case use only strictly-earlier games \u2014 no leakage \u2014 but they yield different numbers; pin one at P35."
+    },
+    {
+     "severity": "C",
+     "title": "L7: design constants frozen from pooled full-archive feature marginals",
+     "detail": "A03 t=3, A08 {20,80}, A16 k=5 were justified from all-season feature marginals (depth histogram re-measured and matches exactly: {0:37, 3-9:76 each, 10:2413}, SHALLOW=113). Outcome-free and conventional, but fold-1 designs are not fold-blind and the record should say so."
+    },
+    {
+     "severity": "C",
+     "title": "L8: self-frozen quasi-Poisson IRLS convention is leakage-inert",
+     "detail": "The mean structure (log link + receipted log_exposure offset) is receipted and its line citations verified against possession_features.py bytes; the family choice affects only training-row IRLS weights and no likelihood-based SE is consumed (all inference is cluster bootstrap). No pre-tip availability channel. Whether freezing an unreceipted family is acceptable convention-invention is another reviewer's lens."
+    }
+   ],
+   "required_changes": [
+    "Correct A16's retrievability claim (2,982 of 2,990 rows non-null, 8 opening-day rows NULL) and freeze the handling of trailing windows containing an unresolved prior game, identically in arm and null (L1).",
+    "Redefine A23 bundle_AI's prior-game rule to 'previous COMPLETED same-season game' OR make bundle_AI conditional on the same preseason-published schedule receipt as A06 path (a), with its element leaving the schedule_context_family denominator if the receipt does not land (L2).",
+    "Bind A06 repair path (b) at P35 to a concrete hash-pinned formula with per-column S8/P2A adjudication and P22 invocation, plus a recorded note that the P34 leakage review did not review the redefined feature (L3).",
+    "Pin A13's cbar_F and its n=0 imputation constant as TRAINING-fold-row means only, identical in arm and null (L4)."
+   ]
+  },
+  "offset": {
+   "verdict": "ACCEPT_WITH_REQUIRED_CHANGES",
+   "checked_hashes": "ALL_MATCH",
+   "stop_condition_concern": true,
+   "review_file": "REVIEW_OFFSET.md",
+   "findings": [
+    {
+     "severity": "A",
+     "title": "A01 cannot pass the frozen offset guard truthfully",
+     "detail": "A01's treatment (log_exposure - m_bar) is exactly affine in the offset (R2=1.0 every fold, measured). Frozen guard run live: SUBSTANTIVE blocks with 7 kinds; RECALIBRATION with truthful k0_carries_offset_slope=False blocks (recalibration_family_incomplete); only a FALSE attestation of k0_carries_offset_slope=True passes, contradicting A01's preregistered null '[log_exposure] with slope fixed at 1'. Arm unfittable as preregistered; withdraw or adjudicate above the node."
+    },
+    {
+     "severity": "A",
+     "title": "A04 blocked by frozen guard under BOTH declared families",
+     "detail": "Complete design [offset | 1[SHALLOW] | centered slope | interaction] measured against frozen guard bytes: SUBSTANTIVE blocks (calibration_parameter_in_substantive_arm on the nuisance slope column plus rank/reconstruction kinds); RECALIBRATION with full declaration blocks (mixed_family_arm: 1[SHALLOW] and the interaction are not functions of the offset/projection). No passing invocation exists at all. Arm unfittable as preregistered."
+    },
+    {
+     "severity": "B",
+     "title": "P25 invocation under-specified: declared_family frozen nowhere",
+     "detail": "P33 freezes neither declared_family nor the recalibration_declaration payload for any of the 26 arms; arm_kind 'calibration_only' does not map onto the guard's SUBSTANTIVE/RECALIBRATION axis (A02 passes only under SUBSTANTIVE, measured; invoked as RECALIBRATION it blocks with mixed_family_arm). P35 must pin per-arm."
+    },
+    {
+     "severity": "B",
+     "title": "'Preregistered intercept structure' referenced everywhere, defined nowhere",
+     "detail": "P30 core_rules, P32 and P33 all use the phrase without enumerating it. No-intercept reading: K0_MATCHED[A01] IS the incumbent and m_bar is load-bearing (defines the one-parameter family's pivot). Free-intercept reading: m_bar is cosmetic but K0 is a refit, not the incumbent, changing what delta_MAE measures and breaking the exact-recovery gloss. Must be pinned per arm and null at P35."
+    },
+    {
+     "severity": "B",
+     "title": "Quasi-Poisson freeze does not dispose of V2's retirement of Poisson GLMs",
+     "detail": "V2_STOP_CONDITION retired 'count/Poisson GLMs (target dispersion ratio 0.193)'; P33 borrows the 0.193 figure from that exact note while freezing quasi-Poisson IRLS, without stating why the retirement does not bind. The disposal exists (retired as replacement point-estimator families vs used here as a symmetric testing scaffold; constant under-dispersion cancels from the score equations; no likelihood SEs used) and must be written at P35."
+    },
+    {
+     "severity": "C",
+     "title": "Exact-recovery gloss loose; containment is the true premise",
+     "detail": "Nulls with free parameters (A04, A07, A11-A15) do not recover the incumbent exactly when fitted; the link-pinning property is that every null FAMILY CONTAINS the incumbent, which forces link=log identically. Conclusion unaffected; restate at P35."
+    },
+    {
+     "severity": "C",
+     "title": "Citation (3) is a turnover-lane sentence",
+     "detail": "GATE_INVOCATION_CONTRACT 3.1 reads 'every TURNOVER arm carries log(exposure) (and log(D)) in the offset'; P33 calls it program-wide. Corroborative only; citations (1)+(2) carry the derivation."
+    },
+    {
+     "severity": "C",
+     "title": "A02 identity is by construction, with one unstated caveat",
+     "detail": "Blend identity own+opp==2*projected is a producer invariant (build_projected_exposure.py 320-328, fails closed unless exactly 2 sides); offset cluster-constant (all 1,491 games, measured); gap antisymmetric (max per-game sum 0.0). Exact orthogonality is conditional on games-never-split; any cluster-splitting subset voids the exact zero and must not quote the 0.0."
+    },
+    {
+     "severity": "C",
+     "title": "A02 'blend weight' interpretation is first-order only",
+     "detail": "Nonzero gamma gives mu = P*exp(gamma*gap), a multiplicative surrogate rather than a natural-scale reweighted blend; gamma=0 recovery is exact."
+    },
+    {
+     "severity": "C",
+     "title": "m_bar fold-safe; load-bearing under the no-intercept reading",
+     "detail": "Training-only centering, no leakage channel; measured per fold 4.374304-4.378700 (range 0.0044). A04's interaction is immune to m_bar shifts because the SHALLOW main absorbs them exactly."
+    },
+    {
+     "severity": "C",
+     "title": "A02 contrast prereg record mismatch (name and audit offset)",
+     "detail": "P25 PREREGISTERED_CONTRASTS.json registers 'contrast_own_minus_opp_pace_estimate' audited against the NATURAL-scale projection; P33 names the column pace_gap and invokes with offset=log_exposure. As-is the guard's formula-reproduction check never fires. Reconcile at P35."
+    }
+   ],
+   "required_changes": [
+    "Resolve A01 guard-invocability: withdraw the arm or escalate the frozen-guard-vs-preregistered-K0 conflict for adjudication above this node before the P35 task-card freeze",
+    "Resolve A04 guard-invocability identically (no passing invocation exists under either declared family)",
+    "Pin per-arm declared_family and complete truthful recalibration_declaration payloads for every P25 offset_dependency_guard invocation",
+    "Define the intercept structure (free intercept present/absent) per arm and per null; the phrase 'preregistered intercept structure' is currently defined nowhere",
+    "State explicitly at P35 why V2_STOP_CONDITION's retirement of count/Poisson GLMs does not bind the quasi-Poisson IRLS estimation-objective freeze",
+    "Reconcile the A02 contrast preregistration record: pin the P36 column name to the registered record (or re-register under pace_gap) and restate its audit offset as log_exposure"
+   ]
+  },
+  "k0": {
+   "verdict": "ACCEPT_WITH_REQUIRED_CHANGES",
+   "checked_hashes": "ALL_MATCH",
+   "stop_condition_concern": true,
+   "review_file": "REVIEW_K0_PARITY.md",
+   "findings": [
+    {
+     "severity": "A",
+     "title": "K1: A11 K0 block self-contradictory; two-mains null reading breaks nesting; rho-interval kill can never fire",
+     "detail": "Formula ('null fixes rho == 1') plus the frozen P26 hierarchical_pooling kind prescribe null = offset + beta*dblend(1); the k0_matched gloss '[log_exposure | dcur_t | dprev_t]' in the document's own column-list notation is a 2-free-df null not in the arm's span (dblend weights vary by row), violating 'every null is term_removal or parameter_fixed_at_null' and handing the NULL a flexibility advantage. The kill 'rho interval includes 1' is unproducible: rho is fixed per grid element {0.25,0.5,0.75}, only beta gets bootstrap intervals, and any grid distribution is bounded by 0.75 < 1. Pin the null, strike the gloss, replace the kill \u2014 or withdraw A11."
+    },
+    {
+     "severity": "B",
+     "title": "K2: 'the preregistered intercept structure' is never preregistered; default-intercept channel recreates S4",
+     "detail": "A01/A03/A06 nulls cite an intercept structure defined nowhere in P33 (the preregistration itself) or any upstream frozen document \u2014 all defer to 'the preregistered' one. Formulas carry no intercept (coherent zero-parameter nulls), but P26 says the null CARRIES it. If a P36 implementer's GLM adds a default intercept to arm designs while nulls are coded as bare offset per the literal glosses, arms gain a free recalibration intercept their nulls lack \u2014 the exact P2/S4 defect. Must pin per arm, identically arm-and-null, before P35."
+    },
+    {
+     "severity": "B",
+     "title": "K3: frozen P26 K0-contract validator cannot consume or pass the P33 K0 declarations",
+     "detail": "Schema: P33 k0_matched blocks lack every structured field validate_k0_matched.py reads. Substance: R8 requires calibration_only arms to declare a slope-role parameter with null_value exactly 1.0; A01/A04 declare slope with null 0 (delta parameterization), A02/A03/A05/A06 declare no slope role at all. GATE_INVOCATION_CONTRACT.md never mentions P26 (zero grep matches), so no frozen document names who enforces the K0 contract at fit time. P35 must emit P26-schema records with the equivalence adjudicated, or supersede P26 on the record."
+    },
+    {
+     "severity": "B",
+     "title": "K4: A08's d_t league-mean window unpinned across the K grid \u2014 shared-K0 status undecidable",
+     "detail": "If d_t's inner 'lagged league mean' is all-prior (D6 suggests so), both K elements {20,80} share one null [offset | d_t] identical to A09/A10's \u2014 fair. If trailing-K, the two elements carry different nulls, 'identical machinery' claims across A08/A09/A10 break, and the frozen A04/A09 collapse test no longer speaks for A08's columns. One pinning sentence needed at P35."
+    },
+    {
+     "severity": "C",
+     "title": "K5: 'incumbent structural terms' misnomer for gap/depth/opp_depth in A07/A12/A14 nulls",
+     "detail": "possession_features.py bytes: the incumbent has no fitted feature and pace_gap is explicitly the part that does NOT enter the projection. These nulls are deliberately stronger than the incumbent (S6 direction 1) and symmetric with their arms \u2014 no unfairness \u2014 but the label invites P36 to claim the nulls 'recover the incumbent' or to read MAE(K0) as an incumbent benchmark. Relabel."
+    },
+    {
+     "severity": "C",
+     "title": "K6: n_i clock is the contract schedule including D010-excluded games \u2014 reproducibly so, but stated nowhere",
+     "detail": "P33's A03/A07 collapse and A07-absorption numbers reproduce exactly (4 dp every fold) only when n_i counts strictly-earlier same-season rows of the 2,990-row prior artifact including the four excluded 2021 opening-day games; universe-row clock gives materially different bytes (fold-2 R2 0.3674 vs 0.3321). Verdicts unchanged. Pin the clock in one frozen sentence so P36 builds the preregistered feature."
+    },
+    {
+     "severity": "C",
+     "title": "K7: no symmetric rule for degenerate bootstrap draws or one-sided IRLS non-convergence",
+     "detail": "Fully-empty indicator draws are measured-negligible (worst case ~8e-12, A03 fold 1), but near-degenerate draws and the 100-iteration cap can break one member of an arm/null pair only. Direction is conservative (widens arm intervals, favors kills) but behavior is implementation-defined. Declare one symmetric NA-both-members rule at P35; also covers A09's formula-vs-treatment_terms drafting gap (both readings give the identical null there, unlike A11)."
+    },
+    {
+     "severity": "C",
+     "title": "K8: A23's two bundles have per-bundle nulls with potentially different evaluable sets in one Holm family",
+     "detail": "bundle_AI's opener rule is an S7 fold-level fallback (can change evaluability, arm-and-null identically); bundle_OM's is deterministic. Fair per element and declared; record so family Holm is not read as like-for-like row sets."
+    }
+   ],
+   "required_changes": [
+    "K1 (A): pin A11's null to one construction (frozen precedence points to: identical machinery with rho = 1, i.e. offset + beta*dblend(1)); strike the '[log_exposure | dcur_t | dprev_t]' two-free-mains gloss; replace the never-fireable 'rho interval includes 1' kill with a decidable per-element criterion (per-element beta interval plus existing concentration/sign kills) \u2014 or withdraw A11",
+    "K2 (B): preregister the intercept structure explicitly per arm (at minimum A01-A06), identically in arm and null, and add an invariant prohibiting implementation-default intercepts in any design",
+    "K3 (B): make the P26 K0 contract enforceable on the P35 task cards \u2014 emit P26-schema K0 records per arm, adjudicate the delta=0 <=> slope=1 equivalence on the record, extend or interpret the calibration_only slope rule for intercept/blend-weight calibrations, and name the call site where validate_k0_matched runs \u2014 or supersede P26 in a frozen record and name the replacement enforcement",
+    "K4 (B): pin d_t's league-mean window as K-free and shared across A08/A09/A10 (or declare per-element nulls explicitly)",
+    "K5 (C): relabel 'incumbent structural terms' to 'receipted incumbent-path features granted to the null (S6 direction 1)'",
+    "K6 (C): add one frozen sentence: n_i / n counts are computed on the contract schedule (2,990 team-game rows of team_possession_prior_v1), including universe-excluded games",
+    "K7 (C): declare a symmetric rule for degenerate bootstrap draws and one-sided IRLS non-convergence (record NA for both members of the pair); clarify A09's formula to match its treatment_terms",
+    "K8 (C): note that A23's two bundles may be evaluated on different fold/row sets within schedule_context_family"
+   ]
+  },
+  "folds": {
+   "verdict": "ACCEPT_WITH_REQUIRED_CHANGES",
+   "checked_hashes": "ALL_MATCH",
+   "stop_condition_concern": false,
+   "review_file": "REVIEW_FOLD_ESTIMABILITY.md",
+   "findings": [
+    {
+     "severity": "B",
+     "title": "A08 window-definedness constraint unsatisfiable for both K in every fold",
+     "detail": "SPEC freezes both 'rows defined once >= K league games completed' and 'K elements must keep L_t defined on all rows of every training fold'. Measured: L_t undefined on 44 training rows (K=20) and 162 (K=80, 39.5% of fold-1 training) in EVERY fold. As written both grid elements fail at invocation, evaporating A08 post-freeze and silently changing the timeseries_shrinkage Holm denominator. Fix at P35: freeze explicit pre-window-row handling (identical in arm and null) or withdraw now."
+    },
+    {
+     "severity": "B",
+     "title": "A16/A17/A19/A21 definedness claims refuted by bytes (7 zero-prior rows)",
+     "detail": "Measured against the possessions archive (the lag operator's actual source; all 8 excluded opening-day team-games do carry possession rows): exactly 7 universe rows have zero strictly-earlier possession games for the offense team \u2014 four 2021-05-15 rows plus three expansion debuts; 5 clusters/10 rows for symmetric/contrast constructions; 1 is a fold-4 TEST row and 2 are fold-5 TEST rows. A16's 'defined on all 2,982 rows', A17's '|P|>=1 by universe construction', A19/A21's 'defined on every row' are false. Undefined treatment on a test row means the arm cannot predict it while its null can \u2014 undeclared row-set asymmetry. Freeze a deterministic symmetric |P|=0 rule per arm (A22's churn:=0 is the model)."
+    },
+    {
+     "severity": "B",
+     "title": "A14 Holm-slot handling unpinned; diagnostic arm can block real promotions",
+     "detail": "SPEC retains A14's slot ('test is still performed') but never states whether its p enters the Holm step-down ordering. If it does, an intermediate A14 non-rejection stops the sequence and can deny A07/A12/A13/A15 tests they would pass at m=4 \u2014 promotion made dependent on a promotion-ineligible, franchise-confounded p-value. Recommend pinning the fixed-slot reading (charged to m, excluded from ordering) at P35."
+    },
+    {
+     "severity": "B",
+     "title": "A14 licensing omits single-franchise confound; effective support 9-15 clusters",
+     "detail": "Measured: all 46 expansion training clusters in train_lt_2026 belong to ONE franchise (1611661331, 2025); test-side expansion rows are 57 across two DIFFERENT franchises. kappa-hat is unidentifiable against that franchise's idiosyncratic level. Clusters with decayed treatment >= 0.05 number 15 (>= 0.2: 9) vs 46 nominal. Restated kills verified decidable, but PRELIMINARY_SUPPORTED_SINGLE_FOLD must carry the confound and effective-support caveats. Retention in fit set justified only jointly with this and the Holm pin; otherwise drop A14 and shrink the family to 4 openly."
+    },
+    {
+     "severity": "B",
+     "title": "A11 fold-1 fallback names a mechanism, not a rule; evaluability undefined",
+     "detail": "Measured: train_lt_2022 training = 2021 season only; dprev_t undefined on 100% of fold-1 training rows. A11 invokes GATE_INVOCATION_CONTRACT section 4 but freezes none of its menu options, and leaves undefined whether fold 1 enters pooled delta_MAE (dilution by 478 test rows if the column drops) or counts as 'evaluable' for the rho-interval kill. Bring to the A12/A13/A05 standard: name the option and the evaluability, before P35."
+    },
+    {
+     "severity": "B",
+     "title": "Active-set rule file self-declares NOT registered for any arm",
+     "detail": "ACTIVE_SET_RULE_PREREGISTRATION.json (hash-pinned by P33, cited as A03's operative fallback and mirrored by A04/A12/A13/A14) states it is a reference instance that each arm must register in the arm registry before execution. P33 creates no registration obligation. P35 task cards must register S7_TIER_SUPPORT_v1 per invoking arm, else fold deactivations rest on an unregistered fallback that section 4 treats as invalidating."
+    },
+    {
+     "severity": "C",
+     "title": "A12/A13 P27-at-invocation deferral is sound; risk negligible",
+     "detail": "The deferred >= 10-cluster |dev_prev|>0 floors in folds 2-5 have a schedule-fact lower bound of hundreds of clusters (every such fold contains a full season whose teams all have an archived prior season). Fold-1 structural deactivation verified as schedule fact. Recommend P35 record the lower bound so invocation is confirmation, not decision."
+    },
+    {
+     "severity": "C",
+     "title": "P27 rule is training-side only; test-side blind spot patched ad hoc for A05 alone",
+     "detail": "The rule conditions on 'training-fold counts only'. A05's fold-5 test degeneracy (0 playoff test rows \u2014 verified) got a bespoke decidable trigger, but no general test-side degeneracy rule exists. Measured today no other arm has a fully test-degenerate fold (A03 test shallow rows 12/12/12/16/21; A14 fold-5 test exp rows 57), so record-level this cycle."
+    },
+    {
+     "severity": "C",
+     "title": "A03 verified; per-fold test-side discrimination rests on 12-21 rows",
+     "detail": "Training support and t=3 rationale premises reproduced exactly (24/36/46/57/69 shallow train clusters; no depth-1/2 rows). SPEC omits test-side support: 12/12/12/16/21 shallow test rows (2.5-4.9%). Power risk already declared by the arm; recorded so a null is read as underpowered-stratum evidence."
+    },
+    {
+     "severity": "C",
+     "title": "No rule for degenerate bootstrap draws or IRLS non-convergence in a draw",
+     "detail": "B=2000 refit bootstrap has no frozen disposition for a draw losing a thin stratum or hitting max iterations. Quantified negligible for current arms (zero-playoff fold-1 draw ~ e^-17; shallow ~ e^-24; expansion ~ e^-46). Completeness item for P35 cards."
+    }
+   ],
+   "required_changes": [
+    "A08: resolve the L_t definedness contradiction before P35 \u2014 freeze explicit handling of pre-window rows (44 rows at K=20, 162 at K=80, every training fold; training-side only), identical in arm and null, or withdraw the element(s)/arm now and restate the timeseries_shrinkage budget.",
+    "A16/A17/A19/A21: correct the false 'defined on every row' claims and freeze a deterministic symmetric |P|=0 rule per arm covering the 7 measured zero-prior offense rows (5 clusters/10 rows, incl. 3 test rows in folds 4-5).",
+    "A14: pin whether its p-value enters the COLDSTART_FALLBACK Holm step-down ordering or occupies a fixed non-rejected slot (recommended: fixed slot, charged to m, excluded from ordering).",
+    "A14: add to single_active_fold_licensing that the training stratum is one franchise (1611661331), kappa-hat is confounded with franchise identity, and effective decayed support is ~9-15 clusters; carry these caveats on any PRELIMINARY_SUPPORTED_SINGLE_FOLD record.",
+    "A11: name the concrete GATE_INVOCATION_CONTRACT section-4 fallback option for train_lt_2022 and state fold-1 evaluability for both the pooled primary gate and the rho-interval kill.",
+    "P35 task cards: register S7_TIER_SUPPORT_v1 (or arm-specific instances) in the arm registry for every arm invoking the active-set rule (A03/A04/A12/A13/A14), per the guard file's own registration condition.",
+    "P35 cards (completeness): state the disposition for degenerate bootstrap draws and IRLS non-convergence within a draw."
+   ]
+  },
+  "multiplicity": {
+   "verdict": "ACCEPT_WITH_REQUIRED_CHANGES",
+   "checked_hashes": "ALL_MATCH",
+   "stop_condition_concern": false,
+   "review_file": "REVIEW_MULTIPLICITY.md",
+   "findings": [
+    {
+     "severity": "B",
+     "title": "Provenance rule manufactures a partition no source proposed; F14/F15/F18 mechanisms double-funded with no dual check",
+     "detail": "F14 (A17/A18), F15 (A19/A20), F18 (A23/A24) are each one P32-adjudicated mechanism charged to two multiplicity families with independent 0.05 budgets. Under every one of the three P32 source readings of the F18 rest mechanism, A23 and A24 co-locate with denominator >= 3; the frozen split (A24 singleton at uncorrected 0.05) appears in no reading and is weakly more lenient than all of them \u2014 inverting stricter-governs exactly where a dispute exists. P33's dual-Holm covers only the D2/D5 arms; the seven CONFLICTING-ADJACENT arms (A17-A20, A23-A25) get pure provenance."
+    },
+    {
+     "severity": "B",
+     "title": "D2 three-way dispute reduced to two-way; A06's dual check is mathematically vacuous",
+     "detail": "D2 records CAL vs temporal_drift vs COLDSTART (CF-H3). P33 checks A06 under CAL and temporal_drift only; temporal_drift_family as constituted is A06's own 2 elements, a strict subset of the CAL run, and by Holm's closed-testing structure a subset family is never the binding check. The only alternate that could bind (A06 into COLDSTART) is omitted, so 'Neither reading is erased' is false in operation."
+    },
+    {
+     "severity": "B",
+     "title": "Dual-Holm alternate compositions unpinned; stricter-governs stops at the disputed arm",
+     "detail": "Whether other disputed arms are held at primary during an alternate run is unstated (D5 moves A11 and A12/A13 in opposite directions between the same two families \u2014 four configurations, different Holm outcomes); A06-conditional-element interplay with A07's CAL-alternate run is unstated. Non-disputed members of enlarged families (A01-A05 under CAL+A07=8; A08-A10 under timeseries+A12/A13=12) are never re-corrected at the larger denominator \u2014 the anti-conservative direction."
+    },
+    {
+     "severity": "B",
+     "title": "Grid-element semantics contradictory: fitted-element Holm vs fold-local training selection; no multi-survivor rule",
+     "detail": "The partition rule defines Holm over 'fitted elements (arm x enumerated-grid-element)' but A09 says kappa is 'fold-locally fit' and A10 says lambda is 'fold-locally selected' on training rows \u2014 under selection, element identity varies by fold and per-element pooled p-values do not exist, so the frozen procedure has no inputs. A06's two bases are joined by 'OR'. No preregistered rule selects the promotable element when several elements of one arm survive Holm."
+    },
+    {
+     "severity": "B",
+     "title": "Kill-condition alpha accounting self-contradictory; 'conservative direction' rationale backwards for failure-to-reject kills",
+     "detail": "inference.coefficient_inference freezes kills as UNCORRECTED while six arm records (A01-A06) freeze 'family-corrected X = 0 not rejected' kills. Both cannot be implemented. For failure-to-reject kills, uncorrected evaluation fires FEWER kills than corrected \u2014 the anti-conservative direction; the damage is bounded by the corrected primary gate but the bytes contradict each other."
+    },
+    {
+     "severity": "B",
+     "title": "LAGGED_TEMPO_MIX drop rule and A13 fixed-sequence gate cited but specified nowhere",
+     "detail": "The families block cites a 'preregistered weaker-member drop rule (A19.k0_matched declaration)'; measured, that declaration contains no drop/weaker language \u2014 no statistic, stage, or post-drop alpha (Holm-2 at 0.025 vs uncorrected 0.05 is exactly a max-selection charge). A13's gate 'confirmatory only if A12's joint treatment rejects' states no rejection level (uncorrected vs Holm vs dual-stricter) and no denominator rule for the exploratory case."
+    },
+    {
+     "severity": "B",
+     "title": "No both-pass adjudication; A03/A07 answer; program-wide alpha silent",
+     "detail": "A03/A07 is not formal double funding under frozen semantics (distinct F-ids, collapse rule executed honestly: max fold R2 0.7134, spearman 0.5141, far below 0.998001/0.999), but the collapse criterion is an identifiability threshold, not a mechanism-identity test: at R2 ~0.71 in the fold where both cold-start claims live, with A03's null owning no depth information, the two tests overlap on the same signal across two family budgets, and if both pass the record licenses promoting both. Same both-pass exposure for A17/A18, A19/A20, A23/A24. 10 families at 0.05 give up to ~0.40-0.50 global false-funding under the null; no program-wide statement exists anywhere in the frozen bytes."
+    },
+    {
+     "severity": "C",
+     "title": "A03 'no other element is defensible' overstated",
+     "detail": "t=3 is genuinely anchored and honestly charged, but WINDOW_K=10 is accepted elsewhere in the same document (A09's kappa anchor) as frozen evidence, so a depth threshold at the window cap is defensible by the identical argument form. Count unaffected."
+    },
+    {
+     "severity": "C",
+     "title": "A08 {20,80} and A16 k=5 justifications constructed, not sourced \u2014 honestly charged",
+     "detail": "Source text for A08 is only '(K small, preregistered)' (HYPOTHESES_timeseries_shrinkage.md:183); A16's source names no k and delegates accounting ('one preregistered k is fitted'). Counts charged honestly pre-fit with no performance data; the 'discharged from source' framing overstates the derivation, not the count."
+    },
+    {
+     "severity": "C",
+     "title": "Quasi-Poisson freeze is multiplicity-neutral only because global and irrevocable",
+     "detail": "The un-receipted response-family freeze charges nothing under this lens (single pre-fit convention, no searched dimension, no likelihood SE consumed). Recommend a P35 clause that any per-arm response-family/objective deviation at P36 voids the arm, paralleling the stochastic-fitting clause."
+    },
+    {
+     "severity": "C",
+     "title": "Verified sound: budget arithmetic, pre-fit alpha statement, A14 slot, granularity, A23 cross-product refusal",
+     "detail": "26 arms each in exactly one family; charge = max(grid,1) all 26; sums match; A14 Holm slot retention conservative; conditional-element timing well-defined; bootstrap min p ~2.0e-4 clears worst Holm threshold 0.05/12 ~4.2e-3 with margin; A23's two source-consistent bundles correctly refuse the 8-cell cross-product."
+    }
+   ],
+   "required_changes": [
+    "P35: co-locate F14/F15/F18 in one multiplicity family each per stricter-governs, OR extend dual-Holm stricter-governs to A17, A18, A19, A20, A23, A24, A25 with pinned alternate compositions, OR expressly disclaim mechanism-level multiplicity semantics and acknowledge additive mechanism funding rates.",
+    "P35: add the A06-under-COLDSTART configuration to the D2 check (or record why CF-H3's reading binds A07 only); annotate the temporal_drift alternate as subset-vacuous.",
+    "P35: enumerate the exact element sets of every dual-Holm run per disputed arm (hold-others-at-primary or otherwise; conditional-element handling); extend survive-both to all members of any family whose composition is disputed, or record explicit acceptance of the asymmetry with direction stated.",
+    "P35: per grid-carrying arm state the regime \u2014 every element fitted end-to-end with its own pooled OOF p-value, or training-time selection with unselected elements charged at p=1 (or equivalent explicit rule); resolve A06's 'OR'; add the multi-survivor promotion-selection rule.",
+    "P35: strike either 'family-corrected' from the A01-A06 kill conditions or the UNCORRECTED clause in the inference block; state the direction consequence.",
+    "P35: write the LAGGED_TEMPO_MIX weaker-member drop rule (statistic, stage, post-drop alpha) and the A13 fixed-sequence rejection level plus denominator rule into the task cards as decidable rules.",
+    "P35: one preregistered paragraph declaring (i) the both-pass adjudication for cross-family correlated survivors (e.g., joint nested re-test above a stated training-fold R2 bound, or a portfolio rule) and (ii) that error control is per-family Holm at 0.05 with no program-wide FWER claim."
+   ]
+  },
+  "targetunits": {
+   "verdict": "ACCEPT_WITH_REQUIRED_CHANGES",
+   "checked_hashes": "ALL_MATCH",
+   "stop_condition_concern": false,
+   "review_file": "REVIEW_TARGET_UNITS.md",
+   "findings": [
+    {
+     "severity": "B",
+     "title": "Response-family freeze cites, without reporting, the V2 sentence that retired its family",
+     "detail": "SPEC.json inference_spec_gap_resolution freezes Poisson quasi-likelihood IRLS and cites the 0.193 under-dispersion from V2_STOP_CONDITION's retired-families note; that same sentence (line 189) retires 'count/Poisson GLMs' and 'log transforms' as families. P33's contradiction list omits this. The freeze likely survives (retirement bounded challenger accuracy families; constant dispersion cancels in the quasi-score; all inference is cluster bootstrap; note marked 'NOT verified by the coordinator'), but the reconciliation must be written into the frozen record, not assumed. If instead the retirement is read as binding on estimation machinery, that is an inference-structure stop condition and must be halted, not resolved."
+    },
+    {
+     "severity": "B",
+     "title": "Regulation-equivalent rescale of lagged realized pace unpinned for A08-A11, ambiguous for A12/A16",
+     "detail": "Target and archived projection are period-based regulation-equivalent (measured: n_off*40/(40+5*max(0,max_period-4)), re-derivation dev 0.0). A08-A11 define d_t/pace(j) as 'realized regulation-equivalent pace' with no construction formula anywhere; D9 pins conventions only for A12/A16/A26. A16's wording ('regulation-equivalent duration from lagged duration_sec/period aggregates') and A12's ('lagged duration/overtime columns') admit a duration_sec-based normalizer that differs from the target/projection convention; under that reading A16's dev residual carries a systematic convention artifact on lagged-OT games. Not leakage, not a K0-parity break, but a post-preregistration unit-construction judgment call P32's F8 explicitly instructed be closed. Fix at P35: pin all six arms to the lagged target-column construction; A26 stays raw per D9 (pinning is completing a spec, not harmonizing)."
+    },
+    {
+     "severity": "C",
+     "title": "Quasi-Poisson coherent on the continuous target; dispersion heterogeneity caveat recorded",
+     "detail": "Verified: min target 66 > 0, no NaN, 120/2982 (4.02%) non-integer rows; quasi-score and deviance defined everywhere, IRLS well-posed. Caveat: the OT rescale makes per-row quasi-dispersion heterogeneous (phi*40/g, factors {1, 8/9, 4/5, 2/3}), so IRLS weights are mildly mis-specified on the 4.4% OT rows; identical in arm and null, bootstrap-immune. 'Dispersion irrelevant' means the constant-phi factor cancels, not that the variance model is right."
+    },
+    {
+     "severity": "C",
+     "title": "Notation unification incomplete: three notations persist; eight arms state no predictor equation",
+     "detail": "Measured census over the frozen SPEC: 'eta =' in 11 arms, 'log E[y] =' in 4 (A08-A11), 'y ~ offset()' in 3 (A16/A23/A25), and no linear-predictor statement at all in A17-A22, A24, A26; mu=exp(eta) stated only in A01. Substance is closed by shared_arm_invariants.link=log plus per-arm k0_matched treatment terms. Recommend P35 task cards render full eta and mu=exp(eta) per arm mechanically."
+    },
+    {
+     "severity": "C",
+     "title": "A26 raw-count convention preregistered honestly and bounded by P28; OT channel now bracketed",
+     "detail": "The unmeasured symmetric-cancellation assertion is labeled unmeasured, D9 bars harmonization, and the shared primary gate clause (d) enforces P28 ordering. Measured bound: 66/1491 games (4.43%) are OT, raw-count inflation up to 1.5x (one 8-period game); with the E=3 window a single OT prior game can move raw_t by several possessions, so cancellation is approximate. The mismatch is a noise channel that can only hurt A26; kills remain interpretable. Optional: copy the prevalence bound into the arm record."
+    },
+    {
+     "severity": "C",
+     "title": "Link-derivation citation (3) is cross-lane and does not describe the possession design",
+     "detail": "GATE_INVOCATION_CONTRACT 3.1 line 117 says every TURNOVER arm carries log(exposure) and log(D) in the offset; no possession arm may carry log(D) (duration prohibited from the prediction path). Harmless tertiary support - citations (1)/(2) fix the link and the zero-treatment recovery identity was verified numerically - but the record should quote 3.1 as the turnover-lane instance only."
+    },
+    {
+     "severity": "C",
+     "title": "A02 blend-weight gloss is a natural-scale story tested by a multiplicative model",
+     "detail": "Mechanism says 'optimal blend weight on own_est exceeds one half' (mu = proj + w*gap), but the frozen model is mu = proj*exp(gamma*gap); equivalence is first-order only and gamma's unit is 1/possessions. K0 nesting and incumbent recovery exact; interpretation-only. Applies mutatis mutandis to every natural-scale covariate under the log link."
+    }
+   ],
+   "required_changes": [
+    "Before the P35 freeze, add to the frozen preregistration record an explicit reconciliation of the quasi-Poisson IRLS estimation-objective freeze with V2_STOP_CONDITION's retired-families sentence (which retires count/Poisson GLMs and log transforms): quote the sentence in full, state that the retirement bounded challenger accuracy families and does not bind the shared scoring machinery, and scope the 0.193 citation to constant-dispersion cancellation in the quasi-score. If the adjudicator rejects that reading, HALT (inference-structure stop condition).",
+    "At or before the P35 task-card freeze, pin per arm (A08, A09, A10, A11, A12, A16) that prior-game realized regulation-equivalent possessions/pace := the lagged value of the frozen target construction n_off_poss * 40 / (40 + 5*max(0, max_period - 4)) (i.e., lagged realised_team_off_possessions_reg_equiv), striking the duration_sec reading of the A16/A12 D9 wording. A26 remains raw per D9; the three D9 conventions stay distinct (this completes a specification, it does not harmonize D9)."
+   ]
+  },
+  "operational": {
+   "verdict": "ACCEPT_WITH_REQUIRED_CHANGES",
+   "checked_hashes": "ALL_MATCH",
+   "stop_condition_concern": false,
+   "review_file": "REVIEW_OPERATIONAL.md",
+   "findings": [
+    {
+     "severity": "A",
+     "title": "OP-1: A19 live-ball dictionary cannot exist in this artifact; withdrawal clause already triggered by bytes",
+     "detail": "end_reason in the pinned possessions_raw_v2.parquet (sha256 7200881f...4b1a verified) has nine levels with exactly one turnover level ('turnover', 41,505 rows, 17.40%) and no live-ball/dead-ball marker anywhere. Every possible frozen E_LB fails: {turnover} silently relabels the mechanism to all-turnover forcing (A20's construct), {} is zero-variance and gate-blocked. A19's preregistered 'WITHDRAWN as design failure if the frozen dictionary cannot distinguish live-ball turnover terminators' is decidable-and-met today; P33's could_not_establish deferral to P35 deferred an in-scope measurable fact. Closure: withdraw A19 at/before P35 (restating LAGGED_TEMPO_MIX as single-member {A17}, joint-scoring rule explicitly voided, Holm denominator restated) or hash-pin a steal-distinguishing receipted source before the freeze; bar the silent E_LB={turnover} relabeling by name. A20 survives the identical check ({'turnover'} is a complete turnover-terminator set) and is operable."
+    },
+    {
+     "severity": "B",
+     "title": "OP-2: 15 zero-prior-evidence rows contradict A16/A09/A10 'defined on every row' claims; A11 has an uncovered 0/0 on expansion debuts",
+     "detail": "Measured: 15 universe rows with zero strictly-earlier team games (12 in 2021 post-opening-day; 1611661331 debut 2025; 1611661327/1611661332 debuts 2026) and 75 rows with <5 priors. The 2025/2026 rows are TEST rows of the two most recent folds. A16's 'defined on all 2,982 rows' is false (empty window); A09's 'continuous on every resolved row' and A10's 'defined everywhere' are false at n=0; A11's dblend = 0/0 at n_cur=0,m_prev=0 and its declared fallback covers only train_lt_2022's training season while 2021 rows sit in every training fold and expansion test rows are covered by nothing. Fix at P35: deterministic symmetric empty/partial-window rules with numeric triggers, per A12's dev_prev:=0 idiom, identical in arm and null."
+    },
+    {
+     "severity": "B",
+     "title": "OP-3: A08's enumeration constraint is self-contradictory and both enumerated K fail it on the bytes",
+     "detail": "Constraint text 'K elements must keep L_t defined on all rows of every training fold' vs measured 44 rows (K=20) and 162 rows (K=80) with fewer strictly-earlier league games, all early-2021 and therefore inside every expanding training fold (39.5% of train_lt_2022 at K=80). Read literally the whole {20,80} enumeration is inadmissible at P27 invocation; read against the arm's own 'undefined rows handled by the window rule' sentence, the constraint is dead letter. Replace with the actual undefined-row rule and numeric trigger before P35."
+    },
+    {
+     "severity": "B",
+     "title": "OP-4: A23 bundle_AI's 'previous SCHEDULED same-season game' is computable from no receipted in-scope artifact",
+     "detail": "Glob over experiments/player_program finds no schedule artifact of any kind; the archive carries realized game_dates of completed games only, so scheduled-vs-completed prior-game identity (postponements) is unreceipted. bundle_AI is implementable only under an unreceipted scheduled==completed assumption, reducing its distinction from bundle_OM to cap and opener rule. Same defect class that made A06 INADMISSIBLE_UNTIL_RECEIPTED. Fix: A06-style receipt discipline by P35, or preregister the substitution explicitly."
+    },
+    {
+     "severity": "B",
+     "title": "OP-5: 13-arm PHO/PHX fail-closed precondition rests on unpinned out-of-scope team_cities.csv",
+     "detail": "merge_guard.py's resolution of 1611661317 is real, tested, order-independent, with an implemented exclusion branch (P23 t06/t07/t13/t14) - the precondition is dischargeable, not a landmine; the 13-arm list is internally consistent with per-arm precondition fields. But the sole resolver input data/reference/team_cities.csv sits outside the program scope and no P33 record pins its bytes (P23 measured sha256 10a544fd...ac42d, 1,892 bytes); the guard fails closed on ambiguity, not on silent revision. Fix: P35 task cards pin the hash in every franchise-continuity receipt."
+    },
+    {
+     "severity": "C",
+     "title": "OP-6: IRLS non-convergence disposition unspecified",
+     "detail": "The quasi-Poisson IRLS freeze is operationally sound (deterministic, seedless, cheap, identical arm/null tolerances) but nothing states the outcome when the 100-iteration cap is hit. Recommend P35 declare cap-hit => arm/fold unevaluable, symmetric."
+    },
+    {
+     "severity": "C",
+     "title": "OP-7: A22's '|P|=1 rows exist only in early-2021' gloss is measured-false",
+     "detail": "15 |P|=1 rows include 1 in 2025 and 2 in 2026 (expansion second games, test-fold rows). The churn:=0 rule is symmetric and covers them; correct the frozen sentence at P35."
+    },
+    {
+     "severity": "C",
+     "title": "OP-8: end_reason schema drift tiny; 'fail closed' is actually fail-degrade",
+     "detail": "Level sets differ across seasons only in rare levels (~0.09% of possessions). Unmapped-in-denominator silently deflates the share at decision time rather than halting; an optional preregistered drift alarm would make it genuinely fail-closed."
+    },
+    {
+     "severity": "C",
+     "title": "OP-9: compute budget feasible; A14's promotion-ineligible slot cheap and correctly spent",
+     "detail": "Arithmetic only: ~1.29M deterministic IRLS fits (32 elements x 5 folds x 2 designs x 2,001) on <=2,552x~8 designs plus index-only test resamples; hours, parallelizable. No arm's operational cost moots its scientific value."
+    },
+    {
+     "severity": "C",
+     "title": "OP-10: A06 conditional path decidable and well-formed; path-(b) caveat",
+     "detail": "Deadline, non-admission outcome and denominator handling all explicit. Caveat: a path-(b) past-only redefinition changes column bytes while preserving 2-element form - require it be hash-pinned at P35 under the same cap, else it is a new arm."
+    },
+    {
+     "severity": "C",
+     "title": "OP-11: expected-failure-mode fields pass the boilerplate test (recorded as a pass)",
+     "detail": "All 26 name mechanism-specific falsifiable deaths with measured quantities; A24 lag-operator and A25 guard positive-control roles are operationally load-bearing and preserved."
+    }
+   ],
+   "required_changes": [
+    "A19: withdraw as design failure per its own preregistered clause (restate LAGGED_TEMPO_MIX as single-member {A17}, explicitly void the joint-scoring/weaker-member-drop rule, restate the Holm denominator) OR hash-pin a steal-distinguishing receipted upstream source before the P35 freeze; explicitly bar freezing E_LB={turnover} as a silent mechanism relabeling",
+    "A09/A10/A11/A16: preregister deterministic symmetric empty/partial-window imputation rules with numeric triggers (dev/d_t := 0 on empty window; state partial-window semantics), identical in arm and null, covering the 15 measured zero-prior rows including 2025/2026 expansion test rows",
+    "A08: replace the self-contradictory 'K must keep L_t defined on all rows of every training fold' constraint with the actual undefined-row rule and numeric trigger (measured 44 rows @ K=20, 162 @ K=80, all 2021, present in every training fold)",
+    "A23 bundle_AI: hash-pin a scheduled-games source by P35 (A06 discipline) or preregister the scheduled==completed substitution explicitly in the frozen record",
+    "Pin data/reference/team_cities.csv (sha256 10a544fdc52a9c80c1573437c9838b11815c9eafe6ac2cf052be17a2128ac42d) in every P35 franchise-continuity receipt requirement; mismatch fails closed"
+   ]
+  }
+ },
+ "severity_a_register": [
+  {
+   "reviewer": "offset",
+   "title": "A01 cannot pass the frozen offset guard truthfully"
+  },
+  {
+   "reviewer": "offset",
+   "title": "A04 blocked by frozen guard under BOTH declared families"
+  },
+  {
+   "reviewer": "k0",
+   "title": "K1: A11 K0 block self-contradictory; two-mains null reading breaks nesting; rho-interval kill can never fire"
+  },
+  {
+   "reviewer": "operational",
+   "title": "OP-1: A19 live-ball dictionary cannot exist in this artifact; withdrawal clause already triggered by bytes"
+  }
+ ],
+ "adjudication": {
+  "decision_id": "D026_P34_ADJUDICATION",
+  "made_by": "coordinator",
+  "halt": false,
+  "halt_rationale": "Every Severity A closure is arm-level (withdrawal or pinning forced by frozen precedence); no frozen structure changes: the offset_dependency_guard bytes, the per-arm K0_MATCHED map (D007), the five-fold D006 inference scaffold, the universe, the cutoff-valid set and the leakage status all stand untouched. The two reviewer stop-condition raises are answered by choosing exactly the closure paths that leave structures frozen.",
+  "rulings": [
+   {
+    "arm": "A01",
+    "ruling": "WITHDRAWN",
+    "basis": "Frozen offset_dependency_guard bytes block every truthful invocation of its preregistered design; the sole passing invocation requires attesting k0_carries_offset_slope=True, which is false of its slope-fixed null. Rejection for failing a predeclared integrity check (GRAPH_POLICY s5). The alternative - re-reading the guard's S4 rule for declared-recalibration arms - would change frozen-gate enforcement semantics and is not taken. The question A01 carried (free recalibration slope vs slope-1) is recorded as structurally unanswerable under the frozen guard; answering it would require a guard revision, which is a USER gate.",
+    "source_finding": "REVIEW_OFFSET.md A-1"
+   },
+   {
+    "arm": "A04",
+    "ruling": "WITHDRAWN",
+    "basis": "No declared_family exists under which its complete preregistered design passes the frozen guard (SUBSTANTIVE: calibration_parameter_in_substantive_arm among seven blocks; RECALIBRATION: mixed_family_arm). Same policy basis as A01. Its depth-adaptive-gain mechanism survives in guard-compatible form in A09; the A04/A09 collapse rule becomes moot.",
+    "source_finding": "REVIEW_OFFSET.md A-2"
+   },
+   {
+    "arm": "A11",
+    "ruling": "REPAIR_AT_P35",
+    "basis": "Three clauses of one frozen record disagree about its null. Frozen precedence already forces reading (1): the arm's own formula ('null fixes rho == 1') and the frozen P26 hierarchical_pooling kind (pooling strength fixed at its null) - a deterministic consequence of accepted rulings (GRAPH_POLICY s5). P35 must: pin the null to the single blended column dblend_t(1) with free beta; strike the two-free-mains gloss; replace the never-firing rho-interval kill with the decidable per-element set (per-element beta interval + thin-stratum concentration + sign kills). If P35 cannot express the repair exactly, A11 withdraws.",
+    "source_finding": "REVIEW_K0_PARITY.md K1"
+   },
+   {
+    "arm": "A19",
+    "ruling": "WITHDRAWN_BY_OWN_PREREGISTERED_CLAUSE",
+    "basis": "Measured bytes: end_reason in the pinned possessions artifact carries a single undifferentiated turnover level; the E_LB live-ball subset is inexpressible, so the arm's own preregistered withdrawal-as-design-failure clause is already triggered. This is the designed fail-closed path executing, not a defect. A20 is unaffected by the same check.",
+    "source_finding": "REVIEW_OPERATIONAL.md OP-1 (convergent: REVIEW_LEAKAGE.md L5)"
+   }
+  ],
+  "arm_count_after_adjudication": {
+   "preregistered": 26,
+   "withdrawn": [
+    "A01",
+    "A04",
+    "A19"
+   ],
+   "repair_required": [
+    "A11"
+   ],
+   "remaining_fit_eligible": 23,
+   "notes": "A06 remains PREREGISTERED_CONDITIONAL_NOT_FIT pending its schedule receipt; A14 remains promotion-ineligible (single active fold) but in the fit set for evidence."
+  },
+  "severity_b_disposition": "Every Severity B finding from all seven reviews is a mandatory item of the P35 task-card freeze mandate; P35 may not freeze a card that leaves any B open against its arm. Multiplicity family denominators are recomputed after the withdrawals.",
+  "preserved_disagreements": [
+   "A11 null readings (1) vs (2): both recorded verbatim in REVIEW_K0_PARITY.md K1; ruling pins (1) by frozen precedence without erasing the contradiction.",
+   "Quasi-Poisson freeze: leakage reviewer finds it leakage-inert, offset reviewer finds it coherent but in unresolved tension with the V2 retired-families record it cites, K0 reviewer finds it parity-clean. The tension is disposed at P35 in writing (offset B-3), not averaged away here."
+  ]
+ }
+}

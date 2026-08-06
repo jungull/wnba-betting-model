@@ -1,367 +1,402 @@
-# P34 red-team review — OPERATIONAL RELEVANCE dimension
+# P34 red-team review — dimension: OPERATIONAL RELEVANCE
 
 ADVERSARIAL REVIEW. Reviewers are independent of the preregistration author. A clean review does not make an arm true; it makes it fittable.
 
-**Reviewer dimension:** operational relevance — can each arm actually run at decision time in the
-daily pipeline: pre-tip availability of every feature from receipted artifacts, cold-start
-behaviour, PHO/PHX merge-guard fail-closed handling, the A19/A20 end_reason dictionary deferral,
-A06 conditional-path operability, and whether expected failure modes are specific and falsifiable.
+**Reviewer:** independent operational-relevance reviewer (one of seven). Did not author P33.
+**Verdict: ACCEPT_WITH_REQUIRED_CHANGES.** One Severity A (OP-1, A19 — closable by the arm's own
+preregistered withdrawal clause), four Severity B, six Severity C.
 
-**Blindness attestation:** I did not author the P33 preregistration. I did not open, read, or
-grep any other reviewer's file. A directory listing of `P34_PREREGISTRATION_RED_TEAM/` exposed
-six filenames (`REVIEW_FOLD_ESTIMABILITY.md`, `REVIEW_K0_PARITY.md`, `REVIEW_LEAKAGE.md`,
-`REVIEW_MULTIPLICITY.md`, `REVIEW_OFFSET.md`, `REVIEW_TARGET_UNITS.md`); no byte of their content
-was read.
+**Stop conditions: NONE TRIPPED.** Assessed against all six named triggers. Nothing below changes
+the primary target, the K0 structure, the five-fold/cluster inference structure, the 2,982/1,491
+row universe, the cutoff-valid feature set, or the leakage status. The A19 finding removes an arm
+via the arm's own preregistered withdrawal-as-design-failure clause; arm withdrawal is a family
+denominator event, not a stop-condition event. Every other finding is arm-local specification
+repair inside the P35 freeze window.
 
-**VERDICT: ACCEPT_WITH_REQUIRED_CHANGES.**
-
-**Stop conditions: NONE TRIPPED in my assessment.** None of my findings changes the primary
-target, the K0 structure, the five-fold cluster-bootstrap inference structure, the candidate
-universe, the cutoff-valid feature set, or the leakage status. The three Severity A findings are
-arm-level operability defects; each has a closure path the draft itself already provides
-(preregistered withdrawal-as-design-failure, or a pre-fit fallback declaration under
-GATE_INVOCATION_CONTRACT section 4 made BEFORE the P35 freeze). One consequence — withdrawal of
-A19 — changes a multiplicity family's composition through the draft's own preregistered
-withdrawal mechanism; the multiplicity reviewer should confirm denominator handling, but that is
-family accounting, not inference structure.
+**Process disclosure, stated rather than glossed.** When this review session began, a file named
+`REVIEW_OPERATIONAL.md` already existed at this path (25,245 bytes, mtime 2026-08-06 12:22:45,
+sha256 `C5ECB6F15D65A3305A1EACE2A6E2F9E7F7B641A4651C677E8A610F5513CA6C63`), alongside the other six
+reviewer files (mtimes 12:06–12:14). Per the blindness rule I read NONE of the seven, including the
+pre-existing file bearing my own dimension's name; its hash is recorded above so the coordinator
+can recover or diff the earlier bytes from any prior commit. This file replaces it. The
+coordinator should decide which run's operational review is the review of record; if the earlier
+run was validated and committed, both are recoverable.
 
 ---
 
-## 0. Input hash verification (ran first; all match)
+## 0. Input verification (before any other read)
 
-`Get-FileHash -Algorithm SHA256 <path>` from the worktree root, compared case-insensitively:
+`Get-FileHash -Algorithm SHA256 <path>` on all four mandated inputs, matched case-insensitively:
 
-| artifact | expected sha256 | result |
+| input | expected | match |
 |---|---|---|
-| `stage2b/P33_PREREGISTRATION_DRAFT/SPEC.json` | `066b2a04…d093` | MATCH |
-| `stage2b/P33_PREREGISTRATION_DRAFT/REPORT.md` | `6d945b86…48ab` | MATCH |
-| `stage2b/P32_CANDIDATE_SYNTHESIS/SPEC.json` | `1dc25981…138c` | MATCH |
-| `stage2b/P30_EVIDENCE_PACKET_V3/EVIDENCE_PACKET_V3.json` | `95d24128…75` (`95d2412c28ce34bb6330f5055bc9087693c1d70ed21a12b4edb5b5f950875e75`) | MATCH |
+| `stage2b/P33_PREREGISTRATION_DRAFT/SPEC.json` | `066b2a04…7d093` | YES |
+| `stage2b/P33_PREREGISTRATION_DRAFT/REPORT.md` | `6d945b86…48ab` | YES |
+| `stage2b/P32_CANDIDATE_SYNTHESIS/SPEC.json` | `1dc25981…138c` | YES |
+| `stage2b/P30_EVIDENCE_PACKET_V3/EVIDENCE_PACKET_V3.json` | `95d2412c…75` | YES |
 
-No mismatch; review proceeded. Nothing under `SEALED_RESULTS` was read (and no such directory
-exists in this worktree). Nothing was fitted; no target value entered any statistic below; every
-measurement is a schedule/feature/schema fact.
+Also verified live before use: `possessions_v2/possessions_raw_v2.parquet` sha256 =
+`7200881fd811db9d0d6b10ea0a19b01ec7b6d027ee4567b9ef963241b15a4b1a`, identical to the value pinned
+in the P29 report and `EVIDENCE_PACKET_V2.sources`.
+
+## What I measured, and how
+
+Two scripts (reproduced in the appendix) plus two one-liners, all feature/schedule/schema-only.
+No target value entered any statistic; nothing was fitted; no performance number was computed;
+nothing under `SEALED_RESULTS` was read (and per P33 the directory does not exist).
+
+1. `p34_operational_measurements.py` — full `end_reason` level inventory of
+   `possessions_raw_v2.parquet` (238,563 possessions), overall and per season, plus substring scans
+   for live-ball/dead-ball markers.
+2. `p34_operational_measurements2.py` — via `possession_features.load_universe()` and
+   `chronological_folds()`: per-game count of strictly-earlier completed league games (A08 window
+   coverage at K=20/80 per training fold); per-team strictly-earlier game counts (A16/A09/A10/A11
+   empty- and partial-window rows).
+3. Inline python — zero-prior and one-prior team-game rows by season and team_id.
+4. `Glob **/*schedul*` over `experiments/player_program/` — no file matches (corroborates P33's
+   directory-enumeration claim that no schedule artifact exists in scope).
 
 ---
 
-## 1. Severity A findings
+## Findings, ranked
 
-### A-1. A19's live-ball dictionary CANNOT be constructed from the frozen artifact — the P35 deferral is already decided by the bytes, and the draft defers a question it could have measured
+### OP-1 — SEVERITY A. A19's admissibility is already decided by the artifact's bytes: the live-ball dictionary cannot exist. The P35 deferral defers a fact that was measurable today.
 
-The draft freezes A19's `E_LB` as an "explicit level list frozen at P35 from the artifact's data
-dictionary BEFORE any fit," carries "withdrawal as design failure if the frozen dictionary cannot
-distinguish live-ball turnover terminators," and lists the adequacy question under
-`could_not_establish`. It is establishable now, from frozen bytes, with one groupby:
+Measured on the pinned `possessions_raw_v2.parquet` (hash above): `end_reason` carries exactly
+NINE levels — `defensive_rebound` (84,647), `made_shot` (82,738), **`turnover` (41,505)**,
+`made_ft_final` (22,821), `period_end` (6,054), `technical_ft` (588), `inferred_flip` (200),
+`miss_flip_no_rebound` (8), `made_ft_nonfinal_flip` (2). There is **one generic turnover level and
+no level containing any live-ball or dead-ball marker** (substring scans for
+steal/live/out_of_bounds/offensive_foul/violation/travel/shot_clock/dead all return empty).
 
+A19's mechanism is *"defensive LIVE-ball turnover forcing"* via `end_reason in E_LB (fixed
+live-ball dictionary)`. With a single undifferentiated `turnover` level, every possible frozen
+dictionary fails: E_LB = {turnover} silently relabels the mechanism to all-turnover forcing
+(which is A20's construct, symmetrized), and E_LB = {} yields a zero-variance column the feature
+gate blocks. A19's own preregistered clause — *"WITHDRAWN as design failure if the frozen
+dictionary cannot distinguish live-ball turnover terminators (mechanism unmeasurable in this
+artifact)"* — is therefore **triggered now, by bytes, before any fit**.
+
+P33 carried this in `could_not_establish` as "a data-dictionary question deferred to the P35
+dictionary freeze". It was establishable in-scope by one schema read of a frozen input. Deferring
+a decidable admissibility fact past the red team meant seven reviewers almost reviewed 26 arms
+when the artifact says 25.
+
+**Closure (uses the arm's own clause — this is why the verdict is not REJECT):** at or before the
+P35 task-card freeze, either (a) record A19 WITHDRAWN_DESIGN_FAILURE citing this measurement, and
+restate LAGGED_TEMPO_MIX as the single-member family {A17} — the joint-scoring /
+weaker-member-drop rule becomes void and must be voided EXPLICITLY, with the family's Holm
+denominator restated, not left at 2; or (b) hash-pin a new upstream receipted source that
+distinguishes steals/live-ball terminators (none exists in scope today; this is parallel data-lane
+work on the A06 pattern). Silent option (c) — freezing E_LB = {turnover} — must be named and
+barred: it changes the preregistered mechanism after the fact.
+
+**A20 survives the identical check, and this should be recorded as a positive:** {`turnover`} is a
+complete, well-defined turnover-terminator set (17.40% of all possessions, present every season).
+A20's dictionary freeze at P35 is a formality; the arm is operable as specified.
+
+### OP-2 — SEVERITY B. Fifteen zero-prior-evidence rows contradict four arms' "defined on every row" claims; three of those rows are TEST rows of the two most recent folds.
+
+Measured: 15 universe rows have ZERO strictly-earlier completed games for the offense team — 12
+in 2021 (each franchise's first post-opening-day game; D010 removed only the opening day), 1 in
+2025 (1611661331's debut), 2 in 2026 (1611661327/1611661332's debuts). 75 rows have fewer than 5
+priors. The 2025/2026 rows sit in the TEST sets of `train_lt_2025`/`train_lt_2026` — at
+operational decision time these are exactly the expansion cold starts the pipeline will face.
+
+Document-vs-bytes contradictions, per arm:
+
+* **A16** fallback: *"resolved universe already excludes the no-prior-games stratum; defined on
+  all 2,982 rows in every fold"* — FALSE. The mean over "last k=5 completed games" is a mean over
+  an EMPTY set on 15 rows and a partial window (1–4 games) on 60 more. The universe excludes only
+  the 2021 opening day.
+* **A09** fallback: *"both features continuous on every resolved row"* — FALSE at n=0: d_t is
+  undefined and w(0)·d_t is 0·NaN operationally, not 0.
+* **A10** fallback: *"contrast defined everywhere, exactly zero only for one-prior-game teams"* —
+  FALSE at n=0.
+* **A11**: for an expansion debut, n_cur = 0 AND m_prev = 0, so dblend = 0/0. The declared
+  fallback covers only "train_lt_2022's training season", which is doubly mis-scoped: (a) 2021
+  rows sit inside EVERY training fold under expanding windows, not just the first; (b) the
+  2025/2026 expansion rows are covered by no fallback at all — and they are test rows.
+
+Contrast with arms that got this right, proving the fix is cheap and already program-idiomatic:
+A12 (*"no-prior-season teams get dev_prev = 0 identically in arm and null"*), A18/A20/A26 (E=3
+deterministic symmetric imputation), A22 (churn := 0 with no base window).
+
+**Required change:** before the P35 freeze, preregister for A09/A10/A11/A16 a deterministic,
+symmetric, numerically-triggered empty/partial-window rule (the obvious candidate: deviation
+terms := 0 when the window is empty; state whether a 1–4-game window is used as-is), identical in
+arm and null, per GATE_INVOCATION_CONTRACT section 4 ("frozen and registered before any result is
+visible... There is no third option"). Absent this, P36 implementers exercise discretion on 15
+rows — the exact thing a preregistration exists to remove — or the gates fail the arms on
+`non_finite` at invocation.
+
+### OP-3 — SEVERITY B. A08's enumeration constraint is self-contradictory as written, and BOTH enumerated K elements fail it on the bytes.
+
+A08's constraint text: *"K elements must keep L_t defined on all rows of every training fold"*.
+Measured: rows whose game has fewer than K strictly-earlier completed league games — K=20: 44
+rows; K=80: 162 rows — all early-2021, therefore inside EVERY training fold (expanding windows
+all contain 2021). Read literally, both elements of the enumeration {20, 80} are inadmissible at
+P27 invocation and the arm arrives at P36 pre-dead by its own constraint — 162/410 = 39.5% of the
+first training fold is undefined at K=80. Read charitably against the same arm's fallback sentence
+(*"league-window undefined rows handled by the window rule identically in arm and null"*), the
+constraint sentence is a dead letter. Both sentences are frozen in the same record; they cannot
+both govern.
+
+**Required change:** before P35, replace the constraint with the actual rule and its numeric
+trigger — e.g., "rows with fewer than K strictly-earlier completed league games take L_t := 0
+(training-fold-centered scale) / are dropped from arm AND null identically; measured counts 44
+(K=20) and 162 (K=80), all 2021" — so the P25/P27 invocation has a decidable spec instead of a
+contradiction to resolve.
+
+### OP-4 — SEVERITY B. A23 bundle_AI's defining semantics ("previous SCHEDULED same-season game") are not computable from any receipted in-scope artifact.
+
+`Glob **/*schedul*` over `experiments/player_program/`: no matches. P33 itself established (for
+A06) that no preseason-published schedule artifact exists in scope. The archive carries realized
+`game_date`s of COMPLETED games only. "Previous scheduled game" differs from "most recent
+completed game" exactly when games are postponed or cancelled — and whether any were, in
+2021–2026, is not determinable from in-scope artifacts. So bundle_AI is implementable only under
+the unreceipted assumption scheduled ≡ completed, at which point its defining distinction from
+bundle_OM silently reduces to cap (7 vs 4) and opener rule.
+
+This is the same class of defect that made A06 INADMISSIBLE_UNTIL_RECEIPTED at D021, but bundle_AI
+was not given the same discipline.
+
+**Required change (either branch acceptable, decided before P35):** (a) subject bundle_AI's
+prior-game semantics to the A06 discipline — hash-pinned schedule source by the P35 freeze, else
+the bundle is preregistered with "previous COMPLETED same-season game" and the substitution is
+stated in the frozen record; or (b) preregister the scheduled≡completed assumption explicitly now.
+What is not acceptable is P36 discovering the gap and choosing.
+
+### OP-5 — SEVERITY B. The 13-arm PHO/PHX fail-closed precondition rests on an out-of-scope file whose bytes nothing pins.
+
+The precondition machinery itself is REAL and TESTED — this review verified it rather than
+assuming it: `merge_guard.py` resolves team_id 1611661317 solely from documented
+first_season/last_season interval semantics (PHO 2021–2024, PHX 2025–open; contiguous,
+non-overlapping, order-independent under 8 permutation seeds), and the exclusion branch
+(`AmbiguousDimensionError` instructing EXCLUDE) is implemented and tested (P23 t06/t07/t13/t14).
+The receipt is producible at gate-invocation time; the precondition is dischargeable, not a
+landmine. The 13-arm list in `shared_arm_invariants` is also internally consistent: 12 of the 13
+carry a per-arm `precondition` key, A14 inherits via the shared invariant plus its feature-level
+note, and A23 correctly carries the narrower P23 game_date-join receipt instead.
+
+The gap: the resolver's sole input is `data/reference/team_cities.csv` — OUTSIDE
+`experiments/player_program/`, hash pinned nowhere in P33's SPEC (P23 measured it:
+`10a544fdc52a9c80c1573437c9838b11815c9eafe6ac2cf052be17a2128ac42d`, 1,892 bytes). The guard fails
+closed on AMBIGUITY, not on silent revision: a rewritten team_cities.csv with clean intervals
+resolves successfully with different semantics and no error. Thirteen arms' cross-season features
+inherit whatever those bytes say.
+
+**Required change:** P35 task cards pin `team_cities.csv` at the P23-measured hash as part of
+every franchise-continuity receipt; a mismatch fails the receipt closed. One line per task card.
+
+### OP-6 — SEVERITY C. IRLS non-convergence disposition unspecified.
+
+The estimation-objective freeze is operationally sound under this lens: deterministic, seedless,
+cheap, identical tolerance (1e-10 deviance, max 100 iterations) on arm and null — the family
+choice itself is another reviewer's dimension and draws no operational objection here. The one
+hole: nothing says what happens when the 100-iteration cap is HIT. Evaluable? Unevaluable?
+Error? Recommend P35 declare: cap reached in arm or null ⇒ arm/fold unevaluable, symmetric,
+recorded — consistent with the program's fail-closed idiom.
+
+### OP-7 — SEVERITY C. A22's supporting claim about |P|=1 rows is measured-false; the rule itself is fine.
+
+A22's fallback note: *"|P|=1 rule declared (rows exist only in early-2021 inside train_lt_2022
+training window)"*. Measured: 15 |P|=1 rows — 12 in 2021, 1 in 2025, 2 in 2026 (expansion second
+games; the latter three are test-fold rows). The churn := 0 rule is symmetric and covers them, and
+|P|=0 is covered by the cold-start text, so operability is intact — but a frozen record should not
+carry a measured-false sentence. Correct the parenthetical at P35.
+
+### OP-8 — SEVERITY C. end_reason schema drift is real but tiny; "fail closed" is actually fail-degrade. Record.
+
+Measured level sets differ across seasons only in rare levels: `inferred_flip` absent in 2026,
+`miss_flip_no_rebound` sporadic (8 rows total), `made_ft_nonfinal_flip` (2 rows total). At these
+magnitudes (~0.09% of possessions) the A19/A20 denominator rule is harmless. But note the
+semantics honestly: "unmapped levels count only in the denominator" means a novel level SILENTLY
+deflates the share at decision time rather than halting — degradation, not closure. A
+preregistered drift alarm (e.g., unmapped share > 1% in any team's trailing window ⇒ flag) would
+make it genuinely fail-closed. Optional; record only.
+
+### OP-9 — SEVERITY C. Compute budget is feasible; no arm's operational cost moots its scientific value; A14's diagnostic slot is cheap and worth its price.
+
+Arithmetic (no fit performed): 32 unconditional elements (+2 conditional A06) × 5 folds × 2
+designs (arm+null) × 2,001 IRLS fits (point fit + B=2,000 training-cluster refits) ≈ 1.29M
+deterministic IRLS fits on designs of at most 2,552 rows × ~8 columns, plus B=10,000 test-side
+resamples that only re-index precomputed per-row errors. Single-digit hours of single-core
+compute, embarrassingly parallel across elements and folds. A14 — the deliberate
+promotion-ineligible arm — costs 1/32 of this to keep the COLDSTART_FALLBACK denominator honest:
+correctly spent under this lens.
+
+### OP-10 — SEVERITY C. A06's conditional path is operationally decidable and well-formed; one caveat on repair path (b).
+
+Decidable deadline (P35 freeze), explicit non-admission outcome (PREREGISTERED_CONDITIONAL_NOT_FIT
+with the 2 elements leaving the denominator), receipt work correctly routed to the data lane.
+Not a landmine as structured. Caveat: repair path (b) (past-only denominator redefinition) changes
+the drift-column BYTES while preserving the 2-element form; require that a path-(b) redefinition
+be itself hash-pinned at P35 under the same 2-element cap — anything looser is a new arm.
+
+### OP-11 — SEVERITY C. The expected-failure-mode fields pass the boilerplate test. Record as a pass.
+
+Audited all 26: each names a mechanism-specific, falsifiable death — P25 near-affinity for
+A08/A09/A10/A16/A17/A26; depth absorption (with the 0.958 fold-1 R2 measured in advance) for A07;
+the volume-proxy falsification for A21/A22; named strata with measured row/cluster counts for
+A03 (113 rows), A05 (212 playoff team-games, 0 test rows in 2026), A14 (46 clusters, one fold).
+None is generic. A24's lag-operator positive-control role and A25's guard positive-control role
+are operationally load-bearing and correctly preserved.
+
+---
+
+## Decision-time operability sweep (the dimension's core question, arm by arm)
+
+Every feature in all 26 arms was checked for pre-tip computability from receipted artifacts.
+Summary: offset and calibration terms (A01–A05, A15, A25) are functions of the frozen incumbent's
+own pre-tip outputs and schedule facts — operable. Lagged-aggregate arms (A07–A22, A24, A26)
+require only strictly-earlier completed games at `game_date` granularity
+(`possession_features.DECISION_TIME_COLUMN = "game_date"`; same-day fails closed where declared,
+e.g. A17) — operable, subject to OP-2/OP-3 repairs. A16's archived-projection join was already
+resolved by P33 (all 2,990 team-games retrievable from the frozen artifact). No arm uses
+tip-time-derived features, so P29's INELIGIBLE ruling is respected by construction. The two
+non-operable constructions found are OP-1 (A19, artifact cannot express the mechanism) and OP-4
+(A23 bundle_AI, semantics unreceipted). Cold-start behavior is declared for every cold-start arm;
+the declared behaviors are contradicted by bytes only where OP-2 says so.
+
+## What I could NOT establish
+
+* Whether any upstream pbp-level source could distinguish steals/live-ball turnovers (A19 repair
+  path): out of scope; would need a new receipted producer.
+* Whether postponements occurred in the 2021–2026 archive (whether bundle_AI ≡ bundle_OM on
+  prior-game identity in practice): no scheduled-games source in scope — this is OP-4's point.
+* Daily-pipeline ingest latency for previous-night games (whether "strictly earlier by game_date"
+  content is reliably ingested before tip in live operation): no in-scope receipt speaks to live
+  ops timing; the preregistration's fits are unaffected, but a promoted lagged arm inherits this
+  unverified operational assumption. Recorded, not resolvable here.
+* The contents of the six other reviewer files and the pre-existing operational review: not read,
+  by the blindness rule.
+
+## Contradictions found (document vs bytes / document vs document)
+
+1. A16 "defined on all 2,982 rows in every fold" vs 15 measured empty-window rows (OP-2).
+2. A09 "continuous on every resolved row" / A10 "defined everywhere" vs the same 15 rows (OP-2).
+3. A11's fallback scope ("train_lt_2022's training season") vs 2021 rows present in all five
+   training folds and uncovered expansion test rows (OP-2).
+4. A08's "must keep L_t defined on all rows of every training fold" vs its own "undefined rows
+   handled by the window rule" sentence, and vs the measured 44/162 undefined rows (OP-3).
+5. A22's "|P|=1 rows exist only in early-2021" vs measured 2025/2026 rows (OP-7).
+6. P33 `could_not_establish` lists the A19/A20 dictionary question as not establishable in scope;
+   the deciding bytes are in a mandated frozen input and were read by this review in one query
+   (OP-1). The A20 half of the deferral, conversely, resolves in the arm's favor.
+
+## Required changes (the ACCEPT is conditional on exactly these)
+
+1. **(OP-1, A)** A19: withdraw as design failure per its own clause, restating LAGGED_TEMPO_MIX as
+   single-member {A17} with the joint-scoring rule explicitly voided and the Holm denominator
+   restated — or hash-pin a steal-distinguishing receipted source before the P35 freeze. Bar the
+   silent E_LB={turnover} relabeling by name.
+2. **(OP-2, B)** A09/A10/A11/A16: preregister deterministic symmetric empty/partial-window rules
+   (A12's dev_prev:=0 idiom) with numeric triggers, arm and null identically, at P35.
+3. **(OP-3, B)** A08: replace the self-contradictory definedness constraint with the actual
+   undefined-row rule and its measured counts (44 @ K=20, 162 @ K=80, all 2021).
+4. **(OP-4, B)** A23 bundle_AI: receipt a scheduled-games source by P35 or preregister the
+   scheduled≡completed substitution explicitly.
+5. **(OP-5, B)** Pin `data/reference/team_cities.csv` (sha256 `10a544fd…ac42d`) in every P35
+   franchise-continuity receipt requirement; mismatch fails closed.
+
+C-items (OP-6..OP-8, OP-10 caveat) are recorded for P35's convenience and do not condition the verdict.
+
+---
+
+## Appendix — measurement scripts (verbatim)
+
+### p34_operational_measurements.py
 ```python
+# P34 operational-relevance reviewer: feature/schema-only measurements.
+# NO target values enter any statistic. NOTHING is fitted. No performance number computed.
+import hashlib, json, sys
+from pathlib import Path
+
 import pandas as pd
-df = pd.read_parquet('experiments/player_program/possessions_v2/possessions_raw_v2.parquet',
-                     columns=['season','end_reason'])
-print(df['end_reason'].value_counts())
-print(pd.crosstab(df['end_reason'], df['season']))
+
+ROOT = Path(r"C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/player_program")
+POSS = ROOT / "possessions_v2" / "possessions_raw_v2.parquet"
+
+out = {}
+h = hashlib.sha256(POSS.read_bytes()).hexdigest()
+out["possessions_raw_v2_sha256"] = h
+
+cols = ["game_id", "season", "end_reason", "offense_team_id", "defense_team_id", "duration_sec"]
+d = pd.read_parquet(POSS, columns=cols)
+out["rows"] = int(len(d))
+
+er = d["end_reason"].astype(str)
+overall = er.value_counts(dropna=False)
+out["end_reason_levels_overall"] = {k: int(v) for k, v in overall.items()}
+
+by_season = {}
+for s, grp in d.groupby("season"):
+    vc = grp["end_reason"].astype(str).value_counts()
+    by_season[str(s)] = {k: int(v) for k, v in vc.items()}
+out["end_reason_levels_by_season"] = by_season
+
+lvl_sets = {s: set(v.keys()) for s, v in by_season.items()}
+all_lvls = set(overall.index)
+union_minus = {s: sorted(all_lvls - lv) for s, lv in lvl_sets.items()}
+out["levels_missing_per_season"] = union_minus
+out["level_set_identical_across_seasons"] = all(lv == all_lvls for lv in lvl_sets.values())
+
+tos = sorted([l for l in all_lvls if ("turnover" in l.lower()) or ("steal" in l.lower())])
+out["turnover_like_levels"] = tos
+out["turnover_like_share_of_rows"] = float(er.isin(tos).mean()) if tos else 0.0
+
+live_markers = ["steal", "live"]
+dead_markers = ["out_of_bounds", "out-of-bounds", "offensive_foul", "violation", "travel",
+                "3sec", "shot_clock", "shotclock", "dead"]
+out["levels_with_live_markers"] = sorted([l for l in all_lvls if any(m in l.lower() for m in live_markers)])
+out["levels_with_dead_markers"] = sorted([l for l in all_lvls if any(m in l.lower() for m in dead_markers)])
+
+print(json.dumps(out, indent=2))
 ```
+Key outputs: nine levels as tabulated in OP-1; `turnover_like_levels = ["turnover"]`, share
+0.17397920046277085; live/dead marker scans both empty; per-season level differences as in OP-8.
 
-Measured on all 238,563 possessions: the complete `end_reason` vocabulary is
-`defensive_rebound` (84,647), `made_shot` (82,738), **`turnover` (41,505)**, `made_ft_final`
-(22,821), `period_end` (6,054), `technical_ft` (588), `inferred_flip` (200),
-`miss_flip_no_rebound` (8), `made_ft_nonfinal_flip` (2). **There is exactly ONE turnover level,
-undifferentiated.** No level distinguishes live-ball turnovers (steals) from dead-ball turnovers
-(out-of-bounds, offensive foul, violation). The vocabulary is stable across all six seasons and
-across both `era` values (v2/v3): `turnover` appears 5,736 / 6,787 / 7,212 / 7,301 / 8,490 /
-5,979 times in 2021–2026, with zero nulls. There is no era schema drift to fail closed against —
-and no live-ball distinction to freeze.
-
-Consequence: A19's declared mechanism — "defensive live-ball turnover forcing … a creation
-channel **distinct from clock tempo**" — is unmeasurable in this artifact. At P35 the dictionary
-freezer faces exactly two options: (a) withdraw A19 (the preregistered outcome), or (b) degrade
-`E_LB` to `{turnover}`, which silently converts A19 into a symmetric total-turnover-forcing
-share — a *different* mechanism, materially overlapping A20's channel, that this red team never
-reviewed. Option (b) chosen quietly at P35 is the landmine: a discretionary mechanism swap after
-adversarial review, inside a family (LAGGED_TEMPO_MIX) that is *scored jointly* with A17, so the
-swap would also change A17's effective correction.
-
-**Required change:** resolve A19 NOW, not at P35. Either execute the preregistered withdrawal
-(recording the measurement above as the reason and adjusting the LAGGED_TEMPO_MIX family to a
-single-member test of A17, with the denominator change recorded), or — if the program wants the
-total-turnover-forcing version — preregister it explicitly as a redefined mechanism BEFORE the
-P35 freeze so it can be reviewed as what it is. Silence until P35 is not acceptable.
-
-Note what this does NOT touch: **A20 is operable as frozen.** Its dictionary needs only
-"turnover-terminator end_reason" levels, and the single `turnover` level suffices. The P35 freeze
-for A20 should pin `{turnover}` with the per-season counts above attached as the receipt.
-
-### A-2. Seven universe rows have ZERO strictly-earlier completed games — the definedness claims of A09, A10, A16, A17, A21, A24 (and A11's fallback coverage) are contradicted by the bytes, and no fallback is preregistered for them
-
-The draft's lagged arms repeatedly assert total definedness: A16 "resolved universe already
-excludes the no-prior-games stratum; defined on all 2,982 rows in every fold"; A17 "share defined
-from |P| >= 1 by universe construction"; A21 "defined on every row, bounded [0,1]"; A24 "none
-needed (cross-season prior game covers openers)"; A09 "both features continuous on every resolved
-row"; A10 "contrast defined everywhere". These claims trace to P32 (`fold_support: defined on
-every resolved row (|P| >= 1 by universe construction)`) and were carried into P33 unexamined.
-
-Measured (script below): the universe retains rows for teams with **no completed prior game
-anywhere in the archive**, because `pace_resolved` is TRUE for league-prior-fallback rows —
-universe membership never required prior games. Within the full 2,990-row schedule:
-
+### p34_operational_measurements2.py
 ```python
-import possession_features as pf, pandas as pd
-u = pf.load_universe(); F = u.frame.copy()
-F['game_date'] = pd.to_datetime(F['game_date'])
-P = pd.read_parquet(pf.PRIOR_PARQUET, columns=['game_id','team_id','game_date'])
-P['game_date'] = pd.to_datetime(P['game_date'])
-P = P.sort_values(['team_id','game_date'])
-P['n_prior_any'] = P.groupby('team_id').cumcount()
-z = F.merge(P[['game_id','team_id','n_prior_any']], on=['game_id','team_id'])
-print(z[z['n_prior_any']==0][['team_id','game_date','season']])
+# P34 operational reviewer, script 2: schedule-only window-coverage arithmetic.
+# Uses load_universe() feature/schedule columns ONLY. No target column is read into any
+# statistic; nothing is fitted; no performance number computed.
+import json, sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+ROOT = Path(r"C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/player_program")
+sys.path.insert(0, str(ROOT))
+import possession_features as pf
+
+u = pf.load_universe()
+F = u.frame.copy()
+
+games = (F[["game_id", "game_date"]].drop_duplicates("game_id")
+         .sort_values(["game_date", "game_id"]).reset_index(drop=True))
+gd = games["game_date"].to_numpy()
+games["n_league_prior"] = np.searchsorted(gd, gd, side="left")
+F = F.merge(games[["game_id", "n_league_prior"]], on="game_id", how="left", validate="m:1")
+
+folds = pf.chronological_folds(u)
+for K in (20, 80):
+    for f in folds:
+        tr = F[F["game_date"] < pd.Timestamp(f.cutoff_date)]
+        print(f.fold_id, K, len(tr), int((tr["n_league_prior"] < K).sum()))
+
+F2 = F.sort_values(["team_id", "game_date", "game_id"]).copy()
+F2["n_team_prior"] = F2.groupby("team_id").cumcount()
+print("lt5:", int((F2["n_team_prior"] < 5).sum()), "zero:", int((F2["n_team_prior"] == 0).sum()))
+print({str(k): int(v) for k, v in F2[F2["n_team_prior"] < 5].groupby("season").size().items()})
 ```
+Key outputs: rows with < K strictly-earlier league games = 44 (K=20) and 162 (K=80), identical in
+every training fold because all such rows are early-2021; rows with <5 team priors = 75
+(2021: 60, 2025: 5, 2026: 10); zero-prior rows = 15.
 
-**7 rows**: 1611661319, 1611661322, 1611661328, 1611661329 (all 2021-05-15 — teams that did not
-play the excluded opening day, so D010's exclusion does NOT remove them) and the three expansion
-debuts 1611661331 (2025-05-16), 1611661332 (2026-05-08), 1611661327 (2026-05-09). For symmetric
-and contrast constructions both team-rows of each affected cluster are hit (≤ 14 rows). Fold
-placement is the worst case available: the four 2021 rows sit in the TRAINING set of **all five
-folds**; the 2025 debut is a TEST row of `train_lt_2025` and a training row of `train_lt_2026`;
-the 2026 debuts are TEST rows of `train_lt_2026`. So the affected arms carry undefined features
-in every training fold AND undefined out-of-fold predictions in the two most recent test folds.
-
-Per arm, on the measured stratum: A16's `dev_team` (mean over last 5 completed games) is a mean
-over an empty set; A17/A21's w-weighted shares are 0/0; A24's `rest = min(days since max prior
-contract game date, 10)` is a max over an empty set — its declared fallback "cross-season prior
-game covers openers" is simply false for franchise debuts; A09/A10's `d_t`/EWMA are means over
-empty sets; A11's declared fallback covers ONLY 2021 (`train_lt_2022`), leaving the expansion
-debut rows (n_cur = 0 and m_prev = 0 → 0/0) and — because A11's K0 carries `dprev_t` as a main
-effect — the expansion teams' entire first seasons (46 rows in 2025, 57 in 2026 per the draft's
-own A14 measurement) with an undefined null-design column.
-
-An additional A16-specific hole: the draft's "ARCHIVE RETRIEVABILITY RESOLVED" claim says the
-prior artifact "carries projected_team_off_possessions per (game_id, team_id) row for all 2,990
-team-games." The column exists on 2,990 rows but is **NaN on 8 of them** (the unresolved
-2021-05-14 opening-day rows; measured: `P['projected_team_off_possessions'].isna().sum() == 8`).
-Those 8 games sit inside the last-5-game windows of the 8 opening-day teams' next games:
-**40 own-side universe rows** (all 2021, hence in every training fold) have a window containing a
-NaN archived projection, before counting opponent-side propagation through the contrast. A16's
-residual is undefined there unless a skip-or-impute rule is preregistered. None is.
-
-Why this is Severity A and not a nit: `feature_gate` blocks on `non_finite`
-(GATE_INVOCATION_CONTRACT §3, blocking set), and §4 is explicit that a fold-degenerate feature
-must FAIL for the fold **or be governed by a fallback frozen and registered before any result is
-visible — there is no third option**, and a repair chosen after the failure is observed
-invalidates the arm. As frozen, six arms walk into a blocking gate finding with no preregistered
-fallback, and the "repair" would have to be invented mid-P36 — exactly what the contract
-prohibits. The draft's own `d010_caveat` compounds the irony: it warns that cold-start coverage
-is flattered because the hardest cold-start day was removed, while six arms assume the remaining
-genuine cold-start rows do not exist.
-
-The fix pattern already exists inside the draft — A18/A20/A26 (E=3 imputation, z := 0), A12
-(dev_prev := 0 for no-prior-season teams), A22 (churn := 0 with no base window) are all correctly
-covered. The defect is confined to the arms that asserted definedness instead of declaring a rule.
-
-**Required change:** before the P35 task-card freeze, preregister an explicit, symmetric,
-numerically-triggered empty-history rule for each of A09, A10, A11 (extend the fallback beyond
-2021: dprev := 0 and dblend := dcur where m_prev = 0; define the n_cur = 0 ∧ m_prev = 0 case),
-A16 (empty window AND NaN-projection-in-window handling), A17, A21, A24 (rest := cap for
-no-prior-game teams, or the row is unevaluable — pick one, in advance), identical in arm and
-null. Alternatively declare the affected rows prospectively unevaluable per arm — but say it
-before fitting, with the trigger stated numerically.
-
-### A-3. A08: BOTH enumerated window elements violate the arm's own frozen admissibility constraint in ALL FIVE training folds, and the "window rule" it defers to has no content anywhere
-
-A08's record freezes: "K elements must keep L_t defined on all rows of every training fold under
-the symmetric training-support window rule (R12 discipline); verified at P25/P27 invocation."
-L_t requires ≥ K completed league games strictly before the row's date. Measured against the
-possessions archive (1,495 games, first date 2021-05-14):
-
-```python
-pg = poss.drop_duplicates('game_id').sort_values('game_date')
-F['n_league_prior'] = np.searchsorted(pg['game_date'].values, F['game_date'].values, side='left')
-# per training fold: (n_league_prior < 20).sum(), (n_league_prior < 80).sum()
-```
-
-| training fold | rows with < 20 league priors | rows with < 80 league priors |
-|---|---|---|
-| train_lt_2022 | 36 | 154 |
-| train_lt_2023 | 36 | 154 |
-| train_lt_2024 | 36 | 154 |
-| train_lt_2025 | 36 | 154 |
-| train_lt_2026 | 36 | 154 |
-
-The counts are constant because the folds are expanding windows and every training set contains
-the start of 2021. **K = 20 fails the constraint in every fold; K = 80 fails it in every fold.**
-On the strict reading of the frozen text, A08's entire enumerated grid is inadmissible at
-invocation and the arm is dead on arrival — while carrying 2 charged elements of the
-timeseries_shrinkage Holm budget. On the charitable reading, the "symmetric training-support
-window rule" is supposed to handle those rows — but that rule has no definition anywhere: it is
-not `ACTIVE_SET_RULE_PREREGISTRATION.json` (which I read in full — it is a TIER-indicator
-10-cluster support rule, `S7_TIER_SUPPORT_v1`, conditioning on `SupportSummary`; it says nothing
-about undefined continuous columns, and its own status line says it "is NOT registered for any
-arm"), and neither the P33 SPEC nor A08's record states a trigger, an action (impute 0? drop
-rows? collapse to null?), or the row accounting. GATE_INVOCATION_CONTRACT §4 requires the
-fallback's trigger to be "stated numerically" before execution. A rule with a name but no content
-is not a preregistered fallback; it is deferred discretion.
-
-**Required change:** before P35, either (a) define the window rule numerically — e.g.
-`L_t := 0 (training-fold-centered null value) for rows with n_league_prior < K, identically in
-arm and null`, with the measured 36/154-row counts recorded — and restate the constraint so it is
-satisfiable, or (b) withdraw A08 as a design failure (its own expected_failure_mode already names
-"most likely death in its source family"). If rows are dropped rather than imputed, state the
-delta_MAE row-accounting consequence explicitly.
-
----
-
-## 2. Severity B findings
-
-### B-1. A06 repair path (b) is a blank cheque: an unreviewed feature definition may enter at P35, after adversarial review
-
-Path (a) — a preseason-published schedule artifact receipted under P23 discipline — is decidable
-and fails closed; operationally it is also *hard* (it requires the schedule as published before
-each of five PAST seasons, with provenance; nothing in `experiments/player_program/` carries it,
-confirmed by P33 and consistent with my directory enumeration). Path (b) — "redefinition of the
-phase/index denominator from past-only schedule facts" — is not a definition; it is a licence to
-write one at P35. If exercised, a brand-new feature construction enters the fit set that no
-red-team reviewer has seen. That is the same class of landmine as A-1(b): discretion scheduled
-to occur after review. **Required change:** either freeze the path-(b) definition text now
-(before P35), or strike path (b) and let A06 stand or fall on path (a) — in which case the
-already-specified exclusion branch (`PREREGISTERED_CONDITIONAL_NOT_FIT`, 2 elements leave the
-denominator) executes cleanly. The exclusion branch itself is well-constructed; my objection is
-only to path (b)'s unbounded content.
-
-### B-2. The P23 franchise-continuity precondition gates 13 arms — including the ENTIRE timeseries_shrinkage family — but names no producer, no artifact, and no deadline
-
-`shared_arm_invariants.p23_franchise_continuity_precondition` lists A08, A09, A10, A11, A12,
-A13, A14, A16, A17, A19, A21, A22, A24 (13 arms; exactly half the slate) and says the feature
-fails closed absent the receipt. Correct discipline — but nothing in the draft says WHO produces
-the receipt, WHAT artifact constitutes it, or WHEN it must exist. If it is still absent at P36
-gate invocation, half the slate goes unevaluable at once, and the timeseries_shrinkage family
-(A08–A11, all four members gated) vanishes entirely — post-freeze denominator churn under
-fail-closed rules. The substance is trivially dischargeable NOW: measured, team_id 1611661317
-(PHO/PHX) appears under ONE team_id across all six seasons 2021–2026 (247 rows) in the frozen
-prior artifact, and the P23 merge guard already carries the declared-interval resolution
-semantics (its FINDINGS pin PHO→PHX by season interval and the fail-closed criterion).
-**Required change:** the P35 task cards must name the continuity receipt as a concrete
-deliverable (artifact + hash) produced BEFORE fit dispatch — the same before-the-freeze
-discipline the draft already imposes on A06's receipt — so that a missing receipt is a P35
-blocker, not a P36 surprise.
-
-### B-3. The A19/A20 "dictionary freeze at P35" procedure lacks a receipt requirement
-
-Even with A-1 resolved, the P35 dictionary freeze (for A20, and for A19 if a redefined arm is
-preregistered) should be required to record: the complete measured level list, per-season level
-counts (the era-stability evidence — measured above, vocabulary identical across v2/v3), and the
-explicit mapping of every level to {numerator, denominator-only}. Freezing "from the artifact's
-data dictionary" without binding the measured bytes leaves the freeze unauditable. This is one
-sentence in the P35 task card and closes the last discretionary gap in the F15 family.
-
----
-
-## 3. Severity C findings (record)
-
-* **C-1. Active-set rule registration step is missing from the pipeline plan.**
-  `ACTIVE_SET_RULE_PREREGISTRATION.json` self-declares: "It is NOT registered for any arm. An arm
-  that wishes to use it must register it in the arm registry before its own execution." A03, A12,
-  A13, A14 (and A08's fallback if repaired) cite the rule; no P33 text schedules the arm-registry
-  registration. P35 task cards should include it explicitly, or the rule's own status line makes
-  every citation of it inoperative at execution time.
-* **C-2. Fold-local constants have no final-model convention.** `m_bar` (A01/A04), `cbar_F`
-  (A13), `Lbar_train` (A08) are training-fold statistics. If an arm promotes, the deployed model
-  needs ONE value of each. This is promotion-protocol scope, not preregistration scope, but
-  recording the convention now (e.g. full-archive value at promotion) costs one line and prevents
-  a post-hoc choice later.
-* **C-3. A16 deployment cost.** If A16 promotes, the daily pipeline must persist its own
-  projections with receipts going forward (the frozen artifact ends 2026-07-31); the draft's
-  backtest rule "joined from the frozen artifact bytes, not recomputed" has no deployment-side
-  analogue. Deterministic recomputation from the frozen incumbent is possible but is exactly what
-  the backtest rule prohibits; the convention should be stated at promotion time. Recorded as
-  cost, not defect.
-* **C-4. Partial-lineup rows are unhandled in A13/A22 set construction.** Measured in
-  `possessions_raw_v2`: 64 possessions with null `off_p1` (n_off_oncourt = 0) and 217 with
-  n_off_oncourt = 4. The Jaccard/usage constructions are defined over "player-id sets from
-  off_p1..off_p5"; whether a partial or null lineup row contributes a smaller set, is skipped, or
-  poisons the union is unspecified. 281 of 238,563 possessions (0.12%) — one sentence at P35.
-* **C-5. A14's Holm-slot spend is operationally sound.** It burns a COLDSTART_FALLBACK element on
-  a promotion-ineligible arm, deliberately, so the denominator is not quietly shrunk; the arm
-  costs only schedule facts to fit. Deliberate, defended, cheap. No change requested.
-
----
-
-## 4. What the draft gets RIGHT operationally (verified, not assumed)
-
-* **Pre-tip availability is structurally sound for all 26 arms.** Every candidate column is a
-  function of (i) the frozen incumbent's own pre-tip artifacts, (ii) pure schedule facts, or
-  (iii) strictly-earlier-by-`game_date` lagged aggregates. Measured: **no team plays two games on
-  one calendar date anywhere in the 2,982-row universe** (0 occurrences), so the strict-date lag
-  operator gives the daily pipeline a full overnight window to ingest the previous night's PBP —
-  no intra-day race exists in any arm. No arm uses tip times (P29 ruled them ineligible; the
-  slate complies).
-* **The transition-share construction (A17) is live and non-degenerate:** measured
-  `duration_sec <= 8` share by season is 0.195–0.210, stable, on zero-null `duration_sec`.
-* **Cold-start rules, where actually declared, are correct in form:** A18/A20/A26's E=3
-  imputation, A12's dev_prev := 0, A22's churn := 0, A03/A14's 10-cluster floors, A05's numeric
-  fold-2026 trigger (0 test playoff rows, measured by P33 and consistent with my read) are
-  symmetric, deterministic, and stated before results. The A-2 arms should copy this pattern.
-* **Expected failure modes are genuinely specific, not boilerplate.** Spot-checked all 26: most
-  name a measured quantity and a decidable death (A01: the 0.869 R11 t19 slope vs bootstrap
-  resolution; A03: 113 shallow rows vs the 37–42% S6 bias share; A07: the measured 0.958 R2
-  against depth in train_lt_2022; A14: a wide interval on 46 clusters; A16/A26: P25 near-affinity
-  as withdrawal-before-any-number). The weakest ("covered-zero interval", A18/A24) still carry
-  preregistered interpretations or positive-control roles (A24's lag-operator control, A25's
-  guard control — both operationally valuable). No change requested.
-
----
-
-## 5. Contradictions found (document vs bytes)
-
-1. **P32/P33 "|P| >= 1 by universe construction" vs the bytes:** false — 7 universe rows have
-   zero strictly-earlier completed games (finding A-2). Root cause: `pace_resolved` is TRUE for
-   league-prior-fallback rows, so universe membership never implied prior games.
-2. **A16 "defined on all 2,982 rows in every fold" / "resolved universe already excludes the
-   no-prior-games stratum" vs the bytes:** false — same 7 rows, plus 40 own-side rows whose
-   5-game windows contain a NaN archived projection.
-3. **A16 "carries projected_team_off_possessions … for all 2,990 team-games" vs the bytes:**
-   the column is NaN on exactly 8 of 2,990 rows (the unresolved opening-day rows). Retrievability
-   is real; completeness is overstated.
-4. **A24 "cross-season prior game covers openers" vs the bytes:** false for the three franchise
-   debuts and the four 2021-05-15 first-ever games.
-5. **A08's element constraint vs the schedule facts:** both enumerated K violate it in all five
-   training folds (finding A-3).
-6. **A19's "fixed live-ball dictionary" vs the artifact vocabulary:** no live-ball distinction
-   exists to freeze (finding A-1).
-
-## 6. What I could NOT establish
-
-* Whether the P32 SOURCE texts (upstream of the SPEC) define |P| = 0 behaviour for the w-weighted
-  lag operator somewhere the SPEC failed to carry — I checked the P32 SPEC (the frozen input),
-  which asserts "|P| >= 1 by universe construction"; the raw role-source files were not among my
-  inputs. Immaterial: the frozen SPEC governs and is contradicted by the bytes either way.
-* Whether a preseason-published schedule artifact exists OUTSIDE `experiments/player_program/`
-  (A06 path (a)) — out of my read scope; inside scope, none exists (agrees with P33).
-* Live daily-pipeline behaviour — no daily scoring run exists to observe in this worktree; all
-  decision-time claims above are assessed against artifact structure and schedule facts, which is
-  the strongest evidence available without fitting.
-* The A04/A09 near-affinity numbers (d_t is P36 scope) — the frozen test itself is decidable and
-  operationally clean; no objection.
-
-## 7. Required changes (consolidated)
-
-1. **(A-1)** Withdraw A19 now on the measured single-level `end_reason` vocabulary, or
-   preregister the degraded `{turnover}` mechanism explicitly before P35 for review; record the
-   LAGGED_TEMPO_MIX family consequence either way. Freeze A20's dictionary as `{turnover}` with
-   the measured per-season counts attached.
-2. **(A-2)** Preregister numeric, symmetric empty-history rules (or prospective unevaluability)
-   for A09, A10, A11, A16, A17, A21, A24 covering the 7 zero-prior rows, A11's expansion-season
-   `dprev_t`, and A16's NaN-projection windows — before P35, identical in arm and null.
-3. **(A-3)** Give A08's window rule numeric content (trigger + action + row accounting) or
-   withdraw A08; reconcile the element-admissibility constraint with the measured 36/154
-   undefined-row counts.
-4. **(B-1)** Freeze A06 path (b)'s definition text now, or strike path (b).
-5. **(B-2)** Name the P23 franchise-continuity receipt as a hash-pinned P35 deliverable produced
-   before fit dispatch.
-6. **(B-3)** Require the P35 dictionary freeze to bind the measured level list and per-season
-   counts as its receipt.
-7. **(C-1)** Add the arm-registry registration of `S7_TIER_SUPPORT_v1` to the P35 task cards for
-   every arm citing it.
-
-Every measurement above is reproducible from the commands shown, run from
-`experiments/player_program/` against the frozen artifacts
-(`possessions_v2/possessions_raw_v2.parquet`, `possession_features.PRIOR_PARQUET =
-team_possession_prior_v1.parquet`, `possession_features.load_universe()` /
-`chronological_folds()`). No fit was run; no performance number exists in this review.
+Inline follow-up (zero/one-prior rows by season and team): zero-prior = {2021: 12, 2025: 1,
+2026: 2}; one-prior = {2021: 12, 2025: 1, 2026: 2}; the 2025/2026 rows belong to team_ids
+1611661331 / 1611661327 / 1611661332 — the measured expansion set, corroborating P33's A14
+support numbers from an independent construction.
