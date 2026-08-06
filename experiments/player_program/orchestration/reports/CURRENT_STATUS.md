@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `ff050b7d8256210b675f0216cb09ab715334a6ce` |
+| HEAD | `7b9184241cf658867a694b40d204ecea057f2cd4` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 170 |
+| events | 171 |
 
 ## Counts by status
 
@@ -17,9 +17,9 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 10 |
 | PASSED | 46 |
+| RUNNING | 1 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 2 |
-| VERIFYING | 1 |
 
 ## Severity A blockers
 
@@ -89,11 +89,11 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | SUPERSEDED | USER_REQUIRED | VERIFYING |
+| lane | BLOCKED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED |
 |---|---|---|---|---|---|
-| data | 0 | 5 | 1 | 0 | 0 |
+| data | 0 | 5 | 0 | 1 | 0 |
 | future_research | 0 | 7 | 0 | 0 | 0 |
-| governance | 0 | 5 | 1 | 0 | 0 |
-| operations | 0 | 11 | 2 | 1 | 0 |
-| possession | 10 | 14 | 2 | 1 | 1 |
+| governance | 0 | 5 | 0 | 1 | 0 |
+| operations | 0 | 11 | 0 | 2 | 1 |
+| possession | 10 | 14 | 1 | 2 | 1 |
 | product | 0 | 4 | 0 | 0 | 0 |
