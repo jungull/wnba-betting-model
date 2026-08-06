@@ -34,7 +34,7 @@ FEAT_F = OUT / "featured_backfill.jsonl"
 PROPS_F = OUT / "props_discovery.jsonl"
 LOG_F = OUT / "_backfill_progress.log"
 
-STOP_GUARD = 4000
+STOP_GUARD = 8000  # raised from 4000 at the D029 100K-tier bump: reserves a full month of worst-case ladder + daily-job burn
 SNAP_TIMES = ("16:00:00Z", "23:30:00Z")
 SEASONS = [
     ("2022-05-21", "2022-09-20"),
