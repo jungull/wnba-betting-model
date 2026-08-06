@@ -94,3 +94,26 @@ Purchases/subscriptions; wagers or anything order-shaped; credentials beyond the
 artifacts/Arm D; changing the primary target; CONFIRM/AUTO execution modes; pushing any
 branch other than player-model-program. When genuinely blocked on one, write the decision
 packet, record a ledger note, and continue other lanes.
+
+---
+## LIVE ADDENDUM (primary coordinator, evening, after the first sealed pass)
+
+DIVISION OF LABOR: while GRAPH_EVENTS.jsonl shows activity fresher than 30 minutes, the
+primary session is driving - your staleness guard applies; append your check-in note and
+stand down. You take the wheel ONLY when events go stale. Never run a second copy of an
+in-flight step: check EXECUTION_LOG.md / progress.jsonl under stage2b/P38_BLINDED_FIT and
+the latest ledger events before dispatching anything.
+
+STATE RIGHT NOW: P36 and P37 PASSED (D039). P38 first pass SEALED (15 fitted; MANIFEST in
+SEALED_RESULTS). D040 continuation wave IS IN FLIGHT: per-fold P25 wrapper re-runs
+(A05,A12,A13,A14,A15,A17,A22) + A08 fits + A20/A21/A23 remediation builds + the A24
+amendment draft. When it lands, the sequence is: coordinator verifies + commits; appends
+the A24 registry amendment (single-writer, byte-identity discipline as before, payload at
+stage2b/P37_IMPLEMENTATION_AUDIT/A24_AMENDMENT_PAYLOAD.json); fits A24 + the three
+remediated arms (sealed, same executor discipline); closes P38 (SPEC/REPORT, events,
+commit); dispatches P39_RESULT_INTEGRITY per its prompt (independent verifier context;
+receipts/seeds/folds/universes verified WITHOUT opening results); on P39 pass, dispatches
+P40_PRIMARY_ADJUDICATION which alone opens the seals; adjudicated numbers then flow to the
+leaderboard ONLY through the D036 pipeline (regenerate, tests, commit, republish with the
+artifact url in the handoff). NOTHING in SEALED_RESULTS is readable before P40 - by anyone,
+including coordinators.
