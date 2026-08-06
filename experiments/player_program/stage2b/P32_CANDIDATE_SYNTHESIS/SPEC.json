@@ -1,0 +1,633 @@
+{
+  "schema": "stage2b_p32_candidate_synthesis/1",
+  "node": "P32_CANDIDATE_SYNTHESIS",
+  "epistemic_status": "SYNTHESIS. Reduces sources to families. Rejection here is a design decision, not an empirical result: nothing has been fitted.",
+  "inputs_verified_sha256": {
+    "GENERATION_ORDER_V3.json": "898f4b806a5b117b8c2a598aaa88f240b10ff9412ef6ba043dc72ed88d9f3285",
+    "HYPOTHESES_adversarial_identifiability.md": "bf5896162bc4ebb546b1e2e75c780f052afd69fc119d711505489d20a76f0076",
+    "HYPOTHESES_calibration_control.md": "1085da13c520d3405eeeb01bf9b0b42966d5a7b4b208f1ce5a3fde6b016476a7",
+    "HYPOTHESES_coldstart_fallback.md": "8d145ce1bcf67e8cd5159234c80591868f924d435f1a56f9adf7e6f31b410143",
+    "HYPOTHESES_cutoff_leakage.md": "3d8c096b46c74747a33fc40c1c6cc3841889a882d1adf8d2635a9a3014a43ace",
+    "HYPOTHESES_opponent_mechanism.md": "88cda948b84b2ec5ed52c1c11b4b85d6f176866e92d7b7cb6062c44e8232041a",
+    "HYPOTHESES_timeseries_shrinkage.md": "ea2cbd42c7ed575899a1bcac16d8551e234fc645d1c57c65557d3a9ae2230d3a",
+    "EVIDENCE_PACKET_V3.json": "95d2412c28ce34bb6330f5055bc9087693c1d70ed21a12b4edb5b5f950875e75"
+  },
+  "binding_state": {
+    "primary_target": "REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS",
+    "incumbent": "D_ewma_shrunk (K=200, alpha=0.1), FROZEN; enters every design as the offset; never retuned or altered here",
+    "universe": {
+      "team_game_rows_resolved": 2982,
+      "game_clusters_resolved": 1491,
+      "team_game_rows_full_schedule": 2990,
+      "game_clusters_full_schedule": 1495,
+      "both_numbers_reported_per_packet_rule": true,
+      "games_never_split_across_folds_or_bootstrap_draws": true,
+      "d010_caveat": "universe excludes the 2021 opening day (4 games); every cold-start coverage figure is flattered by construction"
+    },
+    "folds": "FIVE chronological expanding-window folds per D006: train_lt_2022 (410/478), train_lt_2023 (888/520), train_lt_2024 (1408/524), train_lt_2025 (1932/620), train_lt_2026 (2552/430)",
+    "controls": "K0_FLAT diagnostic only; K0_MATCHED authoritative and PER-ARM (D007/P26); every arm below states its K0_MATCHED implication",
+    "prohibited_from_prediction_path": "current-game realized overtime, game_minutes, duration, overtime periods, and any exact or approximate same-game surrogate",
+    "downstream_rule": "P28 ordering contract: primary possession verdict frozen before any downstream turnover number; downstream results may never rescue a candidate that fails or worsens the primary target"
+  },
+  "shared_estimator_convention": "Every arm is a GLM-type linear predictor carrying the frozen incumbent projection as OFFSET under the link fixed by the frozen inference specification, plus the arm's declared design columns; all constants, thresholds and centering statistics are computed on that fold's TRAINING rows only; evaluation is out-of-fold on the five D006 folds with game-clustered resampling, both team rows of a cluster carried together. Per D005 the shared feature_gate enforces none of the prohibitions: every arm's frame passes postgame_surrogate_guard (P22, sha256 951e85132f470fdd939c8039958f0544413aaaa485da5dba7da9c1b9b73ceeda), merge_guard (P23), offset_dependency_guard (P25/R11, auditing the COMPLETE design [offset | nuisance | candidate]), and fold_estimability_guard (P27/R12) at the call site BEFORE any result exists. This SPEC authorises no fit; fitting requires the preregistration chain P33-P37.",
+  "family_semantics_note": "A FAMILY below is a mechanistic equivalence class produced by deduplication - one falsifiable mechanism per family. It is NOT automatically a multiplicity-accounting family: each arm carries the multiplicity family its source declared, those declarations conflict in places (preserved_disagreements D2, D5), and fixing the multiplicity partition is P33-P37 work, not this node's.",
+  "candidate_union": {
+    "n_candidates": 31,
+    "per_source": {
+      "timeseries_shrinkage": 4,
+      "adversarial_identifiability": 5,
+      "calibration_control": 6,
+      "coldstart_fallback": 6,
+      "cutoff_leakage": 5,
+      "opponent_mechanism": 5
+    },
+    "n_retained_source_hypotheses": 26,
+    "n_rejected_source_hypotheses": 5,
+    "n_families": 20,
+    "n_arms": 26
+  },
+  "families": [
+    {
+      "family_id": "F01_CAL_GLOBAL_GAIN",
+      "mechanism": "The incumbent's regression-to-the-mean gain is globally miscalibrated, so projected deviations from the training-fold mean are systematically over- or under-dispersed; a single slope on the centered projection corrects the gain, and if delta = 0 cannot be rejected with stable sign across folds the mechanism is false.",
+      "multiplicity_family_as_declared": "CALIBRATION_CONTROL_FAMILY",
+      "arms": [
+        {
+          "arm_id": "A01_cal_global_gain",
+          "provenance": [{"file": "HYPOTHESES_calibration_control.md", "section": "CALIBRATION_CONTROL_H1"}],
+          "formula": "linear predictor = off + delta * (off - m_bar); m_bar = training-fold mean of the offset; delta = 0 recovers the incumbent exactly",
+          "features": [
+            {"name": "off (incumbent projection, offset and treatment substrate)", "construction": "frozen Arm D projection; centered against training-fold mean m_bar", "lineage": "Stage 1B receipted incumbent path (team_possession_prior_v1)", "cutoff_validity_citation": "EVIDENCE_PACKET_V3 rulings_carried.D009 standard (a) scoped acceptance; enforcement.offset_dependency_guard_S4_S5 ('recalibration is its own hypothesis family')"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {}, "note": "no free hyperparameters; one treatment parameter delta, training-only per fold"},
+          "k0_matched": "identical rows, target, five folds, cluster weights, offset, fallback machinery; null design [off] with slope fixed at incumbent value 1 and the preregistered lower-order intercept structure; treatment design [off | (off - m_bar)]; the ONLY difference is the slope column; calibration family carries its own nested null and multiplicity accounting per k0_matched.core_rules",
+          "fold_support": "one continuous column, non-degenerate in all five folds (smallest training fold 410 rows / 205 clusters); no active-set rule needed; S7 guard checks discharge the claim",
+          "kill_conditions": "family-corrected delta = 0 not rejected across folds AND no out-of-fold primary-target improvement over K0; sign instability of delta-hat across folds kills the mechanism regardless",
+          "notes": "This is the S4 free-slope defect converted into a declared, controlled hypothesis - the only family in which offset-affine terms are admissible (P25/R11 rule)."
+        }
+      ]
+    },
+    {
+      "family_id": "F02_CAL_BLEND_ASYMMETRY",
+      "mechanism": "The incumbent blends own_est and opp_est with implicit equal weights (own_est + opp_est == 2*projected, measured in S5), but offense controls tempo more than defense, so the optimal blend weight on the offensive side exceeds one half; if gamma = 0 cannot be rejected with stable sign, equal weighting stands.",
+      "multiplicity_family_as_declared": "CALIBRATION_CONTROL_FAMILY",
+      "arms": [
+        {
+          "arm_id": "A02_cal_blend_contrast",
+          "provenance": [{"file": "HYPOTHESES_calibration_control.md", "section": "CALIBRATION_CONTROL_H2"}],
+          "formula": "linear predictor = off + gamma * (own_est - opp_est); gamma = 0 recovers the incumbent's equal-weight blend exactly",
+          "features": [
+            {"name": "own_est - opp_est (single preregistered contrast)", "construction": "difference of the two internal team-side estimates of the frozen incumbent's receipted projection path; the PAIR never enters", "lineage": "incumbent-internal components, Stage 1B receipted path", "cutoff_validity_citation": "EVIDENCE_PACKET_V3 enforcement.offset_dependency_guard_S4_S5.rule - the pair may not enter beside the offset; 'a single preregistered nonredundant contrast (own-opp) is admissible with fold-local full rank'; D009 standard (a)"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {}, "note": "no free hyperparameters"},
+          "k0_matched": "identical everything; null [off] (blend weight fixed at incumbent equal halves); treatment [off | (own_est - opp_est)]; only the contrast column differs",
+          "fold_support": "conditional on fold-local full rank of [offset | own-opp] exactly as the offset guard demands; exact own=opp across a whole fold is a measurable degeneracy - arm/fold prospectively UNEVALUABLE per S7 rule, declared in advance",
+          "kill_conditions": "family-corrected gamma = 0 not rejected across folds; sign flip of gamma-hat across folds; or S7 finds the contrast near-collinear with the offset in any fold (then the 'contrast' is secretly a slope and the arm yields to A01 rather than claiming its credit)",
+          "notes": "Mechanistically distinct from A14 (residual momentum): this arm adds ZERO new information - it reweights incumbent-internal components; A14 builds a new lagged-residual signal."
+        }
+      ]
+    },
+    {
+      "family_id": "F03_CAL_COLDSTART_LEVEL",
+      "mechanism": "Where the incumbent's evidence is shallow its fallback pulls toward a league prior whose level has drifted, so shallow-evidence projections share a common level error; a shallow-tier intercept corrects it, and alpha_S = 0 unrejected (or sign-unstable) across folds kills it.",
+      "multiplicity_family_as_declared": "CALIBRATION_CONTROL_FAMILY",
+      "arms": [
+        {
+          "arm_id": "A03_cal_shallow_tier_intercept",
+          "provenance": [{"file": "HYPOTHESES_calibration_control.md", "section": "CALIBRATION_CONTROL_H3"}],
+          "formula": "linear predictor = off + alpha_S * 1[tier = SHALLOW]; tier = binary collapse of the evidence-depth ladder by a preregistered threshold on pace_evidence_depth; DEEP is reference; the full V2 tier ladder is NOT proposed (P27: no training fold supports it under the 10-cluster floor)",
+          "features": [
+            {"name": "pace_evidence_depth (tier index only)", "construction": "binary threshold indicator, threshold fixed before any result, training-only application", "lineage": "incumbent-equivalent possession feature on the exact receipted Stage 1B path", "cutoff_validity_citation": "EVIDENCE_PACKET_V3 rulings_carried.D009 standard (a); DECLARED DEPENDENCY preserved verbatim: under standard (b) alone the field is CUTOFF_UNPROVEN and the arm is inadmissible"},
+            {"name": "off", "construction": "as A01", "lineage": "frozen incumbent", "cutoff_validity_citation": "D009 standard (a)"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {"shallow_threshold_on_pace_evidence_depth": "preregistered single value or small grid; every grid point counts inside the family multiplicity budget"}, "note": "threshold is a hyperparameter, separated from the hypothesis (cold-start level bias exists)"},
+          "k0_matched": "identical everything; null [off] with the incumbent's own intercept structure; treatment [off | 1[SHALLOW]]; tier MAIN effect is itself the treatment so nothing lower-order is omitted from the null; per-arm active-set rule: if either tier falls below the 10-cluster training floor in a fold, arm collapses to incumbent for that fold and the fold is UNEVALUABLE for this member (declared per S7 before results)",
+          "fold_support": "both tiers supported in every training fold at any non-extreme threshold (every training fold contains >= 1 complete season; train_lt_2022 holds 205 resolved clusters); remainder handled by the declared symmetric active-set rule aligned with P27/ACTIVE_SET_RULE_PREREGISTRATION.json sha256 327fa8ec9fb54e3635ae70b540573b4121c6136fc5034cbdb689cabbe2986db7",
+          "kill_conditions": "family-corrected alpha_S = 0 not rejected across folds, or sign instability; D010 interpretive limit declared: a kill kills the hypothesis ON THIS UNIVERSE, and no post-hoc appeal to the missing opening day may rescue a dead result",
+          "notes": "This is the S6 finding (bias 37-42% of MSE on cold-start strata) expressed as a controlled calibration arm; the S6 trap is handled by making the tier intercept the declared treatment rather than smuggling it into K0."
+        }
+      ]
+    },
+    {
+      "family_id": "F04_CAL_DEPTH_GAIN",
+      "mechanism": "The optimal shrinkage gain is not one number: projections built on few prior games carry more sampling noise and deserve more shrinkage, so the slope on the centered projection should differ at low evidence depth; delta_S = 0 (given the full lower-order null) unrejected or sign-unstable across folds kills it.",
+      "multiplicity_family_as_declared": "CALIBRATION_CONTROL_FAMILY (calibration_control source) / CALIBRATION (coldstart_fallback source) - consistent",
+      "arms": [
+        {
+          "arm_id": "A04_cal_depth_indexed_slope",
+          "provenance": [
+            {"file": "HYPOTHESES_calibration_control.md", "section": "CALIBRATION_CONTROL_H4 (canonical formulation)"},
+            {"file": "HYPOTHESES_coldstart_fallback.md", "section": "COLDSTART_FALLBACK_H2 (duplicate formulation, merged; see rejections R3)"}
+          ],
+          "formula": "canonical (stricter null, adopted per RESEARCH_CONTRACT_V1 'stricter governs'): linear predictor = off + alpha_S*1[SHALLOW] + delta0*(off - m_bar) + delta_S*B(depth)*(off - m_bar), with ONLY the depth-indexed slope term as treatment; B(depth) is the depth-response basis (see hyperparameters)",
+          "features": [
+            {"name": "pace_evidence_depth", "construction": "depth-response basis B(depth): binary 1[SHALLOW] (CC-H4 form) or bounded kernel 1/(1 + depth/h) (CF-H2 form)", "lineage": "incumbent-equivalent receipted feature", "cutoff_validity_citation": "D009 standard (a); same declared dependency as A03"},
+            {"name": "off", "construction": "centered against training-fold m_bar", "lineage": "frozen incumbent", "cutoff_validity_citation": "D009 standard (a)"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {"depth_response_basis": ["binary tier 1[SHALLOW] with preregistered threshold", "kernel 1/(1 + depth/h) with h = 5 (the CF-H2 frozen value)"], "shallow_threshold": "as A03 if binary basis chosen"}, "note": "the basis choice is a hyperparameter, NOT a second hypothesis; exactly one basis is selected at preregistration or the full choice set is counted in the family multiplicity budget"},
+          "k0_matched": "STRICTER NULL ADOPTED (CC-H4's): null contains the tier/depth main effect AND the global slope (off - m_bar) - per k0_matched.core_rules 'tier interactions require lower-order tier main effects in K0' and per S4: a free slope the control lacks is the confound, not a finding. The arm can only win by the INTERACTION being real, never by rediscovering A01's global slope or A03's tier level. CF-H2's weaker null (slope-1 only) is recorded as a preserved disagreement (D1a) and NOT used.",
+          "fold_support": "rank-4 design (with offset) over training rows; interaction non-degenerate wherever A03's tier support holds and the offset varies within the shallow tier; same S7 rank/condition checks and active-set rule as A03; declared strictly JUNIOR to A01 and A03 in the family ordering",
+          "kill_conditions": "family-corrected delta_S = 0 not rejected given the full lower-order null; sign instability; if the interaction rejects only when the global slope is REMOVED from the null, that is the S4 confound pattern and is recorded as a kill, not a find; D010 interpretive limit as A03",
+          "notes": "Overlap with F08 (A08) flagged: both test evidence-depth-dependent gain, one on the offset (here, zero new information) and one on a rebuilt lagged deviation (A08, new construction). If P25 finds A08's rebuilt deviation near-affine to the offset's deviation, A08 collapses into this family and must be withdrawn as a design failure, per A08's own declared failure mode."
+        }
+      ]
+    },
+    {
+      "family_id": "F05_CAL_PLAYOFF_LEVEL",
+      "mechanism": "The incumbent's playoff adjustment (it already carries is_playoff_game) may be incorrectly sized on the current universe; a playoff intercept beside the offset measures the residual playoff level error, and pi = 0 unrejected on the evaluable folds kills it.",
+      "multiplicity_family_as_declared": "CALIBRATION_CONTROL_FAMILY",
+      "arms": [
+        {
+          "arm_id": "A05_cal_playoff_intercept",
+          "provenance": [{"file": "HYPOTHESES_calibration_control.md", "section": "CALIBRATION_CONTROL_H6"}],
+          "formula": "linear predictor = off + pi * 1[is_playoff_game]; pi = 0 recovers the incumbent exactly",
+          "features": [
+            {"name": "is_playoff_game / season_type", "construction": "schedule indicator", "lineage": "possession column already carried by the incumbent (possession_features.py)", "cutoff_validity_citation": "EVIDENCE_PACKET_V3 cutoff_validity.possession_columns_48_S8 table: season_type ELIGIBLE ('schedule fact known at the cutoff'), with the hazard note 'fold-degenerate: 0 playoff games in fold 2026'"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {}, "note": "none"},
+          "k0_matched": "identical everything; null [off]; treatment [off | 1[is_playoff_game]]; one column difference",
+          "fold_support": "training-side support in every fold (every training fold contains completed prior seasons including playoffs); TEST side of fold 2026 has 0 playoff games (S7 known_degeneracies) - the GATE_INVOCATION_CONTRACT section 4 frozen fold-level fallback is DECLARED NOW: on fold-2026 test rows the treatment column is identically zero, the arm's prediction reduces to the null's by construction, and the fold contributes no discriminating information for pi (recorded, not hidden); effective evidence base is four folds",
+          "kill_conditions": "family-corrected pi = 0 not rejected on the evaluable folds, or sign instability across them; thin playoff strata make a null a priori likely - accepted and declared",
+          "notes": "PRESERVED DISAGREEMENT (D3): the coldstart_fallback source's standing constraints exclude any new is_playoff_game term outright as fold-degenerate; the calibration source proposes it WITH the declared section-4 fallback, which is exactly the remedy the packet's S7 clause names. Both positions are preserved; retention here follows the packet's own clause, and the objection travels with the arm to preregistration."
+        }
+      ]
+    },
+    {
+      "family_id": "F06_WITHIN_SEASON_DRIFT",
+      "mechanism": "League-common tempo deviates early in the season and drifts across it (conditioning, rotation tightening, tactical convergence) while the incumbent's projection is an average over earlier games and lags any monotone drift; if neither the phase/index term nor the early-transient term rejects with a fold-stable sign pattern, the drift mechanism is false on this universe.",
+      "multiplicity_family_as_declared": "CONFLICTING - CALIBRATION_CONTROL_FAMILY (CC-H5) vs temporal_drift_family (AI-H5) vs COLDSTART_FALLBACK (CF-H3); preserved as disagreement D2, to be fixed at preregistration",
+      "arms": [
+        {
+          "arm_id": "A06_season_phase_drift",
+          "provenance": [
+            {"file": "HYPOTHESES_calibration_control.md", "section": "CALIBRATION_CONTROL_H5 (canonical formulation)"},
+            {"file": "HYPOTHESES_adversarial_identifiability.md", "section": "AI-H5 (duplicate formulation, merged; see rejections R4)"}
+          ],
+          "formula": "linear predictor = off + drift term, where the drift term is EITHER phi_E*1[phase=EARLY] + phi_L*1[phase=LATE] with MID reference, phase = within-season schedule-day fraction cut at preregistered thirds (CC-H5 basis, joint 2-df test), OR beta*g(within_season_schedule_index) with g a preregistered monotone transform using SCHEDULED season length (AI-H5 basis, 1 df). Season itself NEVER enters (S8 hazard: fold identifier).",
+          "features": [
+            {"name": "game_date -> within-season day fraction / schedule index", "construction": "(game_date - season_first_game_date) / (season_last_scheduled_date - season_first_game_date), or nth scheduled game normalized by SCHEDULED season length; never realized length", "lineage": "contract schedule; cluster-constant", "cutoff_validity_citation": "S8 table: game_date ELIGIBLE ('schedule fact; it is the cutoff boundary itself'; master_team revision risk inherited and declared)"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {"drift_basis": ["thirds-bin phase intercepts (2 df, joint test)", "preregistered monotone transform g of the schedule index (1 df)"]}, "note": "basis is a hyperparameter separated from the hypothesis; one basis selected at preregistration or the set counted in the multiplicity budget"},
+          "k0_matched": "identical everything; null [off] with incumbent intercept structure; treatment adds only the drift column(s), tested as ONE treatment; crucially the null is the NESTED model, never a team-identity permutation (S9 lesson: permuting identities does not destroy a league-level time signal); lower-order terms in K0 for any tier/spline elaboration per k0_matched.core_rules",
+          "fold_support": "every training fold contains >= 1 complete season so all phases / the full index range are trained-on for folds through train_lt_2025; train_lt_2026 is the adversarial case - the 2026 test season is truncated at 2026-07-31 so late-season values are trained-on but never tested; the preregistered symmetric training-support-based active-set rule must handle this or the fold is UNEVALUABLE; the preregistration binds itself IN ADVANCE to reject a pattern where the arm wins only on the truncated fold (AI-H5's declaration, carried verbatim)",
+          "kill_conditions": "family-corrected joint test fails to reject across folds, or the fitted phase/drift pattern is not stable in ORDER/sign across folds (a monotone drift mechanism predicts a consistent pattern; an inconsistent one kills the mechanism even if some fold rejects)",
+          "notes": "This family is the deliberate head-on test of the S9/D007 level-transport trap; the per-arm K0_MATCHED nested null is the only valid control."
+        },
+        {
+          "arm_id": "A07_early_season_transient",
+          "provenance": [{"file": "HYPOTHESES_coldstart_fallback.md", "section": "COLDSTART_FALLBACK_H3"}],
+          "formula": "eta_i = offset_i + [K0 terms] + delta * exp(-n_i / tau), tau = 5 preregistered and FIXED; n_i = team's completed same-season contract games strictly before the target date (team clock, within-cluster variation possible, unlike A06's cluster-constant calendar clock)",
+          "features": [
+            {"name": "n_i (within-season completed-game count)", "construction": "count of strictly earlier completed same-season contract games for the offense team", "lineage": "schedule facts + completedness of strictly earlier games", "cutoff_validity_citation": "S8 table: game_date, season, offense_team_id all ELIGIBLE; identity via drop-duplicates join per the SEVERE multiplicity hazard note; no realized column touched"},
+            {"name": "gap, depth, opp_depth (K0 only)", "construction": "incumbent structural terms, granted to the null", "lineage": "receipted incumbent path", "cutoff_validity_citation": "D009 standard (a)"}
+          ],
+          "hyperparameters": {"fixed": {"tau": 5}, "grid_or_choice_set": {}, "note": "tau frozen by the source before any fit; not tunable"},
+          "k0_matched": "identical rows/target/folds/weights/offset/fallback; K0 holds the full incumbent structure (gap, depth, opp_depth) and intercept, so any level information carried by total evidence depth belongs to the null (S6 trap direction 1); ONLY the treatment adds delta*exp(-n/tau); if exp(-n/tau) is near-collinear with depth in a fold the S7 condition-number check must catch it and the arm/fold is UNEVALUABLE rather than silently credited",
+          "fold_support": "positive variance of exp(-n/5) in all five training folds (every training fold has a complete season with early and late games; 2021 contributes n >= 1 per D010); declared risk accepted in advance: near-collinearity with depth in train_lt_2022 makes that arm/fold prospectively UNEVALUABLE; retirement rule: unevaluable against depth in >= 2 folds retires the hypothesis unevaluated",
+          "kill_conditions": "delta interval covers 0; improvement concentrating outside the early-season stratum (n <= 5) kills it as a cold-start claim; direction NOT preregistered but a sign FLIP across folds kills it",
+          "notes": "Kept as a distinct arm (not a duplicate of A06): its regressor is the TEAM's game count, which varies within a cluster under staggered schedules, while A06's calendar clock is cluster-constant; the sources' shared underlying mechanism is what makes them one family."
+        }
+      ]
+    },
+    {
+      "family_id": "F07_LEAGUE_LEVEL_TRANSPORT",
+      "mechanism": "League-wide pace drifts across time and the frozen offset tracks the moving league level imperfectly, so the strictly-lagged trailing league mean, centered on the training constant, carries residual level information; gamma = 0 unrejected (or P25 rejection for near-affinity with the offset) kills it.",
+      "multiplicity_family_as_declared": "timeseries_shrinkage",
+      "arms": [
+        {
+          "arm_id": "A08_league_lag_level",
+          "provenance": [{"file": "HYPOTHESES_timeseries_shrinkage.md", "section": "TS4"}],
+          "formula": "log E[y] = log(offset) + beta0 * d_t + gamma * L_t; L_t = Lbar_<g - Lbar_train; Lbar_<g = trailing mean pace over the last K completed league games strictly before game_date(g); Lbar_train = training-fold constant",
+          "features": [
+            {"name": "lag_pace_dev_flat (d_t, lower-order, in K0)", "construction": "strictly-lagged mean of prior-game realized regulation-equivalent pace minus the lagged league mean", "lineage": "lagged aggregates of LAGGED_USE_ONLY possession columns", "cutoff_validity_citation": "S8/P2A LAGGED_USE_ONLY licence to propose; P22 postgame_surrogate_guard precedent ('correctly lagged prior-game duration PASSES'); construction re-adjudicated by the guard at preregistration"},
+            {"name": "league_lag_level (L_t)", "construction": "trailing league mean of realized pace over strictly earlier completed games, centered on the training constant; NOT built from era (CUTOFF_UNPROVEN) and NOT from season-as-feature (S8 fold-identifier hazard)", "lineage": "lagged realized play only", "cutoff_validity_citation": "same P22 licence; every contributing game precedes game_date(g)"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {"K_trailing_window_games": "small preregistered value or grid; every grid point counted inside the timeseries_shrinkage family budget"}, "note": "K separated from the hypothesis (league level drifts)"},
+          "k0_matched": "K0 = offset + beta0*d_t, identical machinery otherwise; the null excludes only the league-level term; the preregistration MUST state explicitly that a team-identity permutation control is NOT a valid null for this arm (S9: permutation does not destroy a league-level time signal); the nested null is the only control",
+          "fold_support": "L_t continuous, defined on all rows once >= K league games completed; window rule symmetric and training-support-based, declared under R12 discipline; condition-number check against the offset is the live risk and is the arm's gate",
+          "kill_conditions": "most likely rejection point in its source family: if the incumbent already tracks league drift, L_t is near-affine in the offset and P25 rejects the design outright (desired behavior, not a defect); under expanding-window folds the test season's drift is always an extrapolation, so even a real gamma can transport poorly across the fold boundary",
+          "notes": "Distinct from F06: the regressor is DATA-DRIVEN trailing realized league level (captures cross-season and within-season drift), not schedule position."
+        }
+      ]
+    },
+    {
+      "family_id": "F08_POOLING_VOLUME_ADAPTIVE",
+      "mechanism": "A team's lagged pace deviation from the league is informative in proportion to the evidence count behind it, so the classical partial-pooling weight w(n) = n/(n+kappa) should beat a fixed-weight use of the deviation; beta = 0 against the flat-weight null, or a P25 near-affinity rejection, kills it.",
+      "multiplicity_family_as_declared": "timeseries_shrinkage",
+      "arms": [
+        {
+          "arm_id": "A09_evidence_depth_adaptive_shrinkage",
+          "provenance": [{"file": "HYPOTHESES_timeseries_shrinkage.md", "section": "TS1"}],
+          "formula": "log E[y] = log(offset) + beta * w(n_t) * d_t; d_t = mean_{j in P(t,<g)} pace(j) - Lbar_<g; w(n) = n/(n+kappa)",
+          "features": [
+            {"name": "lag_pace_dev_flat (d_t)", "construction": "as A08's d_t; lag >= 1 completed game ordered by ELIGIBLE game_date", "lineage": "lagged LAGGED_USE_ONLY aggregates", "cutoff_validity_citation": "S8/P2A licence; P22 guard precedent; re-adjudication at preregistration"},
+            {"name": "n_prior_games (n_t)", "construction": "count of the team's completed prior games", "lineage": "pure schedule fact from game_date/game_id", "cutoff_validity_citation": "S8: game_date and game_id ELIGIBLE; no realized content"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {"kappa": "preregistered grid, fit fold-locally on training rows only; every grid point counted inside the family budget"}, "note": "kappa separated from the hypothesis (adaptivity exists)"},
+          "k0_matched": "identical rows/target/folds/clustering/weights/offset/fallback/nuisance; K0 carries the flat lower-order term beta0*d_t; the null fixes w == 1 (kappa = 0); the treatment's ONLY excluded mechanism is the evidence-depth adaptivity of the weight",
+          "fold_support": "both features continuous and defined on every resolved row; smallest training fold 410 rows / 205 clusters, far above the 10-cluster floor; kappa grid training-only, symmetric, per R12 discipline; kappa weakly identified in train_lt_2022 (single training season) - declared",
+          "kill_conditions": "the incumbent plausibly already performs implicit pooling, in which case w(n)*d_t is near-affine to information inside the offset and P25 rejects the design, or beta ~ 0 against K0",
+          "notes": "Cross-reference F04: same underlying claim (depth-dependent gain) implemented on a REBUILT deviation rather than on the offset. Retained separately because the substrates differ; if P25 finds the rebuilt deviation redundant with the offset's own deviation, this arm collapses into F04 and is withdrawn as a design failure."
+        }
+      ]
+    },
+    {
+      "family_id": "F09_POOLING_RECENCY",
+      "mechanism": "Within-season pace is non-stationary, so recent prior games carry more information than early ones; the exponentially-discounted-minus-flat contrast of the lagged deviation should be nonzero, and beta1 = 0 against the flat-only null kills it.",
+      "multiplicity_family_as_declared": "timeseries_shrinkage",
+      "arms": [
+        {
+          "arm_id": "A10_recency_contrast",
+          "provenance": [{"file": "HYPOTHESES_timeseries_shrinkage.md", "section": "TS2"}],
+          "formula": "log E[y] = log(offset) + beta0 * d_t + beta1 * c_t; c_t = ewma_lambda{pace(j) - Lbar_<j} - d_t (EWMA-minus-flat contrast of the same strictly-lagged deviations)",
+          "features": [
+            {"name": "lag_pace_dev_flat (d_t)", "construction": "as A09", "lineage": "lagged aggregates", "cutoff_validity_citation": "S8/P2A licence; P22 precedent"},
+            {"name": "recency_contrast (c_t)", "construction": "deterministic reweighting of the same prior-game aggregates; no new source, no new timestamp risk", "lineage": "same lag structure as d_t", "cutoff_validity_citation": "same; adjudicated by the P22 guard at preregistration"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {"lambda": "preregistered grid, fold-locally selected on training rows only; counted as treatment degrees of freedom inside the family multiplicity budget"}, "note": "lambda separated from the hypothesis (recency matters)"},
+          "k0_matched": "K0 = offset + beta0*d_t, identical everything else; the null excludes only the recency contrast",
+          "fold_support": "continuous, defined everywhere; contrast exactly zero only for one-prior-game teams (no zero-variance column in any training fold); full rank alongside d_t by construction (contrast, not level - the P25-admissible parameterization)",
+          "kill_conditions": "beta1 indistinguishable from 0 against K0 in the two small early folds; lambda selection burns family alpha without a stable cross-fold optimum",
+          "notes": "The incumbent is itself an EWMA (D_ewma_shrunk, alpha=0.1). This arm tests recency in the REBUILT deviation beside the frozen offset; the preregistration must confirm from the receipted incumbent construction (no performance peeking) that the treatment is not re-deriving the incumbent's own discounting - a P25 near-affinity rejection is the expected kill if it is."
+        }
+      ]
+    },
+    {
+      "family_id": "F10_SEASON_CARRYOVER",
+      "mechanism": "A franchise's prior-season pace identity carries information that thin early-current-season evidence lacks, with a weight that should decay as current-season evidence accumulates (and, in the moderated arm, scale with roster continuity); if no carryover term rejects on the thin-evidence stratum with the predicted decay/moderation shape, carryover is false on this universe.",
+      "multiplicity_family_as_declared": "CONFLICTING - timeseries_shrinkage (TS3) vs COLDSTART_FALLBACK (CF-H1, CF-H4); preserved as disagreement D5",
+      "arms": [
+        {
+          "arm_id": "A11_carryover_blend_rho",
+          "provenance": [{"file": "HYPOTHESES_timeseries_shrinkage.md", "section": "TS3"}],
+          "formula": "log E[y] = log(offset) + beta * dblend_t(rho); dblend_t(rho) = (n_cur*dcur_t + rho*m_prev*dprev_t) / (n_cur + rho*m_prev); null fixes rho == 1 (undifferentiated pooling); treatment = the estimated season-boundary discount only",
+          "features": [
+            {"name": "lag_pace_dev_cur_season (dcur_t)", "construction": "flat lagged deviation over same-season prior games", "lineage": "lagged aggregates", "cutoff_validity_citation": "S8/P2A licence; P22 precedent"},
+            {"name": "lag_pace_dev_prev_season (dprev_t)", "construction": "flat deviation over the team's immediately-prior-season completed games (whole prior season precedes the cutoff)", "lineage": "lagged aggregates", "cutoff_validity_citation": "same"},
+            {"name": "n_prior_games_cur / n_prior_games_prev", "construction": "schedule-fact counts", "lineage": "game_date ELIGIBLE", "cutoff_validity_citation": "S8 ELIGIBLE"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {"rho": "preregistered grid, fold-local, training-only; counted in family budget"}, "note": "rho separated from the hypothesis (carryover should be discounted)"},
+          "k0_matched": "K0 carries BOTH lower-order main effects (beta_a*dcur_t + beta_b*dprev_t) so the treatment cannot take credit for merely having prior-season information; null fixes rho == 1; PRESERVED DISAGREEMENT (D1): this null PRESUMES the incumbent-equivalent pooling already includes prior-season evidence at full weight, the OPPOSITE presumption from A12's null (no carryover at all); the preregistration node must resolve which nested null matches the frozen incumbent's receipted construction - from receipts, not from performance",
+          "fold_support": "dprev_t undefined for 2021 rows (no archived prior season): the GATE_INVOCATION_CONTRACT section 4 frozen fold-level fallback for train_lt_2022's training season is DECLARED BEFORE results per P27/R12; all other folds have full continuous support",
+          "kill_conditions": "cold-start-adjacent mechanism: any measured benefit is flattered by construction (D010) and must be reported under that caveat; early-season rows are a minority of every test fold (underpowered, declared); the 2021 fallback consumes its one degree of structural mercy",
+          "notes": "Franchise identity across seasons is keyed on team_id from the possessions artifact directly; no team_cities join occurs, so the S2 fan-out hazard is not engaged, but franchise continuity across the PHO/PHX rebrand must be receipted by the P23 merge guard for ANY cross-season history feature - declared precondition for all three arms of this family."
+        },
+        {
+          "arm_id": "A12_carryover_additive_decay",
+          "provenance": [{"file": "HYPOTHESES_coldstart_fallback.md", "section": "COLDSTART_FALLBACK_H1"}],
+          "formula": "eta_i = offset_i + [K0 terms] + beta1*dev_prev_i + beta2*w(n_i)*dev_prev_i; w(n) = 1/(1 + n/h), h = 5 FIXED; treatment = the pair {dev_prev, w(n)*dev_prev}, 2 df, tested jointly; teams with no prior season get dev_prev = 0 (identical fallback in arm and null)",
+          "features": [
+            {"name": "dev_prev_i", "construction": "team's prior-season mean regulation-equivalent offensive possessions per team-game minus the prior-season league mean, all strictly earlier than the target date; prior-game OT possessions rescaled using that prior game's OWN lagged duration/overtime columns (regulation-equivalent by construction - no scorer-mismatch channel)", "lineage": "lagged LAGGED_USE_ONLY aggregates (offense_team_id row multiplicity, period, duration_sec, is_overtime of strictly earlier games)", "cutoff_validity_citation": "S8/P2A LAGGED_USE_ONLY licence; P22 guard adjudication required; P22 precedent (lagged duration PASSES)"},
+            {"name": "n_i", "construction": "same-season completed prior game count", "lineage": "schedule facts", "cutoff_validity_citation": "S8 ELIGIBLE (game_date, season, team ids by identity join)"}
+          ],
+          "hyperparameters": {"fixed": {"h": 5}, "grid_or_choice_set": {}, "note": "h frozen by the source, no search"},
+          "k0_matched": "K0 holds w(n) as a MAIN effect plus the incumbent structural terms (gap, depth, opp_depth) - the null owns every depth-indexed level/re-centring degree of freedom (S6 trap direction 1) - but K0 does NOT hold dev_prev in any form (S6 trap direction 2: the null must not absorb the carryover information the arm exists to add); PRESERVED DISAGREEMENT (D1): opposite null presumption from A11, see A11.k0_matched",
+          "fold_support": "dev_prev identically zero across all training rows of train_lt_2022 (2021-only training set, no archived prior season): DECLARED ACTIVE-SET RULE (preregistered, training-support-based, symmetric, receipt-recorded): treatment enters a fold iff >= 10 training clusters carry |dev_prev| > 0; activates train_lt_2023..train_lt_2026, deactivates train_lt_2022 for arm AND null identically; no silent pooled pass (S7)",
+          "kill_conditions": "joint treatment adds no out-of-fold improvement on the preregistered thin-evidence stratum (n <= 5) under family multiplicity control; improvement appearing only in the all-rows aggregate kills it AS A COLD-START CLAIM; beta2 sign contradicting decay kills it; a null here does NOT license the claim that carryover is useless at n = 0 (D010)",
+          "notes": "See A11 note on PHO/PHX franchise-continuity precondition."
+        },
+        {
+          "arm_id": "A13_carryover_roster_continuity_moderator",
+          "provenance": [{"file": "HYPOTHESES_coldstart_fallback.md", "section": "COLDSTART_FALLBACK_H4"}],
+          "formula": "cont_i = Jaccard(P_curr_i, P_prev_i) over player-id sets from off_p1..off_p5 / def_p1..def_p5 of strictly earlier games; eta_i = offset_i + [K0 = A12's FULL arm design + cont main effect] + beta3*(cont_i - cbar_F)*dev_prev_i; treatment = the single centered interaction (1 df); n=0 fallback: cont := training-fold mean, identical in arm and null",
+          "features": [
+            {"name": "off_p1..off_p5, def_p1..def_p5 of STRICTLY EARLIER games", "construction": "unordered player-id sets (the S8 measurement that slots are ascending order statistics makes the no-positional-meaning caveat harmless)", "lineage": "derive_lineups -> source pbp, lagged only", "cutoff_validity_citation": "S8 LAGGED_USE_ONLY; P22 guard adjudication REQUIRED - if the lagged-lineup construction fails adjudication the hypothesis is inadmissible, not merely null (source's own declaration)"},
+            {"name": "dev_prev, w(n), n", "construction": "as A12", "lineage": "as A12", "cutoff_validity_citation": "as A12"}
+          ],
+          "hyperparameters": {"fixed": {"h": 5}, "grid_or_choice_set": {}, "note": "inherits A12's frozen h"},
+          "k0_matched": "K0 = A12's full arm design (offset, incumbent terms, w(n) main, carryover pair) PLUS the cont main effect (lower-order rule) and identical n=0 fallback machinery; ONLY the treatment adds the centered interaction; uniform carryover belongs to the null - the arm is credited only for the continuity-CONDITIONING; the H1->H4 (A12->A13) sequence is ORDERED in the accounting, not independent (source declaration, carried)",
+          "fold_support": "same structural zero as A12 in train_lt_2022; DECLARED ACTIVE-SET RULE identical in form (>= 10 training clusters with a defined, nonconstant interaction term), activating train_lt_2023..train_lt_2026, symmetric, receipt-recorded",
+          "kill_conditions": "beta3 interval covers 0 given A12's terms in the null; beta3 < 0 (carryover weaker for continuous rosters) refutes the mechanism; P22 adjudication failure makes it inadmissible; explicitly claims nothing on n = 0 openers - its claim lives on n in [1, ~8]",
+          "notes": "PRESERVED CONTRADICTION (D4): the opponent_mechanism source declared the lineup-continuity family EMPTY this wave on the ground that its mandate restricted lineup-availability mechanisms to ELIGIBLE columns; this arm and A22 build lagged-lineup features under the S8 LAGGED_USE_ONLY licence to propose. The packet's S8 licence governs this synthesis; the narrower reading is preserved verbatim rather than silently harmonized."
+        }
+      ]
+    },
+    {
+      "family_id": "F11_EXPANSION_FALLBACK",
+      "mechanism": "A franchise in its first league season has no history and the incumbent's implicit fallback treats it as league-average, which is biased for expansion rosters; a decaying expansion-stratum level term tests it, and kappa = 0 (or retirement for support) kills it.",
+      "multiplicity_family_as_declared": "COLDSTART_FALLBACK",
+      "arms": [
+        {
+          "arm_id": "A14_expansion_intercept_decay",
+          "provenance": [{"file": "HYPOTHESES_coldstart_fallback.md", "section": "COLDSTART_FALLBACK_H5"}],
+          "formula": "exp_i = 1{team's first season in the contract schedule >= 2022 and equals season_i} (first-appearance-in-2021 is archive truncation, NOT expansion, and is excluded from the definition); eta_i = offset_i + [K0 terms incl. A07's exp(-n/tau) as granted lower-order term] + kappa*exp_i*exp(-n_i/tau), tau = 5 fixed; treatment = single kappa; no defense-side analogue proposed",
+          "features": [
+            {"name": "exp_i (first-appearance indicator)", "construction": "schedule identity fact fixed before the season begins", "lineage": "offense_team_id, season, game_date", "cutoff_validity_citation": "S8 ELIGIBLE; DECLARED PRECONDITION inherited verbatim: first-appearance must be computed after resolving the PHO/PHX duplicate (team_id 1611661317) from documented effective-date semantics, or per the S2 rule (enforcement.dimension_cardinality_guard_S2) this family is EXCLUDED"},
+            {"name": "n_i", "construction": "as A07", "lineage": "schedule facts", "cutoff_validity_citation": "S8 ELIGIBLE"}
+          ],
+          "hyperparameters": {"fixed": {"tau": 5}, "grid_or_choice_set": {}, "note": "tau frozen"},
+          "k0_matched": "K0 holds the incumbent structure AND the league-common decay term exp(-n/tau) as granted lower-order/structural term, so the null already owns generic early-season drift and ONLY the expansion-specific increment is credited (S6 trap direction 1); K0 holds no expansion-indexed term (direction 2)",
+          "fold_support": "the honest weak point, declared rather than hidden: whether ANY training fold contains >= 10 clusters of expansion team-games is a measurable schedule fact NOT asserted from memory by the source and NOT measurable by this synthesis node (the data artifacts lie outside its read scope); DECLARED ACTIVE-SET RULE: term enters a fold iff >= 10 training clusters have exp_i = 1; if NO fold meets the floor the hypothesis is retired unevaluated and reported as such - an outcome itself informative about the universe's cold-start coverage under D010",
+          "kill_conditions": "retired for support; kappa interval covers 0 in every active fold-set; effect absorbed entirely by the league drift term in K0; sign not preregistered but sign instability across active folds kills it",
+          "notes": "Not rejected as fold-degenerate: degeneracy is unmeasured (out of this node's read scope) and the source preregistered the retirement rule; P27 adjudicates at preregistration."
+        }
+      ]
+    },
+    {
+      "family_id": "F12_DEPTH_ASYMMETRY_RELIABILITY",
+      "mechanism": "The incumbent combines the two teams' pace estimates as if equally reliable, but staggered schedules make evidence depth unequal, so the pace gap's predictive weight should vary with the transformed depth difference between the teams; beta4 = 0, or improvement not concentrating in high-|asym| rows, or beta4 < 0, kills it.",
+      "multiplicity_family_as_declared": "COLDSTART_FALLBACK",
+      "arms": [
+        {
+          "arm_id": "A15_gap_by_depth_asymmetry",
+          "provenance": [{"file": "HYPOTHESES_coldstart_fallback.md", "section": "COLDSTART_FALLBACK_H6"}],
+          "formula": "asym_i = s(depth_i) - s(opp_depth_i), s(d) = 1/(1 + d/5) fixed; eta_i = offset_i + [K0 terms] + beta4 * gap_i * asym_i; treatment = the single interaction (1 df)",
+          "features": [
+            {"name": "pace_gap", "construction": "the incumbent's single preregistered own-opp contrast - the admissible object under the offset guard; the own/opp pair never enters (S5 discipline)", "lineage": "receipted incumbent path", "cutoff_validity_citation": "D009 standard (a); enforcement.offset_dependency_guard_S4_S5 (contrast admissible with fold-local full rank)"},
+            {"name": "pace_evidence_depth, opp_pace_evidence_depth", "construction": "through the fixed bounded transform s only", "lineage": "receipted incumbent path", "cutoff_validity_citation": "D009 standard (a)"}
+          ],
+          "hyperparameters": {"fixed": {"s_scale_h": 5}, "grid_or_choice_set": {}, "note": "transform frozen; no new data enters at all - the cheapest cold-start hypothesis in the set to adjudicate (source's claim, structural not performance)"},
+          "k0_matched": "K0 holds gap, depth, opp_depth main effects AND the asym main effect (lower-order rule; asym is a fixed transform of depths, granting it to the null blocks re-centring credit); ONLY the treatment adds gap*asym; all depth-level information is in the null - the arm is credited solely for the reliability-weighting mechanism",
+          "fold_support": "asym nonzero exactly where transformed completed-game counts differ - staggered scheduling guarantees such rows every season; full design [offset | nuisance | candidate] rank and condition-number checked per fold by S7 guard; NO active-set rule declared; an S7 failure in a fold makes that arm/fold prospectively unevaluable, accepted in advance",
+          "kill_conditions": "beta4 interval covers 0; improvement not concentrated in top-|asym| bucket (mechanism mislabeled); beta4 < 0 refutes the reliability mechanism",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "family_id": "F13_RESIDUAL_MOMENTUM_CONTRAST",
+      "mechanism": "A team's realized pace over its k most recent completed games deviates from the incumbent's projections in a way that persists into the next game, with the opponent's symmetric deviation acting oppositely, so the single own-minus-opp trailing-residual contrast carries signal beside the offset; beta = 0, or P25 near-affinity rejection, kills it.",
+      "multiplicity_family_as_declared": "lagged_pace_contrast_family",
+      "arms": [
+        {
+          "arm_id": "A16_lag_residual_own_minus_opp",
+          "provenance": [{"file": "HYPOTHESES_adversarial_identifiability.md", "section": "AI-H1"}],
+          "formula": "y ~ offset(log mu_incumbent) + beta * [dev_own - dev_opp]; dev_team = mean over last k completed games (lag >= 1) of (realized regulation-equivalent possessions - incumbent projection for that game); k preregistered, single value, not searched",
+          "features": [
+            {"name": "lag_pace_dev_contrast", "construction": "per-game realized possession counts (per-game max of canonical_seq + 1, S8 LAGGED_USE_ONLY) normalized by regulation-equivalent duration from lagged duration_sec/period aggregates, minus the incumbent's ARCHIVED projection for each prior game; joined on ELIGIBLE keys (offense_team_id, game_date)", "lineage": "lagged possession aggregates + lagged incumbent projections (team_possession_prior_v1, frozen canonical artifact)", "cutoff_validity_citation": "S8/P2A LAGGED_USE_ONLY licence; P22 guard (same-game joins fail closed); lagged projections inherit D009 standard (a) for the receipted path - noted by this synthesis, not cited by the source (see REPORT, could-not-establish)"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {"k_window_games": "ONE preregistered value; any window-length variant is the same family (source declaration)"}, "note": "k separated from the hypothesis"},
+          "k0_matched": "identical universe, five D006 folds, cluster weights, offset log mu_incumbent, identical fallback and nuisance; excludes only the beta contrast term; no re-centring credit; K0_FLAT diagnostic only",
+          "fold_support": "resolved universe already excludes the no-prior-games stratum, so the lagged deviation is defined on all 2,982 rows in every fold; per-fold rank and condition-number checks must still pass because the contrast is a function of the same evidence stream the offset was built from",
+          "kill_conditions": "death by near-affinity with the offset: the incumbent projection is itself built from lagged pace evidence (pace_gap / pace_evidence_depth on the receipted path), so dev_own - dev_opp may be near-affine to information already in mu_incumbent - P25 rejection, most acutely in train_lt_2022 where the condition number is worst",
+          "notes": "Uses the incumbent's own LAGGED outputs as feature material. This is not the S4 free-slope defect (no current-game projection enters as a feature), but the P25 audit over the complete design is the arm's gate and the preregistration must show the archived per-prior-game projections come from the frozen receipted artifact, not a recomputation."
+        }
+      ]
+    },
+    {
+      "family_id": "F14_DURATION_COMPOSITION_TEMPO",
+      "mechanism": "The shape of a team's trailing possession-duration distribution (transition share; median duration) carries tempo information that the count-based scalar pace estimates behind the offset average away; if neither functional rejects against K0, duration composition adds nothing beyond scalar pace.",
+      "multiplicity_family_as_declared": "CONFLICTING-ADJACENT - LAGGED_TEMPO_MIX (CL-H1, shared with A19) vs OPPONENT_MECHANISM_F1 (OM-H1); preserved",
+      "arms": [
+        {
+          "arm_id": "A17_transition_mix_share",
+          "provenance": [{"file": "HYPOTHESES_cutoff_leakage.md", "section": "CUTOFF_LEAKAGE_H1"}],
+          "formula": "short_off(t,g) = w-weighted share of t's offensive possessions in P(t,g) with duration_sec <= 8; x = (short_off(t,g) + short_def(opp(g,t),g)) / 2; treatment 1 df; weights: exponential decay by game recency, half-life h = 10 games, season-boundary discount lambda = 0.5, both FIXED by the source",
+          "features": [
+            {"name": "duration_sec (lagged share)", "construction": "threshold share at 8 s (fixed, not tuned) under the source's lag operator L (strictly earlier games, same-day fails closed)", "lineage": "possessions_raw_v2 lagged rows", "cutoff_validity_citation": "S8 LAGGED_USE_ONLY ('only an aggregate over STRICTLY EARLIER games may be proposed'); P22 proof that lagged prior-game duration passes all cutoff checks"},
+            {"name": "offense_team_id / defense_team_id / game_date", "construction": "identity attribution and cutoff boundary", "lineage": "possessions_raw_v2 / schedule", "cutoff_validity_citation": "S8 ELIGIBLE"}
+          ],
+          "hyperparameters": {"fixed": {"short_threshold_sec": 8, "half_life_games": 10, "season_boundary_discount": 0.5}, "grid_or_choice_set": {}, "note": "all constants frozen by the source before the preregistration chain; not tunable inside it (source declaration, carried)"},
+          "k0_matched": "identical rows/target/five folds/cluster weights/frozen offset/frozen fallback machinery plus nuisance set incl. is_playoff_game with the section-4 fold-2026 fallback declared; treatment adds ONLY x; no re-centring, changed fallback or estimator credit",
+          "fold_support": "defined on every resolved row (|P| >= 1 by universe construction), bounded [0,1], continuous; short possessions exist in every season; verified prospectively by fold_estimability_guard before any result; no tier ladder",
+          "kill_conditions": "preregistered score/LR test vs K0 null on fold-aggregated evaluation; or P25 finds x near-affine in the offset (mixture share re-encoding trailing pace)",
+          "notes": "Symmetric combination (own offense + opponent defense). Preserved formulation disagreement with A18 (antisymmetric median contrast): tail-share vs median, symmetric vs antisymmetric - two functionals of one mechanism, deliberately both carried."
+        },
+        {
+          "arm_id": "A18_median_duration_contrast",
+          "provenance": [{"file": "HYPOTHESES_opponent_mechanism.md", "section": "OPPONENT_MECHANISM_H1"}],
+          "formula": "z1 = med_dur_opp - med_dur_own; med_dur_team = median duration_sec over that team's offensive possessions in strictly earlier SAME-SEASON games; enters untransformed (seconds); expected beta1 > 0; E = 3 imputation: z1 = 0 when either team has < 3 completed prior same-season games (deterministic, symmetric, preregistered)",
+          "features": [
+            {"name": "duration_sec (lagged median)", "construction": "same-season strictly-earlier median per team; robust to OT, technical/zero-duration and garbage-time tails (the stated statistical ground)", "lineage": "possessions_raw_v2 lagged rows", "cutoff_validity_citation": "S8 LAGGED_USE_ONLY; P22 guard"},
+            {"name": "offense_team_id / game_date / game_id", "construction": "identity join, cutoff boundary, join key", "lineage": "schedule/possessions", "cutoff_validity_citation": "S8 ELIGIBLE"}
+          ],
+          "hyperparameters": {"fixed": {"E_min_prior_games": 3, "window": "same-season flat (no decay)"}, "grid_or_choice_set": {}, "note": "trailing-window convention differs from A17's cross-season decayed operator - a preserved formulation divergence (D6), unified per-arm at preregistration, never averaged"},
+          "k0_matched": "null holds identical rows/target/folds/weights/offset and the identical E=3 imputation machinery; no nuisance requested (no tier structure, no lower-order terms owed); treatment adds ONLY z1; antisymmetric within cluster, structurally orthogonal to cluster-constant terms",
+          "fold_support": "continuous contrast, nonzero cross-team variance every season; single antisymmetric column, full rank in all five training folds; E=3 rule is the preregistered active-set/imputation declaration",
+          "kill_conditions": "cluster-resampled interval for beta1 covers 0, or primary gate fails vs K0; WITHDRAWN as design failure (not a null result) if the P25 audit finds z1 near-affine in the offset or in pace_gap in every training fold",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "family_id": "F15_TURNOVER_FORCING_CHANNEL",
+      "mechanism": "Defensive live-ball turnover forcing truncates possessions and launches immediate alternations, raising possession counts through a creation channel distinct from clock tempo; if neither the symmetric mix nor the antisymmetric contrast of the lagged forced-turnover share rejects against K0, the channel adds nothing beyond the offset.",
+      "multiplicity_family_as_declared": "CONFLICTING-ADJACENT - LAGGED_TEMPO_MIX (CL-H4, with A17) vs OPPONENT_MECHANISM_F1 (OM-H2); preserved",
+      "arms": [
+        {
+          "arm_id": "A19_forced_turnover_mix",
+          "provenance": [{"file": "HYPOTHESES_cutoff_leakage.md", "section": "CUTOFF_LEAKAGE_H4"}],
+          "formula": "fto(t,g) = w-weighted share of t's DEFENSIVE possessions in P(t,g) with end_reason in E_LB (fixed live-ball-turnover level dictionary, preregistered as an explicit list; unmapped levels count only in the denominator - fail closed); x = (fto(t,g) + fto(opp(g,t),g)) / 2; 1 df",
+          "features": [
+            {"name": "end_reason (lagged categorical share)", "construction": "fixed E_LB dictionary; schema drift across eras handled entirely by the fail-closed dictionary, never by conditioning on the CUTOFF_UNPROVEN era column", "lineage": "possessions_raw_v2 lagged rows", "cutoff_validity_citation": "S8 LAGGED_USE_ONLY; P22 guard"},
+            {"name": "defense_team_id / game_date", "construction": "identity attribution of the defensive possession; cutoff boundary", "lineage": "possessions/schedule", "cutoff_validity_citation": "S8 ELIGIBLE"}
+          ],
+          "hyperparameters": {"fixed": {"half_life_games": 10, "season_boundary_discount": 0.5, "E_LB_dictionary": "explicit level list frozen before any fit"}, "grid_or_choice_set": {}, "note": "dictionary is specification, not a tuned choice"},
+          "k0_matched": "same null machinery as A17; treatment adds ONLY x; declared: if this and A17 are ever carried in one arm, the null of each must contain the other - separate arms in the same declared family precisely so neither borrows the other's credit",
+          "fold_support": "fixed dictionary removes the fold-local unseen-level hazard (S7 unique-level check); shares defined and bounded on all rows; turnovers occur in every season",
+          "kill_conditions": "null vs K0; within-family redundancy conditional on A17 (family scored jointly, weaker member dropped by the preregistered family rule, not post hoc); P25 rejection",
+          "notes": "Preserved formulation disagreement with A20: symmetric mix (game-level creation intensity) vs antisymmetric contrast (which side forces more) - orthogonal projections of (own, opp), both estimable, deliberately both carried."
+        },
+        {
+          "arm_id": "A20_forced_turnover_contrast",
+          "provenance": [{"file": "HYPOTHESES_opponent_mechanism.md", "section": "OPPONENT_MECHANISM_H2"}],
+          "formula": "z2 = ftr_own - ftr_opp; ftr_team = share of that team's DEFENSIVE possessions with a turnover-terminator end_reason over strictly earlier same-season games; frozen level mapping from the artifact's dictionary before any fit; E = 3 imputation as A18; expected beta2 > 0",
+          "features": [
+            {"name": "end_reason (lagged share)", "construction": "turnover-terminator level set frozen pre-fit; data-dictionary lookup, not tuned", "lineage": "possessions_raw_v2 lagged rows", "cutoff_validity_citation": "S8 LAGGED_USE_ONLY; P22 guard"},
+            {"name": "defense_team_id / game_date / game_id", "construction": "identity/grouping and join keys", "lineage": "possessions/schedule", "cutoff_validity_citation": "S8 ELIGIBLE"}
+          ],
+          "hyperparameters": {"fixed": {"E_min_prior_games": 3, "window": "same-season flat"}, "grid_or_choice_set": {}, "note": "window convention divergence from A19 preserved (D6)"},
+          "k0_matched": "null holds identical rows/target/folds/weights/offset and the E=3 imputation machinery, no other candidate column; treatment adds ONLY z2; a joint H1+H2 arm would be a NEW arm with its own K0 - declared now",
+          "fold_support": "proportion strictly inside (0,1) with cross-team variance every season; single antisymmetric column, full rank all five folds; no level-support or tier issue",
+          "kill_conditions": "cluster-resampled interval covers 0 or no primary-gate improvement; WITHDRAWN as design failure if the frozen end_reason dictionary cannot distinguish turnover terminators (mechanism unmeasurable in this artifact) or if the P25 audit finds z2 jointly reconstructing the offset with any nuisance column",
+          "notes": "Value channel is the primary possession target itself (more forced turnovers -> more possessions for BOTH cluster rows); explicitly NOT the frozen turnover scorer (P28 respected)."
+        }
+      ]
+    },
+    {
+      "family_id": "F16_EVIDENCE_CONTAMINATION",
+      "mechanism": "The incumbent's trailing-pace evidence is partly generated in non-competitive game states where possession generation departs from competitive play, so rows whose trailing evidence is more garbage-time-contaminated deviate predictably from the offset; a null test, or absorption by evidence depth, kills it.",
+      "multiplicity_family_as_declared": "EVIDENCE_QUALITY_CORRECTION",
+      "arms": [
+        {
+          "arm_id": "A21_garbage_time_contamination",
+          "provenance": [{"file": "HYPOTHESES_cutoff_leakage.md", "section": "CUTOFF_LEAKAGE_H2"}],
+          "formula": "nc(t,g) = w-weighted share of t's offensive possessions in P(t,g) flagged non_competitive_conservative; x = (nc(t,g) + nc(opp(g,t),g)) / 2; 1 df",
+          "features": [
+            {"name": "non_competitive_conservative (lagged share)", "construction": "lagged aggregate only, under the source's lag operator L", "lineage": "possessions_raw_v2 enrich() GARBAGE_RULE column, lagged", "cutoff_validity_citation": "S8 LAGGED_USE_ONLY (exactly reproducible from three realized columns; pre-possession within its own game; used here only over strictly earlier completed games); P22 guard"},
+            {"name": "offense_team_id / game_date", "construction": "identity, cutoff boundary", "lineage": "possessions/schedule", "cutoff_validity_citation": "S8 ELIGIBLE"}
+          ],
+          "hyperparameters": {"fixed": {"half_life_games": 10, "season_boundary_discount": 0.5}, "grid_or_choice_set": {}, "note": "frozen by source"},
+          "k0_matched": "identical to A17's null; treatment adds ONLY x; K0 is NOT granted any re-weighting of its evidence - the arm must show the correction as an additive term, never smuggle a better estimator (core rule: no credit for free re-centring or changed fallback)",
+          "fold_support": "defined on every row, bounded [0,1]; blowouts occur in every season so within-fold variance expected in all five folds; S7 guard prospective; no tiers",
+          "kill_conditions": "null preregistered test vs K0; or the preregistered robustness check - adding pace_evidence_depth (D009 standard (a)) to the nuisance set - absorbs the effect, meaning x proxies evidence VOLUME not contamination: the mechanism is falsified even if the naive test is positive",
+          "notes": ""
+        }
+      ]
+    },
+    {
+      "family_id": "F17_PERSONNEL_CONTINUITY_CHURN",
+      "mechanism": "Pace is produced by the players on the floor, so when the personnel behind a team's trailing evidence differ from the personnel most recently observed, the trailing estimate mis-projects; lineup churn from PRIOR games' realized lineups is the cutoff-valid footprint of that discontinuity, and its death also removes the mechanistic warrant for prospective injury capture on this target.",
+      "multiplicity_family_as_declared": "PERSONNEL_CONTINUITY",
+      "arms": [
+        {
+          "arm_id": "A22_lineup_churn_tv_distance",
+          "provenance": [{"file": "HYPOTHESES_cutoff_leakage.md", "section": "CUTOFF_LEAKAGE_H3"}],
+          "formula": "u_last(j) = player j's share of t's offensive possessions in the MOST RECENT prior game; u_base(j) = w-decayed share over P(t,g) excluding that game; churn(t,g) = 0.5 * sum_j |u_last(j) - u_base(j)| in [0,1]; x = (churn(t,g) + churn(opp(g,t),g)) / 2; preregistered rule: churn := 0 when |P(t,g)| = 1 (no base window - 'no evidence of change'), symmetric, training-support-independent, receipt-recorded per S7",
+          "features": [
+            {"name": "off_p1..off_p5 of STRICTLY EARLIER games", "construction": "usage vectors over unordered player-id sets (ascending-order-statistics caveat respected: no positional meaning used)", "lineage": "derive_lineups -> source pbp, lagged only", "cutoff_validity_citation": "S8 LAGGED_USE_ONLY (realized lineups are target-game outcomes; used ONLY from strictly earlier completed games); P22 guard"},
+            {"name": "offense_team_id / game_date", "construction": "identity, cutoff boundary", "lineage": "possessions/schedule", "cutoff_validity_citation": "S8 ELIGIBLE"}
+          ],
+          "hyperparameters": {"fixed": {"half_life_games": 10, "season_boundary_discount": 0.5}, "grid_or_choice_set": {}, "note": "frozen by source"},
+          "k0_matched": "same null machinery as A17/A21; treatment adds ONLY x; the churn-by-depth interaction is explicitly NOT in this arm (it would be a separate arm whose K0 must carry both mains)",
+          "fold_support": "defined on every row via the preregistered |P|=1 rule (such rows exist only in early-2021 inside train_lt_2022's training window); bounded [0,1]; roster churn exists every season; S7 prospective",
+          "kill_conditions": "null test vs K0; or pace_evidence_depth added to the nuisance set absorbs the effect (churn proxying thin evidence rather than personnel change) - either kills the arm AND the priority claim of prospective injury capture on this target",
+          "notes": "The injury family itself contributes ZERO candidates this wave (P24: 0 cutoff-valid rows in every fold); this arm is the mandated cutoff-valid twin, not an injury feature. PRESERVED CONTRADICTION D4 applies (opponent_mechanism source held the lineup family empty)."
+        }
+      ]
+    },
+    {
+      "family_id": "F18_SCHEDULE_REST",
+      "mechanism": "Rest and schedule load move the possession-generating behaviours (transition pushes, pressure, rotation depth): the rest DIFFERENTIAL predicts which team drags the tempo equilibrium, and the rest LEVEL predicts overall depression; a null on both components kills fatigue as a pace mechanism on this universe.",
+      "multiplicity_family_as_declared": "CONFLICTING-ADJACENT - schedule_context_family (AI-H2, with A25) vs OPPONENT_MECHANISM_F1 (OM-H4) vs SCHEDULE_FATIGUE (CL-H5); preserved",
+      "arms": [
+        {
+          "arm_id": "A23_rest_differential_contrast",
+          "provenance": [
+            {"file": "HYPOTHESES_adversarial_identifiability.md", "section": "AI-H2 (canonical formulation)"},
+            {"file": "HYPOTHESES_opponent_mechanism.md", "section": "OPPONENT_MECHANISM_H4 (duplicate formulation, merged; see rejections R2)"}
+          ],
+          "formula": "y ~ offset(log mu_incumbent) + beta * [f(rest_own) - f(rest_opp)]; rest = days since the team's previous scheduled/completed same-season game; f = min(rest, c) with cap c from the choice set; antisymmetric within cluster",
+          "features": [
+            {"name": "rest_days_contrast", "construction": "pure schedule arithmetic from game_date and team identities; touches NO realized column - cutoff-valid by construction rather than by lag argument; satisfies even the strict D009 standard (b) trivially", "lineage": "game_date + offense_team_id/defense_team_id identity joins", "cutoff_validity_citation": "S8: game_date ELIGIBLE ('the cutoff boundary itself'); team ids ELIGIBLE by identity join per the SEVERE multiplicity hazard note; only leakage channel is master_team's revision risk on the game_date join, receipted by P23"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {"cap_days": [4, 7], "season_opener_rule": ["S7 preregistered training-support-based symmetric fallback (AI-H2)", "assign cap value = fully rested, deterministic, no active-set rule needed (OM-H4)"]}, "note": "each source FROZE its own cap (4 and 7) and its own opener rule; merging makes them a preregistration CHOICE SET, not a tuned grid - exactly one element of each set is selected at P33-P37 or the set is counted in the family multiplicity budget; the disagreement is preserved (D6/D7), never averaged"},
+          "k0_matched": "identical everything; excludes only the rest contrast; season-opener handling identical in arm and null under whichever opener rule is selected, declared before results per GATE_INVOCATION_CONTRACT section 4",
+          "fold_support": "rest defined for every row except season openers (or every row, under the OM opener rule); variance nonzero in every fold (schedule congestion incl. Commissioner's Cup compression); zero-variance and unique-level checks expected to pass",
+          "kill_conditions": "identified but empty: if the incumbent already conditions on schedule density, beta is estimable but shows no gain over K0; effect size may sit below cluster-bootstrap resolution on ~1,491 clusters; OM addition carried: a sign OPPOSITE to prediction with an interval excluding 0 kills the mechanism as stated, no post-hoc reinterpretation; D010: opener-fallback performance is flattered by construction and must not be cited as evidence the fallback is safe",
+          "notes": ""
+        },
+        {
+          "arm_id": "A24_rest_level_symmetric",
+          "provenance": [{"file": "HYPOTHESES_cutoff_leakage.md", "section": "CUTOFF_LEAKAGE_H5"}],
+          "formula": "rest(t,g) = min(d_g - max prior contract game date of t, 10); x = (rest(t,g) + rest(opp(g,t),g)) / 2; 1 df; cross-season prior games allowed (cap bounds offseason leverage)",
+          "features": [
+            {"name": "rest level (symmetric mean)", "construction": "pure schedule arithmetic; only lag content is the EXISTENCE of the prior completed game - the universe's own resolvedness criterion", "lineage": "game_date + team identities", "cutoff_validity_citation": "S8 ELIGIBLE; no realized-outcome column touched"}
+          ],
+          "hyperparameters": {"fixed": {"cap_days": 10}, "grid_or_choice_set": {}, "note": "cap frozen by source; differs from A23's caps - preserved divergence (D6)"},
+          "k0_matched": "same null machinery; treatment adds ONLY x",
+          "fold_support": "defined on every resolved row; in-season rest varies every season; S7 prospective",
+          "kill_conditions": "null preregistered test vs K0 kills it; no scorer-mismatch channel and no offset-affinity risk expected - if the P25 guard nonetheless flags it, that is evidence the incumbent already encodes schedule structure, and the arm dies",
+          "notes": "Retained as a distinct arm, not a duplicate of A23: symmetric and antisymmetric combinations are orthogonal components of (rest_own, rest_opp) testing different predictions (game-level depression vs equilibrium drag). Source also declared this arm the LAG OPERATOR'S POSITIVE CONTROL: it is the maximally provable lagged construction (pure schedule arithmetic), so if the preregistration machinery cannot cleanly evaluate it, no lagged-arm result should be trusted - role note preserved."
+        }
+      ]
+    },
+    {
+      "family_id": "F19_HOME_TEMPO_RESIDUAL",
+      "mechanism": "Home offenses play marginally faster than the frozen offset prices, identified as a pure within-cluster contrast (each game cluster carries exactly one home and one away row resampled together); a covered-zero interval is a genuine null certifying that the offset already prices home tempo.",
+      "multiplicity_family_as_declared": "CONFLICTING-ADJACENT - schedule_context_family (AI-H3, with A23) vs OPPONENT_MECHANISM_F1 (OM-H3); preserved",
+      "arms": [
+        {
+          "arm_id": "A25_home_offense_contrast",
+          "provenance": [
+            {"file": "HYPOTHESES_adversarial_identifiability.md", "section": "AI-H3 (canonical formulation)"},
+            {"file": "HYPOTHESES_opponent_mechanism.md", "section": "OPPONENT_MECHANISM_H3 (duplicate formulation, merged; see rejections R1)"}
+          ],
+          "formula": "y ~ offset(log mu_incumbent) + beta * h; h = is_home_offense (0/1) or equivalently +/-1 antisymmetric coding - affinely identical design columns beside the offset and intercept structure",
+          "features": [
+            {"name": "is_home_offense", "construction": "identity join (drop_duplicates) per the S8 hazard note - never a row aggregate, since row multiplicity of the identity columns IS the target numerator", "lineage": "schedule-determined home/away mapping", "cutoff_validity_citation": "S8 ELIGIBLE ('home/away mapping, schedule-determined and known pregame; measured constant within (game_id, offense_team_id)')"}
+          ],
+          "hyperparameters": {"fixed": {}, "grid_or_choice_set": {}, "note": "none; the 0/1 vs +/-1 coding is affinely equivalent, not a hyperparameter"},
+          "k0_matched": "identical everything; excludes only the home term; no tier structure so the P27 tier-support constraint is vacuous; no imputation machinery",
+          "fold_support": "exactly 50/50 balanced within every fold by construction (games never split; both rows carried); full rank trivially; no degeneracy possible in any fold including 2026 - the strongest possible fold-support guarantee",
+          "kill_conditions": "cluster-resampled interval for beta covers 0 - the preregistered interpretation of that null is that the offset already prices home tempo; high prior probability of dying exactly that way, accepted",
+          "notes": "BOTH sources independently assign this arm the guard positive-control role: it is nearly failure-mode-free at the guard level, so a null here is a genuine null, and if ANY guard declares it UNEVALUABLE the guard configuration - not the arm - is suspect. Role preserved."
+        }
+      ]
+    },
+    {
+      "family_id": "F20_SOS_CORRECTION_CONTRAST",
+      "mechanism": "In a 12-13 team league, trailing pace signatures are confounded by opponent mix, and the leave-one-out strength-of-schedule CORRECTION term - not the adjusted pace itself - is the piece an offset built on raw signatures cannot contain; beta5 = 0, or a P25 finding that the incumbent already implicitly schedule-adjusts, kills it.",
+      "multiplicity_family_as_declared": "OPPONENT_MECHANISM_F1",
+      "arms": [
+        {
+          "arm_id": "A26_sos_correction_own_minus_opp",
+          "provenance": [{"file": "HYPOTHESES_opponent_mechanism.md", "section": "OPPONENT_MECHANISM_H5"}],
+          "formula": "raw_t = mean per-team-game possession row count over t's strictly earlier same-season games; sched_t = mean over those games of raw_{opp(g)} computed leave-one-out; both centered on the league trailing mean at d; c_t = -sched_t; z5 = c_own - c_opp; expected beta5 > 0; OT games enter raw on BOTH sides of every mean, preregistered as-is (no OT reweighting; any OT adjustment would be a separate arm and none is proposed; the correction contrast differences OT noise symmetrically - the raw/regulation-equivalent mismatch is NOT a value channel)",
+          "features": [
+            {"name": "lagged possession counts + LOO opponent means", "construction": "per-(game, team) row counts in the possessions artifact restricted to strictly earlier games; the S8 SEVERE row-multiplicity hazard applies to the TARGET game - here counts are taken ONLY over completed earlier games, the lagged construction the table permits proposing", "lineage": "possessions_raw_v2 lagged rows; opponent located via identity keys", "cutoff_validity_citation": "S8 LAGGED_USE_ONLY licence; P22 guard, lag >= 1"},
+            {"name": "offense_team_id / defense_team_id / game_date / game_id", "construction": "identity, cutoff boundary, join keys", "lineage": "possessions/schedule", "cutoff_validity_citation": "S8 ELIGIBLE"}
+          ],
+          "hyperparameters": {"fixed": {"E_min_prior_games": 3, "imputation": "z5 = 0 when either team has < 3 prior same-season games or any required LOO opponent mean is undefined - deterministic, symmetric, preregistered"}, "grid_or_choice_set": {}, "note": "frozen by source"},
+          "k0_matched": "null holds identical rows/target/folds/weights/offset and the identical E=3-plus-undefined-LOO imputation machinery; treatment adds ONLY z5; the league-mean centering inside z5 is part of the feature DEFINITION, not a design change - the null never sees the column",
+          "fold_support": "continuous with cross-cluster variance every season (schedule imbalance largest early, persists all season); imputation rule covers every row deterministically so the column exists on all 2,982 rows in all five folds; single antisymmetric column, full rank per fold; D010 caveat carried explicitly - reported on both universes per do_not_substitute",
+          "kill_conditions": "cluster-resampled interval covers 0 or no primary-gate improvement; WITHDRAWN as design failure (before any performance number) if the P25 audit finds z5 near-affine in the offset or pace_gap within training folds - meaning the incumbent's construction already implicitly schedule-adjusts",
+          "notes": "Distinct from F13 (residual momentum): the confounder corrected here is opponent MIX, and the correction term is constructed without the incumbent's projections."
+        }
+      ]
+    }
+  ],
+  "rejections": [
+    {
+      "rejection_id": "R1",
+      "candidate": "OPPONENT_MECHANISM_H3 - within-cluster home/away antisymmetric term z3 = +/-1",
+      "source_files": ["HYPOTHESES_opponent_mechanism.md (section OPPONENT_MECHANISM_H3)"],
+      "reason": "duplicate formulation",
+      "detail": "z3 = 2*is_home_offense - 1 is an affine recoding of AI-H3's design column; beside the offset and intercept structure the two designs span the identical space, test the identical mechanism (residual home tempo), and share the identical within-cluster identification argument. Content fully preserved in the canonical arm.",
+      "canonical_retained_arm": "A25_home_offense_contrast (family F19)"
+    },
+    {
+      "rejection_id": "R2",
+      "candidate": "OPPONENT_MECHANISM_H4 - rest differential z4 = rest_own - rest_opp, cap 4",
+      "source_files": ["HYPOTHESES_opponent_mechanism.md (section OPPONENT_MECHANISM_H4)"],
+      "reason": "duplicate formulation",
+      "detail": "Identical mechanism (rest asymmetry drags the tempo equilibrium) and identical functional class as AI-H2's f(rest_own) - f(rest_opp); the differences - cap 4 vs 7, opener rule cap-assignment vs S7 fallback - are hyperparameter/specification choices, separated into A23's choice sets and preserved as disagreements D6/D7 rather than averaged. OM-H4's sharper kill condition (opposite-sign rejection) is carried into the canonical arm.",
+      "canonical_retained_arm": "A23_rest_differential_contrast (family F18)"
+    },
+    {
+      "rejection_id": "R3",
+      "candidate": "COLDSTART_FALLBACK_H2 - evidence-depth-indexed calibration slope b(depth) = 1 + gamma/(1 + depth/5)",
+      "source_files": ["HYPOTHESES_coldstart_fallback.md (section COLDSTART_FALLBACK_H2)"],
+      "reason": "duplicate formulation",
+      "detail": "Identical mechanism to CALIBRATION_CONTROL_H4 (the shrinkage gain on the offset's centered deviation depends on evidence depth), same feature (pace_evidence_depth under D009 standard (a)), same family assignment (calibration). The continuous kernel is preserved as a basis option in A04's hyperparameter choice set. MATERIAL NULL DISAGREEMENT PRESERVED (D1a): CF-H2's null carries slope-1 only, CC-H4's null carries the tier main AND the global slope; the stricter null governs per RESEARCH_CONTRACT_V1 precedence and per S4 (a free slope the control lacks is the confound).",
+      "canonical_retained_arm": "A04_cal_depth_indexed_slope (family F04)"
+    },
+    {
+      "rejection_id": "R4",
+      "candidate": "AI-H5 - within-season schedule-index drift g(schedule_index)",
+      "source_files": ["HYPOTHESES_adversarial_identifiability.md (section AI-H5)"],
+      "reason": "duplicate formulation",
+      "detail": "Identical mechanism to CALIBRATION_CONTROL_H5 (league tempo drifts within the season and the offset lags it), identical feature material (game_date-derived within-season position, season never entering per the S8 fold-identifier hazard), identical S9-aware nested-null discipline. The monotone-transform basis is preserved as an option in A06's basis choice set; AI-H5's truncated-2026 binding declaration and the level-transport trap framing are carried verbatim into A06. MULTIPLICITY-FAMILY ASSIGNMENT DISAGREEMENT PRESERVED (D2): CC-H5 declared CALIBRATION_CONTROL_FAMILY, AI-H5 declared temporal_drift_family.",
+      "canonical_retained_arm": "A06_season_phase_drift (family F06)"
+    },
+    {
+      "rejection_id": "R5",
+      "candidate": "AI-H4 - lagged overtime-exposure arm (lag_ot_share beside the offset)",
+      "source_files": ["HYPOTHESES_adversarial_identifiability.md (section AI-H4)"],
+      "reason": "downstream-mismatch-exploitation-only",
+      "detail": "As a PROMOTION candidate on the primary target, this arm's hypothesized primary-target signal is ZERO by its own construction: the source itself states that a nonzero coefficient is a measured defect in the normalization chain, not a pace discovery, and preregisters that gain over K0 triggers a pipeline investigation, not a candidate promotion. V2_STOP_CONDITION's recorded E5 observation is that trailing OT rate's only downstream benefit channel is arbitraging the OT bias on 132 rows - improving turnover MAE while WORSENING the primary target - which is the named exclusion. Rejecting it from the CANDIDATE universe is therefore consistent with the source's own intent. THE AUDIT CONTENT IS PRESERVED, NOT DISCARDED: the report recommends the same construction be run in a DIAGNOSTIC lane (never as a challenger, never entering the promotion multiplicity accounting), because a nonzero lagged-OT coefficient would indict the regulation-equivalent normalization chain and that is worth knowing. That recommendation is advisory; this node does not create the diagnostic.",
+      "canonical_retained_arm": null
+    }
+  ],
+  "rejection_category_scan": {
+    "offset_reconstruction": "ZERO candidates rejected under this reason. No source proposed the own/opp pair, the incumbent's current projection as a substantive feature, or any exact/near-exact affine function of the offset outside the declared calibration family. Candidates at elevated P25 risk are flagged inside their arm definitions (A08, A09, A10, A16, A26) with withdrawal-on-audit-failure declared; that is the guard's adjudication to make at preregistration, not a design-time rejection.",
+    "postgame_surrogate": "ZERO candidates rejected under this reason. Every realized-column construction in all 31 candidates is a strictly-lagged aggregate under the P22 discipline with same-game joins failing closed; no same-game surrogate for duration/overtime/game_minutes appears in any prediction path.",
+    "cutoff_unproven_injury_field": "ZERO candidates rejected under this reason because ZERO were proposed: all six sources honoured P24's measured result (0 cutoff-valid injury rows in every fold). A22 is the mandated cutoff-valid twin built from lagged lineups, not an injury field.",
+    "unsafe_fan_out_feature": "ZERO candidates rejected under this reason. No candidate joins team_cities or proposes venue/travel/elevation/timezone features (the S2 hazard set). The PHO/PHX duplicate (team_id 1611661317) precondition binds A14 by the source's own declaration and is EXTENDED by this synthesis to every cross-season franchise-history construction (A11, A12, A13): P23 merge-guard receipts required at preregistration.",
+    "fold_degenerate": "ZERO candidates rejected under this reason. The two support-risk candidates are retained WITH their preregistered remedies, exactly as the packet's S7 clause prescribes: A05 (playoff intercept; test-side-2026 degeneracy, section-4 fallback declared, effective evidence base four folds) and A14 (expansion stratum; support unmeasurable from this node's read scope, retirement rule declared). A candidate with a KNOWN blocking training-fold degeneracy and no declared remedy would have been rejected; none exists in the union.",
+    "duplicate_formulation": "FOUR rejected: R1, R2, R3, R4.",
+    "downstream_mismatch_exploitation_only": "ONE rejected: R5."
+  },
+  "preserved_disagreements": [
+    {"id": "D1", "between": ["HYPOTHESES_timeseries_shrinkage.md TS3", "HYPOTHESES_coldstart_fallback.md COLDSTART_FALLBACK_H1"], "what": "Opposite null presumptions about the frozen incumbent's prior-season pooling: TS3's null fixes rho = 1 (incumbent-equivalent UNDIFFERENTIATED pooling of prior-season evidence), CF-H1's null contains NO carryover term (incumbent presumed to under-use or not use prior season). Both cannot be the correct nested null. NOT resolved here: resolution requires reading the incumbent's receipted construction (no performance peeking), which is P33-P37 work. Both arms carried (A11, A12) with the disagreement stamped on each."},
+    {"id": "D1a", "between": ["HYPOTHESES_calibration_control.md CALIBRATION_CONTROL_H4", "HYPOTHESES_coldstart_fallback.md COLDSTART_FALLBACK_H2"], "what": "Null structure for the depth-indexed slope: CC-H4's null carries tier main + global slope; CF-H2's null carries slope-1 only. Stricter null adopted for A04 per RESEARCH_CONTRACT_V1 ('the stricter governs') and S4; the weaker formulation recorded here, not silently discarded."},
+    {"id": "D2", "between": ["HYPOTHESES_calibration_control.md CALIBRATION_CONTROL_H5", "HYPOTHESES_adversarial_identifiability.md AI-H5", "HYPOTHESES_coldstart_fallback.md COLDSTART_FALLBACK_H3"], "what": "Three multiplicity-family assignments for the within-season-drift mechanism: CALIBRATION_CONTROL_FAMILY vs temporal_drift_family vs COLDSTART_FALLBACK. Affects family-wise error budgeting, not fold/cluster inference structure. Preserved; the multiplicity partition is fixed at P33-P37."},
+    {"id": "D3", "between": ["HYPOTHESES_calibration_control.md CALIBRATION_CONTROL_H6", "HYPOTHESES_coldstart_fallback.md standing constraint 4"], "what": "Admissibility of any new is_playoff_game term: coldstart source excludes it outright as fold-degenerate (S7); calibration source proposes it with the declared GATE_INVOCATION_CONTRACT section-4 fallback, which is the remedy the packet's S7 clause itself names. A05 retained with the objection attached; both positions travel to preregistration."},
+    {"id": "D4", "between": ["HYPOTHESES_opponent_mechanism.md 'What was considered and NOT proposed'", "HYPOTHESES_cutoff_leakage.md CUTOFF_LEAKAGE_H3", "HYPOTHESES_coldstart_fallback.md COLDSTART_FALLBACK_H4"], "what": "Admissibility of lagged-lineup constructions: the opponent_mechanism source declares the lineup family EMPTY this wave ('the mandate restricts lineup-availability mechanisms to ELIGIBLE columns and no ELIGIBLE column carries lineup content') while two other sources build lagged off_p*/def_p* features under the S8 LAGGED_USE_ONLY licence to propose. The packet's S8 licence governs this synthesis (A13, A22 retained); the narrower reading is preserved verbatim. Probable cause is a role-mandate scope difference, but the two thin-briefed sources' ROLE_PROMPTs never existed on disk and the OM prompt is not among this node's inputs, so the cause COULD NOT BE ESTABLISHED."},
+    {"id": "D5", "between": ["HYPOTHESES_timeseries_shrinkage.md family declaration", "HYPOTHESES_coldstart_fallback.md family declaration"], "what": "TS3 declared inside the timeseries_shrinkage multiplicity family; the mechanistically-equivalent CF-H1/CF-H4 declared inside COLDSTART_FALLBACK. Same budgeting consequence as D2; preserved."},
+    {"id": "D6", "between": ["HYPOTHESES_cutoff_leakage.md lag operator L", "HYPOTHESES_opponent_mechanism.md shared conventions", "HYPOTHESES_adversarial_identifiability.md AI-H1", "HYPOTHESES_timeseries_shrinkage.md notation"], "what": "Four incompatible frozen trailing-window conventions for lagged evidence: cross-season exponential decay h=10 games with lambda=0.5 season discount (CL); same-season flat means with E=3 imputation (OM); last-k window, single preregistered k (AI); all-prior-games flat/EWMA-on-grid (TS). Each source froze its own constants as non-tunable. Preserved per-arm exactly as declared; the preregistration node must NOT harmonize them into one pooled grid without counting the choice in the relevant family's multiplicity budget."},
+    {"id": "D7", "between": ["HYPOTHESES_adversarial_identifiability.md AI-H2", "HYPOTHESES_opponent_mechanism.md OPPONENT_MECHANISM_H4", "HYPOTHESES_cutoff_leakage.md CUTOFF_LEAKAGE_H5"], "what": "Three season-opener rest rules (S7 fallback; cap-assignment 'fully rested'; cross-season prior game) and three frozen caps (7, 4, 10). Preserved as A23's explicit choice sets and A24's fixed cap; never averaged."},
+    {"id": "D8", "between": ["HYPOTHESES_timeseries_shrinkage.md provenance attestation", "GENERATION_ORDER_V3.json deviations_recorded"], "what": "The timeseries source attests the staging packet copy was 'the only copy in existence'; GENERATION_ORDER records isolation-directory copies existed for four sources (byte-identical, hash-verified). A provenance-narrative overstatement by the thin-briefed source, immaterial to content (its computed packet hash matches the frozen value); recorded as a document-vs-document contradiction, not repaired."}
+  ],
+  "could_not_establish": [
+    "Whether any training fold contains >= 10 clusters of expansion team-games (A14's support): the schedule artifacts lie outside this node's read scope (experiments/player_program/ only); the P27 guard measures it at preregistration.",
+    "Which of the two carryover nulls (D1) matches the frozen incumbent's actual construction: requires reading the receipted incumbent build, deliberately not done here to stay inside the synthesis mandate; flagged for P33-P37.",
+    "Whether archived per-prior-game incumbent projections used by A16 are retrievable as frozen receipted rows of team_possession_prior_v1 without recomputation: asserted plausible from PROGRAM_STATE's frozen-artifact listing, not verified against bytes (artifact outside read scope for content verification of projections per game).",
+    "The cause of the D4 admissibility split (role-mandate wording): the six ROLE_PROMPT files are not among this node's frozen inputs and two never existed on disk (GENERATION_ORDER deviations).",
+    "Whether the end_reason level dictionaries required by A19/A20 actually distinguish live-ball turnover terminators in the artifact: a data question outside read scope; both arms carry withdrawal-as-design-failure if it fails."
+  ],
+  "stop_condition": {
+    "tripped": false,
+    "detail": "Nothing in the union or in this synthesis changes the primary target, the K0 structure (per-arm K0_MATCHED map stands), the five-fold inference structure or game clustering, the candidate universe (2,982/1,491), the cutoff-valid feature set as adjudicated by the packet, or the leakage status. The preserved disagreements are formulation- and accounting-level and are assigned to the preregistration chain, where the packet already places them."
+  }
+}
