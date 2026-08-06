@@ -1,0 +1,551 @@
+{
+ "schema": "market_program/MODEL_VS_MARKET/model_vs_market/1",
+ "generated_utc": "2026-08-06T22:09:08.180073+00:00",
+ "decision_authority": [
+  "D023_MARKET_PROGRAM_AUTHORIZED",
+  "D027_PROPS_HISTORICAL_BOUNDED_USES",
+  "D034_GRADUATION_STANDARD",
+  "D036_SCOREBOARD_MEASUREMENT_SEMANTICS",
+  "D037 (VERIFICATION_REPORT.md, RECEIPTED legacy artifacts)"
+ ],
+ "evidence_class": "PRELIMINARY",
+ "evidence_class_reason": "matched-universe retrospective comparison of a RECEIPTED legacy generation-only artifact against a T1 vendor-asserted props archive; not a preregistered family endpoint; no evidence-ladder label (contract section 3) is claimed or held",
+ "evidence_ladder_labels_held": [],
+ "opportunity_class_context": "informs MODEL_VS_MARKET_VALUE (contract section 1.4) but is NOT an F8 preregistered endpoint and confers no label",
+ "m00_bounded_use": {
+  "m00_use_class": "M00-U2",
+  "extended_to_this_archive_by": "D027_PROPS_HISTORICAL_BOUNDED_USES (calibration WITH unknown-timing caveats)",
+  "object": "data/props_capture/historical/master_props_historical.csv (T1_VENDOR_ASSERTED)",
+  "caveat_text_verbatim": "Calibration is of a snapshot whose capture time is vendor-asserted and unwitnessed (P2B: CUTOFF_UNPROVEN). Results characterize an unknown-time pregame price level and must not be read as closing-line calibration, opening-line calibration, or calibration at T\u221264 minutes. No CLV, timing, or line-movement inference may be built on this result.",
+  "caveat_hash": "39b8dbde2fc3407e5563752775c18e61f161946b216cbd0194c8d0c110997e7b",
+  "additional_prohibitions_honored": "no CLV, timing, lead-lag, stale-window or executability claim is made anywhere in this node (D027)"
+ },
+ "contract": {
+  "path": "experiments/market_program/M00_MARKET_PROGRAM_CONTRACT/MARKET_PROGRAM_CONTRACT.md",
+  "sha256_verified": "1152dcd3bf74000f700844bc8bfc0df25de61a067f59534a714ac4f2f20265de"
+ },
+ "producer": "compute_model_vs_market.py",
+ "commit_sha": "UNAVAILABLE: no git in this worktree per task constraints; the legacy producing run's clean-tree receipt asserts commit 0108ef86e9c085e1d701e40e53c24dcde177ac97 (reproduced, not independently verified); manifest content hashes are the verified anchors",
+ "seed": 20260806,
+ "n_boot": 1000,
+ "model": {
+  "model_version": "cbs_v15_player_oof_v5/1 (arm cbs_v15_player_oof_v5, rev 8)",
+  "target": "points (player_scoring_distribution pred_point)",
+  "cutoff": "per-row forecast_cutoff inherited from prediction_contract_v5; every used row re-asserted byte-equal to the contract cutoff (generation-consistent); verified strictly pre-game by VERIFICATION_REPORT.md check 3",
+  "verification": "experiments/market_program/SCOREBOARD/granular/VERIFICATION_REPORT.md (7/7 RECEIPTED)"
+ },
+ "market": {
+  "primary_quantity": "de-vigged consensus threshold probability P(points > consensus_line) -- D036 point 5 primary; implied means are NOT computed",
+  "as_of": "single vendor-asserted snapshot per game (~T-65m median, VENDOR_ASSERTED); the only as-of class this archive supports (D036 point 3)"
+ },
+ "timing_advisory_vendor_asserted": {
+  "channel": "VENDOR_ASSERTED (contract section 6.2 advisory channel; never a headline, gate, endpoint or decision input)",
+  "claim": "cutoff ordering is ASSERTED-NOT-WITNESSED: the legacy forecast_cutoff is a verified contract field, but the prop snapshot timestamps are vendor-asserted and unwitnessed (T1, D027). Whether the model's information cutoff truly preceded the market snapshot cannot be established from witnessed records.",
+  "vendor_asserted_snapshot_minus_cutoff_hours": {
+   "min": -1.7397222222222222,
+   "p05": 0.3433333333333333,
+   "median": 0.3441666666666667,
+   "p95": 30.843888888888888,
+   "max": 31.344166666666666,
+   "n_negative_snapshot_asserted_before_cutoff": 15
+  },
+  "reading": "in the vendor-asserted timeline the market snapshot post-dates the model cutoff on 5874 of 5889 evaluable rows (median gap +0.34h -- ~21 minutes for exact_tip_T-90m cutoff rows vs the ~T-65m snapshot; p95 +30.8h for day-before-18:00-UTC cutoff rows), i.e. the market quote reflects LATER information than the model on those rows IF the vendor stamps are truthful; on the 15 negative rows the asserted ordering is reversed. Asserted, unwitnessed context -- never a timing claim."
+ },
+ "headline": {
+  "question": "does the legacy points model beat the market's own over/under calls at the archive's vendor-asserted snapshot?",
+  "verdict": "NO",
+  "universe": "A_primary matched player-games, pooled 2024-2026",
+  "n": 5737,
+  "model_ou_accuracy": 0.4938120969147638,
+  "market_ou_accuracy": 0.5267561443263029,
+  "paired_diff": -0.03294404741153913,
+  "paired_diff_ci95": [
+   -0.04949109744974008,
+   -0.017580912646525046
+  ],
+  "market_brier": 0.24884099760943712
+ },
+ "cells": {
+  "A_primary": {
+   "2024": {
+    "season": "2024",
+    "tier": "A_primary",
+    "n_player_games": 1685,
+    "n_games": 234,
+    "date_range": [
+     "2024-05-16",
+     "2024-09-19"
+    ],
+    "model_ou_accuracy": 0.485459940652819,
+    "market_ou_accuracy": 0.5186943620178042,
+    "paired_accuracy_diff_model_minus_market": -0.03323442136498516,
+    "paired_accuracy_diff_ci95": {
+     "lo": -0.0629948070087475,
+     "hi": -0.0020823949206249777,
+     "n_boot": 1000,
+     "n_clusters": 85,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "market_brier_devig_p_over": 0.2494793490636831,
+    "market_brier_note": "Brier of the de-vigged consensus P(over) vs the realized over indicator. NO model Brier exists: the legacy artifact is a point prediction (generation-only), not a probability.",
+    "over_base_rate": 0.4664688427299703,
+    "market_call_over_rate": 0.4433234421364985,
+    "model_call_over_rate": 0.5002967359050445,
+    "threshold_distance_block": {
+     "framing": "|consensus_line - outcome| is the distance from a betting THRESHOLD to the outcome. The line is not the market's point projection; this quantity is NOT the market's projection error and is never compared to projection MAE as like-for-like (D036 point 5).",
+     "model_mean_abs_pred_minus_outcome": 5.292278657637894,
+     "line_mean_abs_line_minus_outcome": 4.942729970326409,
+     "paired_diff_model_minus_line": 0.34954868731148453,
+     "paired_diff_ci95": {
+      "lo": 0.1926512136269671,
+      "hi": 0.525426009748683,
+      "n_boot": 1000,
+      "n_clusters": 85,
+      "seed": 20260806,
+      "method": "cluster_bootstrap_over_game_dates_percentile"
+     },
+     "model_rmse_pred_minus_outcome": 6.711199298423478,
+     "line_rms_line_minus_outcome": 6.206402839147683,
+     "model_bias_pred_minus_outcome": -0.08599843167529603,
+     "line_bias_line_minus_outcome": 0.19851632047477744
+    }
+   },
+   "2025": {
+    "season": "2025",
+    "tier": "A_primary",
+    "n_player_games": 2107,
+    "n_games": 280,
+    "date_range": [
+     "2025-05-18",
+     "2025-09-11"
+    ],
+    "model_ou_accuracy": 0.49549121974371146,
+    "market_ou_accuracy": 0.5486473659231135,
+    "paired_accuracy_diff_model_minus_market": -0.053156146179401995,
+    "paired_accuracy_diff_ci95": {
+     "lo": -0.07916377614772067,
+     "hi": -0.027817286769547925,
+     "n_boot": 1000,
+     "n_clusters": 99,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "market_brier_devig_p_over": 0.2470831880065813,
+    "market_brier_note": "Brier of the de-vigged consensus P(over) vs the realized over indicator. NO model Brier exists: the legacy artifact is a point prediction (generation-only), not a probability.",
+    "over_base_rate": 0.4660654959658282,
+    "market_call_over_rate": 0.43996203132415757,
+    "model_call_over_rate": 0.5842429995253916,
+    "threshold_distance_block": {
+     "framing": "|consensus_line - outcome| is the distance from a betting THRESHOLD to the outcome. The line is not the market's point projection; this quantity is NOT the market's projection error and is never compared to projection MAE as like-for-like (D036 point 5).",
+     "model_mean_abs_pred_minus_outcome": 5.250650767231267,
+     "line_mean_abs_line_minus_outcome": 4.990745135263408,
+     "paired_diff_model_minus_line": 0.25990563196786054,
+     "paired_diff_ci95": {
+      "lo": 0.15274480788401545,
+      "hi": 0.3765324067362789,
+      "n_boot": 1000,
+      "n_clusters": 99,
+      "seed": 20260806,
+      "method": "cluster_bootstrap_over_game_dates_percentile"
+     },
+     "model_rmse_pred_minus_outcome": 6.603710716102822,
+     "line_rms_line_minus_outcome": 6.232740763710794,
+     "model_bias_pred_minus_outcome": 0.0065228670272848115,
+     "line_bias_line_minus_outcome": 0.027289985761746557
+    }
+   },
+   "2026": {
+    "season": "2026",
+    "tier": "A_primary",
+    "n_player_games": 1945,
+    "n_games": 205,
+    "date_range": [
+     "2026-05-10",
+     "2026-07-30"
+    ],
+    "model_ou_accuracy": 0.49922879177377893,
+    "market_ou_accuracy": 0.510025706940874,
+    "paired_accuracy_diff_model_minus_market": -0.010796915167095116,
+    "paired_accuracy_diff_ci95": {
+     "lo": -0.03862816412813703,
+     "hi": 0.018201401548419475,
+     "n_boot": 1000,
+     "n_clusters": 70,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "market_brier_devig_p_over": 0.2501921969065131,
+    "market_brier_note": "Brier of the de-vigged consensus P(over) vs the realized over indicator. NO model Brier exists: the legacy artifact is a point prediction (generation-only), not a probability.",
+    "over_base_rate": 0.48894601542416455,
+    "market_call_over_rate": 0.4987146529562982,
+    "model_call_over_rate": 0.5465295629820052,
+    "threshold_distance_block": {
+     "framing": "|consensus_line - outcome| is the distance from a betting THRESHOLD to the outcome. The line is not the market's point projection; this quantity is NOT the market's projection error and is never compared to projection MAE as like-for-like (D036 point 5).",
+     "model_mean_abs_pred_minus_outcome": 5.192723817570288,
+     "line_mean_abs_line_minus_outcome": 4.88611825192802,
+     "paired_diff_model_minus_line": 0.3066055656422681,
+     "paired_diff_ci95": {
+      "lo": 0.18914442230771114,
+      "hi": 0.4353309597764369,
+      "n_boot": 1000,
+      "n_clusters": 70,
+      "seed": 20260806,
+      "method": "cluster_bootstrap_over_game_dates_percentile"
+     },
+     "model_rmse_pred_minus_outcome": 6.663188840602806,
+     "line_rms_line_minus_outcome": 6.218235476576886,
+     "model_bias_pred_minus_outcome": -0.5885742522437762,
+     "line_bias_line_minus_outcome": -0.4480719794344473
+    }
+   },
+   "pooled_2024_2026": {
+    "season": "pooled_2024_2026",
+    "tier": "A_primary",
+    "n_player_games": 5737,
+    "n_games": 719,
+    "date_range": [
+     "2024-05-16",
+     "2026-07-30"
+    ],
+    "model_ou_accuracy": 0.4938120969147638,
+    "market_ou_accuracy": 0.5267561443263029,
+    "paired_accuracy_diff_model_minus_market": -0.03294404741153913,
+    "paired_accuracy_diff_ci95": {
+     "lo": -0.04949109744974008,
+     "hi": -0.017580912646525046,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "market_brier_devig_p_over": 0.24884099760943712,
+    "market_brier_note": "Brier of the de-vigged consensus P(over) vs the realized over indicator. NO model Brier exists: the legacy artifact is a point prediction (generation-only), not a probability.",
+    "over_base_rate": 0.47394108419034336,
+    "market_call_over_rate": 0.4608680495032247,
+    "model_call_over_rate": 0.546801464179885,
+    "threshold_distance_block": {
+     "framing": "|consensus_line - outcome| is the distance from a betting THRESHOLD to the outcome. The line is not the market's point projection; this quantity is NOT the market's projection error and is never compared to projection MAE as like-for-like (D036 point 5).",
+     "model_mean_abs_pred_minus_outcome": 5.243238370202256,
+     "line_mean_abs_line_minus_outcome": 4.941171343907966,
+     "paired_diff_model_minus_line": 0.30206702629429055,
+     "paired_diff_ci95": {
+      "lo": 0.22733190335309666,
+      "hi": 0.3847328737599913,
+      "n_boot": 1000,
+      "n_clusters": 254,
+      "seed": 20260806,
+      "method": "cluster_bootstrap_over_game_dates_percentile"
+     },
+     "model_rmse_pred_minus_outcome": 6.655589594971941,
+     "line_rms_line_minus_outcome": 6.220096669646342,
+     "model_bias_pred_minus_outcome": -0.2224055424717674,
+     "line_bias_line_minus_outcome": -0.0835802684329789
+    }
+   }
+  },
+  "all_tiers": {
+   "2024": {
+    "season": "2024",
+    "tier": "all_tiers",
+    "n_player_games": 1726,
+    "n_games": 240,
+    "date_range": [
+     "2024-05-14",
+     "2024-09-19"
+    ],
+    "model_ou_accuracy": 0.4855156431054461,
+    "market_ou_accuracy": 0.5196987253765932,
+    "paired_accuracy_diff_model_minus_market": -0.034183082271147164,
+    "paired_accuracy_diff_ci95": {
+     "lo": -0.06371558096471155,
+     "hi": -0.0032981705078725773,
+     "n_boot": 1000,
+     "n_clusters": 87,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "market_brier_devig_p_over": 0.24941221640610614,
+    "market_brier_note": "Brier of the de-vigged consensus P(over) vs the realized over indicator. NO model Brier exists: the legacy artifact is a point prediction (generation-only), not a probability.",
+    "over_base_rate": 0.4681344148319815,
+    "market_call_over_rate": 0.4420625724217845,
+    "model_call_over_rate": 0.4901506373117034,
+    "threshold_distance_block": {
+     "framing": "|consensus_line - outcome| is the distance from a betting THRESHOLD to the outcome. The line is not the market's point projection; this quantity is NOT the market's projection error and is never compared to projection MAE as like-for-like (D036 point 5).",
+     "model_mean_abs_pred_minus_outcome": 5.334139481337461,
+     "line_mean_abs_line_minus_outcome": 4.936848203939745,
+     "paired_diff_model_minus_line": 0.39729127739771636,
+     "paired_diff_ci95": {
+      "lo": 0.23566823080624932,
+      "hi": 0.580593366885751,
+      "n_boot": 1000,
+      "n_clusters": 87,
+      "seed": 20260806,
+      "method": "cluster_bootstrap_over_game_dates_percentile"
+     },
+     "model_rmse_pred_minus_outcome": 6.766015111226737,
+     "line_rms_line_minus_outcome": 6.197385723271769,
+     "model_bias_pred_minus_outcome": -0.22829254437737337,
+     "line_bias_line_minus_outcome": 0.18597914252607184
+    }
+   },
+   "2025": {
+    "season": "2025",
+    "tier": "all_tiers",
+    "n_player_games": 2158,
+    "n_games": 286,
+    "date_range": [
+     "2025-05-16",
+     "2025-09-11"
+    ],
+    "model_ou_accuracy": 0.49443929564411493,
+    "market_ou_accuracy": 0.5495829471733086,
+    "paired_accuracy_diff_model_minus_market": -0.0551436515291937,
+    "paired_accuracy_diff_ci95": {
+     "lo": -0.07956759426696136,
+     "hi": -0.031097043699403006,
+     "n_boot": 1000,
+     "n_clusters": 101,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "market_brier_devig_p_over": 0.24712777983780895,
+    "market_brier_note": "Brier of the de-vigged consensus P(over) vs the realized over indicator. NO model Brier exists: the legacy artifact is a point prediction (generation-only), not a probability.",
+    "over_base_rate": 0.4666357738646895,
+    "market_call_over_rate": 0.4388322520852641,
+    "model_call_over_rate": 0.5755329008341057,
+    "threshold_distance_block": {
+     "framing": "|consensus_line - outcome| is the distance from a betting THRESHOLD to the outcome. The line is not the market's point projection; this quantity is NOT the market's projection error and is never compared to projection MAE as like-for-like (D036 point 5).",
+     "model_mean_abs_pred_minus_outcome": 5.295876718114297,
+     "line_mean_abs_line_minus_outcome": 4.993512511584801,
+     "paired_diff_model_minus_line": 0.30236420652949575,
+     "paired_diff_ci95": {
+      "lo": 0.1900899328068688,
+      "hi": 0.4347857480104118,
+      "n_boot": 1000,
+      "n_clusters": 101,
+      "seed": 20260806,
+      "method": "cluster_bootstrap_over_game_dates_percentile"
+     },
+     "model_rmse_pred_minus_outcome": 6.6674542973211866,
+     "line_rms_line_minus_outcome": 6.226475654269913,
+     "model_bias_pred_minus_outcome": -0.10148993737255656,
+     "line_bias_line_minus_outcome": 0.020852641334569044
+    }
+   },
+   "2026": {
+    "season": "2026",
+    "tier": "all_tiers",
+    "n_player_games": 2005,
+    "n_games": 212,
+    "date_range": [
+     "2026-05-08",
+     "2026-07-30"
+    ],
+    "model_ou_accuracy": 0.5002493765586035,
+    "market_ou_accuracy": 0.512718204488778,
+    "paired_accuracy_diff_model_minus_market": -0.012468827930174564,
+    "paired_accuracy_diff_ci95": {
+     "lo": -0.03982373019544828,
+     "hi": 0.015322248776816916,
+     "n_boot": 1000,
+     "n_clusters": 72,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "market_brier_devig_p_over": 0.2500592567778511,
+    "market_brier_note": "Brier of the de-vigged consensus P(over) vs the realized over indicator. NO model Brier exists: the legacy artifact is a point prediction (generation-only), not a probability.",
+    "over_base_rate": 0.48927680798004985,
+    "market_call_over_rate": 0.49975062344139654,
+    "model_call_over_rate": 0.5321695760598504,
+    "threshold_distance_block": {
+     "framing": "|consensus_line - outcome| is the distance from a betting THRESHOLD to the outcome. The line is not the market's point projection; this quantity is NOT the market's projection error and is never compared to projection MAE as like-for-like (D036 point 5).",
+     "model_mean_abs_pred_minus_outcome": 5.260910059098346,
+     "line_mean_abs_line_minus_outcome": 4.888528678304239,
+     "paired_diff_model_minus_line": 0.37238138079410665,
+     "paired_diff_ci95": {
+      "lo": 0.2206452288743384,
+      "hi": 0.5386389951199883,
+      "n_boot": 1000,
+      "n_clusters": 72,
+      "seed": 20260806,
+      "method": "cluster_bootstrap_over_game_dates_percentile"
+     },
+     "model_rmse_pred_minus_outcome": 6.751103804557249,
+     "line_rms_line_minus_outcome": 6.208724052821947,
+     "model_bias_pred_minus_outcome": -0.7258164307509324,
+     "line_bias_line_minus_outcome": -0.45361596009975064
+    }
+   },
+   "pooled_2024_2026": {
+    "season": "pooled_2024_2026",
+    "tier": "all_tiers",
+    "n_player_games": 5889,
+    "n_games": 738,
+    "date_range": [
+     "2024-05-14",
+     "2026-07-30"
+    ],
+    "model_ou_accuracy": 0.4938020037357786,
+    "market_ou_accuracy": 0.5282730514518594,
+    "paired_accuracy_diff_model_minus_market": -0.03447104771608083,
+    "paired_accuracy_diff_ci95": {
+     "lo": -0.05076835029954702,
+     "hi": -0.017652533667217724,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "market_brier_devig_p_over": 0.24879538873264093,
+    "market_brier_note": "Brier of the de-vigged consensus P(over) vs the realized over indicator. NO model Brier exists: the legacy artifact is a point prediction (generation-only), not a probability.",
+    "over_base_rate": 0.4747834946510443,
+    "market_call_over_rate": 0.46051961283749365,
+    "model_call_over_rate": 0.5357446085922907,
+    "threshold_distance_block": {
+     "framing": "|consensus_line - outcome| is the distance from a betting THRESHOLD to the outcome. The line is not the market's point projection; this quantity is NOT the market's projection error and is never compared to projection MAE as like-for-like (D036 point 5).",
+     "model_mean_abs_pred_minus_outcome": 5.29518617268998,
+     "line_mean_abs_line_minus_outcome": 4.9411614875191034,
+     "paired_diff_model_minus_line": 0.35402468517087693,
+     "paired_diff_ci95": {
+      "lo": 0.27047487357484584,
+      "hi": 0.44921263229955755,
+      "n_boot": 1000,
+      "n_clusters": 260,
+      "seed": 20260806,
+      "method": "cluster_bootstrap_over_game_dates_percentile"
+     },
+     "model_rmse_pred_minus_outcome": 6.724965249905569,
+     "line_rms_line_minus_outcome": 6.21191742962571,
+     "model_bias_pred_minus_outcome": -0.351215853302928,
+     "line_bias_line_minus_outcome": -0.09229071149600951
+    }
+   }
+  }
+ },
+ "join_audit": {
+  "model_side": {
+   "n_prediction_rows_all_seasons": 44851,
+   "n_generation_inconsistent_cutoff_rows_excluded": 0,
+   "n_excluded_by_producer_exclusion_reason": 0,
+   "prediction_artifact_sha256": {
+    "2021": "12e6437c1cd735d0b1e29a5ef14365f86d0d32eece3bca573497a8ac508170e4",
+    "2022": "c9197032553b38741b3545e3bc7b30c68f066d053a7abf2c6e68c61c118f0278",
+    "2023": "de1b4fa406cb6dd9e15d018681d0863d7d68954feaa40db3e0c31072902edc55",
+    "2024": "f01151efa99b620eb133d38f0ce91a8fe48d7efa9f6b850b63e4bf27aa28cd21",
+    "2025": "293cf7f9bc6a30b77fb6c8bdea2d9ab8afe856e9b10e43343bc4ced535105d75",
+    "2026": "8d6e5595751d7aa27721c8b2bd929674559b110132ee8b88c55ade8521318e9d"
+   },
+   "n_no_gamelog_outcome_row": 18444,
+   "n_outcome_team_differs_from_obligation_team": 231,
+   "n_zero_minutes_excluded_conditional_target": 32,
+   "n_scored_points_rows": 26144
+  },
+  "market_side": {
+   "source": {
+    "path": "data/props_capture/historical/master_props_historical.csv (LIVE worktree)",
+    "sha256": "47983f8725e775aac16ff342d7704b7b2a8e72c3dfdf0b1448d4481660431a82",
+    "tier": "T1_VENDOR_ASSERTED per D027",
+    "n_rows": 36946,
+    "n_games": 784
+   },
+   "n_inplay_rows_excluded": 0,
+   "n_one_sided_rows_excluded_cannot_devig": 5603,
+   "one_sided_by_book": {
+    "betrivers": 5591,
+    "bovada": 6,
+    "betmgm": 4,
+    "betonlineag": 2
+   },
+   "n_two_sided_rows": 31343,
+   "n_same_book_same_line_duplicate_rows_dropped": 0,
+   "n_unresolved_player_rows_excluded": 62,
+   "snapshots_per_game": {
+    "1": 784
+   },
+   "snapshot_class_note": "single vendor-asserted snapshot per game; vendor-asserted snapshot-to-commence gap (hours): min 0.573, median 1.156, max 3.240 -- VENDOR_ASSERTED, unwitnessed (D027); this is the only as-of class this archive supports (D036 point 3)",
+   "n_prop_player_games_resolved_two_sided": 6529,
+   "n_book_quotes_excluded_non_consensus_line": 3463,
+   "consensus_method": {
+    "module": "experiments/market_program/M11_CONSENSUS_MODEL/consensus.py",
+    "module_sha256": "b94ce8a9467a37fd0d99de9ac889039ac56e44d1feea39e0adcd57abcc749dfa",
+    "vig_method": "multiplicative_proportional",
+    "vig_preregistration_hash": "021dc75506a43a8a849f2d57a7b4aae1b6410e9bccb3a1a88f5f4412c1f60bc6",
+    "weights": "PREREGISTERED_UNIFORM",
+    "line_rule": "consensus line = line quoted two-sided by the most distinct books; ties -> closest to the median of all two-sided lines for that player-game; ties -> lower line. Books not quoting the consensus line are EXCLUDED AND COUNTED, never blended across thresholds (D036 point 5: thresholds are never conflated)",
+    "epistemic_status_line": "MARKET-REACTION SYSTEM COMPONENT under the four-system separation. Estimates a consensus fair line from multi-book quotes. It models the market, not the game; its output is never a fundamental prediction and is labelled per the M00 ladder."
+   }
+  },
+  "unresolved_player_names_excluded_and_listed": [
+   {
+    "player_name": "Cheyenne Parker",
+    "n_rows": 62,
+    "n_games": 14,
+    "identification_note": "owned gamelogs list her as 'Cheyenne Parker-Tyus' in 2024-2026; a genuine spelling variant. Per O14 conventions resolution is normalized-EXACT plus an explicit alias table and NEVER fuzzy, so she is excluded here and flagged as an alias-table candidate for O14 (a human decision, not this node's to make)."
+   }
+  ],
+  "outcome_assembly": {
+   "sources": {
+    "2021": {
+     "path": "data/wnba_gamelog_2021.parquet",
+     "sha256": "1897388129f356465b6d67415c072b186582f20e4affc1dcc1898b9fe90d2a1c",
+     "n_rows": 3565
+    },
+    "2022": {
+     "path": "data/wnba_gamelog_2022.parquet",
+     "sha256": "17f540cd77f999c7d74a04e1223a52f215bd59b89377f2c98e75104f89ecd3f8",
+     "n_rows": 4096
+    },
+    "2023": {
+     "path": "data/wnba_gamelog_2023.parquet",
+     "sha256": "0c025e46a60dac727eb259e5f1e323c056ec6321776a02ff7d234de613656f83",
+     "n_rows": 4544
+    },
+    "2024": {
+     "path": "data/wnba_gamelog_2024.parquet",
+     "sha256": "bccdc65f1b2d8e557c4fe0fd78b59358a996ba19db343a77dcc226323b0d04e7",
+     "n_rows": 4515
+    },
+    "2025": {
+     "path": "data/refresh_2026/gamelog_player_2025_regular_season.parquet",
+     "sha256": "5a6211147b5d27a20cca6043779cbcca820d1c54af278972f1153d17792a8c37",
+     "n_rows": 5407
+    },
+    "2026": {
+     "path": "data/refresh_2026/gamelog_player_2026_regular_season.parquet",
+     "sha256": "a46ece17905bb848fa7dd3dbbbb730c88b719c04a31a7c4467a1ea564da0df37",
+     "n_rows": 4259
+    }
+   },
+   "game_date_source": {
+    "path": "data/masters/master_player.parquet",
+    "sha256": "52e084efaad5c08444b407c64c18d55b57ff5a1e13491cc908dfd960b8641dce",
+    "use": "game_id -> game_date lookup only (pinned 2021-2024 files carry no date)"
+   },
+   "n_duplicate_player_games_dropped": 0
+  },
+  "n_scored_model_rows_total": 26144,
+  "n_market_player_games_total": 6529,
+  "n_matched_player_games": 5966,
+  "n_market_rows_unmatched_no_scored_model_row": 563,
+  "n_market_games_total": 784,
+  "n_matched_games": 738,
+  "n_market_games_with_no_matched_row": 46,
+  "unmatched_market_note": "market player-games without a matched model row: the game is outside the owned regular-season outcome universe (e.g. playoffs/Commissioner's Cup final), the player did not appear (DNP -- conditional target), the outcome team differs from the obligation row scored, or the player-game is outside the legacy contract universe. Nothing is silently dropped; every stage above carries its own count.",
+  "matched_by_tier": {
+   "A_primary": 5808,
+   "B_transaction_sensitivity": 153,
+   "B_s2_weak_fallback": 5
+  },
+  "matched_by_season": {
+   "2024": 1768,
+   "2025": 2186,
+   "2026": 2012
+  },
+  "n_push_outcome_equals_line": 0,
+  "n_model_no_call_pred_equals_line": 0,
+  "n_market_no_call_p_exactly_half": 77,
+  "n_evaluable_matched_player_games": 5889
+ },
+ "result_hash": "ca9b36e7c7bf7d5b16262449d2699f5be1bf7b0ed7784a0f5545c555a859a955"
+}
