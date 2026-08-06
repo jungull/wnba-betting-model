@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fixture tests for the D036 scoreboard pipeline.
+"""Fixture tests for the D036/D037/D038 scoreboard + leaderboard pipeline.
 
 1. Coverage-count math: a tiny synthetic props jsonl and featured jsonl with
    hand-countable contents must reproduce the exact seven counts.
@@ -7,6 +7,19 @@
    stable output (byte-identical across two runs) containing the mandated
    semantics (NOT-YET-EVALUATED-PENDING-AUDIT chips, banned-phrase discipline,
    caveat text, provenance hashes) and the manifest must hash-verify.
+3. D038 acceptance checks (LEADERBOARD_SPEC.md, deterministic):
+   AC1  every visible score generated from structured inputs
+   AC2  higher score always = better skill
+   AC3  no score for unevaluated targets
+   AC4  Market Advantage uses matched universes + cutoffs only
+   AC5  best/worst book never re-selected after outcomes
+   AC6  tolerance bands fixed in config
+   AC7  default sorting = strongest verified first
+   AC8  all columns sort both ways
+   AC9  filters never alter metric values
+   AC10 hover values match source JSON
+   AC11 byte-identical regeneration from unchanged inputs
+   AC12 dropped-cells honesty log visible in methodology layer
 
 Run: python TESTS.py
 """
@@ -15,6 +28,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import sys
 import tempfile
 
@@ -161,11 +175,15 @@ def make_generator_fixture(tmp):
                 "total": {"mae": s_mae + 4.0, "bias": -0.9, "n": n - 5},
                 "moneyline": ml(0.2, n)}
 
+    # NOTE (AC5): the fixed pre-declared book (FanDuel, variant=best_book) is
+    # deliberately WORSE (9.9) than the cross-book consensus (9.7) in this
+    # fixture -- the generator must still display 9.9 for the fixed identity
+    # and never re-select a better book after outcomes are known.
     baseline_rows = [
         brow("POOLED", "EARLY", "cross_book", 9.5, 100),
         brow("POOLED", "EARLY", "best_book", 9.52, 99),
         brow("POOLED", "LATE", "cross_book", 9.7, 90),
-        brow("POOLED", "LATE", "best_book", 9.68, 88),
+        brow("POOLED", "LATE", "best_book", 9.9, 88),
     ]
     prov = {
         "source_artifact": {"path": "fixture/source.json", "sha256": "c" * 64},
@@ -333,9 +351,17 @@ def make_granular_fixture(tmp):
     return granular_metrics, granular_coverage
 
 
+def copy_score_config(tmp):
+    """The FROZEN real score_config.json is used verbatim in every fixture
+    build, so fixture tests also pin the frozen formula, bands and tolerance
+    bands."""
+    shutil.copy(os.path.join(HERE, "score_config.json"), os.path.join(tmp, "score_config.json"))
+
+
 def run_generator_tests(tmp):
     make_generator_fixture(tmp)
     make_granular_fixture(tmp)
+    copy_score_config(tmp)
     out1 = os.path.join(tmp, "run1")
     out2 = os.path.join(tmp, "run2")
     os.makedirs(out1); os.makedirs(out2)
@@ -360,6 +386,8 @@ def run_generator_tests(tmp):
     check("golden: incumbent MAE shown 4dp", "2.9675 MAE" in h1)
     check("golden: intrinsic shown with n", "2.8960" in h1 and "2,982" in h1)
     check("golden: LATE pooled market spread", "9.7000" in h1)
+    check("golden: fixed identity displayed even though worse than consensus (AC5)",
+          '9.9000</span><span class="sub">FanDuel fixed identity' in h1)
     check("golden: fixed-identity fanduel framing (best book not per-game)", "per-book rows" in h1.lower() or "fixed" in h1.lower())
     check("golden: operational section marker present", "Operational progress — NOT predictive evidence" in h1)
     check("golden: dropped-cells honesty log present", "fixture old cell" in h1 and "fixture reason" in h1)
@@ -402,14 +430,219 @@ def run_generator_tests(tmp):
     ok = ok and hashlib.sha256(out_b).hexdigest() == man["output"]["sha256"]
     gen_b = open(build_scoreboard.__file__, "rb").read()
     ok = ok and hashlib.sha256(gen_b).hexdigest() == man["generator"]["sha256"]
-    check("manifest: all sha256 verify (5 inputs + generator + output)", ok)
+    check("manifest: all sha256 verify (6 inputs + generator + output)", ok)
+    check("manifest: score_config.json is a manifested input", "score_config.json" in man["inputs"])
+    check("manifest: carries the frozen score formula version", man.get("score_formula_version") == "prediction_score/1.0.0")
     check("manifest: carries generation timestamp", bool(man.get("generated_utc")))
+
+
+# ==================================================================== D038
+# acceptance checks (deterministic; LEADERBOARD_SPEC.md points 1-12)
+LB_ROW_RE = re.compile(r'<tr class="lb-row" id="lb-([a-zA-Z_]+)" data-target="[^"]*" data-score="([^"]*)"')
+
+
+def lb_scores(h):
+    """[(target_id, data-score str), ...] in DOM order."""
+    return LB_ROW_RE.findall(h)
+
+
+def make_lb_fixture(tmp, our_model=None):
+    """Full fixture input dir; optionally injects evaluated our_model rows
+    into the granular metrics file (the ONLY structured path through which a
+    model number may reach the leaderboard for player targets)."""
+    os.makedirs(tmp, exist_ok=True)
+    make_generator_fixture(tmp)
+    make_granular_fixture(tmp)
+    copy_score_config(tmp)
+    if our_model is not None:
+        p = os.path.join(tmp, "granular", "player_granular_metrics.json")
+        gm = json.load(open(p, encoding="utf-8"))
+        gm["our_model"] = our_model
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(gm, f, indent=2)
+    out = os.path.join(tmp, "out")
+    os.makedirs(out, exist_ok=True)
+    build_scoreboard.main(tmp, out)
+    return open(os.path.join(out, "scoreboard.html"), encoding="utf-8").read()
+
+
+def model_row(mae, n, universe, cutoff, evidence_class, extra=None):
+    r = {"mae": mae, "rmse": mae + 1.0, "bias": 0.0, "n_player_games": n,
+         "universe": universe, "cutoff": cutoff, "evidence_class": evidence_class,
+         "model_version": "our/fixture/1", "date_range": ["2022-05-08", "2026-07-31"]}
+    if extra:
+        r.update(extra)
+    return r
+
+
+BASE_UNI = "fixture regular-season player-games"
+MKT_UNI = "fixture prop quote rows joined to player-game outcomes"
+MKT_CUT = "vendor-asserted pre-game snapshot (FIXTURE)"
+
+
+def run_acceptance_tests(tmp):
+    cfg = json.load(open(os.path.join(HERE, "score_config.json"), encoding="utf-8"))
+
+    # ---- variant A: two evaluated model rows matched to their BASELINE
+    # universes (points VERIFIED score 75; rebounds PROMISING score 100);
+    # market universe deliberately NOT matched.
+    variant_a = {"lifecycle_state": "EVALUATED", "note": "fixture evaluated rows", "rows": {
+        "points": {"pooled": model_row(3.0, 1000, BASE_UNI, "pregame fixture cutoff",
+                                       "MEASURED_BLIND_WALK_FORWARD_AUDITED fixture")},
+        "rebounds": {"pooled": model_row(2.5, 1000, BASE_UNI, "pregame fixture cutoff",
+                                         "MEASURED_RETROSPECTIVE_POSITIVE fixture")},
+    }}
+    ha = make_lb_fixture(os.path.join(tmp, "va"), variant_a)
+
+    # ---- variant B: model points row matched to the MARKET universe/cutoff/N
+    # and carrying the market's own metric (devig_brier) -> market advantage
+    # computable; baseline universe unmatched -> score stays TBD.
+    variant_b = {"lifecycle_state": "EVALUATED", "note": "fixture evaluated rows", "rows": {
+        "points": {"pooled": model_row(3.0, 5900, MKT_UNI, MKT_CUT,
+                                       "MEASURED_BLIND_WALK_FORWARD_AUDITED fixture",
+                                       extra={"devig_brier": 0.2})},
+    }}
+    hb = make_lb_fixture(os.path.join(tmp, "vb"), variant_b)
+
+    # AC1 -- every visible score generated from structured inputs -----------
+    gm_a = json.load(open(os.path.join(tmp, "va", "granular", "player_granular_metrics.json"), encoding="utf-8"))
+    exp_points = build_scoreboard.compute_prediction_score(
+        gm_a["our_model"]["rows"]["points"]["pooled"]["mae"],
+        gm_a["naive_baselines"]["points"]["season_to_date_mean"]["pooled"]["mae"])[0]
+    exp_rebounds = build_scoreboard.compute_prediction_score(
+        gm_a["our_model"]["rows"]["rebounds"]["pooled"]["mae"],
+        gm_a["naive_baselines"]["rebounds"]["season_to_date_mean"]["pooled"]["mae"])[0]
+    got = dict(lb_scores(ha))
+    check("AC1: points score in HTML == frozen formula on structured inputs",
+          got.get("player_points") == str(exp_points) == "75", got.get("player_points"))
+    check("AC1: rebounds score in HTML == frozen formula on structured inputs",
+          got.get("player_rebounds") == str(exp_rebounds) == "100", got.get("player_rebounds"))
+    check("AC1: the only numeric scores on the page are the two derivable ones",
+          sorted(v for _, v in lb_scores(ha) if v != "") == ["100", "75"])
+
+    # AC2 -- higher score always = better skill ------------------------------
+    s = lambda m, b: build_scoreboard.compute_prediction_score(m, b)[0]
+    seq = [s(m, 4.0) for m in (2.0, 3.0, 3.5, 4.0, 4.5, 5.0, 8.0)]
+    check("AC2: score strictly non-increasing as model error grows on a fixed baseline",
+          seq == sorted(seq, reverse=True) and seq[0] == 100 and seq[3] == 50 and seq[-1] == 0, seq)
+    check("AC2: equal-to-baseline lands exactly on 50", s(4.0, 4.0) == 50)
+    check("AC2: clamped to [0,100]", s(0.001, 4.0) == 100 and s(400.0, 4.0) == 0)
+
+    # AC3 -- no score for unevaluated targets --------------------------------
+    check("AC3: fixture unevaluated targets carry empty data-score",
+          all(v == "" for k, v in lb_scores(ha) if k not in ("player_points", "player_rebounds")))
+    check("AC3: variant B baseline-unmatched model row shows NO score (never normalized across universes)",
+          all(v == "" for _, v in lb_scores(hb)))
+    check("AC3: TBD chips, never placeholder numbers, on unevaluated rows",
+          "no attractive placeholders" in ha)
+
+    # AC4 -- market advantage only on matched universes + cutoffs ------------
+    check("AC4: variant A (market universe unmatched) -> Not comparable, no number",
+          "universes not matched — never compared" in ha and 'data-market=""' in ha.split('id="lb-player_points"')[1][:600])
+    adv = build_scoreboard.compute_market_advantage(0.2, 0.2485, True)
+    check("AC4: variant B advantage == frozen formula on structured inputs",
+          f'data-market="{round(adv * 100, 1)}"' in hb, round(adv * 100, 1))
+    check("AC4: variant B labeled Strong advantage with signed percent",
+          "Strong advantage" in hb and "+19.5% lower de-vigged O/U Brier" in hb)
+    check("AC4: unmatched flag hard-disables the computation",
+          build_scoreboard.compute_market_advantage(0.2, 0.2485, False) is None)
+    check("AC4: metric never mixed — a model without the market's metric is not compared",
+          build_scoreboard.compute_market_advantage(None, 0.2485, True) is None)
+
+    # AC5 -- best/worst book never re-selected after outcomes ----------------
+    check("AC5: fixed-identity FanDuel value (9.9) displayed although consensus (9.7) is better",
+          '9.9000</span><span class="sub">FanDuel fixed identity' in ha and "9.7000" in ha)
+    check("AC5: fixed-identity framing text present",
+          "FIXED pre-declared identity" in ha and "Per-game closest-book selection is prohibited" in ha)
+
+    # AC6 -- tolerance bands fixed in config ---------------------------------
+    tb = cfg["tolerance_bands"]
+    expected_bands = {"player_points": (5, "points"), "player_rebounds": (2, "rebounds"),
+                      "player_assists": (2, "assists"), "player_minutes": (5, "minutes"),
+                      "game_total": (10, "points"), "margin": (8, "points")}
+    check("AC6: config frozen flags set", cfg["frozen"] is True and tb["frozen"] is True
+          and cfg["prediction_score"]["frozen"] is True)
+    check("AC6: frozen tolerance values match the spec exactly",
+          {k: (v["tolerance"], v["unit"]) for k, v in tb["bands"].items()} == expected_bands)
+    check("AC6: every band rendered in the methodology layer verbatim from config",
+          all(f'±{v["tolerance"]} {v["unit"]}' in ha for v in tb["bands"].values()))
+    check("AC6: undeclared targets say so instead of inheriting a band",
+          "no target range declared" in ha)
+
+    # AC7 -- default sorting = strongest verified first ----------------------
+    order_a = [k for k, _ in lb_scores(ha)]
+    check("AC7: VERIFIED-scored row first, PROMISING-scored second (evidence before raw score)",
+          order_a[:2] == ["player_points", "player_rebounds"], order_a[:4])
+    check("AC7: evaluated-without-score row precedes unevaluated targets",
+          order_a[2] == "team_attributed_turnovers", order_a[2])
+    check("AC7: unevaluated targets last, in registry order",
+          order_a[-4:] == ["team_total", "game_total", "margin", "win_probability"], order_a[-4:])
+
+    # AC8 -- all columns sort both ways ---------------------------------------
+    for key in ("target", "score", "miss", "range", "improve", "market", "n", "evidence", "updated"):
+        check(f"AC8: column '{key}' is sortable", f'data-key="{key}"' in ha)
+    check("AC8: sort direction toggles (both ways)", "state.dir = -state.dir" in ha)
+    check("AC8: blank cells always last in both directions", "blanks last in BOTH directions" in ha)
+    check("AC8: rows carry the sort datasets", 'data-evidence="' in ha and 'data-updated="' in ha)
+
+    # AC9 -- filters never alter metric values --------------------------------
+    check("AC9: no innerHTML anywhere in the page script", "innerHTML" not in ha and "insertAdjacentHTML" not in ha)
+    check("AC9: filters only toggle row.hidden", "r.hidden = hide" in ha and
+          "Filters only hide rows; they never alter a metric value" in ha)
+    check("AC9: the only textContent write is the expander button label",
+          ha.count("textContent") == ha.count("btn.textContent"))
+
+    # AC10 -- hover values match source JSON -----------------------------------
+    check("AC10: score hover carries model and baseline errors from the inputs",
+          "model error: 3.0" in ha and "baseline error: 4.0" in ha and "prediction_score/1.0.0" in ha)
+    check("AC10: baseline hover carries the source mae verbatim", "mae: 4.0" in ha)
+    check("AC10: market hover carries the source devig_brier verbatim", "devig_brier: 0.2485" in ha)
+    check("AC10: provenance hashes surface in hovers", ("f" * 64) in ha)
+
+    # AC11 -- byte-identical regeneration (fixture) ----------------------------
+    out2 = os.path.join(tmp, "va", "out2")
+    os.makedirs(out2, exist_ok=True)
+    build_scoreboard.main(os.path.join(tmp, "va"), out2)
+    ha2 = open(os.path.join(out2, "scoreboard.html"), encoding="utf-8").read()
+    check("AC11: byte-identical regeneration from unchanged fixture inputs", ha == ha2)
+
+    # AC12 -- dropped-cells honesty log in the methodology layer ----------------
+    m_pos = ha.find('id="methodology"')
+    d_pos = ha.find("honesty log")
+    check("AC12: dropped-cells honesty log lives inside the methodology layer",
+          0 <= m_pos < d_pos and "fixture old cell" in ha and "fixture reason" in ha)
+
+
+def run_real_input_tests(tmp):
+    """The same acceptance guarantees against the REAL committed inputs."""
+    o1 = os.path.join(tmp, "r1"); o2 = os.path.join(tmp, "r2")
+    os.makedirs(o1); os.makedirs(o2)
+    build_scoreboard.main(HERE, o1)
+    build_scoreboard.main(HERE, o2)
+    h1 = open(os.path.join(o1, "scoreboard.html"), encoding="utf-8").read()
+    h2 = open(os.path.join(o2, "scoreboard.html"), encoding="utf-8").read()
+    check("real/AC11: byte-identical regeneration from the real inputs", h1 == h2)
+    scores = lb_scores(h1)
+    check("real: leaderboard has 13 target rows", len(scores) == 13, len(scores))
+    check("real/AC3: NO numeric Prediction Score exists yet (our model unevaluated everywhere)",
+          all(v == "" for _, v in scores))
+    check("real/AC7: evaluated-without-score incumbent leads; unevaluated afterward",
+          scores[0][0] == "team_attributed_turnovers", scores[0][0])
+    check("real: Betting Edge card = Not yet demonstrated (never accuracy-as-profitability)",
+          "Betting Edge" in h1 and h1.count("Not yet demonstrated") >= 2)
+    check("real: player leaderboard locked state",
+          "Player-level leaderboards are collecting sufficient verified samples." in h1)
+    check("real: no naive baseline is ever presented as our model",
+          "our model has not been evaluated on this target yet" in h1.lower()
+          or "no evaluated model run exists" in h1)
 
 
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         run_coverage_tests(tmp)
         run_generator_tests(tmp)
+        run_acceptance_tests(os.path.join(tmp, "ac"))
+        run_real_input_tests(os.path.join(tmp, "real"))
     print(f"\n{len(PASS)}/{len(PASS) + len(FAIL)} tests passed")
     if FAIL:
         print("FAILED:", FAIL)

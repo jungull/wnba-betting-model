@@ -1,0 +1,200 @@
+{
+  "schema": "market_program/SCOREBOARD/score_config/1",
+  "decision_authority": "D038 Prediction Leaderboard (LEADERBOARD_SPEC.md, frozen 2026-08-06); D036 measurement semantics retained in full",
+  "frozen": true,
+  "frozen_utc": "2026-08-06T21:00:00+00:00",
+  "freeze_note": "Frozen BEFORE any our-model evaluation result was visible. Per the spec, the scoring transformation, interpretation bands and tolerance bands may never be changed to improve presentation. Changing any value in this file requires a new version string and a decision record.",
+  "prediction_score": {
+    "version": "prediction_score/1.0.0",
+    "frozen": true,
+    "formula": "score = clamp(50 + 100 * skill, 0, 100); skill = (baseline_error - model_error) / baseline_error",
+    "constants": {
+      "offset": 50,
+      "slope": 100,
+      "clamp_min": 0,
+      "clamp_max": 100
+    },
+    "rounding": "round half to even to nearest integer (Python 3 round)",
+    "interpretation": "One score point = one percentage point of error reduced relative to the declared baseline on the identical evaluation universe. 50 = exactly baseline quality. 100 = error halved (or better). 0 = error at least 50% worse than baseline.",
+    "error_metric_by_target_kind": {
+      "scalar": "mae",
+      "probability": "devig_brier"
+    },
+    "never_rules": [
+      "The score is NEVER a normalization of raw MAE across unrelated units.",
+      "The score NEVER mixes evidence strength or market edge; those are separate axes (accuracy / beats-market / certainty).",
+      "No attractive placeholder scores: an unevaluated target is TBD, never a number."
+    ],
+    "eligibility": {
+      "model_row_must_exist_and_be_evaluated": true,
+      "allowed_model_evidence_badges": ["VERIFIED", "PROMISING", "PRELIMINARY"],
+      "baseline_must_be_declared_here_and_evaluated": true,
+      "universe_match_rule": "exact string equality of the declared universe AND identical N between the model row and the baseline row; unmatched universes are never compared and never normalized",
+      "min_n_by_level": {
+        "player": 500,
+        "team": 200,
+        "game": 200
+      },
+      "min_n_units": {
+        "player": "player-games",
+        "team": "team-games",
+        "game": "games"
+      }
+    },
+    "bands": [
+      {"min": 90, "max": 100, "label": "Exceptional", "plain": "at least 40% lower error than the basic model"},
+      {"min": 80, "max": 89, "label": "Strong", "plain": "30-39% lower error than the basic model"},
+      {"min": 70, "max": 79, "label": "Useful", "plain": "20-29% lower error than the basic model"},
+      {"min": 60, "max": 69, "label": "Modest skill", "plain": "10-19% lower error than the basic model"},
+      {"min": 50, "max": 59, "label": "About basic-baseline quality", "plain": "0-9% lower error than the basic model"},
+      {"min": 0, "max": 49, "label": "No demonstrated improvement", "plain": "not better than the basic model on this evidence"}
+    ]
+  },
+  "tolerance_bands": {
+    "frozen": true,
+    "note": "Declared target ranges for the 'Within Target Range' column, frozen before viewing any model results; never changed to improve presentation. Targets without a declared band show 'no target range declared' and never inherit another target's band.",
+    "bands": {
+      "player_points": {"tolerance": 5, "unit": "points"},
+      "player_rebounds": {"tolerance": 2, "unit": "rebounds"},
+      "player_assists": {"tolerance": 2, "unit": "assists"},
+      "player_minutes": {"tolerance": 5, "unit": "minutes"},
+      "game_total": {"tolerance": 10, "unit": "points"},
+      "margin": {"tolerance": 8, "unit": "points"}
+    }
+  },
+  "improvement_vs_basic_model": {
+    "roughly_equal_band_abs_skill": 0.02,
+    "labels": {
+      "better": "{pct} more accurate than {baseline}",
+      "roughly_equal": "Roughly equal to {baseline}",
+      "worse": "No demonstrated improvement over {baseline}",
+      "pending_model": "Pending — our model has not completed an evaluated run for this target",
+      "pending_baseline": "Pending — matched baseline not yet computed on this universe"
+    }
+  },
+  "market_advantage": {
+    "version": "market_advantage/1.0.0",
+    "direction": "positive = our model beats market consensus on the target-appropriate metric",
+    "formula": "advantage = (market_error - model_error) / market_error, computed only on timestamp-matched, identical universes with the documented consensus method",
+    "metric_by_target": {
+      "player_points": "devig_brier",
+      "game_total": "mae",
+      "margin": "mae",
+      "win_probability": "devig_brier"
+    },
+    "never_collapse_rule": "MAE, Brier, log-loss and ROI are never collapsed into one number; each target uses its declared metric, translated to a common direction (positive = we did better); the methodology layer shows the raw comparison.",
+    "eligibility": [
+      "same target",
+      "same games / player-games (identical matched universe: exact universe-string equality and identical N)",
+      "same declared cutoff (exact cutoff-string equality)",
+      "documented consensus method (de-vig method preregistered by hash)",
+      "no hindsight best-book-per-outcome selection, ever (fixed pre-declared book identities only)"
+    ],
+    "label_thresholds": {
+      "strong_min": 0.10,
+      "meaningful_min": 0.05,
+      "slight_min": 0.02,
+      "market_level_abs_max": 0.02
+    },
+    "labels": ["Strong advantage", "Meaningful advantage", "Slight advantage", "Market-level", "Market currently better", "Not comparable", "Pending"]
+  },
+  "baselines": {
+    "best_of_three_naive_pooled": {
+      "kind": "best_of_three_naive_pooled_mae",
+      "declared_for": "all eight granular player targets",
+      "variants": ["trailing_5_mean", "season_to_date_mean", "league_mean"],
+      "selection_rule": "the variant with the lowest pooled MAE in granular/player_granular_metrics.json; deterministic, values read verbatim, never recomputed",
+      "source": "granular/player_granular_metrics.json naive_baselines[stat][variant].pooled",
+      "cutoff": "pregame-by-construction (strictly prior information only)"
+    },
+    "naive_trio_declared_pending": {
+      "kind": "declared_pending",
+      "declared_for": "team_attributed_turnovers, team_total, game_total, margin",
+      "variants": ["league_mean", "rolling_team_average", "last_five_games"],
+      "source": "metrics.json rows naive_baseline_* (status DECLARED_PENDING)",
+      "note": "required by D036 point 6 on every target; until computed with walk-forward leakage discipline on the identical universe, every dependent Prediction Score stays TBD"
+    },
+    "win_probability_baseline_declared_pending": {
+      "kind": "declared_pending",
+      "declared_for": "win_probability",
+      "candidate": "home-court constant-probability baseline, to be preregistered before first scored evaluation",
+      "note": "no baseline artifact exists; score stays TBD"
+    }
+  },
+  "evidence_badges": {
+    "order_best_first": ["VERIFIED", "PROMISING", "PRELIMINARY", "PENDING", "NOT_CAPTURED"],
+    "definitions": {
+      "VERIFIED": "audited blind walk-forward or adequate prospective evaluation",
+      "PROMISING": "positive retrospective result, not yet confirmed by audit",
+      "PRELIMINARY": "small sample, exploratory, or legacy-receiptable evidence",
+      "PENDING": "implementation exists, evaluation not completed",
+      "NOT_CAPTURED": "the data does not exist"
+    },
+    "never_sealed_rule": "never SEALED before an evaluation ran; lifecycle BUILT → AUDITED → FITTING → EVALUATED/SEALED → ADJUDICATED; implementation test counts live in operational progress only",
+    "evidence_class_prefix_map": {
+      "MEASURED_WALK_FORWARD_RECEIPTED_DEVELOPMENT": "PRELIMINARY",
+      "MEASURED_BLIND_WALK_FORWARD_AUDITED": "VERIFIED",
+      "MEASURED_PROSPECTIVE": "VERIFIED",
+      "MEASURED_RETROSPECTIVE_POSITIVE": "PROMISING",
+      "NOT-YET-EVALUATED-PENDING-AUDIT": "PENDING",
+      "DECLARED_PENDING": "PENDING",
+      "NOT_CAPTURED": "NOT_CAPTURED"
+    }
+  },
+  "display": {
+    "typical_miss_decimals": 1,
+    "subtext_template": "Usually within {miss} {unit} of the actual result",
+    "benchmark_subtext_template": "No model prediction evaluated yet — the basic benchmark ({baseline}) is usually within {miss} {unit} of the actual result",
+    "note": "readable 1-decimal rounding in the leaderboard; raw 4-decimal values remain in the evidence layer and in every hover popover"
+  },
+  "targets": [
+    {"id": "player_points", "label": "Player points", "level": "player", "unit": "points", "kind": "scalar", "granular_stat": "points", "tolerance_key": "player_points", "baseline": "best_of_three_naive_pooled", "market": "props_threshold_points"},
+    {"id": "player_rebounds", "label": "Player rebounds", "level": "player", "unit": "rebounds", "kind": "scalar", "granular_stat": "rebounds", "tolerance_key": "player_rebounds", "baseline": "best_of_three_naive_pooled", "market": "props_not_captured"},
+    {"id": "player_assists", "label": "Player assists", "level": "player", "unit": "assists", "kind": "scalar", "granular_stat": "assists", "tolerance_key": "player_assists", "baseline": "best_of_three_naive_pooled", "market": "props_not_captured"},
+    {"id": "player_steals", "label": "Player steals", "level": "player", "unit": "steals", "kind": "scalar", "granular_stat": "steals", "tolerance_key": null, "baseline": "best_of_three_naive_pooled", "market": "props_not_captured"},
+    {"id": "player_blocks", "label": "Player blocks", "level": "player", "unit": "blocks", "kind": "scalar", "granular_stat": "blocks", "tolerance_key": null, "baseline": "best_of_three_naive_pooled", "market": "props_not_captured"},
+    {"id": "player_threes_made", "label": "Player threes made", "level": "player", "unit": "threes", "kind": "scalar", "granular_stat": "threes_made", "tolerance_key": null, "baseline": "best_of_three_naive_pooled", "market": "props_not_captured"},
+    {"id": "player_turnovers", "label": "Player turnovers", "level": "player", "unit": "turnovers", "kind": "scalar", "granular_stat": "turnovers", "tolerance_key": null, "baseline": "best_of_three_naive_pooled", "market": "props_not_captured"},
+    {"id": "player_minutes", "label": "Player minutes", "level": "player", "unit": "minutes", "kind": "scalar", "granular_stat": "minutes", "tolerance_key": "player_minutes", "baseline": "best_of_three_naive_pooled", "market": "market_does_not_price"},
+    {"id": "team_attributed_turnovers", "label": "Team turnovers (attributed)", "level": "team", "unit": "turnovers", "kind": "scalar", "model_row": "incumbent_operational_team_attributed_turnovers", "tolerance_key": null, "baseline": "naive_trio_declared_pending", "market": "market_does_not_price"},
+    {"id": "team_total", "label": "Team total points", "level": "team", "unit": "points", "kind": "scalar", "tolerance_key": null, "baseline": "naive_trio_declared_pending", "market": "bookie_not_computed"},
+    {"id": "game_total", "label": "Game total points", "level": "game", "unit": "points", "kind": "scalar", "tolerance_key": "game_total", "baseline": "naive_trio_declared_pending", "market": "bookie_late_cross_total"},
+    {"id": "margin", "label": "Final margin (spread)", "level": "game", "unit": "points", "kind": "scalar", "tolerance_key": "margin", "baseline": "naive_trio_declared_pending", "market": "bookie_late_cross_spread"},
+    {"id": "win_probability", "label": "Game winner (win probability)", "level": "game", "unit": "probability", "kind": "probability", "tolerance_key": null, "baseline": "win_probability_baseline_declared_pending", "market": "bookie_late_cross_moneyline"}
+  ],
+  "defaults": {
+    "sort": {
+      "description": "strongest verified work first",
+      "rules": [
+        "1. rows with a numeric Prediction Score first, ordered by evidence badge (VERIFIED before PROMISING before PRELIMINARY), then score descending",
+        "2. evaluated rows without a score (measured model, matched baseline pending) next, by evidence badge",
+        "3. unevaluated targets last, in registry order"
+      ]
+    },
+    "filters": {
+      "level": "all",
+      "verified_only": false,
+      "market_covered_only": false,
+      "season": "pooled",
+      "cutoff": "pregame_pooled"
+    },
+    "filter_note": "the archive currently supports pooled regular-season evaluation only; season and cutoff filters expose the single pooled option until per-season leaderboard splits are published. Filters only hide rows; they never alter a metric value."
+  },
+  "player_leaderboard": {
+    "status": "LOCKED",
+    "locked_text": "Player-level leaderboards are collecting sufficient verified samples.",
+    "unlock_requirements": [
+      "minimum verified sample per player per stat family (min_n_player_stat = 40 evaluated player-games)",
+      "player-specific baseline difficulty (score vs that player's own best naive baseline, never raw MAE)",
+      "market-matched universe for any market-advantage ranking",
+      "role-stability and minute-volatility accounting",
+      "uncertainty shrinkage toward the population mean before ranking",
+      "team-change handling (no cross-team pooling without adjustment)"
+    ],
+    "schema_ready": {
+      "row": ["player_id", "player_name", "stat_family", "prediction_score", "typical_miss", "market_advantage", "n_evaluated", "evidence_badge", "role_stability", "shrinkage_weight", "last_updated"],
+      "rankings": ["players_we_model_best", "largest_market_advantage_players", "stable_vs_volatile_roles", "stat_families"]
+    },
+    "never_rule": "never rank players by raw MAE alone"
+  }
+}
