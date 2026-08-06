@@ -236,8 +236,106 @@ def make_generator_fixture(tmp):
     return coverage, metrics, lifecycle
 
 
+def make_granular_fixture(tmp):
+    """Small but schema-complete D037 granular player inputs.
+
+    Two stats get full naive_baselines[stat][variant]["pooled"] blocks
+    (points, rebounds) so best-of-three selection is exercised (season-to-date
+    beats trailing-5 beats league-mean by construction); the remaining six
+    stats reuse the same shape via a helper so the generator's per-stat loop
+    has real data for every GRANULAR_STATS entry.
+    """
+    gdir = os.path.join(tmp, "granular")
+    os.makedirs(gdir, exist_ok=True)
+
+    def pooled_row(target, variant, mae):
+        return {
+            "evidence_class": "NAIVE_BASELINE",
+            "model_version": f"naive/{variant}/1",
+            "target": target,
+            "cutoff": "pregame-by-construction: strictly prior same-season games only (FIXTURE)",
+            "universe": "fixture regular-season player-games",
+            "season": "pooled",
+            "n_player_games": 1000,
+            "date_range": ["2022-05-08", "2026-07-31"],
+            "mae": mae,
+            "rmse": mae + 1.0,
+            "bias": 0.01,
+            "mae_ci95": {"lo": mae - 0.05, "hi": mae + 0.05, "n_boot": 1000, "n_clusters": 50,
+                         "seed": 20260806, "method": "cluster_bootstrap_over_game_dates_percentile"},
+            "n_cold_start_excluded": 10,
+        }
+
+    stats = ["points", "rebounds", "assists", "steals", "blocks", "threes_made", "turnovers", "minutes"]
+    naive_baselines = {}
+    for i, stat in enumerate(stats):
+        # season_to_date_mean is always the lowest MAE (best) in this fixture,
+        # by a margin large enough to be unambiguous.
+        naive_baselines[stat] = {
+            "trailing_5_mean": {"pooled": pooled_row(stat, "trailing_5_mean", 5.0 + i)},
+            "season_to_date_mean": {"pooled": pooled_row(stat, "season_to_date_mean", 4.0 + i)},
+            "league_mean": {"pooled": pooled_row(stat, "league_mean", 6.0 + i)},
+        }
+
+    granular_metrics = {
+        "schema": "market_program/SCOREBOARD/granular/player_granular_metrics/1",
+        "generated_utc": "2026-08-06T20:12:02+00:00",
+        "contract_sha256": "f" * 64,
+        "producer": "compute_player_granular.py",
+        "producer_sha256": "1" * 64,
+        "naive_baselines": naive_baselines,
+        "market_threshold": {
+            "points": {
+                "pooled_books": {"pooled": {
+                    "evidence_class": "MARKET_THRESHOLD",
+                    "model_version": "market_lines/T1_vendor_asserted_snapshot/1",
+                    "target": "points",
+                    "cutoff": "vendor-asserted pre-game snapshot (FIXTURE)",
+                    "universe": "fixture prop quote rows joined to player-game outcomes",
+                    "date_range": ["2024-05-14", "2026-07-30"],
+                    "bookmaker": "ALL_BOOKS_POOLED",
+                    "n_quote_rows": 27916,
+                    "n_player_games": 5900,
+                    "threshold_mae": 5.0093,
+                    "threshold_mae_note": "THRESHOLD MAE (line vs realized stat) per D036 point 5 -- NOT a projection MAE",
+                    "devig_ou_accuracy": 0.5299,
+                    "devig_brier": 0.2485,
+                    "vig_method": "multiplicative_proportional",
+                    "vig_preregistration_hash": "2" * 64,
+                }},
+                "per_book": {"betmgm": {}, "bovada": {}},
+            }
+        },
+        "our_model": {"lifecycle_state": "NOT-YET-EVALUATED-PENDING-AUDIT",
+                      "note": "D037 fixture: no legacy number appears in this file."},
+    }
+    granular_coverage = {
+        "schema": "market_program/SCOREBOARD/granular/player_granular_coverage/1",
+        "generated_utc": "2026-08-06T20:12:02+00:00",
+        "seasons": [2022, 2023, 2024, 2025, 2026],
+        "n_player_games_total": 22821,
+        "unique_game_dates": 429,
+        "unique_games": 1197,
+        "market_join_audit": {
+            "n_raw_rows": 36946,
+            "n_quote_rows_matched": 27916,
+            "n_quote_rows_unmatched": 3427,
+            "n_matched_player_games": 5900,
+            "n_unmatched_player_games": 645,
+            "market_families_present": ["player_points"],
+            "market_families_supported": ["player_points"],
+        },
+    }
+    for name, doc in (("player_granular_metrics.json", granular_metrics),
+                       ("player_granular_coverage.json", granular_coverage)):
+        with open(os.path.join(gdir, name), "w", encoding="utf-8") as f:
+            json.dump(doc, f, indent=2)
+    return granular_metrics, granular_coverage
+
+
 def run_generator_tests(tmp):
     make_generator_fixture(tmp)
+    make_granular_fixture(tmp)
     out1 = os.path.join(tmp, "run1")
     out2 = os.path.join(tmp, "run2")
     os.makedirs(out1); os.makedirs(out2)
@@ -269,6 +367,32 @@ def run_generator_tests(tmp):
     check("golden: provenance sha256 of fixture source", "c" * 64 in h1)
     check("golden: declared-pending naive baselines", "DECLARED-PENDING" in h1)
 
+    # ---------------------------------------------------------- D037 checks
+    check("golden: granular section heading present", "Granular player outcomes (D037)" in h1)
+    for label in ("Points", "Rebounds", "Assists", "Steals", "Blocks", "Threes made", "Turnovers", "Minutes"):
+        check(f"golden: granular row present for {label}", f'<td class="metric">{label}</td>' in h1)
+    check("golden: granular our-model cells pending", h1.count("NOT-YET-EVALUATED-PENDING-AUDIT") >= 8)
+    check("golden: legacy badge appears exactly on points and minutes (2x)",
+          h1.count("LEGACY RECEIPTABLE - VERIFICATION QUEUED") == 2)
+    check("golden: no legacy number rendered (no MEASURED chip beside the legacy badge)",
+          "LEGACY RECEIPTABLE" in h1 and "PROBE_LEGACY.md verdict: RECEIPTABLE" in h1)
+    check("golden: naive baseline picks season-to-date (lowest fixture MAE) for every stat",
+          h1.count("NAIVE_BASELINE") >= 8 and h1.count("season-to-date mean ·") >= 8)
+    check("golden: naive footnote names all three baselines",
+          "trailing-5 mean, season-to-date mean, league mean" in h1)
+    check("golden: market OU accuracy / Brier / threshold MAE shown for points",
+          "0.5299 OU acc." in h1 and "Brier 0.2485" in h1 and "threshold MAE 5.0093" in h1)
+    check("golden: threshold MAE explicitly not a projection MAE",
+          "NOT a projection MAE" in h1 and "line-vs-outcome distance" in h1)
+    check("golden: D036 point 5 threshold-vs-projection sentence present",
+          "A market line is a threshold, not a projection" in h1)
+    check("golden: rebounds/assists/threes market cells NOT CAPTURED (single-family archive)",
+          h1.count("NOT CAPTURED (single-family archive)") >= 7)
+    check("golden: coverage strip shows granular player archive tile",
+          "Granular player archive" in h1)
+    check("golden: coverage strip shows the 22,821 player-game universe",
+          "22,821" in h1 and "player-game universe" in h1)
+
     man = json.load(open(os.path.join(out1, "scoreboard_manifest.json"), encoding="utf-8"))
     ok = True
     for name, rec in man["inputs"].items():
@@ -278,7 +402,7 @@ def run_generator_tests(tmp):
     ok = ok and hashlib.sha256(out_b).hexdigest() == man["output"]["sha256"]
     gen_b = open(build_scoreboard.__file__, "rb").read()
     ok = ok and hashlib.sha256(gen_b).hexdigest() == man["generator"]["sha256"]
-    check("manifest: all sha256 verify (3 inputs + generator + output)", ok)
+    check("manifest: all sha256 verify (5 inputs + generator + output)", ok)
     check("manifest: carries generation timestamp", bool(man.get("generated_utc")))
 
 

@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""D036 point 8 scoreboard generator.
+"""D036 point 8 / D037 scoreboard generator.
 
-Deterministic: reads exactly three JSON inputs (data_coverage.json,
-metrics.json, lifecycle.json) and emits scoreboard.html plus
+Deterministic: reads exactly five JSON inputs (data_coverage.json,
+metrics.json, lifecycle.json, granular/player_granular_metrics.json,
+granular/player_granular_coverage.json) and emits scoreboard.html plus
 scoreboard_manifest.json.  Given identical input bytes the emitted HTML is
 byte-identical (the page's own displayed timestamps come from the inputs).
-The manifest carries its own generation timestamp and the sha256 of the three
+The manifest carries its own generation timestamp and the sha256 of the five
 inputs, this generator, and the output.
+
+The two granular/*.json inputs are READ-ONLY: they are pre-computed by
+experiments/market_program/SCOREBOARD/granular/compute_player_granular.py and
+this generator only selects and formats already-computed fields from them --
+it never recomputes a metric.
 
 The visual system (tokens, chips, tiles, table anatomy) is preserved from the
 prior hand-edited scoreboard.html, which this generated page replaces.
@@ -182,8 +188,206 @@ def pooled(baseline_rows, snapshot_class, variant):
 
 PENDING = "NOT-YET-EVALUATED-PENDING-AUDIT"
 
+# ---------------------------------------------------------------- D037: granular player outcomes
+GRANULAR_STATS = [
+    ("points", "Points"),
+    ("rebounds", "Rebounds"),
+    ("assists", "Assists"),
+    ("steals", "Steals"),
+    ("blocks", "Blocks"),
+    ("threes_made", "Threes made"),
+    ("turnovers", "Turnovers"),
+    ("minutes", "Minutes"),
+]
+NAIVE_VARIANTS = ("trailing_5_mean", "season_to_date_mean", "league_mean")
+NAIVE_VARIANT_LABELS = {
+    "trailing_5_mean": "trailing-5 mean",
+    "season_to_date_mean": "season-to-date mean",
+    "league_mean": "league mean",
+}
+LEGACY_PROBED_STATS = {"points", "minutes"}
+LEGACY_PROBE_NOTE = (
+    "PROBE_LEGACY.md verdict: RECEIPTABLE -- committed OOF prediction artifacts "
+    "(cbs_v15_player_oof_v5, cbs_v14_player_oof, oof_backfill) exist on disk with "
+    "per-fold cutoff-discipline receipts and sha256 manifests. Per D037, no legacy "
+    "number is rendered until a verification node executes the full checklist (byte "
+    "integrity, producer digest, cutoff discipline, universe, config/snapshot "
+    "pinning, generation-only claim, tier semantics)."
+)
 
-def build_html(coverage, metrics, lifecycle):
+
+def best_naive_pooled(granular_metrics, stat_key):
+    """Select the naive baseline variant with the lowest pooled MAE for a stat.
+
+    Selection only -- the pooled MAE values themselves are read verbatim from
+    granular/player_granular_metrics.json, never recomputed.
+    """
+    variants = granular_metrics["naive_baselines"][stat_key]
+    best_variant = min(NAIVE_VARIANTS, key=lambda v: variants[v]["pooled"]["mae"])
+    return best_variant, variants[best_variant]["pooled"]
+
+
+def naive_prov_title(row, granular_metrics):
+    bits = [
+        "naive baseline (best of three by pooled MAE)",
+        f"model version: {row.get('model_version')}",
+        f"target: {row.get('target')}",
+        f"cutoff: {row.get('cutoff')}",
+        f"universe: {row.get('universe')}",
+        f"date range: {row.get('date_range')}",
+        f"evidence class: {row.get('evidence_class')}",
+        f"n_player_games: {row.get('n_player_games')}",
+        f"producer: {granular_metrics.get('producer')} sha256={granular_metrics.get('producer_sha256')}",
+        f"contract sha256: {granular_metrics.get('contract_sha256')}",
+        f"computed at: {granular_metrics.get('generated_utc')}",
+    ]
+    return " | ".join(str(b) for b in bits)
+
+
+def market_prov_title(row, granular_metrics):
+    bits = [
+        "market threshold (all books pooled)",
+        f"model version: {row.get('model_version')}",
+        f"target: {row.get('target')}",
+        f"cutoff: {row.get('cutoff')}",
+        f"universe: {row.get('universe')}",
+        f"date range: {row.get('date_range')}",
+        f"evidence class: {row.get('evidence_class')}",
+        f"vig method: {row.get('vig_method')}",
+        f"vig preregistration sha256: {row.get('vig_preregistration_hash')}",
+        f"n_quote_rows: {row.get('n_quote_rows')}",
+        f"n_player_games: {row.get('n_player_games')}",
+        f"computed at: {granular_metrics.get('generated_utc')}",
+    ]
+    return " | ".join(str(b) for b in bits)
+
+
+def build_granular_section(granular_metrics, granular_coverage):
+    """D037 GRANULAR PLAYER OUTCOMES section.
+
+    One row per stat; columns are Our model | Best naive baseline |
+    Market (threshold, player_points only) | Notes. Every number displayed
+    here is read verbatim from granular/player_granular_metrics.json /
+    granular/player_granular_coverage.json -- this function only selects,
+    formats and labels.
+    """
+    gm = granular_metrics
+    gc = granular_coverage
+    market_points = gm["market_threshold"]["points"]["pooled_books"]["pooled"]
+
+    pend_title = (
+        "Lifecycle: BUILT → AUDITED → FITTING → EVALUATED/SEALED → ADJUDICATED. "
+        "Blind fits have not run for the granular player targets."
+    )
+    pending_chip = chip("pend", PENDING, pend_title, long=True)
+    legacy_chip = chip("warn", "LEGACY RECEIPTABLE - VERIFICATION QUEUED", LEGACY_PROBE_NOTE, long=True)
+    not_captured = chip(
+        "warn", "NOT CAPTURED (single-family archive)",
+        "The props archive holds exactly one market family: player_points. No rebounds, "
+        "assists, steals, blocks, threes, turnovers or minutes prop lines exist in it.",
+        long=True,
+    )
+
+    parts = []
+    a = parts.append
+    a('<section class="predsec">')
+    a('<h2>Granular player outcomes (D037) — model vs naive floor vs market, independent of moneyline pricing</h2>')
+    a(f'<p class="foot">Player-game universe: <b>{gc["n_player_games_total"]:,}</b> player-games, seasons '
+      f'{gc["seasons"][0]}–{gc["seasons"][-1]} ({gc["unique_game_dates"]:,} unique calendar dates, '
+      f'{gc["unique_games"]:,} unique games). One row per stat; naive baselines are strictly-lagged and computed '
+      f'from owned gamelogs; nothing on this page is recomputed from the granular inputs, only selected and labeled.</p>')
+    a('<div class="tablewrap"><table>')
+    a('<thead><tr>'
+      '<th style="width:14%">Stat</th>'
+      '<th><span class="dot" style="background:var(--us)"></span>Our model</th>'
+      '<th><span class="dot" style="background:var(--best)"></span>Best naive baseline</th>'
+      '<th><span class="dot" style="background:var(--mkt)"></span>Market (threshold, player_points only)</th>'
+      '<th style="width:20%">Notes</th></tr></thead><tbody>')
+
+    for stat_key, label in GRANULAR_STATS:
+        best_variant, best_row = best_naive_pooled(gm, stat_key)
+        naive_title = naive_prov_title(best_row, gm)
+        naive_cell = (
+            f'<span class="num">{best_row["mae"]:.4f} MAE</span>'
+            f'<span class="sub">{esc(NAIVE_VARIANT_LABELS[best_variant])} · '
+            f'95% CI [{best_row["mae_ci95"]["lo"]:.4f}, {best_row["mae_ci95"]["hi"]:.4f}] · '
+            f'n={best_row["n_player_games"]:,} · {esc(best_row["evidence_class"])} ⁹</span> '
+            f'{chip("ok", "NAIVE_BASELINE", naive_title)}'
+        )
+
+        our_cell = f'{pending_chip} {legacy_chip}' if stat_key in LEGACY_PROBED_STATS else pending_chip
+
+        if stat_key == "points":
+            mkt_title = market_prov_title(market_points, gm)
+            mkt_cell = (
+                f'<span class="num">{market_points["devig_ou_accuracy"]:.4f} OU acc.</span>'
+                f'<span class="sub">de-vigged Brier {market_points["devig_brier"]:.4f} · '
+                f'threshold MAE {market_points["threshold_mae"]:.4f} (line-vs-outcome distance, '
+                f'NOT a projection MAE ¹⁰) · n={market_points["n_player_games"]:,} player-games / '
+                f'{market_points["n_quote_rows"]:,} quote rows</span> '
+                f'{chip("ok", "MEASURED — T1 VENDOR-ASSERTED", mkt_title)}'
+            )
+        else:
+            mkt_cell = not_captured
+
+        if stat_key == "points":
+            notes = ("Threshold metrics are primary per D036 point 5. " + LEGACY_PROBE_NOTE)
+        elif stat_key == "minutes":
+            notes = LEGACY_PROBE_NOTE
+        else:
+            notes = (
+                "No legacy artifact registered for this target -- the legacy lane never "
+                "targeted it, so the column is ABSENT, not unreceipted (PROBE_LEGACY.md)."
+            )
+
+        a(f'<tr><td class="metric">{esc(label)}</td>'
+          f'<td>{our_cell}</td>'
+          f'<td>{naive_cell}</td>'
+          f'<td>{mkt_cell}</td>'
+          f'<td class="foot">{esc(notes)}</td></tr>')
+
+    a('</tbody></table></div>')
+    a('<p class="foot"><span class="mark">⁹ Naive baseline selection.</span> Best of three strictly-lagged '
+      'baselines by pooled MAE: trailing-5 mean, season-to-date mean, league mean -- all three computed '
+      'pregame-by-construction from owned gamelogs, full provenance in the popover.</p>')
+    a('<p class="foot"><span class="mark">¹⁰ Threshold vs projection.</span> A market line is a threshold, '
+      'not a projection: threshold MAE measures the distance between the posted line and the realized stat and, '
+      'per D036 point 5, is NOT comparable to a projection MAE. De-vigged OU accuracy and Brier are the primary, '
+      'comparable market quantities.</p>')
+    a('</section>')
+    return "\n".join(parts)
+
+
+def granular_coverage_tile(granular_metrics, granular_coverage):
+    """Seven-counts coverage tile for the granular player archive (D037),
+    selected verbatim from granular/player_granular_coverage.json's
+    market_join_audit block -- never recomputed."""
+    gc = granular_coverage
+    mja = gc["market_join_audit"]
+    per_book = granular_metrics["market_threshold"]["points"]["per_book"]
+    g7 = {
+        "n_raw_prop_rows": mja["n_raw_rows"],
+        "n_quote_rows_matched": mja["n_quote_rows_matched"],
+        "n_quote_rows_unmatched": mja["n_quote_rows_unmatched"],
+        "n_player_games_matched": mja["n_matched_player_games"],
+        "n_player_games_unmatched": mja["n_unmatched_player_games"],
+        "unique_books": len(per_book),
+        "unique_market_families": len(mja["market_families_supported"]),
+    }
+    return (
+        '<div class="tile"><div class="k">Granular player archive · player_granular_coverage.json</div><div class="d">'
+        f'<b>{gc["n_player_games_total"]:,}</b> player-game universe (seasons {gc["seasons"][0]}–{gc["seasons"][-1]}) · '
+        f'<b>{g7["n_raw_prop_rows"]:,}</b> raw prop rows · '
+        f'<b>{g7["n_quote_rows_matched"]:,}</b> quote rows matched · '
+        f'<b>{g7["n_quote_rows_unmatched"]:,}</b> quote rows unmatched · '
+        f'<b>{g7["n_player_games_matched"]:,}</b> player-games matched · '
+        f'<b>{g7["n_player_games_unmatched"]:,}</b> player-games unmatched · '
+        f'<b>{g7["unique_books"]}</b> books · '
+        f'<b>{g7["unique_market_families"]}</b> market family (player_points only)</div></div>'
+    )
+
+
+def build_html(coverage, metrics, lifecycle, granular_metrics, granular_coverage):
     inc = get_row(metrics, "incumbent_operational_team_attributed_turnovers")
     inc_in = get_row(metrics, "incumbent_intrinsic_team_attributed_turnovers")
     bb = get_row(metrics, "bookie_baseline")
@@ -345,6 +549,9 @@ def build_html(coverage, metrics, lifecycle):
     a('</tbody></table></div>')
     a('</section>')
 
+    # D037 granular player outcomes section --------------------------------------
+    a(build_granular_section(granular_metrics, granular_coverage))
+
     # operational section — visually distinct -----------------------------------
     a('<section class="opsec">')
     a('<h2>Operational progress — NOT predictive evidence</h2>')
@@ -382,8 +589,10 @@ def build_html(coverage, metrics, lifecycle):
       f'<b>{f7["unique_market_families"]}</b> market families ({esc(", ".join(feat["market_families"]))}) · '
       f'events commence {esc(feat["commence_time_range_of_events"][0][:10])} → {esc(feat["commence_time_range_of_events"][1][:10])} · '
       f'sha256 <code>{esc(feat["sha256"][:16])}…</code></div></div>')
+    a(granular_coverage_tile(granular_metrics, granular_coverage))
     a('</div>')
-    a(f'<p class="foot">{esc(props["tier_caveat"])}. The old “833 game days” figure is withdrawn: 833 is the count of event-snapshot records with a non-empty payload, not calendar dates.</p>')
+    a(f'<p class="foot">{esc(props["tier_caveat"])}. The old “833 game days” figure is withdrawn: 833 is the count of event-snapshot records with a non-empty payload, not calendar dates. '
+      f'The granular player archive (D037) player-game universe is <b>{granular_coverage["n_player_games_total"]:,}</b>, distinct from the props/featured event-snapshot counts above.</p>')
     a('</section>')
 
     # dropped cells ---------------------------------------------------------------
@@ -439,13 +648,18 @@ def main(indir=HERE, outdir=None):
         "data_coverage.json": os.path.join(indir, "data_coverage.json"),
         "metrics.json": os.path.join(indir, "metrics.json"),
         "lifecycle.json": os.path.join(indir, "lifecycle.json"),
+        "granular/player_granular_metrics.json": os.path.join(indir, "granular", "player_granular_metrics.json"),
+        "granular/player_granular_coverage.json": os.path.join(indir, "granular", "player_granular_coverage.json"),
     }
     docs = {}
     for name, path in inputs.items():
         with open(path, encoding="utf-8") as f:
             docs[name] = json.load(f)
 
-    page = build_html(docs["data_coverage.json"], docs["metrics.json"], docs["lifecycle.json"])
+    page = build_html(
+        docs["data_coverage.json"], docs["metrics.json"], docs["lifecycle.json"],
+        docs["granular/player_granular_metrics.json"], docs["granular/player_granular_coverage.json"],
+    )
     out_html = os.path.join(outdir, "scoreboard.html")
     with open(out_html, "w", encoding="utf-8", newline="\n") as f:
         f.write(page)
@@ -453,7 +667,7 @@ def main(indir=HERE, outdir=None):
     generator_path = os.path.abspath(__file__)
     manifest = {
         "schema": "market_program/SCOREBOARD/manifest/1",
-        "decision_authority": "D036_SCOREBOARD_MEASUREMENT_SEMANTICS point 8",
+        "decision_authority": "D036_SCOREBOARD_MEASUREMENT_SEMANTICS point 8, D037_GRANULAR_PLAYER_SCOREBOARD",
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "inputs": {name: {"path": path.replace("\\", "/"), "sha256": sha256_file(path)} for name, path in inputs.items()},
         "generator": {"path": generator_path.replace("\\", "/"), "sha256": sha256_file(generator_path)},
