@@ -6,19 +6,19 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `a945b41592782efe408fcebcaa644a590b448f10` |
+| HEAD | `4739d3cdf062b4dc651caf3f96f51977d969adb0` |
 | working tree | DIRTY |
 | nodes | 87 |
-| events | 240 |
+| events | 261 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 17 |
-| PASSED | 52 |
-| READY | 9 |
-| RUNNING | 1 |
+| BLOCKED | 14 |
+| PASSED | 57 |
+| READY | 4 |
+| RUNNING | 4 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 2 |
 
@@ -28,19 +28,17 @@ None open against a node.
 
 ## Running
 
-* `P35_FREEZE_TASK_CARDS` — Freeze task cards and append registry records
+* `M09_TRUE_ARB_SCANNER` — True-arbitrage scanner over live multi-book capture: flags only, never orders
+* `M11_CONSENSUS_MODEL` — Multi-book consensus / fair-value model with preregistered vig treatment
+* `M25_MARKET_UI_FIXTURES` — Market screen shell against fixtures, extending the existing U11/U13 pattern
+* `P36_IMPLEMENT_ARMS` — Implement each arm, K0_FLAT, each K0_MATCHED, the shared runner and receipts
 
 ## Ready — next automatically scheduled
 
-* `M01_MARKET_DATA_INVENTORY` (market_intelligence) — Classify every market-relevant source by point-in-time class; rule on the earliest valid tape date
-* `M02_BUILD_VS_BUY` (market_intelligence) — Vendor matrix with verified Odds API historical coverage; costed build-vs-buy recommendation
-* `M04_COMPETITOR_ARCHIVE_DESIGN` (market_intelligence) — Fixed-cutoff competitor-projection archive design with explicit licensing surface
-* `M05_EVENT_MARKET_LINKAGE` (market_intelligence) — Deterministic event-to-quote linkage with explicit censoring intervals
+* `M06_INJURY_REACTION_STUDY` (market_intelligence) — Injury-news reaction-time event study on point-in-time tape only
 * `M07_BOOK_LEAD_LAG` (market_intelligence) — Which book moves first: lead-lag measurement across synchronized captures
-* `M09_TRUE_ARB_SCANNER` (market_intelligence) — True-arbitrage scanner over live multi-book capture: flags only, never orders
 * `M17_SUSPENSION_REOPENING` (market_intelligence) — Market suspension and reopening microstructure on the high-frequency tape
 * `M21_EXECUTION_REALISM` (market_intelligence) — Execution realism: limits, slippage and decision-to-executable latency, measured
-* `M25_MARKET_UI_FIXTURES` (market_intelligence) — Market screen shell against fixtures, extending the existing U11/U13 pattern
 
 ## Passed
 
@@ -54,7 +52,11 @@ None open against a node.
 * `I11_BLINDED_RESULT_PACKAGING` — Generic sealed-result and integrity-manifest tooling
 * `I13_REPRODUCIBILITY_RUNNER` — Deterministic commands, seed manifests and artifact reconciliation
 * `M00_MARKET_PROGRAM_CONTRACT` — Freeze the market lane's taxonomy, evidence ladder, system separation and archive-use bounds
+* `M01_MARKET_DATA_INVENTORY` — Classify every market-relevant source by point-in-time class; rule on the earliest valid tape date
+* `M02_BUILD_VS_BUY` — Vendor matrix with verified Odds API historical coverage; costed build-vs-buy recommendation
 * `M03_CAPTURE_UPGRADE` — High-frequency live odds capture: cadence measurement, event-driven bursts, latency fields
+* `M04_COMPETITOR_ARCHIVE_DESIGN` — Fixed-cutoff competitor-projection archive design with explicit licensing surface
+* `M05_EVENT_MARKET_LINKAGE` — Deterministic event-to-quote linkage with explicit censoring intervals
 * `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
 * `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
 * `O12_PER_GAME_EXECUTION_SCOPE` — Per-game execution scope defect
@@ -75,6 +77,7 @@ None open against a node.
 * `P32_CANDIDATE_SYNTHESIS` — Deduplicate into mechanistically distinct families; return complete arm definitions
 * `P33_PREREGISTRATION_DRAFT` — Freeze every retained arm's complete specification
 * `P34_PREREGISTRATION_RED_TEAM` — Independent adversarial review of the preregistration
+* `P35_FREEZE_TASK_CARDS` — Freeze task cards and append registry records
 * `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
 * `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 * `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
@@ -109,7 +112,7 @@ None open against a node.
 | data | 0 | 5 | 0 | 0 | 1 | 0 |
 | future_research | 0 | 7 | 0 | 0 | 0 | 0 |
 | governance | 0 | 5 | 0 | 0 | 1 | 0 |
-| market_intelligence | 10 | 2 | 9 | 0 | 0 | 1 |
+| market_intelligence | 8 | 6 | 4 | 3 | 0 | 1 |
 | operations | 0 | 12 | 0 | 0 | 2 | 0 |
-| possession | 7 | 17 | 0 | 1 | 2 | 1 |
+| possession | 6 | 18 | 0 | 1 | 2 | 1 |
 | product | 0 | 4 | 0 | 0 | 0 | 0 |
