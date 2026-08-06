@@ -6,17 +6,17 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `61ab5cb3b794704e36ae37c697708136f421914b` |
+| HEAD | `a899cb220aae55ea91481b2ae2dd4869a169d94c` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 186 |
+| events | 195 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 9 |
-| PASSED | 48 |
+| BLOCKED | 8 |
+| PASSED | 49 |
 | RUNNING | 1 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 1 |
@@ -27,7 +27,7 @@ None open against a node.
 
 ## Running
 
-* `P33_PREREGISTRATION_DRAFT` — Freeze every retained arm's complete specification
+* `P34_PREREGISTRATION_RED_TEAM` — Independent adversarial review of the preregistration
 
 ## Ready — next automatically scheduled
 
@@ -62,6 +62,7 @@ None.
 * `P30_EVIDENCE_PACKET_V3` — Build and freeze EVIDENCE_PACKET_V3 with an immutable correction addendum
 * `P31_FINAL_V3_IDEATION` — Final clean ideation wave: six independent roles, V3 only, no source sees another output
 * `P32_CANDIDATE_SYNTHESIS` — Deduplicate into mechanistically distinct families; return complete arm definitions
+* `P33_PREREGISTRATION_DRAFT` — Freeze every retained arm's complete specification
 * `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
 * `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 * `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
@@ -96,5 +97,5 @@ None.
 | future_research | 0 | 7 | 0 | 0 | 0 |
 | governance | 0 | 5 | 0 | 1 | 0 |
 | operations | 0 | 12 | 0 | 2 | 0 |
-| possession | 9 | 15 | 1 | 2 | 1 |
+| possession | 8 | 16 | 1 | 2 | 1 |
 | product | 0 | 4 | 0 | 0 | 0 |
