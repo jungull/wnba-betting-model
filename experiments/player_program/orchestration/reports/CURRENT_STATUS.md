@@ -6,18 +6,18 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `df20524f53d790603cb0aa82386bcd0653f53a8e` |
+| HEAD | `f0916dbe35e8df20e11cabe853ca91ee4c9269c3` |
 | working tree | DIRTY |
 | nodes | 87 |
-| events | 219 |
+| events | 226 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 24 |
-| PASSED | 49 |
-| READY | 4 |
+| BLOCKED | 22 |
+| PASSED | 50 |
+| READY | 5 |
 | RUNNING | 2 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 2 |
@@ -28,15 +28,16 @@ None open against a node.
 
 ## Running
 
-* `M00_MARKET_PROGRAM_CONTRACT` — Freeze the market lane's taxonomy, evidence ladder, system separation and archive-use bounds
+* `M03_CAPTURE_UPGRADE` — High-frequency live odds capture: cadence measurement, event-driven bursts, latency fields
 * `P34_PREREGISTRATION_RED_TEAM` — Independent adversarial review of the preregistration
 
 ## Ready — next automatically scheduled
 
+* `M01_MARKET_DATA_INVENTORY` (market_intelligence) — Classify every market-relevant source by point-in-time class; rule on the earliest valid tape date
 * `M02_BUILD_VS_BUY` (market_intelligence) — Vendor matrix with verified Odds API historical coverage; costed build-vs-buy recommendation
-* `M03_CAPTURE_UPGRADE` (market_intelligence) — High-frequency live odds capture: cadence measurement, event-driven bursts, latency fields
 * `M04_COMPETITOR_ARCHIVE_DESIGN` (market_intelligence) — Fixed-cutoff competitor-projection archive design with explicit licensing surface
 * `M05_EVENT_MARKET_LINKAGE` (market_intelligence) — Deterministic event-to-quote linkage with explicit censoring intervals
+* `M25_MARKET_UI_FIXTURES` (market_intelligence) — Market screen shell against fixtures, extending the existing U11/U13 pattern
 
 ## Passed
 
@@ -49,6 +50,7 @@ None open against a node.
 * `I10_GENERIC_CLUSTERED_INFERENCE` — Reusable game-clustered bootstrap and interval utilities in a task-isolated namespace
 * `I11_BLINDED_RESULT_PACKAGING` — Generic sealed-result and integrity-manifest tooling
 * `I13_REPRODUCIBILITY_RUNNER` — Deterministic commands, seed manifests and artifact reconciliation
+* `M00_MARKET_PROGRAM_CONTRACT` — Freeze the market lane's taxonomy, evidence ladder, system separation and archive-use bounds
 * `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
 * `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
 * `O12_PER_GAME_EXECUTION_SCOPE` — Per-game execution scope defect
@@ -102,7 +104,7 @@ None open against a node.
 | data | 0 | 5 | 0 | 0 | 1 | 0 |
 | future_research | 0 | 7 | 0 | 0 | 0 | 0 |
 | governance | 0 | 5 | 0 | 0 | 1 | 0 |
-| market_intelligence | 16 | 0 | 4 | 1 | 0 | 1 |
+| market_intelligence | 14 | 1 | 5 | 1 | 0 | 1 |
 | operations | 0 | 12 | 0 | 0 | 2 | 0 |
 | possession | 8 | 16 | 0 | 1 | 2 | 1 |
 | product | 0 | 4 | 0 | 0 | 0 | 0 |
