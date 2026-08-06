@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `7b9184241cf658867a694b40d204ecea057f2cd4` |
+| HEAD | `9b1ec99c98ace58f6d6a15ff042dc97483892a28` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 171 |
+| events | 178 |
 
 ## Counts by status
 
@@ -17,9 +17,9 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 10 |
 | PASSED | 46 |
-| RUNNING | 1 |
+| RUNNING | 2 |
 | SUPERSEDED | 6 |
-| USER_REQUIRED | 2 |
+| USER_REQUIRED | 1 |
 
 ## Severity A blockers
 
@@ -28,6 +28,7 @@ None open against a node.
 ## Running
 
 * `P32_CANDIDATE_SYNTHESIS` — Deduplicate into mechanistically distinct families; return complete arm definitions
+* `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 
 ## Ready — next automatically scheduled
 
@@ -85,7 +86,6 @@ None.
 ## Human gates
 
 * `P43_CHAMPION_DECISION` — Whether to replace Arm D as the frozen champion
-* `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 
 ## By lane
 
@@ -94,6 +94,6 @@ None.
 | data | 0 | 5 | 0 | 1 | 0 |
 | future_research | 0 | 7 | 0 | 0 | 0 |
 | governance | 0 | 5 | 0 | 1 | 0 |
-| operations | 0 | 11 | 0 | 2 | 1 |
+| operations | 0 | 11 | 1 | 2 | 0 |
 | possession | 10 | 14 | 1 | 2 | 1 |
 | product | 0 | 4 | 0 | 0 | 0 |
