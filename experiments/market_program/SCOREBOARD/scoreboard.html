@@ -1,0 +1,242 @@
+<title>WNBA Model vs Market — Scoreboard</title>
+<style>
+  :root {
+    --bg: #FAFAF7; --surface: #FFFFFF; --line: #E4E2DB;
+    --ink: #1D1E1A; --ink-2: #565750; --ink-3: #8B8B83;
+    --accent: #C2571B; --accent-ink: #9C4413;
+    --us: #C2571B; --mkt: #33628C; --best: #6B4FA1; --worst: #857F72;
+    --ok: #2E7D4F; --ok-bg: #E7F2EA;
+    --run: #8A6D1F; --run-bg: #F5EEDA;
+    --sealed: #5B5E66; --sealed-bg: #ECECEF;
+    --tbd: #8B8B83; --tbd-bg: #F1F0EC;
+    --warn: #A04E12; --warn-bg: #F8EBE1;
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg: #14161A; --surface: #1C1F24; --line: #2E323A;
+    --ink: #E9E8E2; --ink-2: #A8A9A1; --ink-3: #767770;
+    --accent: #E07A3E; --accent-ink: #E8925F;
+    --us: #E07A3E; --mkt: #6FA0CC; --best: #A38BD4; --worst: #8C8677;
+    --ok: #58A87C; --ok-bg: #1E2E25;
+    --run: #C9A94E; --run-bg: #2E2917;
+    --sealed: #9DA1AB; --sealed-bg: #262930;
+    --tbd: #767770; --tbd-bg: #22242A;
+    --warn: #D98147; --warn-bg: #322015;
+  }}
+  :root[data-theme="light"] {
+    --bg: #FAFAF7; --surface: #FFFFFF; --line: #E4E2DB;
+    --ink: #1D1E1A; --ink-2: #565750; --ink-3: #8B8B83;
+    --accent: #C2571B; --accent-ink: #9C4413;
+    --us: #C2571B; --mkt: #33628C; --best: #6B4FA1; --worst: #857F72;
+    --ok: #2E7D4F; --ok-bg: #E7F2EA;
+    --run: #8A6D1F; --run-bg: #F5EEDA;
+    --sealed: #5B5E66; --sealed-bg: #ECECEF;
+    --tbd: #8B8B83; --tbd-bg: #F1F0EC;
+    --warn: #A04E12; --warn-bg: #F8EBE1;
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161A; --surface: #1C1F24; --line: #2E323A;
+    --ink: #E9E8E2; --ink-2: #A8A9A1; --ink-3: #767770;
+    --accent: #E07A3E; --accent-ink: #E8925F;
+    --us: #E07A3E; --mkt: #6FA0CC; --best: #A38BD4; --worst: #8C8677;
+    --ok: #58A87C; --ok-bg: #1E2E25;
+    --run: #C9A94E; --run-bg: #2E2917;
+    --sealed: #9DA1AB; --sealed-bg: #262930;
+    --tbd: #767770; --tbd-bg: #22242A;
+    --warn: #D98147; --warn-bg: #322015;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 ui-sans-serif, system-ui, "Segoe UI", sans-serif; margin: 0; padding: 32px 20px 64px; }
+  .wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-ink); }
+  h1 { font-size: 26px; font-weight: 800; margin: 2px 0 0; letter-spacing: -.01em; text-wrap: balance; }
+  .stamp { color: var(--ink-3); font-size: 12.5px; margin-top: 6px; }
+  .stamp b { color: var(--ink-2); font-weight: 600; }
+  h2 { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 10px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px 14px; }
+  .tile .k { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .tile .v { font-size: 30px; font-weight: 800; letter-spacing: -.02em; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .tile .v small { font-size: 14px; font-weight: 600; color: var(--ink-2); letter-spacing: 0; }
+  .tile .d { font-size: 12.5px; color: var(--ink-2); }
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; vertical-align: middle; }
+  .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .c-ok { color: var(--ok); background: var(--ok-bg); }
+  .c-run { color: var(--run); background: var(--run-bg); }
+  .c-sealed { color: var(--sealed); background: var(--sealed-bg); }
+  .c-sealed::before { content: "🔒"; width: auto; height: auto; background: none; font-size: 9px; }
+  .c-tbd { color: var(--tbd); background: var(--tbd-bg); }
+  .c-na { color: var(--ink-3); background: none; border: 1px dashed var(--line); }
+  .c-na::before { display: none; }
+  .tablewrap { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 880px; }
+  th, td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 13.5px; vertical-align: top; }
+  thead th { border-top: none; font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); padding-top: 14px; }
+  thead th .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: baseline; }
+  tbody th[colspan] { background: none; border-top: 1px solid var(--line); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-ink); padding: 14px 14px 6px; font-weight: 800; }
+  td .num { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 14.5px; }
+  td .sub { display: block; color: var(--ink-3); font-size: 11.5px; margin-top: 2px; }
+  .metric { font-weight: 600; }
+  .metric .sub { font-weight: 400; }
+  .foot { font-size: 12.5px; color: var(--ink-2); }
+  .foot p { margin: 6px 0; }
+  .foot .mark { font-weight: 700; color: var(--ink); }
+  .pipe { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pipe .step { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--ink-2); }
+  .pipe .step b { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+  .pipe .step.now { border-color: var(--accent); }
+  .pipe .step.now b { color: var(--accent-ink); }
+  .log { font-size: 12.5px; color: var(--ink-2); border-left: 3px solid var(--line); padding-left: 14px; }
+  .log div { margin: 4px 0; }
+  .log b { color: var(--ink); font-weight: 600; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--ink-2); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">WNBA Program · Persistent Scoreboard</div>
+    <h1>How close are we to reality — and how close are the bookies?</h1>
+    <div class="stamp">Updated <b>Aug 6, 2026 · evening</b> · every number carries its evidence class · cells fill as gates open — nothing here is ever estimated to look finished</div>
+  </header>
+
+  <section>
+    <h2>Headline numbers</h2>
+    <div class="tiles">
+      <div class="tile">
+        <div class="k">Our champion · team possessions</div>
+        <div class="v">2.97 <small>MAE</small></div>
+        <div class="d">Frozen incumbent, walk-forward on 2,982 rows / 1,491 games. The only fully receipted model number today. <span class="chip c-ok">MEASURED</span></div>
+      </div>
+      <div class="tile">
+        <div class="k">Market baseline · all metrics</div>
+        <div class="v">…<small> computing</small></div>
+        <div class="d">Spread MAE, total MAE, win-prob calibration on the same 2022–26 universe, from today's captured archive. <span class="chip c-run">RUNNING</span></div>
+      </div>
+      <div class="tile">
+        <div class="k">Challenger field · 22 variants</div>
+        <div class="v">🔒</div>
+        <div class="d">Built &amp; tested (322/322). Results stay sealed until the audit and blind fits pass — by design. <span class="chip c-sealed">SEALED</span></div>
+      </div>
+      <div class="tile">
+        <div class="k">Live tape · high-frequency odds</div>
+        <div class="v">Night 1</div>
+        <div class="d">Ladder recording since this afternoon; first game windows tonight. Head-to-heads accrue from here. <span class="chip c-ok">ON</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Scoreboard — model vs market vs reality</h2>
+    <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:24%">Metric (vs actual outcome)</th>
+          <th><span class="dot" style="background:var(--us)"></span>Our model</th>
+          <th><span class="dot" style="background:var(--mkt)"></span>Market avg</th>
+          <th><span class="dot" style="background:var(--best)"></span>Best book</th>
+          <th><span class="dot" style="background:var(--worst)"></span>Worst book</th>
+          <th style="width:17%">Head-to-head</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th colspan="6">Team level</th></tr>
+        <tr>
+          <td class="metric">Possessions (reg-equiv)<span class="sub">pace — the program's primary target</span></td>
+          <td><span class="num">2.9675 MAE</span><span class="sub">intrinsic 2.896 · n=1,491 games ¹</span> <span class="chip c-ok">MEASURED</span></td>
+          <td><span class="chip c-na">N/A</span><span class="sub">not directly priced — only implicit in totals</span></td>
+          <td><span class="chip c-na">N/A</span></td>
+          <td><span class="chip c-na">N/A</span></td>
+          <td><span class="chip c-na">N/A</span></td>
+        </tr>
+        <tr>
+          <td class="metric">Game total<span class="sub">combined points</span></td>
+          <td><span class="chip c-sealed">SEALED</span><span class="sub">opens at adjudication ³</span></td>
+          <td><span class="chip c-run">RUNNING</span><span class="sub">baseline computing now ²</span></td>
+          <td><span class="chip c-run">RUNNING</span></td>
+          <td><span class="chip c-run">RUNNING</span></td>
+          <td><span class="chip c-tbd">TBD</span><span class="sub">needs both columns ⁴</span></td>
+        </tr>
+        <tr>
+          <td class="metric">Margin (spread)<span class="sub">final scoring margin</span></td>
+          <td><span class="chip c-sealed">SEALED</span><span class="sub">opens at adjudication ³</span></td>
+          <td><span class="chip c-run">RUNNING</span> <span class="sub">²</span></td>
+          <td><span class="chip c-run">RUNNING</span></td>
+          <td><span class="chip c-run">RUNNING</span></td>
+          <td><span class="chip c-tbd">TBD</span><span class="sub">⁴</span></td>
+        </tr>
+        <tr>
+          <td class="metric">Win probability<span class="sub">Brier · log-loss · calibration</span></td>
+          <td><span class="chip c-sealed">SEALED</span><span class="sub">³</span></td>
+          <td><span class="chip c-run">RUNNING</span><span class="sub">de-vigged ML, 10-bin calibration ²</span></td>
+          <td><span class="chip c-run">RUNNING</span></td>
+          <td><span class="chip c-run">RUNNING</span></td>
+          <td><span class="chip c-tbd">TBD</span><span class="sub">⁴</span></td>
+        </tr>
+        <tr>
+          <td class="metric">Team total<span class="sub">single-team points</span></td>
+          <td><span class="chip c-tbd">TBD</span><span class="sub">downstream of possession target</span></td>
+          <td><span class="chip c-tbd">TBD</span><span class="sub">sparse in archive — coverage being counted ²</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+        </tr>
+        <tr><th colspan="6">Player level</th></tr>
+        <tr>
+          <td class="metric">Player points<span class="sub">vs actual points scored</span></td>
+          <td><span class="chip c-tbd">TBD</span><span class="sub">props are last in the pipeline, by design</span></td>
+          <td><span class="chip c-tbd">TBD</span><span class="sub">engine + 833 game days of prop history (May 2023→) on disk; accuracy run queued ⁵</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+        </tr>
+        <tr>
+          <td class="metric">Player rebounds / assists / threes<span class="sub">per prop family</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+          <td><span class="chip c-tbd">TBD</span><span class="sub">verified real May 2023 onward — earlier "star games only" read was wrong ⁵</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+        </tr>
+        <tr>
+          <td class="metric">Projected minutes<span class="sub">vs actual minutes</span></td>
+          <td><span class="chip c-tbd">TBD</span><span class="sub">reconstruction planned</span></td>
+          <td><span class="chip c-na">N/A</span><span class="sub">market prices props, not minutes — expert sources fill this ⁶</span></td>
+          <td><span class="chip c-na">N/A</span></td>
+          <td><span class="chip c-na">N/A</span></td>
+          <td><span class="chip c-tbd">TBD</span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section class="foot">
+    <h2>Evidence notes — what each mark means</h2>
+    <p><span class="mark">¹ Receipted.</span> Walk-forward, five chronological folds, games never split; the strongest evidence class in the program.</p>
+    <p><span class="mark">² Archive caveat.</span> Market numbers come from the 2022–26 snapshot archive captured Aug 6 — two snapshots per game day with vendor-asserted timestamps. Honest for accuracy-vs-outcome; forbidden for any timing claim.</p>
+    <p><span class="mark">³ Sealed by design.</span> Challenger results cannot be seen — by us or anyone — until the implementation audit and integrity checks pass. Prevents cherry-picking before it can happen.</p>
+    <p><span class="mark">⁴ Head-to-head standard.</span> Comparisons only on identical as-of universes: our prediction at time T vs de-vigged market at time T vs outcome. No mixed-timestamp comparisons, ever.</p>
+    <p><span class="mark">⁵ Threshold-first rule.</span> A single prop line yields a de-vigged over/under probability — the primary quantity. An "implied mean" is only shown where alternate lines exist or a distribution has been calibrated out of sample.</p>
+    <p><span class="mark">⁶ Source hierarchy.</span> Official quarter-hour injury report &gt; team/league announcement &gt; credentialed reporter &gt; archived projections &gt; news &gt; Wikipedia revision &gt; participation inference.</p>
+  </section>
+
+  <section>
+    <h2>Where the TBDs unlock</h2>
+    <div class="pipe">
+      <div class="step now"><b>Now</b>Market baseline computing · live tape night 1</div>
+      <div class="step now"><b>Next</b>Implementation audit (P37) of all 22 variants</div>
+      <div class="step"><b>Then</b>Blind walk-forward fits → sealed results</div>
+      <div class="step"><b>Then</b>Integrity gate → adjudication → SEALED cells open</div>
+      <div class="step"><b>Then</b>Model-vs-market on identical as-of universes</div>
+      <div class="step"><b>Ongoing</b>Prospective: our forecasts vs live tape vs outcomes</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Changelog</h2>
+    <div class="log">
+      <div><b>Aug 6 · late</b> — Historical backfill COMPLETE: 1,415 featured-market snapshots (701 game days, 2022–26) + props discovery: 833 game days carry real bookmaker prop lines, May 2023 onward. SX Bet exchange capture live: 47 WNBA markets, 512 trades, 278 order-book rows in the first 4 cycles. ~64k API credits still in hand.</div>
+      <div><b>Aug 6</b> — Scoreboard created. One receipted model number (possessions 2.9675 MAE). Market baseline dispatched. 2022–26 odds archive captured (701 game days). Live capture ladder activated. 22 challenger variants built, 322/322 tests, results sealed.</div>
+    </div>
+  </section>
+</div>
