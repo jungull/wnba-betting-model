@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -27,36 +27,142 @@ def check(name: str, cond: bool, detail: str = "") -> None:
 
 
 # ---------------------------------------------------------------------------
-# 1. Cost model — matches the measured numbers in ODDS_API_LIVE_VERIFICATION.md
+# 1. Cost model — recomputed for the D033 event-adaptive grid. The scenario
+#    constants are themselves computed from adaptive_snapshot_schedule() at
+#    import time (see dense_window_puller.py), so these checks pin the
+#    numbers reported in the module docstring, not re-derive them independently.
 # ---------------------------------------------------------------------------
 
 def test_cost_model():
-    check("cost_per_snapshot_call == 30", dwp.COST_PER_SNAPSHOT_CALL == 30,
-          f"got {dwp.COST_PER_SNAPSHOT_CALL}")
-    check("n_snapshots_per_event == 13", dwp.N_SNAPSHOTS_PER_EVENT == 13,
-          f"got {dwp.N_SNAPSHOTS_PER_EVENT}")
-    check("cost_per_event == 391", dwp.COST_PER_EVENT == 391,
-          f"got {dwp.COST_PER_EVENT}")
-    check("n_events_under_cap(35000) == 89", dwp.n_events_under_cap(35000) == 89,
-          f"got {dwp.n_events_under_cap(35000)}")
-    check("89 events fits under cap", 89 * dwp.COST_PER_EVENT <= 35000,
-          f"89*{dwp.COST_PER_EVENT}={89*dwp.COST_PER_EVENT}")
-    check("90 events would NOT fit under cap", 90 * dwp.COST_PER_EVENT > 35000,
-          f"90*{dwp.COST_PER_EVENT}={90*dwp.COST_PER_EVENT}")
+    check("cost_per_snapshot_call == 30 (unchanged by the redesign)",
+          dwp.COST_PER_SNAPSHOT_CALL == 30, f"got {dwp.COST_PER_SNAPSHOT_CALL}")
+
+    check("UNKNOWN_TS fallback: 49 snapshots / 1471 credits",
+          dwp.n_snapshots_for_event_offset(None) == 49 and dwp.COST_PER_EVENT_UNKNOWN_TS == 1471,
+          f"got n={dwp.n_snapshots_for_event_offset(None)} cost={dwp.COST_PER_EVENT_UNKNOWN_TS}")
+    check("KNOWN_TS typical (T-2h): 35 snapshots / 1051 credits",
+          dwp.COST_PER_EVENT_KNOWN_TYPICAL == 1051, f"got {dwp.COST_PER_EVENT_KNOWN_TYPICAL}")
+    check("KNOWN_TS worst (T-24h, window edge): 64 snapshots / 1921 credits",
+          dwp.COST_PER_EVENT_KNOWN_WORST == 1921, f"got {dwp.COST_PER_EVENT_KNOWN_WORST}")
+    check("KNOWN_TS best (T-15m): 19 snapshots / 571 credits",
+          dwp.COST_PER_EVENT_KNOWN_BEST == 571, f"got {dwp.COST_PER_EVENT_KNOWN_BEST}")
+
+    check("planning default is the UNKNOWN_TS (fallback) cost — conservative, catalog assumed partial/absent",
+          dwp.COST_PER_EVENT_PLANNING_DEFAULT == dwp.COST_PER_EVENT_UNKNOWN_TS)
+
+    # The headline number this redesign reports: pricier per-event cost under
+    # the adaptive grid pulls N well below the old uniform grid's 89.
+    check("n_events_under_cap(35000) == 23 (new N, under the old grid's 89)",
+          dwp.n_events_under_cap(35000) == 23, f"got {dwp.n_events_under_cap(35000)}")
+    check("23 events fits under cap",
+          23 * dwp.COST_PER_EVENT_PLANNING_DEFAULT <= 35000,
+          f"23*{dwp.COST_PER_EVENT_PLANNING_DEFAULT}={23 * dwp.COST_PER_EVENT_PLANNING_DEFAULT}")
+    check("24 events would NOT fit under cap",
+          24 * dwp.COST_PER_EVENT_PLANNING_DEFAULT > 35000,
+          f"24*{dwp.COST_PER_EVENT_PLANNING_DEFAULT}={24 * dwp.COST_PER_EVENT_PLANNING_DEFAULT}")
+    check("new N (23) is strictly under the old grid's N (89)", dwp.n_events_under_cap(35000) < 89)
 
 
 # ---------------------------------------------------------------------------
-# 2. Snapshot scheduling — T-6h to tip inclusive, 30-min grid
+# 2. Snapshot scheduling — D033 event-adaptive grid
 # ---------------------------------------------------------------------------
 
-def test_snapshot_schedule():
+def test_snapshot_schedule_fallback():
+    """Unknown event ts: uniform 30-min grid over the full 24h before tip."""
     tip = datetime(2024, 7, 13, 19, 0, 0, tzinfo=timezone.utc)
-    sched = dwp.snapshot_schedule(tip)
-    check("schedule has 13 points", len(sched) == 13, f"got {len(sched)}")
-    check("first point is T-6h", sched[0] == tip.replace(hour=13), f"got {sched[0]}")
-    check("last point is tip", sched[-1] == tip, f"got {sched[-1]}")
+    sched = dwp.adaptive_snapshot_schedule(tip)
+    check("fallback schedule has 49 points", len(sched) == 49, f"got {len(sched)}")
+    check("fallback first point is T-24h", sched[0] == tip - timedelta(hours=24), f"got {sched[0]}")
+    check("fallback last point is tip", sched[-1] == tip, f"got {sched[-1]}")
     deltas = [(sched[i + 1] - sched[i]).total_seconds() for i in range(len(sched) - 1)]
-    check("all gaps are exactly 30 min", all(d == 1800 for d in deltas), f"got {deltas}")
+    check("fallback gaps are exactly 30 min", all(d == 1800 for d in deltas), f"got {deltas}")
+
+    # back-compat wrapper
+    check("snapshot_schedule() wrapper matches the fallback grid",
+          dwp.snapshot_schedule(tip) == sched)
+
+
+def test_snapshot_schedule_known_event():
+    """Known event ts: baselines + 5-min dense window + medium grid + final sprint."""
+    tip = datetime(2024, 7, 13, 19, 0, 0, tzinfo=timezone.utc)
+    event_ts = tip - timedelta(hours=2)  # exact-instant event, 2h before tip
+    sched = dwp.adaptive_snapshot_schedule(tip, event_ts, event_ts)
+
+    check("known-event schedule has 35 points (matches KNOWN_TS_TYPICAL cost scenario)",
+          len(sched) == 35, f"got {len(sched)}")
+    check("schedule is sorted and within [tip-24h, tip]",
+          sched == sorted(sched) and sched[0] >= tip - timedelta(hours=24) and sched[-1] <= tip)
+    check("last point is tip", sched[-1] == tip, f"got {sched[-1]}")
+
+    # baselines present
+    for h in (24, 12, 6):
+        check(f"baseline T-{h}h present", (tip - timedelta(hours=h)) in sched)
+
+    # dense window (event +/- 60min) at 5-min resolution
+    dense_pts = [t for t in sched if event_ts - timedelta(minutes=60) <= t <= event_ts + timedelta(minutes=60)]
+    check("dense window has 25 points (2h @ 5min inclusive)", len(dense_pts) == 25, f"got {len(dense_pts)}")
+
+    # final 30-minute sprint at 5-min resolution
+    final_pts = [t for t in sched if tip - timedelta(minutes=30) <= t <= tip]
+    check("final sprint has 7 points (30min @ 5min inclusive)", len(final_pts) == 7, f"got {len(final_pts)}")
+
+
+def test_snapshot_schedule_clipped_to_window():
+    """Event bounds at/near the 24h window edge never produce points before
+    tip-24h or after tip, even with dense-window padding that would otherwise
+    reach outside the window."""
+    tip = datetime(2024, 7, 13, 19, 0, 0, tzinfo=timezone.utc)
+    event_ts = tip - timedelta(hours=24)  # right at the window floor
+    sched = dwp.adaptive_snapshot_schedule(tip, event_ts, event_ts)
+    check("worst-case known-event schedule has 64 points", len(sched) == 64, f"got {len(sched)}")
+    check("no point earlier than tip-24h", all(t >= tip - timedelta(hours=24) for t in sched))
+    check("no point later than tip", all(t <= tip for t in sched))
+
+    # event bounds entirely before the window (pathological/garbage catalog
+    # row) must not crash and must still respect the window
+    far_event = tip - timedelta(hours=100)
+    sched2 = dwp.adaptive_snapshot_schedule(tip, far_event, far_event)
+    check("far-past event ts does not crash and stays in-window",
+          all(tip - timedelta(hours=24) <= t <= tip for t in sched2))
+
+
+def test_estimate_event_cost_and_selection():
+    """estimate_event_cost / select_events are catalog-aware and budget-safe."""
+    tip_day = "2024-07-13"
+    events = [
+        {"rank": 1, "player_id": 1, "player_name": "A", "absent_game_id": "g1",
+         "absent_game_date": tip_day, "team_abbreviation": "AAA",
+         "absent_game_opponent_abbreviation": "BBB", "absent_game_team_is_home": True},
+        {"rank": 2, "player_id": 2, "player_name": "B", "absent_game_id": "g2",
+         "absent_game_date": tip_day, "team_abbreviation": "AAA",
+         "absent_game_opponent_abbreviation": "BBB", "absent_game_team_is_home": True},
+    ]
+    # no catalog -> both fall back, uniform 1471 each
+    no_catalog_selected = dwp.select_events(events, hard_budget_cap=1471, catalog_index=None)
+    check("no catalog: budget for exactly 1 event selects 1", len(no_catalog_selected) == 1,
+          f"got {len(no_catalog_selected)}")
+
+    no_catalog_selected2 = dwp.select_events(events, hard_budget_cap=1470, catalog_index=None)
+    check("no catalog: budget one credit short of 1 event selects 0",
+          len(no_catalog_selected2) == 0, f"got {len(no_catalog_selected2)}")
+
+    catalog_records = [
+        {"player_id": 1, "game_id": "g1", "ts_lower": "2024-07-13T17:00:00Z",
+         "ts_upper": "2024-07-13T17:00:00Z", "status_transition": "OUT", "confidence": "high"},
+    ]
+    idx = dwp.build_catalog_index(catalog_records)
+    check("build_catalog_index indexes by (player_id, game_id)", (1, "g1") in idx)
+    bounds = dwp.catalog_event_ts_bounds(events[0], idx)
+    check("catalog_event_ts_bounds resolves a hit", bounds is not None)
+    miss = dwp.catalog_event_ts_bounds(events[1], idx)
+    check("catalog_event_ts_bounds returns None on a miss", miss is None)
+
+    cost_hit = dwp.estimate_event_cost(events[0], idx)
+    cost_miss = dwp.estimate_event_cost(events[1], idx)
+    check("catalog hit and catalog miss produce different cost estimates",
+          cost_hit != cost_miss, f"hit={cost_hit} miss={cost_miss}")
+    check("catalog miss falls back to the UNKNOWN_TS cost",
+          cost_miss == dwp.COST_PER_EVENT_UNKNOWN_TS, f"got {cost_miss}")
 
 
 # ---------------------------------------------------------------------------
@@ -78,16 +184,19 @@ def _load_or_fake_events():
 
 def test_select_events():
     events = _load_or_fake_events()
+    # No catalog supplied -> every event uses the UNKNOWN_TS fallback cost;
+    # select_events is a greedy budget walk over rank order, which reduces to
+    # the same floor-division count as before when cost-per-event is uniform.
     selected = dwp.select_events(events, 35000)
     expected_n = min(len(events), dwp.n_events_under_cap(35000))
     check("select_events respects the budget-derived N", len(selected) == expected_n,
           f"got {len(selected)}, expected {expected_n}")
     check("select_events preserves rank order", selected == events[:expected_n])
 
-    tiny = dwp.select_events(events, 391)
+    tiny = dwp.select_events(events, dwp.COST_PER_EVENT_UNKNOWN_TS)
     check("cap of exactly one event's cost selects 1", len(tiny) == min(1, len(events)))
 
-    zero = dwp.select_events(events, 390)
+    zero = dwp.select_events(events, dwp.COST_PER_EVENT_UNKNOWN_TS - 1)
     check("cap below one event's cost selects 0", len(zero) == 0, f"got {len(zero)}")
 
 
@@ -219,15 +328,20 @@ def test_zero_network_dry_run():
         events = _load_or_fake_events()
         report = dwp.estimate_cost_report(events, 35000)
         check("estimate_cost_report runs with zero network calls", True)
-        check("estimate_cost_report reports 89-under-cap shape",
-              report["cost_per_event"] == 391 and report["n_events_selected"] <= 89)
+        check("estimate_cost_report reports the new (<=23, catalog-absent) shape",
+              report["planning_default_cost_per_event"] == 1471 and report["n_events_selected"] <= 23)
+        check("estimate_cost_report notes no catalog supplied",
+              report["catalog_coverage"] == "no event catalog supplied — all events use the fallback grid")
     finally:
         urllib.request.urlopen = orig
 
 
 def main() -> int:
     test_cost_model()
-    test_snapshot_schedule()
+    test_snapshot_schedule_fallback()
+    test_snapshot_schedule_known_event()
+    test_snapshot_schedule_clipped_to_window()
+    test_estimate_event_cost_and_selection()
     test_select_events()
     test_match_event()
     test_build_snapshot_row()
