@@ -70,7 +70,8 @@ def get(url_path: str, params: dict) -> tuple[object, dict]:
             if e.code == 429:
                 time.sleep(15 * (attempt + 1))
                 continue
-            if e.code == 404:
+            if 400 <= e.code < 500:
+                # 4xx other than 429: not retryable (e.g. no such market/date) - fail fast
                 return None, {k.lower(): v for k, v in e.headers.items()}
             time.sleep(5 * (attempt + 1))
         except Exception:
@@ -78,11 +79,17 @@ def get(url_path: str, params: dict) -> tuple[object, dict]:
     return None, {}
 
 
+_LAST_REMAINING = [1e9]
+
+
 def remaining(hdrs: dict) -> float:
+    # Absent header: fall back to the LAST KNOWN value so the stop-guard never disarms.
     try:
-        return float(hdrs.get("x-requests-remaining", "1e9"))
+        if "x-requests-remaining" in hdrs:
+            _LAST_REMAINING[0] = float(hdrs["x-requests-remaining"])
     except ValueError:
-        return 1e9
+        pass
+    return _LAST_REMAINING[0]
 
 
 def guard(hdrs: dict) -> None:
@@ -201,4 +208,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except BaseException:
+        import traceback
+        log("CRASH:\n" + traceback.format_exc())
+        raise
