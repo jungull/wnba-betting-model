@@ -6,18 +6,18 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `e5490741bbe3a09003c437424dd3539b57fb7b64` |
+| HEAD | `61ab5cb3b794704e36ae37c697708136f421914b` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 184 |
+| events | 186 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
 | BLOCKED | 9 |
-| PASSED | 47 |
-| RUNNING | 2 |
+| PASSED | 48 |
+| RUNNING | 1 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 1 |
 
@@ -28,7 +28,6 @@ None open against a node.
 ## Running
 
 * `P33_PREREGISTRATION_DRAFT` — Freeze every retained arm's complete specification
-* `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 
 ## Ready — next automatically scheduled
 
@@ -64,6 +63,7 @@ None.
 * `P31_FINAL_V3_IDEATION` — Final clean ideation wave: six independent roles, V3 only, no source sees another output
 * `P32_CANDIDATE_SYNTHESIS` — Deduplicate into mechanistically distinct families; return complete arm definitions
 * `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
+* `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 * `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
 * `R12_P27_REPORT_REMEDIATION` — Write the missing P27_FOLD_LOCAL_ESTIMABILITY_GUARD report from its own preserved evidence
 * `R13_I12_REPORT_REMEDIATION` — Write the missing I12_DESIGN_DEPENDENCY_AUDIT report from its own preserved evidence
@@ -95,6 +95,6 @@ None.
 | data | 0 | 5 | 0 | 1 | 0 |
 | future_research | 0 | 7 | 0 | 0 | 0 |
 | governance | 0 | 5 | 0 | 1 | 0 |
-| operations | 0 | 11 | 1 | 2 | 0 |
+| operations | 0 | 12 | 0 | 2 | 0 |
 | possession | 9 | 15 | 1 | 2 | 1 |
 | product | 0 | 4 | 0 | 0 | 0 |
