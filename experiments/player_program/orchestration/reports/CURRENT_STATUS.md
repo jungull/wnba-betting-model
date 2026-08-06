@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `7835530ec9060c3cc599c15c47e723f8eb69d676` |
+| HEAD | `0cd6dc7e5aed6de4f63ede1b68ed7bcc6e8adaec` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 165 |
+| events | 166 |
 
 ## Counts by status
 
@@ -17,7 +17,7 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 10 |
 | PASSED | 46 |
-| READY | 1 |
+| RUNNING | 1 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 2 |
 
@@ -27,11 +27,11 @@ None open against a node.
 
 ## Running
 
-None.
+* `P32_CANDIDATE_SYNTHESIS` — Deduplicate into mechanistically distinct families; return complete arm definitions
 
 ## Ready — next automatically scheduled
 
-* `P32_CANDIDATE_SYNTHESIS` (possession) — Deduplicate into mechanistically distinct families; return complete arm definitions
+None.
 
 ## Passed
 
@@ -89,7 +89,7 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
+| lane | BLOCKED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED |
 |---|---|---|---|---|---|
 | data | 0 | 5 | 0 | 1 | 0 |
 | future_research | 0 | 7 | 0 | 0 | 0 |
