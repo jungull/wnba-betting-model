@@ -1,0 +1,1141 @@
+{
+  "node_id": "P2B_MARKET_ODDS_ELIGIBILITY",
+  "epistemic_status": "VERIFIED_READ_ONLY_DERIVATION. Establishes what historical odds evidence EXISTS and whether it is cutoff-valid. It does NOT decide whether a market feature belongs in a possession model -- that is a separate question about what the model is, and this node raises it rather than settling it.",
+  "verdict": {
+    "family": "market odds (spread, moneyline/h2h, total)",
+    "admitted": false,
+    "packet_stated_ground": "capture begins 2026-07-31",
+    "packet_stated_ground_status": "FALSIFIED",
+    "exclusion_status": "SUSTAINED ON DIFFERENT AND STRONGER GROUNDS",
+    "governing_grounds": [
+      "CUTOFF_UNPROVEN by retrospective harvest (all pre-2026-07-30 odds)",
+      "fold-local degeneracy: all-missing training rows in the deciding fold(s)",
+      "the totals market -- the only pace-relevant member -- has no history before 2025-07-05"
+    ],
+    "note": "The node does not admit the family and does not recommend admitting it. The correction is to the packet's REASON, not to its outcome."
+  },
+  "F1_archive_located": {
+    "severity": "informational",
+    "claim": "A game-joined historical odds archive exists and is the parent of tip_times.csv.",
+    "status": "CONFIRMED",
+    "archives_read_only_from_repository_root_worktree": {
+      "branch": "data-refresh-2026",
+      "note": "These files live ONLY in the repository ROOT worktree. Reading them READ-ONLY was permitted and expected by this node's brief. Nothing was written there.",
+      "paths": [
+        "C:\\Users\\jgallagher\\wnba-betting-model\\data\\drive_masters\\master_odds.csv",
+        "C:\\Users\\jgallagher\\wnba-betting-model\\data\\odds_capture\\master_odds_extension.csv",
+        "C:\\Users\\jgallagher\\wnba-betting-model\\data\\odds_capture\\master_odds_extension_other_markets.csv"
+      ]
+    },
+    "rows": {
+      "drive_master": 20004,
+      "extension": 27734,
+      "other_markets": 53178
+    },
+    "distinct_games": {
+      "drive_master": 813,
+      "extension": 406,
+      "other_markets": 406
+    },
+    "all_untracked": true,
+    "gitignore_rules": [
+      ".gitignore:2 data/drive_masters/",
+      ".gitignore:5 data/odds_capture/"
+    ]
+  },
+  "F2_earliest_snapshot_2022_05_21": {
+    "severity": "informational",
+    "claim_under_test": "earliest snapshot in the parent odds archive is 2022-05-21",
+    "verdict": "REPRODUCED",
+    "measured_earliest_utc": "2022-05-21 17:55:00+00:00",
+    "measured_in": "drive_master__master_odds",
+    "per_archive_spans": [
+      {
+        "archive": "drive_master__master_odds",
+        "min": "2022-05-21 17:55:00+00:00",
+        "max": "2025-07-03 22:55:37+00:00"
+      },
+      {
+        "archive": "extension__master_odds_extension",
+        "min": "2025-07-05 14:55:37+00:00",
+        "max": "2026-07-30 16:00:01+00:00"
+      },
+      {
+        "archive": "extension__other_markets",
+        "min": "2025-07-05 14:55:37+00:00",
+        "max": "2026-07-30 16:00:01+00:00"
+      }
+    ],
+    "material_qualification": "The DATE reproduces to the second (2022-05-21T17:55:00Z). It is a VENDOR-ASSERTED observation instant, not a witnessed local capture. Reproducing it does not make it cutoff-valid -- see F4."
+  },
+  "F3_tip_times_provenance": {
+    "severity": "informational",
+    "claim": "data/reference/tip_times.csv descends from the odds archive.",
+    "status": "CONFIRMED -- chain closed on exact per-season counts",
+    "builder": "data/reference/collect_bios.py::phase_tips (lines 241-291)",
+    "child_counts_by_season_and_source": {
+      "2022|drive_master": 180,
+      "2023|drive_master": 259,
+      "2024|drive_master": 261,
+      "2025|drive_master": 113,
+      "2025|extension": 197,
+      "2026|extension": 209
+    },
+    "parent_counts_by_season": {
+      "drive_master": {
+        "2022": 180,
+        "2023": 259,
+        "2024": 261,
+        "2025": 113
+      },
+      "extension": {
+        "2025": 197,
+        "2026": 209
+      }
+    },
+    "counts_match_exactly": true,
+    "join_proved_nonempty": true
+  },
+  "F4_per_snapshot_observation_timestamp_survival": {
+    "severity": "A",
+    "question": "For each candidate market field: does a per-snapshot observation timestamp survive, or only the latest snapshot's value?",
+    "answer_by_stage": {
+      "parent_archive": {
+        "observation_timestamp_survives": true,
+        "column": "odds_snapshot_timestamp",
+        "nulls": 0,
+        "also_present": [
+          "odds_previous_timestamp",
+          "odds_next_timestamp"
+        ],
+        "note": "This is BETTER than the tip pipeline: the archive does retain a per-row observation instant. It is nevertheless not sufficient -- see verdict below."
+      },
+      "derived_tip_times_csv": {
+        "observation_timestamp_survives": false,
+        "output_columns": [
+          "game_id",
+          "season",
+          "game_date",
+          "home_team_id",
+          "home_abbr",
+          "timezone",
+          "tip_utc",
+          "tip_local",
+          "tip_hour_local",
+          "tip_dow_local",
+          "source_table",
+          "n_snapshots",
+          "n_commence_variants"
+        ],
+        "mechanism": "collect_bios.py:250 sorts by snapshot, :253 keeps commence_utc=('commence_utc','last'); :280-282 the written column list omits odds_snapshot_timestamp entirely.",
+        "consequence": "D10's CUTOFF_UNPROVEN verdict on the three tip fields is independently reconfirmed here. Not upgraded."
+      }
+    },
+    "verdict": "CUTOFF_UNPROVEN for every market field over every pre-2026-07-30 row",
+    "why_survival_is_not_enough": "A surviving vendor timestamp is a CLAIM about a past instant, not a witness to it. The decisive test is whether the row was OBSERVED before the forecast cutoff by this repository. It was not: see F5. Per the governing rule, a single retrospective pull is permanently CUTOFF_UNPROVEN no matter how far back its event dates reach."
+  },
+  "F5_retrospective_harvest_proof": {
+    "severity": "A",
+    "claim": "All odds evidence before 2026-07-30 is a retrospective harvest, not a contemporaneous capture.",
+    "status": "CONFIRMED by four independent lines of evidence",
+    "evidence": {
+      "E1_one_snapshot_per_game": {
+        "distinct_snapshots_per_game_drive_master": {
+          "min": 1,
+          "median": 1.0,
+          "max": 1,
+          "mean": 1.0
+        },
+        "reading": "Every one of 813 games carries exactly ONE distinct snapshot. A live capture stream produces many."
+      },
+      "E2_targeted_offset": {
+        "lead_minutes_commence_minus_snapshot": {
+          "min": 4.37,
+          "median": 64.37,
+          "max": 1685.0,
+          "mode_top5": {
+            "64.0": 15124,
+            "65.0": 4468,
+            "94.0": 122,
+            "124.0": 108,
+            "69.0": 78
+          },
+          "n_rows_snapshot_after_commence": 0
+        },
+        "snapshot_minute_of_hour_values": [
+          25,
+          55
+        ],
+        "vendor_underlying_grid_minutes": 5,
+        "reading": "Harvested snapshots sit ONLY on minute :25 and :55 at a modal lead of 64-65 minutes, while odds_previous_timestamp/odds_next_timestamp show the vendor's true grid is 5 minutes. One grid point per game was SELECTED at approximately tip-minus-one-hour. That is a query pattern, not a stream."
+      },
+      "E3_single_burst_download": {
+        "n_files": 292,
+        "event_name_date_span": [
+          "hist_2025-07-05_15Z.json",
+          "hist_2026-07-29_22Z.json"
+        ],
+        "mtime_span_utc": [
+          "2026-07-30 15:43:40.188507+00:00",
+          "2026-07-30 15:53:11.587153+00:00"
+        ],
+        "distinct_mtime_dates": [
+          "2026-07-30"
+        ],
+        "burst_duration_seconds": 571.4,
+        "verdict": "RETROSPECTIVE -- 292 files whose event dates span 2025-07-05..2026-07-29 were all written inside a single ~9.5 minute burst on 2026-07-30"
+      },
+      "E4_contemporaneous_stream_starts_later": {
+        "n_files": 71,
+        "first": "live_20260730T150132Z.json",
+        "last": "live_20260804T220003Z.json",
+        "mtime_span_utc": [
+          "2026-07-30 15:01:33.167156+00:00",
+          "2026-08-04 22:00:04.012170+00:00"
+        ],
+        "abs_skew_filename_vs_mtime_seconds": {
+          "max": 14.5,
+          "median": 1.6
+        },
+        "verdict": "CONTEMPORANEOUS -- mtime tracks the filename stamp to within seconds; this is a genuine witnessed capture stream"
+      }
+    },
+    "earliest_contemporaneously_witnessed_capture_utc": "2026-07-30T15:01:32Z",
+    "csv_archive_mtimes_utc": {
+      "C:\\Users\\jgallagher\\wnba-betting-model\\data\\drive_masters\\master_odds.csv": "2026-07-30 14:44:37.010071+00:00",
+      "C:\\Users\\jgallagher\\wnba-betting-model\\data\\odds_capture\\master_odds_extension.csv": "2026-07-30 16:24:56.614974+00:00",
+      "C:\\Users\\jgallagher\\wnba-betting-model\\data\\odds_capture\\master_odds_extension_other_markets.csv": "2026-07-30 16:24:57.205498+00:00",
+      "C:\\Users\\jgallagher\\wnba-betting-model\\data\\reference\\tip_times.csv": "2026-07-31 20:42:39.787119+00:00"
+    }
+  },
+  "F6_packet_figure_reconstructed": {
+    "severity": "B",
+    "claim": "The packet's 2026-07-31 date is a game date misreported as a capture date.",
+    "status": "CONFIRMED -- exact match",
+    "detail": {
+      "packet_path": ".cutoff_valid_availability_table_CORRECTED.unavailable_or_insufficient[2]",
+      "packet_claim": "coverage: 2026-07-31 .. 2026-08-06 only",
+      "capture_log_path": "C:\\Users\\jgallagher\\wnba-betting-model\\data\\odds_capture\\capture_log.csv",
+      "capture_log_rows": 20112,
+      "capture_log_columns": [
+        "snapshot_utc",
+        "commence_time",
+        "home_team",
+        "away_team",
+        "bookmaker",
+        "market",
+        "outcome",
+        "point",
+        "price"
+      ],
+      "has_game_id": false,
+      "commence_time_span": [
+        "2026-07-31T00:02:55Z",
+        "2026-08-06T23:00:00Z"
+      ],
+      "snapshot_utc_span": [
+        "20260730T150132Z",
+        "20260804T220003Z"
+      ],
+      "markets": {
+        "totals": 7154,
+        "spreads": 7150,
+        "h2h": 5808
+      },
+      "finding": "The packet's 2026-07-31..2026-08-06 window is the COMMENCE-TIME span of capture_log.csv -- the dates of the GAMES quoted -- not the capture span. The capture span is 2026-07-30T15:01:32Z..2026-08-04T22:00:03Z. The packet reported a game-date range as if it were a capture range, and then reasoned from it that the family is historically unavailable."
+    },
+    "packet_citations": {
+      "availability_table": ".cutoff_valid_availability_table_CORRECTED.unavailable_or_insufficient[2]",
+      "classification": ".statement_classification.UNCHANGED[9] == 'market odds unavailability (capture begins 2026-07-31)'"
+    },
+    "correction": "Contemporaneous capture begins 2026-07-30T15:01:32Z, one day EARLIER than the packet states; and the retrospective archive reaches game dates back to 2022-05-21. Both halves of the packet's sentence are wrong. The family is still inadmissible, for the reasons in F4/F5/F7."
+  },
+  "F7_coverage_by_season_and_by_fold": {
+    "severity": "A",
+    "note": "Reported by season and by fold. NEVER pooled.",
+    "universe": {
+      "team_game_rows": 2982,
+      "game_clusters": 1491,
+      "seasons": [
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "date_span": [
+        "2021-05-15 00:00:00",
+        "2026-07-31 00:00:00"
+      ]
+    },
+    "join_proofs": {
+      "market_spread": {
+        "n_intersection": 1219,
+        "join_proved_nonempty": true
+      },
+      "market_moneyline_price": {
+        "n_intersection": 1219,
+        "join_proved_nonempty": true
+      },
+      "market_total_points": {
+        "n_intersection": 406,
+        "join_proved_nonempty": true
+      },
+      "market_h2h_price_other": {
+        "n_intersection": 406,
+        "join_proved_nonempty": true
+      },
+      "tip_utc__tip_times_csv": {
+        "n_intersection": 1219,
+        "join_proved_nonempty": true
+      }
+    },
+    "by_season": {
+      "market_spread": {
+        "2021": {
+          "games": 205,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 410,
+          "row_coverage_rate": 0.0
+        },
+        "2022": {
+          "games": 239,
+          "games_covered": 180,
+          "game_coverage_rate": 0.753138,
+          "team_game_rows": 478,
+          "row_coverage_rate": 0.753138
+        },
+        "2023": {
+          "games": 260,
+          "games_covered": 259,
+          "game_coverage_rate": 0.996154,
+          "team_game_rows": 520,
+          "row_coverage_rate": 0.996154
+        },
+        "2024": {
+          "games": 262,
+          "games_covered": 261,
+          "game_coverage_rate": 0.996183,
+          "team_game_rows": 524,
+          "row_coverage_rate": 0.996183
+        },
+        "2025": {
+          "games": 310,
+          "games_covered": 310,
+          "game_coverage_rate": 1.0,
+          "team_game_rows": 620,
+          "row_coverage_rate": 1.0
+        },
+        "2026": {
+          "games": 215,
+          "games_covered": 209,
+          "game_coverage_rate": 0.972093,
+          "team_game_rows": 430,
+          "row_coverage_rate": 0.972093
+        }
+      },
+      "market_moneyline_price": {
+        "2021": {
+          "games": 205,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 410,
+          "row_coverage_rate": 0.0
+        },
+        "2022": {
+          "games": 239,
+          "games_covered": 180,
+          "game_coverage_rate": 0.753138,
+          "team_game_rows": 478,
+          "row_coverage_rate": 0.753138
+        },
+        "2023": {
+          "games": 260,
+          "games_covered": 259,
+          "game_coverage_rate": 0.996154,
+          "team_game_rows": 520,
+          "row_coverage_rate": 0.996154
+        },
+        "2024": {
+          "games": 262,
+          "games_covered": 261,
+          "game_coverage_rate": 0.996183,
+          "team_game_rows": 524,
+          "row_coverage_rate": 0.996183
+        },
+        "2025": {
+          "games": 310,
+          "games_covered": 310,
+          "game_coverage_rate": 1.0,
+          "team_game_rows": 620,
+          "row_coverage_rate": 1.0
+        },
+        "2026": {
+          "games": 215,
+          "games_covered": 209,
+          "game_coverage_rate": 0.972093,
+          "team_game_rows": 430,
+          "row_coverage_rate": 0.972093
+        }
+      },
+      "market_total_points": {
+        "2021": {
+          "games": 205,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 410,
+          "row_coverage_rate": 0.0
+        },
+        "2022": {
+          "games": 239,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 478,
+          "row_coverage_rate": 0.0
+        },
+        "2023": {
+          "games": 260,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 520,
+          "row_coverage_rate": 0.0
+        },
+        "2024": {
+          "games": 262,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 524,
+          "row_coverage_rate": 0.0
+        },
+        "2025": {
+          "games": 310,
+          "games_covered": 197,
+          "game_coverage_rate": 0.635484,
+          "team_game_rows": 620,
+          "row_coverage_rate": 0.635484
+        },
+        "2026": {
+          "games": 215,
+          "games_covered": 209,
+          "game_coverage_rate": 0.972093,
+          "team_game_rows": 430,
+          "row_coverage_rate": 0.972093
+        }
+      },
+      "market_h2h_price_other": {
+        "2021": {
+          "games": 205,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 410,
+          "row_coverage_rate": 0.0
+        },
+        "2022": {
+          "games": 239,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 478,
+          "row_coverage_rate": 0.0
+        },
+        "2023": {
+          "games": 260,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 520,
+          "row_coverage_rate": 0.0
+        },
+        "2024": {
+          "games": 262,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 524,
+          "row_coverage_rate": 0.0
+        },
+        "2025": {
+          "games": 310,
+          "games_covered": 197,
+          "game_coverage_rate": 0.635484,
+          "team_game_rows": 620,
+          "row_coverage_rate": 0.635484
+        },
+        "2026": {
+          "games": 215,
+          "games_covered": 209,
+          "game_coverage_rate": 0.972093,
+          "team_game_rows": 430,
+          "row_coverage_rate": 0.972093
+        }
+      },
+      "tip_utc__tip_times_csv": {
+        "2021": {
+          "games": 205,
+          "games_covered": 0,
+          "game_coverage_rate": 0.0,
+          "team_game_rows": 410,
+          "row_coverage_rate": 0.0
+        },
+        "2022": {
+          "games": 239,
+          "games_covered": 180,
+          "game_coverage_rate": 0.753138,
+          "team_game_rows": 478,
+          "row_coverage_rate": 0.753138
+        },
+        "2023": {
+          "games": 260,
+          "games_covered": 259,
+          "game_coverage_rate": 0.996154,
+          "team_game_rows": 520,
+          "row_coverage_rate": 0.996154
+        },
+        "2024": {
+          "games": 262,
+          "games_covered": 261,
+          "game_coverage_rate": 0.996183,
+          "team_game_rows": 524,
+          "row_coverage_rate": 0.996183
+        },
+        "2025": {
+          "games": 310,
+          "games_covered": 310,
+          "game_coverage_rate": 1.0,
+          "team_game_rows": 620,
+          "row_coverage_rate": 1.0
+        },
+        "2026": {
+          "games": 215,
+          "games_covered": 209,
+          "game_coverage_rate": 0.972093,
+          "team_game_rows": 430,
+          "row_coverage_rate": 0.972093
+        }
+      }
+    },
+    "by_fold": {
+      "market_spread": {
+        "train_lt_2022": {
+          "train": {
+            "games": 205,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 410,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 239,
+            "games_covered": 180,
+            "game_coverage_rate": 0.753138,
+            "team_game_rows": 478,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2022-05-06"
+        },
+        "train_lt_2023": {
+          "train": {
+            "games": 444,
+            "games_covered": 180,
+            "game_coverage_rate": 0.405405,
+            "team_game_rows": 888,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 260,
+            "games_covered": 259,
+            "game_coverage_rate": 0.996154,
+            "team_game_rows": 520,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2023-05-19"
+        },
+        "train_lt_2024": {
+          "train": {
+            "games": 704,
+            "games_covered": 439,
+            "game_coverage_rate": 0.62358,
+            "team_game_rows": 1408,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 262,
+            "games_covered": 261,
+            "game_coverage_rate": 0.996183,
+            "team_game_rows": 524,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2024-05-14"
+        },
+        "train_lt_2025": {
+          "train": {
+            "games": 966,
+            "games_covered": 700,
+            "game_coverage_rate": 0.724638,
+            "team_game_rows": 1932,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 310,
+            "games_covered": 310,
+            "game_coverage_rate": 1.0,
+            "team_game_rows": 620,
+            "degenerate_zero_variance": true,
+            "all_missing": false
+          },
+          "cutoff_date": "2025-05-16"
+        },
+        "train_lt_2026": {
+          "train": {
+            "games": 1276,
+            "games_covered": 1010,
+            "game_coverage_rate": 0.791536,
+            "team_game_rows": 2552,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 215,
+            "games_covered": 209,
+            "game_coverage_rate": 0.972093,
+            "team_game_rows": 430,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2026-05-08"
+        }
+      },
+      "market_moneyline_price": {
+        "train_lt_2022": {
+          "train": {
+            "games": 205,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 410,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 239,
+            "games_covered": 180,
+            "game_coverage_rate": 0.753138,
+            "team_game_rows": 478,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2022-05-06"
+        },
+        "train_lt_2023": {
+          "train": {
+            "games": 444,
+            "games_covered": 180,
+            "game_coverage_rate": 0.405405,
+            "team_game_rows": 888,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 260,
+            "games_covered": 259,
+            "game_coverage_rate": 0.996154,
+            "team_game_rows": 520,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2023-05-19"
+        },
+        "train_lt_2024": {
+          "train": {
+            "games": 704,
+            "games_covered": 439,
+            "game_coverage_rate": 0.62358,
+            "team_game_rows": 1408,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 262,
+            "games_covered": 261,
+            "game_coverage_rate": 0.996183,
+            "team_game_rows": 524,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2024-05-14"
+        },
+        "train_lt_2025": {
+          "train": {
+            "games": 966,
+            "games_covered": 700,
+            "game_coverage_rate": 0.724638,
+            "team_game_rows": 1932,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 310,
+            "games_covered": 310,
+            "game_coverage_rate": 1.0,
+            "team_game_rows": 620,
+            "degenerate_zero_variance": true,
+            "all_missing": false
+          },
+          "cutoff_date": "2025-05-16"
+        },
+        "train_lt_2026": {
+          "train": {
+            "games": 1276,
+            "games_covered": 1010,
+            "game_coverage_rate": 0.791536,
+            "team_game_rows": 2552,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 215,
+            "games_covered": 209,
+            "game_coverage_rate": 0.972093,
+            "team_game_rows": 430,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2026-05-08"
+        }
+      },
+      "market_total_points": {
+        "train_lt_2022": {
+          "train": {
+            "games": 205,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 410,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 239,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 478,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "cutoff_date": "2022-05-06"
+        },
+        "train_lt_2023": {
+          "train": {
+            "games": 444,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 888,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 260,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 520,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "cutoff_date": "2023-05-19"
+        },
+        "train_lt_2024": {
+          "train": {
+            "games": 704,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 1408,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 262,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 524,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "cutoff_date": "2024-05-14"
+        },
+        "train_lt_2025": {
+          "train": {
+            "games": 966,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 1932,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 310,
+            "games_covered": 197,
+            "game_coverage_rate": 0.635484,
+            "team_game_rows": 620,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2025-05-16"
+        },
+        "train_lt_2026": {
+          "train": {
+            "games": 1276,
+            "games_covered": 197,
+            "game_coverage_rate": 0.154389,
+            "team_game_rows": 2552,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 215,
+            "games_covered": 209,
+            "game_coverage_rate": 0.972093,
+            "team_game_rows": 430,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2026-05-08"
+        }
+      },
+      "market_h2h_price_other": {
+        "train_lt_2022": {
+          "train": {
+            "games": 205,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 410,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 239,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 478,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "cutoff_date": "2022-05-06"
+        },
+        "train_lt_2023": {
+          "train": {
+            "games": 444,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 888,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 260,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 520,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "cutoff_date": "2023-05-19"
+        },
+        "train_lt_2024": {
+          "train": {
+            "games": 704,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 1408,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 262,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 524,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "cutoff_date": "2024-05-14"
+        },
+        "train_lt_2025": {
+          "train": {
+            "games": 966,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 1932,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 310,
+            "games_covered": 197,
+            "game_coverage_rate": 0.635484,
+            "team_game_rows": 620,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2025-05-16"
+        },
+        "train_lt_2026": {
+          "train": {
+            "games": 1276,
+            "games_covered": 197,
+            "game_coverage_rate": 0.154389,
+            "team_game_rows": 2552,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 215,
+            "games_covered": 209,
+            "game_coverage_rate": 0.972093,
+            "team_game_rows": 430,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2026-05-08"
+        }
+      },
+      "tip_utc__tip_times_csv": {
+        "train_lt_2022": {
+          "train": {
+            "games": 205,
+            "games_covered": 0,
+            "game_coverage_rate": 0.0,
+            "team_game_rows": 410,
+            "degenerate_zero_variance": true,
+            "all_missing": true
+          },
+          "test": {
+            "games": 239,
+            "games_covered": 180,
+            "game_coverage_rate": 0.753138,
+            "team_game_rows": 478,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2022-05-06"
+        },
+        "train_lt_2023": {
+          "train": {
+            "games": 444,
+            "games_covered": 180,
+            "game_coverage_rate": 0.405405,
+            "team_game_rows": 888,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 260,
+            "games_covered": 259,
+            "game_coverage_rate": 0.996154,
+            "team_game_rows": 520,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2023-05-19"
+        },
+        "train_lt_2024": {
+          "train": {
+            "games": 704,
+            "games_covered": 439,
+            "game_coverage_rate": 0.62358,
+            "team_game_rows": 1408,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 262,
+            "games_covered": 261,
+            "game_coverage_rate": 0.996183,
+            "team_game_rows": 524,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2024-05-14"
+        },
+        "train_lt_2025": {
+          "train": {
+            "games": 966,
+            "games_covered": 700,
+            "game_coverage_rate": 0.724638,
+            "team_game_rows": 1932,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 310,
+            "games_covered": 310,
+            "game_coverage_rate": 1.0,
+            "team_game_rows": 620,
+            "degenerate_zero_variance": true,
+            "all_missing": false
+          },
+          "cutoff_date": "2025-05-16"
+        },
+        "train_lt_2026": {
+          "train": {
+            "games": 1276,
+            "games_covered": 1010,
+            "game_coverage_rate": 0.791536,
+            "team_game_rows": 2552,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "test": {
+            "games": 215,
+            "games_covered": 209,
+            "game_coverage_rate": 0.972093,
+            "team_game_rows": 430,
+            "degenerate_zero_variance": false,
+            "all_missing": false
+          },
+          "cutoff_date": "2026-05-08"
+        }
+      }
+    },
+    "degeneracy_summary": {
+      "market_spread": {
+        "folds_with_all_missing_train": [
+          "train_lt_2022"
+        ],
+        "folds_with_all_missing_test": []
+      },
+      "market_moneyline_price": {
+        "folds_with_all_missing_train": [
+          "train_lt_2022"
+        ],
+        "folds_with_all_missing_test": []
+      },
+      "market_total_points": {
+        "folds_with_all_missing_train": [
+          "train_lt_2022",
+          "train_lt_2023",
+          "train_lt_2024",
+          "train_lt_2025"
+        ],
+        "folds_with_all_missing_test": [
+          "train_lt_2022",
+          "train_lt_2023",
+          "train_lt_2024"
+        ]
+      },
+      "market_h2h_price_other": {
+        "folds_with_all_missing_train": [
+          "train_lt_2022",
+          "train_lt_2023",
+          "train_lt_2024",
+          "train_lt_2025"
+        ],
+        "folds_with_all_missing_test": [
+          "train_lt_2022",
+          "train_lt_2023",
+          "train_lt_2024"
+        ]
+      },
+      "tip_utc__tip_times_csv": {
+        "folds_with_all_missing_train": [
+          "train_lt_2022"
+        ],
+        "folds_with_all_missing_test": []
+      }
+    }
+  },
+  "F8_totals_market_correction": {
+    "severity": "B",
+    "claim": "P29 reported 'Markets present: odds_spread and odds_price. No totals column.' That is a correction in BOTH directions.",
+    "corrected_to": "A totals market DOES exist, in master_odds_extension_other_markets.csv, which P29 did not open (27820 totals rows). But it covers only ['2025', '2026']. The pace-relevant member of the family -- the market total, which is what the packet's candidate entry actually names -- has NO history before 2025-07-05.",
+    "totals_games_by_season": {
+      "2025": 197,
+      "2026": 209
+    },
+    "consequence": "The archive that reaches back to 2022-05-21 carries spread and price only. Discovering a 2022 archive therefore does NOT supply history for the feature the packet was actually contemplating."
+  },
+  "F9_in_play_contamination": {
+    "severity": "A",
+    "claim": "The extension archives contain post-tip (in-play) snapshots, and the 'take the last snapshot' rule already in use would select them.",
+    "rows_with_snapshot_after_commence": {
+      "drive_master": 0,
+      "extension": 232,
+      "other_markets": 338
+    },
+    "most_negative_lead_minutes": {
+      "extension": -172.62,
+      "other_markets": -172.62
+    },
+    "consequence": "An in-play odds value is an approximate SAME-GAME surrogate for the realised game, which the settled target prohibits from the prediction path. Any future market feature must filter snapshot < commence at the call site; collect_bios.py::phase_tips does not."
+  },
+  "F10_n_snapshots_field_is_a_row_count": {
+    "severity": "B",
+    "claim": "tip_times.csv's n_snapshots column counts parent ROWS, not distinct snapshots, and therefore overstates capture density by more than an order of magnitude.",
+    "audit": {
+      "n_games_compared": 813,
+      "recorded_equals_true_distinct": 0,
+      "recorded_equals_parent_row_count": 813,
+      "recorded_n_snapshots_min_med_max": [
+        10,
+        24.0,
+        32
+      ],
+      "true_distinct_snapshots_min_med_max": [
+        1,
+        1.0,
+        1
+      ]
+    },
+    "mechanism": "collect_bios.py:255  n_snapshots=('snap', 'size')   # size == rows",
+    "consequence": "Anyone reading tip_times.csv sees a median of 24 'snapshots' per game for drive_master rows and would reasonably infer a capture time series. The true distinct-snapshot count is 1 for all 813 games; the 24 is the bookmaker x team row fan-out. P29 relayed this field's min/median/max (10/30/146) without recomputing it against the parent."
+  },
+  "F11_ledger_gap": {
+    "severity": "B",
+    "claim": "The market-odds family has no entry in D10_FIELD_AVAILABILITY_LEDGER. The only odds-descended entries are the three tip fields.",
+    "consequence": "The family was excluded by the packet's prose without ever being entered in the field ledger that governs availability verdicts."
+  },
+  "SEPARATE_OBJECTION_LEFT_OPEN": {
+    "status": "OPEN -- NOT RESOLVED BY THIS NODE",
+    "objection": "A market feature changes what the model IS, from predicting possessions to predicting the market.",
+    "packet_wording_verbatim": {
+      ".unavailable_but_potentially_valuable.candidates[4].caution": "a market feature changes what the model is: it would no longer be a pure pace projection",
+      ".cutoff_valid_availability_table_CORRECTED.unavailable_or_insufficient[2].note": "capture begins after the modelling span; also a market feature, which raises separate questions about what is being learned"
+    },
+    "this_node_position": "This objection is independent of every measurement above and survives all of them. Even if a perfectly witnessed, fully covered, cutoff-valid market archive existed, this objection would still stand unresolved. It is a question about the identity and purpose of the model, not about data availability, and it is explicitly not this node's to settle. It must be decided by the program before any market feature is considered, and it must NOT be treated as discharged by this node's evidence."
+  },
+  "stop_conditions": {
+    "trigger_evaluated": "if the evidence would ADMIT a family the frozen packet excluded, HALT and raise",
+    "tripped_by_admission": false,
+    "reasoning": "The evidence does NOT admit the family. It falsifies the packet's stated REASON while sustaining the packet's OUTCOME on stronger grounds. The candidate universe is unchanged by this node.",
+    "raised_not_resolved": [
+      {
+        "id": "P2B-SC1",
+        "severity": "A",
+        "statement": "EVIDENCE PACKET CORRECTION REQUIRED. Two frozen packet statements are factually false: the availability-table note and statement_classification.UNCHANGED[9]. A frozen artifact may not be edited by this node and was not. The correction must be registered by whoever owns the packet.",
+        "status": "RAISED, NOT DISCHARGED"
+      },
+      {
+        "id": "P2B-SC2",
+        "severity": "A",
+        "statement": "P29's SC1 (candidate universe / market-odds family) remains UNDISCHARGED. This node supplies the evidence P29 lacked and recommends NO admission, but the universe decision and the separate what-is-the-model objection belong to the program.",
+        "status": "SUSTAINED, NOT DISCHARGED"
+      },
+      {
+        "id": "P2B-SC3",
+        "severity": "A",
+        "statement": "The fold-degeneracy blindness P29 raised as SC2 is reconfirmed on a second family: market_total_points is 100% missing on the training rows of 4 of 5 folds, and market_spread on 1 of 5. Any pooled-only gate check would not see this.",
+        "status": "RAISED, NOT DISCHARGED"
+      }
+    ]
+  },
+  "could_not_establish": [
+    "Whether the vendor's asserted odds_snapshot_timestamp values are accurate. They are internally consistent with a 5-minute grid, but no independent witness exists in this repository and none can be constructed from it.",
+    "Whether the 6 uncovered 2026 games (2026-07-30/31) are covered by the live capture stream. capture_log.csv carries no game_id -- it is keyed on team names only -- so it cannot be joined to the contract universe without an entity-resolution step this node did not perform and was not asked to perform.",
+    "Why 2022 coverage is 180/239 (75.3%) while 2023-2025 are >=99.6%. The harvest's selection rule is not documented in any script found in either worktree.",
+    "The identity of the code that produced master_odds.csv. Its schema is a historical odds API response shape; wnba-odds-aggregator/scripts/historical_backfill.py is a 54-line stub whose scraping logic is an unimplemented TODO (line 26), and the wnba_odds_system scripts target a different (oddsportal) source and schema.",
+    "Any statement about predictive value. No fit was run, none is permitted, and nothing under stage2b/SEALED_RESULTS/ was read."
+  ]
+}

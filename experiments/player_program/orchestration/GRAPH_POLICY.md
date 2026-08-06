@@ -169,7 +169,35 @@ event.
 
 ---
 
-## 9. Severity and blocking
+## 9. Model tiering — match the agent to the task
+
+Dispatch cost is real. Every agent launch declares a model tier and a reasoning effort, chosen
+by what the node *is*, not by what capacity happens to be free:
+
+| tier | use for |
+|---|---|
+| **highest available** (inherit session model, high effort) | target and contract interpretation; K0 design; preregistration authoring and red-team review; adversarial verification on the possession critical path; final adjudication; graph mutation after a scientific blocker |
+| **mid** (`sonnet`, medium effort) | documentation extraction with refusal discipline; target-contract drafts; citation-checking verification off the critical path; data cleaning with fixed rules; UI scaffolding |
+| **fast** (`haiku`, low effort) | file inventory; mechanical reformatting; report assembly from existing structured data with no judgement calls |
+
+Two rules that override the table:
+
+1. **Verification of a Severity A node never runs below the tier of the work it verifies.**
+   A cheap verifier signing off on expensive analysis is how a plausible-but-wrong finding
+   survives.
+2. **Do not launch redundant agents merely because capacity exists.** An additional agent must
+   supply a distinct expertise lens, an independent audit, genuinely parallel implementation, or
+   fault isolation.
+
+## 10. Remote policy
+
+The program branch `player-model-program` is pushed to `origin` after each integration cycle
+(user authorization 2026-08-04, superseding this policy's original no-push rule — see decision
+`D017`). Constraints that remain in force: never force-push, never push `main` or any branch not
+owned by this graph, never rewrite published history. A push is a backup of committed work, not a
+deployment.
+
+## 11. Severity and blocking
 
 A blocker in one lane blocks **descendants in that lane**, not independent work elsewhere. Severity
 A stops affected descendants. Severity B creates a remediation node. Severity C is scheduled.

@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `97c1d694d2aa6191e001e1b2c5fde949d9dffe04` |
+| HEAD | `4374f7c548bbac7589df3cacc0dbeed3d7a8e1e1` |
 | working tree | DIRTY |
 | nodes | 65 |
-| events | 117 |
+| events | 133 |
 
 ## Counts by status
 
@@ -17,10 +17,11 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 13 |
 | FAILED | 3 |
-| PASSED | 36 |
-| RUNNING | 8 |
+| PASSED | 41 |
+| READY | 2 |
 | SUPERSEDED | 3 |
 | USER_REQUIRED | 2 |
+| VERIFYING | 1 |
 
 ## Severity A blockers
 
@@ -29,17 +30,11 @@ None open against a node.
 ## Running
 
 * `P2B_MARKET_ODDS_ELIGIBILITY` — Adjudicate the market-odds family: the stated exclusion ground is factually wrong
-* `F10_WITHIN_BETWEEN_TEAM_INVOLVEMENT` — Within-team versus between-team involvement forecaster
-* `F11_PLAYER_ALLOCATION_ARCHITECTURE` — Player allocation / distribution architecture
-* `F12_OFF_DEF_STRENGTH_COMPONENTS` — Offensive and defensive strength components
-* `F13_SCORE_MARGIN_TOTAL_DISTRIBUTIONS` — Score, margin and total distributions
-* `F14_DECISION_TIME_MARKET_COMPARISON` — Decision-time market comparison
-* `F15_PROSPECTIVE_VALIDATION` — Prospective validation design
-* `F16_PLAYER_PROPS` — Player props — last, by design
 
 ## Ready — next automatically scheduled
 
-None.
+* `F15_PROSPECTIVE_VALIDATION` (future_research) — Prospective validation design
+* `F16_PLAYER_PROPS` (future_research) — Player props — last, by design
 
 ## Passed
 
@@ -74,6 +69,11 @@ None.
 * `R15_G02_INDEX_CLASSIFICATION` — Repair the DERIVED vs HAND-MAINTAINED classification in the document index
 * `G03_FROZEN_PATH_GUARD` — Task-specific tests proving the frozen-path guard fails closed
 * `G04_PROGRAM_ROADMAP_EXTRACTION` — Convert documented remaining program into graph nodes; unknown work becomes NEEDS_TARGET_CONTRACT
+* `F10_WITHIN_BETWEEN_TEAM_INVOLVEMENT` — Within-team versus between-team involvement forecaster
+* `F11_PLAYER_ALLOCATION_ARCHITECTURE` — Player allocation / distribution architecture
+* `F12_OFF_DEF_STRENGTH_COMPONENTS` — Offensive and defensive strength components
+* `F13_SCORE_MARGIN_TOTAL_DISTRIBUTIONS` — Score, margin and total distributions
+* `F14_DECISION_TIME_MARKET_COMPARISON` — Decision-time market comparison
 * `R16_I11_SEAL_HONESTY` — Make I11's seal claim honest: obfuscation is not blinding
 * `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
 * `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
@@ -87,11 +87,11 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | FAILED | PASSED | RUNNING | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|---|
-| data | 0 | 1 | 5 | 0 | 0 | 0 |
-| future_research | 0 | 0 | 0 | 7 | 0 | 0 |
-| governance | 0 | 0 | 5 | 0 | 1 | 0 |
-| operations | 0 | 2 | 11 | 0 | 0 | 1 |
-| possession | 13 | 0 | 11 | 1 | 2 | 1 |
-| product | 0 | 0 | 4 | 0 | 0 | 0 |
+| lane | BLOCKED | FAILED | PASSED | READY | SUPERSEDED | USER_REQUIRED | VERIFYING |
+|---|---|---|---|---|---|---|---|
+| data | 0 | 1 | 5 | 0 | 0 | 0 | 0 |
+| future_research | 0 | 0 | 5 | 2 | 0 | 0 | 0 |
+| governance | 0 | 0 | 5 | 0 | 1 | 0 | 0 |
+| operations | 0 | 2 | 11 | 0 | 0 | 1 | 0 |
+| possession | 13 | 0 | 11 | 0 | 2 | 1 | 1 |
+| product | 0 | 0 | 4 | 0 | 0 | 0 | 0 |
