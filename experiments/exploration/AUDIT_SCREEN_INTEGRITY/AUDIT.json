@@ -1,0 +1,258 @@
+{
+  "kind": "program_wide_integrity_audit",
+  "schema": "audit/1",
+  "audit_id": "AUDIT_SCREEN_INTEGRITY",
+  "run_at": "2026-08-07",
+  "scope": "every E0_* screen under experiments/exploration/",
+  "write_scope": "experiments/exploration/AUDIT_SCREEN_INTEGRITY/ only; no file outside it was modified; no git command was run; no past screen's code was edited or re-run in place",
+  "prohibitions_honoured": {
+    "no_fitting_no_new_modelling": true,
+    "exploration_partition_2021_2024_only": true,
+    "holdout_2025_2026_never_read": true,
+    "concurrent_agent_directories_avoided": [
+      "experiments/exploration/E1_I0009_additive_pressure",
+      "experiments/exploration/E1_I0011_split_alpha",
+      "experiments/player_program/stage3_score/S43_CUTOFF_RECEIPTS_TIER1",
+      "experiments/player_program/stage3_score/S43_CUTOFF_RECEIPTS_TIER2"
+    ],
+    "partition_check_method": "VALUE-BASED. Tables were parsed and the VALUES of season/date-like columns tested against {2021,2022,2023,2024}. No byte-scan for the literals 2025/2026 was used, because a prior coordinator's byte-scan produced a FALSE partition violation by matching row counts equal to 2026 and digit runs inside floats."
+  },
+
+  "defect_1_no_op_placebo": {
+    "definition": "A negative control that permutes a GROUPING KEY and then RECOMPUTES the aggregate from the permuted key is a NO-OP: the permuted cell is the same row set under a new name, so every row still receives its own true value.",
+    "diagnostic_signature": "reproduces the real number with sd exactly 0.000000",
+    "correct_form": "compute the aggregate on the TRUE grouping, then permute which rows receive which already-computed aggregate value",
+    "headline": "NO NO-OP PLACEBO FOUND IN ANY SHIPPED E0 SCREEN. The only instance in the program is the one I0010 caught and fixed inside its own script before its verdict was reached. No verdict is downgraded by Defect 1.",
+    "screens": {
+      "E0_I0003_rebound_interaction": {
+        "classification": "NO PLACEBO CLAIMED",
+        "evidence": {
+          "files_inspected": [
+            "experiments/exploration/E0_I0003_rebound_interaction/build_events.py",
+            "experiments/exploration/E0_I0003_rebound_interaction/aggregate_and_test.py",
+            "experiments/exploration/E0_I0003_rebound_interaction/NOTES.md"
+          ],
+          "construction": "no permutation, placebo, negative-control or RNG construct exists anywhere in this screen. NOTES.md contains no placebo section.",
+          "line_numbers": "n/a - absence of construct"
+        },
+        "placebo_sd": null,
+        "idea_log_verdict": "kill",
+        "verdict_consequence": "UNAFFECTED",
+        "reasoning": "The kill rests on a year-over-year stability comparison (fused REB/min r=0.917 vs decomposed 0.275-0.786) and one null interaction proxy, and the coordinator annotation already records that the comparison is CONFOUNDED BY MEASUREMENT NOISE (~72% correct side-of-play). There is no placebo support to remove. The verdict's existing caveats are unchanged and remain the binding limitation."
+      },
+      "E0_I0004_shot_location_allowance": {
+        "classification": "GENUINE",
+        "sub_form": "specificity control, not a permutation null",
+        "evidence": {
+          "file": "experiments/exploration/E0_I0004_shot_location_allowance/build_and_test.py",
+          "line_numbers": "211-215",
+          "construction": "correlates the player's shooting_residual against the opponent's POOLED (season, non-zone) FG% allowed. The aggregate is computed on TRUE opponents; a DIFFERENT, deliberately non-informative aggregate is substituted for the zone-specific one. No grouping key is permuted, so the no-op mechanism cannot arise.",
+          "measured_result": "corr = +0.0211 on n=121,412 (run_log.txt), against real Restricted-Area diff +0.0392. It does NOT reproduce the real number."
+        },
+        "placebo_sd": null,
+        "placebo_sd_note": "not measurable: a single statistic, no draws recorded. This control has NO distribution and therefore is NOT a noise floor and must not be read as one.",
+        "idea_log_verdict": "iterate",
+        "verdict_consequence": "UNAFFECTED",
+        "reasoning": "The iterate rests on three supports the placebo is not one of: (a) Restricted Area is the only zone with real between-team dispersion in opponent allowance, (b) the leave-one-game-out interaction is sign-consistent across both within-partition halves (+0.049 / +0.034), (c) the Corner-3 self-inclusion leak was found and corrected. The placebo is corroborative only. Standing gap, not a downgrade: this screen has no noise floor bounding its +0.0392 effect."
+      },
+      "E0_I0005_turnover_interaction": {
+        "classification": "GENUINE",
+        "evidence": {
+          "file": "experiments/exploration/E0_I0005_turnover_interaction/analyze.py",
+          "line_numbers": "76-94 (permutation loop); 80-84 is the construction",
+          "construction": "X1 = player_tendency_loo is an ALREADY-COMPUTED per-row value. The loop permutes its ASSIGNMENT TO ROWS within season (`X1_perm[idx] = rng.permutation(X1_perm[idx])`), then rebuilds the interaction and re-residualises from the permuted assignment. This is the correct form: it breaks the row-to-value pairing, it does not rename a grouping key."
+        },
+        "placebo_sd": 0.007976358685450172,
+        "placebo_sd_source": "re-run from a COPY at experiments/exploration/AUDIT_SCREEN_INTEGRITY/rerun_I0005_permutation_sd.py with outputs repointed; same seed 20260807, same n_perm 2000. 2000/2000 unique draws. Reproduced the shipped p-value 0.004 exactly. The screen's summary.json does not record the sd, which is why a re-run was required.",
+        "idea_log_verdict": "kill",
+        "verdict_consequence": "UNAFFECTED",
+        "reasoning": "Doubly safe. First, the permutation is genuine. Second, the kill was made AGAINST the permutation, not on it: p=0.004 was explicitly overruled because per-season partial correlations (0.058 / -0.002 / 0.021 / 0.002) fail replication. A broken placebo could only have made the interaction look better, which is the direction the screen already refused."
+      },
+      "E0_I0006_usage_redistribution": {
+        "classification": "GENUINE",
+        "sub_form": "matched-sample event placebo, not a permutation",
+        "evidence": {
+          "file": "experiments/exploration/E0_I0006_usage_redistribution/analyze_clean.py",
+          "line_numbers": "73-98 (build_redistribution); 105-115 (placebo event construction); 119-134 (statistic)",
+          "construction": "Placebo events are the studied player's OWN PRESENCE games - games where no absence occurred - with leave_one_out=True at line 82 so the pseudo-event game is excluded from the teammate baseline. The identical top1_share statistic is computed on a no-treatment event set. No grouping key is permuted anywhere, so the no-op mechanism structurally cannot arise.",
+          "superseded_first_pass": "experiments/exploration/E0_I0006_usage_redistribution/placebo_check.py lines 30-67, same construction, run against the pre-rebuild data"
+        },
+        "placebo_sd": 0.1724003,
+        "placebo_sd_source": "placebo_presence_games.csv: n=167 events, mean 0.5078, sd 0.1724, 166/167 unique values. Real arm clean_per_absence_game_summary.csv: n=578, mean 0.4699, sd 0.1311. Both distributions are richly dispersed; neither is degenerate.",
+        "idea_log_verdict": "kill",
+        "verdict_consequence": "SURVIVES",
+        "reasoning": "THIS WAS THE HIGHEST-STAKES ITEM IN THE AUDIT. I0006 is the ONLY screen whose kill rests ENTIRELY on the placebo - the finding IS 'the placebo (0.539) is more concentrated than the real effect (0.470)'. Had this placebo been a no-op the kill would have been unsupported. It is not a no-op; it is not even a permutation, so the defect's mechanism does not apply. The kill stands.",
+        "residual_caveats_not_fatal": [
+          "matched-n asymmetry: placebo events require >=7 presence games while real events require >=6 control games",
+          "n asymmetry: 578 real events vs 200 placebo (167 realised in the retained first-pass artifact)",
+          "the screen itself already discloses that a matched blowout/back-to-back placebo would be tighter (NOTES.md:129-131), and notes the direction reversed rather than merely failing to reach significance"
+        ]
+      },
+      "E0_I0008_height_differential": {
+        "classification": "NO PLACEBO CLAIMED",
+        "evidence": {
+          "files_inspected": [
+            "experiments/exploration/E0_I0008_height_differential/build.py",
+            "experiments/exploration/E0_I0008_height_differential/build_rung1_rung2.py",
+            "experiments/exploration/E0_I0008_height_differential/analyze_rung1_rung2.py",
+            "experiments/exploration/E0_I0008_height_differential/analyze_rung3.py",
+            "experiments/exploration/E0_I0008_height_differential/NOTES.md"
+          ],
+          "construction": "no permutation, placebo, negative-control or RNG construct exists in this screen. The only regex hit was `_neg_clock` at build.py:60-73, which is a descending sort key for a merge_asof join and is unrelated to negative controls.",
+          "line_numbers": "n/a - absence of construct"
+        },
+        "placebo_sd": null,
+        "idea_log_verdict": "iterate (rungs 1/2 signal; rung 3 ambiguous null)",
+        "verdict_consequence": "UNAFFECTED",
+        "reasoning": "The iterate rests on incremental R2 over the player's own recent rate (+0.018-0.020), a median-split bucket check, stability across all four seasons (r=0.32-0.36), and a position cut. None of that is placebo-derived, so nothing is removed.",
+        "standing_gap_flagged_not_a_downgrade": "This screen's +0.018-0.020 incremental R2 has never been compared against ANY noise floor. That is an ABSENT support, not a broken one - it does not reverse or downgrade the verdict. But I0006 demonstrated inside this same program that a concentration-style statistic can look like a finding and be beaten by its own noise floor. Recommend a permutation null (permute which opponent's roster-height aggregate each row receives, keeping the aggregate keyed on true opponents) before this lead's placebo strength is weighed against I0009's or I0011's."
+      },
+      "E0_I0009_additive_pressure": {
+        "classification": "GENUINE",
+        "independently_confirmed": true,
+        "evidence": {
+          "file": "experiments/exploration/E0_I0009_additive_pressure/analyze.py",
+          "line_numbers": "115-159; key lines 120-137 (panel + identity assert) and 142-148 (reassignment)",
+          "construction": "The PregamePressure panel is keyed on TRUE team ids. PMAT precomputes every team's pregame pressure as of every played date. The placebo reassigns a DIFFERENT column per row: `off = rng.integers(1, n_teams_row)` at line 144 starts at 1, never 0, so no row can receive its own opponent. Line 136 asserts `np.allclose(recon, P_PRE)` - the precomputed lookup reproduces the real pregame pressure EXACTLY - which proves construction identity while identity of the opponent is the only thing that varies. This is precisely the correct form."
+        },
+        "placebo_sd": 0.000105,
+        "placebo_sd_source": "run_log.txt: 'placebo pooled dR2: mean=0.000093 sd=0.000105 median=0.000057 p95=0.000313 max=0.000504'; real pooled dR2 = 0.0065, ~70x the placebo mean; 0/200 draws reach real.",
+        "idea_log_verdict": "keep-as-lead",
+        "verdict_consequence": "SURVIVES",
+        "reasoning": "The coordinator's prior finding (placebo_verified_genuine: YES) is independently reproduced here by direct code inspection, and corroborated by a nonzero recorded spread. No change to the verdict. Its six existing caveats (home/away confound, 2023 clearing by only 1.07x, dR2 as an upper bound, rung-2 hybrid, in-sample WLS, per-season degradation under the quality control) are untouched by this audit and remain the binding limitations."
+      },
+      "E0_I0010_positional_matchup": {
+        "classification": "GENUINE",
+        "note": "This is the screen that FOUND the defect. The no-op existed only in its own draft and was corrected inside the same script before any verdict was reached.",
+        "evidence": {
+          "file": "experiments/exploration/E0_I0010_positional_matchup/analyze.py",
+          "line_numbers": "235-240 (the defect documented in-code); 242-259 (team_panel/lookup_allow keyed on TRUE opp_team_id); 286 (REAL computed through the identical machinery with the identity map); 290-301 (deranged lookup); 293-296 (derangement enforced)",
+          "construction": "The allowance panel stays keyed on TRUE opp_team_id. Each row looks up a DERANGED team's allowance as of the same date via merge_asof. The real number is computed through the identical machinery under an identity map, so real and placebo differ ONLY in which team's allowance a row receives. Correct form."
+        },
+        "placebo_sd": {
+          "pts_POOLED": 0.00014433,
+          "reb_POOLED": 0.00015601,
+          "ast_POOLED": 0.00013561,
+          "per_season_range": "0.00036795 to 0.00082298 across all 12 target x season cells",
+          "n_unique_draws": "200/200 in every one of the 15 columns measured"
+        },
+        "placebo_sd_source": "measured directly from the shipped placebo_draws_{pts,reb,ast}.csv by experiments/exploration/AUDIT_SCREEN_INTEGRITY/audit_outputs.py. No degenerate spread anywhere, in any season column, for any target.",
+        "idea_log_verdict": "kill (points, rebounds, assists)",
+        "verdict_consequence": "SURVIVES",
+        "reasoning": "The kill was reached with the CORRECTED placebo, and the shipped draws confirm it empirically. Existing caveats stand unchanged and this audit adds no new ones: the pts placebo fraction 0.020 is carried by 2023 alone (per-season 0.49/0.45/0.040/0.28), but the pts kill does not rest on the placebo - it rests on interaction dR2 collapsing to 0.00001 under the overall-defence control. The assists kill remains the least secure on its own stated ground (allowance reliability 0.281), which is a measurement issue, not a placebo issue."
+      },
+      "E0_I0011_tendency_estimator": {
+        "classification": "GENUINE",
+        "sub_form": "single-draw negative controls, not a permutation distribution",
+        "evidence": {
+          "file": "experiments/exploration/E0_I0011_tendency_estimator/score.py",
+          "line_numbers": "79-91 (deranged donor map); 160-176 (the three controls); 163-176 is NEG_other_player",
+          "construction": "NEG_other_player assigns ANOTHER player's ALREADY-COMPUTED expanding estimate to this player's rows (lut built at 164-166, reassignment at 167-176), with a donor map deranged by `np.roll(shuffled, 1)` at line 87 so nobody maps to self. This is exactly the correct 'permute the assignment of an already-computed value to rows' form. NEG_league_const (161) and NEG_reversed (160) are constructed controls, not permutations."
+        },
+        "placebo_sd": null,
+        "placebo_sd_note": "not applicable by design - a single draw, no distribution. The no-op signature is nonetheless DEFINITIVELY ABSENT, because a no-op would have reproduced the real estimator's MAE. It does not: NEG_other_player degrades MAE by 1.7-2.7x on every target and ranks LAST on all four.",
+        "negative_control_ranking_measured": {
+          "pts": {"best_real": 4.0354, "NEG_reversed": 4.4644, "NEG_league_const": 6.2808, "NEG_other_player": 7.8156},
+          "reb": {"best_real": 1.7624, "NEG_reversed": 1.9853, "NEG_league_const": 2.6149, "NEG_other_player": 3.1046},
+          "ast": {"best_real": 1.2020, "NEG_reversed": 1.3382, "NEG_league_const": 1.7517, "NEG_other_player": 2.2015},
+          "minutes": {"best_real": 4.6868, "NEG_reversed": 6.1345, "NEG_league_const": 9.4875, "NEG_other_player": 12.7998},
+          "source": "experiments/exploration/E0_I0011_tendency_estimator/negative_control_ranking.csv"
+        },
+        "idea_log_verdict": "keep-as-lead (pts/reb/ast); kill (minutes); kill (normalization arm)",
+        "verdict_consequence": "UNAFFECTED",
+        "reasoning": "The verdict rests on a disjoint select(2021-2022) / score(2023-2024) MAE gap against the incumbent, not on the negative controls. The controls are a harness-integrity check and they pass, ranking correctly by severity on all four targets."
+      }
+    }
+  },
+
+  "defect_2_observed_time_tripwire": {
+    "fact_established": {
+      "column": "observed_time in data/masters/master_player.parquet and master_team.parquet",
+      "dtype": "str",
+      "n_distinct_values_master_player": 10,
+      "values_on_2021_2024_partition_rows": [
+        "2026-07-31T20:42:42+00:00", "2026-07-31T20:42:43+00:00", "2026-07-31T20:42:44+00:00",
+        "2026-07-31T20:42:45+00:00", "2026-08-01T13:00:36+00:00"
+      ],
+      "manifest_says": "asof_granularity='row'; bound_source='game_date via asof_invariant.bound_from_dates'; notes: 'Any observed_time column in this artifact is a LOCAL FILE MTIME and is deliberately NOT used as an as-of bound.'",
+      "is_leakage": false,
+      "written_by": "build_masters.py lines 490 and 595"
+    },
+    "part_a_outputs_containing_it": {
+      "e0_screens_affected": "NONE",
+      "method": "every .csv and .parquet in all eight E0_* screen directories was parsed and its column names matched against /observed_time|obs_time|observedtime/i. Zero hits.",
+      "i0010_self_caught": {
+        "note": "I0010's FIRST version of features_*.csv carried observed_time straight through from master_player. It was caught and dropped before shipping.",
+        "fix_locations": [
+          "experiments/exploration/E0_I0010_positional_matchup/build_features.py:219-223",
+          "experiments/exploration/E0_I0010_positional_matchup/analyze.py:221-227"
+        ],
+        "recorded_at": "experiments/exploration/E0_I0010_positional_matchup/NOTES.md:72-77 and :339-341"
+      },
+      "program_wide_files_that_DO_carry_it_with_2026_values": [
+        {"path": "data/masters/master_player.csv", "rows": 33712, "years_present": ["2026"]},
+        {"path": "data/masters/master_team.csv", "rows": 2990, "years_present": ["2026"]},
+        {"path": "experiments/playoff_shift/series_game_rows.csv", "rows": 212, "years_present": ["2026"]},
+        {"path": "experiments/forecast_dryrun/forecast_today.csv", "rows": 2, "years_present": ["2026"]}
+      ],
+      "consequence": "These four are the byte-level tripwires. None is an E0/E1 artifact, none is a partition violation, and none of them affects any screen verdict. They are named so a future byte-level partition check does not report them as holdout contamination."
+    },
+    "part_b_treated_as_an_asof_bound": {
+      "finding": "NO CODE ANYWHERE TREATS master observed_time AS AN AS-OF OR OBSERVATION BOUND. Every consumer either refuses it explicitly or uses it in the CONSERVATIVE direction (lateness as evidence AGAINST cutoff validity, never for).",
+      "consumers_inspected": [
+        {
+          "path": "experiments/player_program/data_lane/D10_FIELD_AVAILABILITY_LEDGER/build_ledger.py",
+          "lines": "229, 238-259, 683, 704-735, 796-836",
+          "usage": "counts rows whose observed_time is strictly AFTER their own forecast_cutoff and issues CUTOFF_UNPROVEN / CUTOFF_INVALID verdicts on that basis. Line 709-711 states the file 'has observed_time values that are all 2026 bulk scrapes, so the FILE cannot prove the box was observed before the cutoff'.",
+          "direction": "CONSERVATIVE - correct"
+        },
+        {"path": "cbs_provenance.py", "lines": "93, 307, 330, 339", "usage": "stamps observed_time_deliberately_unused=True; derives the bound from game_date", "direction": "REFUSES - correct"},
+        {"path": "cbs_real_adapter.py", "lines": "26, 89, 99, 191, 212, 223", "usage": "same; 'why_not_observed' records the mtime reason per field", "direction": "REFUSES - correct"},
+        {"path": "prediction_contract_v3.py", "lines": "152, 730, 810", "usage": "bound is max(game_date)+1d at 12:00 UTC; observed_time explicitly unused", "direction": "REFUSES - correct"},
+        {"path": "prediction_contract_v4.py", "lines": "962, 1072", "usage": "same", "direction": "REFUSES - correct"},
+        {"path": "cbs_accounting_v11.py", "lines": "221", "usage": "sidecar derives its own bound; master observed_time not used", "direction": "REFUSES - correct"},
+        {"path": "tests/test_cbs_v8.py", "lines": "532-534", "usage": "asserts G5: 'the as-of bound is derived from game_date, never observed_time'", "direction": "GUARDED BY TEST - correct"},
+        {"path": "build_masters.py", "lines": "38, 490, 506, 595, 606", "usage": "the writer; documents it as the UTC ISO mtime of the newest contributing file", "direction": "WRITER - correct"},
+        {
+          "path": "daily_forecast.py",
+          "lines": "258, 1038, 1046-1050, 1089, 1147, 1240",
+          "usage": "propagates max(master_team_max_observed_time, ...) onto forecast rows as an 'observed_time' provenance stamp",
+          "direction": "LABEL, NOT A GATE - no check consumes it as a bound",
+          "note_flagged_not_claimed": "it stamps forecast rows with a 2026 mtime under a field name that reads like an observation timestamp. Harmless today because nothing gates on it; a downstream reader who did not know the provenance could mistake it. Worth a ticket, not a finding."
+        }
+      ],
+      "adjacent_finding_different_field_flagged_not_claimed": {
+        "what": "prediction_contract_v5.py:477 sets candidate_observed_time for the S2 source to e['times']['S2'], which line 459 defines as pd.Timestamp(f'{season}-01-01T00:00:00Z') - a SYNTHETIC SEASON-START MARKER, not an observation. validate_projected_exposure.py:565 then asserts by_tier['B_s2_weak_fallback']['observed_after_cutoff'] == 0 and PASSES, because the marker was constructed to precede every cutoff.",
+        "why_it_matters": "this is a manufactured cutoff-availability pass by exactly the mechanism Defect 2(b) describes - but on candidate_observed_time, a DIFFERENT field, not on master's observed_time.",
+        "already_disclosed": "yes - experiments/player_program/build_projected_exposure.py:128-135 states plainly that all 5,053 B_s2_weak_fallback rows 'carry candidate_evidence_time and candidate_observed_time at season-start markers'. Documented, not hidden.",
+        "status": "OUT OF THIS AUDIT'S SCOPE. Raised for the coordinator's routing, not asserted as a defect."
+      }
+    }
+  },
+
+  "partition_compliance_of_all_e0_outputs": {
+    "method": "VALUE-BASED parse of every .csv and .parquet in all eight E0_* screen directories; season-like columns coerced to int and tested against {2021,2022,2023,2024}; date-like columns scanned for ISO year values and tested the same way. Explicitly NOT a byte-scan.",
+    "result": "CLEAN. Every season/date-like column in every readable output is inside 2021-2024. Zero violations. Zero unreadable files.",
+    "artifact": "experiments/exploration/AUDIT_SCREEN_INTEGRITY/output_scan.json"
+  },
+
+  "verdicts_now_unsupported": [],
+
+  "could_not_determine": [
+    "E0_I0004's specificity control has no recorded distribution, so its placebo sd is not measurable. It is classified GENUINE on construction (no grouping key is permuted, and it does not reproduce the real number), not on a measured spread. Re-running it would produce a single statistic again, not a spread, so no re-run was performed.",
+    "E0_I0011's negative controls are single-draw by design, so no sd exists. Classified GENUINE on construction plus the definitive absence of the no-op signature in the measured MAE ranking.",
+    "The four concurrently-written directories (E1_I0009_additive_pressure, E1_I0011_split_alpha, S43_CUTOFF_RECEIPTS_TIER1, S43_CUTOFF_RECEIPTS_TIER2) were NOT audited, per instruction. Their placebo integrity is unknown to this audit."
+  ],
+
+  "audit_artifacts": [
+    "experiments/exploration/AUDIT_SCREEN_INTEGRITY/AUDIT.json",
+    "experiments/exploration/AUDIT_SCREEN_INTEGRITY/REPORT_BODY.md",
+    "experiments/exploration/AUDIT_SCREEN_INTEGRITY/audit_outputs.py",
+    "experiments/exploration/AUDIT_SCREEN_INTEGRITY/run_log_audit_outputs.txt",
+    "experiments/exploration/AUDIT_SCREEN_INTEGRITY/output_scan.json",
+    "experiments/exploration/AUDIT_SCREEN_INTEGRITY/placebo_spreads.json",
+    "experiments/exploration/AUDIT_SCREEN_INTEGRITY/rerun_I0005_permutation_sd.py",
+    "experiments/exploration/AUDIT_SCREEN_INTEGRITY/rerun_I0005_permutation_sd.json",
+    "experiments/exploration/AUDIT_SCREEN_INTEGRITY/run_log_rerun_I0005.txt"
+  ]
+}

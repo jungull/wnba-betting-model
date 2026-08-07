@@ -1,0 +1,147 @@
+﻿player_game_analysis: rows=18165 season values=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] date years=[np.int32(2021), np.int32(2022), np.int32(2023), np.int32(2024)]
+team_game_defense: rows=1940 season values=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] date years=[np.int32(2021), np.int32(2022), np.int32(2023), np.int32(2024)]
+PARTITION VERIFIED on season/date COLUMN VALUES (no byte scan; column values only).
+
+==============================================================================
+PART 1  HOME/AWAY -- is the pressure measure venue in disguise?
+==============================================================================
+  forced-TO/100 def poss  2021: home=17.491  away=16.889  diff=+0.602
+  forced-TO/100 def poss  2022: home=18.001  away=17.434  diff=+0.566
+  forced-TO/100 def poss  2023: home=17.656  away=16.921  diff=+0.734
+  forced-TO/100 def poss  2024: home=17.806  away=17.162  diff=+0.643
+  forced-TO/100 def poss  pooled: home=17.746  away=17.106  diff=+0.640
+
+  team-game forced-TO rate, weighted R^2 (n=1940 team-games):
+    season FE only            : 0.00168
+    season FE + venue         : 0.00608   (venue adds 0.00441)
+    team-season FE            : 0.13175   (team identity adds 0.13007)
+    team-season FE + venue    : 0.13618
+
+  COLLINEARITY of opponent_pressure_pregame, within season:
+    2021: r(is_home)=+0.0164  r(opp prior home share)=+0.0480  r(opp defrtg)=-0.2278  R2(pressure~venue)=0.00275  R2(pressure~venue+defrtg)=0.05142
+    2022: r(is_home)=+0.0169  r(opp prior home share)=-0.0631  r(opp defrtg)=-0.4404  R2(pressure~venue)=0.00580  R2(pressure~venue+defrtg)=0.21017
+    2023: r(is_home)=+0.0258  r(opp prior home share)=+0.1367  r(opp defrtg)=-0.3330  R2(pressure~venue)=0.02040  R2(pressure~venue+defrtg)=0.14391
+    2024: r(is_home)=-0.0193  r(opp prior home share)=+0.1344  r(opp defrtg)=-0.6190  R2(pressure~venue)=0.02037  R2(pressure~venue+defrtg)=0.38320
+    pooled: r(is_home)=+0.0079  r(opp prior home share)=+0.0589  r(opp defrtg)=-0.4050  R2(pressure~venue)=0.00381  R2(pressure~venue+defrtg)=0.16240
+
+  home/away main effect on player turnover rate: beta=-0.0633 dR2=0.000120
+
+==============================================================================
+PART 2  IN-SAMPLE dR2 UNDER PROGRESSIVE CONTROL (E0-comparable, hindsight baseline)
+==============================================================================
+  M_A_E0_replication           pooled dR2=0.007035  beta=+0.1244  per-season=[0.015959, 0.005624, 0.002499, 0.006783]
+  M_B_plus_venue               pooled dR2=0.007045  beta=+0.1245  per-season=[0.015973, 0.005673, 0.002511, 0.006742]
+  M_C_plus_schedule_balance    pooled dR2=0.007013  beta=+0.1245  per-season=[0.015683, 0.005615, 0.002395, 0.006989]
+  M_D_plus_opp_defrtg          pooled dR2=0.005999  beta=+0.1255  per-season=[0.014773, 0.005927, 0.001927, 0.003291]
+  M_E_pregame_baseline         pooled dR2=0.006765  beta=+0.1220  per-season=[0.016031, 0.005410, 0.002143, 0.006693]
+  M_F_pregame_full_control     pooled dR2=0.005649  beta=+0.1218  per-season=[0.014643, 0.005409, 0.001770, 0.003049]
+
+  retained vs M_A (E0 replication, dR2=0.007035):
+    M_A_E0_replication            100.0%
+    M_B_plus_venue                100.1%
+    M_C_plus_schedule_balance      99.7%
+    M_D_plus_opp_defrtg            85.3%
+    M_E_pregame_baseline           96.2%
+    M_F_pregame_full_control       80.3%
+
+  E0 reconciliation (E0's own R^2 denominator convention):
+    rung-2 pooled dR2 = 0.006505  (E0 published 0.006505)
+    rung-1 pooled dR2 = 0.008424  (E0 published 0.008424)
+    rung-2 per season = [0.015038, 0.005329, 0.002279, 0.006121]
+    (E0 published       [0.015038, 0.005329, 0.002279, 0.006121])
+
+  venue-STRATIFIED (effect must be present inside each venue stratum):
+    home_games  n= 9085  dR2=0.007200  beta=+0.1242
+    away_games  n= 9080  dR2=0.006867  beta=+0.1246
+
+  venue-split vs venue-blind pressure measure (M_B baseline):
+    venue-blind dR2=0.007045 | venue-matched dR2=0.005804 | venue-matched ON TOP of venue-blind dR2=0.000020
+
+==============================================================================
+PART 3  OUT-OF-SAMPLE (leave-one-season-out and walk-forward, inside 2021-2024)
+==============================================================================
+
+  M_B_plus_venue  (baseline = ['player_tendency_loo', 'player_is_home'])
+    LOSO hold-out 2021: dR2_oos=+0.014195  beta=+0.1127  n_test=3878
+    LOSO hold-out 2022: dR2_oos=+0.005359  beta=+0.1291  n_test=4508
+    LOSO hold-out 2023: dR2_oos=+0.002193  beta=+0.1295  n_test=4886
+    LOSO hold-out 2024: dR2_oos=+0.006536  beta=+0.1262  n_test=4893
+    LOSO   mean=+0.007071 sd=0.005091 min=+0.002193 max=+0.014195 all_positive=True
+    WF train<= 2021 -> test 2022: dR2_oos=+0.003276  beta=+0.1568
+    WF train<= 2022 -> test 2023: dR2_oos=+0.002197  beta=+0.1335
+    WF train<= 2023 -> test 2024: dR2_oos=+0.006536  beta=+0.1262
+    WF     mean=+0.004003 sd=0.002259 all_positive=True
+
+  M_D_plus_opp_defrtg  (baseline = ['player_tendency_loo', 'player_is_home', 'opp_prior_home_share', 'opponent_defrtg_pregame'])
+    LOSO hold-out 2021: dR2_oos=+0.013426  beta=+0.1141  n_test=3878
+    LOSO hold-out 2022: dR2_oos=+0.005763  beta=+0.1258  n_test=4508
+    LOSO hold-out 2023: dR2_oos=+0.001955  beta=+0.1316  n_test=4886
+    LOSO hold-out 2024: dR2_oos=+0.004043  beta=+0.1292  n_test=4893
+    LOSO   mean=+0.006297 sd=0.005001 min=+0.001955 max=+0.013426 all_positive=True
+    WF train<= 2021 -> test 2022: dR2_oos=+0.004452  beta=+0.1548
+    WF train<= 2022 -> test 2023: dR2_oos=+0.001313  beta=+0.1390
+    WF train<= 2023 -> test 2024: dR2_oos=+0.004043  beta=+0.1292
+    WF     mean=+0.003270 sd=0.001707 all_positive=True
+
+  M_E_pregame_baseline  (baseline = ['player_tendency_pregame', 'player_is_home'])
+    LOSO hold-out 2021: dR2_oos=+0.013658  beta=+0.1100  n_test=3878
+    LOSO hold-out 2022: dR2_oos=+0.005267  beta=+0.1263  n_test=4508
+    LOSO hold-out 2023: dR2_oos=+0.001751  beta=+0.1278  n_test=4886
+    LOSO hold-out 2024: dR2_oos=+0.006245  beta=+0.1236  n_test=4893
+    LOSO   mean=+0.006731 sd=0.005005 min=+0.001751 max=+0.013658 all_positive=True
+    WF train<= 2021 -> test 2022: dR2_oos=+0.002413  beta=+0.1570
+    WF train<= 2022 -> test 2023: dR2_oos=+0.001778  beta=+0.1319
+    WF train<= 2023 -> test 2024: dR2_oos=+0.006245  beta=+0.1236
+    WF     mean=+0.003479 sd=0.002417 all_positive=True
+
+  M_F_pregame_full_control  (baseline = ['player_tendency_pregame', 'player_is_home', 'opp_prior_home_share', 'opponent_defrtg_pregame'])
+    LOSO hold-out 2021: dR2_oos=+0.012671  beta=+0.1100  n_test=3878
+    LOSO hold-out 2022: dR2_oos=+0.005794  beta=+0.1212  n_test=4508
+    LOSO hold-out 2023: dR2_oos=+0.001637  beta=+0.1282  n_test=4886
+    LOSO hold-out 2024: dR2_oos=+0.003530  beta=+0.1263  n_test=4893
+    LOSO   mean=+0.005908 sd=0.004818 min=+0.001637 max=+0.012671 all_positive=True
+    WF train<= 2021 -> test 2022: dR2_oos=+0.003881  beta=+0.1541
+    WF train<= 2022 -> test 2023: dR2_oos=+0.000974  beta=+0.1367
+    WF train<= 2023 -> test 2024: dR2_oos=+0.003530  beta=+0.1263
+    WF     mean=+0.002795 sd=0.001587 all_positive=True
+
+  ROBUSTNESS -- drop 2021 entirely (E0 flagged 2021 as the strongest season):
+    M_B_plus_venue             LOSO(2022-24) mean=+0.004796 sd=0.002353 all_positive=True | in-sample pooled(2022-24) dR2=0.004938
+    M_F_pregame_full_control   LOSO(2022-24) mean=+0.003902 sd=0.001684 all_positive=True | in-sample pooled(2022-24) dR2=0.003579
+
+  practical size (fully-controlled beta=+0.1218): p10-p90 pressure spread=4.78 -> +0.583 TO/100 off poss (17.7% of the 3.30 weighted mean)
+
+==============================================================================
+PART 4  PLACEBO -- reassignment of ALREADY-COMPUTED values (not key permutation)
+==============================================================================
+  lookup matrix reproduces the real pregame pressure exactly: max abs err = 3.553e-15
+  team_identity_derangement  insample_M_A_E0_replication          real=+0.007035 placebo mean=+0.000281 sd=0.000382 max=+0.002136 draws>=real=0/200
+  team_identity_derangement  insample_M_B_venue_controlled        real=+0.007045 placebo mean=+0.000282 sd=0.000382 max=+0.002136 draws>=real=0/200
+  team_identity_derangement  insample_M_F_pregame_full_control    real=+0.005649 placebo mean=+0.000271 sd=0.000351 max=+0.001976 draws>=real=0/200
+  team_identity_derangement  loso_mean_M_B_venue_controlled       real=+0.007071 placebo mean=-0.000258 sd=0.000669 max=+0.001539 draws>=real=0/200
+  team_identity_derangement  loso_mean_M_F_pregame_full_control   real=+0.005908 placebo mean=-0.000200 sd=0.000607 max=+0.001563 draws>=real=0/200
+  row_shuffle                insample_M_A_E0_replication          real=+0.007035 placebo mean=+0.000043 sd=0.000059 max=+0.000389 draws>=real=0/200
+  row_shuffle                insample_M_B_venue_controlled        real=+0.007045 placebo mean=+0.000044 sd=0.000060 max=+0.000397 draws>=real=0/200
+  row_shuffle                insample_M_F_pregame_full_control    real=+0.005649 placebo mean=+0.000045 sd=0.000062 max=+0.000478 draws>=real=0/200
+  row_shuffle                loso_mean_M_B_venue_controlled       real=+0.007071 placebo mean=-0.000084 sd=0.000131 max=+0.000338 draws>=real=0/200
+  row_shuffle                loso_mean_M_F_pregame_full_control   real=+0.005908 placebo mean=-0.000085 sd=0.000134 max=+0.000432 draws>=real=0/200
+
+  All placebo sds are non-zero -> the negative control is NOT the no-op form.
+
+==============================================================================
+PART 5  RELIABILITY OF THE PRESSURE MEASURE
+==============================================================================
+  split-half 2021: r=+0.681  (n=12 teams)
+  split-half 2022: r=+0.359  (n=12 teams)
+  split-half 2023: r=+0.735  (n=12 teams)
+  split-half 2024: r=+0.515  (n=12 teams)
+  season-over-season r=+0.464 (n=36 team-season pairs)
+  NOTE: 12 teams per season -- these correlations are individually imprecise.
+
+==============================================================================
+E1 VERDICT: keep-as-lead
+  effect retained after home/away control: 100.1% of E0's dR2
+  LOSO out-of-sample (venue-controlled):   mean=+0.007071 sd=0.005091 all_positive=True
+  LOSO out-of-sample (full pregame ctrl):  mean=+0.005908 sd=0.004818 all_positive=True
+==============================================================================
+wrote FINDINGS.json
