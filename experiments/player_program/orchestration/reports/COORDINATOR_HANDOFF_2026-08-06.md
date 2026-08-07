@@ -117,3 +117,42 @@ P40_PRIMARY_ADJUDICATION which alone opens the seals; adjudicated numbers then f
 leaderboard ONLY through the D036 pipeline (regenerate, tests, commit, republish with the
 artifact url in the handoff). NOTHING in SEALED_RESULTS is readable before P40 - by anyone,
 including coordinators.
+
+---
+## FINAL ADDENDUM - PRIMARY SESSION STANDING DOWN (user-directed, end of day one)
+
+The primary session stops after processing the in-flight score-baselines task. A NEW CHAT
+becomes coordinator; the scheduled task wnba-coordinator-on-duty remains only as the
+dead-man backstop (its staleness guard yields to any active coordinator writing events).
+
+STATE AT STAND-DOWN: 66 nodes PASSED. Cycle 1 complete through P41: the possession
+challenger program returned a SWEEP OF NULLS (D042) - 0/29 passed, champion D_ewma_shrunk
+stands at a VERIFIED 2.86649 possessions MAE (N=2,572/1,286, five-fold blind walk-forward),
+A07 preserved as the strongest lead, all negative results permanent. Board v6 live at the
+artifact URL above with the first VERIFIED row and the turnovers-vs-possessions labeling
+corrected. P41 closed as the carded empty-entrant confirmation.
+
+IN FLIGHT AT STAND-DOWN: the D043 score-composite baselines (workflow wf_50c213c0-8e2,
+outputs land at experiments/market_program/SCORE_BASELINES/). If its outputs exist but are
+uncommitted when you arrive: run its TESTS.py, verify, commit, feed the numbers to the
+board via the pipeline (matched-universe market comparisons only), republish with the
+artifact url.
+
+NEW CHAT - FIRST ACTIONS IN ORDER:
+1. Read this handoff top to bottom + GRAPH_POLICY.md + CURRENT_STATUS.md + D023-D043.
+2. Close out SCORE_BASELINES if pending (above).
+3. P42_SCIENTIFIC_COMPLETION per its prompt - the formal cycle-1 closure.
+4. End-of-cycle push of player-model-program per D017/D018 (quiescent tree, verify_all
+   hook ~10 min, never bypass).
+5. THE D043 CYCLE-2 FORMALIZATION: graduate F12/F13 into a full preregistered challenger
+   cycle on the existing machinery (target contracts -> cards -> audit -> sealed fits ->
+   adjudication), A07 carried as a registered candidate.
+6. Market lane maintenance backlog: diagnose the injury-live capture (63 PDFs discovered,
+   0 rows written - capture_log.csv holds the attempts); schedule the SX Bet loop and
+   Wikipedia weekly harvest (schtasks pattern per market_ladder_tick.cmd); the
+   rebounds/assists/threes props discovery pass (D033, ~63k credits in hand, empties
+   free); dense-window execution (env var + 35k cap per the DENSE_WINDOWS README).
+7. USER decisions still parked: Kalshi consent letter (user sends), RotoGrinders month,
+   wehoop/RotoWire outreach. Never self-grant any gate in the list above.
+
+The ledger is the memory. The board is the truth. Frozen bytes govern. Good hunting.
