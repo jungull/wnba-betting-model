@@ -160,3 +160,35 @@ props ONLY — the game-lines endpoint returns HTTP 200 and writes zero rows.**
 ---
 
 *The ledger is the memory. The board is the truth. Frozen bytes govern. Do not stop.*
+
+---
+## 7. STATE AMENDMENT — later on 2026-08-07
+
+**78 nodes PASSED.** Both branches pushed clean (program 35/35, data 13/13).
+
+**Closed since §1 was written:** M26_CAPTURE_MICROSTRUCTURE_REMEDIATION. The game-lines bug is
+root-caused and fixed — `_poll_and_write` filtered the slate-wide `/odds` response on our INTERNAL
+`game_id` while every row carries the VENDOR event id, so the filter matched nothing, silently,
+forever. Coordinator-verified on bytes: `snapshots.csv` now carries h2h 22 / spreads 22 / totals 22
+alongside the props. Witnessed-absence and latency/skew fields also shipped. Defect 2 is
+PARTIALLY_CLOSED by design — see D052 below.
+
+**In flight at this amendment:**
+- `S33R_PREREGISTRATION_REPAIR` (top tier) — closing the four S34 Severity A findings + eight B.
+  This is the critical path; S35 depends on it.
+- `M13_PLAYER_VALUE_TRANSLATION` (mid tier) — point-prediction → threshold-probability translation
+  with the distributional assumption made explicit and calibrated out-of-sample.
+
+**Deliberately NOT dispatched though READY — do not read their status as an invitation:**
+- `M08_STALE_WINDOW` — its own title conditions it on *demonstrated* lead-lag structure; M07
+  measured that none is demonstrable from the current vendor topology. Dispatching it would invite
+  a stale-window claim resting on an unsupportable premise. Unblocks if the user rules on D052.
+- `M22_CAPACITY` — sizes how much money the measured opportunity classes absorb, which presupposes
+  an adjudicated opportunity class (none exists) and edges toward staking, a USER-gated surface.
+
+**New USER decision packet — D052_PER_BOOK_POLLING_COST_PACKET.** The vendor bundles all books in
+one payload, so cross-book lead-lag is unsupportable by construction. Per-book polling fixes it at
+~5-11x credit cost — a spend decision reserved to the user. Three options are written into the
+ledger entry (authorize scoped, fund a bounded sizing experiment, or decline and mark the claim
+permanently unmeasurable). A shipped test blocks any attempt to fake per-book timing from parse
+order in the meantime. **Do not self-grant this.**
