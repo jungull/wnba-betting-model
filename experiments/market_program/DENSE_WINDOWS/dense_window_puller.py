@@ -151,6 +151,22 @@ FALLBACK_INTERVAL_MINUTES = 30  # unknown-event-ts fallback: uniform grid over t
 STOP_GUARD = 8000  # same headroom reservation as backfill_market_history.py
 HARD_BUDGET_CAP_DEFAULT = 35000
 
+
+def _load_team_name_map() -> dict:
+    """Abbreviation -> Odds API full team name. match_event() requires names
+    already resolved to the vendor's convention; this is the resolver it was
+    written to expect. Committed alongside this file since the D033 build and
+    never wired in until 2026-08-07 (see the call-site defect note)."""
+    import json as _json
+    import os as _os
+    path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "team_name_map.json")
+    with open(path, encoding="utf-8") as f:
+        raw = _json.load(f)
+    return {k: v for k, v in raw.items() if not k.startswith("_")}
+
+
+TEAM_NAME_MAP = _load_team_name_map()
+
 # NOTE: the reference-tip cost-scenario constants (COST_PER_EVENT_*,
 # n_snapshots_for_event_offset, n_events_under_cap) are defined further below,
 # immediately after adaptive_snapshot_schedule() — they call it to compute
@@ -619,13 +635,31 @@ def main() -> None:
         day = ev["absent_game_date"]
         events_data, hdrs = get("/events", {"date": day + "T00:00:00Z"})
         guard(hdrs)
+        # DEFECT FIX (2026-08-07, D054 execution): match_event's own docstring
+        # requires callers to pass names ALREADY RESOLVED to the vendor's
+        # convention — the Odds API returns full team names ("Dallas Wings"),
+        # never abbreviations. The call site passed raw abbreviations ("DAL"),
+        # so the membership test could never be true and every event resolved
+        # NO MATCH: 23/23 skipped, 0 credits spent, 0 rows captured, silently.
+        # team_name_map.json (the resolver this function was written to expect)
+        # was already committed alongside this file and simply never wired in.
+        # Same defect class as the M26 game-lines bug: two identifier spaces
+        # compared as if they were one.
+        team_full = TEAM_NAME_MAP.get(ev["team_abbreviation"])
+        opp_full = TEAM_NAME_MAP.get(ev["absent_game_opponent_abbreviation"])
+        if team_full is None or opp_full is None:
+            log(f"UNMAPPED ABBREV for {key} "
+                f"({ev['team_abbreviation']}/{ev['absent_game_opponent_abbreviation']}); "
+                f"skipping WITHOUT marking done — this is a map gap, not a vendor miss")
+            continue
         matched = match_event(
             (events_data or {}).get("data") or [],
-            ev["team_abbreviation"], ev["absent_game_opponent_abbreviation"],
+            team_full, opp_full,
             ev.get("absent_game_team_is_home"),
         )
         if matched is None:
-            log(f"NO MATCH for {key}; skipping (recorded as done to avoid retry loop)")
+            log(f"NO MATCH for {key} ({team_full} vs {opp_full} on {day}); "
+                f"skipping (recorded as done to avoid retry loop)")
             done.add(key)
             st["events_done"] = sorted(done)
             save_state(st)
