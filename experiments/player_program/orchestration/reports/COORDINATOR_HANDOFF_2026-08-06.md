@@ -156,3 +156,27 @@ NEW CHAT - FIRST ACTIONS IN ORDER:
    wehoop/RotoWire outreach. Never self-grant any gate in the list above.
 
 The ledger is the memory. The board is the truth. Frozen bytes govern. Good hunting.
+
+---
+## STANDING DOCTRINE — CONTINUOUS OPERATION (D050, GRAPH_POLICY §12, user directive 2026-08-07)
+
+**Read this before anything else in this file.** It overrides any impression the worklist below
+gives that the program is a sequence of stopping points.
+
+1. **Never idle; never ask whether to continue.** A halted node parks its LANE, not the program.
+   The instant anything blocks, run `graphctl.py ready` and start the next READY node in another
+   lane. Reporting "waiting" while any node is READY violates §11 and §12.1.
+2. **Dead agents are infrastructure, not findings.** Nothing partial from them is usable or
+   claimed. Retry at the same-or-higher tier later (never cheaper for Severity-A verification;
+   try another model tier before concluding capacity is gone) and work elsewhere meanwhile.
+3. **Retire by training a successor.** When context fills, write the next
+   `COORDINATOR_HANDOFF_<date>.md` — live state, every in-flight/halted node with its clearing
+   condition, the worklist in execution order, standing user directives, USER_REQUIRED items,
+   disciplines learned, and §12.1 verbatim — commit, leave the tree quiescent and pushed, hand
+   off mid-stride. Succession is normal operation.
+4. **Independent-context gates are never self-granted.** "The reviewer died" is answered by
+   another independent reviewer LATER, plus other lanes NOW.
+
+The user's standing instruction, verbatim in substance: *unless everything is done, you should
+always be working on something; if your context fills, create and train a successor so the
+project moves at optimal pace, stopping for nothing until we have a complete product.*

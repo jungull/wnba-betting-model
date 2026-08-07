@@ -211,3 +211,38 @@ A blocker in one lane blocks **descendants in that lane**, not independent work 
 A stops affected descendants. Severity B creates a remediation node. Severity C is scheduled.
 
 Do not report "waiting" while unrelated nodes remain READY.
+
+## 12. Continuous operation and succession (`D050`, user directive 2026-08-07)
+
+The graph exists to keep the program moving without supervision. Three rules make that binding.
+
+**12.1 Always be executing.** A coordinator never idles and never asks the user whether to
+continue. When a node halts — for a failing gate, an exhausted agent, a blocked dependency, a
+`USER_REQUIRED` decision — that lane parks and the coordinator **immediately moves to the next
+READY node in any other lane** (`graphctl.py ready` is the worklist; §11 governs). Parking one
+lane is not parking the program. Reporting "waiting" or "shall I continue?" while any node is
+READY is a policy violation, not a courtesy. The only legitimate stopping states are: every node
+is PASSED, SUPERSEDED, or blocked behind a `USER_REQUIRED` gate; or the user says stop.
+
+**12.2 What halting actually means.** A halted node keeps its HALTED event and its honest reason,
+is retry-eligible (a retry is labeled `RETRY` and is never a new independent source, §4), and
+**blocks only its own descendants**. The coordinator records the halt, records what the next
+coordinator must do to clear it, and goes to work elsewhere in the same turn. A gate that
+requires an independent context is still never self-granted (§5, §6) — the correct response to
+"the independent reviewer died" is *another independent reviewer later*, plus other lanes now.
+
+**12.3 Retire by training a successor, never by stopping.** When a coordinator's context is
+filling, it does not wind down the program; it **produces a successor packet and hands off mid-
+stride**. The packet is written to `orchestration/reports/COORDINATOR_HANDOFF_<date>.md` and must
+contain, at minimum: the live state (`graphctl.py ready` + `status` output at hand-off), every
+in-flight or halted node with exactly what clears it, the current worklist **in execution order**,
+the standing user directives and every `USER_REQUIRED` item the successor may never self-grant,
+the disciplines learned this session (what broke, what the fix was), and an explicit statement of
+§12.1 so the successor inherits the anti-stall rule. The outgoing coordinator commits the packet,
+leaves the tree quiescent and pushed, and the incoming coordinator's **first action** is to read
+it plus this policy. Succession is a normal operation of the graph, not an emergency.
+
+**12.4 Dispatch under resource failure.** An agent that dies on capacity/credit exhaustion is an
+infrastructure event, not a scientific finding: nothing it produced partially may be used or
+claimed. Retry it later at the same tier (never a cheaper tier for a Severity-A verification,
+§9.1), and in the meantime execute work that does not depend on it.
