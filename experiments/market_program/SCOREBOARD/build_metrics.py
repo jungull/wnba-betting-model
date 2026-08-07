@@ -29,6 +29,7 @@ LEGACY_VERIFIED = os.path.join(HERE, "granular", "legacy_verified_metrics.json")
 MODEL_VS_MARKET = os.path.join(ROOT, "experiments/market_program/MODEL_VS_MARKET/model_vs_market.json")  # READ-ONLY
 ADJUDICATION = os.path.join(ROOT, "experiments/player_program/stage2b/P40_PRIMARY_ADJUDICATION/ADJUDICATION.json")  # READ-ONLY, D042
 ADJUDICATION_REPORT = os.path.join(ROOT, "experiments/player_program/stage2b/P40_PRIMARY_ADJUDICATION/REPORT.md")  # READ-ONLY, corroborating
+SCORE_BASELINES = os.path.join(ROOT, "experiments/market_program/SCORE_BASELINES/score_baselines.json")  # READ-ONLY, D043
 
 
 def sha256_file(path):
@@ -353,6 +354,133 @@ def main():
         },
         "provenance": prov_legacy,
     })
+
+    # ---- D043 score-family baselines (SCORE_BASELINES/score_baselines.json) --
+    # Values are selected VERBATIM from the D043 composite-baselines artifact.
+    # The ONLY derived quantities are the market-advantage fraction and its CI,
+    # computed here strictly by the frozen market_advantage/1.0.0 formula
+    #   advantage = (market_error - model_error) / market_error
+    # from the artifact's own paired numbers (delta = composite - market, so
+    # advantage = -delta / market; CI endpoints map monotonically, order flips).
+    # Evidence discipline: these rows carry NAIVE_BASELINE semantics per the
+    # artifact's own evidence_class_semantics -- an untuned strictly-lagged
+    # floor, never a fitted model, never predictive evidence for a challenger.
+    # They are the D043 "current-best-estimate rows for score-family targets"
+    # until a preregistered cycle-2 model earns better.
+    sb = load(SCORE_BASELINES)
+    prov_sb = {
+        "source_artifact": {"path": rel(SCORE_BASELINES), "sha256": sha256_file(SCORE_BASELINES)},
+        "commit_lineage": {"recorded_head": None, "note": commit_note_uncommitted.replace(
+            "artifact not present in ARTIFACT_LEDGER.jsonl",
+            "score_baselines.json is not row-listed in ARTIFACT_LEDGER.jsonl")},
+        "authorities": sb["authorities"],
+        "evidence_class_semantics_verbatim": sb["evidence_class_semantics"],
+        "computed_at_source_utc": sb["generated_utc"],
+        "computation_timestamp_utc": now,
+    }
+    sb_mc = sb["market_comparison"]
+    SB_TARGETS = [
+        # (target_id, sb metrics key, kind, paired key, metric, metric_label)
+        ("game_total", "total", "scalar", "total_mae", "mae", "game-total MAE"),
+        ("margin", "margin", "scalar", "margin_mae", "mae", "margin (spread) MAE"),
+        ("win_probability", "win_prob", "probability", "winprob_brier", "devig_brier",
+         "win-probability Brier (model raw vs market de-vigged)"),
+    ]
+    SB_METHODS = [
+        ("composite_pace_x_eff_v1", "composite",
+         "composite_pace_x_eff_v1: VERIFIED pace ingredient (D042 champion projection, consumed as-is) x "
+         "strictly-lagged points-per-possession EWMAs (offense and defense); NO home-court term by construction "
+         "(pooled margin bias -1.77 marks that as declared cycle-2 work)"),
+        ("league_average_v1", "league_average",
+         "league_average_v1: strictly-lagged league-mean scoring baseline (D036 point 6 naive floor)"),
+        ("team_scoring_avg_v1", "team_scoring_avg",
+         "team_scoring_avg_v1: strictly-lagged season-to-date team scoring average (D036 point 6 naive floor)"),
+    ]
+    for method_key, method_short, method_desc in SB_METHODS:
+        pooled = sb["methods"][method_key]["POOLED"]
+        seasons = {yr: sb["methods"][method_key][yr] for yr in sb["methods"][method_key] if yr != "POOLED"}
+        for target_id, sb_key, kind, paired_key, mc_metric, mc_label in SB_TARGETS:
+            block = pooled[sb_key]
+            n_games = block["n"]
+            universe = (
+                f"SCORE_BASELINES {method_key} coverage: {n_games} games with the method's own strictly-lagged "
+                f"inputs resolvable (walk-forward over 2021-2026; per-method exclusions in the artifact; "
+                f"{block['n_date_clusters']} date clusters)"
+            )
+            if kind == "probability":
+                metrics_block = {
+                    "brier": block["brier"], "brier_ci95": block["brier_ci95"],
+                    "log_loss": block["log_loss"], "log_loss_ci95": block["log_loss_ci95"],
+                    "n": n_games, "n_date_clusters": block["n_date_clusters"],
+                    "calibration_10bin": block.get("calibration_10bin"),
+                    "ci95": block["brier_ci95"],
+                    "ci95_reason": "date-clustered 95% CI from the artifact (brier_ci95), copied verbatim",
+                }
+                season_splits = {yr: (seasons[yr].get(sb_key) or {}).get("brier") for yr in seasons}
+            else:
+                metrics_block = {
+                    "mae": block["mae"], "mae_ci95": block["mae_ci95"],
+                    "rmse": block["rmse"], "rmse_ci95": block["rmse_ci95"],
+                    "bias": block["bias"], "bias_ci95": block["bias_ci95"],
+                    "n": n_games, "n_date_clusters": block["n_date_clusters"],
+                    "ci95": block["mae_ci95"],
+                    "ci95_reason": "date-clustered 95% CI from the artifact (mae_ci95), copied verbatim",
+                }
+                season_splits = {yr: (seasons[yr].get(sb_key) or {}).get("mae") for yr in seasons}
+            row = {
+                "row_id": f"score_baseline_{method_short}_{target_id}",
+                "section": "predictive",
+                "status": "MEASURED",
+                "evidence_class": (
+                    "MEASURED_WALK_FORWARD_RECEIPTED_DEVELOPMENT — D043 score-family baseline with NAIVE_BASELINE "
+                    "semantics per D036 point 6: an untuned, strictly-lagged floor, never a fitted model, never "
+                    "predictive evidence for any challenger; the current-best-estimate row for this target until "
+                    "a preregistered cycle-2 model is adjudicated past it"
+                ),
+                "model_version": method_desc,
+                "target": {
+                    "game_total": "game total points (both teams, final score sum)",
+                    "margin": "final margin, home minus away (spread family)",
+                    "win_probability": "home-team win probability (model probability vs realized winner)",
+                }[target_id],
+                "cutoff": "pregame; strictly-lagged inputs only, walk-forward (no same-game information)",
+                "universe": universe,
+                "date_range": " to ".join(pooled["date_range"]),
+                "metrics": metrics_block,
+                "season_splits": season_splits,
+                "provenance": prov_sb,
+            }
+            if method_short == "composite":
+                paired = sb_mc["paired_metrics"][paired_key]
+                market_v = paired["market"]
+                model_v = paired["composite"]
+                delta_lo, delta_hi = paired["paired_delta_ci95"]
+                advantage = (market_v - model_v) / market_v
+                row["market_comparison"] = {
+                    "metric": mc_metric,
+                    "metric_label": mc_label,
+                    "question": ("On the identical paired game set (matched universe, LATE cross-book de-vigged "
+                                 "consensus), does the composite baseline beat the market?"),
+                    "verdict": ("Market currently better at baseline strength -- the paired delta excludes zero; "
+                                 "this is the honest bar cycle-2 models must beat, not a defeat of the program"),
+                    "model_value": model_v,
+                    "market_value": market_v,
+                    "advantage": advantage,
+                    "advantage_formula": "market_advantage/1.0.0: (market_error - model_error) / market_error, "
+                                          "computed from the artifact's paired values; CI mapped from "
+                                          "paired_delta_ci95 by advantage = -delta/market (order flips)",
+                    "advantage_ci95": [-delta_hi / market_v, -delta_lo / market_v],
+                    "paired_delta_composite_minus_market": paired["paired_delta_composite_minus_market"],
+                    "paired_delta_ci95": paired["paired_delta_ci95"],
+                    "n": paired["n_pairs"],
+                    "n_date_clusters": paired["n_date_clusters"],
+                    "universe": sb_mc["universe"] + f" (paired rows for this target: n={paired['n_pairs']})",
+                    "snapshot_class": sb_mc["snapshot_class"],
+                    "timing_advisory": ("market snapshot timestamps are VENDOR_ASSERTED, unwitnessed (T1); never a "
+                                         "timing/CLV/reaction claim; caveat sha256 " + sb_mc["caveat_sha256"]),
+                    "source": {"path": rel(SCORE_BASELINES), "sha256": sha256_file(SCORE_BASELINES)},
+                }
+            rows.append(row)
 
     # ---- Naive baselines: declared pending, never invented -------------------
     for nb in ("league_mean", "rolling_team_average", "last_five_games"):

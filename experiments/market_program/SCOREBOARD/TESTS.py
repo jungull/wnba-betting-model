@@ -719,6 +719,33 @@ def run_real_input_tests(tmp):
     check("real/D042: challenger field lifecycle state is ADJUDICATED, not stuck at BUILT",
           ">ADJUDICATED<" in h1)
 
+    # ---------------------------------------------------------- D045 checks
+    # D043 score-family baselines wired to the board: composite rows are the
+    # current-best-estimate rows, market comparison is paired matched-universe
+    # only, and no Prediction Score is shown while universes are unmatched.
+    check("real/D045: game_total typical miss shows the composite baseline (13.8 points)",
+          "13.8 points" in h1 and "composite_pace_x_eff_v1" in h1)
+    check("real/D045: NO Prediction Score for any score-family target (matched universe pending)",
+          dict(scores)["game_total"] == "" and dict(scores)["margin"] == ""
+          and dict(scores)["win_probability"] == "")
+    check("real/D045: matched-universe pending state stated, never faked from unmatched numbers",
+          "Pending — matched universe" in h1)
+    check("real/D045: market advantage from the PAIRED comparison, market currently ahead on totals (-2.8)",
+          "Market currently better" in h1 and "-2.8" in h1)
+    check("real/D045: margin market advantage rendered (-8.2)",
+          "-8.2" in h1)
+    check("real/D045: win-probability Brier shown raw (0.2181)",
+          "0.2181" in h1)
+    check("real/D045: declared naive baseline is the season-to-date team scoring average (best of two)",
+          "season-to-date team scoring average baseline" in h1)
+    check("real/D045: the market bar framed as the bar to beat, not a defeat",
+          "honest bar" in h1)
+    gt_start = h1.find('data-for="lb-game_total"')
+    gt_next = h1.find('data-for="lb-margin"')
+    gt_block = h1[gt_start:gt_next if gt_next != -1 else gt_start + 8000]
+    check("real/D045: game_total composite row carries PRELIMINARY badge, never VERIFIED",
+          gt_start != -1 and ">PRELIMINARY<" in gt_block and ">VERIFIED<" not in gt_block)
+
 
 def main():
     with tempfile.TemporaryDirectory() as tmp:

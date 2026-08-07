@@ -4,6 +4,13 @@
   "frozen": true,
   "frozen_utc": "2026-08-06T21:00:00+00:00",
   "freeze_note": "Frozen BEFORE any our-model evaluation result was visible. Per the spec, the scoring transformation, interpretation bands and tolerance bands may never be changed to improve presentation. Changing any value in this file requires a new version string and a decision record.",
+  "amendments": [
+    {
+      "utc": "2026-08-07",
+      "decision": "D045_SCORE_FAMILY_BOARD_WIRING",
+      "change": "ADDITIVE ONLY: game_total, margin and win_probability targets wired to the D043 SCORE_BASELINES rows (model_row = composite; baseline = new score_family_best_naive spec). The frozen scoring transformation, interpretation bands and tolerance bands are byte-unchanged; prediction_score stays 1.0.0. The composite rows carry NAIVE_BASELINE semantics (D036 point 6) and PRELIMINARY evidence; nothing here was changed after viewing a result to improve presentation -- the wired rows show the market currently AHEAD of the composite on all three targets."
+    }
+  ],
   "prediction_score": {
     "version": "prediction_score/1.0.0",
     "frozen": true,
@@ -110,7 +117,7 @@
     },
     "naive_trio_declared_pending": {
       "kind": "declared_pending",
-      "declared_for": "team_attributed_turnovers, team_total, game_total, margin",
+      "declared_for": "team_attributed_turnovers, team_total (game_total and margin moved to score_family_best_naive per D045, 2026-08-07)",
       "variants": ["league_mean", "rolling_team_average", "last_five_games"],
       "source": "metrics.json rows naive_baseline_* (status DECLARED_PENDING)",
       "note": "required by D036 point 6 on every target; until computed with walk-forward leakage discipline on the identical universe, every dependent Prediction Score stays TBD"
@@ -126,6 +133,15 @@
       "declared_for": "team_possessions",
       "candidate": "naive team-possessions baseline (league mean / rolling team average / last-five-games), to be preregistered before first scored evaluation",
       "note": "D042: the model number (team_possessions_champion) is now VERIFIED, but no matched-universe naive baseline has been computed for this target; per D036 point 6 the Prediction Score stays TBD until one is computed with walk-forward leakage discipline on the identical universe -- never invented, never inherited from the turnovers baseline"
+    },
+    "score_family_best_naive": {
+      "kind": "best_score_family_naive_pooled",
+      "declared_for": "game_total, margin, win_probability",
+      "variants": ["league_average", "team_scoring_avg"],
+      "selection_rule": "the variant with the lowest pooled error (MAE for scalar targets, Brier for probability targets) among metrics.json rows score_baseline_league_average_<target> and score_baseline_team_scoring_avg_<target>; deterministic, values read verbatim, never recomputed",
+      "source": "metrics.json rows score_baseline_* (selected verbatim from experiments/market_program/SCORE_BASELINES/score_baselines.json, D043)",
+      "cutoff": "pregame; strictly-lagged inputs only, walk-forward (no same-game information)",
+      "note": "each method carries its own coverage universe (per-method exclusions in the source artifact); a Prediction Score computes only where the frozen matched-universe rule (exact universe string + identical N) holds, otherwise it stays TBD with the unmatched numbers shown as reference only"
     }
   },
   "evidence_badges": {
@@ -166,9 +182,9 @@
     {"id": "player_minutes", "label": "Player minutes", "level": "player", "unit": "minutes", "kind": "scalar", "granular_stat": "minutes", "tolerance_key": "player_minutes", "baseline": "best_of_three_naive_pooled", "market": "market_does_not_price"},
     {"id": "team_attributed_turnovers", "label": "Team turnovers (attributed)", "level": "team", "unit": "turnovers", "kind": "scalar", "model_row": "incumbent_operational_team_attributed_turnovers", "tolerance_key": null, "baseline": "naive_trio_declared_pending", "market": "market_does_not_price"},
     {"id": "team_total", "label": "Team total points", "level": "team", "unit": "points", "kind": "scalar", "tolerance_key": null, "baseline": "naive_trio_declared_pending", "market": "bookie_not_computed"},
-    {"id": "game_total", "label": "Game total points", "level": "game", "unit": "points", "kind": "scalar", "tolerance_key": "game_total", "baseline": "naive_trio_declared_pending", "market": "bookie_late_cross_total"},
-    {"id": "margin", "label": "Final margin (spread)", "level": "game", "unit": "points", "kind": "scalar", "tolerance_key": "margin", "baseline": "naive_trio_declared_pending", "market": "bookie_late_cross_spread"},
-    {"id": "win_probability", "label": "Game winner (win probability)", "level": "game", "unit": "probability", "kind": "probability", "tolerance_key": null, "baseline": "win_probability_baseline_declared_pending", "market": "bookie_late_cross_moneyline"},
+    {"id": "game_total", "label": "Game total points", "level": "game", "unit": "points", "kind": "scalar", "model_row": "score_baseline_composite_game_total", "tolerance_key": "game_total", "baseline": "score_family_best_naive", "market": "bookie_late_cross_total"},
+    {"id": "margin", "label": "Final margin (spread)", "level": "game", "unit": "points", "kind": "scalar", "model_row": "score_baseline_composite_margin", "tolerance_key": "margin", "baseline": "score_family_best_naive", "market": "bookie_late_cross_spread"},
+    {"id": "win_probability", "label": "Game winner (win probability)", "level": "game", "unit": "probability", "kind": "probability", "model_row": "score_baseline_composite_win_probability", "tolerance_key": null, "baseline": "score_family_best_naive", "market": "bookie_late_cross_moneyline"},
     {"id": "team_possessions", "label": "Team possessions (regulation-equivalent)", "level": "team", "unit": "possessions", "kind": "scalar", "model_row": "team_possessions_champion", "tolerance_key": null, "baseline": "team_possessions_baseline_declared_pending", "market": "market_does_not_price"}
   ],
   "defaults": {

@@ -468,8 +468,11 @@ def resolve_model(tcfg, metrics, gm):
             r = None
         if r is not None and r.get("status") == "MEASURED":
             m = r["metrics"]
+            # probability-kind targets are scored on Brier, never MAE
+            # (score_config error_metric_by_target_kind); scalar targets on MAE.
+            err = m.get("brier") if tcfg.get("kind") == "probability" else m.get("mae")
             return {
-                "error": m.get("mae"), "rmse": m.get("rmse"), "bias": m.get("bias"),
+                "error": err, "rmse": m.get("rmse"), "bias": m.get("bias"),
                 "n": m.get("n_team_games") or m.get("n_player_games") or m.get("n"),
                 "universe": r.get("universe"), "cutoff": r.get("cutoff"),
                 "evidence_class": r.get("evidence_class"), "row": r,
@@ -506,6 +509,35 @@ def resolve_baseline(tcfg, cfg, metrics, gm):
             "ci": row.get("mae_ci95"), "row": row,
             "title": naive_prov_title(row, gm),
         }
+    if spec["kind"] == "best_score_family_naive_pooled":
+        # D045: deterministic best-of-two selection among the D043 score-family
+        # naive rows in metrics.json; values read verbatim, never recomputed.
+        err_key = "brier" if tcfg.get("kind") == "probability" else "mae"
+        labels = {"league_average": "league-average", "team_scoring_avg": "season-to-date team scoring average"}
+        candidates = []
+        for variant in spec["variants"]:
+            try:
+                row = get_row(metrics, f"score_baseline_{variant}_{tcfg['id']}")
+            except KeyError:
+                continue
+            if row.get("status") == "MEASURED" and row["metrics"].get(err_key) is not None:
+                candidates.append((variant, row))
+        if candidates:
+            variant, row = min(candidates, key=lambda vr: vr[1]["metrics"][err_key])
+            m = row["metrics"]
+            ci_list = m.get("ci95")
+            ci = ({"lo": ci_list[0], "hi": ci_list[1],
+                   "method": m.get("ci95_reason", "ci95 copied verbatim from score_baselines.json")}
+                  if isinstance(ci_list, (list, tuple)) and len(ci_list) == 2 else None)
+            return {
+                "pending": False, "name": f"{labels.get(variant, variant)} baseline",
+                "variant": variant, "error": m[err_key], "n": m.get("n"),
+                "universe": row.get("universe"), "cutoff": row.get("cutoff"),
+                "ci": ci, "row": row,
+                "title": prov_title(f"naive baseline ({labels.get(variant, variant)}, best of two by pooled {err_key})", row),
+            }
+        return {"pending": True, "name": "score-family naive baseline (rows absent from metrics.json)",
+                "error": None, "n": None, "universe": None, "title": spec.get("note", "declared pending")}
     # declared-pending kinds
     name = "a basic naive baseline (declared, pending computation)"
     title = spec.get("note", "declared pending")
@@ -855,11 +887,21 @@ def detail_html(r, cfg, metrics, gm, gc):
     # seasons / diagnostics for the incumbent
     if tcfg.get("model_row") and r["model"] is not None and r["model"]["row"].get("season_splits"):
         splits = r["model"]["row"]["season_splits"]
-        parts.append("<div><h4>Season-by-season (model arm D vs league-constant arm A — diagnostic, not a scored baseline)</h4>")
-        parts.append(" · ".join(
-            f'{esc(s)}: D {splits[s]["D_ewma_shrunk"]:.3f} / A {splits[s]["A_league_constant"]:.3f}'
-            for s in sorted(splits)))
-        parts.append("</div>")
+        if all(isinstance(v, dict) for v in splits.values()):
+            # incumbent shape: per-season {arm_id: value} diagnostic
+            parts.append("<div><h4>Season-by-season (model arm D vs league-constant arm A — diagnostic, not a scored baseline)</h4>")
+            parts.append(" · ".join(
+                f'{esc(s)}: D {splits[s]["D_ewma_shrunk"]:.3f} / A {splits[s]["A_league_constant"]:.3f}'
+                for s in sorted(splits)))
+            parts.append("</div>")
+        else:
+            # flat shape (D045 score-family rows): per-season scalar error, absent seasons shown as em-dash
+            metric_name = cfg["prediction_score"]["error_metric_by_target_kind"][r["kind"]]
+            parts.append(f'<div><h4>Season-by-season ({esc(metric_name)} — diagnostic, not a scored comparison)</h4>')
+            parts.append(" · ".join(
+                f'{esc(s)}: {splits[s]:.3f}' if isinstance(splits[s], (int, float)) else f'{esc(s)}: —'
+                for s in sorted(splits)))
+            parts.append("</div>")
 
     # known limitations + provenance
     parts.append("<div><h4>Known limitations</h4>")
