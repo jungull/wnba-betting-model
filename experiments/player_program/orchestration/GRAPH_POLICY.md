@@ -387,3 +387,15 @@ must not be used to forbid the use of a model that clears the bar above.
 **What this does NOT change:** the *authority* to deploy. GRAPH_POLICY §6 reserves external
 deployment and financial commitment to the user, and D063 changes the **evidence standard**, not who
 rules. E2 can now make the case; the user still makes the call.
+
+**13.8.1 `adaptive_generation` follows the HYPOTHESIS FAMILY, not the experiment id** (`D064`, user
+directive 2026-08-07). The counter attaches to the **campaign/lineage**, not to a name. If a 2025/26
+result teaches something and a closely related variant is spun out of that information, **renaming it
+does not reset it to fresh confirmation** — the variant inherits the family's `adaptive_generation`
+and increments it. Every E2 record therefore carries a `hypothesis_family_id`, and the counter is
+keyed on that. Spawning a "new" experiment id from a holdout-informed insight is the obvious way to
+launder an adaptive test into a fresh one, and it is closed here explicitly.
+
+**13.9.1 Deployment authority — CONFIRMED BY THE USER 2026-08-07.** E2 can establish that a model is
+**deployment-READY**. **Deployment itself and any financial commitment remain the user's decision**
+(§6). The coordinator's D063 interpretation is ratified: E2 makes the case, the user makes the call.
