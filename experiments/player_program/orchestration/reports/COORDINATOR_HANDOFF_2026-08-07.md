@@ -482,3 +482,30 @@ user's directive and is flagged as such in D057 for the user to rule on.
 is now *where* the advantage is strongest, what observable pre-game state predicts it, and whether
 we can abstain elsewhere. Conditional edge and abstention are first-class targets. D051's residual
 characterisation is the existing bridge.
+
+
+## 10.10 CENTRAL RESEARCH THESIS ADDED — D060, and it changes what ideation must cover
+
+The user added a modeling thesis they believe may carry a large share of the eventual edge, recorded
+as **T1_CONTEXT_NORMALIZED_TENDENCY_X_MATCHUP** in `experiments/idea_log.jsonl`:
+
+> Observed recent performance = underlying player tendency/form **+ the context that produced it**.
+> Estimate the tendency cleanly using **shifted, context-normalized EWMAs at the lowest useful
+> stat/substat level**, then interact it with **today's** matchup context. Keep **opportunity and
+> efficiency separate wherever the data allows.** The edge is expected to come from many small
+> context corrections and interactions assembled coherently — not one magic feature.
+
+**Future ideation must explicitly explore this** rather than defaulting to conventional rolling
+averages or generic ML features. Vary normalization schemes, EWMA horizons/alphas (the score lane's
+own span was never tuned), decomposition depth, interaction formulations, hierarchical fallbacks —
+and alternative frameworks entirely, since this is a hypothesis, **not an architectural commandment**.
+
+**Binding process constraint:** do NOT assemble a massive combinatorial model. Run it through the
+§13 funnel — screen individual concepts at E0, log every attempt, kill fast, combine only after each
+component shows **independent** value.
+
+**The independence cost, which must be honoured:** a source shown T1 is **DIRECTED, not blind**, and
+may never be cited as independent convergence on T1 — exactly as cycle 2 distinguished *5-of-5 blind*
+convergence on schedule fatigue from *3-of-5 on the user-directed* interaction. If both focus and
+blind corroboration are wanted, split the ideation panel and label each source's exposure. D046's bar
+is on COORDINATOR priors and is not in conflict: a user scope directive is not a coordinator prior.
