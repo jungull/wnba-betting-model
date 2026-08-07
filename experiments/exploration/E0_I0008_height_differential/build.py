@@ -49,18 +49,23 @@ print("rebound events in partition:", reb.shape)
 # For each game+period, sort possessions by descending start clock and use merge_asof
 # (direction='backward' on a DEscending-sorted key emulated by negating clock) to find
 # the possession whose [end_sec, start_sec] clock window contains the event's clock.
-poss_sorted = poss.sort_values(["game_id", "period", "period_clock_start_sec"], ascending=[True, True, False]).copy()
-reb_sorted = reb.sort_values(["game_id", "period", "clock_seconds_remaining"], ascending=[True, True, False]).copy()
+poss_sorted = poss.copy()
+reb_sorted = reb.copy()
 
 # normalize join-key dtypes so merge_asof's by= columns match exactly
 for df_ in (poss_sorted, reb_sorted):
     df_["game_id"] = df_["game_id"].astype(str)
     df_["period"] = df_["period"].astype("int64")
 
-# merge_asof requires numeric ascending keys; negate clock so it's ascending.
 poss_sorted["_neg_clock"] = -poss_sorted["period_clock_start_sec"]
 reb_sorted["_neg_clock"] = -reb_sorted["clock_seconds_remaining"]
 
+# merge_asof requires the 'on' key sorted ASCENDING GLOBALLY (not just per-group), even
+# when 'by' is used for grouping.
+poss_sorted = poss_sorted.sort_values("_neg_clock", kind="mergesort")
+reb_sorted = reb_sorted.sort_values("_neg_clock", kind="mergesort")
+
+# merge_asof requires numeric ascending keys; negate clock so it's ascending.
 matched = pd.merge_asof(
     reb_sorted,
     poss_sorted,
@@ -83,7 +88,8 @@ print("...and lineup_valid_ten==True:", matched.shape[0])
 
 # ---- side-of-play: offense (ORB) vs defense (DRB) for the credited rebounder ----
 # event_team_id on the rebound event = the team credited with the board.
-matched["is_orb"] = (matched["event_team_id"] == matched["offense_team_id"]).astype(int)
+matched = matched.dropna(subset=["event_team_id", "offense_team_id"]).copy()
+matched["is_orb"] = (matched["event_team_id"] == matched["offense_team_id"]).astype("int64")
 
 # ---- height differential at the moment of the rebound ---------------------
 off_cols = ["off_p1", "off_p2", "off_p3", "off_p4", "off_p5"]

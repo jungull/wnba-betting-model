@@ -399,3 +399,12 @@ launder an adaptive test into a fresh one, and it is closed here explicitly.
 **13.9.1 Deployment authority — CONFIRMED BY THE USER 2026-08-07.** E2 can establish that a model is
 **deployment-READY**. **Deployment itself and any financial commitment remain the user's decision**
 (§6). The coordinator's D063 interpretation is ratified: E2 makes the case, the user makes the call.
+
+**13.2.1 The manifest check — how §13.2 is actually enforced** (`H1`, 2026-08-07). Before using ANY
+pre-built artifact at E0/E1, read its sibling `<artifact>.manifest.json` and inspect `fit_seasons`
+and `fit_through_season`. **If either includes 2025 or 2026, the artifact is holdout-contaminated and
+may not be used** — rebuild from raw per-season files instead. A sweep on 2026-08-07 found **19 of 29
+manifested artifacts contaminated**, including all five `data/zone_maps/*` files (whose own manifests
+state *"a 2021 row's shrunk value saw later seasons"*) and `data/w1_truth/player_game_availability.csv`
+— exactly what an absence or minutes screen reaches for first. There is no error, warning or visible
+symptom when a contaminated artifact is used; the check is the only defence.
