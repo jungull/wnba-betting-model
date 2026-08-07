@@ -806,8 +806,9 @@ def detail_html(r, cfg, metrics, gm, gc):
     parts.append("<div><h4>Our model</h4>")
     if r["model"] is not None:
         m = r["model"]
+        bias_txt = f'{m["bias"]:+.4f}' if m.get("bias") is not None else "— (not adjudicated: P40 reports the pooled null MAE, not a bias term)"
         parts.append(f'<b>{fmt(m["error"])}</b> {esc(cfg["prediction_score"]["error_metric_by_target_kind"][r["kind"]])} '
-                     f'· n={m["n"]:,}<br>bias {m["bias"]:+.4f} · RMSE {fmt(m["rmse"]) if m.get("rmse") is not None else "—"}<br>'
+                     f'· n={m["n"]:,}<br>bias {bias_txt} · RMSE {fmt(m["rmse"]) if m.get("rmse") is not None else "—"}<br>'
                      f'universe: {esc(m["universe"])}<br>cutoff: {esc(m["cutoff"])}<br>'
                      f'evidence: {esc(m["evidence_class"])}')
     else:
@@ -1292,10 +1293,23 @@ def build_evidence_layer(coverage, metrics, lifecycle, granular_metrics, granula
       f'<div class="d">Totals {late_x["total"]["mae"]:.2f} MAE · de-vigged Brier {late_x["moneyline"]["brier"]:.3f} · '
       f'n={late_x["spread"]["n"]:,}/{late_x["total"]["n"]:,}/{late_x["moneyline"]["n"]:,}. Vendor-asserted snapshot class, never a closing line. '
       f'{chip("ok", "MEASURED — T1 VENDOR-ASSERTED", bb_title)} <span class="prov" title="{esc(bb_title)}">ⓘ provenance</span></div></div>')
+    cf = lifecycle["challenger_field"]
+    cf_state = cf.get("lifecycle_state", "BUILT")
+    cf_kind = {"BUILT": "run", "AUDITED": "run", "FITTING": "run",
+               "EVALUATED/SEALED": "run", "ADJUDICATED": "ok"}.get(cf_state, "run")
+    cf_value = pending_chip if cf_state in ("BUILT", "AUDITED", "FITTING") else chip(cf_kind, cf_state, cf["source"]["record"])
     a(f'<div class="tile"><div class="k">Challenger field · 22 arms</div>'
-      f'<div class="v">{pending_chip}</div>'
-      f'<div class="d">{esc(lifecycle["challenger_field"]["statement"])} '
-      f'{chip("run", "BUILT", lifecycle["challenger_field"]["source"]["record"])}</div></div>')
+      f'<div class="v">{cf_value}</div>'
+      f'<div class="d">{esc(cf["statement"])} '
+      f'{chip(cf_kind, cf_state, cf["source"]["record"])}</div></div>')
+    tpc = get_row(metrics, "team_possessions_champion")
+    tpc_title = prov_title("frozen incumbent, VERIFIED possessions null (P40 adjudication)", tpc)
+    a(f'<div class="tile"><div class="k">Team possessions (regulation-equivalent) · VERIFIED</div>'
+      f'<div class="v">{tpc["metrics"]["mae"]:.4f} <small>MAE</small></div>'
+      f'<div class="d">Frozen incumbent K0_MATCHED null, five-fold blind walk-forward, n={tpc["metrics"]["n_team_games"]:,} pooled '
+      f'OOF rows / {tpc["metrics"]["n_clusters"]:,} clusters. Supersedes the 2.9675 turnover-lane figure above with correct '
+      f'labeling of BOTH numbers (D042) — this is the possessions number, that one is turnovers; never the same target. '
+      f'{chip("ok", "VERIFIED", tpc_title)} <span class="prov" title="{esc(tpc_title)}">ⓘ provenance</span></div></div>')
     a(f'<div class="tile"><div class="k">Props archive coverage (re-audited)</div>'
       f'<div class="v">{p7["unique_calendar_dates_with_prop_lines"]:,} <small>unique calendar dates</small></div>'
       f'<div class="d">{p7["unique_event_ids_with_prop_lines"]:,} events · {p7["unique_event_snapshot_pairs_with_prop_lines"]:,} event-snapshot pairs · '
@@ -1326,6 +1340,17 @@ def build_evidence_layer(coverage, metrics, lifecycle, granular_metrics, granula
       f'<span class="sub">bias {inc["metrics"]["bias"]:+.4f} · RMSE {inc["metrics"]["rmse"]:.4f} · n={inc["metrics"]["n_team_games"]:,} team-games · '
       f'intrinsic track {inc_in["metrics"]["mae"]:.4f} (n={inc_in["metrics"]["n_team_games"]:,}) ²</span> '
       f'{chip("ok", "MEASURED", inc_title)}</td>'
+      f'<td>{na}<span class="sub">not directly priced by the books</span></td>'
+      f'<td>{na}</td><td>{na}</td><td>{na}</td></tr>')
+
+    # possessions champion (D042: P40 primary adjudication, VERIFIED)
+    a('<tr><td class="metric">Team possessions (regulation-equivalent)<span class="sub">frozen incumbent\'s '
+      'K0_MATCHED null, VERIFIED by P40 blind walk-forward adjudication — the correctly-labeled possessions '
+      'number the turnover row above is NOT ¹¹</span></td>'
+      f'<td><span class="num">{tpc["metrics"]["mae"]:.4f} MAE</span>'
+      f'<span class="sub">n={tpc["metrics"]["n_team_games"]:,} pooled OOF rows / {tpc["metrics"]["n_clusters"]:,} clusters · '
+      f'five D006 test folds · challenger field: {tpc["adjudication_summary"]["n_pass_primary"]}/{tpc["adjudication_summary"]["fitted_elements"]} elements promoted</span> '
+      f'{chip("ok", "VERIFIED", tpc_title)}</td>'
       f'<td>{na}<span class="sub">not directly priced by the books</span></td>'
       f'<td>{na}</td><td>{na}</td><td>{na}</td></tr>')
 
@@ -1460,6 +1485,15 @@ def build_evidence_layer(coverage, metrics, lifecycle, granular_metrics, granula
     a('<p><span class="mark">⁶ Naive baselines.</span> Required on every target (D036 point 6); shown as declared-pending until computed with walk-forward leakage discipline.</p>')
     a('<p><span class="mark">⁷ Threshold-first rule.</span> A single prop line yields a de-vigged over/under probability — the primary quantity. Threshold MAE is explicitly distinct from projection MAE. Implied means are null absent alternate lines or an out-of-sample-calibrated distribution.</p>')
     a('<p><span class="mark">⁸ Archive caveat (verbatim, frozen).</span> ' + esc(bb["caveat_text_verbatim"]) + '</p>')
+    cps = get_row(metrics, "challenger_program_summary")
+    a('<p><span class="mark">¹¹ Team possessions vs team-attributed turnovers.</span> These are two DIFFERENT '
+      'targets on two different pooled universes; ADJUDICATION.json records explicitly that they are not '
+      'cross-comparable (different row sets and pooling). Possessions is now VERIFIED (P40 blind walk-forward '
+      'adjudication, D042); turnovers remains the PRELIMINARY receipt-cited development figure. Challenger '
+      'program result: ' + esc(cps["plain_english"]) + ' Strongest lead: ' +
+      esc(cps["metrics"]["strongest_lead"]["arm_id"]) + f' (delta_MAE {cps["metrics"]["strongest_lead"]["delta_mae_pooled"]:+.5f}, '
+      f'uncorrected p={cps["metrics"]["strongest_lead"]["p_two_sided_uncorrected"]:.3f}); ' +
+      esc(cps["metrics"]["strongest_lead"]["why_it_failed"]) + '</p>')
 
     for r in [inc, inc_in, bb, rank] + naive:
         p = r.get("provenance", {})

@@ -27,6 +27,8 @@ PROGRAM_STATE = os.path.join(ROOT, "experiments/player_program/PROGRAM_STATE.jso
 ARTIFACT_LEDGER = os.path.join(ROOT, "experiments/player_program/orchestration/ARTIFACT_LEDGER.jsonl")
 LEGACY_VERIFIED = os.path.join(HERE, "granular", "legacy_verified_metrics.json")  # READ-ONLY per D038 task grant
 MODEL_VS_MARKET = os.path.join(ROOT, "experiments/market_program/MODEL_VS_MARKET/model_vs_market.json")  # READ-ONLY
+ADJUDICATION = os.path.join(ROOT, "experiments/player_program/stage2b/P40_PRIMARY_ADJUDICATION/ADJUDICATION.json")  # READ-ONLY, D042
+ADJUDICATION_REPORT = os.path.join(ROOT, "experiments/player_program/stage2b/P40_PRIMARY_ADJUDICATION/REPORT.md")  # READ-ONLY, corroborating
 
 
 def sha256_file(path):
@@ -128,6 +130,115 @@ def main():
         },
         "season_splits": audit["results"]["intrinsic"]["by_season_team_mae"],
         "provenance": prov_incumbent,
+    })
+
+    # ---- Team possessions champion (D042: P40_PRIMARY_ADJUDICATION VERIFIED) -
+    # The frozen incumbent D_ewma_shrunk's own pooled out-of-fold MAE on the
+    # REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS target, taken verbatim
+    # from ADJUDICATION.json summary.incumbent_margin (the K0_MATCHED null
+    # shared by every arm whose null equals the frozen incumbent exactly).
+    # This SUPERSEDES the PRELIMINARY receipt-cited 2.9675 figure above with
+    # correct labeling of BOTH numbers: 2.9675 is the TURNOVER-lane MAE
+    # (row incumbent_operational_team_attributed_turnovers, unchanged); 2.86649
+    # here is the POSSESSIONS-lane MAE, newly VERIFIED by blind walk-forward
+    # adjudication. The two targets, universes and evidence classes are never
+    # conflated (ADJUDICATION.json could_not_establish: the two numbers are not
+    # comparable to each other -- different row sets and pooling).
+    adjudication = load(ADJUDICATION)
+    adj_summary = adjudication["summary"]
+    adj_margin = adj_summary["incumbent_margin"]
+    prov_adjudication = {
+        "source_artifact": {"path": rel(ADJUDICATION), "sha256": sha256_file(ADJUDICATION)},
+        "corroborating_artifact": {"path": rel(ADJUDICATION_REPORT), "sha256": sha256_file(ADJUDICATION_REPORT)},
+        "commit_lineage": {
+            "recorded_head": None,
+            "note": commit_note_uncommitted.replace(
+                "artifact not present in ARTIFACT_LEDGER.jsonl",
+                "ADJUDICATION.json is not row-listed in ARTIFACT_LEDGER.jsonl"),
+        },
+        "authority": adjudication["authority"],
+        "manifest_sha256": adjudication["authority"]["manifest_sha256"],
+        "computed_at_source_utc": adjudication["elements"]["A02_cal_blend_contrast__single"]["provenance_d036"]["computation_timestamp_utc"],
+        "computation_timestamp_utc": now,
+    }
+    rows.append({
+        "row_id": "team_possessions_champion",
+        "section": "predictive",
+        "status": "MEASURED",
+        "evidence_class": (
+            "MEASURED_BLIND_WALK_FORWARD_AUDITED — VERIFIED per P39_RESULT_INTEGRITY "
+            "PASS_WITH_FINDINGS (21/21 structural checks, 0 Severity A) and P40_PRIMARY_ADJUDICATION "
+            "(D041 unseal authority; preregistration P35 sha256 68ef22f4fca15a2e8d91eeeb9b84b86f86e8e9e7caab5e23e6a9b950385b4d32); "
+            "supersedes the PRELIMINARY receipt-cited 2.9675 turnover-lane figure with correct labeling "
+            "of BOTH numbers per D042 -- 2.9675 remains the team-attributed TURNOVER MAE (see the row "
+            "above); this row is the team POSSESSIONS MAE and is not comparable to it"
+        ),
+        "model_version": "Arm D_ewma_shrunk, K=200, alpha=0.1, FROZEN incumbent (preregistered, not learned) -- "
+                          "K0_MATCHED null shared exactly by the CALIBRATION_CONTROL_FAMILY / OPPONENT_MECHANISM_F1 / "
+                          "schedule_context_family arms whose null equals the frozen incumbent",
+        "target": "REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS (pooled out-of-fold, five D006 expanding "
+                   "walk-forward test folds train_lt_2022..train_lt_2026)",
+        "cutoff": "pregame; strictly-lagged features only; D006 expanding folds; blinded P36/P38 fit, unsealed "
+                   "only at P40 under D041 (first and only context authorized to open SEALED_RESULTS/P38/)",
+        "universe": "pooled out-of-fold rows across the five D006 test folds; corrected candidate universe "
+                    "(same universe as the 29 fitted challenger elements' K0_MATCHED nulls)",
+        "date_range": "WNBA seasons 2021-2026 (five expanding folds: train_lt_2022 .. train_lt_2026)",
+        "metrics": {
+            "mae": adj_margin["pooled_oof_mae_of_incumbent_identical_nulls"],
+            "rmse": None,
+            "bias": None,
+            "n_team_games": adj_margin["n_rows"],
+            "n_clusters": 1286,
+            "ci95": None,
+            "ci95_reason": "P40 adjudicates the pooled K0_MATCHED null MAE itself (no treatment coefficient to "
+                            "interval); per-element treatment-coefficient 95% intervals exist in ADJUDICATION.json",
+        },
+        "champion_note": adj_summary["champion_note"],
+        "adjudication_summary": {
+            "fitted_elements": adj_summary["fitted_elements"],
+            "n_pass_primary": adj_summary["n_pass_primary"],
+            "n_fail_primary": adj_summary["n_fail_primary"],
+            "champion_challenged": adj_summary["champion_challenged"],
+        },
+        "provenance": prov_adjudication,
+    })
+
+    # ---- Challenger program summary (D042: P40_PRIMARY_ADJUDICATION) --------
+    # A non-scored, outsider-legible summary of the blind challenger program's
+    # outcome. Not a prediction target -- never wired to a score_config target
+    # as a model_row; surfaced as its own tile/section in the evidence layer.
+    a07 = adjudication["elements"]["A07_early_season_transient__single"]
+    rows.append({
+        "row_id": "challenger_program_summary",
+        "section": "context",
+        "status": "MEASURED",
+        "evidence_class": (
+            "MEASURED_BLIND_WALK_FORWARD_AUDITED — VERIFIED per P39_RESULT_INTEGRITY "
+            "PASS_WITH_FINDINGS and P40_PRIMARY_ADJUDICATION"
+        ),
+        "model_version": "22 challenger arms / 29 fitted elements, stage2b P36-P40",
+        "target": "context / programmatic summary -- not itself a scored prediction target",
+        "cutoff": "n/a (summary of the P40 adjudication verdict across all fitted elements)",
+        "universe": "29 fitted elements across 22 arms, 10 preregistered families, family-Holm alpha 0.05",
+        "date_range": "WNBA seasons 2021-2026",
+        "metrics": {
+            "n_configurations_tested": adj_summary["fitted_elements"],
+            "n_passed_preregistered_bar": adj_summary["n_pass_primary"],
+            "strongest_lead": {
+                "arm_id": "A07_early_season_transient",
+                "delta_mae_pooled": a07["primary"]["delta_mae_pooled"],
+                "p_two_sided_uncorrected": a07["primary"]["p_two_sided"],
+                "verdict": a07["verdict"],
+                "why_it_failed": "fails the Holm-adjusted multiplicity threshold in BOTH its candidate families "
+                                 "(COLDSTART_FALLBACK m=5 and the alternate CAL+A07 m=4 run); the stricter of the "
+                                 "two must reject and neither does",
+            },
+        },
+        "plain_english": (
+            "Twenty-nine context-adjusted ideas were tested blind; none beat the champion after correction for "
+            "multiple testing. The strongest, an early-season adjustment, is preserved for the next cycle."
+        ),
+        "provenance": prov_adjudication,
     })
 
     # ---- Bookie baseline (re-emitted verbatim, with caveat + provenance) -----

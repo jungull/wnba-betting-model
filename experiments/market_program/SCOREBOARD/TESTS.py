@@ -207,6 +207,27 @@ def make_generator_fixture(tmp):
              "metrics": {"mae": 2.896, "rmse": 3.62, "bias": 0.07, "n_team_games": 2982,
                           "ci95": None, "ci95_reason": "fixture"},
              "season_splits": {}, "provenance": prov},
+            {"row_id": "team_possessions_champion", "section": "predictive", "status": "MEASURED",
+             "evidence_class": "MEASURED_BLIND_WALK_FORWARD_AUDITED fixture -- VERIFIED",
+             "model_version": "Arm D fixture, K0_MATCHED null", "target": "possessions fixture",
+             "cutoff": "pregame fixture", "universe": "fixture possessions universe", "date_range": "2021-2026",
+             "metrics": {"mae": 2.86649, "rmse": None, "bias": None, "n_team_games": 2572, "n_clusters": 1286,
+                          "ci95": None, "ci95_reason": "fixture"},
+             "champion_note": "fixture champion note",
+             "adjudication_summary": {"fitted_elements": 29, "n_pass_primary": 0, "n_fail_primary": 29,
+                                       "champion_challenged": False},
+             "provenance": prov},
+            {"row_id": "challenger_program_summary", "section": "context", "status": "MEASURED",
+             "evidence_class": "MEASURED_BLIND_WALK_FORWARD_AUDITED fixture -- VERIFIED",
+             "model_version": "22 arms / 29 elements fixture", "target": "context fixture",
+             "cutoff": "n/a", "universe": "fixture", "date_range": "2021-2026",
+             "metrics": {"n_configurations_tested": 29, "n_passed_preregistered_bar": 0,
+                          "strongest_lead": {"arm_id": "A07_fixture", "delta_mae_pooled": 0.054,
+                                              "p_two_sided_uncorrected": 0.028, "verdict": "FAIL",
+                                              "why_it_failed": "fixture reason"}},
+             "plain_english": "Twenty-nine context-adjusted ideas were tested blind; none beat the champion "
+                               "after correction for multiple testing.",
+             "provenance": prov},
             {"row_id": "bookie_baseline", "section": "predictive", "status": "MEASURED",
              "evidence_class": "MEASURED_T1_VENDOR_ASSERTED fixture",
              "model_version": "market fixture", "target": "spread/total/moneyline",
@@ -573,8 +594,10 @@ def run_acceptance_tests(tmp):
     order_a = [k for k, _ in lb_scores(ha)]
     check("AC7: VERIFIED-scored row first, PROMISING-scored second (evidence before raw score)",
           order_a[:2] == ["player_points", "player_rebounds"], order_a[:4])
+    check("AC7: evaluated-without-score VERIFIED row (team_possessions) outranks PRELIMINARY evaluated-without-score rows",
+          order_a[2] == "team_possessions", order_a[2])
     check("AC7: evaluated-without-score row precedes unevaluated targets",
-          order_a[2] == "team_attributed_turnovers", order_a[2])
+          order_a[3] == "team_attributed_turnovers", order_a[3])
     check("AC7: unevaluated targets last, in registry order",
           order_a[-4:] == ["team_total", "game_total", "margin", "win_probability"], order_a[-4:])
 
@@ -623,17 +646,19 @@ def run_real_input_tests(tmp):
     h2 = open(os.path.join(o2, "scoreboard.html"), encoding="utf-8").read()
     check("real/AC11: byte-identical regeneration from the real inputs", h1 == h2)
     scores = lb_scores(h1)
-    check("real: leaderboard has 13 target rows", len(scores) == 13, len(scores))
+    check("real: leaderboard has 14 target rows", len(scores) == 14, len(scores))
     check("real/AC3: NO numeric Prediction Score exists yet (our model unevaluated everywhere)",
           all(v == "" for _, v in scores))
-    # D038 leaderboard integration: legacy_player_points (metrics.json, via
-    # build_metrics.py) now gives player_points a MEASURED, evaluated-without-
-    # score row -- registry order (player_points id 0) puts it ahead of
-    # team_attributed_turnovers (id 8) within the same "evaluated, no score
-    # yet" / PRELIMINARY-badge sort group.
-    check("real/AC7: evaluated-without-score PRELIMINARY group leads with player_points, "
-          "then team_attributed_turnovers (registry order); unevaluated targets afterward",
-          scores[0][0] == "player_points" and scores[1][0] == "team_attributed_turnovers", scores[:2])
+    # D038/D042 leaderboard integration: legacy_player_points and
+    # team_possessions_champion (metrics.json, via build_metrics.py) give
+    # player_points and team_possessions MEASURED, evaluated-without-score
+    # rows. team_possessions carries a VERIFIED badge (rank 0), so it leads
+    # the "evaluated, no score yet" group ahead of the two PRELIMINARY-badge
+    # rows (player_points id 0, team_attributed_turnovers id 8, registry order).
+    check("real/AC7: VERIFIED evaluated-without-score row (team_possessions) leads, then the PRELIMINARY group "
+          "(player_points, then team_attributed_turnovers, registry order); unevaluated targets afterward",
+          scores[0][0] == "team_possessions" and scores[1][0] == "player_points"
+          and scores[2][0] == "team_attributed_turnovers", scores[:3])
     check("real: Betting Edge card = Not yet demonstrated (never accuracy-as-profitability)",
           "Betting Edge" in h1 and h1.count("Not yet demonstrated") >= 2)
     check("real: player leaderboard locked state",
@@ -666,6 +691,33 @@ def run_real_input_tests(tmp):
           and "model_vs_market.json" in pp_block and "sha256=" in pp_block)
     check("real/legacy row: Betting Edge is never substituted for this predictive-accuracy row",
           "Betting Edge" in h1)
+
+    # -------------------------------------------- D042 team_possessions row
+    tp_start = h1.index('id="lb-team_possessions"')
+    tp_next = h1.find('<tr class="lb-row"', tp_start + 1)
+    tp_block = h1[tp_start:tp_next if tp_next != -1 else tp_start + 8000]
+
+    check("real/D042: team_possessions carries NO Prediction Score yet (baseline still declared-pending)",
+          dict(scores)["team_possessions"] == "")
+    check("real/D042: VERIFIED evidence badge on team_possessions",
+          'data-evidence="0"' in tp_block and ">VERIFIED<" in tp_block)
+    check("real/D042: Typical Miss shows the VERIFIED pooled OOF possessions MAE (2.9 dp1, from 2.86649)",
+          "2.9 possessions" in tp_block)
+    check("real/D042: team_possessions sample N=2,572 team-games shown",
+          "2,572" in tp_block)
+    check("real/D042: headline tile shows the VERIFIED possessions MAE to 4dp",
+          "2.8665" in h1 and ">VERIFIED<" in h1)
+    check("real/D042: both possession and turnover MAEs correctly and separately labeled on the page",
+          "2.9675" in h1 and "2.8665" in h1
+          and "supersedes the 2.9675 turnover-lane figure" in h1.lower())
+    check("real/D042: challenger program summary present in outsider-legible language",
+          "Twenty-nine context-adjusted ideas were tested blind" in h1
+          and "none beat the champion after correction for multiple testing" in h1
+          and "early-season" in h1.lower())
+    check("real/D042: 0 of 29 challenger elements promoted, stated plainly",
+          "0/29 elements promoted" in h1 or "0 of 29" in h1 or "n_pass_primary=0" in h1)
+    check("real/D042: challenger field lifecycle state is ADJUDICATED, not stuck at BUILT",
+          ">ADJUDICATED<" in h1)
 
 
 def main():
