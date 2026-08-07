@@ -78,6 +78,14 @@ The **evaluation harness, in code, before any model is rebuilt** (`evalharness/`
 - **Experiment registry:** every experiment registered (id, hypothesis, features, gate
   thresholds) in `experiments/registry.jsonl` and committed **before** execution. Unregistered
   results are void.
+  - **Scope clarification (D059, 2026-08-07): E0/E1 are research SCREENS, not experiments.**
+    An "experiment" in this clause means **E2 and above** (see `GRAPH_POLICY.md` section 13).
+    E0 exploration and E1 signal screening are explicitly NON-CLAIMING, produce no evaluation
+    record, hold no evidence-ladder label, and may never be cited as a result -- so they are
+    not registered here and are not void for being unregistered. They are logged in the
+    append-only `experiments/idea_log.jsonl` instead. On promotion to E2 an idea receives an
+    `experiment_id` and enters THIS registry under the full pre-registration rule, unchanged.
+    Nothing about the E2/E3 safeguards is weakened by this clarification.
 - **Paired, game-level residual comparison** against the incumbent; bootstrap confidence
   intervals **clustered by game date** (and by team as sensitivity).
 - **Minimum practical improvement** preregistered per experiment; automatic rejection if
