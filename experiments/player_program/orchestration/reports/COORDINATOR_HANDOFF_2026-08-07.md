@@ -1201,6 +1201,141 @@ Sequence: stop dispatching → close or document in-flight agents → write the 
 `wnba-coordinator-06` as a **one-time** task 3–4 minutes out, telling it that it is **Coordinator
 #06** and **that it must name #07** → **stop.**
 
-The procedure is a skill: `C:\Users\jgallagher\.claude\skills\coordinator-handoff\SKILL.md`.
+The procedure is a skill: `C:\Users\jgallagher\.claude\skills\coordinator-handoff\SKILL.md` .
 The test of a packet is not completeness but **actionability**: *could a fresh context, having read
 only this and the policy, take the next correct action without asking the user anything?*
+
+## 12.11 AMENDMENT — TWO OF THE THREE IN-FLIGHT AGENTS RETURNED. SUPERSEDES §12.3 AND §12.5.
+
+Written after §12.1–12.10. **Where this section and §12.5 disagree, this one is right.**
+
+### 12.11.1 THE TIER-2 AUDIT RETURNED — BIGGEST RESULT OF THE SESSION — `D067`
+
+**A9's tier-2 half is NOT discharged, and not because the audit fell short. It is exhaustive and
+determinate, and it went the *other way*: it DEMOTES five constructions from `CUTOFF_UNPROVEN` to
+`CUTOFF_INVALID`.**
+
+| target | verdict | census |
+|---|---|---|
+| `opp_pace_estimate` / `team_possession_prior_v1` (#50/#49, SC08 z1) | **CUTOFF_INVALID** | 1,491 clusters: 1,426 pass, **44 fail**, 21 not established |
+| `prior_box_aggregates`, per-team lags (SC01/02/03-clock/05/08-sd20/10/12) | **CUTOFF_INVALID** | 2,982 rows: 2,912 pass, **45 fail**, 10 undecided |
+| league-level lags (SC04, SC11) | **CUTOFF_INVALID — worst** | 1,491 clusters: 314 pass, **1,061 fail (71.2%)**, 115 undecided |
+| prior-season carryover (SC03) | **CUTOFF_UNPROVEN — the only clean target** | **2,572/2,572 pass unconditionally, zero failures** |
+| all recent-form inputs (15 constructions) | **CUTOFF_INVALID** | all resolve to the two lag families above |
+| the five `score_baseline_rows` pred columns | **CUTOFF_INVALID** | 1,491 as-consumed: 1,426 pass, **44 fail**, 21 undecided |
+
+**No sampling anywhere — every figure is a full census.**
+
+**Why INVALID and not merely UNPROVEN.** The auditor split the standard into **(E) the event claim** —
+every contributing event had *finished* before the row's cutoff; necessary, exactly measurable, and
+**never measured before in this program** — and **(R) the record claim**, D10's per-row timestamp
+test, unclosable for 2021–2024. **Failing (E) is fatal in a way failing (R) is not: no future capture
+receipt can rescue an event that had not yet happened.** Producers were **re-derived from their own
+sources**, so contributing sets were recomputed rather than argued.
+
+**Mechanism, one sentence:** a date-grained or row-grained "strictly prior" predicate cannot respect a
+cutoff sitting at **18:00 UTC the day before**. Prior-season carryover is clean only because its lag
+is a whole season. The league-level lags are worst because `features_common` counts an earlier
+**same-day** game as prior, and **917 of 1,491 clusters have one**.
+
+**It is NOT an artifact of a weak witness — check this before anyone argues it away.** The
+league-level lags **survive refusing the market-archive tip witness entirely**: 335 failures are
+provable from `CUTOFF_VALID` evidence alone, 151 needing no timestamp at all. They also fail on
+**182 of the 407 clusters that already carry exact tip cutoffs**, so a better cutoff policy will not
+fix them. (T1/T2a/T4 failures *do* rest on that witness; refusing it downgrades them to
+`CUTOFF_UNPROVEN`, which **grants nothing** and still promotes nothing.)
+
+**Two reproductions SUCCEEDED — positive results.** The pace producer re-derives **bit-for-bit**
+(2,990 rows, every field, frozen column and join-key pins). And **S37's named open item is closed**:
+`build_score_baselines.py`, re-implemented from the three inputs it names, reproduces
+`pred_margin`/`pred_total`/`p_home` to their **pinned sha256 exactly**, NaN positions identical.
+**That closes PROVENANCE, not cutoff-validity** — the same distinction D10 draws between "validated"
+and "timestamped". **Do not let the reproduction be cited as validity.**
+
+**New findings:**
+* **N1 — needs a user ruling; governs SC08 admissibility.** `zscore_train`/`center_on_train` apply a
+  fold-train constant to every training row: **100% of training rows in all five folds** have a cutoff
+  preceding the last observation entering their own moment. **Test rows unaffected.** Consumers
+  include **both** of SC08's treatment columns. **Not in the A9 table — new.** The question: does
+  D065's standard bind **training** rows or only **evaluation** rows? The auditor declined to decide
+  it; so does #04.
+* **N2** — the slate carries **two incompatible meanings of "strictly prior"** (row-strict vs
+  date-strict), contradicting `features_common`'s own stated rationale.
+* **N3** — **neither `team_possession_prior_v1.parquet` nor `score_baseline_rows.parquet` has a
+  `.manifest.json`.** `asof_granularity` undeclared for both, so the §13.2.2 gate was **never actually
+  passed** on either. Row granularity established by re-derivation instead.
+* **N4 — the mid-flight relay worked and is closed.** The synthetic-marker pass
+  (`prediction_contract_v5.py:459` → `validate_projected_exposure.py:565`) is **confirmed**, and the
+  auditor proved **by reproduction, not by reading code**, that it reaches no target here. It credited
+  **zero** inherited cutoff-availability passes; all four neighbouring validations are listed
+  traced-and-not-credited, **including `PROJECTED_EXPOSURE_VALIDATION.json`'s 35/35 that D10 itself
+  cites**. Witness A traced to 199 genuine capture instants. `observed_time` dropped at load.
+
+**WHAT THIS MEANS — counterintuitive, read carefully.** D065 ruled "run the measurements and unblock
+fitting." **The measurements ran. They did not unblock fitting; they established that five
+constructions the slate depends on are invalid.** The user's stated reason for rejecting option (c)
+was not to shrink the model "merely to avoid auditing inputs we have every reason to believe are
+valid" — **the audit has now established that for these five, that belief was wrong.** This is a
+**halt-and-raise** under S30 §11: it changes the cutoff-valid feature set. **The repair is a change to
+the frozen cards' lag predicates** (swap the date/row-grained "strictly prior" for
+`source_event_end_time <= row.forecast_cutoff`); the cards are **immutable**; pinning a reading needs
+a **registry-appended erratum**, never an edit. **No coordinator has authority here.**
+
+**Flagged, not measured:** re-cutting the lags **changes feature values** and therefore possibly
+**every carded stratum census S37 verified**. The repair may invalidate the audit that found it.
+
+### 12.11.2 THE LAYER-3 SWEEP RETURNED — 29 of 30 cells killed, 1 survivor
+
+Logged as **I0012**, family `F_LAYER3_NONCOLLINEAR`, in
+`experiments/exploration/E0_I0012_layer3_noncollinear/`.
+
+**The program-level result matters more than the survivor: the I0010 "costume" diagnosis does NOT
+generalize.** All four non-positional formulations came in **genuinely non-collinear** (|r| 0.03–0.14
+vs I0010's 0.57–0.59) and **died as real nulls, not costumes**. The **personnel-matching channel —
+familiarity, availability, style-fit — is now screened from four directions and is empty.** The live
+surface in layer 3 is **possession volume**.
+
+**Sole survivor: opponent pace × own pregame rebound rate → rebounds.** ΔR² 0.001071, placebo sd
+8.74e-5, 0/200 ≥ real, betas +0.356/+0.335/+0.167/+0.064. Survived four checks including **max-T
+across all 60 tests** (z 10.69 vs largest null draw 9.34) and a side-exchangeability test showing
+genuine asymmetry. **THE CAVEAT GOVERNS: it decays monotonically and is GONE IN 2024** (asymmetry
+difference 0.372→0.403→0.275→**−0.035**); the pooled result is carried by 2021–2022, and **2024 is the
+season nearest the holdout**. At ~0.001 ΔR² it is **~6× under I0009's lead**. **The screen's own
+recommended next step is NOT confirmation — re-run with 2021 dropped to see whether the trend is
+dying on its own.** Costs nothing, never touches the holdout. Do that first.
+
+**Two disciplines this sweep contributes:**
+* **A kill on MEASURABILITY is not a clean negative.** The familiarity formulation is marked
+  `null_is_informative: false` — reliability 0.03–0.08; a WNBA (player, opponent) pair meets ~4×/season,
+  median 3 prior meetings. **It must not be cited as evidence familiarity does not exist**, only that
+  it is unmeasurable in this record. Availability and rest/travel ARE informative negatives
+  (Spearman-Brown 0.70–0.93; error-free schedule facts).
+* **Multiplicity correction earned its keep.** Three cells cleared their own placebo floor at nominal
+  p 0.010–0.040 and were **killed on max-T** — exactly the false positives a 60-test sweep predicts.
+
+**Self-reported defect, already marked void:** the R3 control rung was **rank-deficient by
+construction** (total pace as the exact sum of both sides makes `O × total` an exact linear
+combination of terms already in the model), so its β of 5.27 with per-season signs
+−0.52/+14.66/−12.01/+1.01 is a **linear-algebra artifact, not absorption**. R4 replaces it.
+
+**Routed to layer 2, not layer 3:** opponent OREB-allowed predicts player points as a **main effect**
+(positive 4/4 seasons). Its matched interaction is dead (0.000025), so it is not a matchup.
+
+### 12.11.3 REVISED WORKLIST — REPLACES §12.5
+
+0. **Close the one remaining in-flight agent: `E1_I0011_split_alpha`** (§12.3 row 2). Still writing at
+   #04's retirement. **DO NOT RE-DISPATCH — check the directory and for its return event first.** It
+   owes `baseline/` (corrected baseline spec + runnable code) **and** the baseline-equivalence answer
+   in §12.9 #1.
+1. **Put D067 in front of the user.** Halt-and-raise; the score lane cannot move without a ruling.
+   **Do not re-ask on a loop** (D057) — record, surface once, work discovery.
+2. **N1 needs a ruling** — training rows vs evaluation rows. Bundle with D067.
+3. **§11.5 item 1 — the E1 for the two sweep-1 leads against the corrected baseline.** Unchanged,
+   still the highest-value discovery item. §11.6 is the reasoning.
+4. **I0008 noise floor** — unchanged, required before it is ranked against anything.
+5. **Re-run the I0012 survivor with 2021 dropped** — cheap, decides whether the lead is real or dying.
+6. **Weighted-R² convention** — unchanged. I0012 used **plain unweighted OLS R²** and declared it, so
+   its numbers are unaffected but only order-of-magnitude comparable to I0009's.
+7. **More E0 on layer 3, redirected:** personnel-matching is empty; aim at **possession volume** and
+   the layer-2 OREB main effect.
+8. **I0007 — still parked**, reasons unchanged.
