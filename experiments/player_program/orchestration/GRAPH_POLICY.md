@@ -408,3 +408,22 @@ manifested artifacts contaminated**, including all five `data/zone_maps/*` files
 state *"a 2021 row's shrunk value saw later seasons"*) and `data/w1_truth/player_game_availability.csv`
 — exactly what an absence or minutes screen reaches for first. There is no error, warning or visible
 symptom when a contaminated artifact is used; the check is the only defence.
+
+**13.2.2 CORRECTION to 13.2.1 — the check keys on `asof_granularity`, not on which seasons appear.**
+13.2.1 as first written was wrong in both its sweep (run in the data worktree, 29 manifests, instead
+of the program worktree, 162) and its criterion. The correct rule:
+
+* **`asof_granularity: "row"`** — each row is bounded by its own date. **Filtering to 2021-2024 is
+  SUFFICIENT**; the artifact is usable. `master_player.parquet` and `master_team.parquet` are of this
+  kind.
+* **`asof_granularity: "artifact"`** — the whole file is bounded by its latest input, so a 2021 row's
+  value may have been computed from 2026 data. **Filtering does NOT help; unusable at E0/E1.** The
+  `zone_maps` manifests state it outright: *"a 2021 row's shrunk value saw later seasons."*
+
+Corrected sweep of the program worktree: **65 artifact-granular files spanning the holdout are
+unusable**; **13 row-granular files are safe if filtered**; 84 others are clean. `fit_seasons` alone
+means only which seasons a file *contains* — it is not evidence of contamination.
+
+**This correction has a cost on the record:** the over-broad rule reached a running screen mid-flight
+and caused it to disqualify a valid result. Over-broad safety rules are not free — they destroy true
+findings as efficiently as loose ones admit false ones.
