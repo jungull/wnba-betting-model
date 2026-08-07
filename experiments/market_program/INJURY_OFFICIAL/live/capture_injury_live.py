@@ -52,7 +52,15 @@ from fetch_official_report import (  # noqa: E402
     fetch_discovery_json, fetch_pdf, BotBlockDetected, NetworkUnavailable,
 )
 
-ROOT = Path(__file__).resolve().parent
+import os as _os
+# Data-store root. Default: this module's own directory (original behavior,
+# used for the 2026-08-07 D048 recovery snapshot committed alongside the
+# code). The scheduled tick sets INJURY_LIVE_DATA_ROOT to a directory in
+# the DATA worktree so continuous 15-minute appends never dirty the program
+# worktree (quiescent-tree push rule, D018/D044). Code stays here; only the
+# CSV/raw store moves.
+ROOT = Path(_os.environ.get("INJURY_LIVE_DATA_ROOT") or Path(__file__).resolve().parent)
+ROOT.mkdir(parents=True, exist_ok=True)
 RAWDIR = ROOT / "raw"
 CAPTURE_LOG_CSV = ROOT / "capture_log.csv"
 SNAPSHOTS_CSV = ROOT / "injury_snapshots.csv"
@@ -65,6 +73,8 @@ ET = ZoneInfo("America/New_York")
 CAPTURE_LOG_HEADER = [
     "capture_id", "attempted_ts_utc", "source_url", "http_status",
     "outcome",  # NOVEL | DUPLICATE_OF_PRIOR | BOT_BLOCK | NETWORK_UNAVAILABLE
+                # (+ _BROWSER_CLIENT suffix when the D048 real-Chromium
+                #  fallback obtained the body; see fetch_browser.py)
     "payload_hash_sha256", "dedup_of_capture_id", "raw_path",
     "retrieval_ts_utc",
 ]
@@ -229,7 +239,12 @@ def run_one_cycle(pdf_url, url_slot_label=None, capture_id=None):
 
     prior_hashes = _load_prior_index()
     is_novel = payload_hash not in prior_hashes
-    log_row["outcome"] = "NOVEL" if is_novel else "DUPLICATE_OF_PRIOR"
+    # D048: the browser-client fallback is surfaced in the outcome itself so
+    # provenance never conflates the two fetch paths (client field on the
+    # FetchResult; "urllib" is the honest script client this log has always
+    # recorded, status 0 rows are browser downloads with no status line).
+    _client_suffix = "" if getattr(result, "client", "urllib") == "urllib" else "_BROWSER_CLIENT"
+    log_row["outcome"] = ("NOVEL" if is_novel else "DUPLICATE_OF_PRIOR") + _client_suffix
     log_row["dedup_of_capture_id"] = "" if is_novel else prior_hashes[payload_hash]
 
     raw_path = RAWDIR / f"{capture_id}.pdf"

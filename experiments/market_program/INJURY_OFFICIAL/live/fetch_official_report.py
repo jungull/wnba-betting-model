@@ -88,6 +88,13 @@ class FetchResult:
     body: bytes
     headers: dict = field(default_factory=dict)
     retrieval_ts_utc: str = ""
+    # Which client obtained the body. "urllib" = the honest script client
+    # this module has always used. "chromium_headed_playwright" = the
+    # D048-authorized real-browser fallback (fetch_browser.py); its status
+    # and headers come from the in-page same-origin fetch. Callers surface
+    # this distinction in capture_log outcomes; the two paths are never
+    # conflated in provenance.
+    client: str = "urllib"
 
 
 _last_request_monotonic = [0.0]
@@ -144,20 +151,50 @@ def fetch_discovery_json():
 
 
 def fetch_pdf(url, retries=2, backoff_seconds=3.0):
-    """GET a report PDF. Retries only on NetworkUnavailable (transient);
-    never retries around a BotBlockDetected -- that propagates immediately,
-    per standing rules (report, don't bypass, don't hammer a blocking
-    host)."""
+    """GET a report PDF. urllib is attempted FIRST on every call so the
+    host's script-client filter state stays honestly observed and logged.
+    On NetworkUnavailable, falls back to the D048-authorized real Chromium
+    browser client (fetch_browser.py) — a genuine browser with its true
+    identity, not impersonation. When the browser client is available, the
+    urllib pass is a SINGLE short probe (10s): one honest observation of
+    the filter state per document, without stalling a multi-document cycle
+    ~90s per PDF (the filtered host times out, never fast-fails). The full
+    retry ladder still applies when no browser client is installed. Never
+    retries around a BotBlockDetected — that propagates immediately from
+    EITHER client, per standing rules (report, don't bypass, don't hammer
+    a blocking host)."""
+    try:
+        from fetch_browser import fetch_pdf_via_browser  # noqa: F401
+        browser_available = True
+    except ImportError:
+        browser_available = False
+    attempts = 1 if browser_available else retries + 1
+    probe_timeout = 10 if browser_available else 30
     last_err = None
-    for attempt in range(retries + 1):
+    for attempt in range(attempts):
         try:
-            return _get(url, timeout=30)
+            return _get(url, timeout=probe_timeout)
         except NetworkUnavailable as e:
             last_err = e
-            if attempt < retries:
+            if attempt < attempts - 1:
                 time.sleep(backoff_seconds * (attempt + 1))
                 continue
-            raise
+            break  # exhausted urllib attempts -> try the browser client
         except BotBlockDetected:
             raise
-    raise last_err  # pragma: no cover
+    # D048 fallback: real headed Chromium (see fetch_browser.py for why
+    # headed). BotBlockDetected from the browser propagates; any other
+    # browser failure re-raises the ORIGINAL urllib NetworkUnavailable so
+    # the logged condition remains the honest script-client observation.
+    try:
+        from fetch_browser import fetch_pdf_via_browser
+    except ImportError:
+        raise last_err
+    try:
+        body, retrieval_ts, status, headers = fetch_pdf_via_browser(url)
+    except BotBlockDetected:
+        raise
+    except Exception:
+        raise last_err
+    return FetchResult(url, status, body, headers, retrieval_ts,
+                        client="chromium_headed_playwright")
