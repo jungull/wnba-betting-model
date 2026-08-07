@@ -1,0 +1,3071 @@
+{
+  "schema": "market_program/SCORE_BASELINES/metrics/1",
+  "node": "experiments/market_program/SCORE_BASELINES",
+  "generated_utc": "2026-08-07T01:27:52.921884+00:00",
+  "authorities": [
+    "D043_CYCLE2_SCORE_AND_EFFICIENCY",
+    "D036_SCOREBOARD_MEASUREMENT_SEMANTICS"
+  ],
+  "evidence_class": "COMPOSITE_BASELINE",
+  "evidence_class_semantics": "COMPOSITE_BASELINE carries NAIVE_BASELINE semantics per D036 point 6: an untuned, strictly-lagged floor computed from owned data, never a fitted model, never predictive evidence for any challenger. It exists so every future score-family model has an honest number to beat.",
+  "producer": {
+    "path": "experiments/market_program/SCORE_BASELINES/build_score_baselines.py",
+    "sha256": "65b7a94213d11703b5820b34c49e0926c465fe20ca4fd1b4a82d8f39d5fd03f8"
+  },
+  "inputs": {
+    "master_team": {
+      "path": "data/masters/master_team.parquet",
+      "sha256": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528",
+      "rows": 2990
+    },
+    "team_possession_prior_v1": {
+      "path": "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+      "sha256": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18",
+      "rows": 2990,
+      "role": "VERIFIED incumbent pace ingredient (D042 champion), consumed as-is"
+    },
+    "possessions_raw_v2": {
+      "path": "experiments/player_program/possessions_v2/possessions_raw_v2.parquet",
+      "sha256": "7200881fd811db9d0d6b10ea0a19b01ec7b6d027ee4567b9ef963241b15a4b1a",
+      "role": "realized offensive possession counts (PPP denominators)"
+    },
+    "bookie_baseline_metrics": {
+      "path": "experiments/market_program/BOOKIE_BASELINE/baseline_metrics.json",
+      "sha256": "245a2492362f9d3c8fa63d0307f07a4d7fc2af96b9eb8fddef20486ea40c93c5",
+      "role": "frozen market bars + join conventions (read-only reuse)"
+    }
+  },
+  "conventions": {
+    "pace_ingredient": {
+      "source": "team_possession_prior_v1.projected_team_off_possessions",
+      "status": "VERIFIED (P40-adjudicated incumbent champion, D042)",
+      "definition": "game-level regulation-equivalent offensive possessions per side: mean of the two teams' trailing WINDOW_K=10 same-season window means (prior-season window, then strictly-lagged league mean, as receipted fallbacks)",
+      "coverage": {
+        "team_game_rows": 2990,
+        "team_game_rows_resolved": 2982,
+        "games": 1495,
+        "games_resolved": 1491,
+        "pace_source_counts": {
+          "team_window_same_season": 2762,
+          "team_window_prior_season": 183,
+          "league_prior_all": 37,
+          "unresolved_no_prior_games": 8
+        },
+        "note": "projected_team_off_possessions is GAME-level (mean of the two sides' trailing-window estimates) and identical on both team rows; unresolved only where neither team nor the league has any strictly-prior game (the first game date of 2021). No EWMA reconstruction is possible for those games -- zero history exists -- so they are excluded and counted."
+      }
+    },
+    "efficiency_ingredient": {
+      "definition": "strictly-lagged EWMA of points-per-possession scored (offense) and allowed (defense) per team; ppp = box-score points / raw offensive-possession count from possessions_raw_v2 (both include OT, so ppp is a true rate)",
+      "ewma_span": 10,
+      "ewma_alpha": 0.18181818181818182,
+      "shrinkage": "NONE -- the picked convention is the simple span, not K=200-style shrinkage (D043 offered either; one was picked and is documented here; the span was NOT tuned)",
+      "history": "continuous across seasons, strictly earlier calendar dates only; minimum 3 prior games else excluded"
+    },
+    "composite": "predicted team score = pace x (0.5*own_off_ewma + 0.5*opp_def_ewma); total = sum of sides; margin = home - away. NO home-court-advantage term by construction -- the margin bias this creates is reported, not hidden.",
+    "win_prob": "logistic(intercept + slope*pred_margin), fitted ONLY on strictly-prior seasons, walk-forward, never pooled; 2021 has no prior season and gets no win probability",
+    "ot_note": "predicted scores are regulation-equivalent (the pace ingredient is reg-equivalent); realized totals include OT points, contributing a small negative total bias shared by all pace-based rows",
+    "ci": "95% CIs are game-date-clustered (CR1 sandwich for the mean, z=1.96); every model-vs-market delta is PAIRED per game and clustered by game date per D036 point 7",
+    "walk_forward_logistic_fits": {
+      "composite": {
+        "2021": null,
+        "2022": {
+          "intercept": 0.299505323201602,
+          "slope": 0.14741631020931695,
+          "n_train": 188,
+          "train_seasons": [
+            2021
+          ]
+        },
+        "2023": {
+          "intercept": 0.233067250643731,
+          "slope": 0.15568389112376768,
+          "n_train": 427,
+          "train_seasons": [
+            2021,
+            2022
+          ]
+        },
+        "2024": {
+          "intercept": 0.20611985838658803,
+          "slope": 0.1687596338072305,
+          "n_train": 687,
+          "train_seasons": [
+            2021,
+            2022,
+            2023
+          ]
+        },
+        "2025": {
+          "intercept": 0.20069343450920057,
+          "slope": 0.17341153635846113,
+          "n_train": 949,
+          "train_seasons": [
+            2021,
+            2022,
+            2023,
+            2024
+          ]
+        },
+        "2026": {
+          "intercept": 0.22607998804379503,
+          "slope": 0.16957265962600987,
+          "n_train": 1256,
+          "train_seasons": [
+            2021,
+            2022,
+            2023,
+            2024,
+            2025
+          ]
+        }
+      },
+      "team_avg": {
+        "2021": null,
+        "2022": {
+          "intercept": 0.1950482410575314,
+          "slope": 0.13545774819603953,
+          "n_train": 203,
+          "train_seasons": [
+            2021
+          ]
+        },
+        "2023": {
+          "intercept": 0.20822849734689508,
+          "slope": 0.16187460303238504,
+          "n_train": 436,
+          "train_seasons": [
+            2021,
+            2022
+          ]
+        },
+        "2024": {
+          "intercept": 0.18834923510917398,
+          "slope": 0.17637376435960053,
+          "n_train": 690,
+          "train_seasons": [
+            2021,
+            2022,
+            2023
+          ]
+        },
+        "2025": {
+          "intercept": 0.18624502739191123,
+          "slope": 0.18075666247358252,
+          "n_train": 946,
+          "train_seasons": [
+            2021,
+            2022,
+            2023,
+            2024
+          ]
+        },
+        "2026": {
+          "intercept": 0.20915546281809808,
+          "slope": 0.16599809446001162,
+          "n_train": 1249,
+          "train_seasons": [
+            2021,
+            2022,
+            2023,
+            2024,
+            2025
+          ]
+        }
+      }
+    }
+  },
+  "exclusions": {
+    "composite": {
+      "PACE_UNRESOLVED_NO_PRIOR_GAMES": 4,
+      "EFF_HISTORY_LT_3_PRIOR_GAMES": 26
+    },
+    "league_avg": {
+      "NO_PRIOR_LEAGUE_GAMES": 4
+    },
+    "team_avg": {
+      "NO_SAME_SEASON_PRIOR_GAME_EITHER_TEAM": 39
+    },
+    "team_game_rows_missing_from_possession_stream": 0
+  },
+  "methods": {
+    "composite_pace_x_eff_v1": {
+      "POOLED": {
+        "n_games": 1465,
+        "date_range": [
+          "2021-05-21",
+          "2026-07-31"
+        ],
+        "total": {
+          "mae": 13.81785292794804,
+          "mae_ci95": [
+            13.256068895255664,
+            14.379636960640417
+          ],
+          "rmse": 17.61182644733977,
+          "rmse_ci95": [
+            16.89474971561146,
+            18.30082767716475
+          ],
+          "bias": -1.3170425818082856,
+          "bias_ci95": [
+            -2.22531090764396,
+            -0.4087742559726112
+          ],
+          "n": 1465,
+          "n_date_clusters": 567
+        },
+        "margin": {
+          "mae": 10.336351530403848,
+          "mae_ci95": [
+            9.927643018929702,
+            10.745060041877993
+          ],
+          "rmse": 12.988846110956354,
+          "rmse_ci95": [
+            12.47955980732499,
+            13.478903278961932
+          ],
+          "bias": -1.771465276814289,
+          "bias_ci95": [
+            -2.4344779893461124,
+            -1.1084525642824654
+          ],
+          "n": 1465,
+          "n_date_clusters": 567
+        },
+        "win_prob": {
+          "brier": 0.2181403965599909,
+          "brier_ci95": [
+            0.20968473541977756,
+            0.22659605770020425
+          ],
+          "log_loss": 0.6251830935129226,
+          "log_loss_ci95": [
+            0.6066039425707573,
+            0.6437622444550878
+          ],
+          "n": 1277,
+          "n_date_clusters": 484,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 17,
+              "mean_predicted_p_home": 0.16070112538374343,
+              "empirical_home_win_rate": 0.29411764705882354
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 84,
+              "mean_predicted_p_home": 0.25562015782485037,
+              "empirical_home_win_rate": 0.27380952380952384
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 150,
+              "mean_predicted_p_home": 0.35607549668068905,
+              "empirical_home_win_rate": 0.35333333333333333
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 232,
+              "mean_predicted_p_home": 0.4521859567866279,
+              "empirical_home_win_rate": 0.4224137931034483
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 270,
+              "mean_predicted_p_home": 0.5502537598704131,
+              "empirical_home_win_rate": 0.5037037037037037
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 261,
+              "mean_predicted_p_home": 0.6497822236931272,
+              "empirical_home_win_rate": 0.6743295019157088
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 183,
+              "mean_predicted_p_home": 0.7478433837231395,
+              "empirical_home_win_rate": 0.7103825136612022
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 76,
+              "mean_predicted_p_home": 0.8376762105641741,
+              "empirical_home_win_rate": 0.9078947368421053
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 4,
+              "mean_predicted_p_home": 0.9145761276353832,
+              "empirical_home_win_rate": 1.0
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 188,
+        "provenance": {
+          "model_version": "composite_pace_x_eff_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, composite-covered games, season=POOLED",
+          "date_range": [
+            "2021-05-21",
+            "2026-07-31"
+          ],
+          "n": 1465,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2021": {
+        "n_games": 188,
+        "date_range": [
+          "2021-05-21",
+          "2021-10-17"
+        ],
+        "total": {
+          "mae": 12.727569361289452,
+          "mae_ci95": [
+            11.317251039643503,
+            14.137887682935402
+          ],
+          "rmse": 16.211479718582126,
+          "rmse_ci95": [
+            14.444135886151814,
+            17.804243534460557
+          ],
+          "bias": -1.7414773956618488,
+          "bias_ci95": [
+            -4.014669817698679,
+            0.5317150263749815
+          ],
+          "n": 188,
+          "n_date_clusters": 83
+        },
+        "margin": {
+          "mae": 10.140556663919204,
+          "mae_ci95": [
+            9.013546374191744,
+            11.267566953646664
+          ],
+          "rmse": 12.823117804387882,
+          "rmse_ci95": [
+            11.398245452850523,
+            14.10477582406014
+          ],
+          "bias": -1.0424334806640898,
+          "bias_ci95": [
+            -2.730087165436245,
+            0.6452202041080652
+          ],
+          "n": 188,
+          "n_date_clusters": 83
+        },
+        "win_prob": null,
+        "n_win_prob_excluded_no_prior_season_calibration": 188,
+        "provenance": {
+          "model_version": "composite_pace_x_eff_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, composite-covered games, season=2021",
+          "date_range": [
+            "2021-05-21",
+            "2021-10-17"
+          ],
+          "n": 188,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2022": {
+        "n_games": 239,
+        "date_range": [
+          "2022-05-06",
+          "2022-09-18"
+        ],
+        "total": {
+          "mae": 13.431025954324731,
+          "mae_ci95": [
+            12.070957956116914,
+            14.791093952532549
+          ],
+          "rmse": 17.556179010525703,
+          "rmse_ci95": [
+            15.743174574990075,
+            19.198731656040003
+          ],
+          "bias": -1.5266016196218741,
+          "bias_ci95": [
+            -3.8396599945953693,
+            0.7864567553516211
+          ],
+          "n": 239,
+          "n_date_clusters": 96
+        },
+        "margin": {
+          "mae": 10.29504124318721,
+          "mae_ci95": [
+            9.288803785981516,
+            11.301278700392904
+          ],
+          "rmse": 12.750586670480208,
+          "rmse_ci95": [
+            11.394722863815172,
+            13.975521877185942
+          ],
+          "bias": -1.2197852456441405,
+          "bias_ci95": [
+            -3.05106019579242,
+            0.6114897045041392
+          ],
+          "n": 239,
+          "n_date_clusters": 96
+        },
+        "win_prob": {
+          "brier": 0.2234817736755025,
+          "brier_ci95": [
+            0.2045502786374958,
+            0.2424132687135092
+          ],
+          "log_loss": 0.6366515051586781,
+          "log_loss_ci95": [
+            0.5958216033304091,
+            0.677481406986947
+          ],
+          "n": 239,
+          "n_date_clusters": 96,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 11,
+              "mean_predicted_p_home": 0.26143993818006844,
+              "empirical_home_win_rate": 0.09090909090909091
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 20,
+              "mean_predicted_p_home": 0.36535167651405354,
+              "empirical_home_win_rate": 0.35
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 47,
+              "mean_predicted_p_home": 0.4570726644008371,
+              "empirical_home_win_rate": 0.5106382978723404
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 56,
+              "mean_predicted_p_home": 0.5516410559858386,
+              "empirical_home_win_rate": 0.48214285714285715
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 53,
+              "mean_predicted_p_home": 0.6480791049624406,
+              "empirical_home_win_rate": 0.6415094339622641
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 42,
+              "mean_predicted_p_home": 0.7461322561100222,
+              "empirical_home_win_rate": 0.6666666666666666
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 10,
+              "mean_predicted_p_home": 0.8291871097863467,
+              "empirical_home_win_rate": 0.9
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "composite_pace_x_eff_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, composite-covered games, season=2022",
+          "date_range": [
+            "2022-05-06",
+            "2022-09-18"
+          ],
+          "n": 239,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2023": {
+        "n_games": 260,
+        "date_range": [
+          "2023-05-19",
+          "2023-10-18"
+        ],
+        "total": {
+          "mae": 13.951025149097351,
+          "mae_ci95": [
+            12.682986930479725,
+            15.219063367714977
+          ],
+          "rmse": 17.50836156084412,
+          "rmse_ci95": [
+            15.850831324958243,
+            19.02200292814115
+          ],
+          "bias": -0.4560671433872939,
+          "bias_ci95": [
+            -2.528038932110063,
+            1.6159046453354748
+          ],
+          "n": 260,
+          "n_date_clusters": 100
+        },
+        "margin": {
+          "mae": 10.485272291595937,
+          "mae_ci95": [
+            9.544718411709377,
+            11.425826171482496
+          ],
+          "rmse": 13.094593970046498,
+          "rmse_ci95": [
+            11.944646310702137,
+            14.151403004401578
+          ],
+          "bias": -2.275981024140387,
+          "bias_ci95": [
+            -3.834724845166586,
+            -0.7172372031141878
+          ],
+          "n": 260,
+          "n_date_clusters": 100
+        },
+        "win_prob": {
+          "brier": 0.21447894273583523,
+          "brier_ci95": [
+            0.1984953173699081,
+            0.23046256810176236
+          ],
+          "log_loss": 0.6169962782179192,
+          "log_loss_ci95": [
+            0.5823908256423492,
+            0.6516017307934893
+          ],
+          "n": 260,
+          "n_date_clusters": 100,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 6,
+              "mean_predicted_p_home": 0.16903874609128333,
+              "empirical_home_win_rate": 0.0
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 11,
+              "mean_predicted_p_home": 0.2530435627342722,
+              "empirical_home_win_rate": 0.36363636363636365
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 34,
+              "mean_predicted_p_home": 0.3615158331990009,
+              "empirical_home_win_rate": 0.2647058823529412
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 49,
+              "mean_predicted_p_home": 0.44993461138745283,
+              "empirical_home_win_rate": 0.40816326530612246
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 53,
+              "mean_predicted_p_home": 0.5532981110266222,
+              "empirical_home_win_rate": 0.5283018867924528
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 63,
+              "mean_predicted_p_home": 0.6544591241164605,
+              "empirical_home_win_rate": 0.6825396825396826
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 32,
+              "mean_predicted_p_home": 0.7510708241249047,
+              "empirical_home_win_rate": 0.71875
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 12,
+              "mean_predicted_p_home": 0.8264318183294752,
+              "empirical_home_win_rate": 0.9166666666666666
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "composite_pace_x_eff_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, composite-covered games, season=2023",
+          "date_range": [
+            "2023-05-19",
+            "2023-10-18"
+          ],
+          "n": 260,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2024": {
+        "n_games": 262,
+        "date_range": [
+          "2024-05-14",
+          "2024-10-20"
+        ],
+        "total": {
+          "mae": 12.60585415151244,
+          "mae_ci95": [
+            11.372249662139467,
+            13.839458640885415
+          ],
+          "rmse": 16.254678055549142,
+          "rmse_ci95": [
+            14.692501625528424,
+            17.679352741629042
+          ],
+          "bias": -0.34908100614811916,
+          "bias_ci95": [
+            -2.3813781859472987,
+            1.6832161736510602
+          ],
+          "n": 262,
+          "n_date_clusters": 100
+        },
+        "margin": {
+          "mae": 9.335956956630637,
+          "mae_ci95": [
+            8.490946718454483,
+            10.180967194806792
+          ],
+          "rmse": 11.432498169959999,
+          "rmse_ci95": [
+            10.3370806732637,
+            12.431765440464018
+          ],
+          "bias": -1.0500666164372614,
+          "bias_ci95": [
+            -2.4354923548938805,
+            0.3353591220193579
+          ],
+          "n": 262,
+          "n_date_clusters": 100
+        },
+        "win_prob": {
+          "brier": 0.21284438173334663,
+          "brier_ci95": [
+            0.1935912283436121,
+            0.23209753512308118
+          ],
+          "log_loss": 0.6145825342674147,
+          "log_loss_ci95": [
+            0.5718021063483817,
+            0.6573629621864477
+          ],
+          "n": 262,
+          "n_date_clusters": 100,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 1,
+              "mean_predicted_p_home": 0.16562952903198147,
+              "empirical_home_win_rate": 1.0
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 19,
+              "mean_predicted_p_home": 0.2534675747987667,
+              "empirical_home_win_rate": 0.3684210526315789
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 32,
+              "mean_predicted_p_home": 0.3447955218712529,
+              "empirical_home_win_rate": 0.3125
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 56,
+              "mean_predicted_p_home": 0.4500463350725168,
+              "empirical_home_win_rate": 0.375
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 49,
+              "mean_predicted_p_home": 0.5466488235691312,
+              "empirical_home_win_rate": 0.40816326530612246
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 44,
+              "mean_predicted_p_home": 0.6467084957148775,
+              "empirical_home_win_rate": 0.75
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 36,
+              "mean_predicted_p_home": 0.7490328699668978,
+              "empirical_home_win_rate": 0.8055555555555556
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 24,
+              "mean_predicted_p_home": 0.8349912908775576,
+              "empirical_home_win_rate": 0.875
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 1,
+              "mean_predicted_p_home": 0.9031372296586802,
+              "empirical_home_win_rate": 1.0
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "composite_pace_x_eff_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, composite-covered games, season=2024",
+          "date_range": [
+            "2024-05-14",
+            "2024-10-20"
+          ],
+          "n": 262,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2025": {
+        "n_games": 307,
+        "date_range": [
+          "2025-05-16",
+          "2025-10-10"
+        ],
+        "total": {
+          "mae": 13.555408848038226,
+          "mae_ci95": [
+            12.405039489789278,
+            14.705778206287174
+          ],
+          "rmse": 16.801502011911857,
+          "rmse_ci95": [
+            15.396350970752094,
+            18.097881547241304
+          ],
+          "bias": -0.5668050278077158,
+          "bias_ci95": [
+            -2.3955051158068037,
+            1.2618950601913723
+          ],
+          "n": 307,
+          "n_date_clusters": 115
+        },
+        "margin": {
+          "mae": 11.122010979597858,
+          "mae_ci95": [
+            10.157825829739501,
+            12.086196129456216
+          ],
+          "rmse": 14.080687337282455,
+          "rmse_ci95": [
+            12.873629298209286,
+            15.192142063346449
+          ],
+          "bias": -2.8025892993816246,
+          "bias_ci95": [
+            -4.230101132813954,
+            -1.375077465949295
+          ],
+          "n": 307,
+          "n_date_clusters": 115
+        },
+        "win_prob": {
+          "brier": 0.21836977238454827,
+          "brier_ci95": [
+            0.19953866518964888,
+            0.23720087957944766
+          ],
+          "log_loss": 0.6243434588207284,
+          "log_loss_ci95": [
+            0.5824847949219578,
+            0.666202122719499
+          ],
+          "n": 307,
+          "n_date_clusters": 115,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 8,
+              "mean_predicted_p_home": 0.15490875498287776,
+              "empirical_home_win_rate": 0.375
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 30,
+              "mean_predicted_p_home": 0.2576711563967379,
+              "empirical_home_win_rate": 0.3333333333333333
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 32,
+              "mean_predicted_p_home": 0.35503672501262834,
+              "empirical_home_win_rate": 0.46875
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 48,
+              "mean_predicted_p_home": 0.4480857175916071,
+              "empirical_home_win_rate": 0.4375
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 71,
+              "mean_predicted_p_home": 0.5486375167087232,
+              "empirical_home_win_rate": 0.5211267605633803
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 55,
+              "mean_predicted_p_home": 0.6542723370674668,
+              "empirical_home_win_rate": 0.6909090909090909
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 36,
+              "mean_predicted_p_home": 0.7485339525347239,
+              "empirical_home_win_rate": 0.6666666666666666
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 24,
+              "mean_predicted_p_home": 0.8468502798923015,
+              "empirical_home_win_rate": 0.9583333333333334
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 3,
+              "mean_predicted_p_home": 0.9183890936276177,
+              "empirical_home_win_rate": 1.0
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "composite_pace_x_eff_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, composite-covered games, season=2025",
+          "date_range": [
+            "2025-05-16",
+            "2025-10-10"
+          ],
+          "n": 307,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2026": {
+        "n_games": 209,
+        "date_range": [
+          "2026-05-08",
+          "2026-07-31"
+        ],
+        "total": {
+          "mae": 16.980121787696387,
+          "mae_ci95": [
+            15.249063689921568,
+            18.711179885471207
+          ],
+          "rmse": 21.40371366633231,
+          "rmse_ci95": [
+            19.15222083565291,
+            23.439930769587686
+          ],
+          "bias": -4.082134069122539,
+          "bias_ci95": [
+            -6.973756396188021,
+            -1.1905117420570566
+          ],
+          "n": 209,
+          "n_date_clusters": 73
+        },
+        "margin": {
+          "mae": 10.474481305810379,
+          "mae_ci95": [
+            9.339731625404541,
+            11.609230986216216
+          ],
+          "rmse": 13.430262760363687,
+          "rmse_ci95": [
+            12.007205463400634,
+            14.716349159506418
+          ],
+          "bias": -1.8202058744780518,
+          "bias_ci95": [
+            -3.7549544845293976,
+            0.11454273557329375
+          ],
+          "n": 209,
+          "n_date_clusters": 73
+        },
+        "win_prob": {
+          "brier": 0.22288932656054056,
+          "brier_ci95": [
+            0.2010245338402283,
+            0.2447541192808528
+          ],
+          "log_loss": 0.6367751316286734,
+          "log_loss_ci95": [
+            0.5888355146195168,
+            0.68471474863783
+          ],
+          "n": 209,
+          "n_date_clusters": 73,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 2,
+              "mean_predicted_p_home": 0.15639354304046738,
+              "empirical_home_win_rate": 0.5
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 13,
+              "mean_predicted_p_home": 0.2512889333962292,
+              "empirical_home_win_rate": 0.07692307692307693
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 32,
+              "mean_predicted_p_home": 0.35681627321162646,
+              "empirical_home_win_rate": 0.375
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 32,
+              "mean_predicted_p_home": 0.4583506744129705,
+              "empirical_home_win_rate": 0.375
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 41,
+              "mean_predicted_p_home": 0.5515307342484587,
+              "empirical_home_win_rate": 0.5853658536585366
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 46,
+              "mean_predicted_p_home": 0.6429106663346643,
+              "empirical_home_win_rate": 0.6086956521739131
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 37,
+              "mean_predicted_p_home": 0.7451652022340067,
+              "empirical_home_win_rate": 0.7027027027027027
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 6,
+              "mean_predicted_p_home": 0.8483568977639063,
+              "empirical_home_win_rate": 0.8333333333333334
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "composite_pace_x_eff_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, composite-covered games, season=2026",
+          "date_range": [
+            "2026-05-08",
+            "2026-07-31"
+          ],
+          "n": 209,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      }
+    },
+    "league_average_v1": {
+      "POOLED": {
+        "n_games": 1491,
+        "date_range": [
+          "2021-05-15",
+          "2026-07-31"
+        ],
+        "total": {
+          "mae": 14.388705096094169,
+          "mae_ci95": [
+            13.799739630008308,
+            14.97767056218003
+          ],
+          "rmse": 18.41088544310693,
+          "rmse_ci95": [
+            17.64391926712379,
+            19.14715431842631
+          ],
+          "bias": -1.8518275639069004,
+          "bias_ci95": [
+            -2.830766176015881,
+            -0.8728889517979197
+          ],
+          "n": 1491,
+          "n_date_clusters": 574
+        },
+        "margin": {
+          "mae": 11.408179394709306,
+          "mae_ci95": [
+            10.992060170407974,
+            11.824298619010637
+          ],
+          "rmse": 14.043464190635467,
+          "rmse_ci95": [
+            13.528146552689627,
+            14.54053038222035
+          ],
+          "bias": -0.5425551475547916,
+          "bias_ci95": [
+            -1.2698695652879295,
+            0.18475927017834626
+          ],
+          "n": 1491,
+          "n_date_clusters": 574
+        },
+        "win_prob": {
+          "brier": 0.2491625806352662,
+          "brier_ci95": [
+            0.24704230019740622,
+            0.25128286107312614
+          ],
+          "log_loss": 0.6915175958278075,
+          "log_loss_ci95": [
+            0.6872574483682032,
+            0.6957777432874117
+          ],
+          "n": 1491,
+          "n_date_clusters": 574,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 2,
+              "mean_predicted_p_home": 0.25,
+              "empirical_home_win_rate": 0.5
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 26,
+              "mean_predicted_p_home": 0.3727016149014916,
+              "empirical_home_win_rate": 0.46153846153846156
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 19,
+              "mean_predicted_p_home": 0.45557917091195543,
+              "empirical_home_win_rate": 0.6842105263157895
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 1444,
+              "mean_predicted_p_home": 0.5384083298229618,
+              "empirical_home_win_rate": 0.5429362880886427
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "league_average_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, league-average-covered games, season=POOLED",
+          "date_range": [
+            "2021-05-15",
+            "2026-07-31"
+          ],
+          "n": 1491,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2021": {
+        "n_games": 205,
+        "date_range": [
+          "2021-05-15",
+          "2021-10-17"
+        ],
+        "total": {
+          "mae": 13.544691609197422,
+          "mae_ci95": [
+            12.159353868431898,
+            14.930029349962945
+          ],
+          "rmse": 17.08238172622944,
+          "rmse_ci95": [
+            15.40572377438502,
+            18.608578824525615
+          ],
+          "bias": 0.8335113880587428,
+          "bias_ci95": [
+            -1.38668194222301,
+            3.0537047183404953
+          ],
+          "n": 205,
+          "n_date_clusters": 90
+        },
+        "margin": {
+          "mae": 11.382087251879048,
+          "mae_ci95": [
+            10.248288543641841,
+            12.515885960116254
+          ],
+          "rmse": 14.260037204532747,
+          "rmse_ci95": [
+            12.83973348488176,
+            15.551159641213973
+          ],
+          "bias": -0.6593959089310824,
+          "bias_ci95": [
+            -2.5138160419379427,
+            1.195024224075778
+          ],
+          "n": 205,
+          "n_date_clusters": 90
+        },
+        "win_prob": {
+          "brier": 0.2527786406864058,
+          "brier_ci95": [
+            0.24729827862870782,
+            0.2582590027441038
+          ],
+          "log_loss": 0.6990275781849562,
+          "log_loss_ci95": [
+            0.6878485634916266,
+            0.7102065928782858
+          ],
+          "n": 205,
+          "n_date_clusters": 90,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 2,
+              "mean_predicted_p_home": 0.25,
+              "empirical_home_win_rate": 0.5
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 26,
+              "mean_predicted_p_home": 0.3727016149014916,
+              "empirical_home_win_rate": 0.46153846153846156
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 19,
+              "mean_predicted_p_home": 0.45557917091195543,
+              "empirical_home_win_rate": 0.6842105263157895
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 158,
+              "mean_predicted_p_home": 0.518452220220583,
+              "empirical_home_win_rate": 0.5443037974683544
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "league_average_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, league-average-covered games, season=2021",
+          "date_range": [
+            "2021-05-15",
+            "2021-10-17"
+          ],
+          "n": 205,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2022": {
+        "n_games": 239,
+        "date_range": [
+          "2022-05-06",
+          "2022-09-18"
+        ],
+        "total": {
+          "mae": 13.482469902593952,
+          "mae_ci95": [
+            11.977758557360081,
+            14.987181247827822
+          ],
+          "rmse": 17.940088723493346,
+          "rmse_ci95": [
+            15.862618280224273,
+            19.800780492433148
+          ],
+          "bias": -2.041595922825692,
+          "bias_ci95": [
+            -4.4133967272275925,
+            0.3302048815762082
+          ],
+          "n": 239,
+          "n_date_clusters": 96
+        },
+        "margin": {
+          "mae": 11.314312669584346,
+          "mae_ci95": [
+            10.287098488913013,
+            12.34152685025568
+          ],
+          "rmse": 13.792965677849603,
+          "rmse_ci95": [
+            12.441740437952674,
+            15.023145451445496
+          ],
+          "bias": -0.4473219884639211,
+          "bias_ci95": [
+            -2.426277306663597,
+            1.531633329735755
+          ],
+          "n": 239,
+          "n_date_clusters": 96
+        },
+        "win_prob": {
+          "brier": 0.2490634571783967,
+          "brier_ci95": [
+            0.24337845229185953,
+            0.2547484620649339
+          ],
+          "log_loss": 0.6912820019248539,
+          "log_loss_ci95": [
+            0.6798853653563457,
+            0.7026786384933621
+          ],
+          "n": 239,
+          "n_date_clusters": 96,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 239,
+              "mean_predicted_p_home": 0.539879342285136,
+              "empirical_home_win_rate": 0.5439330543933054
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "league_average_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, league-average-covered games, season=2022",
+          "date_range": [
+            "2022-05-06",
+            "2022-09-18"
+          ],
+          "n": 239,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2023": {
+        "n_games": 260,
+        "date_range": [
+          "2023-05-19",
+          "2023-10-18"
+        ],
+        "total": {
+          "mae": 14.236775591341804,
+          "mae_ci95": [
+            13.105709609393028,
+            15.36784157329058
+          ],
+          "rmse": 17.557461974541216,
+          "rmse_ci95": [
+            16.168887701737887,
+            18.843991415395806
+          ],
+          "bias": -1.816594423660211,
+          "bias_ci95": [
+            -3.8822858458650717,
+            0.24909699854464962
+          ],
+          "n": 260,
+          "n_date_clusters": 100
+        },
+        "margin": {
+          "mae": 11.79078908010288,
+          "mae_ci95": [
+            10.862281311747244,
+            12.719296848458514
+          ],
+          "rmse": 14.185893918805128,
+          "rmse_ci95": [
+            13.056586429791684,
+            15.231701262582728
+          ],
+          "bias": -0.9953449485246223,
+          "bias_ci95": [
+            -2.7714564184853403,
+            0.7807665214360956
+          ],
+          "n": 260,
+          "n_date_clusters": 100
+        },
+        "win_prob": {
+          "brier": 0.24954106209905474,
+          "brier_ci95": [
+            0.24507671826305938,
+            0.2540054059350501
+          ],
+          "log_loss": 0.6922337179633793,
+          "log_loss_ci95": [
+            0.6832872569234245,
+            0.7011801790033341
+          ],
+          "n": 260,
+          "n_date_clusters": 100,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 260,
+              "mean_predicted_p_home": 0.5378819108371652,
+              "empirical_home_win_rate": 0.5307692307692308
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "league_average_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, league-average-covered games, season=2023",
+          "date_range": [
+            "2023-05-19",
+            "2023-10-18"
+          ],
+          "n": 260,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2024": {
+        "n_games": 262,
+        "date_range": [
+          "2024-05-14",
+          "2024-10-20"
+        ],
+        "total": {
+          "mae": 13.381450950453356,
+          "mae_ci95": [
+            12.10624986113185,
+            14.656652039774862
+          ],
+          "rmse": 17.142644619669834,
+          "rmse_ci95": [
+            15.556951115858952,
+            18.59359570097632
+          ],
+          "bias": 0.5285355284105344,
+          "bias_ci95": [
+            -1.4618575476610962,
+            2.518928604482165
+          ],
+          "n": 262,
+          "n_date_clusters": 100
+        },
+        "margin": {
+          "mae": 10.56225860098361,
+          "mae_ci95": [
+            9.589189227831856,
+            11.535327974135363
+          ],
+          "rmse": 12.691780894703937,
+          "rmse_ci95": [
+            11.495656963197785,
+            13.784501280163385
+          ],
+          "bias": 0.17108466891379534,
+          "bias_ci95": [
+            -1.3918067536839307,
+            1.7339760915115212
+          ],
+          "n": 262,
+          "n_date_clusters": 100
+        },
+        "win_prob": {
+          "brier": 0.2482317888400536,
+          "brier_ci95": [
+            0.24342746782409666,
+            0.2530361098560105
+          ],
+          "log_loss": 0.6896092011758493,
+          "log_loss_ci95": [
+            0.679979274594416,
+            0.6992391277572827
+          ],
+          "n": 262,
+          "n_date_clusters": 100,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 262,
+              "mean_predicted_p_home": 0.5408395035056626,
+              "empirical_home_win_rate": 0.5458015267175572
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "league_average_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, league-average-covered games, season=2024",
+          "date_range": [
+            "2024-05-14",
+            "2024-10-20"
+          ],
+          "n": 262,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2025": {
+        "n_games": 310,
+        "date_range": [
+          "2025-05-16",
+          "2025-10-10"
+        ],
+        "total": {
+          "mae": 13.664792672587463,
+          "mae_ci95": [
+            12.582414944050011,
+            14.747170401124915
+          ],
+          "rmse": 16.84234032930114,
+          "rmse_ci95": [
+            15.504330166611973,
+            18.081609486455935
+          ],
+          "bias": 0.26925418357285624,
+          "bias_ci95": [
+            -1.5513058434421851,
+            2.089814210587898
+          ],
+          "n": 310,
+          "n_date_clusters": 115
+        },
+        "margin": {
+          "mae": 11.982133459229015,
+          "mae_ci95": [
+            10.983434273656055,
+            12.980832644801975
+          ],
+          "rmse": 14.982122958495317,
+          "rmse_ci95": [
+            13.700080743972377,
+            16.16279073352069
+          ],
+          "bias": -1.185077288689121,
+          "bias_ci95": [
+            -2.776429294741514,
+            0.40627471736327236
+          ],
+          "n": 310,
+          "n_date_clusters": 115
+        },
+        "win_prob": {
+          "brier": 0.24651943124580655,
+          "brier_ci95": [
+            0.24164455100493418,
+            0.2513943114866789
+          ],
+          "log_loss": 0.6861755349575875,
+          "log_loss_ci95": [
+            0.6764009488535152,
+            0.6959501210616599
+          ],
+          "n": 310,
+          "n_date_clusters": 115,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 310,
+              "mean_predicted_p_home": 0.5434655334097095,
+              "empirical_home_win_rate": 0.5645161290322581
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "league_average_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, league-average-covered games, season=2025",
+          "date_range": [
+            "2025-05-16",
+            "2025-10-10"
+          ],
+          "n": 310,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2026": {
+        "n_games": 215,
+        "date_range": [
+          "2026-05-08",
+          "2026-07-31"
+        ],
+        "total": {
+          "mae": 18.655812466982404,
+          "mae_ci95": [
+            16.62388167894358,
+            20.68774325502123
+          ],
+          "rmse": 23.97379289543033,
+          "rmse_ci95": [
+            21.51277308115991,
+            26.20469587582525
+          ],
+          "bias": -10.202948195262238,
+          "bias_ci95": [
+            -13.249025164599662,
+            -7.156871225924814
+          ],
+          "n": 215,
+          "n_date_clusters": 73
+        },
+        "margin": {
+          "mae": 11.27799337767565,
+          "mae_ci95": [
+            10.239012061518677,
+            12.316974693832622
+          ],
+          "rmse": 14.107342204015776,
+          "rmse_ci95": [
+            12.781843159209743,
+            15.318573483708347
+          ],
+          "bias": 0.06732955546125391,
+          "bias_ci95": [
+            -1.9642708212908708,
+            2.0989299322133785
+          ],
+          "n": 215,
+          "n_date_clusters": 73
+        },
+        "win_prob": {
+          "brier": 0.25031251912922614,
+          "brier_ci95": [
+            0.2442698830556485,
+            0.2563551552028038
+          ],
+          "log_loss": 0.6937808845390762,
+          "log_loss_ci95": [
+            0.6816666954137819,
+            0.7058950736643704
+          ],
+          "n": 215,
+          "n_date_clusters": 73,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 215,
+              "mean_predicted_p_home": 0.5418207096288418,
+              "empirical_home_win_rate": 0.5209302325581395
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "league_average_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, league-average-covered games, season=2026",
+          "date_range": [
+            "2026-05-08",
+            "2026-07-31"
+          ],
+          "n": 215,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      }
+    },
+    "team_scoring_avg_v1": {
+      "POOLED": {
+        "n_games": 1456,
+        "date_range": [
+          "2021-05-16",
+          "2026-07-31"
+        ],
+        "total": {
+          "mae": 13.942597760208288,
+          "mae_ci95": [
+            13.381284345013917,
+            14.50391117540266
+          ],
+          "rmse": 17.731237265197656,
+          "rmse_ci95": [
+            17.0096098968148,
+            18.424622684539514
+          ],
+          "bias": -0.6840269951305182,
+          "bias_ci95": [
+            -1.6093088431243703,
+            0.24125485286333392
+          ],
+          "n": 1456,
+          "n_date_clusters": 563
+        },
+        "margin": {
+          "mae": 10.279300028794202,
+          "mae_ci95": [
+            9.874668673864887,
+            10.683931383723516
+          ],
+          "rmse": 12.884983609612819,
+          "rmse_ci95": [
+            12.382127880314236,
+            13.368938416924767
+          ],
+          "bias": -1.770020644152015,
+          "bias_ci95": [
+            -2.430060053464296,
+            -1.1099812348397338
+          ],
+          "n": 1456,
+          "n_date_clusters": 563
+        },
+        "win_prob": {
+          "brier": 0.21556552190260214,
+          "brier_ci95": [
+            0.20660736478998679,
+            0.2245236790152175
+          ],
+          "log_loss": 0.6214141668829686,
+          "log_loss_ci95": [
+            0.6008611639886194,
+            0.6419671697773177
+          ],
+          "n": 1253,
+          "n_date_clusters": 474,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 7,
+              "mean_predicted_p_home": 0.05912483470062983,
+              "empirical_home_win_rate": 0.14285714285714285
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 29,
+              "mean_predicted_p_home": 0.16122210813542945,
+              "empirical_home_win_rate": 0.3793103448275862
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 81,
+              "mean_predicted_p_home": 0.25458705602380494,
+              "empirical_home_win_rate": 0.2839506172839506
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 159,
+              "mean_predicted_p_home": 0.35085743364626615,
+              "empirical_home_win_rate": 0.27672955974842767
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 211,
+              "mean_predicted_p_home": 0.4486617110154889,
+              "empirical_home_win_rate": 0.43601895734597157
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 274,
+              "mean_predicted_p_home": 0.5489224124755842,
+              "empirical_home_win_rate": 0.5437956204379562
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 231,
+              "mean_predicted_p_home": 0.650191533345919,
+              "empirical_home_win_rate": 0.6796536796536796
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 186,
+              "mean_predicted_p_home": 0.747024951611659,
+              "empirical_home_win_rate": 0.7688172043010753
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 60,
+              "mean_predicted_p_home": 0.8388434112837391,
+              "empirical_home_win_rate": 0.85
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 15,
+              "mean_predicted_p_home": 0.9374028256895424,
+              "empirical_home_win_rate": 0.8666666666666667
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 203,
+        "provenance": {
+          "model_version": "team_scoring_avg_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, season-to-date-covered games, season=POOLED",
+          "date_range": [
+            "2021-05-16",
+            "2026-07-31"
+          ],
+          "n": 1456,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2021": {
+        "n_games": 203,
+        "date_range": [
+          "2021-05-16",
+          "2021-10-17"
+        ],
+        "total": {
+          "mae": 13.18296753153068,
+          "mae_ci95": [
+            11.826905104758541,
+            14.53902995830282
+          ],
+          "rmse": 16.532268614316088,
+          "rmse_ci95": [
+            14.901612195372023,
+            18.015930868277145
+          ],
+          "bias": 0.9311909627901778,
+          "bias_ci95": [
+            -1.2293012743647052,
+            3.0916831999450607
+          ],
+          "n": 203,
+          "n_date_clusters": 89
+        },
+        "margin": {
+          "mae": 10.416671232703983,
+          "mae_ci95": [
+            9.279003270070717,
+            11.55433919533725
+          ],
+          "rmse": 13.218237251590946,
+          "rmse_ci95": [
+            11.736310265668806,
+            14.550003897822505
+          ],
+          "bias": -0.6988892257211232,
+          "bias_ci95": [
+            -2.3469424250823385,
+            0.9491639736400923
+          ],
+          "n": 203,
+          "n_date_clusters": 89
+        },
+        "win_prob": null,
+        "n_win_prob_excluded_no_prior_season_calibration": 203,
+        "provenance": {
+          "model_version": "team_scoring_avg_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, season-to-date-covered games, season=2021",
+          "date_range": [
+            "2021-05-16",
+            "2021-10-17"
+          ],
+          "n": 203,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2022": {
+        "n_games": 233,
+        "date_range": [
+          "2022-05-08",
+          "2022-09-18"
+        ],
+        "total": {
+          "mae": 13.495881612378286,
+          "mae_ci95": [
+            12.069871924666831,
+            14.92189130008974
+          ],
+          "rmse": 17.84146780794224,
+          "rmse_ci95": [
+            15.885585875376401,
+            19.603165776978994
+          ],
+          "bias": -1.1789147457824558,
+          "bias_ci95": [
+            -3.6631101147021266,
+            1.3052806231372152
+          ],
+          "n": 233,
+          "n_date_clusters": 94
+        },
+        "margin": {
+          "mae": 10.215238141887358,
+          "mae_ci95": [
+            9.185517130063369,
+            11.244959153711347
+          ],
+          "rmse": 12.723185009927219,
+          "rmse_ci95": [
+            11.2734826379619,
+            14.023817697233694
+          ],
+          "bias": -1.4540634504766357,
+          "bias_ci95": [
+            -3.357018909097365,
+            0.4488920081440937
+          ],
+          "n": 233,
+          "n_date_clusters": 94
+        },
+        "win_prob": {
+          "brier": 0.21683404286162306,
+          "brier_ci95": [
+            0.2002022676756186,
+            0.2334658180476275
+          ],
+          "log_loss": 0.6243211454275694,
+          "log_loss_ci95": [
+            0.588508935407868,
+            0.6601333554472709
+          ],
+          "n": 233,
+          "n_date_clusters": 94,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 1,
+              "mean_predicted_p_home": 0.09022259208930491,
+              "empirical_home_win_rate": 0.0
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 2,
+              "mean_predicted_p_home": 0.17973579061146555,
+              "empirical_home_win_rate": 0.5
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 8,
+              "mean_predicted_p_home": 0.2646673082420339,
+              "empirical_home_win_rate": 0.0
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 24,
+              "mean_predicted_p_home": 0.3610704175227208,
+              "empirical_home_win_rate": 0.2916666666666667
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 48,
+              "mean_predicted_p_home": 0.4485644746699065,
+              "empirical_home_win_rate": 0.375
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 68,
+              "mean_predicted_p_home": 0.5476661885467451,
+              "empirical_home_win_rate": 0.5882352941176471
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 54,
+              "mean_predicted_p_home": 0.6530030287836366,
+              "empirical_home_win_rate": 0.7407407407407407
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 24,
+              "mean_predicted_p_home": 0.7380699366899414,
+              "empirical_home_win_rate": 0.7916666666666666
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 4,
+              "mean_predicted_p_home": 0.8190868167493456,
+              "empirical_home_win_rate": 0.5
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "team_scoring_avg_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, season-to-date-covered games, season=2022",
+          "date_range": [
+            "2022-05-08",
+            "2022-09-18"
+          ],
+          "n": 233,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2023": {
+        "n_games": 254,
+        "date_range": [
+          "2023-05-21",
+          "2023-10-18"
+        ],
+        "total": {
+          "mae": 14.083332671692059,
+          "mae_ci95": [
+            12.83595951061645,
+            15.330705832767668
+          ],
+          "rmse": 17.52042347445027,
+          "rmse_ci95": [
+            15.870380469695643,
+            19.027913737329143
+          ],
+          "bias": -1.3535110786974598,
+          "bias_ci95": [
+            -3.391804916747589,
+            0.6847827593526694
+          ],
+          "n": 254,
+          "n_date_clusters": 98
+        },
+        "margin": {
+          "mae": 10.312769989707139,
+          "mae_ci95": [
+            9.414153882322145,
+            11.211386097092133
+          ],
+          "rmse": 12.725982575492436,
+          "rmse_ci95": [
+            11.62538522735974,
+            13.738692926874817
+          ],
+          "bias": -2.3517963782850866,
+          "bias_ci95": [
+            -3.91090184550456,
+            -0.7926909110656131
+          ],
+          "n": 254,
+          "n_date_clusters": 98
+        },
+        "win_prob": {
+          "brier": 0.20860293464303006,
+          "brier_ci95": [
+            0.19194854526966032,
+            0.2252573240163998
+          ],
+          "log_loss": 0.6019743194536177,
+          "log_loss_ci95": [
+            0.5658512507268202,
+            0.6380973881804152
+          ],
+          "n": 254,
+          "n_date_clusters": 98,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 2,
+              "mean_predicted_p_home": 0.04876759376854489,
+              "empirical_home_win_rate": 0.0
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 7,
+              "mean_predicted_p_home": 0.15625077444459962,
+              "empirical_home_win_rate": 0.0
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 12,
+              "mean_predicted_p_home": 0.2525134727203625,
+              "empirical_home_win_rate": 0.4166666666666667
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 32,
+              "mean_predicted_p_home": 0.3479058607808727,
+              "empirical_home_win_rate": 0.21875
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 42,
+              "mean_predicted_p_home": 0.44907142810286843,
+              "empirical_home_win_rate": 0.4523809523809524
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 53,
+              "mean_predicted_p_home": 0.5442192278568739,
+              "empirical_home_win_rate": 0.5283018867924528
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 54,
+              "mean_predicted_p_home": 0.6513574127151875,
+              "empirical_home_win_rate": 0.6481481481481481
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 37,
+              "mean_predicted_p_home": 0.7452488598502984,
+              "empirical_home_win_rate": 0.7297297297297297
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 14,
+              "mean_predicted_p_home": 0.8336081301669165,
+              "empirical_home_win_rate": 0.9285714285714286
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 1,
+              "mean_predicted_p_home": 0.953205058826131,
+              "empirical_home_win_rate": 1.0
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "team_scoring_avg_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, season-to-date-covered games, season=2023",
+          "date_range": [
+            "2023-05-21",
+            "2023-10-18"
+          ],
+          "n": 254,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2024": {
+        "n_games": 256,
+        "date_range": [
+          "2024-05-16",
+          "2024-10-20"
+        ],
+        "total": {
+          "mae": 12.792024001313557,
+          "mae_ci95": [
+            11.536241798984893,
+            14.04780620364222
+          ],
+          "rmse": 16.482629869981473,
+          "rmse_ci95": [
+            14.899568822924973,
+            17.926433659613757
+          ],
+          "bias": -0.13617498025892072,
+          "bias_ci95": [
+            -2.183526823800035,
+            1.9111768632821935
+          ],
+          "n": 256,
+          "n_date_clusters": 98
+        },
+        "margin": {
+          "mae": 9.212410042043393,
+          "mae_ci95": [
+            8.356674269911236,
+            10.06814581417555
+          ],
+          "rmse": 11.285902628099956,
+          "rmse_ci95": [
+            10.19351865917963,
+            12.281505347752114
+          ],
+          "bias": -0.9537422096084162,
+          "bias_ci95": [
+            -2.318027631535285,
+            0.4105432123184526
+          ],
+          "n": 256,
+          "n_date_clusters": 98
+        },
+        "win_prob": {
+          "brier": 0.20654351235545015,
+          "brier_ci95": [
+            0.18664275547347775,
+            0.22644426923742256
+          ],
+          "log_loss": 0.5998200963323872,
+          "log_loss_ci95": [
+            0.5555551219343099,
+            0.6440850707304645
+          ],
+          "n": 256,
+          "n_date_clusters": 98,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 1,
+              "mean_predicted_p_home": 0.04542646663296544,
+              "empirical_home_win_rate": 0.0
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 3,
+              "mean_predicted_p_home": 0.15906923210403356,
+              "empirical_home_win_rate": 0.6666666666666666
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 25,
+              "mean_predicted_p_home": 0.2584768577069792,
+              "empirical_home_win_rate": 0.4
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 37,
+              "mean_predicted_p_home": 0.3466616016280323,
+              "empirical_home_win_rate": 0.1891891891891892
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 38,
+              "mean_predicted_p_home": 0.4541750008000356,
+              "empirical_home_win_rate": 0.42105263157894735
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 47,
+              "mean_predicted_p_home": 0.5540735894940427,
+              "empirical_home_win_rate": 0.46808510638297873
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 35,
+              "mean_predicted_p_home": 0.6388625549181843,
+              "empirical_home_win_rate": 0.6857142857142857
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 48,
+              "mean_predicted_p_home": 0.7552175542351268,
+              "empirical_home_win_rate": 0.8333333333333334
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 19,
+              "mean_predicted_p_home": 0.843623916400711,
+              "empirical_home_win_rate": 0.8421052631578947
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 3,
+              "mean_predicted_p_home": 0.9449145579930095,
+              "empirical_home_win_rate": 1.0
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "team_scoring_avg_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, season-to-date-covered games, season=2024",
+          "date_range": [
+            "2024-05-16",
+            "2024-10-20"
+          ],
+          "n": 256,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2025": {
+        "n_games": 303,
+        "date_range": [
+          "2025-05-18",
+          "2025-10-10"
+        ],
+        "total": {
+          "mae": 13.455325593531901,
+          "mae_ci95": [
+            12.360141492964534,
+            14.550509694099269
+          ],
+          "rmse": 16.649788624926924,
+          "rmse_ci95": [
+            15.294423716826065,
+            17.90283568822773
+          ],
+          "bias": -0.2822617384220805,
+          "bias_ci95": [
+            -2.098504481008448,
+            1.533981004164287
+          ],
+          "n": 303,
+          "n_date_clusters": 113
+        },
+        "margin": {
+          "mae": 11.03679032340202,
+          "mae_ci95": [
+            10.139495307074633,
+            11.934085339729407
+          ],
+          "rmse": 13.902161711392703,
+          "rmse_ci95": [
+            12.793081008926363,
+            14.929074947848381
+          ],
+          "bias": -2.5410025303761303,
+          "bias_ci95": [
+            -3.9416728511765444,
+            -1.1403322095757162
+          ],
+          "n": 303,
+          "n_date_clusters": 113
+        },
+        "win_prob": {
+          "brier": 0.2239330680493494,
+          "brier_ci95": [
+            0.20230337330034853,
+            0.24556276279835026
+          ],
+          "log_loss": 0.6421921601245645,
+          "log_loss_ci95": [
+            0.5896325776474212,
+            0.6947517426017078
+          ],
+          "n": 303,
+          "n_date_clusters": 113,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 1,
+              "mean_predicted_p_home": 0.014170889433648136,
+              "empirical_home_win_rate": 0.0
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 12,
+              "mean_predicted_p_home": 0.16528167133476113,
+              "empirical_home_win_rate": 0.5
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 25,
+              "mean_predicted_p_home": 0.24526010692005587,
+              "empirical_home_win_rate": 0.28
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 37,
+              "mean_predicted_p_home": 0.35140810286496976,
+              "empirical_home_win_rate": 0.40540540540540543
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 53,
+              "mean_predicted_p_home": 0.4470213582408169,
+              "empirical_home_win_rate": 0.4716981132075472
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 52,
+              "mean_predicted_p_home": 0.5443348705805283,
+              "empirical_home_win_rate": 0.5576923076923077
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 50,
+              "mean_predicted_p_home": 0.6508004324897108,
+              "empirical_home_win_rate": 0.6
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 45,
+              "mean_predicted_p_home": 0.749051480068285,
+              "empirical_home_win_rate": 0.7555555555555555
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 17,
+              "mean_predicted_p_home": 0.8435448573971145,
+              "empirical_home_win_rate": 0.9411764705882353
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 11,
+              "mean_predicted_p_home": 0.9339176047761797,
+              "empirical_home_win_rate": 0.8181818181818182
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "team_scoring_avg_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, season-to-date-covered games, season=2025",
+          "date_range": [
+            "2025-05-18",
+            "2025-10-10"
+          ],
+          "n": 303,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      },
+      "2026": {
+        "n_games": 207,
+        "date_range": [
+          "2026-05-10",
+          "2026-07-31"
+        ],
+        "total": {
+          "mae": 17.15387061107334,
+          "mae_ci95": [
+            15.374455931189477,
+            18.933285290957205
+          ],
+          "rmse": 21.601987953861713,
+          "rmse_ci95": [
+            19.306110776333817,
+            23.676271957584458
+          ],
+          "bias": -2.1551208643082105,
+          "bias_ci95": [
+            -5.3009538522863,
+            0.9907121236698786
+          ],
+          "n": 207,
+          "n_date_clusters": 71
+        },
+        "margin": {
+          "mae": 10.386270910561164,
+          "mae_ci95": [
+            9.203117852746121,
+            11.569423968376206
+          ],
+          "rmse": 13.231374127572979,
+          "rmse_ci95": [
+            11.829297527188851,
+            14.498491046341993
+          ],
+          "bias": -2.3431918292500273,
+          "bias_ci95": [
+            -4.263474065634417,
+            -0.42290959286563723
+          ],
+          "n": 207,
+          "n_date_clusters": 71
+        },
+        "win_prob": {
+          "brier": 0.2215906414295872,
+          "brier_ci95": [
+            0.19745325319034293,
+            0.24572802966883148
+          ],
+          "log_loss": 0.6382873328487096,
+          "log_loss_ci95": [
+            0.5829670233138157,
+            0.6936076423836036
+          ],
+          "n": 207,
+          "n_date_clusters": 71,
+          "calibration_10bin": [
+            {
+              "bin": "[0.0,0.1)",
+              "n": 2,
+              "mean_predicted_p_home": 0.08325935360570025,
+              "empirical_home_win_rate": 0.5
+            },
+            {
+              "bin": "[0.1,0.2)",
+              "n": 5,
+              "mean_predicted_p_home": 0.15232527625261844,
+              "empirical_home_win_rate": 0.4
+            },
+            {
+              "bin": "[0.2,0.3)",
+              "n": 11,
+              "mean_predicted_p_home": 0.26187520760651795,
+              "empirical_home_win_rate": 0.09090909090909091
+            },
+            {
+              "bin": "[0.3,0.4)",
+              "n": 29,
+              "mean_predicted_p_home": 0.35031294199937996,
+              "empirical_home_win_rate": 0.27586206896551724
+            },
+            {
+              "bin": "[0.4,0.5)",
+              "n": 30,
+              "mean_predicted_p_home": 0.4441581414209167,
+              "empirical_home_win_rate": 0.4666666666666667
+            },
+            {
+              "bin": "[0.5,0.6)",
+              "n": 54,
+              "mean_predicted_p_home": 0.5550546137835108,
+              "empirical_home_win_rate": 0.5555555555555556
+            },
+            {
+              "bin": "[0.6,0.7)",
+              "n": 38,
+              "mean_predicted_p_home": 0.6541728767197054,
+              "empirical_home_win_rate": 0.7368421052631579
+            },
+            {
+              "bin": "[0.7,0.8)",
+              "n": 32,
+              "mean_predicted_p_home": 0.7406561093246883,
+              "empirical_home_win_rate": 0.71875
+            },
+            {
+              "bin": "[0.8,0.9)",
+              "n": 6,
+              "mean_predicted_p_home": 0.8357711000542802,
+              "empirical_home_win_rate": 0.6666666666666666
+            },
+            {
+              "bin": "[0.9,1.0)",
+              "n": 0,
+              "mean_predicted_p_home": null,
+              "empirical_home_win_rate": null
+            }
+          ]
+        },
+        "n_win_prob_excluded_no_prior_season_calibration": 0,
+        "provenance": {
+          "model_version": "team_scoring_avg_v1",
+          "target": "total,margin,win_prob",
+          "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+          "universe": "owned gamelog universe 2021-2026, season-to-date-covered games, season=2026",
+          "date_range": [
+            "2026-05-10",
+            "2026-07-31"
+          ],
+          "n": 207,
+          "evidence_class": "COMPOSITE_BASELINE",
+          "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+          "computed_at": "2026-08-07T01:27:52.921884+00:00"
+        }
+      }
+    }
+  },
+  "market_comparison": {
+    "universe": "MATCHED universe only: BOOKIE_BASELINE's frozen join of the 2022-2026 T1 odds archive to owned outcomes, LATE snapshot class, cross_book consensus, intersected with games the composite covers. NEVER an unmatched-universe verdict.",
+    "snapshot_class": "LATE",
+    "variant": "cross_book",
+    "provenance_class": "T1_VENDOR_ASSERTED",
+    "vendor_ts_semantics": "vendor_asserted_unwitnessed",
+    "t1_timing_caveat_verbatim": "This snapshot's timestamp is vendor-asserted and unwitnessed (tier T1: THIRD_PARTY_CONTEMPORANEOUS, per MARKET_PROGRAM_CONTRACT.md section 4.3). It is drawn from a third-party historical-odds archive retrieved on 2026-08-06, labelled EARLY (vendor-asserted ~16:00Z request) or LATE (vendor-asserted ~23:30Z request) relative to the archive's own request day, not from our own real-time capture. LATE is closer to commence than EARLY, but neither is a witnessed closing line, and the true hours-to-commence at capture is not independently verified. No timing, latency, reaction, or CLV inference may be drawn from this snapshot; it supports calibration-against-realized-outcomes only, at an unknown-but-bounded-pregame instant.",
+    "caveat_sha256": "93a816cc9357af8d0a09da60695eee60e6921b1cbf1fbcb2b7c8b125216e21f7",
+    "n_matched_games_with_late_quote": 1070,
+    "n_paired_with_composite": 1061,
+    "d036_market_bars_context": {
+      "value": {
+        "spread_mae": 9.7,
+        "total_mae": 13.74,
+        "brier": 0.202
+      },
+      "note": "D043's quoted bars (LATE cross_book POOLED over the FULL matched archive, from BOOKIE_BASELINE); shown for context only -- the verdict numbers are the PAIRED rows below, computed on the identical game set for both sides."
+    },
+    "paired_metrics": {
+      "margin_mae": {
+        "composite": 10.477779822691193,
+        "market": 9.680722351403281,
+        "paired_delta_composite_minus_market": 0.797057471287914,
+        "paired_delta_ci95": [
+          0.5143661795983165,
+          1.0797487629775115
+        ],
+        "n_pairs": 1059,
+        "n_date_clusters": 435,
+        "date_range": [
+          "2022-05-21",
+          "2026-07-31"
+        ],
+        "seasons": [
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ]
+      },
+      "margin_mse": {
+        "composite": 172.45202939805372,
+        "market": 151.78299956828332,
+        "paired_delta_composite_minus_market": 20.669029829770416,
+        "paired_delta_ci95": [
+          12.83300761501351,
+          28.50505204452732
+        ],
+        "n_pairs": 1059,
+        "n_date_clusters": 435,
+        "date_range": [
+          "2022-05-21",
+          "2026-07-31"
+        ],
+        "seasons": [
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ]
+      },
+      "total_mae": {
+        "composite": 14.11804133714421,
+        "market": 13.735351521366255,
+        "paired_delta_composite_minus_market": 0.3826898157779535,
+        "paired_delta_ci95": [
+          0.17099584330049877,
+          0.5943837882554083
+        ],
+        "n_pairs": 1052,
+        "n_date_clusters": 434,
+        "date_range": [
+          "2022-05-21",
+          "2026-07-31"
+        ],
+        "seasons": [
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ]
+      },
+      "total_mse": {
+        "composite": 323.5768119559432,
+        "market": 305.3785518848024,
+        "paired_delta_composite_minus_market": 18.198260071140812,
+        "paired_delta_ci95": [
+          9.91684391558454,
+          26.479676226697084
+        ],
+        "n_pairs": 1052,
+        "n_date_clusters": 434,
+        "date_range": [
+          "2022-05-21",
+          "2026-07-31"
+        ],
+        "seasons": [
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ]
+      },
+      "winprob_brier": {
+        "composite": 0.21820949090122635,
+        "market": 0.20140738359356364,
+        "paired_delta_composite_minus_market": 0.01680210730766272,
+        "paired_delta_ci95": [
+          0.00970262179472248,
+          0.023901592820602956
+        ],
+        "n_pairs": 1058,
+        "n_date_clusters": 435,
+        "date_range": [
+          "2022-05-21",
+          "2026-07-31"
+        ],
+        "seasons": [
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ]
+      },
+      "winprob_log_loss": {
+        "composite": 0.6256246125721278,
+        "market": 0.5878343940478146,
+        "paired_delta_composite_minus_market": 0.03779021852431312,
+        "paired_delta_ci95": [
+          0.02165281994729065,
+          0.05392761710133559
+        ],
+        "n_pairs": 1058,
+        "n_date_clusters": 435,
+        "date_range": [
+          "2022-05-21",
+          "2026-07-31"
+        ],
+        "seasons": [
+          2022,
+          2023,
+          2024,
+          2025,
+          2026
+        ]
+      }
+    },
+    "provenance": {
+      "model_version": "composite_pace_x_eff_v1",
+      "target": "total,margin,win_prob vs market consensus",
+      "cutoff": "pregame_strictly_lagged_all_inputs_prior_dates",
+      "universe": "matched_2022_2026_late_cross_book_with_composite_coverage",
+      "date_range": [
+        "2022-05-21",
+        "2026-07-31"
+      ],
+      "n": 1059,
+      "evidence_class": "COMPOSITE_BASELINE",
+      "commit": "NO_GIT_WORKTREE (worktree is not a git repo; see top-level producer.sha256)",
+      "computed_at": "2026-08-07T01:27:52.921884+00:00"
+    }
+  }
+}
