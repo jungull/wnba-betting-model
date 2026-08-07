@@ -509,3 +509,33 @@ may never be cited as independent convergence on T1 — exactly as cycle 2 disti
 convergence on schedule fatigue from *3-of-5 on the user-directed* interaction. If both focus and
 blind corroboration are wanted, split the ideation panel and label each source's exposure. D046's bar
 is on COORDINATOR priors and is not in conflict: a user scope directive is not a coordinator prior.
+
+
+## 10.11 SECOND CENTRAL THESIS — D061, ARCHITECTURE (T2), and where to actually start
+
+The user added an **architecture** thesis beside the signal thesis: the champion is likely an
+**ensemble of specialist layers with learned weights**, not one monolithic model. Recorded as
+**T2_ENSEMBLE_OF_SPECIALIST_LAYERS**; T1 is its layer 2. **Neither thesis is sacred** — the ideas
+factory may propose entirely different architectures. Headline discipline: **search broadly first,
+compose later.**
+
+**The coordinator mapped all nine layers against what the program already knows. Read this before
+planning any E0 campaign — it prevents rediscovering settled ground:**
+
+- **Layers 8 (separate market model) and 9 (conditional edge): ALREADY FROZEN LAW.** The four-system
+  separation (S-FUND / S-MKT / S-EXEC / S-DEC) is frozen in `MARKET_PROGRAM_CONTRACT` §2 and already
+  says *"None substitutes for another."* Market non-contamination is **enforced, not a design task**.
+- **Layers 1 (availability/minutes) and 4 (bottom-up aggregation): ALREADY ATTEMPTED AND FAILED.**
+  P3 is frozen, 5/5 arms FAIL, zero promoted. **But the failure localises to layer 1** — intrinsic
+  player signal is real under *known* lineups and dissolved only under *projected* exposure. Layer 4
+  is blocked on layer 1, not on itself. The standing guard holds: the frozen P3 coefficients may be
+  reused only if a materially better exposure artifact is built for an **independently justified**
+  reason; the prior failure is *not* that justification.
+- **Layer 5 (structural team model): retained** per the user — but its ensemble value rests on
+  **error decorrelation**, since standalone it beats neither two-season averages nor the market.
+  Testable, not assumed.
+- **Layer 7:** M13's distributional translation machinery is reusable. **Layer 6:** D051 is its
+  existing prioritisation mechanism.
+- **LAYER 3 (matchup interaction) IS THE LARGEST GENUINELY UNEXPLORED SURFACE** — essentially
+  untouched at player level — **and is independently where the user expects the most incremental
+  signal.** That convergence is the clearest steer available: **start E0 sweeps here.**
