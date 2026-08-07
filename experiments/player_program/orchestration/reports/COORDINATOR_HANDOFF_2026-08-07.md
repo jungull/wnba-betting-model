@@ -454,3 +454,31 @@ by hand. Do NOT attempt to route around that block.
    for the line they draw, not as a blanket bar.
 
 *The ledger is the memory. The board is the truth. Frozen bytes govern. Do not stop.*
+
+
+## 10.8 STANDING DIRECTIVE ADDED AFTER §10 WAS WRITTEN — D057, READ BEFORE PLANNING ANY WORK
+
+The user ruled that the program is dragging because **rigor is applied uniformly instead of being
+sequenced**. GRAPH_POLICY **§13** now defines four evidence levels (E0 Exploration / E1 Signal
+candidate / E2 Challenger / E3 Production). The heavy machinery is reserved for **E2/E3**; E0/E1 are
+fast, disposable and **explicitly non-claiming** — one-line kill/keep log entries, no
+preregistration, no leaderboard, no report.
+
+**This changes the worklist priority.** After the current score cycle reaches a verdict, the next
+coordinator's job is **not** another full-ceremony cycle. It is to run **E0 sweeps at volume** —
+dozens of cheap ideas, most killed in under an hour — against the **player-level residual**, which
+is the program's founding thesis and the thing all this infrastructure was built to test.
+
+Allocation until further notice: **~70% signal discovery / ~20% validation of survivors / ~10%
+infrastructure.** The constitution is good enough. **Do not refine it further absent an actual
+flaw** — including §13 itself.
+
+**§13.2 is the one rule that may not be relaxed for speed:** E0/E1 run only on the exploration
+partition and never touch the E2 confirmation holdout. It is what makes screening 50 ideas
+statistically free rather than a machine for false confidence. It is a coordinator ADDITION to the
+user's directive and is flagged as such in D057 for the user to rule on.
+
+**Also demoted by this directive:** global MAE as the centre of the program. The operative question
+is now *where* the advantage is strongest, what observable pre-game state predicts it, and whether
+we can abstain elsewhere. Conditional edge and abstention are first-class targets. D051's residual
+characterisation is the existing bridge.

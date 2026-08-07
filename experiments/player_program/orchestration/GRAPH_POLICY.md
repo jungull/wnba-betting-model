@@ -276,3 +276,65 @@ failure was observed live on 2026-08-07, when a scheduled coordinator stood down
 infrastructure event, not a scientific finding: nothing it produced partially may be used or
 claimed. Retry it later at the same tier (never a cheaper tier for a Severity-A verification,
 §9.1), and in the meantime execute work that does not depend on it.
+
+
+---
+
+## 13. Evidence levels E0-E3: rigor is sequenced, not uniform (`D057`, user directive 2026-08-07)
+
+**The problem this fixes.** The graph applied approximately one burden of proof to two different
+questions: *"is there anything interesting here?"* and *"should money depend on this?"* Measured on
+this session's own ledger, **0.4% of agent time went to idea generation and 99.6% to validating
+what little was generated** (4 minutes vs 948). That is not rigor; it is misallocation. Rigor
+belongs **at the point where you start believing the result**, not at the point where you first
+look.
+
+| Level | Purpose | Standard | May it be cited? |
+|---|---|---|---|
+| **E0 Exploration** | find anything unusual | fast, permissive, time-boxed (~30-60 min), explicitly non-claiming | **NO** |
+| **E1 Signal candidate** | does the effect persist? | basic season split / holdout **inside the exploration partition** | **NO** |
+| **E2 Challenger** | does it improve forecasting? | preregistration + full clean walk-forward vs champion | yes |
+| **E3 Production** | should money depend on it? | prospective + calibration + market + betting gates | yes, USER gate |
+
+**13.1 E0/E1 are explicitly non-claiming.** No registry entry, no preregistration, no leaderboard
+row, no REPORT.md, no bootstrap, no promotion threshold. Output is a **one-line kill/keep log
+entry**. An E0/E1 finding is a **LEAD, never a RESULT**, and may never be cited as evidence for
+anything. Most leads die; that is the point. Expect ~40 of 50 to die immediately.
+
+**13.2 THE ONE GUARD THAT MAKES THE SANDBOX SAFE — the exploration partition.**
+This is the enabling condition for going fast, not a tax on it. **E0 and E1 run ONLY on a
+designated exploration partition. The E2 confirmation holdout is NEVER read, joined, plotted or
+described during E0/E1.**
+
+Why it is non-negotiable: if exploration touches the holdout, then screening 50 ideas and promoting
+the 2 that "look legitimately strange and persistent" means those 2 were **selected using the very
+data meant to confirm them**. Preregistering afterwards preregisters a hypothesis the data already
+chose. That is selection leakage at program scale, and it is the same family as the failures this
+program has already paid for -- the arm-G leak worth 16x its reported gain, and the apparent
+breakthroughs that evaporated. With the partition in place, screening 50 ideas costs **nothing**
+statistically, because confirmation happens on data the search never saw. Without it, the faster
+process manufactures false confidence faster.
+
+**13.3 Disclose the screen count.** An E2 preregistration states how many E0 leads were screened in
+the campaign that produced it. Not to penalise the search -- to let a reader calibrate. A lead that
+survived 1-of-50 and one that survived 1-of-2 are different objects.
+
+**13.4 Promotion is a real decision, and downgrade is free.** E1 to E2 requires a written
+preregistration *before* the holdout is touched. Killing a lead at E0/E1 needs no ceremony, no
+report and no adjudication -- one log line. Cheap death is what makes cheap birth safe.
+
+**13.5 Stop centring global MAE.** "Beat the market on every game" is an extraordinarily hard bar
+and probably the wrong target. The operative question becomes: **where is our information advantage
+strongest, what observable pre-game state predicts that advantage, and can we abstain everywhere
+else?** A model mediocre in 80% of games and genuinely superior in 20% is valuable, and pooled
+averaging is precisely what hides it. §12's D051 residual-characterisation directive is the
+existing bridge to this; conditional-edge work and abstention are first-class targets, not
+afterthoughts.
+
+**13.6 Effort allocation, until further notice: ~70% signal discovery / ~20% validation of
+survivors / ~10% infrastructure.** The constitution is good enough. **Do not spend further effort
+making it more pure unless an actual flaw appears** -- and note the irony that this section is
+itself constitutional work: it is authorised as the change that *ends* that phase, not as licence
+to continue it. Priority target: the **player-level residual**, i.e. granular player x matchup x
+availability interactions, which is the program's original thesis and the thing the infrastructure
+was built to test.
