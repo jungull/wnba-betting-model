@@ -1,0 +1,1140 @@
+{
+ "schema": "market_program/M13_PLAYER_VALUE_TRANSLATION/findings/1",
+ "generated_utc": "2026-08-07T14:34:41.074241+00:00",
+ "epistemic_status": "INTERFACE COMPONENT under the four-system separation: fundamental system out, market terms in. Consumes only frozen, versioned model snapshots from the forecast log; it never reads sealed possession results and never reaches into a model's internals.",
+ "decision_authority": [
+  "D023_MARKET_PROGRAM_AUTHORIZED",
+  "D027_PROPS_HISTORICAL_BOUNDED_USES",
+  "D036_SCOREBOARD_MEASUREMENT_SEMANTICS",
+  "D037",
+  "D043"
+ ],
+ "evidence_class": "PRELIMINARY",
+ "evidence_class_reason": "interface-component translation of a RECEIPTED legacy artifact against a T1 vendor-asserted props archive; not a preregistered family endpoint; no evidence-ladder label (contract section 3) is claimed or held",
+ "evidence_ladder_labels_held": [],
+ "seed": 20260806,
+ "n_boot": 1000,
+ "contract_sha256_verified": "1152dcd3bf74000f700844bc8bfc0df25de61a067f59534a714ac4f2f20265de",
+ "commit_sha": "UNAVAILABLE: no git in this worktree per task constraints; the legacy producing run's clean-tree receipt asserts commit 0108ef86e9c085e1d701e40e53c24dcde177ac97 (reproduced, not independently verified); manifest content hashes are the verified anchors",
+ "m00_bounded_use": {
+  "m00_use_class": "M00-U2",
+  "extended_to_this_archive_by": "D027_PROPS_HISTORICAL_BOUNDED_USES",
+  "object": "data/props_capture/historical/master_props_historical.csv (T1_VENDOR_ASSERTED)",
+  "caveat_text_verbatim": "Calibration is of a snapshot whose capture time is vendor-asserted and unwitnessed (P2B: CUTOFF_UNPROVEN). Results characterize an unknown-time pregame price level and must not be read as closing-line calibration, opening-line calibration, or calibration at T\u221264 minutes. No CLV, timing, or line-movement inference may be built on this result.",
+  "caveat_hash": "39b8dbde2fc3407e5563752775c18e61f161946b216cbd0194c8d0c110997e7b",
+  "additional_prohibitions_honored": "no CLV, timing, lead-lag, stale-window or executability claim is made anywhere in this node"
+ },
+ "inventory": {
+  "legacy_model": {
+   "path": "experiments/cbs_v15_player_oof_v5/attempt_001/",
+   "run_id": "cbs_v15_player_oof_v5/1",
+   "target": "player_scoring_distribution (points)",
+   "verification": "SCOREBOARD/granular/VERIFICATION_REPORT.md -- 7/7 RECEIPTED",
+   "n_scored_points_rows_all_tiers_all_seasons": 26144,
+   "n_A_primary_pooled_2022_2026": 21970
+  },
+  "model_vs_market_prior_work": {
+   "path": "experiments/market_program/MODEL_VS_MARKET/MODEL_VS_MARKET.md",
+   "reused_functions": [
+    "load_outcomes",
+    "load_scored_points",
+    "build_identity_index",
+    "build_market_frame"
+   ],
+   "finding_reused": "matched-universe binary-call comparison (model pred>line vs market P(over)>0.5); this node adds the missing piece -- an actual model PROBABILITY, which MODEL_VS_MARKET explicitly did not build ('The model has NO Brier: it is a point prediction, not a probability.')",
+   "integrity_cross_check_vs_reproduced_join": {
+    "n_matched_player_games_this_run": 5966,
+    "n_evaluable_matched_player_games_this_run": 5889,
+    "n_matched_player_games_model_vs_market_json": 5966,
+    "n_evaluable_matched_player_games_model_vs_market_json": 5889,
+    "matches_model_vs_market_json": true
+   }
+  },
+  "score_baselines_context": {
+   "path": "experiments/market_program/SCORE_BASELINES/SCORE_BASELINES.md",
+   "relevance": "team-level score-family composite, not player-level; not consumed by this node's translation, cited here only as sibling market-lane context for the same matched-universe discipline"
+  },
+  "props_archive": {
+   "path": "data/props_capture/historical/master_props_historical.csv",
+   "n_rows": 36946,
+   "n_games": 784,
+   "tier": "T1_VENDOR_ASSERTED per D027"
+  }
+ },
+ "distributional_assumption": {
+  "question": "A point prediction is not a threshold probability. Converting one to the other requires an explicit assumption about the distribution of the model's own error around its point prediction. This assumption is fit from data, not asserted.",
+  "fit_pool": {
+   "definition": "A_primary tier, fitted folds only (seasons 2022-2026; 2021 excluded, degenerate no-train fallback-only fold), and DISJOINT from the matched-market evaluation universe below (no row used to fit the distribution is ever scored for calibration -- this is what makes the calibration check an honest out-of-sample test).",
+   "n": 16162
+  },
+  "residual_diagnostics": {
+   "n": 16162,
+   "mean": -0.015164734794126378,
+   "std_ddof1": 5.159310464823577,
+   "median": 0.5570526617838982,
+   "skewness_fisher_pearson": -0.6145306268501058,
+   "excess_kurtosis": 1.29606131513256,
+   "min": -36.30909090909091,
+   "max": 21.094931868172548,
+   "p05": -9.416958351797824,
+   "p95": 8.066864343161495
+  },
+  "normal_fit": {
+   "loc": -0.015164734794126378,
+   "scale": 5.159310464823577,
+   "loglik": -49451.04168534278,
+   "aic": 98906.08337068556
+  },
+  "student_t_fit": {
+   "loc": -0.015164734794126378,
+   "df": 8,
+   "scale": 4.468093928548117,
+   "loglik": -49205.875273071906,
+   "aic": 98417.75054614381
+  },
+  "student_t_df_grid_loglik": [
+   {
+    "df": 3,
+    "scale": 2.978729285698745,
+    "loglik": -49971.86095540745
+   },
+   {
+    "df": 4,
+    "scale": 3.64818341592347,
+    "loglik": -49390.86291368532
+   },
+   {
+    "df": 5,
+    "scale": 3.9963847016350718,
+    "loglik": -49258.581620120356
+   },
+   {
+    "df": 6,
+    "scale": 4.212559354473087,
+    "loglik": -49217.76241883776
+   },
+   {
+    "df": 7,
+    "scale": 4.360413190811006,
+    "loglik": -49206.12097213813
+   },
+   {
+    "df": 8,
+    "scale": 4.468093928548117,
+    "loglik": -49205.875273071906
+   },
+   {
+    "df": 9,
+    "scale": 4.550084142165414,
+    "loglik": -49210.517560569395
+   },
+   {
+    "df": 10,
+    "scale": 4.614627566548622,
+    "loglik": -49217.287811787486
+   },
+   {
+    "df": 12,
+    "scale": 4.709784537927228,
+    "loglik": -49232.731417819625
+   },
+   {
+    "df": 15,
+    "scale": 4.803056652741702,
+    "loglik": -49255.04598835854
+   },
+   {
+    "df": 20,
+    "scale": 4.89455166743536,
+    "loglik": -49285.27366094665
+   },
+   {
+    "df": 25,
+    "scale": 4.9486367531516215,
+    "loglik": -49307.91658028596
+   },
+   {
+    "df": 30,
+    "scale": 4.98436744642108,
+    "loglik": -49325.23122682815
+   },
+   {
+    "df": 40,
+    "scale": 5.028673806165614,
+    "loglik": -49349.789686788215
+   },
+   {
+    "df": 50,
+    "scale": 5.055071225367705,
+    "loglik": -49366.32097498211
+   },
+   {
+    "df": 75,
+    "scale": 5.090054834659418,
+    "loglik": -49390.84115168986
+   },
+   {
+    "df": 100,
+    "scale": 5.107456782292858,
+    "loglik": -49404.32973705321
+   },
+   {
+    "df": 150,
+    "scale": 5.124799639609231,
+    "loglik": -49418.76677853828
+   },
+   {
+    "df": 200,
+    "scale": 5.133449096632175,
+    "loglik": -49426.37990814612
+   }
+  ],
+  "model_selection": {
+   "criterion": "AIC = -2*loglik + 2*k (k=2 normal: loc,scale; k=3 student-t: loc,scale,df)",
+   "normal_aic": 98906.08337068556,
+   "student_t_aic": 98417.75054614381,
+   "primary_family_selected": "student_t",
+   "selection_note": "Student-t's df was chosen by a log-likelihood GRID PROFILE, not a joint MLE of (loc, scale, df); this is a documented simplification (see could_not_establish)."
+  },
+  "heteroscedasticity_check": {
+   "intercept_mean_abs_resid": 2.3979733273898196,
+   "slope_per_pred_point": 0.21841222510696662,
+   "t_stat": 41.86170155034202,
+   "p_value_normal_approx": 0.0,
+   "bin_level_pearson_r_meanpred_vs_stdresid": 0.9627067359187232,
+   "row_level_spearman_absresid_vs_pred": 0.35026373768374475,
+   "heteroscedasticity_material": true
+  },
+  "season_level_parameter_stability": [
+   {
+    "season": 2021,
+    "n": 3407,
+    "bias_mean_pred_minus_actual": -0.5334898737892574,
+    "std_ddof1": 7.234719430593093,
+    "fitted_fold": false
+   },
+   {
+    "season": 2022,
+    "n": 3939,
+    "bias_mean_pred_minus_actual": -0.012514875116245801,
+    "std_ddof1": 5.4076957846549005,
+    "fitted_fold": true
+   },
+   {
+    "season": 2023,
+    "n": 4394,
+    "bias_mean_pred_minus_actual": -0.16814138515143445,
+    "std_ddof1": 5.606135333320797,
+    "fitted_fold": true
+   },
+   {
+    "season": 2024,
+    "n": 4371,
+    "bias_mean_pred_minus_actual": -0.018817006981902477,
+    "std_ddof1": 5.577012614299874,
+    "fitted_fold": true
+   },
+   {
+    "season": 2025,
+    "n": 5213,
+    "bias_mean_pred_minus_actual": -0.041831636323789965,
+    "std_ddof1": 5.610880459986943,
+    "fitted_fold": true
+   },
+   {
+    "season": 2026,
+    "n": 4053,
+    "bias_mean_pred_minus_actual": -0.11591554865358554,
+    "std_ddof1": 5.738475643822037,
+    "fitted_fold": true
+   }
+  ],
+  "propagated_parameter_uncertainty": {
+   "loc_ci95": [
+    -0.10599573189724043,
+    0.08403080505087587
+   ],
+   "scale_ci95": [
+    5.068583972029622,
+    5.251544002523617
+   ],
+   "n_boot": 1000,
+   "seed": 20260806,
+   "method": "cluster_bootstrap_over_game_dates_percentile_refit_per_draw"
+  }
+ },
+ "translation_function": {
+  "version": "m13_translation_v1",
+  "formula": "P(points > line) = CDF_e(pred_point - line), where e = pred_point - actual is the fitted out-of-fold residual distribution (location = fitted bias, scale = fitted dispersion). Four named, deterministic variants are reported (never blended): normal (homoscedastic), student_t (homoscedastic, heavier-tailed), empirical (nonparametric ECDF of fit_pool residuals, no shape assumption), het_normal (normal with dispersion linear in pred_point, offered only as a sensitivity probe -- see heteroscedasticity_material).",
+  "primary_variant": "student_t",
+  "deterministic": true,
+  "per_row_fields_recorded": [
+   "model_version",
+   "forecast_cutoff",
+   "translation_schema_version",
+   "pred_point",
+   "consensus_line",
+   "all four p_over_* variants",
+   "p_over_market_devig",
+   "diff_normal_minus_market"
+  ],
+  "per_row_output": {
+   "path": "experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/translation_rows.parquet",
+   "sha256": "9935e1dd63dcb2ede90e14efd2874e7801fff6e404c1c5bd005661e237ba01cd",
+   "n_rows": 5889
+  }
+ },
+ "calibration": {
+  "universe": "A_primary matched player-games (headline) / all_tiers (labelled, never headline) -- STRICT INTERSECTION of scored model rows and resolved two-sided props, held out from the distribution fit",
+  "cells": {
+   "A_primary": {
+    "n_player_games": 5737,
+    "n_games": 719,
+    "over_base_rate": 0.47394108419034336,
+    "market": {
+     "brier": 0.24884099760943712,
+     "log_loss": 0.6908139936327337,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 1,
+       "mean_predicted_p": 0.2539931919350615,
+       "observed_frequency": 0.0
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 15,
+       "mean_predicted_p": 0.358202666104321,
+       "observed_frequency": 0.2
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 3077,
+       "mean_predicted_p": 0.48007221461380484,
+       "observed_frequency": 0.4523886902827429
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 2642,
+       "mean_predicted_p": 0.5181216792991166,
+       "observed_frequency": 0.5007570022710068
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 2,
+       "mean_predicted_p": 0.609064762369776,
+       "observed_frequency": 0.5
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      }
+     ]
+    },
+    "normal": {
+     "brier": 0.2718700399980593,
+     "log_loss": 0.7567584114376876,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 143,
+       "mean_predicted_p": 0.04878458408328988,
+       "observed_frequency": 0.4825174825174825
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 105,
+       "mean_predicted_p": 0.158761673435553,
+       "observed_frequency": 0.5333333333333333
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 208,
+       "mean_predicted_p": 0.26328379641822663,
+       "observed_frequency": 0.4855769230769231
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 587,
+       "mean_predicted_p": 0.35999332942722506,
+       "observed_frequency": 0.4787052810902896
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 1540,
+       "mean_predicted_p": 0.45432286982195913,
+       "observed_frequency": 0.4727272727272727
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 1945,
+       "mean_predicted_p": 0.5476976177413277,
+       "observed_frequency": 0.4668380462724936
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 968,
+       "mean_predicted_p": 0.6390282021008229,
+       "observed_frequency": 0.4865702479338843
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 197,
+       "mean_predicted_p": 0.7376092623611605,
+       "observed_frequency": 0.4467005076142132
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 41,
+       "mean_predicted_p": 0.8388664746205734,
+       "observed_frequency": 0.3902439024390244
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 3,
+       "mean_predicted_p": 0.9321945161989841,
+       "observed_frequency": 0.3333333333333333
+      }
+     ],
+     "mean_p_over": 0.4977745868263728,
+     "call_over_rate": 0.5497646853756318
+    },
+    "student_t": {
+     "brier": 0.27482439619740084,
+     "log_loss": 0.7632200742418483,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 145,
+       "mean_predicted_p": 0.04652670194782317,
+       "observed_frequency": 0.4827586206896552
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 114,
+       "mean_predicted_p": 0.14671293495381557,
+       "observed_frequency": 0.5263157894736842
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 256,
+       "mean_predicted_p": 0.2561671802051889,
+       "observed_frequency": 0.4921875
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 639,
+       "mean_predicted_p": 0.3588106769580795,
+       "observed_frequency": 0.47417840375586856
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 1429,
+       "mean_predicted_p": 0.4531981114656154,
+       "observed_frequency": 0.4730580825752274
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 1775,
+       "mean_predicted_p": 0.5482222948449672,
+       "observed_frequency": 0.46704225352112677
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 1046,
+       "mean_predicted_p": 0.6411987079420519,
+       "observed_frequency": 0.48279158699808794
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 269,
+       "mean_predicted_p": 0.7372630022849624,
+       "observed_frequency": 0.4684014869888476
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 59,
+       "mean_predicted_p": 0.8388899671819974,
+       "observed_frequency": 0.3898305084745763
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 5,
+       "mean_predicted_p": 0.9253194808648987,
+       "observed_frequency": 0.2
+      }
+     ],
+     "mean_p_over": 0.49889904885832237,
+     "call_over_rate": 0.5497646853756318
+    },
+    "empirical": {
+     "brier": 0.2743376971397115,
+     "log_loss": 0.7594090599238038,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 143,
+       "mean_predicted_p": 0.05871451899171239,
+       "observed_frequency": 0.4825174825174825
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 128,
+       "mean_predicted_p": 0.15417191947160003,
+       "observed_frequency": 0.5234375
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 391,
+       "mean_predicted_p": 0.2568851313950092,
+       "observed_frequency": 0.4680306905370844
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 1202,
+       "mean_predicted_p": 0.35785431449996413,
+       "observed_frequency": 0.49417637271214643
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 1648,
+       "mean_predicted_p": 0.450294304751767,
+       "observed_frequency": 0.4654126213592233
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 1268,
+       "mean_predicted_p": 0.5477017594333712,
+       "observed_frequency": 0.46214511041009465
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 686,
+       "mean_predicted_p": 0.6423915580693006,
+       "observed_frequency": 0.48833819241982507
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 201,
+       "mean_predicted_p": 0.7418371574869128,
+       "observed_frequency": 0.4527363184079602
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 61,
+       "mean_predicted_p": 0.8356699889033373,
+       "observed_frequency": 0.4098360655737705
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 9,
+       "mean_predicted_p": 0.9199287766915537,
+       "observed_frequency": 0.2222222222222222
+      }
+     ],
+     "mean_p_over": 0.4609254149047845,
+     "call_over_rate": 0.38783336238452154
+    },
+    "het_normal": {
+     "brier": 0.26594896736514423,
+     "log_loss": 0.7407836496483652,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 116,
+       "mean_predicted_p": 0.043139244603082265,
+       "observed_frequency": 0.49137931034482757
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 128,
+       "mean_predicted_p": 0.15415554456427483,
+       "observed_frequency": 0.5
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 130,
+       "mean_predicted_p": 0.25634242080175096,
+       "observed_frequency": 0.5076923076923077
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 497,
+       "mean_predicted_p": 0.35852502399055086,
+       "observed_frequency": 0.4688128772635815
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 1712,
+       "mean_predicted_p": 0.4578689591486589,
+       "observed_frequency": 0.4760514018691589
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 2463,
+       "mean_predicted_p": 0.5465586432215941,
+       "observed_frequency": 0.4701583434835566
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 635,
+       "mean_predicted_p": 0.6319724684492903,
+       "observed_frequency": 0.47086614173228347
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 56,
+       "mean_predicted_p": 0.7286933570067512,
+       "observed_frequency": 0.48214285714285715
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      }
+     ],
+     "mean_p_over": 0.4895245695451776,
+     "call_over_rate": 0.5497646853756318
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.021128869339680625,
+     "hi": 0.03118823773883664,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.05670980434033991,
+     "hi": 0.09007039318966199,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "sensitivity_across_variants": {
+     "rmse_normal_vs_student_t": 0.011106650619655116,
+     "rmse_normal_vs_empirical": 0.04348690098694966,
+     "rmse_normal_vs_het_normal": 0.029961711583566975,
+     "max_abs_normal_vs_student_t": 0.02082774851101049,
+     "call_flip_rate_normal_vs_student_t": 0.0,
+     "call_flip_rate_normal_vs_empirical": 0.16193132299111035,
+     "call_flip_rate_normal_vs_het_normal": 0.0
+    }
+   },
+   "all_tiers": {
+    "n_player_games": 5889,
+    "n_games": 738,
+    "over_base_rate": 0.4747834946510443,
+    "market": {
+     "brier": 0.24879538873264093,
+     "log_loss": 0.6907229076359114,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 1,
+       "mean_predicted_p": 0.2539931919350615,
+       "observed_frequency": 0.0
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 15,
+       "mean_predicted_p": 0.358202666104321,
+       "observed_frequency": 0.2
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 3161,
+       "mean_predicted_p": 0.4800435566171297,
+       "observed_frequency": 0.4517557734894021
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 2710,
+       "mean_predicted_p": 0.5180887880483432,
+       "observed_frequency": 0.5033210332103321
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 2,
+       "mean_predicted_p": 0.609064762369776,
+       "observed_frequency": 0.5
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      }
+     ]
+    },
+    "normal": {
+     "brier": 0.27426843759531055,
+     "log_loss": 0.7676551797704115,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 191,
+       "mean_predicted_p": 0.04839656922980099,
+       "observed_frequency": 0.4973821989528796
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 134,
+       "mean_predicted_p": 0.15598998549656254,
+       "observed_frequency": 0.5298507462686567
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 236,
+       "mean_predicted_p": 0.26362664000504177,
+       "observed_frequency": 0.4957627118644068
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 604,
+       "mean_predicted_p": 0.3602361542428084,
+       "observed_frequency": 0.4768211920529801
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 1552,
+       "mean_predicted_p": 0.4542441459453087,
+       "observed_frequency": 0.47164948453608246
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 1959,
+       "mean_predicted_p": 0.5476349072626701,
+       "observed_frequency": 0.4660541092394079
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 972,
+       "mean_predicted_p": 0.6391584075842331,
+       "observed_frequency": 0.4886831275720165
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 197,
+       "mean_predicted_p": 0.7376092623611605,
+       "observed_frequency": 0.4467005076142132
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 41,
+       "mean_predicted_p": 0.8388664746205734,
+       "observed_frequency": 0.3902439024390244
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 3,
+       "mean_predicted_p": 0.9321945161989841,
+       "observed_frequency": 0.3333333333333333
+      }
+     ],
+     "mean_p_over": 0.4910018221570778,
+     "call_over_rate": 0.5386313465783664
+    },
+    "student_t": {
+     "brier": 0.2772921936918319,
+     "log_loss": 0.773844054685091,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 193,
+       "mean_predicted_p": 0.04603121778422879,
+       "observed_frequency": 0.49740932642487046
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 143,
+       "mean_predicted_p": 0.14319704350810564,
+       "observed_frequency": 0.5244755244755245
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 284,
+       "mean_predicted_p": 0.25517631399207175,
+       "observed_frequency": 0.5
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 656,
+       "mean_predicted_p": 0.3586932069668671,
+       "observed_frequency": 0.4725609756097561
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 1441,
+       "mean_predicted_p": 0.4530680634891609,
+       "observed_frequency": 0.4718945176960444
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 1786,
+       "mean_predicted_p": 0.5480824074081821,
+       "observed_frequency": 0.4669652855543113
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 1053,
+       "mean_predicted_p": 0.641285748826262,
+       "observed_frequency": 0.48338081671415006
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 269,
+       "mean_predicted_p": 0.7372630022849624,
+       "observed_frequency": 0.4684014869888476
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 59,
+       "mean_predicted_p": 0.8388899671819974,
+       "observed_frequency": 0.3898305084745763
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 5,
+       "mean_predicted_p": 0.9253194808648987,
+       "observed_frequency": 0.2
+      }
+     ],
+     "mean_p_over": 0.49186602562637016,
+     "call_over_rate": 0.5386313465783664
+    },
+    "empirical": {
+     "brier": 0.27672484933707153,
+     "log_loss": 0.7687187217327397,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 191,
+       "mean_predicted_p": 0.058419950876952,
+       "observed_frequency": 0.4973821989528796
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 157,
+       "mean_predicted_p": 0.15067781073320524,
+       "observed_frequency": 0.5222929936305732
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 419,
+       "mean_predicted_p": 0.25506484316462874,
+       "observed_frequency": 0.47494033412887826
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 1231,
+       "mean_predicted_p": 0.35753767876851267,
+       "observed_frequency": 0.49147034930950445
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 1659,
+       "mean_predicted_p": 0.45043836967461537,
+       "observed_frequency": 0.4653405666063894
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 1271,
+       "mean_predicted_p": 0.5477651972052052,
+       "observed_frequency": 0.46105428796223447
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 690,
+       "mean_predicted_p": 0.6425612772131444,
+       "observed_frequency": 0.49130434782608695
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 201,
+       "mean_predicted_p": 0.7418371574869128,
+       "observed_frequency": 0.4527363184079602
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 61,
+       "mean_predicted_p": 0.8356699889033373,
+       "observed_frequency": 0.4098360655737705
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 9,
+       "mean_predicted_p": 0.9199287766915537,
+       "observed_frequency": 0.2222222222222222
+      }
+     ],
+     "mean_p_over": 0.454582149420258,
+     "call_over_rate": 0.3790117167600611
+    },
+    "het_normal": {
+     "brier": 0.2683818149332686,
+     "log_loss": 0.7510658939839634,
+     "reliability": [
+      {
+       "bin_lo": 0.0,
+       "bin_hi": 0.1,
+       "n": 155,
+       "mean_predicted_p": 0.04284111155537697,
+       "observed_frequency": 0.5032258064516129
+      },
+      {
+       "bin_lo": 0.1,
+       "bin_hi": 0.2,
+       "n": 166,
+       "mean_predicted_p": 0.15205820305341874,
+       "observed_frequency": 0.5060240963855421
+      },
+      {
+       "bin_lo": 0.2,
+       "bin_hi": 0.30000000000000004,
+       "n": 144,
+       "mean_predicted_p": 0.2551699355939653,
+       "observed_frequency": 0.5069444444444444
+      },
+      {
+       "bin_lo": 0.30000000000000004,
+       "bin_hi": 0.4,
+       "n": 528,
+       "mean_predicted_p": 0.35764923748811556,
+       "observed_frequency": 0.4715909090909091
+      },
+      {
+       "bin_lo": 0.4,
+       "bin_hi": 0.5,
+       "n": 1724,
+       "mean_predicted_p": 0.4577908576429999,
+       "observed_frequency": 0.47505800464037123
+      },
+      {
+       "bin_lo": 0.5,
+       "bin_hi": 0.6000000000000001,
+       "n": 2477,
+       "mean_predicted_p": 0.5465024809216552,
+       "observed_frequency": 0.4695195801372628
+      },
+      {
+       "bin_lo": 0.6000000000000001,
+       "bin_hi": 0.7000000000000001,
+       "n": 639,
+       "mean_predicted_p": 0.6321691053540422,
+       "observed_frequency": 0.47417840375586856
+      },
+      {
+       "bin_lo": 0.7000000000000001,
+       "bin_hi": 0.8,
+       "n": 56,
+       "mean_predicted_p": 0.7286933570067512,
+       "observed_frequency": 0.48214285714285715
+      },
+      {
+       "bin_lo": 0.8,
+       "bin_hi": 0.9,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      },
+      {
+       "bin_lo": 0.9,
+       "bin_hi": 1.0,
+       "n": 0,
+       "mean_predicted_p": null,
+       "observed_frequency": null
+      }
+     ],
+     "mean_p_over": 0.4831289305909815,
+     "call_over_rate": 0.5386313465783664
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.023436666171285307,
+     "hi": 0.034347831109170196,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.06529921305499063,
+     "hi": 0.1037197369262059,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "sensitivity_across_variants": {
+     "rmse_normal_vs_student_t": 0.01116759233378874,
+     "rmse_normal_vs_empirical": 0.04325233786221253,
+     "rmse_normal_vs_het_normal": 0.02959995987045719,
+     "max_abs_normal_vs_student_t": 0.02082774851101049,
+     "call_flip_rate_normal_vs_student_t": 0.0,
+     "call_flip_rate_normal_vs_empirical": 0.15961962981830533,
+     "call_flip_rate_normal_vs_het_normal": 0.0
+    }
+   }
+  },
+  "headline_verdict": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+  "headline_verdict_note": "Compares the PRIMARY translation variant's squared/log-loss error to the market's de-vigged squared/log-loss error, paired per player-game, game-date-clustered 95% CI. The translated probability's error is significantly HIGHER than the market's on this universe -- report this plainly; it is the honest prerequisite to any future edge claim, per this node's mandate."
+ },
+ "could_not_establish": [
+  "A joint MLE of (location, scale, degrees-of-freedom) for the Student-t alternative: no scipy is available in this environment, so df was chosen by a log-likelihood grid profile over loc/scale fixed by the method of moments, not a joint optimizer. The AIC comparison against the normal fit is still valid (both are fitted log-likelihoods evaluated on the same data) but the Student-t parameters are not the global MLE.",
+  "A true parametric skew-normal fit: not attempted (no scipy). Skewness is reported as a moment diagnostic only (residual_diagnostics.skewness_fisher_pearson); if it is material and the normal/student-t variants both miss it, that is a limitation of both fitted variants, not resolved by this node.",
+  "Whether the translated probability is calibrated CONDITIONAL on model confidence, injury context, or minutes-uncertainty (e.g. p_active from the same legacy run): not attempted; the translation is unconditional on anything but pred_point and the market line, per the mandate's scope (translate the point prediction, not re-model the player).",
+  "Any timing, CLV, lead-lag, or stale-window claim from the props archive: structurally out of scope for this T1 archive (D016/P2B; contract section 5) and not attempted here.",
+  "Calibration for stat families other than points (rebounds/assists/steals/blocks/threes/turnovers): the legacy lane never registered these targets (PROBE_LEGACY.md); the props archive's market_key is exclusively player_points (asserted in compute_model_vs_market.py); no translation exists for them because no matched model-and-market data exists for them.",
+  "Whether the het_normal variant's fitted heteroscedasticity is causally meaningful (vs. an artifact of usage-tier composition at high/low predicted points): reported as a fitted sensitivity probe only, per heteroscedasticity_material's significance test, never adopted as the primary variant regardless of its p-value, per this node's mandate to report the assumption used and its sensitivity, not to search for the best-fitting one after seeing calibration results (which would be tuning-on-results)."
+ ],
+ "contradictions_found": [],
+ "result_hash": "17cfe53beb3cec98912520c212474c1f67bf86777b2670a7392ab84a79bf6391"
+}
