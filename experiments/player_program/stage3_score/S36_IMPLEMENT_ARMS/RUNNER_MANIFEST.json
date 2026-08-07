@@ -1,0 +1,786 @@
+{
+ "schema": "player_program/s36_implementation/1",
+ "node": "S36_IMPLEMENT_ARMS",
+ "lane": "score",
+ "cycle": 2,
+ "epistemic_status": "IMPLEMENTATION. Unit/synthetic/identity/schema tests only; no comparative historical performance is revealed.",
+ "root_stated_explicitly": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program",
+ "authorises": "NOTHING beyond what S35 authorised. This node implements; it does not fit, does not adjudicate and does not mark its own work accepted.",
+ "not_authorised_fitting": "This freeze does NOT authorise fitting. Fitting requires a PASSED S37 implementation audit. Until S37 passes, no arm and no K0 may be fitted and no performance number may be computed.",
+ "inputs_verified_sha256": {
+  "data/masters/master_team.parquet": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528",
+  "experiments/market_program/SCORE_BASELINES/score_baseline_rows.parquet": "5d1fc4c9af2334a6edd6ddffab91fe7cff5596578d9995937859a86cfc1e1452",
+  "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18",
+  "data/reference/team_cities.csv": "10a544fdc52a9c80c1573437c9838b11815c9eafe6ac2cf052be17a2128ac42d",
+  "experiments/player_program/stage3_score/S33R_PREREGISTRATION_REPAIR/SPEC_V2.json": "6402fc11b9118ef6978ca4feb4aec10e3b811209773b7ae5f03ba29962a8e945",
+  "experiments/player_program/stage3_score/S35_FREEZE_TASK_CARDS/SPEC.json": "36b59c9b7d8878f10f210fb04f9b82e882417dbef47163f9c5007045639c1183",
+  "experiments/player_program/comparison_gate.py": "c2d242581cc7551c6ce7d3aaf554f0cc18fd9b1f72677edd61ba95f91a7b5b92"
+ },
+ "input_pins_all_matched": true,
+ "counts": {
+  "arms_implemented": 11,
+  "element_cards_implemented": 17,
+  "arms_withdrawn_not_implemented": [
+   "SC07_REF_CREW_TOTALS"
+  ],
+  "designs_built_on_real_universe": 16,
+  "designs_deferred": 1,
+  "check": "11 arms, 17 element cards; SC07 withdrawn by measurement"
+ },
+ "elements": [
+  {
+   "element_id": "SC01_OPP_ADJ_INTERACTING::E2_FINAL_MARGIN_HOME",
+   "arm_id": "SC01_OPP_ADJ_INTERACTING",
+   "estimand": "E2_FINAL_MARGIN_HOME",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_OPP_INTERACTION",
+   "card_sha256": "2cce2b9d485937f27dd7037e63e3d32e7ce3d064221e33bb01385f7e7ce47718",
+   "module": "sc01_opp_adj_interacting.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "early-season stratum failure: Delta-MAE(E2) vs K0 <= 0 in the early stratum, pinned to ONE predicate - BOTH teams at most 12 same-season strictly-prior completed games (max(n_H, n_A) <= 12; measured stratum 472 pooled / 75/76/74/81/92 per test season)",
+    "shrinkage collapse: the pinned selection rule drives lambda to the grid maximum in >= 4 of 5 folds",
+    "side-gain cancellation: per-side MAE improves but game-level Delta <= 0 with the covariance receipt showing side gains cancelling"
+   ],
+   "mandatory_receipts": [
+    "early_stratum_delta_table",
+    "per_fold_ridge_path_table",
+    "section5_covariance",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": [
+    "SECTION-5 COVARIANCE OBLIGATION is BINDING: per-side residual variances, home/away residual covariance and corr(e_home, e_away) are first-class receipted sealed outputs"
+   ]
+  },
+  {
+   "element_id": "SC01_OPP_ADJ_INTERACTING::E3_HOME_WIN_PROB",
+   "arm_id": "SC01_OPP_ADJ_INTERACTING",
+   "estimand": "E3_HOME_WIN_PROB",
+   "primary_metric": "brier_raw_model_probability",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_OPP_INTERACTION",
+   "card_sha256": "580c306e8cdb896e5f278f0001fae38bc2fd26ad9f2554c2fe855bbb93dfa9da",
+   "module": "sc01_opp_adj_interacting.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "early-season stratum failure: Delta-MAE(E2) vs K0 <= 0 in the early stratum, pinned to ONE predicate - BOTH teams at most 12 same-season strictly-prior completed games (max(n_H, n_A) <= 12; measured stratum 472 pooled / 75/76/74/81/92 per test season)",
+    "shrinkage collapse: the pinned selection rule drives lambda to the grid maximum in >= 4 of 5 folds",
+    "side-gain cancellation: per-side MAE improves but game-level Delta <= 0 with the covariance receipt showing side gains cancelling"
+   ],
+   "mandatory_receipts": [
+    "early_stratum_delta_table",
+    "per_fold_ridge_path_table",
+    "section5_covariance",
+    "R-A1-EXCEPTIONS",
+    "R_SC08_FLOOR"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": [
+    "R_SC08_FLOOR is registered here as a NON-GATING agreement receipt (O5)"
+   ]
+  },
+  {
+   "element_id": "SC01_OPP_ADJ_INTERACTING::E1_GAME_TOTAL",
+   "arm_id": "SC01_OPP_ADJ_INTERACTING",
+   "estimand": "E1_GAME_TOTAL",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_OPP_INTERACTION",
+   "card_sha256": "4b74bf2b00606bcc194bb376476942b87f937b66ffc765f811114fdebbdf4c14",
+   "module": "sc01_opp_adj_interacting.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "early-season stratum failure: Delta-MAE(E2) vs K0 <= 0 in the early stratum, pinned to ONE predicate - BOTH teams at most 12 same-season strictly-prior completed games (max(n_H, n_A) <= 12; measured stratum 472 pooled / 75/76/74/81/92 per test season)",
+    "shrinkage collapse: the pinned selection rule drives lambda to the grid maximum in >= 4 of 5 folds",
+    "side-gain cancellation: per-side MAE improves but game-level Delta <= 0 with the covariance receipt showing side gains cancelling"
+   ],
+   "mandatory_receipts": [
+    "early_stratum_delta_table",
+    "per_fold_ridge_path_table",
+    "section5_covariance",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": []
+  },
+  {
+   "element_id": "SC02_A07_SCORE_TRANSIENT::E1_GAME_TOTAL",
+   "arm_id": "SC02_A07_SCORE_TRANSIENT",
+   "estimand": "E1_GAME_TOTAL",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_EARLY_SEASON",
+   "card_sha256": "89ec1bf1559b952dc0230f5466c9342175fd4927580db62d096eac7da0dc88e8",
+   "module": "sc02_a07_score_transient.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "CONCENTRATION KILL (mandatory per D042/D043): improvement concentrating outside the early stratum (min(n_H, n_A) <= 5; measured 249 pooled / 40-49 per test season) kills the arm as an early-season claim regardless of pooled results",
+    "delta 95% interval covers 0 pooled, or sign of delta-hat flips across folds",
+    "unevaluable against null-granted columns: kappa_2 (2-norm condition number of the fold's TRAINING design [intercept, standardised null-granted column, standardised treatment term]) >= 1000 marks the fold UNEVALUABLE; failure in >= 2 folds retires the arm UNEVALUATED"
+   ],
+   "mandatory_receipts": [
+    "early_stratum_concentration_table",
+    "per_fold_coefficient_table",
+    "per_fold_kappa2_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": []
+  },
+  {
+   "element_id": "SC02_A07_SCORE_TRANSIENT::E2_FINAL_MARGIN_HOME",
+   "arm_id": "SC02_A07_SCORE_TRANSIENT",
+   "estimand": "E2_FINAL_MARGIN_HOME",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_EARLY_SEASON",
+   "card_sha256": "63b3d2bcd2cecb736f1506c068d63a0cce16ffc6acb63c80c088ac2ca1d63fa5",
+   "module": "sc02_a07_score_transient.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "CONCENTRATION KILL (mandatory per D042/D043): improvement concentrating outside the early stratum (min(n_H, n_A) <= 5; measured 249 pooled / 40-49 per test season) kills the arm as an early-season claim regardless of pooled results",
+    "delta 95% interval covers 0 pooled, or sign of delta-hat flips across folds",
+    "unevaluable against null-granted columns: kappa_2 (2-norm condition number of the fold's TRAINING design [intercept, standardised null-granted column, standardised treatment term]) >= 1000 marks the fold UNEVALUABLE; failure in >= 2 folds retires the arm UNEVALUATED"
+   ],
+   "mandatory_receipts": [
+    "early_stratum_concentration_table",
+    "per_fold_coefficient_table",
+    "per_fold_kappa2_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": []
+  },
+  {
+   "element_id": "SC03_SEASON_CARRYOVER_PRIOR::E2_FINAL_MARGIN_HOME",
+   "arm_id": "SC03_SEASON_CARRYOVER_PRIOR",
+   "estimand": "E2_FINAL_MARGIN_HOME",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_EARLY_SEASON",
+   "card_sha256": "0da4472b2c8aa052b6fc0ff220a2458673a28bbb928457ca3af552c2694b0dd8",
+   "module": "sc03_season_carryover_prior.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "early-subset failure: pooled Delta <= 0 on the min(n_H, n_A) < 10 subset (measured 399 pooled / 62-78 per test season); a pooled pass driven by the late-season complement is spurious and the arm dies regardless of the pooled number",
+    "sign inconsistency: fitted beta does not carry the same sign in >= 3 of the 4 evaluable folds (train_lt_2023..train_lt_2026; fold 1 structurally deactivated)",
+    "single-season dependence: leave-one-test-season-out receipt flips the early-subset Delta to <= 0"
+   ],
+   "mandatory_receipts": [
+    "early_subset_delta_table",
+    "per_fold_coefficient_table",
+    "leave_one_test_season_out_delta_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [
+    "train_lt_2022"
+   ],
+   "sign_pin": null,
+   "notes": []
+  },
+  {
+   "element_id": "SC03_SEASON_CARRYOVER_PRIOR::E1_GAME_TOTAL",
+   "arm_id": "SC03_SEASON_CARRYOVER_PRIOR",
+   "estimand": "E1_GAME_TOTAL",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_EARLY_SEASON",
+   "card_sha256": "95c0174b1078ad09634181c25a172a7964c547dc13521375e5012d78f7b070eb",
+   "module": "sc03_season_carryover_prior.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "early-subset failure: pooled Delta <= 0 on the min(n_H, n_A) < 10 subset (measured 399 pooled / 62-78 per test season); a pooled pass driven by the late-season complement is spurious and the arm dies regardless of the pooled number",
+    "sign inconsistency: fitted beta does not carry the same sign in >= 3 of the 4 evaluable folds (train_lt_2023..train_lt_2026; fold 1 structurally deactivated)",
+    "single-season dependence: leave-one-test-season-out receipt flips the early-subset Delta to <= 0"
+   ],
+   "mandatory_receipts": [
+    "early_subset_delta_table",
+    "per_fold_coefficient_table",
+    "leave_one_test_season_out_delta_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [
+    "train_lt_2022"
+   ],
+   "sign_pin": null,
+   "notes": []
+  },
+  {
+   "element_id": "SC04_HCA_LEAGUE_DRIFT::E2_FINAL_MARGIN_HOME",
+   "arm_id": "SC04_HCA_LEAGUE_DRIFT",
+   "estimand": "E2_FINAL_MARGIN_HOME",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_HOME_COURT",
+   "card_sha256": "d105831f8146bc358d735ad6bb2cbec1273a81b0fa5d51d8816a5d035f88ca59",
+   "module": "sc04_hca_league_drift.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "beta pooled 95% CI covers 0 AND covers 0 in >= 4 of 5 folds",
+    "single-test-season dependence: pooled Delta > 0 but Delta <= 0 after removing any single test season (2021 is never a test season under the pinned folds)",
+    "fitted beta > 1.5 or < 0: outside the mechanically sensible range for a partially-absorbed drift term, indicating specification leak"
+   ],
+   "mandatory_receipts": [
+    "coefficient_table_pooled_and_per_fold",
+    "leave_one_test_season_out_delta_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": [
+    "disputed partition: {SC04, SC05} vs {SC04, SC11} merged into FAM_S2_LAGGED_LEAGUE_DRIFT; the element runs under BOTH and the stricter governs"
+   ]
+  },
+  {
+   "element_id": "SC05_HCA_TEAM_OFFSETS::E2_FINAL_MARGIN_HOME",
+   "arm_id": "SC05_HCA_TEAM_OFFSETS",
+   "estimand": "E2_FINAL_MARGIN_HOME",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_HOME_COURT",
+   "card_sha256": "af06a2100b2a0d56e621200af3691582049daa266e816ab57524efd3106dc6de",
+   "module": "sc05_hca_team_offsets.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "shrinkage collapse: 90th-percentile shrunk |offset| < 0.5 points in EVERY fold AND pooled Delta-MAE(E2) CI covers zero (the team component is empty; its residue is SC04's mechanism)",
+    "pooled OOF Delta-MAE(E2) <= 0 vs K0_MATCHED (uncorrected)"
+   ],
+   "mandatory_receipts": [
+    "per_fold_shrinkage_report",
+    "delta_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": [
+    "dual partition registered on the card itself (S34 finding B7): A = {SC04, SC05}; B leaves {SC05} ALONE; must survive Holm under both"
+   ]
+  },
+  {
+   "element_id": "SC06_SCHED_FATIGUE_DIFF::E2_FINAL_MARGIN_HOME",
+   "arm_id": "SC06_SCHED_FATIGUE_DIFF",
+   "estimand": "E2_FINAL_MARGIN_HOME",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_SCHEDULE_FATIGUE",
+   "card_sha256": "24abe6f2864d2678cf680d9c0776f8eca87baf8d5ae772c4392e82470e7c1acc",
+   "module": "sc06_sched_fatigue_diff.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "fitted beta wrong sign (positive) pooled, or wrong sign in >= 3 of 5 folds",
+    "affected-subset failure: Delta <= 0 on the |F_H - F_A| >= 1 subset",
+    "era instability: subset-Delta sign differs between pre-2024 and 2024+ AND the pooled Delta depends on the pre-2024 split alone (POWER STATEMENT MANDATORY, see era_split_receipt)",
+    "A1-SENSITIVITY: removing the enumerated game_date exception clusters (10 release-order displaced + 6 without a second-endpoint witness) flips the SIGN of the affected-subset Delta"
+   ],
+   "mandatory_receipts": [
+    "per_fold_coefficient_table",
+    "affected_subset_delta_table_with_subset_count",
+    "era_split_table_WITH_POWER_STATEMENT",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": "beta_fatigue NEGATIVE",
+   "notes": []
+  },
+  {
+   "element_id": "SC06_SCHED_FATIGUE_DIFF::E3_HOME_WIN_PROB",
+   "arm_id": "SC06_SCHED_FATIGUE_DIFF",
+   "estimand": "E3_HOME_WIN_PROB",
+   "primary_metric": "brier_raw_model_probability",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_SCHEDULE_FATIGUE",
+   "card_sha256": "77aab51b32f4de4f868fd4c9d9c42f56d524e76a648d6ba96a9957421b515f20",
+   "module": "sc06_sched_fatigue_diff.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "fitted beta wrong sign (positive) pooled, or wrong sign in >= 3 of 5 folds",
+    "affected-subset failure: Delta <= 0 on the |F_H - F_A| >= 1 subset",
+    "era instability: subset-Delta sign differs between pre-2024 and 2024+ AND the pooled Delta depends on the pre-2024 split alone (POWER STATEMENT MANDATORY, see era_split_receipt)",
+    "A1-SENSITIVITY: removing the enumerated game_date exception clusters (10 release-order displaced + 6 without a second-endpoint witness) flips the SIGN of the affected-subset Delta"
+   ],
+   "mandatory_receipts": [
+    "per_fold_coefficient_table",
+    "affected_subset_delta_table_with_subset_count",
+    "era_split_table_WITH_POWER_STATEMENT",
+    "R-A1-EXCEPTIONS",
+    "R_SC08_FLOOR"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": "beta_fatigue NEGATIVE",
+   "notes": [
+    "R_SC08_FLOOR is registered here as a NON-GATING agreement receipt (O5)"
+   ]
+  },
+  {
+   "element_id": "SC08_SIGMA_MARGIN_MAP::E3_HOME_WIN_PROB",
+   "arm_id": "SC08_SIGMA_MARGIN_MAP",
+   "estimand": "E3_HOME_WIN_PROB",
+   "primary_metric": "brier_raw_model_probability",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_DISPERSION",
+   "card_sha256": "348ddc3287230bf29428dd6cc33280c9b0e3af8508811d28743f61a13a749d8e",
+   "module": "sc08_sigma_margin_map.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "dispersion-spread inertness: ratio of 90th to 10th percentile predicted sd_margin < 1.15 pooled",
+    "fictitious variance signal: pooled slope of squared OOF margin residuals on sigma_hat^2 has 95% CI excluding 1 on the low side AND Delta-Brier <= 0",
+    "calibration harm: the contract-mandated 10-bin calibration table shows the arm worse than K0 in >= 6 of 10 bins, regardless of pooled Delta-Brier sign"
+   ],
+   "mandatory_receipts": [
+    "R_SC08_FLOOR",
+    "dispersion_spread_diagnostic_per_fold",
+    "variance_calibration_slope_per_fold",
+    "ten_bin_calibration_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": [
+    "R_SC08_FLOOR is MANDATORY and GATING on this element; absence is a card defect",
+    "verdict label is CONDITIONAL on that receipt: the unqualified feature-value label requires this K0 to reach the public floor"
+   ]
+  },
+  {
+   "element_id": "SC09_FAV_GAP_COMPRESSION::E2_FINAL_MARGIN_HOME",
+   "arm_id": "SC09_FAV_GAP_COMPRESSION",
+   "estimand": "E2_FINAL_MARGIN_HOME",
+   "primary_metric": "mae",
+   "arm_kind": "calibration_only",
+   "family_primary": "FAM_S2_BLOWOUT_DISCOUNT",
+   "card_sha256": "4d32d181a7d01472f742848ef04d6e9bf701a4de4c64f38a0a599e4476ee650e",
+   "module": "sc09_fav_gap_compression.py",
+   "design_built_on_real_universe": false,
+   "kill_conditions": [
+    "fitted gamma >= 0 pooled (wrong sign = dead, no re-spec)",
+    "Delta <= 0 on the |g_hat| > 8 subset (no claim anywhere else)",
+    "habitat too small: the |g_hat| > 8 subset is < 10% of pooled test clusters - the magnitude claim was not honest; kill rather than reinterpret"
+   ],
+   "mandatory_receipts": [
+    "coefficient_table",
+    "subset_delta_table_gt_knee",
+    "subset_count_receipt",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": "gamma_comp NEGATIVE",
+   "notes": [
+    "calibration_only: per P26 1.5 as carried by the S32B schema this element may NEVER be reported as feature value",
+    "SC09's treatment feature is a transform of the element's OWN fitted K0 prediction. Fitting is not authorised until S37 passes, so this design is not materialisable on the real universe at S36. Deferred to S38; fully implemented and synthetically tested here."
+   ]
+  },
+  {
+   "element_id": "SC10_FORM_TREND::E1_GAME_TOTAL",
+   "arm_id": "SC10_FORM_TREND",
+   "estimand": "E1_GAME_TOTAL",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_FORM_DYNAMICS",
+   "card_sha256": "eb1a816f666e07dd4d5dfc4293cef9ebf55ca229c81a7fe3618124831d72a07d",
+   "module": "sc10_form_trend.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "spread-block emptiness: 95% train-refit CI for every spread coefficient covers 0 in >= 4 of 5 folds",
+    "schedule confounding: pooled Delta <= 0 once the spread block is orthogonalized against the trailing-opponent-strength differential (declared sealed variant)",
+    "pooled OOF Delta-MAE <= 0 vs K0_MATCHED (uncorrected)"
+   ],
+   "mandatory_receipts": [
+    "per_fold_spread_coefficient_table",
+    "orthogonalized_variant_delta_receipt",
+    "delta_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": []
+  },
+  {
+   "element_id": "SC10_FORM_TREND::E2_FINAL_MARGIN_HOME",
+   "arm_id": "SC10_FORM_TREND",
+   "estimand": "E2_FINAL_MARGIN_HOME",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_FORM_DYNAMICS",
+   "card_sha256": "7f0254b96ea2d26423d2bfdc970a189b600d509a479677aa01915bc430292625",
+   "module": "sc10_form_trend.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "spread-block emptiness: 95% train-refit CI for every spread coefficient covers 0 in >= 4 of 5 folds",
+    "schedule confounding: pooled Delta <= 0 once the spread block is orthogonalized against the trailing-opponent-strength differential (declared sealed variant)",
+    "pooled OOF Delta-MAE <= 0 vs K0_MATCHED (uncorrected)"
+   ],
+   "mandatory_receipts": [
+    "per_fold_spread_coefficient_table",
+    "orthogonalized_variant_delta_receipt",
+    "delta_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": [
+    "partition D FAM_S2_LAGGED_OWN_FORM = {SC10, SC12} also applies; must survive Holm under both"
+   ]
+  },
+  {
+   "element_id": "SC11_LEAGUE_TOTAL_DRIFT::E1_GAME_TOTAL",
+   "arm_id": "SC11_LEAGUE_TOTAL_DRIFT",
+   "estimand": "E1_GAME_TOTAL",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_LEVEL_DRIFT",
+   "card_sha256": "763b17d30e629c74266e0db6539e9651a5db71bead7bdad496a3dd5b1883b40d",
+   "module": "sc11_league_total_drift.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "beta pooled 95% CI covers 0 AND covers 0 in >= 4 of 5 folds",
+    "cross-estimand integrity: |Delta-MAE(E2)| in the receipted non-gating E2 diagnostic exceeds 0.10 MAE points (card-pinned bound; violation is an implementation-integrity kill, not a performance kill)",
+    "single-test-season dependence: leave-one-test-season-out receipt flips pooled Delta to <= 0"
+   ],
+   "mandatory_receipts": [
+    "coefficient_table",
+    "cross_estimand_sanity_receipt_NON_CITABLE_INTEGRITY_DIAGNOSTIC",
+    "leave_one_test_season_out_delta_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": [
+    "the cross-estimand |Delta-MAE(E2)| receipt is labelled NON_CITABLE_INTEGRITY_DIAGNOSTIC; it sits in no family, belongs to no registration, may never be quoted as a result, and may be used only to fire or not fire the 0.10-MAE-point integrity kill"
+   ]
+  },
+  {
+   "element_id": "SC12_ROBUST_INPUT_WINSOR::E2_FINAL_MARGIN_HOME",
+   "arm_id": "SC12_ROBUST_INPUT_WINSOR",
+   "estimand": "E2_FINAL_MARGIN_HOME",
+   "primary_metric": "mae",
+   "arm_kind": "substantive_feature",
+   "family_primary": "FAM_S2_BLOWOUT_DISCOUNT",
+   "card_sha256": "1b93abafa4a7612667dbc50c83c962e691b119185741300b779259d267062e4f",
+   "module": "sc12_robust_input_winsor.py",
+   "design_built_on_real_universe": true,
+   "kill_conditions": [
+    "BITE-CONCENTRATION KILL: pooled Delta-MAE(E2) <= 0 on the high-bite subset |w_H - w_A| >= 2.0 points (carded habitat 652 pooled clusters, 43.7%, non-empty in every fold)",
+    "IMPLEMENTATION-INTEGRITY inertness kill (not a scientific kill): p90 of |w_H - w_A| over pooled test clusters < 1.0 point means the built transform is not the registered one",
+    "outliers-are-signal confirmation: Delta negative in the two widest-strength-spread test seasons while positive elsewhere; the 'widest' seasons are pinned by a train-only, deterministic spread statistic",
+    "pooled OOF Delta-MAE(E2) <= 0 vs K0_MATCHED (uncorrected)"
+   ],
+   "mandatory_receipts": [
+    "high_bite_subset_delta_table",
+    "abs_w_diff_quantile_receipt_per_fold",
+    "season_split_delta_table_with_spread_ranking",
+    "delta_table",
+    "R-A1-EXCEPTIONS"
+   ],
+   "structurally_deactivated_folds": [],
+   "sign_pin": null,
+   "notes": [
+    "disputed across TWO merges: {SC09, SC12} and partition D {SC10, SC12}; must survive Holm under every registered partition"
+   ]
+  }
+ ],
+ "deferred": {
+  "SC09_FAV_GAP_COMPRESSION::E2_FINAL_MARGIN_HOME": "SC09's treatment feature is a transform of the element's OWN fitted K0 prediction. Fitting is not authorised until S37 passes, so this design is not materialisable on the real universe at S36. Deferred to S38; fully implemented and synthetically tested here."
+ },
+ "obligations_discharged": {
+  "O1_ROOT_PATH_RULE": {
+   "obligation": "S36 MUST read data/masters/master_team.parquet from the PROGRAM WORKTREE and verify its sha256 equals the pin below BEFORE building anything. It must NEVER read the live data-worktree / main-working-tree copy, which legitimately keeps growing as the season is captured.",
+   "where": [
+    "prebuild/PREBUILD_GAME_ID_DIGEST.py::verify_root_path_rule",
+    "runner/universe.py::_verify_input_pins",
+    "runner/runner_constants.py::PROGRAM_WORKTREE / KNOWN_DRIFTED_MASTER_TEAM_SHA256"
+   ],
+   "mechanism": "re-hashed independently at this node before anything was built; the drifted data-worktree copy is refused BY NAME, not merely by pin mismatch; the worktree root is derived from the module's own location, never from cwd or an environment variable",
+   "verified_sha256": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528",
+   "match": true
+  },
+  "O2_C4_PREBUILD_GAME_ID_DIGEST": {
+   "obligation": "before any design matrix is constructed, S36 MUST emit a pre-build digest of the game_id set of the 1,491-cluster universe and pin it into its own receipt, converting invariants.rows - deferred to S36 on all 17 records - from a deferred invariant into a receipted one BEFORE any fit runs.",
+   "where": [
+    "prebuild/PREBUILD_GAME_ID_DIGEST.py",
+    "PREBUILD_GAME_ID_DIGEST.json",
+    "runner/universe.py::build_universe (fails closed)"
+   ],
+   "mechanism": "emitted BEFORE any design matrix existed, and structurally so: the discharging script imports only pure hashing, pure pins and pure text, and cannot construct a design. build_universe() then refuses to return a frame unless this receipt exists and the built game_id set re-derives to it.",
+   "GAME_ID_SET_SHA256": "e0083be22b32ddf5feaf55d010b1d22eb25ec75774546742eb90d4e3b3c4be1d",
+   "n_clusters": 1491,
+   "n_team_game_rows": 2982,
+   "per_season_census": {
+    "2021": 205,
+    "2022": 239,
+    "2023": 260,
+    "2024": 262,
+    "2025": 310,
+    "2026": 215
+   },
+   "league_average_v1_identity_holds": true,
+   "closes_invariants_rows_deferral_on_all_17_records": true
+  },
+  "C1_PROGRAM_ALPHA_DISCLOSURE": {
+   "where": [
+    "runner/obligations.py::stamp_program_alpha",
+    "every receipt this node writes"
+   ],
+   "mechanism": "both bounds stamped on every receipt; 0.40 named GOVERNING",
+   "GOVERNING_BOUND": 0.4,
+   "governing_basis": "8 primary families x 0.05, the intersection rule (a disputed element must survive Holm under EVERY registered partition, so the realized decision rule is the INTERSECTION and the governing additive bound is min(0.40, 0.50) = 0.40)",
+   "DISCLOSED_BOUND": 0.5,
+   "disclosed_basis": "10 maximal-partition families x 0.05",
+   "both_are_stated": true,
+   "which_governs": "0.40 GOVERNS",
+   "no_program_wide_FWER_claim": true,
+   "what_the_bound_is_not": "an additive expectation bound on program-wide false positives, NOT an FWER guarantee. No claim of program-wide family-wise error control is made anywhere in this cycle."
+  },
+  "C2_SC06_ERA_KILL_POWER_STATEMENT": {
+   "mandatory_text": "POWER STATEMENT (MANDATORY, prints adjacent to any verdict this kill produces): SC06's era-instability kill is essentially UNPOWERED. Its pre-2024 support is 17 pooled-TEST clusters (8 in 2022 + 9 in 2023) of the 77 test-fold clusters at |F_H - F_A| >= 1 (78 pooled including the 2021 training season; rest components only, tz component added at sealed-run receipt time). CONSEQUENCE: a kill that does NOT fire is NOT evidence that the fatigue-by-era interaction is stable; it is evidence that this slate cannot tell. Any report of the era-split table that omits this statement is a reporting defect.",
+   "where": [
+    "runner/obligations.py::stamp_sc06_power_statement / assert_sc06_era_verdict_carries_power_statement",
+    "arms/sc06_sched_fatigue_diff.py::era_split_receipt",
+    "CARDED_STRATA_RECEIPT.json::checks.SC06_abs_F_diff_ge_1"
+   ],
+   "mechanism": "era_split_receipt is the ONLY emitter of an era-split table or era-kill verdict in this node; it stamps the verbatim statement and then re-asserts its presence before returning, so a verdict without it cannot be constructed. The statement also travels with the census that is its evidence.",
+   "power_census_re_derived_at_S36": {
+    "pooled_at_abs_F_diff_ge_1": 78,
+    "pooled_test": 77,
+    "agrees_with_card": true
+   }
+  },
+  "C3_SC11_E2_RECEIPT_LABEL": {
+   "label": "NON_CITABLE_INTEGRITY_DIAGNOSTIC",
+   "binding_rule": "the |Delta-MAE(E2)| number produced by this receipt is computed on an estimand SC11 is NOT registered for and that sits in NO family. It MUST be emitted carrying the literal label 'NON_CITABLE_INTEGRITY_DIAGNOSTIC', it may NEVER be quoted as a performance result, it enters no Holm family, no pass tally and no multi-survivor comparison, and it may be used for exactly one thing: firing or not firing SC11's card-pinned implementation-integrity kill at |Delta-MAE(E2)| > 0.10 MAE points.",
+   "where": [
+    "runner/obligations.py::label_sc11_cross_estimand / assert_sc11_cross_estimand_labelled",
+    "arms/sc11_league_total_drift.py::cross_estimand_receipt"
+   ],
+   "mechanism": "cross_estimand_receipt is the ONLY constructor; it applies the label, sets citable=False, enters_family=None, enters_pass_tally=False, and names the number abs_delta_mae_E2_NON_CITABLE rather than delta_mae so a caller cannot lift it out by habit. The label is re-asserted before return."
+  },
+  "reporting_rule": {
+   "rule": "the C2 power statement prints adjacent to any verdict SC06's era kill produces, and the C3 label travels with the number wherever it is emitted, copied or cited.",
+   "where": [
+    "the two self-checking emitters above",
+    "tests/TESTS.py (both refusals are tested in both directions)"
+   ]
+  },
+  "O5_R_SC08_FLOOR": {
+   "receipt_id": "R_SC08_FLOOR",
+   "where": [
+    "arms/sc08_sigma_margin_map.py::r_sc08_floor_receipt"
+   ],
+   "mechanism": "built and schema-tested before S38 so its absence cannot be discovered late; takes NO challenger argument, because the card says the challenger's number is not part of this receipt; registered as a non-gating agreement receipt on SC01::E3 and SC06::E3 as well",
+   "gating_on": "SC08_SIGMA_MARGIN_MAP::E3_HOME_WIN_PROB",
+   "absence_is_a_card_defect": true
+  },
+  "O6_R_A1_EXCEPTIONS": {
+   "receipt_id": "R-A1-EXCEPTIONS",
+   "where": [
+    "every ElementSpec.mandatory_receipts",
+    "arms/sc06_sched_fatigue_diff.py (A1-SENSITIVITY kill carried)"
+   ],
+   "mechanism": "declared mandatory on all 17 elements and asserted in tests; SC06's game_date lineage is carried at CUTOFF_VALID_WITH_ENUMERATED_EXCEPTIONS, never unconditional"
+  },
+  "O7_IDENTITY_SET_EXTENSION_REVIEWABLE": {
+   "rule": "the current-game-deletion invariance receipt runs at COLUMN grain, retaining the S30 section-1 base closed set PLUS the six adjudicated extension columns and nulling every other column of every consumed source on the current game's rows. If a later reviewer rejects any extension member, the affected element set is mechanically readable from the current_game_row_consumed flags.",
+   "where": [
+    "runner/obligations.py::O7_EXTENSION_COLUMNS",
+    "tests/TESTS.py (column-grain classification check against SPEC_V2)"
+   ],
+   "mechanism": "the six extension columns and the base closed set are validated at COLUMN grain against the frozen bytes, and every column classified NEVER_READ is asserted to carry current_game_row_consumed = false, so a later reviewer rejecting any extension member can read off the affected elements"
+  },
+  "S35_CARRIED_JOIN_KEY_GAP": {
+   "obligation": "S36 must state the join-key separator convention explicitly when it recomputes byte pins under R10, so the pin becomes reproducible by a third party.",
+   "where": [
+    "runner/canon.py (UNIT_SEP / RECORD_SEP, join_key_digest)",
+    "BYTE_PIN_CANONICALISATION.md",
+    "tests/TESTS.py (positive AND negative control)"
+   ],
+   "mechanism": "closed BY MEASUREMENT over 576 candidate conventions; exactly one reproduces the frozen join_key_sha256: components joined WITHIN a row by U+001E RECORD SEPARATOR, rows joined by U+001F UNIT SEPARATOR. NO DIGEST WAS CHANGED.",
+   "status": "CLOSED"
+  }
+ },
+ "receipts": {
+  "PREBUILD_GAME_ID_DIGEST.json": "539a07a174197e04f5b1929f9d206dfb750fe987fb8bb7f4919abcb8d954989f",
+  "DESIGN_PARITY_RECEIPT.json": "e6db39bf48b729330c3e4890915176cb2d2a87a54883c53e457f30b6299a4002",
+  "CARDED_STRATA_RECEIPT.json": "e590564afc550a14a3fc4616ef81e8a08ab1e15f1adef51cc17cef8be99cdc45",
+  "TEST_RECEIPT.json": "a1c27fd00ed4323a89ef7d8403694ce99de5a05e5e7dc06672f8c1dc34723b63"
+ },
+ "layer_a_parity": {
+  "elements_checked": 16,
+  "folds_per_element": 5,
+  "all_differ_only_by_treatment_terms": true,
+  "mechanism": "one column dictionary, two column-name lists; validate_design reconstructs the K0 from the arm and refuses anything else"
+ },
+ "carded_strata_reproduction": {
+  "all_agree": true,
+  "strata": {
+   "SC01_max_n_le_12": 472,
+   "SC02_min_n_le_5": 249,
+   "SC03_min_n_lt_10": 399,
+   "SC12_high_bite": 652,
+   "SC06_abs_F_diff_ge_1": 78
+  },
+  "what_this_proves": "every kill in this slate fires on a subset defined by a feature this node builds, so reproducing the carded censuses from this node's own feature code tests the implementations against the preregistration end to end -- clock, sequencing, support floors and row base -- without computing any metric"
+ },
+ "tests": {
+  "run": 57,
+  "passed": 57,
+  "all_green": true,
+  "what_is_NOT_covered": "whether any arm helps. That is sealed until S38 and adjudicated at S40. Every fit in this suite runs on a structurally non-real fixture, and the blinding gate refuses the real universe."
+ },
+ "steps": [
+  {
+   "step": "O2 pre-build game_id digest",
+   "script": "prebuild/PREBUILD_GAME_ID_DIGEST.py",
+   "returncode": 0,
+   "ok": true,
+   "stderr_tail": ""
+  },
+  {
+   "step": "design build + Layer-A parity",
+   "script": "runner/build_all.py",
+   "returncode": 0,
+   "ok": true,
+   "stderr_tail": ""
+  },
+  {
+   "step": "carded kill-stratum re-derivation",
+   "script": "runner/verify_carded_strata.py",
+   "returncode": 0,
+   "ok": true,
+   "stderr_tail": ""
+  },
+  {
+   "step": "test suite",
+   "script": "tests/TESTS.py",
+   "returncode": 0,
+   "ok": true,
+   "stderr_tail": ""
+  }
+ ],
+ "findings_raised_to_S37": [
+  {
+   "id": "F1",
+   "severity": "informational, RESOLVED BY MEASUREMENT",
+   "finding": "the slate-wide EWMA convention is unstated on every card. Sweeping 36 combinations, exactly one reproduces all seven of SC12's carded habitat numbers: the RECURSIVE form (pandas adjust=False). Applied uniformly to SC04, SC10, SC11, SC12. Cycle-1 had flagged the same gap as an open interpretive pin on A10.",
+   "where": "runner/features_common.py, runner/verify_carded_strata.py"
+  },
+  {
+   "id": "F2",
+   "severity": "card-internal discrepancy, DISCLOSED, no inference changes",
+   "finding": "SC12's habitat census reproduces exactly only with the >= 3 prior-games support floor NOT applied, while the same card's parameters and fallback_cold_start make that floor normative. This node BUILDS the normative reading and reports both. MEASURED CONSEQUENCE: neither kill changes behaviour -- bite habitat 652 vs 649, both non-empty in every fold; integrity p90 4.7058 vs 4.6795, both ~4.7x the 1.0 threshold.",
+   "where": "arms/sc12_robust_input_winsor.py, CARDED_STRATA_RECEIPT.json"
+  },
+  {
+   "id": "F3",
+   "severity": "contradiction between two frozen fields, RAISED not resolved",
+   "finding": "three E3 cards (SC01::E3, SC06::E3, SC08::E3) list composite_p_home in arm_spec.structural_terms while their own formula fields fit only the composite MARGIN through the link, and a4_sc08_null_strength_receipt describes the E3 K0s the same way. The fitted-column reading is also not implementable as frozen: the column carries 188 structural NaN rows (re-measured here; the byte pin records n_nan=188) and no card declares an imputation. Implemented as a null-granted INGREDIENT, which is what R_SC08_FLOOR consumes it as.",
+   "where": "arms/_head.py::P_HOME_READING"
+  },
+  {
+   "id": "F4",
+   "severity": "consequence of the card, not a gap",
+   "finding": "SC09's treatment feature is a hinge of the element's OWN FITTED K0 prediction, so its design cannot be materialised on the real universe while fitting is unauthorised. Recorded as deferred, fully implemented, and fully exercised on synthetic data. build() takes the fold's K0 fit as an argument so no second, differently-fitted g_hat can exist.",
+   "where": "arms/sc09_fav_gap_compression.py"
+  },
+  {
+   "id": "F5",
+   "severity": "interpretive pins, declared",
+   "finding": "SC05: var_m read as the pooled variance of team-game margins on the fold's TRAINING rows, and tau2/var_m as fold-train constants while n_home/n_away are the row's own strictly-prior counts. SC06: a STANDARD-offset tz map covering exactly the six IANA zones in the pinned team_cities.csv, enumerated so a seventh zone fails closed. SC08: game-level pace read as the SUM of the two sides, which is provably immaterial because z-scoring is scale-invariant (tested).",
+   "where": "arms/sc05_hca_team_offsets.py, arms/sc06_sched_fatigue_diff.py, arms/sc08_sigma_margin_map.py"
+  },
+  {
+   "id": "F6",
+   "severity": "self-reported defect in this node's own first pass, FIXED",
+   "finding": "the lambda-selection record initially wrote train-tail MAE values into DESIGN_PARITY_RECEIPT.json. Computing them is required by the cards' own construction rule for SC01 and SC10; leaving them on disk violates 'no performance number emitted anywhere'. They are now withheld, and the test that caught it was strengthened from whole-word to substring matching.",
+   "where": "arms/_head.py::select_lambda_train_tail, tests/TESTS.py"
+  }
+ ],
+ "stop_condition": {
+  "tripped": false,
+  "detail": "Nothing here changes the cycle-2 estimands (E1/E2/E3), the K0 structure, the inference structure, the declared universe (1,491 / 2,982), the cutoff-valid feature set or the leakage status. F2 and F3 are contradictions WITHIN frozen bytes, raised and carried with both readings preserved, not resolved inside this node. The cards are immutable from the freeze onward; any repair is a new erratum record, never an edit."
+ },
+ "prohibitions_honoured": "No fit on real data. No MAE, Brier, accuracy or arm-vs-null comparison computed, reported or left on disk anywhere. Nothing under stage2b/SEALED_RESULTS or stage3_score/SEALED_RESULTS was read, listed or globbed. No frozen artifact modified. git was not run. All writes are inside experiments/player_program/stage3_score/S36_IMPLEMENT_ARMS/. Every measurement ran against the PROGRAM WORKTREE, whose master_team.parquet matches ad79ce5c...; the drifted copy was never read.",
+ "does_not_mark_own_work_accepted": true,
+ "code_state": {
+  "schema": "s36_code_state/1",
+  "source_sha256": {
+   "arms/_head.py": "43e8ea8663a19bd8bdc67cf3153c7cc184523380ac79a9e6ffff5f64f8ea1758",
+   "arms/sc01_opp_adj_interacting.py": "32c8e9b99dd41afea53fe9f082b511682b3dbd6c956006e9e44a4a4b8199a5b4",
+   "arms/sc02_a07_score_transient.py": "657673fe13b060cdff35762abbc0a1745e24009be7c1fb281e68840524c6a6bf",
+   "arms/sc03_season_carryover_prior.py": "3314c17dac9aa6bb47905e5aea8aa4fe5d28933ccc35ebf3671b9ab039f7b4fb",
+   "arms/sc04_hca_league_drift.py": "69533120d6ece52236906dc5ecbd31cc68d01d08e61d0ba3c8fed0589d4c3bea",
+   "arms/sc05_hca_team_offsets.py": "3630b685041e5e62ce74d4e2ea6e20b22bef23987989a2e2196d900070062ae9",
+   "arms/sc06_sched_fatigue_diff.py": "1f68cbe0c146397174e7b3aaf75d23a4dd5fec7f6486786c6a96db10cf875a1f",
+   "arms/sc08_sigma_margin_map.py": "a86a1690ecc7523f5deb9ff86174d761acc41b18dfe72a35cb9df0e9cd441572",
+   "arms/sc09_fav_gap_compression.py": "05383e48b8e4732df31087f54e867fff1af0aca9ab620a58dcd2ab0ef5e4e9fe",
+   "arms/sc10_form_trend.py": "3d3973591afa33b5cc256b13b6cd00ec9281be1aa70ca365cf1c077aef5b8c79",
+   "arms/sc11_league_total_drift.py": "b7ebef778763ea999318ef702c7b4544a9e496e745a2b7ef99e62827adee21f8",
+   "arms/sc12_robust_input_winsor.py": "bb5e20119786456acfe2c75753957435791b0c37032fd075a9c901c3053e13ae",
+   "prebuild/PREBUILD_GAME_ID_DIGEST.py": "5e0c38799957d5d417ba55eec109328cd838d2f5297af6aa6d81754e7c4216c6",
+   "runner/blinding.py": "2f7801aee648e210c50b4f6cf2e6beadac08dc3313b218ee41e25e691330f6c7",
+   "runner/build_all.py": "158bde080c9cdbaceb153f6daed45e4edc5abc1a343d3320a6bcc7ec027f265e",
+   "runner/canon.py": "f9fcec15a3a6616a2c08d85e12998ed3e9a4c8be528f2a0fb09d686840efa34c",
+   "runner/cluster_bootstrap.py": "1ba88b3d574ff5eb4b538f62f571520727a55b88085b3fa974bf0dbadbe2f176",
+   "runner/estimators.py": "9cc85ee6aebe9b3e9c03557e782680dff3bca0dd9787fc183846a4980c545ad7",
+   "runner/features_common.py": "945f3eedac0d20bb64521895bdb352ccb57227eb19c4fcd5910526e1cbb17f4a",
+   "runner/obligations.py": "65e0e9556f9c58b8d4c99cc0acd5ba28b9b0a8123f3261740056079700f8ae27",
+   "runner/runner.py": "0b0aab454d21185c2a585f9c3db0fc9e8cecc802692464237835e513f60ca5b6",
+   "runner/runner_constants.py": "c2e46f47290d21850239efe0f98e1445e468108493e128235faec73ed6b6203e",
+   "runner/runner_interface.py": "fecef4b58bca285f917de2bd282b47aba8c28cbfc7ac2934550735a591714d1b",
+   "runner/seed_manifest.py": "363700e4cedfa003eb4ef6d948fbf2f40d6dc84b1e4de5f482bdbf7a4d393919",
+   "runner/universe.py": "cfad507ac724320081f2814033a430514fa8d888f0f8f14e7c614027ae0757b0",
+   "runner/verify_carded_strata.py": "de6c5698849da3126d66d4ffdb7cad236895e09beedf4a346b652e5b4583faee",
+   "tests/synthetic_fixture.py": "375b9f4b2d5fba46cbdb6bb9c787a9e802de06faedc368185b83a6a1f6f30423",
+   "tests/TESTS.py": "3181153393cb3bd5b584c259b1c87ba61cc14a2a7638b0807bac5359cc9fd043"
+  },
+  "environment": {
+   "python": "3.13.14",
+   "numpy": "2.5.1",
+   "pandas": "3.0.5",
+   "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "git_not_run": "GRAPH_POLICY: agents write files; the coordinator makes the task-scoped commit"
+ },
+ "obligation_text_check": {
+  "schema": "s36_obligation_text_check/1",
+  "checks": {
+   "O1_obligation": true,
+   "O1_on_mismatch": true,
+   "O2_obligation": true,
+   "O2_digest_rule": true,
+   "O2_on_mismatch": true,
+   "C2_power_statement": true,
+   "C2_applies_to_elements": true,
+   "C2_kill_not_weakened": true,
+   "C3_label": true,
+   "C3_binding_rule": true,
+   "C3_applies_to": true,
+   "O5_receipt_id": true,
+   "O5_gating_on": true,
+   "O6_receipt_id": true,
+   "O6_rule": true,
+   "O7_rule": true,
+   "O7_extension_columns": true,
+   "C1_governing": true,
+   "C1_disclosed": true,
+   "C1_no_fwer": true
+  },
+  "all_pass": true,
+  "source": "experiments/player_program/stage3_score/S35_FREEZE_TASK_CARDS/SPEC.json"
+ },
+ "program_alpha_disclosure": {
+  "GOVERNING_BOUND": 0.4,
+  "governing_basis": "8 primary families x 0.05, the intersection rule (a disputed element must survive Holm under EVERY registered partition, so the realized decision rule is the INTERSECTION and the governing additive bound is min(0.40, 0.50) = 0.40)",
+  "DISCLOSED_BOUND": 0.5,
+  "disclosed_basis": "10 maximal-partition families x 0.05",
+  "both_are_stated": true,
+  "which_governs": "0.40 GOVERNS",
+  "no_program_wide_FWER_claim": true,
+  "what_the_bound_is_not": "an additive expectation bound on program-wide false positives, NOT an FWER guarantee. No claim of program-wide family-wise error control is made anywhere in this cycle."
+ },
+ "manifest_digest": "1072f73ff3d282a1037be263c524215d55aaeb09051eeaccb1bc6ff51c873d8b"
+}
