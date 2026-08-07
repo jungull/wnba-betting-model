@@ -539,3 +539,35 @@ planning any E0 campaign — it prevents rediscovering settled ground:**
 - **LAYER 3 (matchup interaction) IS THE LARGEST GENUINELY UNEXPLORED SURFACE** — essentially
   untouched at player level — **and is independently where the user expects the most incremental
   signal.** That convergence is the clearest steer available: **start E0 sweeps here.**
+
+
+## 10.12 THE FUNNEL RAN — first E0 screen complete, and what it teaches the next ones
+
+**I0003 (rebound opportunity x secure rate) was KILLED in ~16 minutes.** That is the tier working,
+not a setback. Full record in `experiments/idea_log.jsonl`; artifacts in
+`experiments/exploration/E0_I0003_rebound_interaction/`.
+
+**Three things to carry forward:**
+
+1. **The partition held.** The coordinator verified on bytes that both output CSVs contain seasons
+   2021-2024 only. The 2025/26 confirmation holdout was never touched. §13.2 survived its first
+   real run — keep verifying this on every screen, it is the one rule that makes the sandbox safe.
+
+2. **DO NOT cite this kill as evidence against T1.** The stability comparison is **confounded by
+   measurement noise**: the credited rebounder matched the correct side only ~72% of the time (43%
+   ORB, 84% DRB), so the decomposed halves are measured far more noisily than the fused box rate,
+   and noise depresses year-over-year correlation directly. The screen cannot separate *"opportunity
+   is genuinely unstable"* from *"opportunity is measured badly."* **What died is the cheap
+   construction, not the thesis.**
+
+3. **The reusable finding is worth more than the result.** Lineup attribution by clock-time joins to
+   possession rows is unreliable; the named fix is **substitution-order-derived lineups**. **I0004,
+   I0005 and I0006 all need on-court lineup context and would inherit exactly this defect.** Either
+   build the better attribution path first, or expect the same confound and say so up front. This is
+   the highest-value output of the screen.
+
+**Next E0 targets, in order:** I0004 (shot-location tendency/conversion x opponent location
+allowance) — least dependent on lineup attribution, so most likely to give a clean read; then I0006
+(usage redistribution conditional on teammate composition), which attacks the known layer-1
+bottleneck directly; then I0005. I0007 (structural-model ensemble value via error decorrelation) is
+half-runnable now — the structural residual series already exists.
