@@ -242,6 +242,36 @@ the disciplines learned this session (what broke, what the fix was), and an expl
 leaves the tree quiescent and pushed, and the incoming coordinator's **first action** is to read
 it plus this policy. Succession is a normal operation of the graph, not an emergency.
 
+**12.3.1 The succession trigger is CONTEXT, not the clock** (`D056`, user directive 2026-08-07).
+The recurring scheduled run is only a **safety net**. The intended trigger for succession is the
+coordinator's own context consumption, and because no harness mechanism fires on context
+percentage, **the coordinator is the trigger**: it self-assesses continuously and acts on the
+threshold itself.
+
+At roughly **60% of context — erring EARLY, never late** — the coordinator begins retirement. A
+coordinator that runs out mid-handoff hands over nothing, which is the failure this threshold
+exists to prevent. The sequence is: (1) stop dispatching new nodes — winding down IS the remaining
+work, and §12.1's rule against idling is suspended for this purpose only; (2) close in-flight
+agents properly if they are nearly done, otherwise record each in the packet with its node id,
+write scope, exactly what clears it, and an explicit **DO NOT RE-DISPATCH — check for its return
+event first**; (3) write the §12.3 packet, carrying this subsection verbatim so the successor
+inherits the trigger; (4) commit, then push **only once `git status` shows no agent still holds a
+write scope**, because the pre-push gate correctly refuses a tree that changes while it is
+measured; (5) append a **`coordinator_retired`** event naming the packet and any in-flight nodes,
+as the LAST ledger write; (6) trigger the successor immediately with a **one-time** scheduled task
+firing a few minutes out, rather than leaving the program dark until the next recurring run; (7)
+stop — two live coordinators writing one branch is precisely the collision the staleness guard
+exists to prevent.
+
+**The staleness-guard override this requires.** An incoming coordinator stands down if the last
+ledger event is under 30 minutes old, on the assumption that another instance is live. Under
+self-triggered succession that assumption inverts: the freshest event is the predecessor's own
+handoff write, minutes old by design. **Therefore: if the most recent event is `coordinator_retired`,
+the successor does NOT stand down — it was deliberately summoned and proceeds immediately.**
+Without this override the chain deadlocks and the program stalls until the safety-net run. This
+failure was observed live on 2026-08-07, when a scheduled coordinator stood down against a
+9-minute-old ledger while its predecessor was in fact retiring.
+
 **12.4 Dispatch under resource failure.** An agent that dies on capacity/credit exhaustion is an
 infrastructure event, not a scientific finding: nothing it produced partially may be used or
 claimed. Retry it later at the same tier (never a cheaper tier for a Severity-A verification,
