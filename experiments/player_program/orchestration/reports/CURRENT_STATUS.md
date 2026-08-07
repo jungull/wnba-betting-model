@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `1dc48bdb15d1fa2ad66734ff30c60144097ff5e3` |
-| working tree | clean |
+| HEAD | `6f6bf5652b0c234dadb2eb3001c0522d8034772b` |
+| working tree | DIRTY |
 | nodes | 104 |
-| events | 393 |
+| events | 398 |
 
 ## Counts by status
 
@@ -17,10 +17,11 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 8 |
 | PASSED | 81 |
-| READY | 5 |
-| RUNNING | 1 |
+| READY | 3 |
+| RUNNING | 2 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 3 |
+| VERIFYING | 1 |
 
 ## Severity A blockers
 
@@ -28,14 +29,14 @@ None open against a node.
 
 ## Running
 
+* `M10_MIDDLES` — Middle-opportunity detection with per-book push semantics
+* `M14_MODEL_MARKET_RESIDUAL` — Model-vs-market residual analysis at matched point-in-time snapshots
 * `S35_FREEZE_TASK_CARDS` — Freeze score task cards and append registry records
 
 ## Ready — next automatically scheduled
 
 * `M06_INJURY_REACTION_STUDY` (market_intelligence) — Injury-news reaction-time event study on point-in-time tape only
 * `M08_STALE_WINDOW` (market_intelligence) — Stale-line window measurement conditional on demonstrated lead-lag structure
-* `M10_MIDDLES` (market_intelligence) — Middle-opportunity detection with per-book push semantics
-* `M14_MODEL_MARKET_RESIDUAL` (market_intelligence) — Model-vs-market residual analysis at matched point-in-time snapshots
 * `M22_CAPACITY` (market_intelligence) — Capacity analysis: how much money the measured opportunity classes can absorb
 
 ## Passed
@@ -130,13 +131,13 @@ None open against a node.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | READY | RUNNING | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 0 | 1 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 0 | 1 | 0 |
-| market_intelligence | 2 | 16 | 5 | 0 | 0 | 1 |
-| operations | 0 | 12 | 0 | 0 | 2 | 0 |
-| possession | 0 | 25 | 0 | 0 | 2 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 | 0 |
-| score | 6 | 7 | 0 | 1 | 0 | 1 |
+| lane | BLOCKED | PASSED | READY | RUNNING | SUPERSEDED | USER_REQUIRED | VERIFYING |
+|---|---|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 0 | 1 | 0 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 0 | 1 | 0 | 0 |
+| market_intelligence | 2 | 16 | 3 | 2 | 0 | 1 | 0 |
+| operations | 0 | 12 | 0 | 0 | 2 | 0 | 0 |
+| possession | 0 | 25 | 0 | 0 | 2 | 1 | 0 |
+| product | 0 | 4 | 0 | 0 | 0 | 0 | 0 |
+| score | 6 | 7 | 0 | 0 | 0 | 1 | 1 |
