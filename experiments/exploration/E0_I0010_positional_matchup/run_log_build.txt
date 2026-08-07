@@ -1,0 +1,72 @@
+﻿
+==============================================================================
+LOAD + PARTITION FILTER
+==============================================================================
+raw shape: (33712, 78) raw seasons: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024), np.int64(2025), np.int64(2026)]
+post-filter shape: (21462, 78) seasons: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+max game_date in frame: 2024-10-20
+regular season only: (19642, 78)
+after minutes>=1 & possessions>0: (16574, 78)
+
+==============================================================================
+POSITION GROUP DERIVATION
+==============================================================================
+raw `position` label counts: {'': 7694, 'F': 3552, 'G': 3552, 'C': 1776}
+labelled rows: 8880 / 16574 (0.536)
+starter_flag==1 rows: 8880 ; labelled&starter: 8880 ; labelled&non-starter: 0
+-> `position` is populated ONLY for starters: it is a STARTING-LINEUP SLOT label,
+   not a scouting position. 5 slots per team-game (2 G, 2 F, 1 C).
+
+pos_group counts (all pooled rows): {'F': 6127, 'G': 5169, 'U': 2725, 'C': 2553}
+coverage (non-U) of pooled rows: 0.836
+coverage (non-U) of minutes>=10 rows: 0.897
+
+coverage by season (minutes>=10):
+            mean  size
+season                
+2021    0.778036  3014
+2022    0.908984  3406
+2023    0.940807  3666
+2024    0.940005  3667
+
+sanity -- mean per-100-poss profile by derived group (descriptive only):
+           pts_r  reb_r  ast_r
+pos_group                     
+C          18.95  12.38   2.92
+F          18.79   9.17   3.85
+G          18.82   5.24   6.55
+group n: {'F': 6127, 'G': 5169, 'C': 2553}
+
+player-seasons whose derived group flips mid-season: 49 / 504 (0.097)
+
+pooled frame used for allowances: (13849, 84)
+
+==============================================================================
+FEATURE BUILD (per target)
+==============================================================================
+
+---- target: pts ----
+analysis rows (minutes>=10): 12337
+  non-null allow_loo 12337 | allow_pre 11339 | own_loo 12334 | own_pre 9295 | def_pre 11963
+  complete pregame rows: 9262 (0.751 of analysis rows)
+  allowance spread: LOO sd=1.624 mean=20.525 | PRE sd=1.678 mean=20.473 | naive sd=1.592
+  corr(own_loo, allow_loo)=-0.0780   corr(own_loo, allow_naive)=0.0408  [LOO must shrink this]
+  corr(allow_pre, def_pre)=0.5303  [step-5 confound: positional vs overall defence]
+
+---- target: reb ----
+analysis rows (minutes>=10): 12337
+  non-null allow_loo 12337 | allow_pre 11339 | own_loo 12334 | own_pre 9295 | def_pre 11963
+  complete pregame rows: 9262 (0.751 of analysis rows)
+  allowance spread: LOO sd=2.849 mean=8.521 | PRE sd=2.771 mean=8.518 | naive sd=2.845
+  corr(own_loo, allow_loo)=0.6642   corr(own_loo, allow_naive)=0.6844  [LOO must shrink this]
+  corr(allow_pre, def_pre)=0.0943  [step-5 confound: positional vs overall defence]
+
+---- target: ast ----
+analysis rows (minutes>=10): 12337
+  non-null allow_loo 12337 | allow_pre 11339 | own_loo 12334 | own_pre 9295 | def_pre 11963
+  complete pregame rows: 9262 (0.751 of analysis rows)
+  allowance spread: LOO sd=1.537 mean=4.947 | PRE sd=1.547 mean=4.880 | naive sd=1.533
+  corr(own_loo, allow_loo)=0.5553   corr(own_loo, allow_naive)=0.5858  [LOO must shrink this]
+  corr(allow_pre, def_pre)=0.1281  [step-5 confound: positional vs overall defence]
+
+wrote C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0010_positional_matchup\player_game_features.csv  shape=(41547, 22)  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]

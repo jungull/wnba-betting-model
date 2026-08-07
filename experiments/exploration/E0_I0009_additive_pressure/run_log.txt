@@ -1,0 +1,107 @@
+﻿### python build_data.py
+turnover targets rows after partition filter: 18216 seasons present: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+rows with rate_defined: 18178
+possessions rows after partition filter: 155149 seasons present: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+schedule rows (game,team): 1940
+team-game defensive tallies: 1940
+wrote team_game_defense.csv
+shrinkage pseudo-count K (def possessions): 200.0
+anchor rule: prior-season team rate when season-1 is inside 2021-2024, else that season's league mean (a scalar, non-discriminating across opponents). 2021 therefore always uses the league-mean anchor -- 2020 is outside the exploration partition and was never read.
+player-game rows missing an opponent match: 0
+dropped 13 rows with undefined LOO/pregame predictors (thin support)
+final analysis frame rows: 18165
+season counts: {2021: 3878, 2022: 4508, 2023: 4886, 2024: 4893}
+wrote player_game_analysis.csv
+
+=== predictor summaries (2021-2024 only) ===
+       turnovers_per_100_off_poss  ...  opponent_defrtg_pregame
+count                   18165.000  ...                18165.000
+mean                        3.396  ...                  101.266
+std                         3.988  ...                    4.009
+min                         0.000  ...                   89.714
+25%                         0.000  ...                   98.034
+50%                         2.740  ...                  101.406
+75%                         5.000  ...                  104.187
+max                        66.667  ...                  111.822
+
+[8 rows x 6 columns]
+
+corr(LOO pressure, pregame pressure) = 0.8609
+rows with 0 prior opponent games (pure anchor): 464
+
+### python analyze.py
+rows: 18165 seasons: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+team-game rows: 1940 seasons: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+==============================================================================
+RUNG 1 -- idealised additive effect: tendency(LOO) -> + opponent pressure(LOO)
+==============================================================================
+POOLED  n=18165  R2 0.14193 -> 0.15035   dR2 = 0.008424   beta_pressure = +0.1573
+  season 2021  n= 3878  R2 0.11983 -> 0.13844   dR2 = 0.018606   beta = +0.1742
+  season 2022  n= 4508  R2 0.11538 -> 0.12209   dR2 = 0.006718   beta = +0.1603
+  season 2023  n= 4886  R2 0.13773 -> 0.14127   dR2 = 0.003540   beta = +0.1357
+  season 2024  n= 4893  R2 0.18699 -> 0.19407   dR2 = 0.007072   beta = +0.1474
+  practical size: opponent LOO pressure spans 13.82-23.27 per 100 (range 9.45); pooled beta implies +1.486 turnovers/100 off poss end-to-end (outcome mean 3.396).
+
+==============================================================================
+RUNG 2 -- PREGAME observable: tendency(LOO) -> + opponent pressure(pregame, expanding)
+==============================================================================
+POOLED  n=18165  R2 0.14193 -> 0.14843   dR2 = 0.006505   beta_pressure = +0.1244
+  season 2021  n= 3878  R2 0.11983 -> 0.13487   dR2 = 0.015038   beta = +0.1567
+  season 2022  n= 4508  R2 0.11538 -> 0.12071   dR2 = 0.005329   beta = +0.1146
+  season 2023  n= 4886  R2 0.13773 -> 0.14001   dR2 = 0.002279   beta = +0.0976
+  season 2024  n= 4893  R2 0.18699 -> 0.19311   dR2 = 0.006121   beta = +0.1227
+  practical size: pregame pressure spans 13.14-24.12 (range 10.98); pooled beta implies +1.366 turnovers/100 end-to-end.
+
+==============================================================================
+RUNG 3 -- PLACEBO noise floor (200 permutations of opponent identity within season)
+==============================================================================
+sanity: precomputed lookup reproduces real pregame pressure exactly -> placebo uses same construction
+placebo pooled dR2: mean=0.000093 sd=0.000105 median=0.000057 p90=0.000268 p95=0.000313 p99=0.000427 max=0.000504
+REAL rung-2 pooled dR2 = 0.006505
+fraction of placebo draws >= real: 0.0000  (0/200)
+  season 2021: placebo mean=0.000395 p95=0.001503 max=0.002829 | real=0.015038 | frac>=real=0.000
+  season 2022: placebo mean=0.000243 p95=0.000877 max=0.001800 | real=0.005329 | frac>=real=0.000
+  season 2023: placebo mean=0.000166 p95=0.000688 max=0.002133 | real=0.002279 | frac>=real=0.000
+  season 2024: placebo mean=0.000172 p95=0.000657 max=0.001169 | real=0.006121 | frac>=real=0.000
+placebo floor for the RUNG-1 (idealised season-rate) measure: mean=0.000143 p95=0.000405 max=0.000755 | real rung1=0.008424 | frac>=real=0.0000
+
+==============================================================================
+RUNG 4 -- persistence of the predictor itself (team forced-TO rate)
+==============================================================================
+
+(a) season-over-season correlation of team forced-TO rate per 100 def poss:
+    2021 -> 2022: r = +0.474  (n_teams = 12)
+    2022 -> 2023: r = +0.662  (n_teams = 12)
+    2023 -> 2024: r = +0.410  (n_teams = 12)
+    pooled across all consecutive pairs: r = +0.464 (n = 36 team-season pairs)
+
+(b) within-season split-half (first half vs second half of each team's schedule):
+    season 2021: r(H1,H2) = +0.673  (n_teams = 12)
+    season 2022: r(H1,H2) = +0.360  (n_teams = 12)
+    season 2023: r(H1,H2) = +0.742  (n_teams = 12)
+    season 2024: r(H1,H2) = +0.516  (n_teams = 12)
+    pooled: r(H1,H2) = +0.547  (n = 48 team-seasons)
+
+==============================================================================
+CONFOUND CHECK -- add opponent points-allowed-per-100-def-poss as a control
+==============================================================================
+corr(pressure_LOO, defrtg_LOO)       = -0.4040
+corr(pressure_pregame, defrtg_pregame) = -0.3904
+
+RUNG 1 with opponent-quality control: dR2(pressure | tendency, defrtg) = 0.007529 (uncontrolled 0.008424)  beta = +0.1624
+RUNG 2 with opponent-quality control: dR2(pressure | tendency, defrtg) = 0.005696 (uncontrolled 0.006505)  beta = +0.1263
+  season 2021 rung-2 controlled dR2 = 0.014230
+  season 2022 rung-2 controlled dR2 = 0.006093
+  season 2023 rung-2 controlled dR2 = 0.002108
+  season 2024 rung-2 controlled dR2 = 0.002794
+
+==============================================================================
+PARTITION VERIFICATION -- re-read the written files and scan their bytes
+==============================================================================
+player_game_analysis.csv: rows=18165  season column values=[2021, 2022, 2023, 2024]  4-digit-year tokens anywhere in file bytes=['2021', '2022', '2023', '2024']  out-of-partition tokens=NONE
+team_game_defense.csv: rows=1940  season column values=[2021, 2022, 2023, 2024]  4-digit-year tokens anywhere in file bytes=['2021', '2022', '2023', '2024']  out-of-partition tokens=NONE
+PARTITION VERIFIED on output bytes: only 2021-2024 appear anywhere in the written files.
+
+wrote summary.json
+
