@@ -368,7 +368,17 @@ class TestRunCycleEndToEnd(unittest.TestCase):
         self.assertGreater(stats["rows_written"]["best_line"], 0)
         self.assertEqual(stats["rows_written"]["trades"], 1)
         self.assertEqual(stats["endpoint_failures"], [])
-        for fname in csx.TABLE_FILES.values():
+        # M26_CAPTURE_MICROSTRUCTURE_REMEDIATION (defect 3): roster_events is
+        # a transition log, not a per-poll table -- it structurally cannot
+        # write anything on a FIRST cycle (there is no prior roster to diff
+        # against yet, by construction of compute_roster_transitions). Every
+        # other table always writes something on cycle 1 given this fixture,
+        # which is what this loop checks; roster_events is excluded on
+        # purpose, not an oversight.
+        for table, fname in csx.TABLE_FILES.items():
+            if table == "roster_events":
+                self.assertEqual(stats["rows_written"]["roster_events"], 0)
+                continue
             self.assertTrue(os.path.exists(os.path.join(self.data_dir, fname)))
 
     def test_second_identical_cycle_dedupes_everything(self):

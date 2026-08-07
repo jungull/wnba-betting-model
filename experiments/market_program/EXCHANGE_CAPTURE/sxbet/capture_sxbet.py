@@ -94,11 +94,49 @@ TABLE_FILES = {
     "best_line": "best_line.jsonl",
     "orderbook": "orderbook.jsonl",
     "trades": "trades.jsonl",
+    # M26_CAPTURE_MICROSTRUCTURE_REMEDIATION (defect 3, M17 finding): a NEW,
+    # additive table. /markets/active only ever returns markets it currently
+    # considers active -- a suspended/retired market simply does not appear,
+    # and build_envelope's content-hash dedup means a market that vanishes
+    # and later reappears with byte-identical content produces no row at
+    # all in `markets`. roster_events.jsonl records the TRANSITION itself
+    # (vanished / reappeared), computed by diffing this cycle's active
+    # marketHash set against the immediately prior cycle's, so a vanish-and-
+    # return is a witnessed, timestamped event instead of silence. See
+    # `compute_roster_transitions` below.
+    "roster_events": "roster_events.jsonl",
 }
 
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="microseconds")
+
+
+def estimate_clock_skew_seconds(vendor_http_date: Optional[str], response_received_ts: str):
+    """M26_CAPTURE_MICROSTRUCTURE_REMEDIATION (defect 4): best-effort clock-
+    skew bound from the HTTP `Date` response header, mirroring the same
+    technique/caveats as market_snapshot_writer.estimate_clock_skew_seconds
+    in the DATA-worktree Odds-API writer (this module cannot import that
+    across worktrees, so the small function is duplicated rather than
+    reached for cross-worktree). Same honest limits: whole-second HTTP-date
+    resolution, and the delta conflates true clock skew with one-way network
+    transit time -- an upper bound on skew, not an isolated value. Returns
+    (skew_seconds_or_None, parsed_date_iso_or_None); (None, None) if the
+    response carried no Date header."""
+    if not vendor_http_date:
+        return None, None
+    try:
+        from email.utils import parsedate_to_datetime
+        vendor_dt = parsedate_to_datetime(vendor_http_date)
+        if vendor_dt.tzinfo is None:
+            vendor_dt = vendor_dt.replace(tzinfo=timezone.utc)
+        received_dt = datetime.fromisoformat(response_received_ts)
+        if received_dt.tzinfo is None:
+            received_dt = received_dt.replace(tzinfo=timezone.utc)
+        delta = (received_dt - vendor_dt).total_seconds()
+        return delta, vendor_dt.astimezone(timezone.utc).isoformat()
+    except (ValueError, TypeError):
+        return None, None
 
 
 def sha256_hex(obj: Any) -> str:
@@ -184,6 +222,18 @@ class SxBetClient:
             log_row["finished_ts"] = now_iso()
             log_row["latency_ms"] = latency_ms
             log_row["http_status"] = resp.status_code
+            # M26_CAPTURE_MICROSTRUCTURE_REMEDIATION (defect 4): record what
+            # this vendor's response actually lets us bound. `latency_ms`
+            # above is already a real round-trip figure (our own
+            # vendor_latency_bound, upper-bounding vendor+network+our-own
+            # overhead combined -- not an isolated vendor-only figure).
+            # Added here: an HTTP-Date-header clock-skew estimate, same
+            # honest caveats as estimate_clock_skew_seconds's docstring.
+            vendor_http_date = getattr(resp, "headers", {}).get("Date") if getattr(resp, "headers", None) else None
+            skew, parsed_date = estimate_clock_skew_seconds(vendor_http_date, log_row["finished_ts"])
+            log_row["vendor_http_date"] = vendor_http_date
+            log_row["vendor_http_date_parsed_utc"] = parsed_date
+            log_row["clock_skew_estimate_seconds"] = skew
             if resp.status_code != 200:
                 log_row["ok"] = False
                 log_row["error"] = f"non-200 status: {resp.status_code}; body[:300]={resp.text[:300]!r}"
@@ -426,6 +476,90 @@ def build_envelope(*, table: str, key: str, content: dict, vendor_ts: Optional[A
     return row, True
 
 
+ROSTER_VANISHED_NOTE = (
+    "WITNESSED_ABSENCE (M26_CAPTURE_MICROSTRUCTURE_REMEDIATION defect-3 fix): "
+    "this marketHash was present (roster_status=active) in the immediately "
+    "prior cycle's /markets/active response and is absent from this cycle's "
+    "response. /markets/active exposes no vendor-asserted suspension flag "
+    "distinct from 'not returned' (verified by the same write-path read M17 "
+    "did) -- this event is labeled 'vanished', never 'suspended', and does "
+    "not claim to know WHY the market is gone (retired post-tip, delisted, "
+    "genuinely suspended -- all look identical from this endpoint)."
+)
+ROSTER_REAPPEARED_NOTE = (
+    "WITNESSED_RETURN (M26_CAPTURE_MICROSTRUCTURE_REMEDIATION defect-3 fix): "
+    "this marketHash was roster_status=vanished as of the prior cycle in "
+    "which it was checked and is present again in this cycle's "
+    "/markets/active response. Written unconditionally as its own event row "
+    "(not passed through build_envelope's content-hash dedup), specifically "
+    "so a vanish-and-return with byte-identical content on reappearance -- "
+    "which the regular `markets` table's dedup would otherwise render "
+    "invisible -- still leaves a trace."
+)
+
+
+def compute_roster_transitions(state: StateStore, current_active_hashes: set,
+                                retrieval_ts: str, poll_interval_at_capture,
+                                cycle_id: str) -> List[dict]:
+    """Diffs `current_active_hashes` (this cycle's /markets/active roster)
+    against `state.data["roster"]` (persisted from the last cycle this
+    function was called on). Returns roster_events rows for every
+    active->vanished and vanished->active TRANSITION (not a heartbeat on
+    every cycle a market stays absent/present -- only the edges), and
+    mutates `state.data["roster"]` in place to this cycle's status map.
+    Caller is responsible for `state.save()` (same contract as every other
+    state mutation in this module).
+
+    Must be called ONLY after a cycle whose /markets/active call actually
+    succeeded (log_row.get("ok") is True) -- an empty `current_active_hashes`
+    from a FAILED poll is a we-failed-to-poll gap, not a witnessed vanish,
+    and running this on it would falsely mark every tracked market vanished.
+    Enforced by the caller in run_cycle, not re-checked here (this function
+    has no way to distinguish "genuinely zero active markets" from "poll
+    failed" once it only receives the resulting hash set -- the caller must
+    not invoke it on a failed poll)."""
+    roster = state.data.setdefault("roster", {})  # marketHash -> "active"/"vanished"
+    events = []
+    prior_hashes = {mh for mh, status in roster.items() if status == "active"}
+
+    for mh in sorted(prior_hashes - current_active_hashes):
+        events.append({
+            "row_id": str(uuid.uuid4()), "table": "roster_events", "key": mh,
+            "cycle_id": cycle_id, "is_order": False, "provenance": PROVENANCE,
+            "content": {"marketHash": mh, "roster_status": "vanished"},
+            "vendor_ts": None, "vendor_ts_label": VENDOR_TS_LABEL,
+            "vendor_ts_semantics": "unknown_unverified",
+            "retrieval_ts": retrieval_ts, "ingestion_ts": now_iso(),
+            "max_staleness_bound": poll_interval_at_capture,
+            "poll_interval_at_capture": poll_interval_at_capture,
+            "vendor_latency_note": ROSTER_VANISHED_NOTE,
+            "payload_hash": sha256_hex({"marketHash": mh, "roster_status": "vanished",
+                                        "cycle_id": cycle_id}),
+            "prev_snapshot_ref": None,
+        })
+        roster[mh] = "vanished"
+
+    for mh in sorted(current_active_hashes):
+        if roster.get(mh) == "vanished":
+            events.append({
+                "row_id": str(uuid.uuid4()), "table": "roster_events", "key": mh,
+                "cycle_id": cycle_id, "is_order": False, "provenance": PROVENANCE,
+                "content": {"marketHash": mh, "roster_status": "reappeared"},
+                "vendor_ts": None, "vendor_ts_label": VENDOR_TS_LABEL,
+                "vendor_ts_semantics": "unknown_unverified",
+                "retrieval_ts": retrieval_ts, "ingestion_ts": now_iso(),
+                "max_staleness_bound": poll_interval_at_capture,
+                "poll_interval_at_capture": poll_interval_at_capture,
+                "vendor_latency_note": ROSTER_REAPPEARED_NOTE,
+                "payload_hash": sha256_hex({"marketHash": mh, "roster_status": "reappeared",
+                                            "cycle_id": cycle_id}),
+                "prev_snapshot_ref": None,
+            })
+        roster[mh] = "active"
+
+    return events
+
+
 def append_jsonl(path: str, rows: List[dict]) -> None:
     if not rows:
         return
@@ -529,6 +663,20 @@ def run_cycle(client: SxBetClient, state: StateStore, data_dir: str,
             stats["rows_deduped"]["markets"] += 1
     append_jsonl(os.path.join(data_dir, TABLE_FILES["markets"]), market_rows)
     stats["rows_written"]["markets"] = len(market_rows)
+
+    # 1b. Roster-membership transitions (M26 defect-3 fix) ------------------
+    # Only run when /markets/active itself succeeded this cycle -- see
+    # compute_roster_transitions' docstring for why a failed poll must never
+    # be diffed as if it were a witnessed empty roster.
+    roster_event_rows = []
+    if log_row.get("ok"):
+        roster_event_rows = compute_roster_transitions(
+            state, current_active_hashes=set(market_hashes),
+            retrieval_ts=log_row.get("finished_ts", now_iso()),
+            poll_interval_at_capture=poll_interval_seconds, cycle_id=cycle_id)
+    append_jsonl(os.path.join(data_dir, TABLE_FILES["roster_events"]), roster_event_rows)
+    stats["rows_written"]["roster_events"] = len(roster_event_rows)
+    stats["rows_deduped"]["roster_events"] = 0  # roster_events are never dedup'd -- see docstring
 
     # 2. Order book (per-market depth), batched -----------------------------
     orderbook_rows = []
