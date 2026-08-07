@@ -571,3 +571,26 @@ allowance) — least dependent on lineup attribution, so most likely to give a c
 (usage redistribution conditional on teammate composition), which attacks the known layer-1
 bottleneck directly; then I0005. I0007 (structural-model ensemble value via error decorrelation) is
 half-runnable now — the structural residual series already exists.
+
+
+## 10.13 E2/E3 RESTRUCTURED — D063, read before designing any E2
+
+E2 no longer consumes one fresh test set. It runs the **full walk-forward ladder** (train through
+2021→predict 2022 … through 2025→predict 2026) with **fold provenance labelled**:
+
+* **F1-F3 (predict 2022/23/24): `DEVELOPMENT_CONTAMINATED`** — E0/E1 were allowed to explore those
+  seasons, so these are **robustness evidence, never independent confirmation**. Do not discard them;
+  do not promote them.
+* **F4-F5 (predict 2025/2026): `CLEAN_CONFIRMATION`** — the strongest historical evidence available.
+  **Report separately AND pooled**, and label any pooled figure mixed-provenance.
+
+**Mandatory on every E2 record: `holdout_touch_count` and `adaptive_generation`.** Generation 0 is
+the first look at 2025/26; increment whenever an E2 result causes a redesign that is then re-tested.
+Anything above 0 must say **ADAPTIVE, NOT FRESH CONFIRMATION** in its headline. The holdout cannot be
+restored once informed — this counter is the only honest accounting of how much is left.
+
+**Deployment:** strong E2 evidence can now carry a model to production against the five-part bar in
+§13.9; E3 is live verification that raises or lowers confidence and capital, and **may not be used to
+forbid use of a model that clears the bar**. **The AUTHORITY is unchanged** — §6 still reserves
+deployment and financial commitment to the user. E2 makes the case; the user makes the call. This
+interpretation is flagged in D063 for the user to confirm or overrule.

@@ -338,3 +338,52 @@ itself constitutional work: it is authorised as the change that *ends* that phas
 to continue it. Priority target: the **player-level residual**, i.e. granular player x matchup x
 availability interactions, which is the program's original thesis and the thing the infrastructure
 was built to test.
+
+
+**13.7 E2 uses ALL pseudo-futures, with fold provenance labelled honestly** (`D063`, user directive
+2026-08-07). The WNBA record is small and there is not enough 2026 season left to wait for a large
+prospective sample. So E2 does not consume one fresh test set — it runs the full walk-forward ladder:
+
+| fold | trains through | predicts | provenance |
+|---|---|---|---|
+| F1 | 2021 | 2022 | **DEVELOPMENT_CONTAMINATED** |
+| F2 | 2022 | 2023 | **DEVELOPMENT_CONTAMINATED** |
+| F3 | 2023 | 2024 | **DEVELOPMENT_CONTAMINATED** |
+| F4 | 2024 | **2025** | **CLEAN_CONFIRMATION** |
+| F5 | 2025 | **2026** | **CLEAN_CONFIRMATION** |
+
+Folds F1-F3 predict seasons E0/E1 were allowed to explore, so **they are not independent
+confirmation and may never be reported as such** — they are *robustness evidence*, which is real and
+must not be discarded merely because discovery touched those seasons. **F4 and F5 are the strongest
+historical confirmation available** because exploration never saw 2025 or 2026. Every E2 report
+states F4/F5 **separately and pooled**, and labels the pooled figure as mixed-provenance.
+
+**13.8 The holdout degrades with use, and the accounting is mandatory.** Do NOT retune against
+2025-2026 and present each rerun as fresh confirmation. Every E2 record carries two fields:
+
+* `holdout_touch_count` — how many times this idea's lineage has evaluated against 2025/26;
+* `adaptive_generation` — **0** for the first look, incremented whenever an E2 result *causes a
+  redesign* that is then re-tested.
+
+Any record with `adaptive_generation > 0` is **ADAPTIVE, not fresh confirmation**, and says so in its
+headline. This is not bureaucracy: a confirmation holdout cannot be restored once informed, so the
+counter is the only honest way to report how much of it has been spent. Two ideas showing the same
+F4/F5 result at generation 0 and generation 3 are not equally believable.
+
+**13.9 E2 evidence can carry a model to deployment; E3 modulates confidence, it does not gate first
+use.** A model may be deployed on sufficiently strong E2 historical evidence rather than waiting for
+hundreds of prospective games. The bar is all five of:
+
+1. signal discovered on development data;
+2. mechanics survive proper point-in-time historical walk-forward;
+3. it **holds up independently on 2025 and 2026**;
+4. it materially improves the relevant forecast / market / decision benchmark;
+5. leakage, calibration, stability and coverage checks pass.
+
+**E3 is live verification** — CLV, ROI, calibration and drift measured prospectively, which raises or
+lowers the confidence and capital given to a model that has *already earned deployment at E2*. E3
+must not be used to forbid the use of a model that clears the bar above.
+
+**What this does NOT change:** the *authority* to deploy. GRAPH_POLICY §6 reserves external
+deployment and financial commitment to the user, and D063 changes the **evidence standard**, not who
+rules. E2 can now make the case; the user still makes the call.
