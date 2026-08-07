@@ -88,3 +88,16 @@ A user decision on one of:
 - **(d)** Confirm this track stays OFF and SX Bet is dropped from the exchange-capture roster.
 
 Nothing beyond the three verification GETs listed above was executed against SX Bet's live systems.
+
+---
+## SUPERSEDED 2026-08-07 — capture authorized and running
+
+**This document's "0 rows captured" statement was true when written and is now stale.** The user
+ruled on the ToS interpretation in `DECISION_LEDGER.jsonl` decision `D035_EXCHANGE_DISPOSITIONS`:
+the official-documented-API reading controls, and capture proceeds at gentle read-only rates.
+Capture has since run continuously (scheduled task `WNBA_SxBetCapture`, one cycle per 5 minutes)
+and M21_EXECUTION_REALISM measured 131 cycles / 10.93 hours / zero endpoint failures against it.
+
+The ToS tension recorded above is preserved deliberately (D035: "the ToS tension recorded rather
+than erased, and the disposition reversible if SX Bet ever objects"). Nothing in the analysis above
+is retracted — only its capture-status claim is superseded.

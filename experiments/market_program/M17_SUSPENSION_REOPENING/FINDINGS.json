@@ -1,0 +1,255 @@
+{
+  "node": "M17_SUSPENSION_REOPENING",
+  "epistemic_status": "PROSPECTIVE MEASUREMENT. Characterises when books suspend and how they reopen around information events. A gap in our own capture is not a suspension; the two must be distinguished by evidence, not assumption.",
+  "generated_at_utc": "2026-08-07T13:45:00Z",
+  "write_scope": "experiments/market_program/M17_SUSPENSION_REOPENING/",
+  "forbidden_inputs_touched": false,
+  "t2_archive_touched": false,
+  "contradictions_found": [
+    {
+      "id": "C1_output_filenames",
+      "description": "This node's spawn instructions (orchestrator system message) direct: write ONLY SUSPENSION.json + REPORT_BODY.md, and explicitly 'Do NOT write REPORT.md'. The node's own generated contract (experiments/player_program/orchestration/prompts/M17_SUSPENSION_REOPENING.md, 'Required outputs' section) instead names REPORT.md + FINDINGS.json, and its 'Validation that will be run against your output' step is literally `json.load(open('.../M17_SUSPENSION_REOPENING/FINDINGS.json'))`. The M03_CAPTURE_UPGRADE node hit the identical conflict (CAPTURE_REPORT.md placeholder in that directory records the harness refusing a literal REPORT.md write) and resolved it the same way: content prepared in full, delivered under the alternate filename the spawn instructions actually permit, coordinator to copy at integration. Not silently reconciled: both filename pairs are produced here (REPORT_BODY.md per the direct instruction; SUSPENSION.json AND a duplicate FINDINGS.json with identical content so the contract's own json.load validation step can still pass).",
+      "resolution": "Wrote REPORT_BODY.md (not REPORT.md) per direct orchestrator instruction. Wrote SUSPENSION.json as the primary structured output per the orchestrator instruction, and additionally wrote FINDINGS.json (byte-identical content) solely so the contract's stated validation command does not fail. Flagging for the coordinator rather than guessing which document controls."
+    }
+  ],
+  "tape_characterization": {
+    "odds_api_ladder": {
+      "source_file": "data/market_snapshots/snapshots.csv",
+      "tier": "T0 (WITNESSED) per M00 Section 4 -- our own poll, our own retrieval_ts",
+      "command": "csv.DictReader over snapshots.csv; grouped by chain key (game_id, book, market, outcome, line)",
+      "n_rows": 3152,
+      "n_distinct_game_id": 4,
+      "distinct_book": [
+        "betonlineag",
+        "betrivers",
+        "draftkings",
+        "fanduel",
+        "williamhill_us"
+      ],
+      "distinct_market": [
+        "player_assists",
+        "player_points",
+        "player_rebounds",
+        "player_threes"
+      ],
+      "note_market_scope": "All 4 markets captured in this file are PLAYER PROPS. No h2h/spreads/totals game-line rows are present in this snapshots.csv extract.",
+      "market_status_census": {
+        "active": 3152,
+        "suspended": 0,
+        "missing": 0
+      },
+      "rows_per_book": {
+        "fanduel": 621,
+        "draftkings": 628,
+        "williamhill_us": 493,
+        "betrivers": 765,
+        "betonlineag": 645
+      },
+      "rows_per_market": {
+        "player_assists": 603,
+        "player_points": 1180,
+        "player_rebounds": 802,
+        "player_threes": 567
+      },
+      "n_distinct_chains": 704,
+      "chain_length_histogram": {
+        "1": 43,
+        "2": 59,
+        "3": 78,
+        "4": 391,
+        "6": 1,
+        "8": 1,
+        "9": 131
+      },
+      "n_status_transitions": 0,
+      "cadence_gap_seconds_within_chain": {
+        "n_gaps": 2448,
+        "min": 0.240361,
+        "p10": 0.24884,
+        "median": 2999.674985,
+        "p90": 7201.316934,
+        "max": 13799.713803,
+        "interpretation": "The sub-second minimum is same-poll duplicate outcome rows (retrieval_ts differs by microseconds across outcomes in one HTTP response), not capture cadence. True cadence is the ladder's rung schedule (poll_interval_at_capture values observed: 900s/T-15m, 3600s/T-60m [note: schema field name is nominal interval to next rung, not wall-clock poll spacing], 7200s/T-2h, 14400s/T-4h, 86400s/T-24h) -- coarse and rung-triggered, not continuous polling."
+      },
+      "vendor_ts_semantics_census": {
+        "unknown_unverified": 3152
+      },
+      "poll_interval_at_capture_census": {
+        "86400.0": 1251,
+        "14400.0": 441,
+        "7200.0": 483,
+        "3600.0": 486,
+        "900.0": 491
+      },
+      "vendor_latency_note_populated": false,
+      "vendor_latency_note_observation": "Column present on every row (schema requires the column to exist; NULLABLE_OK), but its value is the empty string on all 3152 rows in this extract -- the advisory field exists structurally but carries no content yet.",
+      "retrieval_ts_span_utc": {
+        "min": "2026-08-06T18:52:04.642477+00:00",
+        "max": "2026-08-07T01:42:03.885243+00:00"
+      },
+      "required_field_null_check": "PASS -- zero blanks across all REQUIRED_PRESENT columns (schema module market_snapshot_schema.py) in all 3152 rows.",
+      "market_status_write_path_audit": {
+        "command": "grep market_status in market_snapshot_writer.py",
+        "finding": "flatten_odds_payload() (game markets, line 152) writes market_status='active' if outcomes else 'missing' -- keyed per (book, market) that DOES appear in the vendor payload; a book/market entirely absent from the payload produces no row at all (neither active nor missing). flatten_props_payload() (props, lines 202/222) writes 'active' whenever any outcome exists, and 'missing' only as a single EVENT-level placeholder row when the entire event returns zero outcomes across every book and market. No code path in this writer ever emits market_status='suspended', despite it being a legal value in MARKET_STATUS_VALUES. The vendor's /odds and /events/{id}/odds endpoints do not expose a book-suspended flag distinct from 'no outcomes in this payload' -- so even if The Odds API's upstream book suspended a market, this writer could only ever record that as 'missing' (event-level, props only) or as a silent absence of a row (game markets), never as a labeled suspension."
+      }
+    },
+    "sxbet_exchange": {
+      "source_files": [
+        "data/sxbet_capture/markets.jsonl",
+        "data/sxbet_capture/orderbook.jsonl",
+        "data/sxbet_capture/best_line.jsonl",
+        "data/sxbet_capture/trades.jsonl"
+      ],
+      "tier": "EXCHANGE_PUBLIC_API, VENDOR_ASSERTED / vendor_ts_semantics=unknown_unverified throughout (per capture_sxbet.py header); treated as T0 witnessed-by-us-at-retrieval, T1-grade on any vendor-asserted field",
+      "venue_note": "Single venue (SX Bet exchange). 'Per book' does not apply here as it does for the multi-book odds-API ladder; coverage below is reported per market TYPE and per game (sportXeventId) instead.",
+      "markets_jsonl": {
+        "n_rows": 314,
+        "n_wnba_rows": 314,
+        "note": "capture_sxbet.py scopes to league_id=1384 (WNBA) only, so 100% WNBA is expected by construction, not a finding.",
+        "status_census_content_status": {
+          "ACTIVE": 314
+        },
+        "n_distinct_marketHash": 138,
+        "n_distinct_games_sportXeventId": 9,
+        "market_type_census": {
+          "226_moneyline": 8,
+          "28_total_over_under": 163,
+          "342_spread_or_other": 143
+        },
+        "chain_length_histogram": {
+          "1": 50,
+          "2": 50,
+          "3": 16,
+          "4": 9,
+          "5": 5,
+          "6": 3,
+          "7": 3,
+          "8": 2
+        },
+        "n_status_transitions": 0,
+        "n_distinct_cycle_ids_in_written_rows": 54,
+        "n_actual_markets_active_http_calls_per_poll_log": 131,
+        "cadence_gap_seconds_between_written_cycles": {
+          "n_gaps": 53,
+          "min": 298.01,
+          "p10": 299.3,
+          "median": 300.44,
+          "p90": 1504.04,
+          "max": 5399.88,
+          "note": "This is the gap between cycles that produced a NEW/CHANGED markets.jsonl row, not the gap between HTTP polls -- see poll_log below for true poll cadence."
+        },
+        "retrieval_ts_span_utc": {
+          "min": "2026-08-07T02:39:05.910270+00:00",
+          "max": "2026-08-07T13:30:03.884773+00:00"
+        },
+        "gameTime_range_utc": {
+          "min": "2026-08-06T23:00:00",
+          "max": "2026-08-09T00:30:00"
+        }
+      },
+      "orderbook_jsonl": {
+        "n_rows": 6333,
+        "orderStatus_census": {
+          "ACTIVE": 6333
+        },
+        "n_distinct_cycle_ids": 130
+      },
+      "best_line_jsonl": {
+        "n_rows": 4449,
+        "n_distinct_cycle_ids": 130,
+        "n_active_orders_histogram": {
+          "0": 511,
+          "1": 1122,
+          "2": 971,
+          "3": 820,
+          "4": 556,
+          "5": 315,
+          "6": 119,
+          "7": 31,
+          "8": 3,
+          "9": 1
+        },
+        "n_rows_zero_active_orders": 511,
+        "pct_rows_zero_active_orders": 11.49,
+        "caveat": "n_active_orders==0 is a thin-liquidity / no-resting-orders observation on ONE side of ONE market, derived from /orders. It is NOT a market-suspension signal: at every one of these 511 rows, the corresponding markets.jsonl entry for that marketHash (when present) still reads status=ACTIVE. Zero-liquidity and book-suspended are different, unconflated phenomena in this data."
+      },
+      "trades_jsonl": {
+        "n_rows": 7442,
+        "tradeStatus_census": {
+          "SUCCESS": 7442
+        }
+      },
+      "poll_log_jsonl": {
+        "source_file": "logs/sxbet/poll_log.jsonl",
+        "n_total_http_attempts": 767,
+        "n_failures": 0,
+        "by_endpoint": {
+          "/markets/active": 131,
+          "/orders": 318,
+          "/trades": 318
+        },
+        "markets_active_n_returned_series_note": "n_returned for /markets/active fell from 90-100 (first ~35 min of capture) to a 28-44 plateau for the remaining ~10.5 hours. This is fully explained by normal game-lifecycle turnover: gameTime values on the earliest-dropping markets are 2026-08-07T01:00-02:00, i.e. already at or past tip-off when this capture window opened at 02:39. No HTTP failure coincides with the drop (0/767 failures across the whole run), which rules out poll failure as the cause. No isolated mid-window dip-then-recovery pattern tied to a single still-scheduled game was observed in the aggregate count; a per-market roster reconstruction (see structural finding below) would be needed to rule that out at the individual-market level, and the current artifacts do not support that reconstruction."
+      }
+    }
+  },
+  "status_transitions": {
+    "n_total_observed": 0,
+    "odds_api_ladder_transitions": [],
+    "sxbet_market_status_transitions": [],
+    "finding": "Zero market_status / status transitions of any kind were observed in either tape across the full captured window (odds-API ladder: ~6h50m, 4 games, 3152 rows; sxbet exchange: ~10h51m and still running at measurement time, 9 games, 314 markets.jsonl rows / 6333 orderbook rows / 4449 best_line rows / 7442 trades). This is a preserved negative result, not an absence of measurement."
+  },
+  "duration_measurements": [],
+  "duration_measurements_note": "Not applicable -- zero transitions observed to bound. No suspension interval exists in the data to measure a lower or upper bound on.",
+  "price_jump_measurements": [],
+  "price_jump_measurements_note": "Not applicable -- reopening price-jump measurement (acceptance criterion 3) requires a reopening event; none occurred in the captured window. Nothing was computed here that could be mistaken for a measured effect.",
+  "structural_findings": [
+    {
+      "id": "S1_odds_api_no_suspended_path",
+      "severity": "material to feasibility",
+      "finding": "market_snapshot_schema.py defines market_status in {'active', 'suspended', 'missing'}, but market_snapshot_writer.py (the only writer of snapshots.csv) contains no code path that ever assigns 'suspended' -- verified by reading flatten_odds_payload() (line 152) and flatten_props_payload() (lines 202, 222) in full. Even if the underlying sportsbook suspended a market mid-poll, The Odds API's response shape (an event/bookmaker/market/outcomes payload with no book-suspended flag) gives this writer nothing to key 'suspended' off of. The schema enum's 'suspended' value is currently unreachable in practice."
+    },
+    {
+      "id": "S2_sxbet_active_only_endpoint",
+      "severity": "material to feasibility",
+      "finding": "capture_sxbet.py's SxBetClient.get_active_markets() calls /markets/active exclusively (line 221-227). By the endpoint's own contract, it returns only markets the exchange currently considers active; a suspended market does not appear in the response with a non-ACTIVE status -- it simply does not appear. This is corroborated by the empirical census: 314/314 markets.jsonl rows across the whole run read status='ACTIVE', and the same is true of orderbook.jsonl's orderStatus (6333/6333 ACTIVE), which is drawn from /orders, another endpoint that appears to return only currently-open orders."
+    },
+    {
+      "id": "S3_dedup_writer_cannot_witness_absence",
+      "severity": "material to feasibility -- the central finding of this node",
+      "finding": "build_envelope() in capture_sxbet.py (lines 390-426) writes a new markets.jsonl row only when a marketHash's content is NEW or has CHANGED (byte-hash comparison against StateStore); byte-identical content is deduplicated and produces no row. No per-cycle roster snapshot (the full list of marketHashes /markets/active returned on a given cycle) is persisted anywhere -- poll_log.jsonl records only the COUNT (n_returned), not the membership. Consequence: if a market were suspended (vanishes from /markets/active for one or more cycles) and then reopened with IDENTICAL content to before, this writer would record nothing at all -- no removal event, no reappearance event, no gap. A suspend/reopen cycle with unchanged content is invisible to the persisted data by construction. This means the acceptance criterion 'a suspension is claimed only from capture evidence that distinguishes book-suspended from we-failed-to-poll' currently has no capture evidence to claim from in either direction -- not because the evidence says 'no suspensions happened', but because the writer cannot represent a suspension as a positive event even when it has no reason to doubt one occurred. This is distinct from a we-failed-to-poll gap: poll_log.jsonl shows 0/767 HTTP failures, so failed polling is ruled out as an explanation for anything observed or unobserved here -- the gap is in what gets WRITTEN on a successful poll of unchanged content, not in polling itself."
+    },
+    {
+      "id": "S4_market_count_drift_explained_by_game_lifecycle",
+      "severity": "informational",
+      "finding": "The aggregate n_returned series for /markets/active (poll_log.jsonl) drops from ~90-100 to a 28-44 plateau within the first ~35 minutes of capture. Cross-referencing markets.jsonl content.gameTime shows the earliest-vanishing markets belong to games whose scheduled tip-off (gameTime) was already at or before the capture window's start (e.g. Portland Fire @ Toronto Tempo, gameTime 2026-08-07T02:00:00, capture starting 02:39:05). This is consistent with ordinary in-play/post-game market retirement, not suspension. No claim beyond this consistency check is made -- the data does not support ruling out an intra-game suspension riding on top of this trend for a market that was NOT about to retire, per S3 above."
+    }
+  ],
+  "feasibility_verdict": {
+    "verdict": "NOT YET -- MARKET_MECHANISM_SUPPORTED (M00 Section 3, rung 1) for the PURE_MICROSTRUCTURE class (M00 Section 1.6, suspension/reopening) cannot be reached on the current tape or the current writer design.",
+    "reasons": [
+      "Zero status transitions observed in either tape over the full captured window (odds-API ladder ~6h50m/4 games; sxbet exchange ~10h51m/9 games).",
+      "The odds-API ladder writer has no code path to ever emit 'suspended' (S1).",
+      "The sxbet writer's dedup-on-unchanged-content design cannot witness a suspend/reopen cycle that leaves content unchanged on reopening (S3) -- this is a capture-architecture gap, not (only) a low base-rate problem."
+    ],
+    "what_would_change_the_verdict": [
+      "A capture-upgrade change to the sxbet writer (or a companion process) that persists a per-cycle roster snapshot -- e.g. a heartbeat row per still-tracked marketHash even when content is unchanged, or an explicit 'not present in this cycle's active list' row -- so that absence becomes a witnessed, timestamped event rather than a silent non-write. This is a design change, not a data-accumulation problem, and is a prerequisite for ANY future transition in this tape to be usable as evidence.",
+      "For the odds-API ladder: either a vendor-side signal for book-level suspension (not currently exposed by the endpoints this writer calls) or accepting that this tape can only ever support the coarser 'missing' (props, event-level) label -- which still needs to actually occur (0 times so far) and needs per-book/per-market granularity it does not currently have for game markets.",
+      "Accumulation of enough live-game capture time, AFTER the above fix, for genuine suspension events (injury review, technical/scoring dispute, replay review, book risk-management pull) to occur and be captured. No base rate for these events at this venue/vendor pair exists in this dataset (n=0 observed in ~17.5 combined tape-hours across 13 total games), so no calendar estimate for 'enough' can be computed -- stating a number here would be an unmeasured guess, which the mandate prohibits."
+    ],
+    "minimum_sample_for_credible_claims": "Per the M00 evidence ladder (Section 3, rung 1) and Section D preregistration discipline this program inherits, a credible F6 (suspension/reopening) endpoint needs a preregistered minimum n of TRUSTED transitions set BEFORE the registration window opens, with UNDERPOWERED as the honest verdict below that n. This node does not set that n itself (that is Section D.2 preregistration territory, owned by the family's registration node, not this audit) -- but notes that n=0 currently, so any endpoint registered today would open UNDERPOWERED by definition and stay there until real transitions accumulate under the fixed writer design above."
+  },
+  "could_not_establish": [
+    "Whether any suspend/reopen event occurred during the captured window that the current writer design simply failed to represent (S3) -- this is unknowable from the persisted artifacts, by construction, not merely unmeasured.",
+    "Any duration bound (lower or upper) for a suspension -- none was observed to bound.",
+    "Any reopening price-jump measurement -- no reopening event exists in the data.",
+    "A base rate or expected-time-to-first-transition for either tape -- would require either historical vendor documentation of suspension frequency (not sourced here) or a much longer observed run; zero transitions in the observed window is not enough to fit a rate.",
+    "Whether the sxbet /orders and /markets/active endpoints structurally exclude non-active objects (assumed from the empirical 100% ACTIVE census plus the endpoint names) versus some other explanation for the census -- vendor API documentation was not fetched as part of this audit (would require a live network call outside this node's read-only local-artifact scope); this is stated as the best-supported inference from the endpoint name, the code, and the census, not a vendor-confirmed fact."
+  ],
+  "stop_conditions_triggered": [],
+  "stop_conditions_checked": [
+    "No finding here required spending money, placing a wager, entering credentials, accepting scraping/licensing risk, or reading sealed possession results.",
+    "No reaction-time or timing claim was made at all (zero transitions to time), so the UNSUPPORTABLE-labeling stop condition (D023 amendment 4) is moot rather than tripped -- there is nothing timing-shaped in this report to label.",
+    "No use of the final-state (T2) odds archive occurred; this node never opened master_odds.csv or its extension files."
+  ],
+  "no_wager_or_order_shaped_recommendation": "Confirmed -- this document contains no staking, ordering, or execution recommendation of any kind, consistent with the node mandate."
+}

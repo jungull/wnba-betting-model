@@ -1,0 +1,553 @@
+{
+  "schema": "market_program/M07/lead_lag_result/1",
+  "epistemic_status": "PROSPECTIVE MEASUREMENT. Lead-lag ordering between books is claimable only from synchronized multi-book capture; ordering below the capture cadence or clock-skew bound is unknowable and must be reported as such.",
+  "source_file": "data/market_snapshots/snapshots.csv",
+  "tape_characterization": {
+    "n_rows": 3152,
+    "n_distinct_games": 4,
+    "n_distinct_books": 5,
+    "books": [
+      "betonlineag",
+      "betrivers",
+      "draftkings",
+      "fanduel",
+      "williamhill_us"
+    ],
+    "n_distinct_markets": 4,
+    "markets": [
+      "player_assists",
+      "player_points",
+      "player_rebounds",
+      "player_threes"
+    ],
+    "n_distinct_market_outcome_pairs": 152,
+    "vendor_ts_semantics_distribution": {
+      "unknown_unverified": 3152
+    },
+    "market_status_distribution": {
+      "active": 3152
+    },
+    "retrieval_ts_min": "2026-08-06T18:52:04.642477+00:00",
+    "retrieval_ts_max": "2026-08-07T01:42:03.885243+00:00",
+    "n_distinct_global_poll_instants": 21,
+    "n_polls_with_all_books_present": 21,
+    "n_polls_with_ge2_books_present": 21
+  },
+  "series_definition": {
+    "key": [
+      "game_id",
+      "book",
+      "market",
+      "outcome",
+      "line"
+    ],
+    "rationale": "line included because this tape is entirely player-prop alt-line markets (points/rebounds/assists/threes); keying without line collides 160 (game,book,market,outcome,retrieval_ts) tuples that are simultaneously-offered alternate lines sharing one snapshot_id/payload_hash, not sequential reprices. This adopts the M05 DESIGN_BASELINE.md DB-1 alternate-line variant (series_key_includes_line=True) rather than re-deriving a join key ad hoc.",
+    "n_series": 704,
+    "n_key_collisions_after_including_line": 0
+  },
+  "cadence": {
+    "raw_consecutive_gap_seconds": {
+      "n": 2448,
+      "min": 0.240361,
+      "max": 13799.713803,
+      "mean": 2981.0654902512256,
+      "p10": 0.24884,
+      "p25": 599.884325,
+      "median": 2999.674985,
+      "p75": 3602.253491,
+      "p90": 7201.316934
+    },
+    "dedup_consecutive_gap_seconds_dropping_sub_1s_echo_polls": {
+      "n": 2049,
+      "min": 599.477991,
+      "max": 13799.713803,
+      "mean": 3561.5656807096143,
+      "p10": 599.884325,
+      "p25": 601.814826,
+      "median": 3000.254718,
+      "p75": 6000.170931,
+      "p90": 7201.316934
+    },
+    "echo_poll_pairs_sub_1s_gap": {
+      "same_state": 399,
+      "different_state": 0
+    },
+    "note": "echo_poll_pairs are consecutive retrievals of the SAME series less than 1s apart; 100% of them show identical price_over/price_under state, confirming they carry zero new information (duplicate/back-to-back poll ticks, not a sub-second reprice)."
+  },
+  "synchronization": {
+    "window_used_s": 0,
+    "window_justification": "0 seconds is not a chosen tolerance -- it is the observed fact that every book/market row captured in one poll cycle for a game shares one identical retrieval_ts string. There is no empirical basis in this tape for any nonzero cross-book skew estimate.",
+    "n_poll_instants_total": 21,
+    "n_poll_instants_with_ge2_books": 21,
+    "n_poll_instants_with_all5_books": 21,
+    "n_series_families_game_market_outcome_line": 238,
+    "n_series_families_with_any_synchronized_ge2_book_poll": 152
+  },
+  "price_changes": {
+    "n_total_price_changes": 747,
+    "n_changes_per_book": {
+      "fanduel": 152,
+      "draftkings": 180,
+      "williamhill_us": 62,
+      "betrivers": 232,
+      "betonlineag": 121
+    },
+    "n_changes_per_game": {
+      "58beff9061f15ff3f416542cb51f4751": 275,
+      "0c6ed7c2d9458b686d96eafc98f9d07d": 242,
+      "2036e6c92c8c4e14b2b4727f482e74a9": 189,
+      "0cc93c06f67e3eeac12f320fbf0a5d2f": 41
+    },
+    "n_co_occurring_change_groups_same_poll_interval": 211,
+    "n_changes_inside_co_occurring_groups": 550
+  },
+  "lead_lag_attempt": {
+    "method_1_within_poll_ordering": {
+      "description": "For (game,market,outcome,line) groups where >=2 books changed price in the SAME poll-to-poll interval, attempt to order them by retrieval_ts.",
+      "n_co_occurring_groups": 211,
+      "book_pair_tie_counts": {
+        "betonlineag|draftkings": 73,
+        "betonlineag|fanduel": 58,
+        "draftkings|fanduel": 67,
+        "betrivers|fanduel": 70,
+        "betonlineag|betrivers": 44,
+        "betrivers|draftkings": 73,
+        "betrivers|williamhill_us": 27,
+        "fanduel|williamhill_us": 30,
+        "betonlineag|williamhill_us": 31,
+        "draftkings|williamhill_us": 33
+      },
+      "verdict": "INDISTINGUISHABLE_AT_GRID for all pairs -- every within-poll co-occurring change shares an identical retrieval_ts across books by construction (see resolution_floor). No pair can be ordered this way."
+    },
+    "method_2_cross_poll_first_mover_counts": {
+      "description": "Coarse ordering only: book A's change interval fully precedes book B's change interval (A's q_up <= B's q_lo) on a matched (game,market,outcome,line) family. This is bounded to whole-poll resolution, never a sub-poll reaction time.",
+      "n_orderable_pairs_observed_raw_cross_product": 886,
+      "n_effective_distinct_family_leader_follower_relationships": 553,
+      "raw_vs_effective_caveat": "The raw cross-product count multiplies every (book-A change) x (book-B change) pair satisfying the ordering test within a family; when a book changes several times across the tape this inflates far past the number of independent 'who moved first' events. The effective, non-inflated count is the number of DISTINCT (family, leader, follower) relationships, used for the power/feasibility estimate below instead of the raw cross-product.",
+      "leader_totals_raw_count": {
+        "betrivers": 206,
+        "draftkings": 233,
+        "fanduel": 175,
+        "betonlineag": 174,
+        "williamhill_us": 98
+      },
+      "detail_sample": [
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "betrivers",
+          "follower": "betonlineag",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "betrivers",
+          "follower": "betonlineag",
+          "leader_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "draftkings",
+          "follower": "betonlineag",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "fanduel",
+          "follower": "betonlineag",
+          "leader_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "draftkings",
+          "follower": "betrivers",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "betrivers",
+          "follower": "fanduel",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "betrivers",
+          "follower": "fanduel",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "betrivers",
+          "follower": "fanduel",
+          "leader_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "draftkings",
+          "follower": "fanduel",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_threes",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "draftkings",
+          "follower": "fanduel",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_rebounds",
+            "Cameron Brink",
+            "5.5"
+          ],
+          "leader": "betonlineag",
+          "follower": "draftkings",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_rebounds",
+            "Cameron Brink",
+            "5.5"
+          ],
+          "leader": "betonlineag",
+          "follower": "draftkings",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_rebounds",
+            "Cameron Brink",
+            "5.5"
+          ],
+          "leader": "draftkings",
+          "follower": "betonlineag",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_rebounds",
+            "Cameron Brink",
+            "5.5"
+          ],
+          "leader": "betonlineag",
+          "follower": "draftkings",
+          "leader_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_rebounds",
+            "Cameron Brink",
+            "5.5"
+          ],
+          "leader": "fanduel",
+          "follower": "betonlineag",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_rebounds",
+            "Cameron Brink",
+            "5.5"
+          ],
+          "leader": "fanduel",
+          "follower": "draftkings",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_rebounds",
+            "Cameron Brink",
+            "5.5"
+          ],
+          "leader": "fanduel",
+          "follower": "draftkings",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_assists",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "betrivers",
+          "follower": "draftkings",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_assists",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "draftkings",
+          "follower": "betrivers",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T22:52:04.022880+00:00",
+            "2026-08-06T23:52:06.276371+00:00"
+          ]
+        },
+        {
+          "family": [
+            "0c6ed7c2d9458b686d96eafc98f9d07d",
+            "player_assists",
+            "Kayla McBride",
+            "2.5"
+          ],
+          "leader": "draftkings",
+          "follower": "betrivers",
+          "leader_interval": [
+            "2026-08-06T20:52:06.277903+00:00",
+            "2026-08-06T22:52:04.022880+00:00"
+          ],
+          "follower_interval": [
+            "2026-08-06T23:52:06.276371+00:00",
+            "2026-08-07T00:42:05.137220+00:00"
+          ]
+        }
+      ],
+      "n_detail_total": 886
+    }
+  },
+  "resolution_floor": {
+    "cross_book_sync_window_s": 0.0,
+    "cross_book_sync_window_basis": "Every row captured in the same poll cycle for a given game shares one byte-identical retrieval_ts string across all books and markets (verified: for each of the 4 games, each distinct retrieval_ts value maps to exactly 5 distinct books, 0 book-level timestamp variance). This is a single shared batch-write timestamp, not an independently measured per-book fetch time -- it proves nothing about which book's underlying price actually changed first.",
+    "poll_to_poll_cadence_s_dedup": {
+      "n": 2049,
+      "min": 599.477991,
+      "max": 13799.713803,
+      "mean": 3561.5656807096143,
+      "p10": 599.884325,
+      "p25": 601.814826,
+      "median": 3000.254718,
+      "p75": 6000.170931,
+      "p90": 7201.316934
+    },
+    "vendor_latency_bound": "UNBOUNDED (vendor_ts_semantics=unknown_unverified for all rows; no sourced per-vendor latency bound configured for this capture run)",
+    "clock_skew_bound": "UNMEASURED (no clock-skew measurement recorded for this capture run)",
+    "verdict": "Any candidate lead-lag ordering between two books can be resolved NO FINER than the poll-to-poll cadence for the series in question, and even then only in the coarse sense of 'book A's change was first witnessed at poll k, book B's change was first witnessed at a later poll k+n' -- never a sub-poll reaction time, because within one poll all books are captured under one shared timestamp with zero measured skew. A reaction-time claim in seconds cannot carry the amendment-4 vendor_latency_bound or clock_skew_bound terms on this tape and must be reported UNSUPPORTABLE if attempted at that resolution."
+  },
+  "power_feasibility": {
+    "clustering_note": "The correct independence unit for any claim that generalizes beyond this tape is the GAME, not the book-pair-family comparison: within one game, book-pair orderings across different player/market/line families share the same underlying capture cycle, scheduler timing, and game-news environment, so they are correlated, not independent draws. This tape has n_game_clusters=4. A per-comparison rate extrapolation (below) describes how fast raw comparison volume accumulates but overstates statistical power; a cluster-robust design needs on the order of dozens of independent GAMES of dense synchronized capture, not dozens of comparisons, and this tape is far short of that on the cluster axis regardless of the per-comparison rate.",
+    "n_game_clusters_in_tape": 4,
+    "current_tape_span_s": 24599.242766,
+    "current_tape_span_hours": 6.833122990555555,
+    "n_total_price_changes_observed": 747,
+    "n_orderable_cross_poll_book_pair_comparisons_observed_raw_cross_product": 886,
+    "n_orderable_cross_poll_book_pair_comparisons_observed_effective": 553,
+    "n_within_poll_co_occurring_comparisons_usable_for_ordering": 0,
+    "changes_per_hour_observed_rate": 109.32043825824164,
+    "orderable_cross_poll_comparisons_per_hour_observed_rate": 80.92932042410659,
+    "n_book_pairs": 10,
+    "target_orderable_comparisons_per_pair_for_sign_test_power": 30,
+    "target_total_orderable_comparisons_all_pairs": 300,
+    "estimated_capture_hours_to_reach_target_at_observed_rate": 3.7069383312236286,
+    "estimated_capture_days_to_reach_target_at_observed_rate": 0.15445576380098452,
+    "caveat": "This is a rate extrapolation from a single ~6h50m, 4-game capture window, not a calibrated power analysis with variance estimates -- reported as an order-of-magnitude feasibility signal only. It also assumes cross-poll orderable comparisons remain the ceiling of what's achievable; the batched same-timestamp capture topology (resolution_floor above) means even an arbitrarily large N of such comparisons could NEVER produce a sub-poll-interval reaction-time estimate -- more data buys higher CONFIDENCE in a poll-granularity ordering, not finer TIME RESOLUTION. A finer resolution requires redesigning capture to poll books independently/staggered (M03_CAPTURE_UPGRADE scope), not simply accumulating more of the current batched design."
+  },
+  "could_not_establish": [
+    {
+      "item": "Sub-poll-interval book reaction time (which book's price moved first, in seconds)",
+      "reason": "Capture topology stamps one shared retrieval_ts per poll across all books; zero measured cross-book timestamp variance exists in this tape to order same-poll changes."
+    },
+    {
+      "item": "Any amendment-4-compliant reaction-time claim (t_lower/t_upper in seconds with vendor_latency_bound and clock_skew_bound both numeric)",
+      "reason": "vendor_ts_semantics is unknown_unverified for all 3152 rows and no clock-skew measurement exists for this capture run, so both mandatory amendment-4 terms are UNBOUNDED/UNMEASURED. Per contract section 6, such a claim must be reported UNSUPPORTABLE, not stated."
+    },
+    {
+      "item": "Statistically powered first-mover ranking of the 5 books",
+      "reason": "only 553 coarse cross-poll orderable comparisons exist across all 10 book pairs and all 4 games in the entire tape -- see power_feasibility."
+    },
+    {
+      "item": "Whether observed alt-line price differences represent a true 'line move' of one persistent series vs. simultaneous alternate-line coexistence",
+      "reason": "the tape carries no book-side flag distinguishing a 'main line' from an 'alt line'; treating (line) as part of series identity is the conservative choice but means a genuine same-line reprice that also shifts the posted line number would be undercounted as changes here."
+    }
+  ]
+}

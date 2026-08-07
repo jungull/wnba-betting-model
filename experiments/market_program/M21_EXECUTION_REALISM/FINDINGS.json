@@ -1,0 +1,150 @@
+{
+  "node": "M21_EXECUTION_REALISM",
+  "epistemic_status_verbatim": "EXECUTION SYSTEM MEASUREMENT under the four-system separation. Measures what stands between a signal and a filled bet: posted limits, price movement between decision and action, account frictions. Reuses the ops lane's latency measurement discipline, pointed at sportsbooks. No wager is placed.",
+  "measured_at_utc": "2026-08-07",
+  "data_sources": {
+    "exchange_tape": "data/sxbet_capture/{markets,best_line,orderbook,trades}.jsonl (DATA worktree, C:\\Users\\jgallagher\\wnba-betting-model)",
+    "exchange_tape_state": "data/sxbet_capture/state/sxbet_state.json",
+    "sportsbook_ladder": "data/market_snapshots/snapshots.csv (DATA worktree)",
+    "sportsbook_poll_log": "data/market_snapshots/poll_log.csv",
+    "contract": "experiments/market_program/M00_MARKET_PROGRAM_CONTRACT/MARKET_PROGRAM_CONTRACT.md",
+    "capture_code": "experiments/market_program/EXCHANGE_CAPTURE/sxbet/capture_sxbet.py",
+    "capture_authority": "DECISION_LEDGER.jsonl D035_EXCHANGE_DISPOSITIONS, ts 2026-08-06T19:30:08Z"
+  },
+  "hard_boundary_compliance": {
+    "wager_placed": false,
+    "order_simulated_as_placed": false,
+    "staking_advice_produced": false,
+    "account_credentials_used": false,
+    "note": "All rows read carry is_order=false structurally per capture_sxbet.py; resting orders and trades captured are third-party activity observed via SX Bet's public read-only API, never anything this program could or did submit."
+  },
+  "tape_inventory": {
+    "markets": {"rows": 314, "distinct_cycle_id": 54, "distinct_retrieval_ts": 54, "distinct_marketHash": 138, "distinct_games_sportXeventId": 9},
+    "best_line": {"rows": 4496, "distinct_cycle_id": 131, "distinct_retrieval_ts": 131, "distinct_marketHash": 138, "distinct_market_side_keys": 276, "keys_that_changed_at_least_once": 188, "keys_observed_only_once_no_change": 88},
+    "orderbook": {"rows": 6376, "distinct_cycle_id": 131, "distinct_retrieval_ts_subbatch": 290, "distinct_marketHash_with_activity": 98, "distinct_games_with_activity": 8},
+    "trades": {"rows": 7442, "distinct_cycle_id": 131, "distinct_retrieval_ts_subbatch": 218, "distinct_marketHash_with_activity": 37, "distinct_games_with_activity": 6}
+  },
+  "capture_run_health": {
+    "n_cycles": 131,
+    "cycle_span_utc": ["2026-08-07T02:39:05.210569+00:00", "2026-08-07T13:35:08.837905+00:00"],
+    "span_hours": 10.93,
+    "endpoint_failures_across_all_cycles": 0,
+    "rows_written_total_matches_state_file": true,
+    "total_rows_written_by_table": {"markets": 314, "best_line": 4496, "orderbook": 6376, "trades": 7442},
+    "total_rows_deduped_by_table": {"markets": 5220, "best_line": 6572, "orderbook": 10437, "trades": 0},
+    "note_dedup": "trades never dedup (each fillHash is a unique, immutable event); markets/best_line/orderbook dedup heavily because most polled state is unchanged between cycles -- append-only writer only records a new row when payload_hash changes."
+  },
+  "wnba_market_universe_captured": {
+    "distinct_games": 9,
+    "games": [
+      "Portland Fire @ Toronto Tempo", "Minnesota Lynx @ Los Angeles Sparks", "Connecticut Sun @ Phoenix Mercury",
+      "Dallas Wings @ Golden State Valkyries", "Washington Mystics @ Atlanta Dream", "Indiana Fever @ Las Vegas Aces",
+      "Chicago Sky @ Indiana Fever", "Minnesota Lynx @ Las Vegas Aces", "Portland Fire @ Seattle Storm"
+    ],
+    "market_type_counts_by_marketHash": {"moneyline_type_226": 8, "totals_type_28": 63, "spread_type_342": 67},
+    "games_with_witnessed_resting_orders": 8,
+    "games_with_witnessed_trades": 6,
+    "trade_leg_notional_usdc_equivalent": {
+      "n": 7594, "min": 0.22, "median": 23.96, "p90": 103.19, "max": 5187.77, "sum": 852518.88,
+      "note": "stake field / 1e6 (6-decimal USDC-scale collateral token). Confirms this is retail/small-notional trading activity, not institutional-scale liquidity."
+    }
+  },
+  "depth_and_slippage": {
+    "method": "Order book is append-only + deduplicated (unchanged orders are not rewritten). Depth-at-instant was reconstructed by event-sourced replay: for each sampled poll checkpoint, an order's state is the latest orderbook row with retrieval_ts <= checkpoint, for each (marketHash, orderHash) key. Sampled every 10th of 131 capture cycles plus the final cycle (14 checkpoints) to bound compute while covering the full session.",
+    "n_market_side_snapshots_with_ge1_active_order": 2273,
+    "n_active_orders_per_side": {"min": 1, "p25": 3.0, "median": 7, "p75": 16.0, "max": 226},
+    "depth_at_best_price_usdc_equivalent": {"n": 2273, "min": 10.00, "p10": 17.77, "p25": 25.70, "median": 49.01, "p75": 87.01, "p90": 275.15, "max": 4500.56},
+    "slippage_to_fill_50_usdc": {
+      "n_attempts": 2273, "n_filled_from_visible_depth": 1983, "n_insufficient_visible_depth": 290,
+      "pct_price_move_from_best": {"min": 0.000, "median": 0.000, "p90": 1.351, "max": 27.787}
+    },
+    "slippage_to_fill_100_usdc": {
+      "n_attempts": 2273, "n_filled_from_visible_depth": 1856, "n_insufficient_visible_depth": 417,
+      "pct_price_move_from_best": {"min": 0.000, "median": 0.081, "p90": 5.229, "max": 31.655}
+    },
+    "caveat_depth_at_capture_instants_only": "These are depths and slippage figures computed against the RECORDED resting book at specific capture instants. They are not claims about what would actually have filled -- SX Bet is a peer-to-peer order book; a resting order can be cancelled, partially filled by someone else, or expire between our poll and any hypothetical action, and our own hypothetical taker order is never modeled as consuming liquidity (no market impact, no gas/settlement delay, no counterparty risk applied). No claim of EXECUTION_FEASIBLE is made.",
+    "caveat_price_units": "percentageOdds is SX Bet's own fixed-point encoding (observed as integer values scaled by 1e20 in the captured payloads). Slippage figures are relative price-move percentages within the same encoding and are unit-invariant; no claim is made about the exact real-world probability implied without independent confirmation of the scale factor from SX Bet documentation, which this node did not separately verify."
+  },
+  "latency": {
+    "resolution_floor_statement": "We cannot measure latency finer than our own polling interval. Only T0 (our own retrieval_ts / ingestion_ts, witnessed at capture time) is used below. vendor_ts fields (createdAt on trades, apiExpiry on orderbook) are VENDOR_ASSERTED / vendor_ts_semantics=unknown_unverified per the M00 contract Section 6.3 default and were NOT used for any latency claim, per the D023 amendment-4 prohibition on using T1 stamps for timing.",
+    "exchange_tape_sxbet": {
+      "measurement": "Inter-cycle gap = started_ts[i+1] - started_ts[i] across 131 recorded capture cycles (sxbet_state.json cycles[]). Both timestamps are T0 (our own wall clock at the moment we issued the poll).",
+      "n_cycles": 131,
+      "inter_cycle_gap_seconds": {"min": 298.0, "median": 300.0, "mean": 302.7, "max": 657.1, "stdev": 31.2},
+      "cycle_in_flight_duration_seconds": {"min": 4.24, "median": 4.28, "max": 10.60, "note": "finished_ts - started_ts per cycle: our own round-trip time to poll all 4 endpoints, batched, at <=1 rps."},
+      "own_pipeline_write_delay_ms": {"n": 6376, "min": 0.09, "median": 1.79, "max": 16.18, "note": "retrieval_ts -> ingestion_ts (disk write), negligible next to the ~300s poll floor."},
+      "decision_to_executable_floor": "A price observed on SX Bet at time t cannot be re-confirmed (i.e., acted on with fresh, witnessed information) sooner than the next poll, at t + [298s, 657s], median +300s. This IS the executable-latency floor for this tape; it is not a reaction-time claim about any specific event, so the D023 amendment-4 grid does not apply to bound it further -- it is a direct measurement of our own polling gap."
+    },
+    "quote_change_frequency_sxbet": {
+      "measurement": "Time between consecutive recorded best_line CHANGE events for the same (marketHash, side) key.",
+      "n_intervals": 4220,
+      "interval_seconds": {"min": 298.0, "p10": 299.5, "median": 300.1, "p90": 1197.9, "max": 16798.6},
+      "caveat": "Right/interval-censored at our own poll floor: because we only observe state once per ~300s cycle, multiple true price changes inside one gap collapse into a single observed transition at the next poll. The true underlying change rate is >= what is reported here and cannot be resolved further from this tape."
+    },
+    "sportsbook_ladder_market_snapshots": {
+      "measurement": "Distinct retrieval_ts values in data/market_snapshots/snapshots.csv, gaps between consecutive distinct poll instants. Both timestamps are T0 (our own retrieval_ts/ingestion_ts).",
+      "n_rows": 3152,
+      "n_distinct_poll_instants": 21,
+      "retrieval_ts_span_utc": ["2026-08-06T18:52:04.642477+00:00", "2026-08-07T01:42:03.885243+00:00"],
+      "inter_poll_gap_seconds": {"min": 0.2, "median": 599.8, "mean": 1230.0, "max": 7201.3},
+      "poll_interval_at_capture_values_observed_seconds": [900.0, 3600.0, 7200.0, 14400.0, 86400.0],
+      "cadence_model": "NOT a fixed-interval poller. poll_log.csv shows an event-adaptive grid keyed to scheduled tipoff offsets (labels observed: T-24h, T-4h, T-2h, T-15m). The resolution floor therefore varies by how close a game is to tip-off, from as fine as the T-15m rung down to a 24h-bucket floor far from tip-off, not a single number."
+    },
+    "cross_venue_latency_sxbet_vs_sportsbook": {
+      "measurable": false,
+      "reason": "The two T0 capture windows do not overlap. Sportsbook ladder witnessed span ends 2026-08-07T01:42:03Z; SX Bet exchange tape witnessed span begins 2026-08-07T02:39:05Z, ~57 minutes later. There is no instant at which both tapes hold a simultaneously-witnessed price, so no decision-on-one-venue / act-on-the-other latency figure can be computed from owned data for this session.",
+      "verdict": "UNSUPPORTABLE for this capture window. Would become measurable once both pollers run concurrently for an overlapping stretch."
+    },
+    "amendment4_fields_sxbet_floor_claim": {
+      "t_lower_seconds": 298.0,
+      "t_upper_seconds": 657.1,
+      "poll_interval_event": "n/a -- this is a same-tape polling-floor claim, not an event-to-quote reaction-time claim",
+      "poll_interval_quote": "300s target (--interval default), observed 298.0-657.1s (median 300.0s, one outlier cycle at 657.1s)",
+      "vendor_latency_bound": "UNBOUNDED -- SX Bet documents no book-last-change timestamp distinct from our own retrieval (vendor_latency_note on every orderbook/trades row); no independently sourced vendor latency bound exists in owned data",
+      "clock_skew_bound": "CLOCK_UNBOUNDED -- no NTP or clock-skew measurement was performed by capture_sxbet.py or found anywhere in experiments/market_program/EXCHANGE_CAPTURE; rows are taintable CLOCK_UNBOUNDED per M00 Section 6.3",
+      "censor_type": "interval",
+      "tier": "T0 (retrieval_ts/ingestion_ts, witnessed); vendor_ts fields present but held to the VENDOR_ASSERTED advisory channel only, never used to sharpen this claim",
+      "n_trusted": 131,
+      "n_excluded": 0,
+      "sharpness_prohibition_consequence": "Per M00 Section 6.2, no point estimate finer than G = poll_interval + L_max(all vendors) + 2*clock_skew. With vendor_latency_bound UNBOUNDED and clock_skew_bound unmeasured, G itself is UNBOUNDED beyond our directly-measured same-tape polling gap. Any finer or cross-venue reaction-time claim is UNSUPPORTABLE; only the same-tape polling-floor interval above is stated as a result."
+    }
+  },
+  "book_side_limits": {
+    "status": "ABSENT",
+    "sportsbook_side": "data/market_snapshots/snapshots.csv schema (market_snapshot_schema.py) carries no maximum-stake, bet-limit, or exposure-cap field of any kind. Checked column header directly (21 columns, none limit-related) and grepped scripts/ and market_snapshot_schema.py for max_stake/bet_limit/wager_limit/maxStake/max_bet -- no matches anywhere in the codebase.",
+    "exchange_side": "SX Bet /markets/active payload (markets.jsonl content) carries no venue-imposed maximum-stake field either; fields present are __type, chainVersion, gameTime, group1, isQuarterLineMarket, leagueId, leagueLabel, line, liveEnabled, mainLine, marketHash, outcomeOneName, outcomeTwoName, outcomeVoidName, participantOneId, participantTwoId, sportId, sportLabel, sportXeventId, status, teamOneName, teamOneScore, teamTwoName, teamTwoScore, type. totalBetSize on a resting order is that ONE maker's chosen order size, not a venue-imposed cap -- it is visible depth, not a limit, and is already reported above under depth_and_slippage.",
+    "conclusion": "Marked ABSENT rather than estimated, per the mandate's explicit instruction. No sportsbook maximum-stake figure, of any kind, is asserted anywhere in this node's output."
+  },
+  "contradictions_and_stale_documents_found": [
+    {
+      "type": "document_vs_bytes",
+      "description": "experiments/market_program/EXCHANGE_CAPTURE/sxbet/HALT_USER_REQUIRED.md (dated 2026-08-06, unmodified since) states in its own words: '0 order-book rows, 0 trade rows, 0 poll cycles... Nothing beyond the three verification GETs listed above was executed against SX Bet's live systems.' The bytes on disk directly contradict this: capture_sxbet.py, poll_log.jsonl, sxbet_state.json and the four data/*.jsonl files all postdate the halt document and show 131 completed capture cycles, 0 endpoint failures, 6376 orderbook rows and 7442 trade rows written between 2026-08-07T02:39Z and 2026-08-07T13:35Z.",
+      "resolution_found": "capture_sxbet.py's own docstring cites the resolving authority: DECISION_LEDGER.jsonl decision D035_EXCHANGE_DISPOSITIONS (ts 2026-08-06T19:30:08Z), a direct user ruling in chat that the official-documented-API reading of SX Bet's Terms and Conditions controls, authorizing capture to proceed. Verified directly by reading DECISION_LEDGER.jsonl line 35 (D035_EXCHANGE_DISPOSITIONS). This is a real, ledgered USER_REQUIRED resolution, not a self-granted exemption -- so this is not a live stop-condition trip.",
+      "residual_defect": "HALT_USER_REQUIRED.md was never updated to record the D035 resolution. It still reads as an open, unresolved halt to anyone who reads only that file. This is a stale-documentation defect in EXCHANGE_CAPTURE/sxbet/, outside this node's write scope to fix, flagged here per the standing rule that frozen bytes govern over prose and contradictions are reported, never silently reconciled."
+    },
+    {
+      "type": "output_filename_discrepancy",
+      "description": "This node's generated contract file (experiments/player_program/orchestration/prompts/M21_EXECUTION_REALISM.md) specifies required outputs REPORT.md and FINDINGS.json, validated by `python -c \"import json;json.load(open('...FINDINGS.json'))\"`. This node's direct dispatch instructions explicitly say 'Do NOT write REPORT.md (write REPORT_BODY.md; the coordinator materializes it)' and name the outputs EXECUTION_REALISM.json + REPORT_BODY.md.",
+      "resolution": "Followed the direct dispatch instructions (more specific, more recent point of contact) and confirmed the REPORT_BODY.md convention is already in use by sibling nodes M16_RELATED_MARKET_COHERENCE and M07_BOOK_LEAD_LAG, whose FINDINGS.json files reference 'See REPORT_BODY.md' internally even though a materialized REPORT_BODY.md was not yet present in their directories at inspection time. Wrote EXECUTION_REALISM.json + REPORT_BODY.md per the dispatch instructions; flagging the mismatch with the generated contract file rather than silently picking one without note."
+    }
+  ],
+  "absent_or_unmeasurable_list": [
+    "Sportsbook maximum-stake / bet limits -- ABSENT from all owned schemas, not estimated.",
+    "SX Bet venue-imposed maximum order/fill size -- ABSENT from the /markets/active payload; only maker-chosen order sizes are visible.",
+    "Cross-venue (SX Bet vs sportsbook ladder) decision-to-executable latency for this session -- UNSUPPORTABLE, capture windows do not overlap.",
+    "Vendor-sourced latency bound (L_max) for SX Bet or The Odds API -- UNBOUNDED, no independently sourced bound found in owned data.",
+    "Clock-skew bound between our capture host and either vendor -- unmeasured; rows are CLOCK_UNBOUNDED per M00 Section 6.3.",
+    "True underlying SX Bet quote-change frequency finer than ~300s -- right-censored by our own poll floor; only a lower bound on change frequency is supportable.",
+    "Whether a hypothetical taker order would actually have filled at the modeled depth-walk price -- not claimed; SX Bet is peer-to-peer, resting liquidity can vanish between poll and action, and no EXECUTION_FEASIBLE label is applied anywhere in this output.",
+    "Real-world probability implied by SX Bet's percentageOdds fixed-point scale -- not independently re-verified against SX Bet's own documentation by this node; relative (within-book) comparisons only were used."
+  ],
+  "commands_behind_every_number": [
+    "python inventory.py -- row counts, distinct cycle_id/retrieval_ts/marketHash/sportXeventId per table, reading data/sxbet_capture/*.jsonl directly",
+    "python depth_analysis.py -- event-sourced order-book state reconstruction at 14 sampled cycle checkpoints (bisect on retrieval_ts per order key), depth-at-best and depth-walk slippage to $50/$100 notional",
+    "python latency_analysis.py -- sxbet_state.json cycles[] inter-cycle gaps and durations; retrieval_ts->ingestion_ts pipeline delay; snapshots.csv distinct retrieval_ts gaps and poll_interval_at_capture values",
+    "python quote_drift.py -- best_line.jsonl per-key consecutive-change interval and magnitude distributions",
+    "python final_summary.py -- market type / game / notional joins across markets.jsonl and trades.jsonl",
+    "PowerShell Get-FileHash comparison of data/sxbet_capture/*.jsonl vs experiments/market_program/EXCHANGE_CAPTURE/sxbet/data/*.jsonl -- established these are two different capture stages of the same standing job, not duplicate copies",
+    "Grep across scripts/ and market_snapshot_schema.py for max_stake|bet_limit|wager_limit|maxStake|max_bet -- zero matches, basis for the book_side_limits ABSENT finding"
+  ]
+}

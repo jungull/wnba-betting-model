@@ -6515,6 +6515,76 @@
       "title": "Score-family K0_MATCHED contract and machine schema (S-lane analog of P26)",
       "type": "documentation",
       "validation_commands": []
+    },
+    {
+      "acceptance_criteria": [
+        "DEFECT 1 (M16, coordinator-confirmed): the game-level odds endpoint returns HTTP 200 and writes ZERO rows on all 21 measured polls while props polls write 118-169 each - root-caused in code and fixed, with a regression test that fails on the old behavior; game lines (h2h/spreads/totals) demonstrably land in snapshots.csv after the fix",
+        "DEFECT 2 (M07): all books share one byte-identical retrieval_ts per poll, making cross-book ordering structurally impossible - capture writes an independent witnessed retrieval_ts per book (or documents per-book polling), so cross-book synchronization windows become measurable rather than zero-by-construction",
+        "DEFECT 3 (M17): neither writer can witness a suspension - market_snapshot_writer gains a path that records suspended/absent status, and the exchange capture persists PER-CYCLE ROSTER MEMBERSHIP so a market vanishing from /markets/active is a witnessed absence event rather than silence; byte-identical dedup must not erase a vanish-and-return",
+        "DEFECT 4 (M21): vendor-latency and clock-skew bounds are unmeasured, which makes every reaction-time claim UNSUPPORTABLE under D023 amendment 4 - capture records the fields needed to bound both, or the report states precisely why they cannot be bounded from this vendor",
+        "no capture change spends money, touches credentials, raises poll rates beyond the polite ceilings already ruled, or alters any frozen artifact; existing rows are never rewritten (append-only holds)",
+        "an independent verifier context confirms each defect is closed by running the regression tests and inspecting freshly captured rows"
+      ],
+      "agent_prompt_path": "experiments/player_program/orchestration/prompts/M26_CAPTURE_MICROSTRUCTURE_REMEDIATION.md",
+      "agent_role": "capture engineer + independent verifier",
+      "allowed_read_paths": [
+        "experiments/"
+      ],
+      "allowed_tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Write",
+        "Edit",
+        "Bash"
+      ],
+      "allowed_write_paths": [
+        "experiments/market_program/M26_CAPTURE_MICROSTRUCTURE_REMEDIATION/"
+      ],
+      "dependencies": [
+        "M07_BOOK_LEAD_LAG",
+        "M16_RELATED_MARKET_COHERENCE",
+        "M17_SUSPENSION_REOPENING",
+        "M21_EXECUTION_REALISM"
+      ],
+      "disallowed_tools": [
+        "Agent"
+      ],
+      "epistemic_status": "REMEDIATION. Fixes a measured capture-topology defect cluster found by four sibling nodes. Ships capture changes only; asserts no market finding.",
+      "expected_outputs": [
+        "experiments/market_program/M26_CAPTURE_MICROSTRUCTURE_REMEDIATION/REPORT.md",
+        "experiments/market_program/M26_CAPTURE_MICROSTRUCTURE_REMEDIATION/FINDINGS.json"
+      ],
+      "forbidden_inputs": [
+        "experiments/player_program/stage2b/SEALED_RESULTS"
+      ],
+      "human_gate": false,
+      "id": "M26_CAPTURE_MICROSTRUCTURE_REMEDIATION",
+      "input_artifacts": [
+        "experiments/player_program/orchestration/reports/MARKET_PROGRAM_RESPONSE_2026-08-06.md",
+        "experiments/player_program/orchestration/GRAPH_POLICY.md",
+        "experiments/player_program/RESEARCH_CONTRACT_V1.md",
+        "experiments/market_program/M00_MARKET_PROGRAM_CONTRACT/MARKET_PROGRAM_CONTRACT.md"
+      ],
+      "input_hashes": {},
+      "lane": "market_intelligence",
+      "max_retries": 2,
+      "merge_policy": "auto",
+      "on_fail": [],
+      "on_pass": [],
+      "owned_files": [],
+      "severity_on_failure": "B",
+      "status": "BLOCKED",
+      "stop_conditions": [
+        "a finding would require spending money, placing a wager, entering credentials, accepting scraping or licensing risk, or reading sealed possession results -- HALT and raise to a USER_REQUIRED gate, do not resolve it inside the node",
+        "a reaction-time or timing claim cannot carry its explicit timestamp-uncertainty and vendor-latency terms (D023 amendment 4) -- report the claim as UNSUPPORTABLE rather than stating it without them",
+        "a use of the final-state odds archive falls outside the bounded-uses enumeration of the M00 contract -- HALT and raise, do not stretch the enumeration"
+      ],
+      "title": "Remediate the capture topology: game lines, per-book independence, witnessed absence",
+      "type": "implementation",
+      "validation_commands": [
+        "python -c \"import json;json.load(open('experiments/market_program/M26_CAPTURE_MICROSTRUCTURE_REMEDIATION/FINDINGS.json'))\""
+      ]
     }
   ],
   "notes": [

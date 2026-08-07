@@ -6,24 +6,25 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `21ce994398bd808b0cea59733eab02b66b15631e` |
+| HEAD | `af32cf38629d45baea3832eb9b0bcaa636fdb047` |
 | working tree | DIRTY |
-| nodes | 101 |
-| events | 333 |
+| nodes | 102 |
+| events | 366 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 15 |
-| PASSED | 68 |
-| READY | 9 |
+| BLOCKED | 10 |
+| HALTED | 1 |
+| PASSED | 76 |
+| READY | 6 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 3 |
 
 ## Severity A blockers
 
-None open against a node.
+* **S34_PREREGISTRATION_RED_TEAM** — Independent adversarial review of the score preregistration
 
 ## Running
 
@@ -32,14 +33,11 @@ None.
 ## Ready — next automatically scheduled
 
 * `M06_INJURY_REACTION_STUDY` (market_intelligence) — Injury-news reaction-time event study on point-in-time tape only
-* `M07_BOOK_LEAD_LAG` (market_intelligence) — Which book moves first: lead-lag measurement across synchronized captures
+* `M08_STALE_WINDOW` (market_intelligence) — Stale-line window measurement conditional on demonstrated lead-lag structure
 * `M10_MIDDLES` (market_intelligence) — Middle-opportunity detection with per-book push semantics
 * `M13_PLAYER_VALUE_TRANSLATION` (market_intelligence) — Translate frozen fundamental-model outputs into priceable market terms
-* `M16_RELATED_MARKET_COHERENCE` (market_intelligence) — Coherence checks across related markets (moneyline, spread, total, props)
-* `M17_SUSPENSION_REOPENING` (market_intelligence) — Market suspension and reopening microstructure on the high-frequency tape
-* `M21_EXECUTION_REALISM` (market_intelligence) — Execution realism: limits, slippage and decision-to-executable latency, measured
-* `S31_SCORE_IDEATION` (score) — Independent ideation wave on the frozen cycle-2 contract: isolated sources, no cross-exposure
-* `S32B_K0_CONTRACT` (score) — Score-family K0_MATCHED contract and machine schema (S-lane analog of P26)
+* `M22_CAPACITY` (market_intelligence) — Capacity analysis: how much money the measured opportunity classes can absorb
+* `M26_CAPTURE_MICROSTRUCTURE_REMEDIATION` (market_intelligence) — Remediate the capture topology: game lines, per-book independence, witnessed absence
 
 ## Passed
 
@@ -58,8 +56,12 @@ None.
 * `M03_CAPTURE_UPGRADE` — High-frequency live odds capture: cadence measurement, event-driven bursts, latency fields
 * `M04_COMPETITOR_ARCHIVE_DESIGN` — Fixed-cutoff competitor-projection archive design with explicit licensing surface
 * `M05_EVENT_MARKET_LINKAGE` — Deterministic event-to-quote linkage with explicit censoring intervals
+* `M07_BOOK_LEAD_LAG` — Which book moves first: lead-lag measurement across synchronized captures
 * `M09_TRUE_ARB_SCANNER` — True-arbitrage scanner over live multi-book capture: flags only, never orders
 * `M11_CONSENSUS_MODEL` — Multi-book consensus / fair-value model with preregistered vig treatment
+* `M16_RELATED_MARKET_COHERENCE` — Coherence checks across related markets (moneyline, spread, total, props)
+* `M17_SUSPENSION_REOPENING` — Market suspension and reopening microstructure on the high-frequency tape
+* `M21_EXECUTION_REALISM` — Execution realism: limits, slippage and decision-to-executable latency, measured
 * `M25_MARKET_UI_FIXTURES` — Market screen shell against fixtures, extending the existing U11/U13 pattern
 * `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
 * `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
@@ -107,6 +109,10 @@ None.
 * `F16_PLAYER_PROPS` — Player props — last, by design
 * `R16_I11_SEAL_HONESTY` — Make I11's seal claim honest: obfuscation is not blinding
 * `S30_TARGET_CONTRACT` — Cycle-2 score-family target contract: freeze estimands, universe, folds, gates
+* `S31_SCORE_IDEATION` — Independent ideation wave on the frozen cycle-2 contract: isolated sources, no cross-exposure
+* `S32B_K0_CONTRACT` — Score-family K0_MATCHED contract and machine schema (S-lane analog of P26)
+* `S32_CANDIDATE_SYNTHESIS` — Deduplicate ideation into mechanistically distinct score-family arm definitions
+* `S33_PREREGISTRATION_DRAFT` — Freeze every retained score arm's complete specification
 * `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
 * `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
 * `U12_PREDICTION_HISTORY` — Immutable prediction-history and model-version views
@@ -120,13 +126,13 @@ None.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 1 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 1 | 0 |
-| market_intelligence | 5 | 9 | 7 | 0 | 1 |
-| operations | 0 | 12 | 0 | 2 | 0 |
-| possession | 0 | 25 | 0 | 2 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 |
-| score | 10 | 1 | 2 | 0 | 1 |
+| lane | BLOCKED | HALTED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|---|
+| data | 0 | 0 | 5 | 0 | 1 | 0 |
+| future_research | 0 | 0 | 7 | 0 | 0 | 0 |
+| governance | 0 | 0 | 5 | 0 | 1 | 0 |
+| market_intelligence | 3 | 0 | 13 | 6 | 0 | 1 |
+| operations | 0 | 0 | 12 | 0 | 2 | 0 |
+| possession | 0 | 0 | 25 | 0 | 2 | 1 |
+| product | 0 | 0 | 4 | 0 | 0 | 0 |
+| score | 7 | 1 | 5 | 0 | 0 | 1 |

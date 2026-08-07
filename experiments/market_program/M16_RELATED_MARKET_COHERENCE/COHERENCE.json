@@ -1,0 +1,1558 @@
+{
+  "epistemic_status": "DIAGNOSTIC MEASUREMENT. Tests whether related quotes jointly satisfy the no-arbitrage relations the M00 taxonomy implies. An incoherence is a timestamped observation about quotes, not an executable opportunity claim.",
+  "universe": {
+    "source": "data/market_snapshots/historical/featured_backfill.jsonl (T1_VENDOR_ASSERTED)",
+    "definition": "one instant = (event_id, bookmaker key, batch requested_ts) with h2h AND spreads AND totals ALL present in that single poll batch for that book",
+    "n_bookmaker_market_instants_with_all_3_families": 40589,
+    "n_records_usable_after_naming_and_devig_checks": 40589,
+    "n_naming_mismatches_dropped": 0,
+    "n_devig_zero_denominator_dropped": 0,
+    "n_distinct_events": 1266,
+    "n_distinct_books": 21,
+    "live_ladder_contribution": "ZERO -- data/market_snapshots/snapshots.csv has no h2h/spreads/totals rows; see inventory.json"
+  },
+  "relations": {
+    "A_favorite_sign_coherence": {
+      "name": "favorite_sign_coherence",
+      "assumed_model": "NONE (model-free ordinal identity: moneyline favorite team must equal spread favorite team)",
+      "inequality": "team(argmax(p_home_nv, p_away_nv)) == team(argmin(spread_point))",
+      "N": 40589,
+      "n_coherent": 40399,
+      "n_violation_raw_incl_tie_artifacts": 190,
+      "n_violation_tie_artifacts_moneyline_exact_pickem": 150,
+      "n_violation_genuine_favorite_disagreement": 40,
+      "violation_rate_raw": 0.004681071226194289,
+      "violation_rate_genuine": 0.0009854886791987978,
+      "violation_rate_by_book_min20_raw": {
+        "pointsbetus": 0.00688298918387414,
+        "betus": 0.0012620950778291964,
+        "foxbet": 0.012618296529968454,
+        "betmgm": 0.004553215708594195,
+        "fanduel": 0.0037085514834205935,
+        "sugarhouse": 0.028409090909090908,
+        "betrivers": 0.00495565988523735,
+        "draftkings": 0.005324298160696999,
+        "barstool": 0.014207650273224045,
+        "twinspires": 0.01381509032943677,
+        "bovada": 0.004151674508718516,
+        "williamhill_us": 0.005585106382978724,
+        "gtbets": 0.0,
+        "mybookieag": 0.002171552660152009,
+        "lowvig": 0.0020898641588296763,
+        "circasports": 0.0,
+        "unibet_us": 0.004166666666666667,
+        "betonlineag": 0.0,
+        "wynnbet": 0.0039447731755424065,
+        "superbook": 0.0,
+        "fanatics": 0.005186232909005186
+      },
+      "violation_rate_by_book_min20_genuine": {
+        "pointsbetus": 0.0009832841691248771,
+        "betus": 0.00042069835927639884,
+        "foxbet": 0.0,
+        "betmgm": 0.0,
+        "fanduel": 0.0010907504363001745,
+        "sugarhouse": 0.0,
+        "betrivers": 0.0018257694314032342,
+        "draftkings": 0.000484027105517909,
+        "barstool": 0.0,
+        "twinspires": 0.0,
+        "bovada": 0.0011071132023249377,
+        "williamhill_us": 0.0031914893617021275,
+        "gtbets": 0.0,
+        "mybookieag": 0.002171552660152009,
+        "lowvig": 0.0,
+        "circasports": 0.0,
+        "unibet_us": 0.0,
+        "betonlineag": 0.0,
+        "wynnbet": 0.0,
+        "superbook": 0.0,
+        "fanatics": 0.000942951438000943
+      },
+      "note": "n_violation_raw includes moneyline exact-pickem cases (p_home_nv==p_away_nv, i.e. no moneyline favorite exists to compare) mechanically mislabeled as disagreements by the argmax tie-break. n_violation_genuine excludes those. See REPORT_BODY.md."
+    },
+    "B_normal_margin_coherence": {
+      "name": "normal_margin_moneyline_spread_coherence",
+      "assumed_model": "Margin ~ Normal(mu=spread_magnitude, sigma); model P(fav wins)=Phi(mu/sigma); sigma self-calibrated as median(mu_i / Phi^-1(p_fav_ml,i)) over this archive (not sourced from realized outcomes or any external dataset).",
+      "inequality": "abs(p_fav_ml - Phi(mu / sigma_hat)) <= epsilon  [reported at multiple epsilon, none validated as a noise floor]",
+      "N_used_for_sigma_calibration": 40245,
+      "sigma_hat_median_points": 12.54032774969269,
+      "sigma_mean_points": 14.354584649136697,
+      "sigma_stdev_points": 8.953844394564381,
+      "N_tested": 40340,
+      "abs_diff_mean": 0.014967848145132884,
+      "abs_diff_median": 0.012961912623844607,
+      "abs_diff_p10": 0.0027136776328022805,
+      "abs_diff_p90": 0.028325368923771577,
+      "abs_diff_p95": 0.03335066832440903,
+      "abs_diff_p99": 0.04843456987231398,
+      "abs_diff_max": 0.35915415868423584,
+      "exceed_rate_gt_0_02": 0.2806643529995042,
+      "exceed_rate_gt_0_05": 0.008998512642538424,
+      "exceed_rate_gt_0_10": 0.0024045612295488347
+    },
+    "B_normal_margin_coherence_by_book_min100": {
+      "pointsbetus": {
+        "N": 1009,
+        "median_abs_diff": 0.010644388365253055,
+        "mean_abs_diff": 0.01352636278680078
+      },
+      "betus": {
+        "N": 2370,
+        "median_abs_diff": 0.012491937947656018,
+        "mean_abs_diff": 0.01401402736006463
+      },
+      "foxbet": {
+        "N": 626,
+        "median_abs_diff": 0.013277089206113368,
+        "mean_abs_diff": 0.013957291671262764
+      },
+      "betmgm": {
+        "N": 3498,
+        "median_abs_diff": 0.013405349865495464,
+        "mean_abs_diff": 0.016622127319188496
+      },
+      "fanduel": {
+        "N": 4567,
+        "median_abs_diff": 0.013238690024421795,
+        "mean_abs_diff": 0.01603313865875965
+      },
+      "sugarhouse": {
+        "N": 342,
+        "median_abs_diff": 0.012346665611662144,
+        "mean_abs_diff": 0.012789454023541298
+      },
+      "betrivers": {
+        "N": 3815,
+        "median_abs_diff": 0.01269700473785318,
+        "mean_abs_diff": 0.013703037737803691
+      },
+      "draftkings": {
+        "N": 4107,
+        "median_abs_diff": 0.014106716890709192,
+        "mean_abs_diff": 0.01612883123263682
+      },
+      "barstool": {
+        "N": 902,
+        "median_abs_diff": 0.013712347650091772,
+        "mean_abs_diff": 0.014945268961820574
+      },
+      "twinspires": {
+        "N": 928,
+        "median_abs_diff": 0.013472377187974338,
+        "mean_abs_diff": 0.014511099724761143
+      },
+      "bovada": {
+        "N": 3591,
+        "median_abs_diff": 0.012492139563988092,
+        "mean_abs_diff": 0.015622189238175313
+      },
+      "williamhill_us": {
+        "N": 3713,
+        "median_abs_diff": 0.012186781808531166,
+        "mean_abs_diff": 0.015223663284262268
+      },
+      "gtbets": {
+        "N": 317,
+        "median_abs_diff": 0.01394458509012475,
+        "mean_abs_diff": 0.014325600074162498
+      },
+      "mybookieag": {
+        "N": 2757,
+        "median_abs_diff": 0.012567117447016107,
+        "mean_abs_diff": 0.013501040716237178
+      },
+      "lowvig": {
+        "N": 1909,
+        "median_abs_diff": 0.012343788363070596,
+        "mean_abs_diff": 0.013691283893556486
+      },
+      "circasports": {
+        "N": 170,
+        "median_abs_diff": 0.015138042111766059,
+        "mean_abs_diff": 0.01674192737842593
+      },
+      "unibet_us": {
+        "N": 717,
+        "median_abs_diff": 0.014198760677090916,
+        "mean_abs_diff": 0.015447956106501909
+      },
+      "betonlineag": {
+        "N": 1870,
+        "median_abs_diff": 0.012671281652604227,
+        "mean_abs_diff": 0.013771385090723004
+      },
+      "wynnbet": {
+        "N": 504,
+        "median_abs_diff": 0.01531444666014986,
+        "mean_abs_diff": 0.016747750178298586
+      },
+      "superbook": {
+        "N": 518,
+        "median_abs_diff": 0.014703747660813615,
+        "mean_abs_diff": 0.016223602041457195
+      },
+      "fanatics": {
+        "N": 2110,
+        "median_abs_diff": 0.012299305489860801,
+        "mean_abs_diff": 0.014195843981220094
+      }
+    },
+    "B_normal_margin_coherence_by_hours_to_tip": {
+      "1-4h": {
+        "N": 6501,
+        "median_abs_diff": 0.012045164581970802,
+        "mean_abs_diff": 0.01352668953107025
+      },
+      "4-12h": {
+        "N": 11513,
+        "median_abs_diff": 0.01254585345467285,
+        "mean_abs_diff": 0.013841214194729206
+      },
+      "0-1h": {
+        "N": 4295,
+        "median_abs_diff": 0.012584429581044554,
+        "mean_abs_diff": 0.01399244693709711
+      },
+      "12-24h": {
+        "N": 2532,
+        "median_abs_diff": 0.01314748991400072,
+        "mean_abs_diff": 0.014753032482831812
+      },
+      "post_commence_or_live": {
+        "N": 2079,
+        "median_abs_diff": 0.0190722105663248,
+        "mean_abs_diff": 0.030220472910375815
+      },
+      "24h+": {
+        "N": 13420,
+        "median_abs_diff": 0.01314748991400072,
+        "mean_abs_diff": 0.014622316355232636
+      }
+    },
+    "Bprime_sigma_scales_with_total_sensitivity": {
+      "name": "normal_margin_moneyline_spread_coherence_sigma_scales_with_total",
+      "assumed_model": "sigma(T) = 13.7043 + 0.003937*T, OLS-fit to (T, implied_sigma) pairs from this archive only",
+      "N_fit_pairs": 40245,
+      "fit_intercept_b0": 13.704251245604222,
+      "fit_slope_b1_per_point_of_total": 0.003937116329201204,
+      "N_tested": 40340,
+      "abs_diff_mean": 0.027243500843005017,
+      "abs_diff_median": 0.024210258049573108,
+      "abs_diff_p95": 0.05956609394208623,
+      "exceed_rate_gt_0_05": 0.12957362419434804,
+      "note": "Sensitivity check only. If b1 is near 0 and the exceedance profile matches relation_B, the constant-sigma model is not being rescued or contradicted by pace/total information."
+    },
+    "C_cross_market_vig_consistency_descriptive": {
+      "name": "cross_market_vig_consistency",
+      "assumed_model": "DESCRIPTIVE ONLY -- no inequality asserted as a violation criterion; a book is free to price different market types with different overround.",
+      "overround_h2h": {
+        "N": 40589,
+        "mean": 0.047498643120361575,
+        "median": 0.04600874166091562,
+        "stdev": 0.015117252339485552,
+        "p05": 0.03418803418803407,
+        "p95": 0.06617038875103387,
+        "min": 0.021077283372365363,
+        "max": 0.9980019980019981
+      },
+      "overround_spread": {
+        "N": 40589,
+        "mean": 0.050204254769246844,
+        "median": 0.04761904761904767,
+        "stdev": 0.013547229899320761,
+        "p05": 0.041284403669724856,
+        "p95": 0.0677506775067751,
+        "min": 0.023809523809523725,
+        "max": 0.9980019980019981
+      },
+      "overround_total": {
+        "N": 40589,
+        "mean": 0.050475880907057576,
+        "median": 0.04761904761904767,
+        "stdev": 0.013113248584665775,
+        "p05": 0.04490540232505125,
+        "p95": 0.06926406926406914,
+        "min": 0.03310162197947708,
+        "max": 0.9980019980019981
+      },
+      "N_triples_with_all_3_overrounds": 40589,
+      "pearson_corr_overround_h2h_vs_spread": 0.7290684764784604,
+      "pearson_corr_overround_h2h_vs_total": 0.7532926988215408,
+      "pearson_corr_overround_spread_vs_total": 0.9079155697637689
+    },
+    "D_cross_book_dispersion_same_instant": {
+      "name": "cross_book_dispersion_same_instant",
+      "assumed_model": "DESCRIPTIVE. 'Large dispersion' flag thresholds (spread range > 2.0 pts OR total range > 3.0 pts) are a judgment call, not a validated arbitrage boundary.",
+      "N_event_instants_with_2plus_books": 4599,
+      "spread_home_signed_range_points": {
+        "N": 4599,
+        "mean": 0.7985431615568602,
+        "median": 0.5,
+        "stdev": 0.9559229340064785,
+        "p05": 0.0,
+        "p95": 2.0,
+        "min": 0.0,
+        "max": 13.0
+      },
+      "total_line_range_points": {
+        "N": 4599,
+        "mean": 1.1814524896716678,
+        "median": 1.0,
+        "stdev": 2.4581237384390113,
+        "p05": 0.0,
+        "p95": 3.0,
+        "min": 0.0,
+        "max": 85.0
+      },
+      "moneyline_home_prob_range": {
+        "N": 4599,
+        "mean": 0.02743705576990892,
+        "median": 0.02239328438402921,
+        "stdev": 0.033296566355236985,
+        "p05": 0.007767495358593446,
+        "p95": 0.05193792254107277,
+        "min": 0.0,
+        "max": 0.6549837038352212
+      },
+      "n_flagged_large_dispersion_instants": 300,
+      "sample_flagged_instants": [
+        {
+          "event_id": "3656f9de559c30a065db42c0ee188d53",
+          "requested_ts": "2022-05-24T23:30:00Z",
+          "n_books": 4,
+          "spread_range_points": 3.0,
+          "total_range_points": 2.0,
+          "books": [
+            "foxbet",
+            "fanduel",
+            "bovada",
+            "betmgm"
+          ]
+        },
+        {
+          "event_id": "0a032df86211207579d132d31ef51b66",
+          "requested_ts": "2022-05-24T23:30:00Z",
+          "n_books": 4,
+          "spread_range_points": 3.0,
+          "total_range_points": 2.0,
+          "books": [
+            "foxbet",
+            "bovada",
+            "fanduel",
+            "betmgm"
+          ]
+        },
+        {
+          "event_id": "0283b2edb35a03b79f8078b58bd1d580",
+          "requested_ts": "2022-05-25T16:00:00Z",
+          "n_books": 4,
+          "spread_range_points": 2.5,
+          "total_range_points": 0.5,
+          "books": [
+            "williamhill_us",
+            "foxbet",
+            "fanduel",
+            "pointsbetus"
+          ]
+        },
+        {
+          "event_id": "303006b031341c255a78f1a8847563e7",
+          "requested_ts": "2022-05-26T23:30:00Z",
+          "n_books": 4,
+          "spread_range_points": 3.0,
+          "total_range_points": 1.0,
+          "books": [
+            "fanduel",
+            "foxbet",
+            "bovada",
+            "betmgm"
+          ]
+        },
+        {
+          "event_id": "953ed15036f7d46369e719fc141207e7",
+          "requested_ts": "2022-05-27T23:30:00Z",
+          "n_books": 3,
+          "spread_range_points": 0.0,
+          "total_range_points": 5.0,
+          "books": [
+            "foxbet",
+            "bovada",
+            "fanduel"
+          ]
+        },
+        {
+          "event_id": "942aa19fbc7801249018943268f910ec",
+          "requested_ts": "2022-05-28T23:30:00Z",
+          "n_books": 5,
+          "spread_range_points": 4.0,
+          "total_range_points": 3.0,
+          "books": [
+            "foxbet",
+            "fanduel",
+            "betmgm",
+            "bovada",
+            "betus"
+          ]
+        },
+        {
+          "event_id": "38bb4b3772e2d32f2efb659bd702524c",
+          "requested_ts": "2022-05-31T23:30:00Z",
+          "n_books": 4,
+          "spread_range_points": 3.0,
+          "total_range_points": 2.5,
+          "books": [
+            "pointsbetus",
+            "foxbet",
+            "betmgm",
+            "fanduel"
+          ]
+        },
+        {
+          "event_id": "85f82adf9ab8afd12102e5b9f108d706",
+          "requested_ts": "2022-06-01T23:30:00Z",
+          "n_books": 8,
+          "spread_range_points": 2.0,
+          "total_range_points": 5.0,
+          "books": [
+            "pointsbetus",
+            "twinspires",
+            "draftkings",
+            "foxbet",
+            "betmgm",
+            "barstool",
+            "fanduel",
+            "bovada"
+          ]
+        },
+        {
+          "event_id": "d64c30338c77cb509a8aaed0b523b470",
+          "requested_ts": "2022-06-01T23:30:00Z",
+          "n_books": 5,
+          "spread_range_points": 1.0,
+          "total_range_points": 5.0,
+          "books": [
+            "pointsbetus",
+            "foxbet",
+            "bovada",
+            "betmgm",
+            "fanduel"
+          ]
+        },
+        {
+          "event_id": "4b1c17893b36a33e1aa65bc21677732b",
+          "requested_ts": "2022-06-03T23:30:00Z",
+          "n_books": 4,
+          "spread_range_points": 1.5,
+          "total_range_points": 4.5,
+          "books": [
+            "fanduel",
+            "pointsbetus",
+            "foxbet",
+            "betmgm"
+          ]
+        },
+        {
+          "event_id": "1be851b66f6fc1c84ad92efd9172a1e4",
+          "requested_ts": "2022-06-04T16:00:00Z",
+          "n_books": 2,
+          "spread_range_points": 0.0,
+          "total_range_points": 37.0,
+          "books": [
+            "fanduel",
+            "bovada"
+          ]
+        },
+        {
+          "event_id": "1be851b66f6fc1c84ad92efd9172a1e4",
+          "requested_ts": "2022-06-04T23:30:00Z",
+          "n_books": 2,
+          "spread_range_points": 0.0,
+          "total_range_points": 37.0,
+          "books": [
+            "fanduel",
+            "bovada"
+          ]
+        },
+        {
+          "event_id": "20a588ca9e1ebae51fef354991d0e02a",
+          "requested_ts": "2022-06-05T23:30:00Z",
+          "n_books": 5,
+          "spread_range_points": 2.0,
+          "total_range_points": 7.0,
+          "books": [
+            "pointsbetus",
+            "fanduel",
+            "betmgm",
+            "foxbet",
+            "bovada"
+          ]
+        },
+        {
+          "event_id": "0e7e76919552dd6f8aac24cc1feb6387",
+          "requested_ts": "2022-06-05T23:30:00Z",
+          "n_books": 8,
+          "spread_range_points": 2.0,
+          "total_range_points": 4.0,
+          "books": [
+            "fanduel",
+            "betmgm",
+            "foxbet",
+            "pointsbetus",
+            "twinspires",
+            "draftkings",
+            "barstool",
+            "bovada"
+          ]
+        },
+        {
+          "event_id": "c98b838a47b323e187bdf82944663c7c",
+          "requested_ts": "2022-06-08T23:30:00Z",
+          "n_books": 5,
+          "spread_range_points": 2.0,
+          "total_range_points": 5.5,
+          "books": [
+            "pointsbetus",
+            "fanduel",
+            "foxbet",
+            "betmgm",
+            "bovada"
+          ]
+        }
+      ]
+    }
+  },
+  "cross_quote_latency_window": {
+    "all_instances": {
+      "N": 40589,
+      "mean": 4.9274433959939885e-05,
+      "median": 0.0,
+      "stdev": 0.007019488581450141,
+      "p05": 0.0,
+      "p95": 0.0,
+      "min": 0.0,
+      "max": 1.0
+    },
+    "relation_A_violation_instances": {
+      "N": 190,
+      "mean": 0.0,
+      "median": 0.0,
+      "stdev": 0.0,
+      "p05": 0.0,
+      "p95": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "note": "Within-poll latency between h2h/spreads/totals last_update timestamps at the SAME book, SAME batch. This is metadata attached to each flag per D023 amendment 4, not a reaction-time claim."
+  },
+  "relation_A_violation_flags_sample": [
+    {
+      "event_id": "38bb4b3772e2d32f2efb659bd702524c",
+      "book": "fanduel",
+      "home_team": "Indiana Fever",
+      "away_team": "Washington Mystics",
+      "batch_requested_ts": "2022-05-31T23:30:00Z",
+      "commence_time": "2022-05-31T23:06:58Z",
+      "p_home_nv": 0.4958445875753168,
+      "p_away_nv": 0.5041554124246831,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-05-31T23:20:07Z",
+        "spreads_last_update": "2022-05-31T23:20:07Z",
+        "totals_last_update": "2022-05-31T23:20:07Z",
+        "batch_requested_ts": "2022-05-31T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "1be851b66f6fc1c84ad92efd9172a1e4",
+      "book": "bovada",
+      "home_team": "Phoenix Mercury",
+      "away_team": "Connecticut Sun",
+      "batch_requested_ts": "2022-06-04T16:00:00Z",
+      "commence_time": "2022-06-04T02:02:40Z",
+      "p_home_nv": 0.3461178671655753,
+      "p_away_nv": 0.6538821328344248,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 3.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-04T04:09:54Z",
+        "spreads_last_update": "2022-06-04T04:09:54Z",
+        "totals_last_update": "2022-06-04T04:09:54Z",
+        "batch_requested_ts": "2022-06-04T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "1be851b66f6fc1c84ad92efd9172a1e4",
+      "book": "bovada",
+      "home_team": "Phoenix Mercury",
+      "away_team": "Connecticut Sun",
+      "batch_requested_ts": "2022-06-04T23:30:00Z",
+      "commence_time": "2022-06-04T02:02:40Z",
+      "p_home_nv": 0.3461178671655753,
+      "p_away_nv": 0.6538821328344248,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 3.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-04T04:09:54Z",
+        "spreads_last_update": "2022-06-04T04:09:54Z",
+        "totals_last_update": "2022-06-04T04:09:54Z",
+        "batch_requested_ts": "2022-06-04T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "99c21083e754839af49c6c91e4c39247",
+      "book": "williamhill_us",
+      "home_team": "Los Angeles Sparks",
+      "away_team": "Phoenix Mercury",
+      "batch_requested_ts": "2022-07-04T16:00:00Z",
+      "commence_time": "2022-07-04T23:00:00Z",
+      "p_home_nv": 0.5108342361863488,
+      "p_away_nv": 0.4891657638136511,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-07-04T15:50:35Z",
+        "spreads_last_update": "2022-07-04T15:50:35Z",
+        "totals_last_update": "2022-07-04T15:50:35Z",
+        "batch_requested_ts": "2022-07-04T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "76236a86bead8e09e8264e7b24e1d459",
+      "book": "williamhill_us",
+      "home_team": "Connecticut Sun",
+      "away_team": "Chicago Sky",
+      "batch_requested_ts": "2022-09-01T16:00:00Z",
+      "commence_time": "2022-09-04T17:00:00Z",
+      "p_home_nv": 0.4891657638136511,
+      "p_away_nv": 0.5108342361863488,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-09-01T15:47:18Z",
+        "spreads_last_update": "2022-09-01T15:47:18Z",
+        "totals_last_update": "2022-09-01T15:47:18Z",
+        "batch_requested_ts": "2022-09-01T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "76236a86bead8e09e8264e7b24e1d459",
+      "book": "williamhill_us",
+      "home_team": "Connecticut Sun",
+      "away_team": "Chicago Sky",
+      "batch_requested_ts": "2022-09-01T23:30:00Z",
+      "commence_time": "2022-09-04T17:00:00Z",
+      "p_home_nv": 0.4891657638136511,
+      "p_away_nv": 0.5108342361863488,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-09-01T23:17:15Z",
+        "spreads_last_update": "2022-09-01T23:17:15Z",
+        "totals_last_update": "2022-09-01T23:17:15Z",
+        "batch_requested_ts": "2022-09-01T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "76236a86bead8e09e8264e7b24e1d459",
+      "book": "williamhill_us",
+      "home_team": "Connecticut Sun",
+      "away_team": "Chicago Sky",
+      "batch_requested_ts": "2022-09-03T16:00:00Z",
+      "commence_time": "2022-09-04T17:00:00Z",
+      "p_home_nv": 0.4891657638136511,
+      "p_away_nv": 0.5108342361863488,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-09-03T15:48:58Z",
+        "spreads_last_update": "2022-09-03T15:48:58Z",
+        "totals_last_update": "2022-09-03T15:48:58Z",
+        "batch_requested_ts": "2022-09-03T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "65c9ec2d290f7662510a560051014739",
+      "book": "mybookieag",
+      "home_team": "Connecticut Sun",
+      "away_team": "Las Vegas Aces",
+      "batch_requested_ts": "2022-09-16T16:00:00Z",
+      "commence_time": "2022-09-18T20:00:00Z",
+      "p_home_nv": 0.4978354041300489,
+      "p_away_nv": 0.5021645958699511,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-09-16T15:48:20Z",
+        "spreads_last_update": "2022-09-16T15:48:20Z",
+        "totals_last_update": "2022-09-16T15:48:20Z",
+        "batch_requested_ts": "2022-09-16T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "66e9c43693d2085fb7fef253188c246c",
+      "book": "fanduel",
+      "home_team": "Chicago Sky",
+      "away_team": "New York Liberty",
+      "batch_requested_ts": "2023-06-02T23:30:00Z",
+      "commence_time": "2023-06-02T22:03:00Z",
+      "p_home_nv": 0.4896023956080519,
+      "p_away_nv": 0.510397604391948,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2023-06-02T23:25:29Z",
+        "spreads_last_update": "2023-06-02T23:25:29Z",
+        "totals_last_update": "2023-06-02T23:25:29Z",
+        "batch_requested_ts": "2023-06-02T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "9f71b589d6a0f090d18830aadee05ae4",
+      "book": "mybookieag",
+      "home_team": "Minnesota Lynx",
+      "away_team": "Los Angeles Sparks",
+      "batch_requested_ts": "2023-06-11T23:30:00Z",
+      "commence_time": "2023-06-11T23:02:19Z",
+      "p_home_nv": 0.5061508180588018,
+      "p_away_nv": 0.4938491819411982,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2023-06-11T23:25:18Z",
+        "spreads_last_update": "2023-06-11T23:25:18Z",
+        "totals_last_update": "2023-06-11T23:25:18Z",
+        "batch_requested_ts": "2023-06-11T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "9f71b589d6a0f090d18830aadee05ae4",
+      "book": "bovada",
+      "home_team": "Minnesota Lynx",
+      "away_team": "Los Angeles Sparks",
+      "batch_requested_ts": "2023-06-11T23:30:00Z",
+      "commence_time": "2023-06-11T23:02:19Z",
+      "p_home_nv": 0.48987854251012153,
+      "p_away_nv": 0.5101214574898786,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2023-06-11T23:25:35Z",
+        "spreads_last_update": "2023-06-11T23:25:35Z",
+        "totals_last_update": "2023-06-11T23:25:35Z",
+        "batch_requested_ts": "2023-06-11T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "f92a33c5cfbcd0c8de8216b7c640b41f",
+      "book": "bovada",
+      "home_team": "Seattle Storm",
+      "away_team": "Chicago Sky",
+      "batch_requested_ts": "2023-07-22T16:00:00Z",
+      "commence_time": "2023-07-23T01:00:00Z",
+      "p_home_nv": 0.5217391304347826,
+      "p_away_nv": 0.4782608695652174,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2023-07-22T15:55:10Z",
+        "spreads_last_update": "2023-07-22T15:55:10Z",
+        "totals_last_update": "2023-07-22T15:55:10Z",
+        "batch_requested_ts": "2023-07-22T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "11e2bb0831bafdfef4c6bf0b601ef7e1",
+      "book": "pointsbetus",
+      "home_team": "Minnesota Lynx",
+      "away_team": "Seattle Storm",
+      "batch_requested_ts": "2023-08-20T23:30:00Z",
+      "commence_time": "2023-08-20T23:00:00Z",
+      "p_home_nv": 0.5203045685279188,
+      "p_away_nv": 0.4796954314720812,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2023-08-20T23:25:33Z",
+        "spreads_last_update": "2023-08-20T23:25:33Z",
+        "totals_last_update": "2023-08-20T23:25:33Z",
+        "batch_requested_ts": "2023-08-20T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "825816a2fc5134fb7cdeab5f7ef88abc",
+      "book": "williamhill_us",
+      "home_team": "Minnesota Lynx",
+      "away_team": "Atlanta Dream",
+      "batch_requested_ts": "2023-09-01T16:00:00Z",
+      "commence_time": "2023-09-02T00:00:00Z",
+      "p_home_nv": 0.5217391304347826,
+      "p_away_nv": 0.4782608695652174,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2023-09-01T15:55:18Z",
+        "spreads_last_update": "2023-09-01T15:55:18Z",
+        "totals_last_update": "2023-09-01T15:55:18Z",
+        "batch_requested_ts": "2023-09-01T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "a24b9786a68975700c5ff9b7af8795e7",
+      "book": "williamhill_us",
+      "home_team": "Washington Mystics",
+      "away_team": "Atlanta Dream",
+      "batch_requested_ts": "2024-05-29T23:30:00Z",
+      "commence_time": "2024-05-29T23:02:59Z",
+      "p_home_nv": 0.48987854251012153,
+      "p_away_nv": 0.5101214574898786,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2024-05-29T23:24:57Z",
+        "spreads_last_update": "2024-05-29T23:24:57Z",
+        "totals_last_update": "2024-05-29T23:24:57Z",
+        "batch_requested_ts": "2024-05-29T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "447bf7c1a31c0905fd2173aebb24b3b1",
+      "book": "mybookieag",
+      "home_team": "Washington Mystics",
+      "away_team": "Chicago Sky",
+      "batch_requested_ts": "2024-06-06T23:30:00Z",
+      "commence_time": "2024-06-06T23:02:28Z",
+      "p_home_nv": 0.5071288903372982,
+      "p_away_nv": 0.4928711096627016,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2024-06-06T23:25:34Z",
+        "spreads_last_update": "2024-06-06T23:25:34Z",
+        "totals_last_update": "2024-06-06T23:25:34Z",
+        "batch_requested_ts": "2024-06-06T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "68cdcd172d4b64ca7c4a2ec49094b833",
+      "book": "betrivers",
+      "home_team": "Connecticut Sun",
+      "away_team": "New York Liberty",
+      "batch_requested_ts": "2024-06-07T23:30:00Z",
+      "commence_time": "2024-06-08T17:00:00Z",
+      "p_home_nv": 0.49469799796403124,
+      "p_away_nv": 0.5053020020359688,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2024-06-07T23:25:33Z",
+        "spreads_last_update": "2024-06-07T23:25:33Z",
+        "totals_last_update": "2024-06-07T23:25:33Z",
+        "batch_requested_ts": "2024-06-07T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "9863f6a3f749083c620a09a283c085fa",
+      "book": "mybookieag",
+      "home_team": "Connecticut Sun",
+      "away_team": "Minnesota Lynx",
+      "batch_requested_ts": "2024-09-17T23:30:00Z",
+      "commence_time": "2024-09-17T23:01:56Z",
+      "p_home_nv": 0.5071288903372982,
+      "p_away_nv": 0.4928711096627016,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2024-09-17T23:15:31Z",
+        "spreads_last_update": "2024-09-17T23:15:31Z",
+        "totals_last_update": "2024-09-17T23:15:31Z",
+        "batch_requested_ts": "2024-09-17T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "914a3bbcb0d2b61c0701a4a140a66035",
+      "book": "williamhill_us",
+      "home_team": "New York Liberty",
+      "away_team": "Atlanta Dream",
+      "batch_requested_ts": "2024-09-18T23:30:00Z",
+      "commence_time": "2024-09-19T23:00:00Z",
+      "p_home_nv": 0.4782608695652174,
+      "p_away_nv": 0.5217391304347826,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2024-09-18T23:19:22Z",
+        "spreads_last_update": "2024-09-18T23:19:22Z",
+        "totals_last_update": "2024-09-18T23:19:22Z",
+        "batch_requested_ts": "2024-09-18T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "7acb34d202aa42ac3fbc6fa56faa2518",
+      "book": "williamhill_us",
+      "home_team": "Chicago Sky",
+      "away_team": "Dallas Wings",
+      "batch_requested_ts": "2025-05-29T16:00:00Z",
+      "commence_time": "2025-05-30T00:00:00Z",
+      "p_home_nv": 0.5108342361863488,
+      "p_away_nv": 0.4891657638136511,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2025-05-29T15:52:23Z",
+        "spreads_last_update": "2025-05-29T15:52:23Z",
+        "totals_last_update": "2025-05-29T15:52:23Z",
+        "batch_requested_ts": "2025-05-29T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "5b4d49bd70c941b71cceea870792def9",
+      "book": "fanduel",
+      "home_team": "Atlanta Dream",
+      "away_team": "Minnesota Lynx",
+      "batch_requested_ts": "2025-06-27T16:00:00Z",
+      "commence_time": "2025-06-27T23:30:00Z",
+      "p_home_nv": 0.4956702459300312,
+      "p_away_nv": 0.5043297540699688,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2025-06-27T15:55:22Z",
+        "spreads_last_update": "2025-06-27T15:55:22Z",
+        "totals_last_update": "2025-06-27T15:55:22Z",
+        "batch_requested_ts": "2025-06-27T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "105309605f614d2ae801db8872e406ac",
+      "book": "williamhill_us",
+      "home_team": "Atlanta Dream",
+      "away_team": "Seattle Storm",
+      "batch_requested_ts": "2025-06-30T23:30:00Z",
+      "commence_time": "2025-07-03T23:30:00Z",
+      "p_home_nv": 0.5217391304347826,
+      "p_away_nv": 0.4782608695652174,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2025-06-30T23:25:15Z",
+        "spreads_last_update": "2025-06-30T23:25:15Z",
+        "totals_last_update": "2025-06-30T23:25:15Z",
+        "batch_requested_ts": "2025-06-30T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "105309605f614d2ae801db8872e406ac",
+      "book": "williamhill_us",
+      "home_team": "Atlanta Dream",
+      "away_team": "Seattle Storm",
+      "batch_requested_ts": "2025-07-01T23:30:00Z",
+      "commence_time": "2025-07-03T23:30:00Z",
+      "p_home_nv": 0.4891657638136511,
+      "p_away_nv": 0.5108342361863488,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2025-07-01T23:23:43Z",
+        "spreads_last_update": "2025-07-01T23:23:43Z",
+        "totals_last_update": "2025-07-01T23:23:43Z",
+        "batch_requested_ts": "2025-07-01T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "105309605f614d2ae801db8872e406ac",
+      "book": "williamhill_us",
+      "home_team": "Atlanta Dream",
+      "away_team": "Seattle Storm",
+      "batch_requested_ts": "2025-07-02T16:00:00Z",
+      "commence_time": "2025-07-03T23:30:00Z",
+      "p_home_nv": 0.4891657638136511,
+      "p_away_nv": 0.5108342361863488,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2025-07-02T15:52:32Z",
+        "spreads_last_update": "2025-07-02T15:52:32Z",
+        "totals_last_update": "2025-07-02T15:52:32Z",
+        "batch_requested_ts": "2025-07-02T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "87efeff4b1aa5295abdc91ae214bf619",
+      "book": "betrivers",
+      "home_team": "Indiana Fever",
+      "away_team": "Las Vegas Aces",
+      "batch_requested_ts": "2025-07-24T23:30:00Z",
+      "commence_time": "2025-07-24T23:02:50Z",
+      "p_home_nv": 0.5028595394235169,
+      "p_away_nv": 0.49714046057648315,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2025-07-24T23:25:30Z",
+        "spreads_last_update": "2025-07-24T23:25:30Z",
+        "totals_last_update": "2025-07-24T23:25:30Z",
+        "batch_requested_ts": "2025-07-24T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "f3bf1de5a8dc7951fc9b680ceb9a7c8c",
+      "book": "mybookieag",
+      "home_team": "Seattle Storm",
+      "away_team": "Atlanta Dream",
+      "batch_requested_ts": "2025-08-12T23:30:00Z",
+      "commence_time": "2025-08-14T02:00:00Z",
+      "p_home_nv": 0.49222032052279446,
+      "p_away_nv": 0.5077796794772056,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2025-08-12T23:23:19Z",
+        "spreads_last_update": "2025-08-12T23:23:19Z",
+        "totals_last_update": "2025-08-12T23:23:19Z",
+        "batch_requested_ts": "2025-08-12T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "c416f257064252a180c067b758496186",
+      "book": "betrivers",
+      "home_team": "Indiana Fever",
+      "away_team": "Seattle Storm",
+      "batch_requested_ts": "2025-08-26T23:30:00Z",
+      "commence_time": "2025-08-26T23:02:30Z",
+      "p_home_nv": 0.5028595394235169,
+      "p_away_nv": 0.49714046057648315,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2025-08-26T23:24:18Z",
+        "spreads_last_update": "2025-08-26T23:24:18Z",
+        "totals_last_update": "2025-08-26T23:24:18Z",
+        "batch_requested_ts": "2025-08-26T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "cc10e0482e68ed9de54b97d21c46596e",
+      "book": "draftkings",
+      "home_team": "Toronto Tempo",
+      "away_team": "Washington Mystics",
+      "batch_requested_ts": "2026-05-07T23:30:00Z",
+      "commence_time": "2026-05-08T23:30:00Z",
+      "p_home_nv": 0.4956702459300312,
+      "p_away_nv": 0.5043297540699688,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-05-07T23:25:06Z",
+        "spreads_last_update": "2026-05-07T23:25:06Z",
+        "totals_last_update": "2026-05-07T23:25:06Z",
+        "batch_requested_ts": "2026-05-07T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "ac814e63fa3b8083a9098b1d3c55047a",
+      "book": "fanduel",
+      "home_team": "Connecticut Sun",
+      "away_team": "Los Angeles Sparks",
+      "batch_requested_ts": "2026-05-30T23:30:00Z",
+      "commence_time": "2026-05-30T22:03:00Z",
+      "p_home_nv": 0.4548257786000616,
+      "p_away_nv": 0.5451742213999383,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-05-30T23:25:06Z",
+        "spreads_last_update": "2026-05-30T23:25:06Z",
+        "totals_last_update": "2026-05-30T23:25:06Z",
+        "batch_requested_ts": "2026-05-30T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "a14af4e37c9f2017c99309b3e7bfaf2b",
+      "book": "draftkings",
+      "home_team": "Portland Fire",
+      "away_team": "Phoenix Mercury",
+      "batch_requested_ts": "2026-06-04T16:00:00Z",
+      "commence_time": "2026-06-06T02:00:00Z",
+      "p_home_nv": 0.4956702459300312,
+      "p_away_nv": 0.5043297540699688,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-06-04T15:54:54Z",
+        "spreads_last_update": "2026-06-04T15:54:54Z",
+        "totals_last_update": "2026-06-04T15:54:54Z",
+        "batch_requested_ts": "2026-06-04T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "cb4366d10ad853bd024841c3f1b9ae3a",
+      "book": "betus",
+      "home_team": "Washington Mystics",
+      "away_team": "Toronto Tempo",
+      "batch_requested_ts": "2026-06-12T23:30:00Z",
+      "commence_time": "2026-06-12T23:30:00Z",
+      "p_home_nv": 0.5086640097036909,
+      "p_away_nv": 0.49133599029630914,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-06-12T23:25:00Z",
+        "spreads_last_update": "2026-06-12T23:25:00Z",
+        "totals_last_update": "2026-06-12T23:25:00Z",
+        "batch_requested_ts": "2026-06-12T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "2460c3f96c0544953ffbc6f0e4f0b2a0",
+      "book": "fanduel",
+      "home_team": "Phoenix Mercury",
+      "away_team": "Los Angeles Sparks",
+      "batch_requested_ts": "2026-06-12T23:30:00Z",
+      "commence_time": "2026-06-14T02:00:00Z",
+      "p_home_nv": 0.49133599029630914,
+      "p_away_nv": 0.5086640097036909,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-06-12T23:25:28Z",
+        "spreads_last_update": "2026-06-12T23:25:28Z",
+        "totals_last_update": "2026-06-12T23:25:28Z",
+        "batch_requested_ts": "2026-06-12T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "bf31ba4dcdf9e2a6f47b02b9514b0eb3",
+      "book": "fanatics",
+      "home_team": "Seattle Storm",
+      "away_team": "Atlanta Dream",
+      "batch_requested_ts": "2026-06-27T16:00:00Z",
+      "commence_time": "2026-06-28T01:00:00Z",
+      "p_home_nv": 0.28169014084507044,
+      "p_away_nv": 0.7183098591549295,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 4.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-06-27T15:55:30Z",
+        "spreads_last_update": "2026-06-27T15:55:30Z",
+        "totals_last_update": "2026-06-27T15:55:30Z",
+        "batch_requested_ts": "2026-06-27T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "bf31ba4dcdf9e2a6f47b02b9514b0eb3",
+      "book": "fanatics",
+      "home_team": "Seattle Storm",
+      "away_team": "Atlanta Dream",
+      "batch_requested_ts": "2026-06-27T23:30:00Z",
+      "commence_time": "2026-06-28T01:00:00Z",
+      "p_home_nv": 0.24516129032258063,
+      "p_away_nv": 0.7548387096774194,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 4.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-06-27T23:25:02Z",
+        "spreads_last_update": "2026-06-27T23:25:02Z",
+        "totals_last_update": "2026-06-27T23:25:02Z",
+        "batch_requested_ts": "2026-06-27T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "f784500c59f1f83757bec7c0ef787879",
+      "book": "mybookieag",
+      "home_team": "Las Vegas Aces",
+      "away_team": "Indiana Fever",
+      "batch_requested_ts": "2026-07-05T23:30:00Z",
+      "commence_time": "2026-07-05T23:02:00Z",
+      "p_home_nv": 0.5071288903372982,
+      "p_away_nv": 0.4928711096627016,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-07-05T23:24:10Z",
+        "spreads_last_update": "2026-07-05T23:24:10Z",
+        "totals_last_update": "2026-07-05T23:24:10Z",
+        "batch_requested_ts": "2026-07-05T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "80aa9418f4995bd78f131b2ede793c1c",
+      "book": "betrivers",
+      "home_team": "Phoenix Mercury",
+      "away_team": "Indiana Fever",
+      "batch_requested_ts": "2026-07-09T23:30:00Z",
+      "commence_time": "2026-07-10T02:10:00Z",
+      "p_home_nv": 0.49469799796403124,
+      "p_away_nv": 0.5053020020359688,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-07-09T23:25:24Z",
+        "spreads_last_update": "2026-07-09T23:25:24Z",
+        "totals_last_update": "2026-07-09T23:25:24Z",
+        "batch_requested_ts": "2026-07-09T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "14c1ed8012d1c1a70778c1d1aa348e83",
+      "book": "williamhill_us",
+      "home_team": "Los Angeles Sparks",
+      "away_team": "Chicago Sky",
+      "batch_requested_ts": "2026-07-09T23:30:00Z",
+      "commence_time": "2026-07-11T02:10:00Z",
+      "p_home_nv": 0.5108342361863488,
+      "p_away_nv": 0.4891657638136511,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-07-09T23:19:10Z",
+        "spreads_last_update": "2026-07-09T23:19:10Z",
+        "totals_last_update": "2026-07-09T23:19:10Z",
+        "batch_requested_ts": "2026-07-09T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "d6adc93ae6db516941aa0c9eabe442fd",
+      "book": "betrivers",
+      "home_team": "Toronto Tempo",
+      "away_team": "Washington Mystics",
+      "batch_requested_ts": "2026-07-13T23:30:00Z",
+      "commence_time": "2026-07-14T23:10:00Z",
+      "p_home_nv": 0.4873460435296103,
+      "p_away_nv": 0.5126539564703898,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-07-13T23:25:13Z",
+        "spreads_last_update": "2026-07-13T23:25:13Z",
+        "totals_last_update": "2026-07-13T23:25:13Z",
+        "batch_requested_ts": "2026-07-13T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "4a1af047b50cc335d69665ae9b499206",
+      "book": "betrivers",
+      "home_team": "Chicago Sky",
+      "away_team": "Los Angeles Sparks",
+      "batch_requested_ts": "2026-07-16T23:30:00Z",
+      "commence_time": "2026-07-17T23:30:00Z",
+      "p_home_nv": 0.4925753075943997,
+      "p_away_nv": 0.5074246924056003,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": true,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-07-16T23:25:15Z",
+        "spreads_last_update": "2026-07-16T23:25:15Z",
+        "totals_last_update": "2026-07-16T23:25:15Z",
+        "batch_requested_ts": "2026-07-16T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "4a1af047b50cc335d69665ae9b499206",
+      "book": "betrivers",
+      "home_team": "Chicago Sky",
+      "away_team": "Los Angeles Sparks",
+      "batch_requested_ts": "2026-07-17T16:00:00Z",
+      "commence_time": "2026-07-17T23:30:00Z",
+      "p_home_nv": 0.5157232704402516,
+      "p_away_nv": 0.48427672955974843,
+      "is_moneyline_exact_pickem_tie_artifact": false,
+      "spread_fav_is_home": false,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2026-07-17T15:55:24Z",
+        "spreads_last_update": "2026-07-17T15:55:24Z",
+        "totals_last_update": "2026-07-17T15:55:24Z",
+        "batch_requested_ts": "2026-07-17T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "81b16bd67c0a7597a78e7900d3f2ded6",
+      "book": "foxbet",
+      "home_team": "Los Angeles Sparks",
+      "away_team": "Dallas Wings",
+      "batch_requested_ts": "2022-05-31T23:30:00Z",
+      "commence_time": "2022-06-01T02:30:00Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-05-31T23:20:08Z",
+        "spreads_last_update": "2022-05-31T23:20:08Z",
+        "totals_last_update": "2022-05-31T23:20:08Z",
+        "batch_requested_ts": "2022-05-31T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "95cdc490a5d4f9aff3a621392a3f8f60",
+      "book": "fanduel",
+      "home_team": "Phoenix Mercury",
+      "away_team": "Los Angeles Sparks",
+      "batch_requested_ts": "2022-06-05T16:00:00Z",
+      "commence_time": "2022-06-05T22:00:00Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 1.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-05T15:48:41Z",
+        "spreads_last_update": "2022-06-05T15:48:41Z",
+        "totals_last_update": "2022-06-05T15:48:41Z",
+        "batch_requested_ts": "2022-06-05T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "20a588ca9e1ebae51fef354991d0e02a",
+      "book": "pointsbetus",
+      "home_team": "Chicago Sky",
+      "away_team": "Washington Mystics",
+      "batch_requested_ts": "2022-06-05T23:30:00Z",
+      "commence_time": "2022-06-05T22:08:55Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 10.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-05T23:19:52Z",
+        "spreads_last_update": "2022-06-05T23:19:52Z",
+        "totals_last_update": "2022-06-05T23:19:52Z",
+        "batch_requested_ts": "2022-06-05T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "5dadd12223fe6722e3106a5da506abbe",
+      "book": "bovada",
+      "home_team": "Indiana Fever",
+      "away_team": "Phoenix Mercury",
+      "batch_requested_ts": "2022-06-15T23:30:00Z",
+      "commence_time": "2022-06-15T23:00:00Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 1.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-15T23:09:54Z",
+        "spreads_last_update": "2022-06-15T23:09:54Z",
+        "totals_last_update": "2022-06-15T23:09:54Z",
+        "batch_requested_ts": "2022-06-15T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "5dadd12223fe6722e3106a5da506abbe",
+      "book": "fanduel",
+      "home_team": "Indiana Fever",
+      "away_team": "Phoenix Mercury",
+      "batch_requested_ts": "2022-06-15T23:30:00Z",
+      "commence_time": "2022-06-15T23:00:00Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 0.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-15T23:10:26Z",
+        "spreads_last_update": "2022-06-15T23:10:26Z",
+        "totals_last_update": "2022-06-15T23:10:26Z",
+        "batch_requested_ts": "2022-06-15T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "3ec8188767d69ef36d809d8280adbdac",
+      "book": "pointsbetus",
+      "home_team": "Connecticut Sun",
+      "away_team": "Atlanta Dream",
+      "batch_requested_ts": "2022-06-15T23:30:00Z",
+      "commence_time": "2022-06-15T23:00:00Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 10.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-15T23:10:05Z",
+        "spreads_last_update": "2022-06-15T23:10:05Z",
+        "totals_last_update": "2022-06-15T23:10:05Z",
+        "batch_requested_ts": "2022-06-15T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "81ad8c786ab644a45fe442f3efe7bdd2",
+      "book": "fanduel",
+      "home_team": "Atlanta Dream",
+      "away_team": "New York Liberty",
+      "batch_requested_ts": "2022-06-24T23:30:00Z",
+      "commence_time": "2022-06-24T23:30:00Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 1.5,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-24T23:20:36Z",
+        "spreads_last_update": "2022-06-24T23:20:36Z",
+        "totals_last_update": "2022-06-24T23:20:36Z",
+        "batch_requested_ts": "2022-06-24T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "a2d66c5c070df08b24666e3c86aad2f5",
+      "book": "foxbet",
+      "home_team": "Seattle Storm",
+      "away_team": "Las Vegas Aces",
+      "batch_requested_ts": "2022-06-29T23:30:00Z",
+      "commence_time": "2022-06-30T02:00:00Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-29T23:20:19Z",
+        "spreads_last_update": "2022-06-29T23:20:19Z",
+        "totals_last_update": "2022-06-29T23:20:19Z",
+        "batch_requested_ts": "2022-06-29T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "5cf117e87745513748916f9d333ece6b",
+      "book": "pointsbetus",
+      "home_team": "New York Liberty",
+      "away_team": "Atlanta Dream",
+      "batch_requested_ts": "2022-06-30T23:30:00Z",
+      "commence_time": "2022-06-30T23:07:21Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 5.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-06-30T23:20:03Z",
+        "spreads_last_update": "2022-06-30T23:20:03Z",
+        "totals_last_update": "2022-06-30T23:20:03Z",
+        "batch_requested_ts": "2022-06-30T23:30:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    },
+    {
+      "event_id": "99c21083e754839af49c6c91e4c39247",
+      "book": "sugarhouse",
+      "home_team": "Los Angeles Sparks",
+      "away_team": "Phoenix Mercury",
+      "batch_requested_ts": "2022-07-04T16:00:00Z",
+      "commence_time": "2022-07-04T23:00:00Z",
+      "p_home_nv": 0.5,
+      "p_away_nv": 0.5,
+      "is_moneyline_exact_pickem_tie_artifact": true,
+      "spread_fav_is_home": true,
+      "mu": 1.0,
+      "capture_timestamps": {
+        "h2h_last_update": "2022-07-04T15:48:39Z",
+        "spreads_last_update": "2022-07-04T15:48:39Z",
+        "totals_last_update": "2022-07-04T15:48:39Z",
+        "batch_requested_ts": "2022-07-04T16:00:00Z"
+      },
+      "cross_quote_latency_window_seconds": 0.0
+    }
+  ],
+  "relation_A_violation_flags_total_count": 190,
+  "could_not_establish": [
+    "Any reaction-time, stale-window, or CLV claim -- explicitly out of scope per D023 amendment 4 and the node's stop conditions; this archive is T1_VENDOR_ASSERTED and no timing claim is made anywhere in this output.",
+    "Whether Relation A/B violations are actually exploitable -- execution feasibility belongs to M21 per this node's acceptance criteria; not assessed here.",
+    "M05 event-market linkage keys -- experiments/market_program/M05_EVENT_MARKET_LINKAGE/ does not exist in this worktree at the time of this run, so quotes were joined on the archive's native (event_id, bookmaker key, batch requested_ts) tuple instead. This is a deviation from the acceptance criterion 'quotes are joined through the M05 linkage keys' caused by an upstream dependency gap, not resolved by this node.",
+    "Whether featured_backfill.jsonl is or is not the specific 'final-state odds archive' (813-game, one-snapshot-per-game) referenced in the M00 contract prompt text -- experiments/market_program/M00_MARKET_PROGRAM_CONTRACT/ does not exist in this worktree, so the bounded-uses ruling could not be checked against its actual frozen bytes. The archive actually present (1268 distinct events, avg ~3.9 polls/event across a full-season ladder cadence) does not match a 'one-snapshot-per-game' description on its face; flagged, not resolved.",
+    "Ground-truth calibration of Relation B (whether the moneyline-vs-spread disagreement reflects real market inefficiency or a wrong normal-margin assumption) -- would require realized game outcomes, which are out of scope for a same-book cross-quote coherence check and were not used."
+  ]
+}
