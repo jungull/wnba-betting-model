@@ -331,3 +331,126 @@ Mechanics, all pre-proven:
 
 After the append: close S35, then S36 implementation — and verify the seven obligations survived
 into it, especially O1 (read the PINNED `master_team.parquet`, HALT on sha mismatch).
+
+
+---
+# 10. RETIREMENT HANDOFF — 2026-08-07, SECOND SUCCESSION (read this section FIRST)
+
+Written by the coordinator that took over at 15:22Z from the §9 retiree. Written EARLY, per the new
+§12.3.1 context trigger, so it is complete rather than rushed. The program is mid-stride.
+
+**86 nodes PASSED · 6 BLOCKED · 3 READY · 6 SUPERSEDED · 3 USER_REQUIRED · 104 total.**
+Program branch pushed clean at `bbe4371`, **35/35 repository gates green**, zero unpushed.
+
+## 10.1 THERE IS AN AGENT IN FLIGHT — DO NOT DUPLICATE IT
+
+**`S37_IMPLEMENTATION_AUDIT` was dispatched at TOP tier ~17:20Z and has NOT returned.** Check
+`GRAPH_EVENTS.jsonl` for its `agent_returned`. If absent, **it is still working — do not
+re-dispatch.** Its write scope is `stage3_score/S37_IMPLEMENTATION_AUDIT/`.
+
+When it returns, these are the COORDINATOR's steps:
+1. It may legitimately return **FAIL** — that is this node succeeding. A prior red team on this lane
+   returned FAIL with four Severity A findings and was right to. If it fails, route to a repair node
+   exactly as S33R was routed from S34; do NOT reconcile findings yourself.
+2. Materialize `REPORT.md` from `S37_REPORT_BODY.md` with a coordinator header (harness forbids
+   subagents writing that filename).
+3. Verify `SPEC.json` parses. Re-derive its headline claims on bytes rather than accepting them.
+4. **It was asked to rule on a contradiction S36 raised and refused to resolve (F3):** three E3 cards
+   list `composite_p_home` in `structural_terms` while their formulas and the A4 receipt appear to fit
+   only the composite margin, and the fitted-column reading appears unimplementable as frozen (188
+   structural NaN, no declared imputation). S36 treated it as a null-granted ingredient. **Read S37's
+   independent ruling before anything downstream.** If the ruling would change estimands, K0
+   structure, inference structure, universe, cutoff-valid set or leakage status, it must HALT and
+   raise — that is a USER-adjacent contract change, not a coordinator call.
+
+## 10.2 CRITICAL PATH FROM HERE
+
+S37 audit → **S38 sealed fits** → S39 integrity → S40 adjudication (sole unseal authority) → S41
+completion → **S42 USER adoption gate**.
+
+Measured durations to plan with (from this session's ledger): implementation ~95 min, audits 35–60
+min, and cycle-1's blinded fit took ~102 min. **Expect at least one repair loop** — the audit exists
+to find problems and has done so every time.
+
+**The standing question is still unanswered and the answer is still NO.** The composite does not beat
+plain two-season-average scoring and trails the market by a PAIRED **0.383 total MAE**, **0.797
+margin MAE**, **0.0168 Brier** (n≈1,050–1,060, date-clustered, all CIs exclude zero). Eleven arms are
+implemented but **NOTHING IS FITTED**. Do not let anyone report the fan-out as progress on that
+question.
+
+## 10.3 WHAT THIS COORDINATOR COMPLETED
+
+- **S35 closed and the registry append PERFORMED as single writer.** 51→65 records. Post-append hash
+  was PRE-PROVEN in a dry run: two candidate concatenations computed, only raw concat matched
+  `SPEC.json`'s expected digest, and the write proceeded solely on that match. Byte-identity of the
+  original 51 proven twice (direct line comparison + all 51 per-record digests, 0 mismatches).
+- **D055** — the pre-existing append-only registry defect at record index 50 remedied by a corrective
+  erratum at index 65. Record 50 untouched. **The erratum creates NO authority** and deliberately does
+  NOT re-register the adjudication, because that would stamp today's date on a payload drafted
+  2026-08-06 for an already-executed cycle — backdating a preregistration. Residual cost recorded:
+  querying the original `experiment_id` still returns zero top-level hits.
+- **M14, M10, M06, S36 all PASSED**, each verified on bytes by re-running its own suite.
+- **D056** — succession now triggers on coordinator context, not the clock (see §10.6).
+
+## 10.4 REGISTRY BASELINE — REFRESHED, USE THIS ONE
+
+`arm_registry.jsonl` is now **66 records**, sha256
+`0e95cd9a03ad19b541c943e8644a8974372bb6d3453df11b122b27e6d213bc39`.
+**S35's post-append expectation of 65 / `6b43f40a…` is SUPERSEDED** — record 65 is the D055 erratum, a
+legitimate later append, not a mutation. S36 independently caught this and flagged it; it was right.
+
+## 10.5 USER-GATED — NEVER SELF-GRANT
+
+Kalshi consent letter · RotoGrinders month · wehoop/RotoWire outreach · any vendor purchase (M02B) ·
+P43 champion replacement · **S42 adoption of any fitted score model** · anything order-shaped or
+money-spending · pushing any branch but `player-model-program` / `data-refresh-2026`.
+
+**Deliberately deferred READY nodes — read the reason before dispatching:** `M08_STALE_WINDOW`
+(conditioned on demonstrated lead-lag; M07 showed none is demonstrable from the bundled vendor
+topology — may become legitimate after a per-book pilot, not before) and `M22_CAPACITY` (presupposes
+an adjudicated opportunity class that does not exist, and edges toward staking).
+
+**Outstanding for the user, non-blocking:** auto permission mode could not be set — the auto-mode
+classifier correctly blocks Claude from editing its own permission settings. The user must add
+`permissions.defaultMode: "auto"` and `skipAutoPermissionPrompt: true` to `~/.claude/settings.json`
+by hand. Do NOT attempt to route around that block.
+
+## 10.6 §12.3.1 VERBATIM — THE SUCCESSION TRIGGER YOU INHERIT
+
+> **The succession trigger is CONTEXT, not the clock** (D056). The recurring scheduled run is only a
+> **safety net**. At roughly **60% of context — erring EARLY, never late** — the coordinator begins
+> retirement: (1) stop dispatching new nodes; (2) close in-flight agents properly if nearly done,
+> else record each with node id, write scope, what clears it, and **DO NOT RE-DISPATCH — check for
+> its return event first**; (3) write the §12.3 packet carrying this subsection verbatim; (4) commit,
+> then push **only once `git status` shows no agent holds a write scope**; (5) append a
+> **`coordinator_retired`** event as the LAST ledger write; (6) trigger the successor with a
+> **one-time** scheduled task firing a few minutes out; (7) stop.
+>
+> **Staleness-guard override:** if the most recent ledger event is `coordinator_retired`, the
+> successor does **NOT** stand down despite the fresh timestamp — it was deliberately summoned.
+> Without this the chain deadlocks. Observed live on 2026-08-07 when a scheduled coordinator stood
+> down against a 9-minute-old ledger while its predecessor was retiring.
+
+## 10.7 DISCIPLINES FROM THIS SESSION
+
+1. **Verify the agent, not just its tests.** Every node this session was closed only after the
+   coordinator re-ran its suite and re-read its headline numbers from the artifact. M14's verdict
+   string said "no predictive content detected" while its own measured slope was significantly
+   negative — imprecise, corrected in the record, caveat attached to the headline.
+2. **Cross-check agents against each other when they read the same source.** M06 and M10
+   independently read the odds store and appeared to disagree (330 vs 220 game-line rows). Counting
+   the file directly resolved it: h2h 110 / spreads 110 / totals 110 — M06 counted all three, M10
+   counted spreads+totals only, correct for middles since a moneyline has no line to middle. **Both
+   right at different scopes.** Resolve apparent contradictions by measurement before reporting either
+   as a defect.
+3. **A count is not a metric.** S36 verified card fidelity by re-deriving five kill-stratum censuses
+   exactly — real verification with zero unblinding. Use this pattern.
+4. **PowerShell here-strings mangle embedded quotes and `2>&1` on native exes fabricates errors.**
+   Write commit messages to a file and drive git via a scratchpad python `subprocess`. A git push that
+   prints a red `NativeCommandError` may still have exit code 0 — check the ref-update line.
+5. **Scope a deferred node rather than skipping it.** M06 was listed as deferred, but its own reason
+   said a feasibility verdict was legitimate while a reaction claim was not. Dispatched under exactly
+   that limit, it returned a clean NOT_YET_FEASIBLE with 0-of-7 event coverage. Read deferral reasons
+   for the line they draw, not as a blanket bar.
+
+*The ledger is the memory. The board is the truth. Frozen bytes govern. Do not stop.*
