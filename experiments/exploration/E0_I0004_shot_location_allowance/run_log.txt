@@ -1,0 +1,91 @@
+﻿=== Loading exploration-partition files only ===
+  data/shotcharts/shots_2021_regular.parquet
+  data/shotcharts/shots_2021_playoffs.parquet
+  data/shotcharts/shots_2022_regular.parquet
+  data/shotcharts/shots_2022_playoffs.parquet
+  data/shotcharts/shots_2023_regular.parquet
+  data/shotcharts/shots_2023_playoffs.parquet
+  data/shotcharts/shots_2024_regular.parquet
+  data/shotcharts/shots_2024_playoffs.parquet
+
+Total shots loaded: 132558
+Season range in loaded data: 2021-2024
+GAME_DATE range: 20210514 - 20241020
+PARTITION CHECK PASSED: no 2025/2026 data loaded.
+
+=== 1. Zone granularity (SHOT_ZONE_BASIC, raw, 2021-2024) ===
+SHOT_ZONE_BASIC
+Above the Break 3        37939
+Restricted Area          37743
+In The Paint (Non-RA)    27397
+Mid-Range                24370
+Left Corner 3             2916
+Right Corner 3            1939
+Backcourt                  254
+Name: count, dtype: int64
+
+=== Collapsed 6-zone scheme (merge L/R corner) ===
+zone
+Above the Break 3        37939
+Restricted Area          37743
+In The Paint (Non-RA)    27397
+Mid-Range                24370
+Corner 3                  4855
+Backcourt                  254
+Name: count, dtype: int64
+
+Zone vs 3PT-flag agreement (mean should be 0 or 1):
+                       mean   size
+zone                              
+Above the Break 3       1.0  37939
+Backcourt               1.0    254
+Corner 3                1.0   4855
+In The Paint (Non-RA)   0.0  27397
+Mid-Range               0.0  24370
+Restricted Area         0.0  37743
+
+=== 2. Deriving opponent team per shot from GAME_ID team pairs ===
+Games with != 2 distinct TEAM_IDs in shot data: 0 / 970
+Shots with no resolvable opponent (dropped): 0 / 132558
+Shots remaining after opponent resolution: 132558
+
+=== 3a. Team-season defensive conversion allowed, by zone ===
+zone                     teams      mu         Q   df   K(pseudo-att)   verdict
+Above the Break 3           12   0.343      55.6   47          4306.9   ~noise-dominated
+Backcourt                   12   0.016      39.6   47             inf   ~noise-dominated
+Corner 3                    12   0.372      43.4   47             inf   ~noise-dominated
+In The Paint (Non-RA)       12   0.398      55.6   47          3110.3   ~noise-dominated
+Mid-Range                   12   0.369      71.9   47           957.2   ~noise-dominated
+Restricted Area             12   0.623     175.2   47           287.1   REAL DISPERSION
+
+=== 3b. Team-season defensive SHOT-MIX SHARE allowed, by zone (tendency side) ===
+zone                     teams mu(share)         Q   df   K(pseudo-att)   verdict
+Above the Break 3           12     0.288      76.4   47          1261.6   ~noise-dominated
+Backcourt                   12     0.002       0.1   47             inf   ~noise-dominated
+Corner 3                    12     0.038       7.1   47             inf   ~noise-dominated
+In The Paint (Non-RA)       12     0.210     143.8   47           275.7   REAL DISPERSION
+Mid-Range                   12     0.187      85.0   47           627.0   ~noise-dominated
+Restricted Area             12     0.290     254.9   47           176.7   REAL DISPERSION
+
+=== 4. Player-level interaction test (conversion channel) ===
+Player-season-zone cells with a usable other-season baseline (>=10 att): 2165
+Shots joined to a player-zone baseline: 121412 / 132558
+
+--- Conversion interaction: corr(shooting_residual, opp zone_conv_residual), by zone ---
+Above the Break 3        n= 34961  corr=+0.0278  hi_opp_resid_mean=+0.0148  lo_opp_resid_mean=-0.0092  diff=+0.0240
+Corner 3                 n=  3872  corr=+0.0901  hi_opp_resid_mean=+0.0445  lo_opp_resid_mean=-0.0296  diff=+0.0741
+In The Paint (Non-RA)    n= 25436  corr=+0.0343  hi_opp_resid_mean=+0.0153  lo_opp_resid_mean=-0.0126  diff=+0.0279
+Mid-Range                n= 22461  corr=+0.0426  hi_opp_resid_mean=+0.0217  lo_opp_resid_mean=-0.0138  diff=+0.0355
+Restricted Area          n= 34681  corr=+0.0617  hi_opp_resid_mean=+0.0260  lo_opp_resid_mean=-0.0231  diff=+0.0491
+
+--- Placebo: corr(shooting_residual, opp POOLED rate) [should be ~0 since residual already player-zone-demeaned & this is season-pool not zone] ---
+corr(shooting_residual, opp pooled FG% allowed) overall = +0.0211  n=121412
+
+=== 5. Persistence: split 2021-2022 vs 2023-2024 (both inside partition) ===
+Above the Break 3       2021_2022: corr=+0.0260 (n=16208)  2023_2024: corr=+0.0294 (n=18753)
+Corner 3                2021_2022: corr=+0.0761 (n=1589)  2023_2024: corr=+0.0941 (n=2283)
+In The Paint (Non-RA)   2021_2022: corr=+0.0462 (n=10861)  2023_2024: corr=+0.0252 (n=14575)
+Mid-Range               2021_2022: corr=+0.0383 (n=11131)  2023_2024: corr=+0.0468 (n=11330)
+Restricted Area         2021_2022: corr=+0.0659 (n=16297)  2023_2024: corr=+0.0521 (n=18384)
+
+Done.
