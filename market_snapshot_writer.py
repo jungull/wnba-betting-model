@@ -149,21 +149,36 @@ def estimate_clock_skew_seconds(vendor_http_date: Optional[str],
         return None, None
 
 
-def fetch_odds_snapshot(session, key: str, timeout=30):
+def fetch_odds_snapshot(session, key: str, timeout=30, bookmakers: Optional[str] = None):
     """One slate-wide live-odds call. Returns (games_json, raw_bytes,
     response, timing_dict). Raises with the key scrubbed from any error
     text. `timing_dict` is the defect-4 fix: our own witnessed
     request/response instants plus a best-effort clock-skew estimate (see
     `_timing`/`estimate_clock_skew_seconds`) -- recorded so vendor-latency
-    and clock-skew bounds are MEASURED, not silently absent."""
+    and clock-skew bounds are MEASURED, not silently absent.
+
+    M27_PER_BOOK_POLLING: `bookmakers`, if given, is a single vendor book
+    key (e.g. "draftkings") passed as the API's `bookmakers=` filter
+    INSTEAD of `regions=us` (the vendor documents these as mutually
+    exclusive scoping params). This is what turns one bundled multi-book
+    call into an independently-witnessed single-book call -- each such
+    call gets its own real HTTP round trip and its own real
+    `response_received_ts`, closing the M26-defect-2(b) gap for whichever
+    books are polled this way. Default (`bookmakers=None`) is UNCHANGED
+    from pre-M27 behavior: `regions=us`, all subscribed books bundled in
+    one response, one shared timestamp -- this is the M26 anti-faking
+    test's own documented case and this default path must keep producing
+    it."""
     import time
     request_sent_ts = datetime.now(timezone.utc).isoformat()
     t0 = time.monotonic()
+    params = {"apiKey": key, "markets": GAME_MARKETS, "oddsFormat": "american"}
+    if bookmakers:
+        params["bookmakers"] = bookmakers
+    else:
+        params["regions"] = "us"
     try:
-        r = session.get(ODDS_URL, params={"apiKey": key, "regions": "us",
-                                          "markets": GAME_MARKETS,
-                                          "oddsFormat": "american"},
-                        timeout=timeout)
+        r = session.get(ODDS_URL, params=params, timeout=timeout)
         r.raise_for_status()
     except Exception as e:
         raise RuntimeError(_scrub(f"{type(e).__name__}: {e}", key)) from None
@@ -172,22 +187,30 @@ def fetch_odds_snapshot(session, key: str, timeout=30):
 
 
 def fetch_event_props_snapshot(session, key: str, event_id: str,
-                                markets=None, timeout=30):
+                                markets=None, timeout=30,
+                                bookmakers: Optional[str] = None):
     """One per-event props call, scoped to a single event_id (used both by
     the regular props ladder rung, over all in-window events, and by a
     burst leg, scoped to the one triggering game's event). Returns
     (event_json, raw_bytes, response, timing_dict) -- see
-    `fetch_odds_snapshot` for what `timing_dict` carries."""
+    `fetch_odds_snapshot` for what `timing_dict` carries and what
+    `bookmakers` does (M27_PER_BOOK_POLLING): passing a single book key
+    scopes this call to that one book via `bookmakers=`, replacing
+    `regions=us`, and yields a genuinely independent HTTP round trip and
+    `response_received_ts` for that book alone. Default unchanged from
+    pre-M27 behavior."""
     import time
     markets = markets or PROP_MARKETS
     url = EVENT_ODDS_URL.format(event_id=event_id)
     request_sent_ts = datetime.now(timezone.utc).isoformat()
     t0 = time.monotonic()
+    params = {"apiKey": key, "markets": ",".join(markets), "oddsFormat": "american"}
+    if bookmakers:
+        params["bookmakers"] = bookmakers
+    else:
+        params["regions"] = "us"
     try:
-        r = session.get(url, params={"apiKey": key, "regions": "us",
-                                     "markets": ",".join(markets),
-                                     "oddsFormat": "american"},
-                        timeout=timeout)
+        r = session.get(url, params=params, timeout=timeout)
         if r.status_code == 422:
             return None, r.content, r, _timing(request_sent_ts, t0, r)
         r.raise_for_status()

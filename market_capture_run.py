@@ -31,9 +31,13 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "prospective_pair"))
 
-from market_capture_config import is_enabled  # noqa: E402
+from market_capture_config import (  # noqa: E402
+    is_enabled, is_per_book_polling_enabled, PER_BOOK_DECLARED_BOOKS,
+    PER_BOOK_POLL_INTERVAL_SECONDS,
+)
 import market_ladder_scheduler as ladder  # noqa: E402
 import market_burst_trigger as burst  # noqa: E402
+import market_per_book_scheduler as per_book  # noqa: E402
 import market_snapshot_writer as writer  # noqa: E402
 import capture_coverage_audit as audit  # noqa: E402
 from odds_capture_daily import api_key  # noqa: E402  (credential loader, reused verbatim)
@@ -86,8 +90,22 @@ def main() -> int:
         cursor_path=out_dir / "_burst_cursor.json",
         slate=games, team_lookup=None, now=now)
 
+    # M27_PER_BOOK_POLLING: which games are due for a scoped per-book poll
+    # cycle right now (kill switch gated -- see market_capture_config.
+    # is_per_book_polling_enabled). Computed BEFORE the /events lookup so a
+    # per-book-only run (no ladder rung, no burst) still triggers the free
+    # /events call it needs to resolve event ids.
+    per_book_cursor = None
+    per_book_due = []
+    if is_per_book_polling_enabled():
+        per_book_cursor = per_book.PerBookCursor(out_dir / per_book.PER_BOOK_CURSOR_JSON)
+        for g in games:
+            last = per_book_cursor.last_polled(g["game_id"])
+            if per_book.due_per_book(g, now, last):
+                per_book_due.append(g)
+
     events_by_teams = {}
-    if due_games or watch_res["bursts_scheduled"]:
+    if due_games or watch_res["bursts_scheduled"] or per_book_due:
         try:
             events_by_teams = _events_lookup(session, key, team_names)
         except Exception as e:
@@ -118,8 +136,24 @@ def main() -> int:
         n_rows += n_rows_g
         n_rejected += n_rej_g
 
+    n_per_book_calls = 0
+    for game in per_book_due:
+        event_id = events_by_teams.get((game["home"], game["away"]))
+        if event_id is None:
+            continue
+        n_rows_g, n_rej_g, n_calls_g = _poll_per_book(
+            session, key, game, event_id, out_dir, now)
+        n_rows += n_rows_g
+        n_rejected += n_rej_g
+        n_per_book_calls += n_calls_g
+        n_polls += n_calls_g
+        per_book_cursor.mark_polled(game["game_id"], now)
+    if per_book_cursor is not None:
+        per_book_cursor.save()
+
     print(f"[{now.isoformat()}] polls={n_polls} rows_written={n_rows} "
-          f"rows_rejected={n_rejected} bursts_triggered={len(watch_res['bursts_scheduled'])}")
+          f"rows_rejected={n_rejected} bursts_triggered={len(watch_res['bursts_scheduled'])} "
+          f"per_book_games_polled={len(per_book_due)} per_book_calls={n_per_book_calls}")
     return 0
 
 
@@ -307,6 +341,95 @@ def _poll_and_write(session, key, game, obligation_type, label,
               f"{p_entry['error']}", file=sys.stderr)
     writer.append_poll_log(p_entry, out_dir)
     return n_written_total, n_rejected_total
+
+
+def _poll_per_book(session, key, game, event_id, out_dir, now):
+    """M27_PER_BOOK_POLLING (D052/D053, bounded scope -- see
+    market_capture_config.py for the declared books/window/interval and
+    M27_PER_BOOK_POLLING/M27_REPORT_BODY.md for the tape evidence behind
+    them). Issues one SEPARATE props HTTP call per book in
+    PER_BOOK_DECLARED_BOOKS, scoped via `bookmakers=<book>` instead of the
+    bundled `regions=us` call -- each call is a genuinely independent round
+    trip with its own witnessed `retrieval_ts`, closing the M26 defect-2(b)
+    gap (all books sharing one byte-identical timestamp) for exactly the
+    declared subset, without touching the bundled odds/props polls' own
+    behavior at all (the M26 anti-faking test
+    `test_defect2_within_one_payload_books_still_share_one_timestamp_documented`
+    exercises the UNCHANGED bundled path and must keep passing).
+
+    Politeness: >=1s spacing between successive per-book calls, matching
+    the polite-client discipline used elsewhere in this program (no
+    documented Odds API rate ceiling exists to size against more precisely
+    -- see M27_REPORT_BODY.md Section 4).
+
+    Roster/vanish-detection uses a per-book roster_key
+    (f"{game_id}:props:perbook:{book}") distinct from the bundled props
+    roster key, so a single book's per-book poll never mistakes "this book
+    wasn't in THIS call" (every other call, by construction, since each
+    call is scoped to one book) for "this chain vanished from the vendor".
+    Chain-history (`prev_snapshot_ref`) uses the SAME ChainIndex as every
+    other poll path, so a per-book row correctly links into the same
+    continuous price history as bundled-poll rows for that
+    (game, book, market, outcome).
+
+    Returns (n_written_total, n_rejected_total, n_calls_made).
+    """
+    import time
+    game_id = game["game_id"]
+    n_written_total = n_rejected_total = n_calls_made = 0
+    for i, book in enumerate(PER_BOOK_DECLARED_BOOKS):
+        if i > 0:
+            time.sleep(1.0)  # polite-client spacing between separate HTTP calls
+        entry = {"poll_ts": datetime.now(timezone.utc).isoformat(), "game_id": game_id,
+                 "obligation_type": "per_book", "label": f"PER_BOOK:{book}",
+                 "endpoint": writer.EVENT_ODDS_URL.format(event_id=event_id) + f"?bookmakers={book}",
+                 "n_rows_written": 0, "n_rows_rejected": 0}
+        try:
+            ev_json, raw, resp, timing = writer.fetch_event_props_snapshot(
+                session, key, event_id, bookmakers=book)
+            n_calls_made += 1
+            retrieval_ts = timing["response_received_ts"]
+            entry["poll_ts"] = retrieval_ts
+            entry["http_status"] = resp.status_code
+            entry["credits_used"] = resp.headers.get("x-requests-used")
+            entry["credits_remaining"] = resp.headers.get("x-requests-remaining")
+            entry["credits_last"] = resp.headers.get("x-requests-last")
+            a_payload_hash = writer.payload_hash(raw)
+            rows = writer.flatten_props_payload(
+                ev_json, retrieval_ts,
+                poll_interval_seconds=int(PER_BOOK_POLL_INTERVAL_SECONDS),
+                a_payload_hash=a_payload_hash)
+
+            ingestion_ts = datetime.now(timezone.utc).isoformat()
+            vanish_rows = []
+            if ev_json is not None:
+                roster = writer.RosterIndex(out_dir / writer.ROSTER_INDEX_JSON)
+                vanish_rows = writer.detect_vanished_chains(
+                    rows, roster, roster_key=f"{game_id}:props:perbook:{book}",
+                    game_id=game_id, retrieval_ts=retrieval_ts, ingestion_ts=ingestion_ts,
+                    poll_interval_seconds=int(PER_BOOK_POLL_INTERVAL_SECONDS),
+                    a_payload_hash=a_payload_hash)
+                roster.save()
+            rows = rows + vanish_rows
+
+            chain = writer.ChainIndex(out_dir / writer.CHAIN_INDEX_JSON)
+            writer.attach_chain_fields(rows, chain, retrieval_ts)
+            n_written, rejected = writer.append_snapshot_rows(rows, out_dir)
+            chain.save()
+            entry["n_rows_written"], entry["n_rows_rejected"] = n_written, len(rejected)
+            entry["n_rows_vanished_witnessed"] = len(vanish_rows)
+            entry["error"] = None
+            n_written_total += n_written
+            n_rejected_total += len(rejected)
+            writer.append_vendor_timing_log({**timing, "poll_ts": retrieval_ts,
+                                             "game_id": game_id,
+                                             "endpoint": entry["endpoint"]}, out_dir)
+        except Exception as e:
+            entry["error"] = f"{type(e).__name__}: {e}"
+            print(f"WARNING: per-book poll failed for {game_id} book={book}: "
+                  f"{entry['error']}", file=sys.stderr)
+        writer.append_poll_log(entry, out_dir)
+    return n_written_total, n_rejected_total, n_calls_made
 
 
 if __name__ == "__main__":
