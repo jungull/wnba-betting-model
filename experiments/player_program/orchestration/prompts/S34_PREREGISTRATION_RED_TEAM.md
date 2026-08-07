@@ -69,6 +69,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 * every arm attacked for leakage, K0 gaming, coverage gaming, multiplicity ambiguity and unreceipted kills
 * every Severity A finding dispositioned (arm withdrawn or pinned-repair) before freeze
+* every DIRECTED candidate card is checked against the D047 directive text for scope creep, and every card is checked for floor/bar value references (banned)
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 

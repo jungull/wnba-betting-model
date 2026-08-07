@@ -72,6 +72,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 * estimation_objective / response family, p-clipping, and calibration_freedom are explicit schema fields
 * the 17-machine-dimension mapping of comparison_gate.py is cited and covered
 * an independent verifier context agrees before freeze
+* the null-granted ingredient features are bound to bytes: exact score_baseline_rows.parquet ingredient columns by column-level digest, or frozen builder source hash plus resolved parameters - name-matching never satisfies the schema
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 

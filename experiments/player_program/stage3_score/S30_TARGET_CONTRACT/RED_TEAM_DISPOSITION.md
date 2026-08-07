@@ -31,6 +31,18 @@ and its disposition in v2. Disagreements preserved; nothing averaged away.
 | C3 | C | "mirrors cycle 1" hides two deltas (stricter-governs; kills-uncorrected omitted) | §4 labels stricter-governs a frozen strengthening and carries kills-uncorrected explicitly |
 | C4 | C | F12 identifiability obstacle unmentioned | §7 identifiability acknowledgment: every directed-candidate card registers its identification constraint |
 
+## Round 2 — reviewer 2 re-verification of v2 (all v1 findings CURED; 4 new B on v2's own surfaces) → v3
+
+| # | sev | finding (compressed) | disposition in v3 |
+|---|---|---|---|
+| N1 | B | cannot-host hatch undecidable; below-floor pass still promotes and launders into pass counts | §4: blockage must be demonstrated mechanically and REPRODUCED by an S34 reviewer; BELOW-FLOOR-NULL label inseparable from every citation; never in unqualified pass tallies; S40 routes any such would-be promotion to the S42 USER gate |
+| N2 | B | S31 graph read scope included market_program (floors readable); cycle-1 forbidden-file receipt dropped | S31 allowed_read_paths narrowed to its own packet dir; manifest must record per-source packet content hash + forbidden-file list (P31 receipt restored) |
+| N3 | B | 90% pooled floor permits concentrated single-fold trimming | §2: additional per-fold floor (≥80% of every fold's test clusters); only alternative is cycle-1-style symmetric whole-fold structural deactivation with a numeric pre-registered trigger |
+| N4 | B | null-granted ingredients pinned by name, not bytes; weak reimplementation nominally complies | §4 + S32B criteria: ingredients bound to bytes (score_baseline_rows.parquet column-level digests, or frozen builder source hash + resolved parameters); name-matching never satisfies |
+| N5 | C | no dropped-candidate log at synthesis | S32 criteria: REPORT.md enumerates every non-retained ideation candidate with reason |
+| N6 | C | multi-survivor rule undefined across metrics | §4: multi-survivor comparison operates within-estimand only; no cross-metric ordering defined or permitted |
+| N7 | C | DIRECTED channel authored by contaminated coordinator (inherent) | S34 criteria: every DIRECTED card checked against D047 text for scope creep + floor/bar reference ban checked |
+
 **Verified-clean list (reviewer 1):** F13 sd figures; D045 floor values and method name; universe
 counts; 5/37 inventory; thirteen-dimension prose list; fold names; B=10,000/2,000; gate clauses
 vs `primary_gate_applied_verbatim`; P42 §6 lesson; estimand feasibility from owned data

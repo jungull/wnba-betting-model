@@ -71,8 +71,12 @@ estimands; it does not modify any existing one.
      strictly-prior data availability (e.g. "both teams have ≥ N strictly-prior games this
      season"); never in outcome terms, season-label convenience, or market-coverage terms
      (market fields are barred entirely, §8).
-  2. **Minimum-coverage floor:** the predicate must retain **≥ 90% of the 1,491 clusters**
-     pooled; a lower floor requires an explicit justification adjudicated at S33/S34 and
+  2. **Minimum-coverage floor, pooled AND per-fold:** the predicate must retain **≥ 90% of
+     the 1,491 clusters pooled** and **≥ 80% of every fold's test clusters** (concentrated
+     trimming of a single fold is the exploit this second floor closes). The only path around
+     the per-fold floor is cycle-1-style **whole-fold structural deactivation** — symmetric
+     in arm and K0, declared in the card with its numeric trigger before any fit. A lower
+     floor of either kind requires an explicit justification adjudicated at S33/S34 and
      recorded in the card.
   3. **All-covered-games sensitivity row (mandatory, non-gating):** every arm is additionally
      scored on the full base universe with its card-declared fallback (the cycle-1
@@ -117,7 +121,9 @@ estimands; it does not modify any existing one.
 * A cross-estimand claim ("this arm works") requires the corrected pass on **each** estimand
   claimed — never on the best one. The multi-survivor rule and the program-alpha declaration
   (no program-wide FWER claim; the additive bound stated with the frozen family count) are
-  restated in the S35 freeze exactly as cycle 1's P35 did.
+  restated in the S35 freeze exactly as cycle 1's P35 did — with one translation pinned here:
+  **the multi-survivor comparison operates within-estimand only** (ΔMAE points and ΔBrier are
+  not comparable magnitudes; no cross-metric ordering is defined or permitted).
 
 **The gate, per element:**
 (a) pooled OOF improvement > 0 against the element's own `K0_MATCHED`;
@@ -140,13 +146,21 @@ number exists before its primary verdict.
   (cycle-1 P35 clause, carried verbatim). `K0_FLAT` remains diagnostic only.
 * **Null-strength floor:** every element's K0_MATCHED **must carry, as receipted
   null-granted features** (the cycle-1 K5/A07 pattern), the public composite's own frozen
-  ingredients — the verified pace ingredient and the strictly-lagged efficiency EWMAs — so
-  that Δ measures value **beyond the public floor**, not beyond an intercept. Where an arm's
-  architecture genuinely cannot host those ingredients, its card must say so and why, the
-  S33/S34 review adjudicates the claim, and any gate pass for such an element is labeled
-  **"FEATURE VALUE OVER OWN NULL ONLY — BELOW-FLOOR NULL"** in adjudication and on the board;
-  such an element additionally reports (non-gating) its metric against the D045 floor
-  recomputed on its exact universe.
+  ingredients — **pinned to bytes, never to names**: the exact ingredient columns of the
+  frozen composite store (`score_baseline_rows.parquet`) by column-level digest, or the
+  frozen builder source hash plus its resolved parameters, as the S32B schema specifies. A
+  self-reimplemented "EWMA" that matches the name but not the bytes does not satisfy this
+  clause. Δ thereby measures value **beyond the public floor**, not beyond an intercept.
+* **The cannot-host path is mechanical, labeled, and never promotes unqualified:** where an
+  arm's architecture cannot host the null-granted ingredients, its card must **demonstrate
+  the blockage mechanically** (the ingredient columns are unrepresentable in the declared
+  design, or provably rank-deficient in it) and an S34 reviewer must **reproduce the
+  demonstration** — a persuasive argument is not a demonstration. Any gate pass for such an
+  element is labeled **"FEATURE VALUE OVER OWN NULL ONLY — BELOW-FLOOR NULL"**; that label is
+  inseparable from every citation of the result, the element is **never counted in any
+  unqualified pass tally**, and S40 routes any such would-be promotion to the S42 USER gate
+  rather than promoting it. Such an element additionally reports (non-gating) its metric
+  against the D045 floor recomputed on its exact universe.
 * **New K0 schema required (consistency finding B3, disclosed):** the cycle-1
   `K0_MATCHED_SCHEMA.json` (P26) pins `target = REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS`
   and **cannot represent E1/E2/E3 controls**. A score-family K0 contract and machine schema —

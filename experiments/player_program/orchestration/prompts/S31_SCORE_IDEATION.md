@@ -69,6 +69,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 * each source ran against an isolated packet containing ONLY the frozen contract (which prints no floor values) and its own prompt
 * no source saw another source output, any D045 numeric row, the D046 priors, the D047 directive text, or any coordinator idea
+* the raw-sources manifest records, per source, the packet content hash AND the forbidden-file list given to that source (cycle-1 P31 receipt, restored)
 * raw outputs frozen and hashed before synthesis reads them
 
 ## Stop conditions — HALT and report rather than resolving these yourself
@@ -79,7 +80,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 ## Scope
 
-**Read:** `experiments/player_program/`, `experiments/market_program/`
+**Read:** `experiments/player_program/stage3_score/S31_SCORE_IDEATION/`
 
 **Write (nothing outside this):** `experiments/player_program/stage3_score/S31_SCORE_IDEATION/`
 

@@ -72,6 +72,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 * families are mechanistically distinct and each candidate is assigned exactly one primary family
 * the A07 transient re-entry (if retained) carries its concentration-kill diagnostic as a mandatory receipted output
 * every directed-candidate definition registers its identification constraint (F12 4.4 carry-forward)
+* REPORT.md enumerates every non-retained ideation candidate with the reason it was dropped (no silent selection by a floors-contaminated author)
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 
