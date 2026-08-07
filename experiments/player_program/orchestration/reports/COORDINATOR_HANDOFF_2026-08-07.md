@@ -192,3 +192,22 @@ one payload, so cross-book lead-lag is unsupportable by construction. Per-book p
 ledger entry (authorize scoped, fund a bounded sizing experiment, or decline and mark the claim
 permanently unmeasurable). A shipped test blocks any attempt to fake per-book timing from parse
 order in the meantime. **Do not self-grant this.**
+
+---
+## 8. TWO COORDINATOR PROCESS FAILURES — DO NOT REPEAT (2026-08-07)
+
+1. **Never launch a push while any agent still holds a write scope.** Twice this session the
+   pre-push hook correctly refused (34/35) because writers were mid-flight. The commit lands, the
+   push does not, and you burn a ten-minute gate run to learn something `git status` would have
+   told you. Check the tree is quiet FIRST, then push.
+2. **Never dispatch work before declaring its node.** M27 was dispatched on a user authorization
+   with no node in the graph; the ledger correctly refused three events referencing an undeclared
+   node and the node had to be created retroactively. Dispatch-before-declare defeats the write-
+   ownership and validation machinery the graph exists to provide. Declare, validate, THEN dispatch.
+3. **Name every concurrent credit-spender in a dispatch brief, or serialize them.** M27 measured an
+   11,728-credit drop it could not attribute and honestly flagged it as a possible leak; it was the
+   coordinator's own dense-window pull, launched concurrently and never mentioned to it. An agent
+   cannot reason about a shared quota it is not told about.
+4. **Record findings in full, not in counts.** The four Severity C notes from S34 nearly vanished
+   because the coordinator's ledger event compressed them to "4 C" while writing A and B out in
+   full. The repair author caught it. Findings are only preserved if their TEXT is preserved.

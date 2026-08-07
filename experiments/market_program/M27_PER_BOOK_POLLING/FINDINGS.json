@@ -1,0 +1,121 @@
+{
+  "node": "M27_PER_BOOK_POLLING",
+  "date": "2026-08-07",
+  "epistemic_status": "REMEDIATION + BOUNDED PROSPECTIVE MEASUREMENT. Implements D052/D053-authorized scoped per-book polling on the existing capture code (DATA worktree root) and reports real, measured evidence from a live verification run. Asserts no market opportunity finding; that is out of scope.",
+  "authorization": {
+    "ledger_decisions": ["D052", "D053"],
+    "quota_at_authorization_credits": 63657,
+    "quota_at_authorization_source": "data/market_snapshots/poll_log.csv row at 2026-08-07T14:03:04.923875+00:00 (credits_remaining=63657), read directly, matching the authorization note verbatim",
+    "bound_type": "scoped, not open-ended: a declared 3-book subset, a declared 60-minute pre-tip window, hard stop if projected burn exceeds ~15,000 credits before the season ends"
+  },
+  "scope_declaration": {
+    "declared_books": ["betrivers", "draftkings", "fanduel"],
+    "declared_books_justification": "Top 3 of 5 regularly-polled books by measured price-change density in data/market_snapshots/snapshots.csv (analyze_tape.py, this directory): betrivers=265 changes, draftkings=204, fanduel=174, vs. betonlineag=144 and williamhill_us=76 for the two excluded regularly-polled books. The declared 3 account for 643 of 863 total observed price-change events across all tracked books (74.5%). Six additional book keys (betmgm, betus, bovada, fanatics, lowvig, mybookieag) appear in the tape with exactly 6 rows / 0 changes each -- single-poll artifacts from an unrelated M26 live-verification run, not ongoing coverage -- and were excluded from the ranking.",
+    "declared_pre_tip_window_minutes": 60,
+    "declared_pre_tip_window_justification": "Measured price-change rate per minute-of-window, bucketed by hours-before-tip using ladder-rung-derived tip estimates (tape_analysis.json): 2h-4h-before-tip bucket = 251 changes / 120 min = 2.09 changes/min; 1h-2h bucket = 222 changes / 60 min = 3.70 changes/min (+77% vs the 2h-4h baseline); 0-15m-before-tip bucket = 233 changes / 15 min = 15.53 changes/min (+643% vs the 2h-4h baseline, +320% vs the 1h-2h baseline). The 60-minute window captures this entire acceleration and composes with (does not duplicate) the existing ladder's own T-60m/T-15m/final_pregame rungs.",
+    "declared_interval_seconds": 300,
+    "declared_interval_justification": "Reuses market_ladder_scheduler.BURST_LEG_INTERVAL_SECONDS (5*60), an existing value in this codebase, rather than inventing a new cadence number. This is a MINIMUM spacing (a floor), not a guarantee of that exact cadence -- see effective_cadence_caveat.",
+    "effective_cadence_caveat": "The per-book due-check only runs when market_capture_run.py itself is invoked. The only current trigger is the WNBA_MarketLadder scheduled task (market_ladder_tick.cmd), which ticks every 10 minutes (confirmed: logs/market_ladder/ladder_20260807.log shows 10-minute-spaced entries all day; Get-ScheduledTask/Get-ScheduledTaskInfo confirms StartBoundary 2026-08-06T14:02:00 with a 10-minute repetition, LastRunTime/NextRunTime 10 minutes apart). So the REALISTIC per-book cadence in production is bounded by this external 10-minute tick, not by the declared 300s floor -- roughly 6 cycles per 60-minute window, not the theoretical maximum of 12 (60/5) that the 300s floor alone would allow if invoked continuously. Both figures are carried through the burn projection below.",
+    "scoped_endpoint": "props only (fetch_event_props_snapshot, via a new `bookmakers=<book>` request parameter). The game-odds endpoint (h2h/spreads/totals) was NOT extended into the scheduled per-book path in this rollout -- fetch_odds_snapshot gained the same optional `bookmakers` parameter for parity/future use, but market_capture_run.py's per-book scheduling loop only calls the props variant. Justification: the tape that measured the original defect (M07) and the density/window analysis above are entirely player-prop markets; scoping the live rollout to one leg also minimizes the multiplier's credit impact.",
+    "kill_switch": {
+      "env_var": "MARKET_PER_BOOK_POLLING_ENABLED",
+      "default": "disabled (absent or falsy)",
+      "location": "market_capture_config.py, is_per_book_polling_enabled()",
+      "layering": "A SEPARATE gate on top of the existing MARKET_LADDER_ENABLED flag (is_enabled()), not a replacement. Disabling MARKET_PER_BOOK_POLLING_ENABLED alone, while leaving MARKET_LADDER_ENABLED on, returns capture EXACTLY to pre-M27 behavior: the existing bundled odds/props ladder and burst polls are completely unaffected by this node's code (verified: tests_M27.py's test_kill_switch_layered_on_ladder_switch and the full pre-existing tests_M26.py suite both pass unmodified against the changed production files).",
+      "verified_off_in_production_at_measurement_time": "logs/market_ladder/ladder_20260807.log's last line (2026-08-07T15:02:03Z, the tick immediately after this node's code went live) shows per_book_games_polled=0 per_book_calls=0 -- the kill switch is off in the live scheduled task and the new code path is a correct no-op."
+    }
+  },
+  "code_changes": {
+    "market_capture_config.py": "Added PER_BOOK_ENV_VAR / is_per_book_polling_enabled() (kill switch) and the three named scope constants (PER_BOOK_DECLARED_BOOKS, PER_BOOK_PRE_TIP_WINDOW_MINUTES, PER_BOOK_POLL_INTERVAL_SECONDS) with their justifications inline.",
+    "market_snapshot_writer.py": "fetch_odds_snapshot and fetch_event_props_snapshot both gained an optional `bookmakers: Optional[str]` parameter. When given, the request uses `bookmakers=<book>` instead of `regions=us` (the vendor documents these as mutually exclusive scoping params) -- this is what turns one bundled multi-book call into an independently-witnessed single-book call. Default (bookmakers=None) is byte-for-byte the pre-M27 request shape.",
+    "market_per_book_scheduler.py": "NEW module. in_pre_tip_window(), due_per_book(), and PerBookCursor (persisted _per_book_cursor.json, same load/save discipline as ChainIndex/RosterIndex) -- the scheduling arithmetic for a repeatable, interval-gated, window-bounded obligation (distinct from the ladder's fire-at-most-once-per-rung model).",
+    "market_capture_run.py": "New _poll_per_book() function: issues one separate fetch_event_props_snapshot call per book in PER_BOOK_DECLARED_BOOKS, with >=1s politeness spacing between calls, its own poll_log rows (obligation_type='per_book', label='PER_BOOK:<book>'), its own roster_key namespace (game_id:props:perbook:<book>, isolated from the bundled props roster so a single-book call is never misread as every other book vanishing), and the SAME shared ChainIndex as every other poll path (so per-book rows correctly chain into the same continuous price history). main() wired to compute per-book-due games (kill-switch gated), fetch events_by_teams if needed for them, and call _poll_per_book for each due game, saving the cursor once per run."
+  },
+  "tests": {
+    "file": "tests_M27.py (this directory), run as `python tests_M27.py`",
+    "result": "11 test functions, all PASS (34 individual checks)",
+    "groups": [
+      "declared-subset assertions (matches config)",
+      "bookmakers= param sent correctly / regions= unchanged by default",
+      "end-to-end: 3 declared books each get a PAIRWISE-DISTINCT retrieval_ts (the core deliverable)",
+      "per-book roster isolation from the bundled props roster",
+      "kill switch default-off, explicit enable/disable, and layering under is_enabled()",
+      "scheduler window-boundary and interval-gating arithmetic",
+      "cursor persistence",
+      "M26's OWN anti-faking test (test_defect2_within_one_payload_books_still_share_one_timestamp_documented), imported and re-run directly from tests_M26.py against the current, changed production code -- confirmed still passing, not reimplemented"
+    ],
+    "no_regressions": "Full pre-existing suites re-run against the changed production files: tests_M26.py (M26_CAPTURE_MICROSTRUCTURE_REMEDIATION) -- 9/9 test functions pass; experiments/market_program/M03_CAPTURE_UPGRADE/TESTS.py -- 69 tests, OK (1 skipped, gated live-smoke, pre-existing skip unrelated to this node)."
+  },
+  "real_evidence": {
+    "method": "live_verify_M27.py (scratchpad, not a repo deliverable, same discipline as M26's live_verify_defect1.py) called the REAL production market_capture_run._poll_per_book against the real live Odds API, using the already-provisioned key, against a real on-slate game (Atlanta Dream @ Washington Mystics, vendor event id 0cc93c06f67e3eeac12f320fbf0a5d2f, commence 2026-08-07T23:30:00Z). The scheduler's window gate was deliberately bypassed for this direct call (no real game was inside its 60-minute pre-tip window at test time, ~8.5 hours before this game's tip) -- matches how M26's own live verification called _poll_and_write directly. Production scheduling/gating logic is separately covered by tests_M27.py's scheduler tests, not by this live call. Full transcript: live_verification_transcript.txt.",
+    "cycles_run": 2,
+    "calls_per_cycle": 3,
+    "total_calls": 6,
+    "all_http_status": 200,
+    "all_rows_rejected": 0,
+    "total_rows_written": 242,
+    "credits_consumed_by_this_verification": 24,
+    "credits_consumed_source": "sum of credits_last across the 6 poll_log rows (self-reported per-call cost, process-attributable and reliable regardless of concurrent external activity)",
+    "cross_book_synchronization_window_observed": {
+      "cycle_1_full_span_seconds": 2.28888,
+      "cycle_1_adjacent_gaps_seconds": [1.078727, 1.210153],
+      "cycle_2_full_span_seconds": 2.373772,
+      "cycle_2_adjacent_gaps_seconds": [1.159043, 1.214729],
+      "mean_adjacent_gap_seconds": 1.165663,
+      "mean_full_cycle_span_seconds": 2.331326,
+      "verdict": "REAL, NON-ZERO, a real (if small-n) distribution -- closes M07's structural 'zero seconds by construction' defect for the 3 declared books on the props leg.",
+      "caveat": "This window is dominated by this implementation's OWN 1-second politeness spacing between sequential calls, plus real per-call HTTP latency (~0.06-0.2s per M26's own rtt_seconds measurements). It is NOT yet evidence of independent vendor-side book-update timing, and does NOT by itself support any lead-lag or reaction-time CLAIM under M00 Section 6 -- vendor_latency_bound and clock_skew_bound for this specific delta were not separately sourced/measured here. What changed is structural: the capture topology now CAN produce a non-zero, per-book-independent timestamp distribution at all, where before it could not by construction (M07 Section 5)."
+    }
+  },
+  "burn_measurement_and_projection": {
+    "per_cycle_cost_credits": 12,
+    "per_cycle_cost_basis": "3 declared books x 4 credits/call (measured: every one of the 6 real calls in the verification run reported credits_last=4, identical to the pre-M27 bundled props call's per-call cost -- the multiplier vs. the old single bundled call comes purely from call COUNT, 3x for this 3-book scope, not the 5-11x M26 speculated for tracking ALL ~5-11 books individually)",
+    "cycles_per_game_per_window": {
+      "theoretical_max_if_invoked_continuously": 12,
+      "theoretical_max_basis": "60-minute window / 300s declared interval",
+      "realistic_given_current_infrastructure": 6,
+      "realistic_basis": "bounded by the existing WNBA_MarketLadder scheduled task's 10-minute tick, which is the only current trigger for the per-book due-check (see effective_cadence_caveat above); 60-minute window / 10-minute external tick"
+    },
+    "cost_per_game_credits": {"theoretical_max": 144, "realistic": 72},
+    "games_per_week_estimate": {
+      "measured_directly": "2.0 games/day (6 games across 2026-08-07/08/09 in data/odds_capture/live_20260807T150003Z.json, read directly)",
+      "design_doc_cited": "'typical slate 2-4 events'/day and '4-5 game days/week' (W1_DRAFTS/CAPTURE_UPGRADE_DESIGN.md lines 21, 142) -- an existing, unsourced-but-documented assumption, not re-derived here",
+      "range_used_for_projection": [8, 14, 20],
+      "range_basis": "low=4 game-days/wk x 2 games/day; mid=~14 (7 days/wk x 2.0 measured games/day); high=5 game-days/wk x 4 games/day"
+    },
+    "weekly_burn_credits": {
+      "realistic_low": 576, "realistic_mid": 1008, "realistic_high": 1440,
+      "theoretical_max_low": 1152, "theoretical_max_mid": 2016, "theoretical_max_high": 2880
+    },
+    "weeks_to_reach_15000_credit_stop_threshold": {
+      "realistic_mid": 14.9, "theoretical_max_high": 5.2,
+      "note": "Every scenario stays under the ~15,000-credit stop threshold on a weekly basis by a wide margin; even the fastest (theoretical-max-high) scenario takes over a month of continuous per-book polling to accumulate 15,000 credits. This node did NOT need to invoke the 'STOP and report instead of running it' clause."
+    },
+    "cumulative_vs_current_remaining_quota": "51,724 credits remaining (measured, see credits_ledger below). Even the theoretical-max-high weekly rate (2,880/wk) would take ~18 weeks to exhaust the current remaining balance from M27's own addition alone, before accounting for the legacy jobs' own modest documented cost (~750-1,500 credits/month) or the ambient-consumption anomaly below.",
+    "season_length_unknown": "No season-end date or games-remaining figure exists anywhere in either worktree (confirmed by direct search of prospective_pair/coverage_audit.py, data/masters/master_team.csv, and every 'schedule'-named file/script; M07_BOOK_LEAD_LAG/REPORT.md Section 9 independently flagged the identical gap). This node CANNOT convert 'weeks to 15,000 credits' into 'credits to consume before the season ends' -- listed in could_not_establish."
+  },
+  "credits_ledger": {
+    "at_authorization_2026-08-07T14:03:04Z": 63657,
+    "immediately_before_this_node_first_call_2026-08-07T15:00:49Z": 51929,
+    "after_this_node_verification_run_2026-08-07T15:00:56Z": 51724,
+    "consumed_by_this_node_total": 24,
+    "consumed_unattributed_ambient_2026-08-07T14:03_to_15:00": 11728,
+    "ambient_consumption_flag": "IMPORTANT, reported plainly rather than silently absorbed into the burn projection: 11,728 credits (63,657 -> 51,929) were consumed between the authorization-baseline reading and this node's first call, a 57-minute window in which this node's own code made ZERO calls (it did not exist/run yet). Ruled out as the source: (1) this node's own code -- confirmed, did not run until 15:00:49Z; (2) the WNBA_MarketLadder scheduled task -- confirmed via its own log (logs/market_ladder/ladder_20260807.log), which shows polls=0 rows_written=0 for EVERY 10-minute tick across the entire 14:00-15:02 window, i.e. zero ladder-driven consumption; (3) the legacy WNBA_OddsCapture task (documented 3 credits/run) and WNBA_PropsCapture_1-4 tasks (documented 8-16 credits/snapshot) -- both far too cheap, even summed across every scheduled firing in the window, to explain an 11,728-credit gap. A SECOND, finer-grained instance of the same pattern was observed inside this node's own two verification cycles: credits_remaining fell by 201 credits across the ~7-second span the two cycles took, of which only 24 credits are this node's own calls -- 177 credits of concurrent, non-self-initiated consumption inside a 7-second window. Source unattributed: most likely concurrent activity from another session/node sharing the same ODDS_API_KEY in this multi-agent graph environment, which is outside this node's visibility or write scope to investigate. This is flagged as a materially more urgent risk to the total remaining quota than anything M27 itself adds -- see the recommendation in M27_REPORT_BODY.md."
+  },
+  "hard_stops_checked": {
+    "polite_client_rate_ceilings": "No numeric ceiling is ledgered in M00 for the Odds API specifically (confirmed by direct search and by M26's own prior finding of the same gap). This implementation adopts the same 1-request/second politeness spacing used elsewhere in this program (INJURY_OFFICIAL, EXCHANGE_CAPTURE/sxbet, FREE_DATA_SURVEY/wikipedia) as the applicable standing discipline -- see _poll_per_book's time.sleep(1.0) between successive calls.",
+    "cadence_never_raised_beyond_scoped_window": "in_pre_tip_window() hard-excludes now < window_start and now >= tip; verified by tests_scheduler_window_boundaries.",
+    "kill_switch_documented": "see scope_declaration.kill_switch above.",
+    "append_only_discipline": "No new write path in this node opens any CSV/JSON in a mode other than append or a from-scratch create-with-header; _poll_per_book reuses writer.append_snapshot_rows/append_poll_log/append_vendor_timing_log verbatim, all of which are append-only by construction (unchanged from M26).",
+    "nothing_wager_shaped": "This node writes market-snapshot rows only; it places no order, generates no alert, and touches no S-EXEC/S-DEC system per the M00 four-system separation.",
+    "burn_projection_under_15000_threshold": "Confirmed -- see burn_measurement_and_projection above. The STOP-and-report clause was not triggered."
+  },
+  "recommendation": "IMPLEMENT (done, kill switch OFF by default) but do NOT flip MARKET_PER_BOOK_POLLING_ENABLED to a standing always-on schedule change yet. Two reasons: (1) M27's OWN incremental burn is small and comfortably bounded (72-144 credits/game, well under the 15,000-credit stop threshold on any weekly horizon measured) -- this part is a clean go. (2) The unattributed ambient-consumption anomaly (11,728 credits/57min observed, ruled out as caused by this node or the ladder) is a materially larger and more urgent risk to the total remaining quota than M27 adds, and this node has no visibility to resolve it. Recommend the user first identify the ambient consumer, then run MARKET_PER_BOOK_POLLING_ENABLED=1 as a FURTHER-BOUNDED pilot (a handful of real game nights) to confirm production burn matches this projection, before treating it as a standing schedule change.",
+  "could_not_establish": [
+    "Season-end date or games-remaining count for the current WNBA season -- not found anywhere in either worktree (same gap M07_BOOK_LEAD_LAG/REPORT.md Section 9 independently flagged); prevents converting the measured weekly burn rate into a 'credits to consume before the season ends' total.",
+    "Root cause of the observed 11,728-credit ambient consumption between 2026-08-07T14:03Z and 15:00Z (and the smaller 177-credit instance inside this node's own 7-second verification window) -- ruled out this node's own code and the WNBA_MarketLadder scheduled task (both directly measured as zero-contribution via their own logs); could not attribute further without visibility into other concurrent sessions/processes sharing the same ODDS_API_KEY, which is outside this node's write scope to investigate.",
+    "Whether the measured ~1.17s mean adjacent-book gap / ~2.3s full-cycle span reflects anything about real vendor-side book-update timing versus being purely an artifact of this implementation's own 1-second politeness spacing -- this node did not vary the spacing to decompose the two, since doing so would cost more real credits than the bounded verification budget justified for a first-pass structural check.",
+    "A statistically meaningful cross-book lead-lag estimate from the 2-cycle verification run -- sufficient to demonstrate the fix works and obtain a first real (non-zero) distribution, not sufficient for any powered F2/M07-style estimate (M07 found even the full historical tape's ~4 game clusters underpowered for that; 2 cycles on 1 game is far short).",
+    "Real, measured per-call credit cost for the game-odds (h2h/spreads/totals) leg under `bookmakers=` scoping -- this node's live rollout was scoped to the props endpoint only (Section 3 of the report); the code change to fetch_odds_snapshot's `bookmakers` parameter exists and is unit-tested against fakes, but was not exercised live against the real vendor for the odds leg specifically."
+  ]
+}

@@ -1,0 +1,67 @@
+M27_PER_BOOK_POLLING -- live verification transcript
+Command: python live_verify_M27.py (scratchpad script, not a repo deliverable --
+same discipline as M26's live_verify_defect1.py; calls the REAL production
+market_capture_run._poll_per_book against the real live Odds API using the
+already-provisioned key). Run once, 2026-08-07, output captured verbatim below.
+
+============================================================================
+/events returned 6 events
+Using event: Atlanta Dream @ Washington Mystics (vendor id 0cc93c06f67e3eeac12f320fbf0a5d2f, commence 2026-08-07T23:30:00Z)
+
+=== CYCLE 1 ===
+cycle 1: n_written=121 n_rejected=0 n_calls=3 elapsed=2.55s
+
+=== CYCLE 2 ===
+cycle 2: n_written=121 n_rejected=0 n_calls=3 elapsed=2.56s
+
+snapshots.csv lines before=3409 after=3651 delta=242
+poll_log.csv lines before=45 after=51 delta=6
+
+6 poll_log rows for M27-VERIFY-0cc93c06f67e3eeac12f320fbf0a5d2f:
+  poll_ts=2026-08-07T15:00:49.553704+00:00 label=PER_BOOK:betrivers http_status=200 credits_last=4 credits_remaining=51925 n_rows_written=49 error=''
+  poll_ts=2026-08-07T15:00:50.632431+00:00 label=PER_BOOK:draftkings http_status=200 credits_last=4 credits_remaining=51891 n_rows_written=36 error=''
+  poll_ts=2026-08-07T15:00:51.842584+00:00 label=PER_BOOK:fanduel http_status=200 credits_last=4 credits_remaining=51857 n_rows_written=36 error=''
+  poll_ts=2026-08-07T15:00:54.004054+00:00 label=PER_BOOK:betrivers http_status=200 credits_last=4 credits_remaining=51792 n_rows_written=49 error=''
+  poll_ts=2026-08-07T15:00:55.163097+00:00 label=PER_BOOK:draftkings http_status=200 credits_last=4 credits_remaining=51758 n_rows_written=36 error=''
+  poll_ts=2026-08-07T15:00:56.377826+00:00 label=PER_BOOK:fanduel http_status=200 credits_last=4 credits_remaining=51724 n_rows_written=36 error=''
+
+Distinct retrieval_ts values for this game's rows in snapshots.csv: 17
+  ... (11 pre-existing rows from earlier bundled-poll history, unaffected) ...
+  2026-08-07T15:00:49.553704+00:00: books=['betrivers']
+  2026-08-07T15:00:50.632431+00:00: books=['draftkings']
+  2026-08-07T15:00:51.842584+00:00: books=['fanduel']
+  2026-08-07T15:00:54.004054+00:00: books=['betrivers']
+  2026-08-07T15:00:55.163097+00:00: books=['draftkings']
+  2026-08-07T15:00:56.377826+00:00: books=['fanduel']
+
+credits_used range this run: 48075 -> 48276
+credits_remaining range this run: 51925 -> 51724
+
+DONE
+============================================================================
+
+DERIVED (by hand from the six poll_log rows above, all arithmetic reproducible
+from the raw poll_ts strings):
+
+Cross-book synchronization window per cycle (max retrieval_ts - min retrieval_ts
+among the 3 declared books' calls):
+  cycle 1: betrivers 15:00:49.553704 -> fanduel 15:00:51.842584 = 2.288880s
+    adjacent gaps: betrivers->draftkings 1.078727s, draftkings->fanduel 1.210153s
+  cycle 2: betrivers 15:00:54.004054 -> fanduel 15:00:56.377826 = 2.373772s
+    adjacent gaps: betrivers->draftkings 1.159043s, draftkings->fanduel 1.214729s
+  mean adjacent-pair gap across both cycles: 1.165663s
+  mean full-cycle span: 2.331326s
+
+Credits consumed BY THIS VERIFICATION specifically (sum of credits_last across
+the 6 rows, self-reported per-call cost, process-attributable and reliable
+regardless of concurrent external activity): 4*6 = 24 credits.
+
+Credits_remaining delta across the run's own wall-clock window (51925 at the
+first call -> 51724 at the last call) = 201 credits, of which only 24 are this
+node's own calls -- the remaining 177 credits were consumed by activity NOT
+initiated by this script during the ~7-second span the two cycles took
+(2.55s + ~2.2s gap + 2.56s). This is the same ambient/concurrent-consumption
+pattern documented in M27_REPORT_BODY.md Section 5 (the pre-run 63,657 ->
+51,929 gap between the 2026-08-07T14:03:04Z authorization-baseline reading and
+this run's first call at 15:00:49Z), examined there in full with the
+scheduled-task ledger (WNBA_MarketLadder's own log ruled out as the source).
