@@ -211,3 +211,85 @@ order in the meantime. **Do not self-grant this.**
 4. **Record findings in full, not in counts.** The four Severity C notes from S34 nearly vanished
    because the coordinator's ledger event compressed them to "4 C" while writing A and B out in
    full. The repair author caught it. Findings are only preserved if their TEXT is preserved.
+
+---
+# 9. RETIREMENT HANDOFF — read this section FIRST (2026-08-07, outgoing coordinator)
+
+A successor coordinator has launched and this coordinator is retiring per GRAPH_POLICY §12.3.
+The program is mid-stride, not stopped. **81 nodes PASSED · 8 BLOCKED · 6 READY · 3 USER_REQUIRED ·
+104 nodes.** Both branches committed and pushed clean (program 35/35, data 13/13).
+
+## 9.1 THERE IS AN AGENT IN FLIGHT — DO NOT DUPLICATE IT
+
+**`S35_FREEZE_TASK_CARDS` was dispatched at top tier and has NOT returned.** Check
+`GRAPH_EVENTS.jsonl` for its `agent_launched` event and for any later `agent_returned`. If no
+return event exists, **the agent is still working — do not re-dispatch it.** Re-dispatching would
+run two freeze attempts against the same registry.
+
+**When it returns, these steps are the COORDINATOR's, not the agent's:**
+1. Read its verification section first. It was instructed to **refuse to freeze** if any S33R
+   repair claim fails to reproduce. If it reports a failed claim, DO NOT proceed to the append —
+   route the failure to a repair node exactly as S33R was routed.
+2. Materialize `REPORT.md` from its `S35_REPORT_BODY.md` with a coordinator header (the harness
+   forbids subagents writing report filenames).
+3. **Perform the registry append yourself as single writer.** The agent prepares
+   `REGISTRY_APPEND_PAYLOAD.jsonl` and `REGISTRY_BASELINE_VERIFICATION.json`; it must NOT append.
+   `experiments/player_program/arm_registry.jsonl` is a FROZEN, APPEND-ONLY path (GRAPH_POLICY §3):
+   existing records may never be edited or reordered.
+   **Pre-append baseline captured by the outgoing coordinator at retirement:**
+   - `arm_registry.jsonl` sha256 = `a0aff704ba2c70f2edf756c5dc765f0ab63fb528ecc1585f6fc8cfbbcf33a7a6`
+   - record count = **51**
+   After appending, re-read the first 51 records and prove they are byte-identical to the baseline,
+   exactly as the D040 A24 append did (50→51). Record the before/after hashes in the event.
+4. Close the node with events, regenerate state, commit, push while the tree is quiet.
+
+## 9.2 THE CRITICAL PATH FROM HERE
+
+S35 freeze → **S36 implement** → S37 audit → S38 sealed fits → S39 integrity → S40 adjudication
+(sole unseal authority) → S41 completion → **S42 USER adoption gate**. This is the sequence that
+finally answers the user's standing question: *did we beat the simple model at predicting game
+outcomes?* Today's honest answer is **no** — the composite does not beat plain scoring averages
+and trails the market by 0.38 (totals) / 0.80 (margins) / 0.017 (Brier). Eleven arms / 17 elements
+are queued to try. **Do not let anyone report the fan-out as progress on that question.**
+
+**S36 inherits four obligations the freeze record carries — verify they survived into it:**
+(a) read the **PINNED** `master_team.parquet` in the PROGRAM worktree and verify its sha
+(`ad79ce5c…`, 1,495 games); the DATA worktree copy legitimately grows with the season (1,512 and
+climbing) and reading it would silently evaluate cycle 2 on a universe no card declares;
+(b) emit a pre-build digest of the `game_id` set; (c) SC06's era kill is unpowered (~17 pooled-test
+clusters of pre-2024 support) — that power statement prints beside any verdict it produces;
+(d) SC11's E2 integrity receipt is labeled `NON_CITABLE_INTEGRITY_DIAGNOSTIC`.
+
+## 9.3 USER-GATED, UNCHANGED — never self-grant
+
+Kalshi consent letter (the user's own letter to send) · RotoGrinders month · wehoop/RotoWire
+outreach · any vendor purchase (M02B) · P43 champion replacement · S42 adoption · anything
+order-shaped or money-spending · pushing any branch but `player-model-program` / `data-refresh-2026`.
+
+**Recently resolved, do not re-raise:** D052/D053 (per-book polling — authorized bounded, shipped
+with kill switch OFF, pilot recommended before standing) and D054 (dense-window spend — the user
+overruled this coordinator's decline; 23/23 events, 30,870 of 35,000 credits, 1,029 snapshots).
+**Quota after those spends is materially reduced — measure it before any new spend.**
+
+## 9.4 DELIBERATELY DEFERRED — READY but do not dispatch without reading why
+
+- `M08_STALE_WINDOW` — conditioned on *demonstrated* lead-lag structure; M07 showed none is
+  demonstrable from the bundled-payload vendor topology. M27 now makes the window measurable, so
+  this may become legitimate after a per-book pilot — but not before.
+- `M22_CAPACITY` — presupposes an adjudicated opportunity class (none exists) and edges toward
+  staking, a USER surface.
+- `M06_INJURY_REACTION_STUDY` — needs point-in-time injury tape overlapping odds tape; the injury
+  capture only began witnessing 2026-08-06/07, so the overlap is days old. Feasibility verdict is
+  a legitimate output; a reaction claim is not.
+- `M14_MODEL_MARKET_RESIDUAL` — newly READY and genuinely useful; note M13 already established the
+  player-points model is *worse calibrated* than the market, so frame it as residual structure, not
+  as an edge hunt.
+
+## 9.5 WHAT THIS COORDINATOR GOT WRONG (§8 has the full list — read it)
+
+Pushed twice while agents held write scopes; dispatched M27 before declaring its node; ran two
+credit-spenders against one quota without telling either; compressed four review findings to a
+count and nearly lost them. **Every one was caught by the graph's own machinery, not by me.** Trust
+the gates over your own certainty — that is the whole point of them.
+
+*The ledger is the memory. The board is the truth. Frozen bytes govern. Do not stop.*
