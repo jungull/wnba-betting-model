@@ -52,10 +52,17 @@ inside lagged rescales) are NOT swept up by this clause. The prohibition is enfo
   S37 audit;
 * every arm ships a frozen feature-lineage table (column → source artifact hash → lag
   semantics);
-* every arm ships a **current-game-deletion invariance receipt**: the feature matrix is
-  recomputed with the current game's rows deleted from every consumed source, and
-  byte-identity of the two matrices is the machine-checkable proof that no same-game
-  information entered the prediction path.
+* every arm ships a **current-game-deletion invariance receipt**, scoped to be satisfiable
+  by legitimate arms: the feature matrix is recomputed with the current game's rows deleted
+  from every consumed **realized/outcome-bearing source** (the possession stream, box
+  aggregates, score outcomes, any odds or injury store) while **retaining schedule-identity
+  rows** (the game's scheduled date, matchup, home/away designation — admissible pregame
+  facts that are the cutoff boundary itself, and without which rest/home features and the
+  row's own fold assignment are uncomputable). Byte-identity of the two matrices is the
+  machine-checkable proof that no same-game *realized* information entered the prediction
+  path. The S37 audit must additionally verify P22's guard is **fit for purpose on score
+  surrogates** (its cycle-1 tests target duration/minutes surrogates) before relying on it
+  per-column.
 
 **Untouched:** the cycle-1 primary target (`REGULATION_EQUIVALENT_TEAM_OFFENSIVE_POSSESSIONS`),
 its champion `D_ewma_shrunk`, and every frozen possession artifact. This contract creates new
@@ -151,6 +158,10 @@ number exists before its primary verdict.
   frozen builder source hash plus its resolved parameters, as the S32B schema specifies. A
   self-reimplemented "EWMA" that matches the name but not the bytes does not satisfy this
   clause. Δ thereby measures value **beyond the public floor**, not beyond an intercept.
+  Terminology pin (consistency finding C6): these ingredients enter the K0 as
+  **structural/null-granted terms** in the S32B schema — never as substantive features —
+  because the frozen gate machinery blocks any K0 with `n_substantive_features > 0`; this is
+  exactly how the cycle-1 K5/A07 null carried its incumbent-path features.
 * **The cannot-host path is mechanical, labeled, and never promotes unqualified:** where an
   arm's architecture cannot host the null-granted ingredients, its card must **demonstrate
   the blockage mechanically** (the ingredient columns are unrepresentable in the declared
@@ -215,12 +226,19 @@ per-side improvement is not evidence of game-level improvement until the covaria
 ## 7. Mechanism scope (D047, user-directed) — directed candidates, isolated ideation
 
 Consistency finding B4 exposed a real conflict in draft v1 (required coverage areas listed
-inside ideation packets vs D047 p3's "ideation packets stay isolated"). Resolution, frozen
-here:
-* **The ideation wave (S31) is fully isolated.** Packets contain ONLY this frozen contract
-  (which quotes no floor values) and the source's own prompt. No D045 numeric rows, no D046
-  priors, no D047 text, no coordinator ideas, no other source's output. Independence is
-  structural (GRAPH_POLICY §4).
+inside ideation packets vs D047 p3's "ideation packets stay isolated"), and its re-review
+caught the residue: this very section quotes D047, so a packet carrying THIS file would
+contain the directive text the packet must exclude. Resolution, frozen here:
+* **Two editions freeze together, both sha256-pinned in the freeze event.** The FULL edition
+  is this file. The **IDEATION EDITION** is byte-identical except this §7's
+  directed-candidate enumeration (the bullet below beginning "The user-directed families")
+  is replaced by a redaction notice stating that a directed-candidate set exists and enters
+  at S32 with provenance labels — naming no mechanism, no family, no area.
+* **The ideation wave (S31) is fully isolated.** Packets contain ONLY the frozen IDEATION
+  EDITION (which quotes no floor values and no D047 text) and the source's own prompt. No
+  D045 numeric rows, no D046 priors, no D047 text, no coordinator ideas, no other source's
+  output. Independence is structural (GRAPH_POLICY §4); the S31 manifest records each
+  packet's content hash and forbidden-file list.
 * **The user-directed families enter as DIRECTED CANDIDATES at synthesis (S32), not through
   ideation.** The coordinator authors them from D047 verbatim; S32 carries every candidate's
   provenance label (`IDEATION_SOURCE_n` vs `USER_DIRECTED`) and directed candidates never
@@ -254,8 +272,10 @@ here:
   past instant, not a witness to it") and found in-play rows inside the extension archives (a
   same-game surrogate). The §8 promotion channel below **explicitly excludes** any field
   whose cutoff validity rests on vendor-asserted timestamps from a retrospective pull. Any
-  future market-feature admission requires P2B's open what-is-the-model objection settled at
-  USER level first. Any consumption of the live capture stream anywhere filters
+  future market-feature admission requires P2B's open what-is-the-model objection settled
+  first — and **this contract escalates that settlement to USER level as its own stricter
+  rule** (P2B itself assigns the objection to "the program"; the USER-level requirement is
+  new here, not P2B's). Any consumption of the live capture stream anywhere filters
   snapshot < commence at the call site (P2B F9).
 * **Injury/lineup/availability features are BARRED this cycle** unless drawn from a
   point-in-time store whose capture timestamps are ≤ the declared cutoff with witnessed (T0)

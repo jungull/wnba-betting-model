@@ -67,7 +67,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 ## Acceptance criteria — your output is validated against exactly these
 
-* each source ran against an isolated packet containing ONLY the frozen contract (which prints no floor values) and its own prompt
+* each source ran against an isolated packet containing ONLY the frozen contract IDEATION EDITION (directed-candidate enumeration redacted; no floor values; no D047 text) and its own prompt
 * no source saw another source output, any D045 numeric row, the D046 priors, the D047 directive text, or any coordinator idea
 * the raw-sources manifest records, per source, the packet content hash AND the forbidden-file list given to that source (cycle-1 P31 receipt, restored)
 * raw outputs frozen and hashed before synthesis reads them
