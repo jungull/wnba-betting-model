@@ -6,6 +6,13 @@ Usage:  python p38_run_fleet.py            (whole fleet)
 
 Emits ONLY operational facts to stdout/progress log. All results land sealed under
 stage2b/SEALED_RESULTS/P38/. See p38_driver.py for the mandate map.
+
+D040 continuation (D040_P38_FOLD_LOCAL_P25_AND_A08): every executed instance now runs a
+per-fold P25 prepass (p38_driver.p25_fold_prepass) and the runner runs under
+p38_wrappers.P25FoldLocalGuardView -- fold-local P25 blocks record FOLD_UNEVALUABLE with
+the frozen guard's full record and the arm fits on its remaining folds; A08 (both K
+elements) joined the fleet, its D039 exclusion condition having been met (REAUDIT_A08.md
+PASS). Prior sealed verdicts are preserved under .pre_D040 names, never erased.
 """
 from __future__ import annotations
 
@@ -20,9 +27,9 @@ import numpy as np
 import pandas as pd
 
 import p38_driver as D
-from p38_wrappers import (FoldGovernor, P27GuardHarnessView, a03_tier_records,
-                          a07_near_affinity_records, history_bound_a09, history_bound_a10,
-                          measure_clock_divergence)
+from p38_wrappers import (FoldGovernor, P25FoldLocalGuardView, P27GuardHarnessView,
+                          a03_tier_records, a07_near_affinity_records, history_bound_a09,
+                          history_bound_a10, measure_clock_divergence)
 
 # the runner unsealing flag: P38 is the only context in which it may exist (RUNNER_INTERFACE
 # section 6). This process IS the P38 executor.
@@ -55,8 +62,10 @@ def write_json(path: Path, obj) -> str:
 # ------------------------------------------------------------------------------ inventory --
 def build_inventory(F, folds, archive, poss, lineup, prior):
     """Every fit-eligible module instance (one per enumeration element), with its P38
-    construction record. A08/A24 are excluded pre-P38 (D039); A20/A21/A23 are blocked by
-    executor mandate/pin (EXEC-M6 / PIN-A21) and never constructed."""
+    construction record. A24 is excluded pre-P38 (D039); A08 joined the fleet under D040
+    (its D039 exclusion condition -- a passed non-implementer re-audit -- was met);
+    A20/A21/A23 are blocked by executor mandate/pin (EXEC-M6 / PIN-A21) and never
+    constructed."""
     fold_ids = [f["fold_id"] for f in folds]
     n_rows = len(F)
     sched = archive[["game_id", "team_id", "game_date", "season"]]
@@ -81,6 +90,27 @@ def build_inventory(F, folds, archive, poss, lineup, prior):
                 "m4": {"binding": "contract_schedule (2,990 rows) constructor-bound, per "
                                   "the frozen module's own signature"},
                 "extra": {}, "a07_module": a07})
+
+    # A08 -- FIT-ELIGIBLE per D040 (re-audit PASSED: P37_IMPLEMENTATION_AUDIT/REAUDIT_A08.md,
+    # non-implementer targeted re-audit, verdict PASS, independent tie-heavy fixture, bitwise
+    # d_t parity with A09/A10). Both frozen K elements fit, one module instance each.
+    a08 = D.import_arm("A08", "a08_arm.py")
+    for K in a08.K_ELEMENTS:
+        inv.append({"key": a08.element_id_for(K), "arm_code": "A08",
+                    "module": a08.A08Arm(archive, K, fold_ids, n_rows, pace_col="pace"),
+                    "m4": {"binding": "contract-schedule archive (2,990 rows / 1,495 games) "
+                                      "constructor-bound as the history/clock (the module's "
+                                      "own frozen signature; n_clock_pin satisfied -- the "
+                                      "2,982-row universe supplies target keys only); the "
+                                      "caller-supplied `pace` column computed by the frozen "
+                                      "lagged_regulation_equivalent_pin formula at the call "
+                                      "site (the EXEC-M4 obligation recorded at first pass "
+                                      "for A08's post-re-audit entry)",
+                           "history_rows": int(len(archive)),
+                           "history_games": int(archive["game_id"].nunique()),
+                           "fit_eligibility": "D040 (D039 condition met: REAUDIT_A08.md "
+                                              "PASS, non-implementer re-audit)"},
+                    "extra": {}})
 
     a09 = D.import_arm("A09", "arm.py")
     uni_hist = F[["team_id", "game_id", "game_date"]].merge(
@@ -186,6 +216,15 @@ def execute_instance(entry, F, folds, basis, openers_record):
     key = entry["key"]
     t0 = time.time()
     out_dir = D.SEALED_P38 / key
+    # D040 custody rule: a re-run never erases a prior sealed verdict. Any pre-existing
+    # sidecar / guard block record is preserved under a .pre_D040 name before this run
+    # writes its own (GUARD_BLOCK_RECORD.json and BLOCK_DIAGNOSTICS.json from the first
+    # pass are additionally left in place unless this run itself produces a new one).
+    for fname in ("P38_EXECUTION_SIDECAR.json", "GUARD_BLOCK_RECORD.json"):
+        p = out_dir / fname
+        keep = out_dir / fname.replace(".json", ".pre_D040.json")
+        if p.exists() and not keep.exists():
+            p.rename(keep)
     sidecar = {
         "schema": "p38_execution_sidecar/1",
         "element": key, "arm_code": entry["arm_code"],
@@ -245,14 +284,51 @@ def execute_instance(entry, F, folds, basis, openers_record):
             return {"element": key, "status": "RETIRED_PREREGISTERED_RULE",
                     "sidecar_sha256": sha}
 
+    # ---- D040: per-fold P25 prepass (the EXEC-M1 analogue for the runner's P25 audit) -----
+    p25_folds, p25_excl, p25_blockers = D.p25_fold_prepass(gh, governor, F, folds)
+    sidecar["d040_p25_fold_verdicts"] = {
+        fid: ({"verdict": "PASS"} if v["verdict"] == "PASS"
+              else {"verdict": "BLOCK -> FOLD_UNEVALUABLE" if fid != "FINAL_ASSEMBLED_DESIGN"
+                    else "BLOCK", "fired": v["fired"]})
+        for fid, v in p25_folds.items()}
+    if p25_excl or p25_blockers:
+        sidecar["d040"] = {
+            "authority": "D040_P38_FOLD_LOCAL_P25_AND_A08 (DECISION_LEDGER.jsonl; ruled a "
+                         "deterministic consequence of D039/EXEC-M1)",
+            "wrapper": "p38_wrappers.P25FoldLocalGuardView -- task-specific call-site "
+                       "wrapper, never a guard edit; frozen guard/harness/runner bytes "
+                       "untouched",
+            "fold_unevaluable": sorted(p25_excl),
+            "semantics": "each fold-local-blocked fold records FOLD_UNEVALUABLE with the "
+                         "frozen guard's full record (sealed in "
+                         "P25_FOLD_LOCAL_RECORDS.json and in the receipt's "
+                         "guard_records.p25_per_fold); the arm fits on remaining folds, "
+                         "arm AND null identically via the P38 fold governor",
+        }
+        # full frozen guard records: sealed, never printed
+        sidecar["p25_fold_local_records_sha256"] = write_json(
+            out_dir / "P25_FOLD_LOCAL_RECORDS.json",
+            {"schema": "p38_d040_p25_fold_local/1", "element": key,
+             "authority": "D040_P38_FOLD_LOCAL_P25_AND_A08",
+             "invocation": "frozen P25 wrapper re-invoked per fold with the runner's own "
+                           "argument pins on the fold's TRAINING design (p38_driver."
+                           "p25_fold_prepass)",
+             "per_fold": p25_folds})
+    for fid, basis_str in p25_excl.items():
+        if fid not in excl:
+            excl[fid] = basis_str
+    blockers = list(blockers) + list(p25_blockers)
+
     sidecar["fold_exclusions"] = dict(excl)
 
     if blockers:
-        sidecar["status"] = "BLOCKED_P27"
+        status = ("BLOCKED_P25_FINAL" if all(b.startswith("P25_") for b in blockers)
+                  else "BLOCKED_P27")
+        sidecar["status"] = status
         sidecar["block_basis"] = blockers
         sidecar["wall_seconds"] = round(time.time() - t0, 1)
         sha = write_json(out_dir / "P38_EXECUTION_SIDECAR.json", sidecar)
-        return {"element": key, "status": "BLOCKED_P27", "blockers": blockers,
+        return {"element": key, "status": status, "blockers": blockers,
                 "sidecar_sha256": sha}
 
     # ---- EXEC-M7: P26 bind path at scoring time ---------------------------------------------
@@ -269,7 +345,11 @@ def execute_instance(entry, F, folds, basis, openers_record):
                                lambda: [])())
     governor = FoldGovernor(entry["module"], excl, entry.get("override"))
     allowed = set(card_deacts) | set(excl)
-    view = P27GuardHarnessView(gh, allowed)
+    # D040: the P25 view SUBSUMES the EXEC-M1 P27 view (same tolerance rule for P27, plus
+    # the per-fold P25 tolerance keyed to the runner's deterministic audit order).
+    p25_fold_sequence = [(str(f["fold_id"]), int(len(f["train_idx"]))) for f in folds] \
+        + [(D.FINAL_FOLD_ID, int(len(F)))]
+    view = P25FoldLocalGuardView(gh, allowed, p25_fold_sequence)
     runner_mod.gh = view
     try:
         rec = runner_mod.run_arm(
@@ -287,6 +367,13 @@ def execute_instance(entry, F, folds, basis, openers_record):
         sidecar["deactivated_folds_in_receipt"] = rec.get("results", {}).get(
             "structurally_deactivated_folds")
         sidecar["exec_m1_p27_tolerance"] = view.tolerance_basis
+        sidecar["d040_p25_tolerance_applied_folds"] = sorted(view.p25_fold_unevaluable)
+        if view.p25_fold_unevaluable:
+            sidecar["d040_p25_tolerance_note"] = (
+                "the frozen P25 guard's fold-local block record for each listed fold is "
+                "carried UNMODIFIED in the sealed receipt's guard_records.p25_per_fold "
+                "and in P25_FOLD_LOCAL_RECORDS.json; the fold is FOLD_UNEVALUABLE "
+                "(deactivated for arm AND null identically) per D040")
         sidecar["guard_verdicts"] = {
             "p26_valid": bool((rec.get("guard_records", {}).get("p26") or {}).get("valid")),
             "p23_valid": bool((rec.get("guard_records", {}).get("p23") or {}).get("valid")),
@@ -417,6 +504,25 @@ def main(argv):
                    "recorded_by": "P38_BLINDED_FIT executor", "authority": "D039"}
             sha = write_json(D.SEALED_P38 / key / "EXCLUSION_RECORD.json", rec)
             log({"event": "exclusion_recorded", "arm": key, "sha256": sha})
+
+    # D040: A08's D039 exclusion condition (a passed non-implementer re-audit) is met; the
+    # original EXCLUSION_RECORD.json is left untouched and a supersession note is sealed
+    # beside it pointing at the two fitted element directories.
+    if not only or "A08" in only:
+        sup = {"schema": "p38_d040_supersession/1", "arm": "A08_league_lag_level",
+               "authority": "D040_P38_FOLD_LOCAL_P25_AND_A08 (DECISION_LEDGER.jsonl)",
+               "supersedes": "EXCLUSION_RECORD.json (D039 EXCLUDED_PRE_P38, conditional on "
+                             "a non-implementer targeted re-audit passing)",
+               "condition_met": "stage2b/P37_IMPLEMENTATION_AUDIT/REAUDIT_A08.md -- verdict "
+                                "PASS, fit-eligible (independent tie-heavy fixture; bitwise "
+                                "d_t parity with A09/A10; full suite re-run passing)",
+               "fitted_elements": ["A08_K20", "A08_K80"],
+               "sealed_under": ["stage2b/SEALED_RESULTS/P38/A08_K20/",
+                                "stage2b/SEALED_RESULTS/P38/A08_K80/"],
+               "recorded_by": "P38_BLINDED_FIT executor (D040 continuation)"}
+        sha = write_json(D.SEALED_P38 / "A08_league_lag_level" / "D040_SUPERSESSION.json",
+                         sup)
+        log({"event": "a08_supersession_recorded", "sha256": sha})
 
     inventory = build_inventory(F, folds, archive, poss, lineup, prior)
     log({"event": "inventory_built", "n_instances": len(inventory),

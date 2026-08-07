@@ -2,10 +2,13 @@
 
 > **Epistemic status (verbatim, binding):** SEALED RESULTS. Standing conditional authorisation: the fit executes automatically once P37 passes, because the preregistration and the implementation audit are exactly the conditions the contract requires. Outputs are sealed and unread until P39 verifies them.
 
-Executor: P38_BLINDED_FIT (D039 dispatch, workflow wf_6972ebba-bdb). Executed
-2026-08-06T23:39:49.883074+00:00 on the commit recorded in the dispatch event
-(`b8422d2ae16a29d0d65174f8cd4b0a1b0651744b`; see MANIFEST.json code.commit_provenance -- git was not
-invoked by this node, per standing rule 4).
+Executor: P38_BLINDED_FIT (D039 dispatch, workflow wf_6972ebba-bdb), in TWO passes on the
+commit recorded in the dispatch event (`b8422d2ae16a29d0d65174f8cd4b0a1b0651744b`; see MANIFEST.json
+code.commit_provenance -- git was not invoked by this node, per standing rule 4):
+first pass 2026-08-06T23:39:49Z (D039 mandates EXEC-M1..M7); D040 continuation
+2026-08-06T23:59:21.268912+00:00 (ruling D040_P38_FOLD_LOCAL_P25_AND_A08:
+per-fold P25 call-site wrapper; seven P25-blocked instances re-run; A08 both K elements
+fitted). First-pass sealed verdicts are preserved under `.pre_D040` names, never erased.
 
 **This file contains ZERO comparative performance numbers.** Every result of every fit is
 sealed under `stage2b/SEALED_RESULTS/P38/` and was written there by the frozen runner
@@ -41,15 +44,17 @@ mirror of this log is `SPEC.json` beside it; the sealed manifest is
   rule as frozen; p-value formula consumed byte-unchanged (EXEC-M3);
   `cluster_bootstrap.py` sha256 `08081fac50951b535c8650b5fe6ec07890072915fdd5418607cf36ccfd4fdea0`.
 
-## 2. Fleet outcome (27 sealed entries, zero performance numbers)
+## 2. Fleet outcome after the D040 continuation (30 sealed element directories, zero performance numbers)
 
 | element | status | wall s | evaluable folds | deactivated folds | receipt sha256 |
 |---|---|---|---|---|---|
 | `A02_cal_blend_contrast__single` | FITTED | 18.1 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `234dbf256c18a22703dfa9a32269d3af2b7834f1db220a902ae77f06bb272468` |
 | `A03_cal_shallow_tier_intercept__t3` | FITTED | 20.4 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `48b3015a04ea54b842f5b6b809a6a677e7a81fdd7e94ceabdc1759449e329e19` |
-| `A05_cal_playoff_intercept__single` | BLOCKED_GUARD | 0.1 | - | - | `-` |
+| `A05_cal_playoff_intercept__single` | FITTED | 20.2 | train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | train_lt_2022 | `f5b4c59f92aa98d56b1242d533e9c33aee29d86b1b16e685b4607f876c43b0f1` |
 | `A07_early_season_transient__single` | FITTED | 29.8 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `d77f9678656e02b0090f2b5175b18a6e10b7560cdaf1beda524d16eaec82a294` |
-| `A08_league_lag_level` | EXCLUDED_PRE_P38_PER_D039 | - | - | - | `-` |
+| `A08_K20` | FITTED | 25.3 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `4a5e34564fb3a038ff3f08623c767bac96f419bdf6b6b69a85ccb1b4513f9043` |
+| `A08_K80` | FITTED | 25.2 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `469b4edec8f5c10888d4737db8689e2389919b93658ae280019127bfe6c967c3` |
+| `A08_league_lag_level` | SUPERSEDED_BY_D040_ELEMENTS_FITTED | - | - | - | `-` |
 | `A09_kappa10` | FITTED | 25.5 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `7329e1492cd8c5bb6487dbad8d4ea1db8b3c848027ecfd623d0319680b0ca85f` |
 | `A09_kappa2` | FITTED | 24.9 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `7c3d0d92a43056c2585a320520de9fc2c395d2d1309c5b9b740ab5b09d91b201` |
 | `A09_kappa50` | FITTED | 23.8 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `06c3977aec3086b86b20e8d8baf38033803b2fb5c4d5c8a06e619ee361a804e7` |
@@ -58,27 +63,32 @@ mirror of this log is `SPEC.json` beside it; the sealed manifest is
 | `A11_rho0.25` | FITTED | 19.0 | train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | train_lt_2022 | `e103e7714747b4d34743be350102866b121c3bf1b607a5a370c10237193693ab` |
 | `A11_rho0.5` | FITTED | 21.2 | train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | train_lt_2022 | `a019a17720c02f013c5b9d4fee2d21d9b83d2dfae5bcf04e78defe25eb44be8c` |
 | `A11_rho0.75` | FITTED | 19.6 | train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | train_lt_2022 | `2e4ff8bca51ccaf0fabb5a1b7314a5e4d3a6c1460baa2779933d69f6d76e700e` |
-| `A12_carryover_additive_decay__single` | BLOCKED_GUARD | 0.7 | - | - | `-` |
-| `A13_carryover_roster_continuity_moderator__single` | BLOCKED_GUARD | 3.6 | - | - | `-` |
-| `A14_expansion_intercept_decay__single` | BLOCKED_GUARD | 0.4 | - | - | `-` |
-| `A15_gap_by_depth_asymmetry__single` | BLOCKED_GUARD | 0.3 | - | - | `-` |
+| `A12_carryover_additive_decay__single` | FITTED | 29.9 | train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | train_lt_2022 | `00079f93a4427726b2f986132d0352d683f41fe06b87968572bf5b1495548678` |
+| `A13_carryover_roster_continuity_moderator__single` | FITTED | 61.4 | train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | train_lt_2022 | `e1893b3ac32149d1e3a666e75c425345e72c658ef85a9c1e393946a525f3fb57` |
+| `A14_expansion_intercept_decay__single` | FITTED | 11.7 | train_lt_2026 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025 | `5bc7891ccee835017c88f2dec14c3978ea525c926f84b2c8580b12f35a9c151c` |
+| `A15_gap_by_depth_asymmetry__single` | FITTED | 26.9 | train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | train_lt_2022 | `12bf8980751a4af589ac48474f5ab0fc45ebd01fbaa1021c57c54ab72117ef97` |
 | `A16_lag_residual_own_minus_opp` | FITTED | 18.1 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `ae749940301d5a930ad413af5822e7210ae280113ea9c3cb8ac0e5d8ddd7f67d` |
-| `A17_transition_mix_share__single` | BLOCKED_GUARD | 0.2 | - | - | `-` |
+| `A17_transition_mix_share__single` | FITTED | 22.8 | train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | train_lt_2022 | `3f682237435d547e4eb49437b04ac68431c7f03021a243d68685252b6685dbda` |
 | `A18_median_duration_contrast` | FITTED | 42.8 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `8466f0876cd8baa830e3f00390b5a5c679905cb3a1c94a8aef76970d0233bd51` |
 | `A20_forced_turnover_contrast` | BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE | - | - | - | `-` |
 | `A21_garbage_time_contamination` | BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE | - | - | - | `-` |
-| `A22_lineup_churn_tv_distance__single` | BLOCKED_GUARD | 1.4 | - | - | `-` |
+| `A22_lineup_churn_tv_distance__single` | FITTED | 25.0 | train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | train_lt_2022 | `b2e060b3f0936ef1916c41a7103081c8466788a02b866fb5d677260d3b2f18d6` |
 | `A23_rest_differential_contrast__bundle_AI` | BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE | - | - | - | `-` |
 | `A23_rest_differential_contrast__bundle_OM` | BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE | - | - | - | `-` |
 | `A24_rest_advantage_symmetric` | EXCLUDED_PRE_P38_PER_D039 | - | - | - | `-` |
 | `A25_home_offense_contrast__single` | FITTED | 20.4 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `9053c3baba5f2f773f40b15a26a352ecb3a6ff4d303aa3cb72b4b7d9722271e5` |
 | `A26_sos_correction_own_minus_opp` | FITTED | 40.3 | train_lt_2022,train_lt_2023,train_lt_2024,train_lt_2025,train_lt_2026 | - | `d2a5c29d30e74e8ffa874ec5293487bb5df377906d5a95addbab63e92c0198fb` |
 
-Counts: **15 FITTED**, **7 BLOCKED_GUARD** (frozen P25 guard,
-see section 4), **4 BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE**
-(EXEC-M6: A20, A23 x2; PIN-A21: A21), **2 EXCLUDED_PRE_P38_PER_D039**
-(A08 re-audit pending; A24 registry amendment pending). Fleet wall time
-384.7s.
+Counts: **24 FITTED** (7 of them re-run under D040 after
+first-pass BLOCKED_GUARD, and 2 the new A08 K elements),
+**0 BLOCKED_GUARD remaining**,
+**4 BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE**
+(EXEC-M6: A20, A23 x2; PIN-A21: A21), **1 EXCLUDED_PRE_P38_PER_D039**
+(A24: registry amendment still pending), **1 SUPERSEDED_BY_D040**
+(the A08_league_lag_level placeholder: its D039 exclusion condition was met and the two
+K elements fitted; the original EXCLUSION_RECORD.json is untouched beside
+D040_SUPERSESSION.json). Cumulative fleet wall time 634.7s
+(both passes; progress.jsonl carries each pass).
 
 ## 3. Executor mandates (EXEC-M1..M7) -- what was implemented, exactly
 
@@ -131,24 +141,46 @@ see section 4), **4 BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE**
   frozen P35 r8_scope_adjudication scopes out -- the adjudicated (non-bind) wrapper
   validation passed for all three, and the refusal is recorded verbatim per arm
   (contradiction 4 below).
+* **D040** (this continuation) -- `p38_wrappers.P25FoldLocalGuardView` +
+  `p38_driver.p25_fold_prepass`: the EXEC-M1 analogue for the runner's per-fold P25
+  audit, ruled a deterministic consequence of D039 (D040_P38_FOLD_LOCAL_P25_AND_A08).
+  Section 4 below has the full mechanics and custody. Applied to every instance executed
+  in this continuation (for instances whose every P25 fold verdict PASSES, the prepass
+  records the verdicts and the tolerance never fires). FOLD_UNEVALUABLE exclusions
+  actually applied by the wrapper this pass: A05/A15/A17/A22 train_lt_2022 (each fits on
+  the remaining 4 folds); A12/A13 train_lt_2022 and A14 train_lt_2022..train_lt_2025
+  were ALREADY excluded by the first-pass P27/card machinery (EXEC-M1), so for them the
+  D040 wrapper's contribution is that the runner's bundle-loop audit of those excluded
+  folds' degenerate designs no longer escalates to a whole-arm refusal.
 
-## 4. The seven frozen-P25 guard blocks (results, and a RAISED finding)
+## 4. The seven frozen-P25 guard blocks: RAISED as P38-R1 (first pass), RESOLVED by D040 (this pass)
 
 The frozen runner audits EVERY fold's design with P22/P25 in its bundle loop, and a P25
 blocking finding in ANY single fold fails the whole arm closed. Seven instances blocked
-that way; the executor then re-invoked the frozen P25 wrapper per fold with the runner's
-own argument pins (diagnostics sealed per arm in `BLOCK_DIAGNOSTICS.json`; full guard
-records inside, never printed):
+that way on the first pass; the executor raised P38-R1 rather than tolerate P25 findings
+without a mandate, and the coordinator ruled (**D040_P38_FOLD_LOCAL_P25_AND_A08**, a
+deterministic consequence of D039/EXEC-M1): a task-specific per-fold P25 CALL-SITE
+wrapper -- never a guard edit -- honours the frozen guard's own fold-local verdicts. A
+fold whose P25 verdict is fold-local-blocked records **FOLD_UNEVALUABLE** with the full
+guard record (carried unmodified in the sealed receipt's `guard_records.p25_per_fold`
+and in `P25_FOLD_LOCAL_RECORDS.json`), and the arm fits on its remaining folds, arm AND
+null identically via the P38 fold governor. FINAL-design or non-excluded-fold P25 blocks
+still fail closed. Implemented as `p38_wrappers.P25FoldLocalGuardView` +
+`p38_driver.p25_fold_prepass`, mirroring EXEC-M1's `P27GuardHarnessView` exactly (the
+view cross-checks the runner's deterministic fold audit order by training-row count and
+refuses on any desynchronisation).
 
-| element | folds that BLOCK | findings fired (kind:feature) |
-|---|---|---|
-| `A05_cal_playoff_intercept__single` | train_lt_2022 | calibration_parameter_in_substantive_arm:is_playoff_indicator; candidate_exactly_determined_by_offset:is_playoff_indicator; candidate_is_function_of_incumbent_projection:is_playoff_indicator |
-| `A12_carryover_additive_decay__single` | train_lt_2022 | augmented_rank_deficient:__augmented_design__; calibration_parameter_in_substantive_arm:dev_prev; calibration_parameter_in_substantive_arm:w_n:dev_prev; candidate_exactly_determined_by_offset:dev_prev; candidate_exactly_determined_by_offset:w_n:dev_prev; candidate_is_function_of_incumbent_projection:dev_prev; candidate_is_function_of_incumbent_projection:w_n:dev_prev |
-| `A13_carryover_roster_continuity_moderator__single` | train_lt_2022 | augmented_rank_deficient:__augmented_design__; calibration_parameter_in_substantive_arm:cont_i; calibration_parameter_in_substantive_arm:cont_i:dev_prev; calibration_parameter_in_substantive_arm:dev_prev; calibration_parameter_in_substantive_arm:w_n:dev_prev; candidate_exactly_determined_by_offset:cont_i; candidate_exactly_determined_by_offset:cont_i:dev_prev; candidate_exactly_determined_by_offset:dev_prev; candidate_exactly_determined_by_offset:w_n:dev_prev; candidate_is_function_of_incumbent_projection:cont_i; candidate_is_function_of_incumbent_projection:cont_i:dev_prev; candidate_is_function_of_incumbent_projection:dev_prev; candidate_is_function_of_incumbent_projection:w_n:dev_prev |
-| `A14_expansion_intercept_decay__single` | train_lt_2022, train_lt_2023, train_lt_2024, train_lt_2025 | augmented_rank_deficient:__augmented_design__; calibration_parameter_in_substantive_arm:expansion_decay_interaction; candidate_exactly_determined_by_offset:expansion_decay_interaction; candidate_is_function_of_incumbent_projection:expansion_decay_interaction |
-| `A15_gap_by_depth_asymmetry__single` | train_lt_2022 | calibration_parameter_in_substantive_arm:pace_gap:asym; candidate_exactly_determined_by_offset:pace_gap:asym; candidate_is_function_of_incumbent_projection:pace_gap:asym |
-| `A17_transition_mix_share__single` | train_lt_2022 | calibration_parameter_in_substantive_arm:is_playoff_indicator; candidate_exactly_determined_by_offset:is_playoff_indicator; candidate_is_function_of_incumbent_projection:is_playoff_indicator |
-| `A22_lineup_churn_tv_distance__single` | train_lt_2022 | calibration_parameter_in_substantive_arm:is_playoff_indicator; candidate_exactly_determined_by_offset:is_playoff_indicator; candidate_is_function_of_incumbent_projection:is_playoff_indicator |
+First-pass block pattern and D040 re-run outcome, per instance:
+
+| element | folds that BLOCKED (first pass) | findings fired (kind:feature) | D040 status | FOLD_UNEVALUABLE folds |
+|---|---|---|---|---|
+| `A05_cal_playoff_intercept__single` | train_lt_2022 | calibration_parameter_in_substantive_arm:is_playoff_indicator; candidate_exactly_determined_by_offset:is_playoff_indicator; candidate_is_function_of_incumbent_projection:is_playoff_indicator | FITTED | train_lt_2022 |
+| `A12_carryover_additive_decay__single` | train_lt_2022 | augmented_rank_deficient:__augmented_design__; calibration_parameter_in_substantive_arm:dev_prev; calibration_parameter_in_substantive_arm:w_n:dev_prev; candidate_exactly_determined_by_offset:dev_prev; candidate_exactly_determined_by_offset:w_n:dev_prev; candidate_is_function_of_incumbent_projection:dev_prev; candidate_is_function_of_incumbent_projection:w_n:dev_prev | FITTED | train_lt_2022 |
+| `A13_carryover_roster_continuity_moderator__single` | train_lt_2022 | augmented_rank_deficient:__augmented_design__; calibration_parameter_in_substantive_arm:cont_i; calibration_parameter_in_substantive_arm:cont_i:dev_prev; calibration_parameter_in_substantive_arm:dev_prev; calibration_parameter_in_substantive_arm:w_n:dev_prev; candidate_exactly_determined_by_offset:cont_i; candidate_exactly_determined_by_offset:cont_i:dev_prev; candidate_exactly_determined_by_offset:dev_prev; candidate_exactly_determined_by_offset:w_n:dev_prev; candidate_is_function_of_incumbent_projection:cont_i; candidate_is_function_of_incumbent_projection:cont_i:dev_prev; candidate_is_function_of_incumbent_projection:dev_prev; candidate_is_function_of_incumbent_projection:w_n:dev_prev | FITTED | train_lt_2022 |
+| `A14_expansion_intercept_decay__single` | train_lt_2022, train_lt_2023, train_lt_2024, train_lt_2025 | augmented_rank_deficient:__augmented_design__; calibration_parameter_in_substantive_arm:expansion_decay_interaction; candidate_exactly_determined_by_offset:expansion_decay_interaction; candidate_is_function_of_incumbent_projection:expansion_decay_interaction | FITTED | train_lt_2022, train_lt_2023, train_lt_2024, train_lt_2025 |
+| `A15_gap_by_depth_asymmetry__single` | train_lt_2022 | calibration_parameter_in_substantive_arm:pace_gap:asym; candidate_exactly_determined_by_offset:pace_gap:asym; candidate_is_function_of_incumbent_projection:pace_gap:asym | FITTED | train_lt_2022 |
+| `A17_transition_mix_share__single` | train_lt_2022 | calibration_parameter_in_substantive_arm:is_playoff_indicator; candidate_exactly_determined_by_offset:is_playoff_indicator; candidate_is_function_of_incumbent_projection:is_playoff_indicator | FITTED | train_lt_2022 |
+| `A22_lineup_churn_tv_distance__single` | train_lt_2022 | calibration_parameter_in_substantive_arm:is_playoff_indicator; candidate_exactly_determined_by_offset:is_playoff_indicator; candidate_is_function_of_incumbent_projection:is_playoff_indicator | FITTED | train_lt_2022 |
 
 Every other fold PASSES and the FINAL_ASSEMBLED_DESIGN passes for all seven. Measured
 mechanisms (structural facts, sealed):
@@ -165,13 +197,18 @@ mechanisms (structural facts, sealed):
    offset-determined whenever the fold's cross-game ties happen not to break constancy --
    which occurs only in the smallest fold, train_lt_2022.
 
-**RAISED, not resolved in-node (P38-R1):** this is R-F1's whole-arm-vs-per-fold shape in
-the runner's P25 branch, which P37 did not adjudicate and EXEC-M1 (worded for P27 only)
-does not cover. No ratified mandate authorises tolerating P25 findings at the call site,
-so the executor held the fail-closed line and the blocks stand as sealed results. A
-coordinator ruling (an EXEC-M1 analogue for the runner's per-fold P22/P25 audits, or
-remediation nodes) is required before these seven can fit. Fail-closed direction: this can
-only wrongly kill, never wrongly promote.
+**P38-R1 disposition:** RAISED on the first pass (the executor held the fail-closed line;
+no mandate then authorised tolerating P25 findings at the call site); RESOLVED by ruling
+D040 (coordinator, 2026-08-06T23:41:49Z) and executed in this continuation. Custody of
+every first-pass block verdict: `P38_EXECUTION_SIDECAR.pre_D040.json` (the first-pass
+BLOCKED_GUARD sidecar with the frozen harness's whole-arm refusal text, preserved
+byte-for-byte under the renamed path; the first pass wrote no separate
+GUARD_BLOCK_RECORD.json for these seven), `BLOCK_DIAGNOSTICS.json` (the frozen guard's
+FULL per-fold machine-readable records from the first-pass re-invocation, untouched),
+plus this pass's `P25_FOLD_LOCAL_RECORDS.json` and the failing fold's full guard record
+inside each sealed `receipt.json` (`guard_records.p25_per_fold[fold].passed == false`,
+verified in all seven). Nothing was erased; the re-run wrote beside the first-pass
+record, not over it.
 
 ## 5. Blocks and exclusions by ratified mandate (results)
 
@@ -182,21 +219,30 @@ only wrongly kill, never wrongly promote.
   re-audit. Fitting it would seal a non-preregistered result. Verdict sealed.
 * **A23 (both bundles)** -- BLOCKED, EXEC-M6 (as A20; rest misresolution on the 8 opener
   teams' second 2021 games measured by auditor 3). Verdicts sealed.
-* **A08** -- EXCLUDED pre-P38 (D039: remediation confirmed, fit-eligibility pending
-  non-implementer re-audit). Record sealed, with the EXEC-M4 pace-column obligation noted
-  for its entry.
+* **A08** -- first pass: EXCLUDED pre-P38 (D039, conditional on a non-implementer
+  re-audit). Condition MET: `P37_IMPLEMENTATION_AUDIT/REAUDIT_A08.md`, verdict PASS
+  (independent tie-heavy fixture; bitwise d_t parity with A09/A10; suite re-run passing).
+  D040 ruled both K elements fit-eligible; this continuation FITTED `A08_K20` and
+  `A08_K80` under the same discipline (contract-schedule archive constructor-bound as the
+  clock, caller-supplied `pace` computed by the frozen lagged_regulation_equivalent_pin
+  formula at the call site -- the EXEC-M4 obligation recorded at first pass -- named fold
+  policy, sealed receipts). The original EXCLUSION_RECORD.json is untouched;
+  D040_SUPERSESSION.json sits beside it.
 * **A24** -- EXCLUDED pre-P38 (D039 option (a): registry-appended amendment required
-  BEFORE A24 fits; not yet appended at execution time). Record sealed.
+  BEFORE A24 fits; not yet appended at either execution time). Record sealed. UNCHANGED
+  by D040 (the ruling's A24 lane is coordinator single-writer work, not this executor's).
 
 ## 6. Contradictions found (reported, never silently reconciled)
 
 1. **"21 fit-eligible arms" (D039 ruling text, dispatch, graph events) vs the measured
-   count of 20.** 22 arm ids are implemented under P36 (A06 was never implemented --
-   D021 amended it to INADMISSIBLE-UNTIL-RECEIPTED); 22 - A08 - A24 = 20 fit-eligible arm
-   ids = 26 fit-eligible module instances. The likely arithmetic source of "21" is
-   D026's "23 fit-eligible" (26 - A01/A04/A19) minus 2, which overlooks A06. This node
-   executed against the measured set: 22 instances run, 4 instances mandate-blocked
-   (A20, A21, A23 x2), matching 26.
+   count of 20 at first pass.** 22 arm ids are implemented under P36 (A06 was never
+   implemented -- D021 amended it to INADMISSIBLE-UNTIL-RECEIPTED); 22 - A08 - A24 = 20
+   fit-eligible arm ids = 26 fit-eligible module instances. The likely arithmetic source
+   of "21" is D026's "23 fit-eligible" (26 - A01/A04/A19) minus 2, which overlooks A06.
+   Post-D040 the measured count is 21 arm ids / 28 instances / 24 run through the runner
+   -- numerically equal to the D039 "21" but composition-DIFFERENT (D039's 21 counted A21
+   and excluded A08; the measured 21 excludes A21 per PIN-A21 and includes A08 per D040).
+   Recorded, not reconciled.
 2. **PIN-A21 vs the dispatch's fit-eligible list.** D039 simultaneously ratified PIN-A21
    verbatim (rebuild under a remediation node; implemented construction rejected) and
    dispatched P38 "on the 21 fit-eligible arms" with only A08/A24 excluded. The executor
@@ -215,26 +261,38 @@ only wrongly kill, never wrongly promote.
    in receipts; the true per-fold bases live in each sidecar's `fold_exclusions`.
 6. **P38-R1** (section 4): the runner audits card-deactivated/rule-collapsed folds'
    degenerate designs and escalates fold-local P25 findings to whole-arm refusals.
+   RESOLVED BY D040 in this continuation; the frozen runner's escalation behaviour itself
+   is unchanged (call-site wrapper only) and the contradiction remains on the record as a
+   fact about the frozen bytes.
+7. **The frozen runner's receipt labelling of D040 exclusions** (same shape as
+   contradiction 5): a FOLD_UNEVALUABLE fold under the D040 wrapper is labelled
+   "STRUCTURALLY_DEACTIVATED / card-pinned structural deactivation" by the frozen runner;
+   the true basis is in the sidecar's `fold_exclusions` ("P25_FOLD_LOCAL_BLOCK ->
+   FOLD_UNEVALUABLE ... D040") and in `P25_FOLD_LOCAL_RECORDS.json`.
 
 ## 7. What could not be established
 
 * The executing git commit was not re-measured in-process (standing rule 4); it is carried
   from the dispatch ledger event and must be confirmed by the coordinator/P39 against the
-  task-scoped commit.
+  task-scoped commit. The D040 continuation ran in the same working tree; its executor
+  sources are re-hashed in the refreshed manifest.
 * Byte-identity of the runner sources to the P36 baseline commit could not be verified
   in-node without git; the measured sha256 of every runner source, arm module, guard and
   P38 wrapper file is in the sealed manifest for P39 to check.
-* Whether the seven P25-blocked arms would pass under a per-fold reading (P38-R1) was NOT
-  computed: producing their fitted results without a ratified mandate would create sealed
-  numbers whose admissibility is undecided. Only guard verdicts were re-measured.
-* A08/A24 outcomes: pending their D039 conditions; nothing here prejudges them.
+* A24's outcome: pending its D039 condition (registry-appended amendment, coordinator
+  single-writer); nothing here prejudges it. A20/A21/A23 remediation builds are D039/D040
+  remediation-node work, not this executor's.
 
 ## 8. Custody
 
 Sealed manifest: `stage2b/SEALED_RESULTS/MANIFEST.json`. Per-arm receipts, sidecars, block
-verdicts, block diagnostics and exclusion records under `stage2b/SEALED_RESULTS/P38/<element>/`
-with sha256 in SPEC.json. Driver/wrapper sources and their hashes: `p38_driver.py`,
-`p38_wrappers.py`, `p38_run_fleet.py`, `p38_block_diagnostics.py`, `p38_finalize.py`,
-`p38_write_log.py` (hashes in the manifest and SPEC.json). Fleet progress: `progress.jsonl`.
-No frozen artifact was modified; no git command was run; nothing outside
-`stage2b/SEALED_RESULTS/` and `stage2b/P38_BLINDED_FIT/` was written.
+verdicts, block diagnostics, exclusion records, D040 fold-local P25 records
+(`P25_FOLD_LOCAL_RECORDS.json`), first-pass preservations (`*.pre_D040.json`) and the A08
+supersession note under `stage2b/SEALED_RESULTS/P38/<element>/` with sha256 in SPEC.json.
+Driver/wrapper sources and their hashes: `p38_driver.py`, `p38_wrappers.py`,
+`p38_run_fleet.py`, `p38_block_diagnostics.py`, `p38_finalize.py`, `p38_write_log.py`
+(hashes in the manifest and SPEC.json; these sources were EXTENDED for the D040
+continuation -- the frozen runner, harness, guards and arm modules were not touched).
+Fleet progress: `progress.jsonl` (both passes, append-only). No frozen artifact was
+modified; no git command was run; nothing outside `stage2b/SEALED_RESULTS/` and
+`stage2b/P38_BLINDED_FIT/` was written.

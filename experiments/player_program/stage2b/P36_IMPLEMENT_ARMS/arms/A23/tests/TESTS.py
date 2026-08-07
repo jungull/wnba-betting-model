@@ -70,12 +70,20 @@ def t01_rest_and_cap_identities():
     return {"cap7": got.tolist(), "cap4": got4.tolist()}
 
 
+def _hist_kwargs(df):
+    return dict(history_team_id=df["team_id"].to_numpy(), history_season=df["season"].to_numpy(),
+               history_game_date=df["game_date"].to_numpy(),
+               history_game_id=df["game_id"].to_numpy())
+
+
 def t02_feature_determinism():
     df = fx.build_universe(seed=111)
     r1, o1 = fc.compute_rest_and_opener(df["team_id"].to_numpy(), df["season"].to_numpy(),
-                                        df["game_date"].to_numpy(), df["game_id"].to_numpy())
+                                        df["game_date"].to_numpy(), df["game_id"].to_numpy(),
+                                        **_hist_kwargs(df))
     r2, o2 = fc.compute_rest_and_opener(df["team_id"].to_numpy(), df["season"].to_numpy(),
-                                        df["game_date"].to_numpy(), df["game_id"].to_numpy())
+                                        df["game_date"].to_numpy(), df["game_id"].to_numpy(),
+                                        **_hist_kwargs(df))
     same = np.array_equal(o1, o2) and (np.array_equal(r1, r2) or
                                        (np.isnan(r1) == np.isnan(r2)).all() and
                                        np.allclose(r1[~np.isnan(r1)], r2[~np.isnan(r2)]))
@@ -85,7 +93,8 @@ def t02_feature_determinism():
     perm = np.random.Generator(np.random.PCG64(9)).permutation(len(df))
     dfp = df.iloc[perm].reset_index(drop=True)
     r3, o3 = fc.compute_rest_and_opener(dfp["team_id"].to_numpy(), dfp["season"].to_numpy(),
-                                        dfp["game_date"].to_numpy(), dfp["game_id"].to_numpy())
+                                        dfp["game_date"].to_numpy(), dfp["game_id"].to_numpy(),
+                                        **_hist_kwargs(dfp))
     back = np.empty(len(df), int)
     back[perm] = np.arange(len(df))
     check(np.array_equal(o1, o3[back]), "opener flag invariant to input row order")
@@ -103,7 +112,8 @@ def t03_strict_lagging_identity():
     """A row's rest/opener depend ONLY on strictly-earlier SAME-TEAM, SAME-SEASON rows."""
     df = fx.build_universe(seed=222)
     r0, o0 = fc.compute_rest_and_opener(df["team_id"].to_numpy(), df["season"].to_numpy(),
-                                        df["game_date"].to_numpy(), df["game_id"].to_numpy())
+                                        df["game_date"].to_numpy(), df["game_id"].to_numpy(),
+                                        **_hist_kwargs(df))
 
     # (a) perturbing a row's own game_date must not move ITS OWN rest/opener value: only the
     #     PRIOR game's date feeds a row's rest, never the row's own date twice.
@@ -111,7 +121,8 @@ def t03_strict_lagging_identity():
     df_a = df.copy()
     df_a.loc[mid, "game_date"] = df_a.loc[mid, "game_date"] + 500
     ra, oa = fc.compute_rest_and_opener(df_a["team_id"].to_numpy(), df_a["season"].to_numpy(),
-                                        df_a["game_date"].to_numpy(), df_a["game_id"].to_numpy())
+                                        df_a["game_date"].to_numpy(), df_a["game_id"].to_numpy(),
+                                        **_hist_kwargs(df_a))
     # the perturbed row's OWN rest depends on rows strictly before its (now-changed) date, so its
     # own value MAY change; what must NOT change is any row of a DIFFERENT team/season.
     other_team = df["team_id"].to_numpy() != df.loc[mid, "team_id"]
@@ -132,7 +143,8 @@ def t03_strict_lagging_identity():
     df_b = df.copy()
     df_b.loc[latest, "game_date"] = df_b.loc[latest, "game_date"] + 999
     rb, ob = fc.compute_rest_and_opener(df_b["team_id"].to_numpy(), df_b["season"].to_numpy(),
-                                        df_b["game_date"].to_numpy(), df_b["game_id"].to_numpy())
+                                        df_b["game_date"].to_numpy(), df_b["game_id"].to_numpy(),
+                                        **_hist_kwargs(df_b))
     earlier = grp_sorted[:-1]
     check(np.allclose(r0[earlier], rb[earlier], equal_nan=True) and
           np.array_equal(o0[earlier], ob[earlier]),
@@ -145,7 +157,8 @@ def t03_strict_lagging_identity():
     df_c = df.copy()
     df_c.loc[early_row, "game_date"] = df_c.loc[early_row, "game_date"] - 2
     rc_, oc_ = fc.compute_rest_and_opener(df_c["team_id"].to_numpy(), df_c["season"].to_numpy(),
-                                          df_c["game_date"].to_numpy(), df_c["game_id"].to_numpy())
+                                          df_c["game_date"].to_numpy(), df_c["game_id"].to_numpy(),
+                                          **_hist_kwargs(df_c))
     check(not oc_[later_row], "the second game of a team-season is never itself an opener")
     check(abs(rc_[later_row] - r0[later_row]) > 1e-9,
           "shifting an earlier same-team-season game's date MUST move a later row's rest")
@@ -158,7 +171,7 @@ def t04_bundle_contrast_identities():
     for bundle in fc.ENUMERATED_BUNDLES:
         out = fc.bundle_contrast(df["team_id"].to_numpy(), df["season"].to_numpy(),
                                  df["game_date"].to_numpy(), df["game_id"].to_numpy(),
-                                 df["opp_team_id"].to_numpy(), bundle=bundle)
+                                 df["opp_team_id"].to_numpy(), **_hist_kwargs(df), bundle=bundle)
         check(np.all(np.isfinite(out["contrast"])),
               f"bundle_{bundle}: contrast must be finite on every row after the opener rule")
         opener_any = out["opener_own"] | out["opener_opp"]
@@ -187,26 +200,28 @@ def t04_bundle_contrast_identities():
 def t05_enumeration_elements_exact():
     check(fc.ENUMERATED_BUNDLES == ("AI", "OM"), "frozen P35 A23 elements: bundle in {AI, OM}")
     df = fx.build_universe(seed=444)
+    cs = fx.build_contract_schedule(df)
     folds = fx.build_folds(df)
     fids = [f["fold_id"] for f in folds]
-    arms = a23.make_arms(fids, len(df))
+    arms = a23.make_arms(cs, fids, len(df))
     check(len(arms) == 2, "one module instance per enumerated bundle")
     got = sorted(a.enumeration_element()["bundle"] for a in arms)
     check(got == ["AI", "OM"], f"enumeration_element() values must be exactly the frozen grid: {got}")
     eids = [a.element_id() for a in arms]
     check(len(set(eids)) == 2, "element_id() must be unique per element")
     check(all(a.card_id() == a23.ARM_ID for a in arms), "card_id() must equal the frozen arm_id")
-    expect_raises(ValueError, lambda: a23.A23Arm("XX", fids, len(df)),
+    expect_raises(ValueError, lambda: a23.A23Arm("XX", cs, fids, len(df)),
                   "an off-grid bundle must be refused, never silently admitted")
     return {"element_ids": eids}
 
 
 def t06_conformance_and_intercept_invariant():
     df = fx.build_universe(seed=555)
+    cs = fx.build_contract_schedule(df)
     folds = fx.build_folds(df)
     fids = [f["fold_id"] for f in folds]
     for bundle in fc.ENUMERATED_BUNDLES:
-        arm = a23.A23Arm(bundle, fids, len(df))
+        arm = a23.A23Arm(bundle, cs, fids, len(df))
         rec = ri.validate_arm_module(arm)
         check(rec["conformant"], f"A23 bundle_{bundle} module must conform to RUNNER_INTERFACE")
         check(arm.uses_global_intercept() is False, "A23 is in ARMS_WITHOUT_GLOBAL_INTERCEPT")
@@ -233,10 +248,11 @@ def t06_conformance_and_intercept_invariant():
 
 def t07_k0_nesting_and_p26_and_antisymmetry():
     df = fx.build_universe(seed=666)
+    cs = fx.build_contract_schedule(df)
     folds = fx.build_folds(df)
     fids = [f["fold_id"] for f in folds]
     for bundle in fc.ENUMERATED_BUNDLES:
-        arm = a23.A23Arm(bundle, fids, len(df))
+        arm = a23.A23Arm(bundle, cs, fids, len(df))
         rec = arm.p26_k0_record()
         check(rec["arm_kind"] == "substantive_feature", "A23 is a substantive_feature arm")
         out = gh.p26_check(rec)
@@ -272,9 +288,10 @@ def t07_k0_nesting_and_p26_and_antisymmetry():
 
 def t08_guard_negative_paths():
     df = fx.build_universe(seed=777)
+    cs = fx.build_contract_schedule(df)
     basis = fx.build_prohibited_basis(df)
     for bundle in fc.ENUMERATED_BUNDLES:
-        arm = a23.A23Arm(bundle, ["f1"], len(df))
+        arm = a23.A23Arm(bundle, cs, ["f1"], len(df))
         design = arm.build_design({"fold_id": "f1", "train_idx": np.arange(len(df)),
                                    "test_idx": np.array([], int)}, df)
         W = df.copy()
@@ -307,12 +324,13 @@ def t09_kill_condition_hooks_decidable_end_to_end():
     and decidable, for BOTH enumerated bundles. Also verifies bundle_AI's S7 rule and bundle_OM's
     absence of one are both honoured end-to-end."""
     df = fx.build_universe(seed=888)
+    cs = fx.build_contract_schedule(df)
     folds = fx.build_folds(df)
     basis = fx.build_prohibited_basis(df)
     fids = [f["fold_id"] for f in folds]
     decisions = {}
     for bundle in fc.ENUMERATED_BUNDLES:
-        arm = a23.A23Arm(bundle, fids, len(df))
+        arm = a23.A23Arm(bundle, cs, fids, len(df))
         out_path = HERE / "artifacts" / f"A23_bundle_{bundle}_receipt.json"
         rec = rn.run_arm(arm, df, folds, prohibited_basis=basis, env={},
                          out_path=out_path, run_git=False)
@@ -355,11 +373,80 @@ def t09_kill_condition_hooks_decidable_end_to_end():
 
     # blinding still holds through this arm: a real fold id must be refused without the flag
     bad_folds = [dict(folds[0], fold_id="train_lt_2024")]
-    arm2 = a23.A23Arm("AI", fids, len(df))
+    arm2 = a23.A23Arm("AI", cs, fids, len(df))
     expect_raises(blinding.BlindingViolation,
                   lambda: rn.run_arm(arm2, df, bad_folds, prohibited_basis=basis, env={}),
                   "the shared runner must refuse real fold ids for A23 too, without P38_UNSEALED")
     return {"decisions": decisions, "kill_condition_verdict_sample": verdict}
+
+
+def t10_regression_contract_schedule_clock_not_universe():
+    """REGRESSION (P37 finding A3-B4 / D039-D040 EXEC-M6): rest/opener status must be computed
+    against the CONTRACT-SCHEDULE clock, not the fitting universe -- the exact defect the audit
+    found. Two teams (100, 200) each play 3 same-season games; each team's FIRST game of the
+    season is present in contract_schedule but EXCLUDED from the fitting universe (the synthetic
+    analogue of the real archive's 4 universe-excluded 2021 opening-day games). Under the
+    pre-remediation universe-only clock, each team's SECOND universe game would be misclassified
+    as an opener (no strictly-earlier row visible in the universe); under the CONTRACT-SCHEDULE
+    clock, it correctly resolves to a non-opener with a defined rest value."""
+    season = 9977
+    dates = pd.date_range("2031-01-01", periods=3, freq="3D")   # day 0, 3, 6
+    # game 0 (excluded from universe, present in contract_schedule): team 100 vs team 200
+    # game 1 (in universe): team 100 vs team 300; game 2 (in universe): team 200 vs team 400
+    cs_rows = [
+        {"team_id": 100, "season": season, "game_date": dates[0], "game_id": "G0"},
+        {"team_id": 200, "season": season, "game_date": dates[0], "game_id": "G0"},
+        {"team_id": 100, "season": season, "game_date": dates[1], "game_id": "G1"},
+        {"team_id": 300, "season": season, "game_date": dates[1], "game_id": "G1"},
+        {"team_id": 200, "season": season, "game_date": dates[2], "game_id": "G2"},
+        {"team_id": 400, "season": season, "game_date": dates[2], "game_id": "G2"},
+    ]
+    cs = pd.DataFrame(cs_rows)
+    uni = cs[cs["game_id"] != "G0"].reset_index(drop=True)     # universe excludes G0
+    uni = uni.assign(opp_team_id=[300, 100, 400, 200])
+
+    # pre-remediation (universe-only) oracle: team 100's G1 row would see NO strictly-earlier
+    # universe row (G0 is excluded) -> misclassified as an opener.
+    r_uni_only, o_uni_only = fc.compute_rest_and_opener(
+        uni["team_id"].to_numpy(), uni["season"].to_numpy(), uni["game_date"].to_numpy(),
+        uni["game_id"].to_numpy(),
+        history_team_id=uni["team_id"].to_numpy(), history_season=uni["season"].to_numpy(),
+        history_game_date=uni["game_date"].to_numpy(), history_game_id=uni["game_id"].to_numpy())
+    row_100_g1 = int(np.flatnonzero((uni["team_id"] == 100) & (uni["game_id"] == "G1"))[0])
+    check(bool(o_uni_only[row_100_g1]),
+          "sanity: the REJECTED universe-only clock does misclassify team 100's G1 as an opener "
+          "(confirms this regression exercises the real defect, not a vacuous case)")
+
+    # remediated (contract-schedule) clock: G0 is visible, so G1 is correctly NOT an opener, with
+    # rest = 3 days (dates[1] - dates[0]).
+    r_cs, o_cs = fc.compute_rest_and_opener(
+        uni["team_id"].to_numpy(), uni["season"].to_numpy(), uni["game_date"].to_numpy(),
+        uni["game_id"].to_numpy(), **_hist_kwargs(cs))
+    check(not bool(o_cs[row_100_g1]),
+          "P37/EXEC-M6: team 100's G1 must NOT be an opener under the contract-schedule clock "
+          "(G0 is a completed contract-schedule game, even though it is excluded from the "
+          "fitting universe)")
+    check(abs(float(r_cs[row_100_g1]) - 3.0) < 1e-9,
+          "P37/EXEC-M6: team 100's G1 rest must equal 3.0 days since G0 (the contract-schedule-"
+          "only prior game), not NaN/opener")
+
+    # bundle_AI's contrast must correspondingly NOT be forced to 0 for this row (the pre-
+    # remediation defect: an opener-side row's contrast is always forced to 0 under bundle_AI).
+    out_ai = fc.bundle_contrast(uni["team_id"].to_numpy(), uni["season"].to_numpy(),
+                                uni["game_date"].to_numpy(), uni["game_id"].to_numpy(),
+                                uni["opp_team_id"].to_numpy(), **_hist_kwargs(cs), bundle="AI")
+    check(not bool(out_ai["opener_own"][row_100_g1]),
+          "bundle_AI: team 100's G1 opener_own must be False under the remediated clock")
+
+    # bundle_OM's f_own must equal the ACTUAL capped rest (3, capped at 4), not the cap-as-opener
+    # fallback (4) the pre-remediation defect would have assigned.
+    out_om = fc.bundle_contrast(uni["team_id"].to_numpy(), uni["season"].to_numpy(),
+                                uni["game_date"].to_numpy(), uni["game_id"].to_numpy(),
+                                uni["opp_team_id"].to_numpy(), **_hist_kwargs(cs), bundle="OM")
+    check(abs(float(out_om["f_own"][row_100_g1]) - 3.0) < 1e-9,
+          "bundle_OM: team 100's G1 f_own must equal min(3, 4)=3 (the true rest), not the "
+          "opener-fallback cap=4 the pre-remediation defect would have assigned")
+    return {"row_checked": row_100_g1, "rest_days": float(r_cs[row_100_g1])}
 
 
 TESTS = [
@@ -372,6 +459,8 @@ TESTS = [
     ("T07_k0_nesting_and_p26_and_antisymmetry", t07_k0_nesting_and_p26_and_antisymmetry),
     ("T08_guard_negative_paths", t08_guard_negative_paths),
     ("T09_kill_condition_hooks_decidable_end_to_end", t09_kill_condition_hooks_decidable_end_to_end),
+    ("T10_regression_contract_schedule_clock_not_universe",
+     t10_regression_contract_schedule_clock_not_universe),
 ]
 
 

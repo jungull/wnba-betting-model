@@ -32,6 +32,12 @@ Mandate map (P37 SPEC.json proposed_rulings.severity_b_mandate_map, ratified D03
            declares the rule but exposes no per-fold callable; ">= 2 unevaluable folds
            retires the hypothesis" is applied by the driver.
 
+  D040     P25FoldLocalGuardView: the EXEC-M1 analogue for the runner's per-fold P25 audit
+           (D040_P38_FOLD_LOCAL_P25_AND_A08, ruled a deterministic consequence of D039).
+           A fold-local P25 block records FOLD_UNEVALUABLE with the frozen guard's full
+           record; the arm fits on its remaining folds; FINAL-design or non-excluded-fold
+           blocks re-raise (fail closed). Task-specific wrapper, never a guard edit.
+
 Nothing in this file reads, prints or returns any comparative performance number.
 """
 from __future__ import annotations
@@ -94,6 +100,61 @@ class P27GuardHarnessView:
                                "proceed; the frozen guard record is carried unmodified in "
                                "the receipt"),
                 }
+                return rec
+            raise
+
+
+# --------------------------------------------------------------------------------- D040 ----
+class P25FoldLocalGuardView(P27GuardHarnessView):
+    """Delegating view adding the D040 per-fold P25 tolerance to the EXEC-M1 P27 view.
+
+    D040_P38_FOLD_LOCAL_P25_AND_A08 (DECISION_LEDGER.jsonl), ruled as a deterministic
+    consequence of D039/EXEC-M1: a task-specific CALL-SITE wrapper (never a guard edit;
+    frozen guard, harness and runner bytes untouched) honours the frozen P25 guard's own
+    per-fold verdicts. A fold whose P25 verdict is fold-local-blocked records
+    FOLD_UNEVALUABLE -- the frozen guard's complete machine-readable record is returned
+    unmodified so it lands in the sealed receipt's guard_records.p25_per_fold[fold_id] --
+    and the arm fits on the remaining folds via the P38 fold governor, which has already
+    deactivated the fold for arm AND null identically. Any P25 block that is NOT strictly
+    fold-local (the FINAL_ASSEMBLED_DESIGN, or a fold not already excluded from fitting)
+    re-raises: fail closed.
+
+    The runner's bundle loop calls p25_check once per fold in a deterministic order
+    (declared folds in order, then FINAL_ASSEMBLED_DESIGN) but passes no fold id; this view
+    is constructed with that exact sequence and cross-checks each call's training-row count
+    against the expected fold. Any desynchronisation refuses (never guesses a fold).
+    """
+
+    def __init__(self, real_gh, allowed_excluded_folds, p25_fold_sequence):
+        super().__init__(real_gh, allowed_excluded_folds)
+        # p25_fold_sequence: ordered [(fold_id, expected_training_rows), ...] ending with
+        # (FINAL_ASSEMBLED_DESIGN, n_universe_rows)
+        self._p25_seq = [(str(fid), int(n)) for fid, n in p25_fold_sequence]
+        self._p25_call_index = 0
+        self.p25_fold_unevaluable = {}   # fold_id -> full frozen guard record (unmodified)
+
+    def p25_check(self, df, **kwargs):
+        i = self._p25_call_index
+        if i >= len(self._p25_seq):
+            raise RuntimeError(
+                "D040 P25 call-site wrapper: more p25_check invocations than declared "
+                "folds -- refusing to guess which fold is being audited (fail closed)")
+        fid, n_expected = self._p25_seq[i]
+        self._p25_call_index += 1
+        if int(len(df)) != n_expected:
+            raise RuntimeError(
+                f"D040 P25 call-site wrapper: fold-order desynchronisation at call {i} "
+                f"(expected {n_expected} training rows for fold {fid}, got {len(df)}) -- "
+                "fail closed")
+        try:
+            return self._real.p25_check(df, **kwargs)
+        except Exception as e:  # GuardHarnessFailure carries .record (the guard's own)
+            rec = getattr(e, "record", None)
+            if (isinstance(rec, dict) and fid != FINAL_FOLD_ID
+                    and fid in self._allowed):
+                # fold-local block on a fold the P38 governor already excludes from
+                # fitting (arm AND null): FOLD_UNEVALUABLE per D040; full record kept.
+                self.p25_fold_unevaluable[fid] = rec
                 return rec
             raise
 

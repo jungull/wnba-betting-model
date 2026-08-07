@@ -23,26 +23,35 @@ FROZEN HYPERPARAMETERS (P33 A21.hyperparameters.fixed; D6 restated verbatim in P
     season_boundary_discount  = 0.5   (multiplicative discount per season boundary crossed)
     both FIXED BY SOURCE; not enumerated, not tunable at P36 (P33 hyperparameters.enumerated={}).
 
-IMPLEMENTATION AMBIGUITY DISCLOSED, NOT RESOLVED SILENTLY (parallel in kind to A07's own disclosed
-n_i lag-kind choice, A07_early_season_transient.py docstring): the frozen record pins the two
-decay NUMBERS above and the qualitative shape ("exponential decay ... season-boundary discount"),
-but no frozen document spells out the exact per-game weighting KERNEL that combines them into one
-scalar weight per historical game. This module uses:
+P37/PIN-A21 REMEDIATION (D039/D040 EXEC-M6/PIN-A21 ratified rulings; supersedes the prior
+implementation flagged by auditor_3_arms_A14_A26 as finding A3-B2/B-2): the frozen phrase
+"nc(t,g) = w-weighted share of t's offensive possessions in P(t,g) flagged
+non_competitive_conservative" is IDENTICAL IN SHAPE to A17's own formula ("short_off(t,g) =
+w-weighted share of t's offensive possessions in P(t,g) with duration_sec <= 8"), and D6 ("A17/
+A19/A21/A22 decay h=10 lambda=0.5") binds A17 and A21 to the SAME shared trailing-evidence
+convention family. The prior implementation computed a decayed weighted MEAN OF PER-GAME SHARES
+(one "share" value per game, decay-weighted across games) -- a GAME-weighted construction. That is
+NOT the literal reading: "a w-weighted share of t's offensive POSSESSIONS" denotes a ratio of two
+decayed SUMS OF POSSESSION COUNTS (numerator: decayed sum of non_competitive_conservative
+possession counts; denominator: decayed sum of ALL offensive possession counts) -- a
+POSSESSION-weighted construction, identical in shape to A17's own `compute_prior_recency_
+aggregates` recurrence (short_off_share = prior_short_off / prior_n_off). Measured divergence on
+identical inputs, pre-remediation: 0.27 absolute on a [0,1] share (auditor 3, A3-B2). This module
+now reuses A17's own recurrence SHAPE verbatim (per-game possession COUNTS aggregated first, then
+a single decayed-sum ratio), substituting only the flagged-possession definition
+(non_competitive_conservative in place of duration_sec <= 8); nothing about A17's own module is
+imported or modified (each arm module in this program is self-contained; the shape is
+re-derived here, not shared code).
 
-    weight(j; g) = 0.5 ** ((rank_back(j; g) - 1) / half_life_games)
-                 * season_boundary_discount ** max(0, season(g) - season(j))
-
-  where rank_back(j; g) is the 1-indexed count-back among team t's own STRICTLY-EARLIER games,
-  ordered (game_date, game_id) descending (rank_back = 1 is the most recent strictly-earlier
-  game -- so decay_factor(rank_back=1) = 1.0, halving every 10 games back), and
-  season(g) - season(j) is the (non-negative, because j is strictly earlier) integer count of
-  season boundaries crossed under an integer season-numbering convention (matching every other
-  season-keyed construction in this program, e.g. A07's n_i, A26's LOO strength-of-schedule).
-  This is an IMPLEMENTATION LABELLING CHOICE with no effect on the two PINNED numbers
-  (half_life_games=10, season_boundary_discount=0.5) or on the pinned formula's shape (a
-  w-weighted share); it is recorded here and in REPORT.md for P37 to affirm or overrule (standing
-  rule 1: frozen bytes govern over prose) -- nothing frozen names the kernel shape, so nothing is
-  silently overridden.
+DECAY KERNEL INDEXING (P37 finding A3-C4, "affirm one fleet convention on the record"): A17's own
+Delta=1-indexed convention is adopted verbatim here, superseding this module's prior 0-indexed
+convention (which the P37 audit verified was VALUE-IRRELEVANT for the old game-weighted mean --
+it cancels in a normalised average -- but is NOT value-irrelevant for a decayed-SUM numerator/
+denominator ratio, so the fleet convention must now be pinned exactly, not left as a labelling
+choice): the game immediately preceding g has Delta_games = 1 (weight = base**1, base =
+0.5**(1/half_life_games)), the one before that Delta_games = 2, and so on -- see A17's
+feature_construction.py module docstring for the identical reasoning, restated here rather than
+imported (self-contained modules).
 
 STRICT LAGGING (own identity/synthetic tests: tests/TESTS.py::t02/t03): nc(t,g) is built ONLY from
 team t's own games with game_date STRICTLY earlier than g's game_date (ties are excluded, matching
@@ -80,55 +89,124 @@ class A21ConstructionFailure(RuntimeError):
     """Raised when the frozen card's construction cannot be honoured. No feature is returned."""
 
 
-def _per_game_team_share(possessions: pd.DataFrame) -> pd.DataFrame:
-    """One row per (offense_team_id, game_id): that team's OWN offensive-possession share of
-    ``non_competitive_conservative`` in that one game, plus the game's date/season for ordering.
+_HISTORY_AGG_COLS = ("team_id", "game_id", "game_date", "season", "n_off", "n_nc_off")
 
-    Deterministic and row-order independent (a groupby-aggregate keyed on identity columns, never
-    on row position).
+
+def aggregate_possession_counts(possessions: pd.DataFrame) -> pd.DataFrame:
+    """Collapse a possession-level frame to one row per (offense_team_id, game_id): the total
+    offensive-possession COUNT and the COUNT of those possessions flagged
+    non_competitive_conservative, plus the game's date/season for ordering.
+
+    This is A17's own `aggregate_possession_counts` SHAPE (per-game possession COUNTS, not a
+    per-game mean/share), re-derived here rather than imported (self-contained modules; see
+    module docstring's P37/PIN-A21 remediation note). Deterministic and row-order independent (a
+    groupby-aggregate keyed on identity columns, never on row position). Performs NO lagging
+    itself -- lagging happens in `compute_prior_recency_aggregates` below.
     """
     g = possessions.groupby(["offense_team_id", "game_id"], sort=False)
-    share = g["non_competitive_conservative"].mean()
+    n_off = g.size().rename("n_off")
+    n_nc_off = g["non_competitive_conservative"].sum().rename("n_nc_off")
     meta = g[["game_date", "season"]].first()
-    out = share.to_frame("share").join(meta).reset_index()
-    return out
+    out = (n_off.to_frame().join(n_nc_off).join(meta).reset_index()
+           .rename(columns={"offense_team_id": "team_id"}))
+    for c in ("n_off", "n_nc_off"):
+        out[c] = out[c].astype(float)
+    return out[list(_HISTORY_AGG_COLS)].reset_index(drop=True)
 
 
-def _decay_weighted_nc(per_game_by_team: dict, team_id, game_date, season,
-                       half_life_games: float, season_boundary_discount: float) -> float:
-    """nc(team_id, g) for ONE target row: decay-weighted mean of ``share`` over team_id's own
-    games strictly before ``game_date``. NaN if the prior-game set is empty (caller imputes).
+def compute_prior_recency_aggregates(history_agg: pd.DataFrame, *,
+                                     half_life_games: float = HALF_LIFE_GAMES,
+                                     season_boundary_discount: float = SEASON_BOUNDARY_DISCOUNT
+                                     ) -> pd.DataFrame:
+    """For every row of `history_agg` (one row per team-game), the recency- and season-discount-
+    weighted SUM of that TEAM's own STRICTLY EARLIER games' offensive possession counts (total and
+    non_competitive_conservative-flagged), and the resulting ratio share -- A17's own
+    `compute_prior_recency_aggregates` recurrence SHAPE (re-derived here, not imported; see module
+    docstring's P37/PIN-A21 remediation note), substituting only the flagged-possession definition.
 
-    ``per_game_by_team`` is ``{team_id: DataFrame sorted (game_date, game_id) ascending}`` -- built
-    once by the caller so a per-row lookup here is a slice, not a full-frame filter (O(n log n)
-    total rather than O(n^2)); this changes nothing about the VALUE computed, only its cost.
+    Recurrence: sort a team's own rows ascending by (game_date, game_id); maintain a running
+    weighted sum; at each row, BEFORE adding that row's own counts, age the running sum by
+    `base * season_boundary_discount ** (season[i] - season[i-1])`
+    (base = 0.5**(1/half_life_games)), record the (now up-to-date) running sum as this row's PRIOR
+    aggregate, then add this row's own raw counts unweighted (they enter at Delta_games = 1
+    relative to the NEXT row) -- reproduces w(p) = base**Delta_games(p,g) *
+    season_boundary_discount**(season(g)-season(p)) for every strictly-earlier own-team game p
+    relative to target g, Delta_games(p,g) counted 1, 2, 3, ... back from g (A17's Delta=1-indexed
+    convention, pinned fleet-wide by P37 finding A3-C4).
+
+    Strict lagging is structural: row i's PRIOR aggregate is computed and returned BEFORE row i's
+    own counts are folded into the running sum, so a row's own game NEVER contributes to its own
+    feature, and no later game ever contributes.
     """
-    own = per_game_by_team.get(team_id)
-    if own is None or own.empty:
-        return float("nan")
-    # own is sorted (game_date, game_id) ascending; strictly-earlier games are a prefix
-    idx = np.searchsorted(own["game_date"].to_numpy(), game_date, side="left")
-    prior = own.iloc[:idx]
-    if prior.empty:
-        return float("nan")
-    # rank_back = 1 for the LAST row of `prior` (most recent strictly-earlier game)
-    m = len(prior)
-    rank_back = np.arange(m, 0, -1, dtype=float)
-    decay = 0.5 ** ((rank_back - 1.0) / half_life_games)
-    season_gap = np.maximum(0.0, float(season) - prior["season"].to_numpy(dtype=float))
-    discount = season_boundary_discount ** season_gap
-    w = decay * discount
-    wsum = float(w.sum())
-    if wsum <= 0.0:
-        return float("nan")
-    return float(np.dot(w, prior["share"].to_numpy(dtype=float)) / wsum)
+    for c in _HISTORY_AGG_COLS:
+        if c not in history_agg.columns:
+            raise A21ConstructionFailure(f"compute_prior_recency_aggregates requires column '{c}'")
+    base = 0.5 ** (1.0 / float(half_life_games))
+
+    h = history_agg.sort_values(["team_id", "game_date", "game_id"],
+                                kind="mergesort").reset_index(drop=True)
+    n = len(h)
+    team_ids = h["team_id"].to_numpy()
+    seasons = h["season"].to_numpy()
+    v_n_off = h["n_off"].to_numpy(float)
+    v_n_nc = h["n_nc_off"].to_numpy(float)
+
+    prior_n_off = np.zeros(n)
+    prior_n_nc = np.zeros(n)
+    run_n_off = run_n_nc = 0.0
+    prev_team = object()
+    prev_season = None
+    for i in range(n):
+        t = team_ids[i]
+        if t != prev_team:
+            run_n_off = run_n_nc = 0.0
+            prev_season = None
+        if prev_season is not None:
+            gap = seasons[i] - prev_season
+            factor = base * (season_boundary_discount ** gap)
+            run_n_off *= factor
+            run_n_nc *= factor
+
+        prior_n_off[i] = run_n_off
+        prior_n_nc[i] = run_n_nc
+
+        run_n_off += v_n_off[i]
+        run_n_nc += v_n_nc[i]
+        prev_team = t
+        prev_season = seasons[i]
+
+    defined = prior_n_off > 1e-12
+    share = np.divide(prior_n_nc, prior_n_off, out=np.full(n, np.nan), where=defined)
+
+    out = h[["team_id", "game_id", "game_date", "season"]].copy()
+    out["prior_n_off"] = prior_n_off
+    out["prior_n_nc"] = prior_n_nc
+    out["share"] = share
+    out["defined"] = defined
+    return out.reset_index(drop=True)
+
+
+def align_share(prior_agg: pd.DataFrame, team_id: np.ndarray, game_id: np.ndarray) -> np.ndarray:
+    """Look up `share` (NaN where undefined -- an empty prior-game set) for an arbitrary
+    (team_id, game_id) key array, aligned to input order (A17's `align_shares` pattern)."""
+    lut = prior_agg.drop_duplicates(subset=["team_id", "game_id"]).set_index(["team_id", "game_id"])
+    key = pd.MultiIndex.from_arrays([np.asarray(team_id), np.asarray(game_id)])
+    missing = ~key.isin(lut.index)
+    if missing.any():
+        bad = list(zip(np.asarray(team_id)[missing][:5], np.asarray(game_id)[missing][:5]))
+        raise A21ConstructionFailure(
+            f"{int(missing.sum())} (team_id, game_id) target key(s) not found in the supplied "
+            f"possession history (first few: {bad}); every target row's own game must itself be a "
+            f"row of the supplied possessions frame")
+    return lut.loc[key, "share"].to_numpy(dtype=float)
 
 
 def compute_nc(possessions: pd.DataFrame, target: pd.DataFrame, *,
               half_life_games: float = HALF_LIFE_GAMES,
               season_boundary_discount: float = SEASON_BOUNDARY_DISCOUNT) -> dict:
-    """Compute nc(t,g) and nc(opp(g,t),g) for every row of ``target``, strictly lagged,
-    deterministic and row-order independent.
+    """Compute nc(t,g) and nc(opp(g,t),g) for every row of ``target``: a possession-weighted
+    decayed-SUM ratio identical in shape to A17's short_off/short_def (P37/PIN-A21), strictly
+    lagged, deterministic and row-order independent.
 
     Returns ``{"nc_own": ndarray, "nc_opp": ndarray}``, NaN where the corresponding side's
     prior-game set is empty (caller imputes per ``impute_empty_prior_set``).
@@ -140,25 +218,14 @@ def compute_nc(possessions: pd.DataFrame, target: pd.DataFrame, *,
     if missing_t:
         raise A21ConstructionFailure(f"target frame is missing required columns {missing_t}")
 
-    per_game = _per_game_team_share(possessions)
-    per_game_by_team = {
-        tid: grp.sort_values(["game_date", "game_id"], kind="mergesort").reset_index(drop=True)
-        for tid, grp in per_game.groupby("offense_team_id", sort=False)
-    }
+    history_agg = aggregate_possession_counts(possessions)
+    prior_agg = compute_prior_recency_aggregates(
+        history_agg, half_life_games=half_life_games,
+        season_boundary_discount=season_boundary_discount)
 
-    n = len(target)
-    nc_own = np.empty(n, dtype=float)
-    nc_opp = np.empty(n, dtype=float)
-    team_id = target["team_id"].to_numpy()
-    opp_id = target["opponent_team_id"].to_numpy()
-    gdate = target["game_date"].to_numpy()
-    season = target["season"].to_numpy()
-
-    for i in range(n):
-        nc_own[i] = _decay_weighted_nc(per_game_by_team, team_id[i], gdate[i], season[i],
-                                       half_life_games, season_boundary_discount)
-        nc_opp[i] = _decay_weighted_nc(per_game_by_team, opp_id[i], gdate[i], season[i],
-                                       half_life_games, season_boundary_discount)
+    nc_own = align_share(prior_agg, target["team_id"].to_numpy(), target["game_id"].to_numpy())
+    nc_opp = align_share(prior_agg, target["opponent_team_id"].to_numpy(),
+                         target["game_id"].to_numpy())
     return {"nc_own": nc_own, "nc_opp": nc_opp}
 
 

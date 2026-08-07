@@ -143,7 +143,9 @@ def dummy_fold(universe: pd.DataFrame, fold_id: str = "SYNTH") -> dict:
 def main() -> int:
     U = synthetic_universe()
     P = synthetic_possessions()
-    arm = A.ArmA20(P, fold_ids=["SYNTH"], n_rows=len(U))
+    # contract_schedule == universe for every test that does not specifically exercise the
+    # P37/EXEC-M6 contract-vs-universe clock divergence (T17 below builds its own, distinct pair).
+    arm = A.ArmA20(P, U, fold_ids=["SYNTH"], n_rows=len(U))
 
     print("T01 feature determinism")
     b1 = arm.build_design(dummy_fold(U), U)
@@ -170,7 +172,7 @@ def main() -> int:
     last_gid = 1000 + 5
     mask = (P2["game_id"] == last_gid) & (P2["defense_team_id"] == 100)
     P2.loc[mask, "end_reason"] = "turnover"
-    arm2 = A.ArmA20(P2, fold_ids=["SYNTH"], n_rows=len(U))
+    arm2 = A.ArmA20(P2, U, fold_ids=["SYNTH"], n_rows=len(U))
     perturbed = arm2.build_design(dummy_fold(U), U)["columns"][A.TREATMENT_COL]
     last_row_100 = U[(U["team_id"] == 100) & (U["game_id"] == last_gid)].index[0]
     check(np.isclose(perturbed[last_row_100], base[last_row_100]),
@@ -186,10 +188,10 @@ def main() -> int:
     P2s = synthetic_possessions(n_games=2, game_id_offset=1500)
     U_multi = pd.concat([U, U2], ignore_index=True)
     P_multi = pd.concat([P, P2s], ignore_index=True)
-    arm_multi = A.ArmA20(P_multi, fold_ids=["SYNTH"], n_rows=len(U_multi))
-    own = arm_multi._own_trailing_rate(U_multi)
-    first_2025_row = U_multi[(U_multi["team_id"] == 100) & (U_multi["season"] == 2025)].index[0]
-    check(own.loc[first_2025_row, "own_count"] == 0.0,
+    arm_multi = A.ArmA20(P_multi, U_multi, fold_ids=["SYNTH"], n_rows=len(U_multi))
+    first_2025_row = U_multi[(U_multi["team_id"] == 100) & (U_multi["season"] == 2025)].iloc[0]
+    own_count_2025 = arm_multi._own_trailing.loc[(100, first_2025_row["game_id"]), "own_count"]
+    check(own_count_2025 == 0.0,
           "a team's first game of a NEW season has own_count 0, even though it played 6 games "
           "the PRIOR season (same-season flat window never crosses the season boundary)")
 
@@ -313,14 +315,17 @@ def main() -> int:
           "dependency)")
     check(arm.p23_receipts() == [], "p23_receipts() returns an empty list")
 
-    print("T15 two-sided universe invariant enforced")
+    print("T15 two-sided universe invariant enforced (opponent absent from contract_schedule)")
+    CS_broken = U[~((U["team_id"] == 200) & (U["game_id"] == 1000))].reset_index(drop=True)
     U_broken = U[~((U["team_id"] == 200) & (U["game_id"] == 1000))].reset_index(drop=True)
     try:
-        arm.build_design(dummy_fold(U_broken), U_broken)
-        check(False, "a universe missing an opponent row raises rather than silently NaN-ing")
+        arm_broken = A.ArmA20(P, CS_broken, fold_ids=["SYNTH"], n_rows=len(U_broken))
+        arm_broken.build_design(dummy_fold(U_broken), U_broken)
+        check(False, "a contract_schedule missing an opponent row raises rather than silently "
+                     "NaN-ing")
     except A.A20ConstructionFailure as e:
-        check(True, "a universe missing an opponent row raises rather than silently NaN-ing",
-              str(e))
+        check(True, "a contract_schedule missing an opponent row raises rather than silently "
+                    "NaN-ing", str(e))
 
     print("T16 malformed possessions input raises rather than silently mis-scoring")
     try:
@@ -329,14 +334,86 @@ def main() -> int:
     except A.A20ConstructionFailure as e:
         check(True, "missing end_reason column raises A20ConstructionFailure", str(e))
     P_missing_pair = P[~((P["game_id"] == 1000) & (P["defense_team_id"] == 100))].copy()
-    arm_missing = A.ArmA20(P_missing_pair, fold_ids=["SYNTH"], n_rows=len(U))
     try:
-        arm_missing.build_design(dummy_fold(U), U)
-        check(False, "a universe row whose (team_id, game_id) is absent from the possessions "
-                     "frame raises rather than silently producing an undefined/NaN rate")
+        arm_missing = A.ArmA20(P_missing_pair, U, fold_ids=["SYNTH"], n_rows=len(U))
+        check(False, "a contract_schedule row whose (team_id, game_id) is absent from the "
+                     "possessions frame raises rather than silently producing an undefined/NaN "
+                     "rate")
     except A.A20ConstructionFailure as e:
-        check(True, "a universe row whose (team_id, game_id) is absent from the possessions "
-                    "frame raises A20ConstructionFailure", str(e))
+        check(True, "a contract_schedule row whose (team_id, game_id) is absent from the "
+                    "possessions frame raises A20ConstructionFailure", str(e))
+
+    print("T17 REGRESSION (P37 finding A3-B1 / D039-D040 EXEC-M6): the trailing window and E=3 "
+         "count are built on the CONTRACT-SCHEDULE clock, not the smaller in-fold UNIVERSE -- an "
+         "opener game present in contract_schedule but excluded from universe must still enter a "
+         "team's own trailing window and E=3 count")
+    # 4 extra "opening day" games for team 100 (season 2024), present in contract_schedule and in
+    # possessions, but EXCLUDED from the fitting universe -- the synthetic analogue of the real
+    # archive's 4 universe-excluded 2021 opening-day games (measured present in possessions_raw_v2
+    # / team_possession_prior_v1 by the P37 audit).
+    # both team 100 (vs filler opponent 300) AND its actual universe-row opponent, team 200 (vs
+    # filler opponent 400), get 4 opener games each -- otherwise the E=3 rule's OTHER side
+    # (opponent team 200's own_count) would force z2 := 0 regardless of team 100's own clock,
+    # masking the exact defect this regression targets.
+    OPENER_FTR_100 = [0.25, 0.35, 0.15, 0.45]
+    OPENER_FTR_200 = [0.55, 0.05, 0.65, 0.35]
+    opener_game_ids_100 = [900 + i for i in range(4)]
+    opener_game_ids_200 = [910 + i for i in range(4)]
+    opener_dates = pd.date_range("2023-12-27", periods=4, freq="D")
+    opener_rows = []
+    for i in range(4):
+        opener_rows.append({"game_id": opener_game_ids_100[i], "team_id": 100, "opp_team_id": 300,
+                            "game_date": opener_dates[i], "season": 2024})
+        opener_rows.append({"game_id": opener_game_ids_100[i], "team_id": 300, "opp_team_id": 100,
+                            "game_date": opener_dates[i], "season": 2024})
+        opener_rows.append({"game_id": opener_game_ids_200[i], "team_id": 200, "opp_team_id": 400,
+                            "game_date": opener_dates[i], "season": 2024})
+        opener_rows.append({"game_id": opener_game_ids_200[i], "team_id": 400, "opp_team_id": 200,
+                            "game_date": opener_dates[i], "season": 2024})
+    CS_reg = pd.concat([pd.DataFrame(opener_rows), U], ignore_index=True)
+    opener_poss_rows = []
+    for i in range(4):
+        for gid, own_team, own_ftr, filler_team in (
+                (opener_game_ids_100[i], 100, OPENER_FTR_100[i], 300),
+                (opener_game_ids_200[i], 200, OPENER_FTR_200[i], 400)):
+            n_to_own = round(own_ftr * N_DEF_PER_GAME)
+            n_to_filler = round(0.5 * N_DEF_PER_GAME)
+            for team, n_to_team in ((own_team, n_to_own), (filler_team, n_to_filler)):
+                for k in range(N_DEF_PER_GAME):
+                    end_reason = "turnover" if k < n_to_team else "made_shot"
+                    opener_poss_rows.append({"game_id": gid, "defense_team_id": team,
+                                             "end_reason": end_reason,
+                                             "possession_id": f"{gid}-{team}-{k}"})
+    P_reg = pd.concat([pd.DataFrame(opener_poss_rows), P], ignore_index=True)
+
+    arm_reg = A.ArmA20(P_reg, CS_reg, fold_ids=["SYNTH"], n_rows=len(U))
+    b_reg = arm_reg.build_design(dummy_fold(U), U)["columns"][A.TREATMENT_COL]
+    # team 100's game index 2 (game_id 1002) has, on the UNIVERSE-only (pre-remediation) clock,
+    # only 2 strictly-earlier same-season games (indices 0,1) -- below E_MIN_PRIOR_GAMES=3, so the
+    # pre-remediation code forces z2 := 0. On the CONTRACT-SCHEDULE clock, team 100 additionally
+    # has its 4 opener games strictly earlier, so own_count = 4 + 2 = 6 >= 3: z2 is the RAW
+    # (non-imputed, non-zero) contrast, and the opener rates enter the trailing mean.
+    row2_100 = U[(U["team_id"] == 100) & (U["game_id"] == 1002)].index[0]
+    own_count_row2 = arm_reg._own_trailing.loc[(100, 1002), "own_count"]
+    check(own_count_row2 == 6.0,
+          "T17: own_count at team 100's 3rd universe game must include the 4 contract-schedule-"
+          "only opener games (4 openers + 2 strictly-earlier universe games = 6), proving the "
+          "clock is the CONTRACT SCHEDULE, not the universe", own_count_row2)
+    check(b_reg[row2_100] != 0.0,
+          "T17: with the contract-schedule clock, own_count >= E_MIN_PRIOR_GAMES at this row, so "
+          "z2 is the RAW (non-imputed) contrast -- the pre-remediation universe-only clock would "
+          "have forced z2 := 0 here (own_count would have been only 2)", b_reg[row2_100])
+    expected_own_mean_row2 = float(np.mean(OPENER_FTR_100 + FTR_100[:2]))
+    expected_opp_mean_row2 = float(np.mean(OPENER_FTR_200 + FTR_200[:2]))
+    # sanity: team 200 (this row's opponent) picks up ITS OWN 4 opener games too, symmetrically
+    check(abs(arm_reg._own_trailing.loc[(200, 1002), "own_mean"] - expected_opp_mean_row2) < 1e-9,
+          "T17: team 200's trailing mean also correctly includes ITS OWN 4 contract-schedule-only "
+          "opener games (symmetric clock fix, not team-100-specific)")
+    check(abs(arm_reg._own_trailing.loc[(100, 1002), "own_mean"] - expected_own_mean_row2) < 1e-9,
+          "T17: team 100's trailing mean at its 3rd universe game equals the mean of ALL 6 "
+          "strictly-earlier contract-schedule games (4 openers + 2 universe games), not just the "
+          "2 universe-only games",
+          (arm_reg._own_trailing.loc[(100, 1002), "own_mean"], expected_own_mean_row2))
 
     print()
     print("=" * 88)

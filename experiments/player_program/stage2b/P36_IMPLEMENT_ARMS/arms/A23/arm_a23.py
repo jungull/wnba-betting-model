@@ -101,16 +101,30 @@ def _sidespec(fold_ids, n_rows, bundle: str, cap: float) -> dict:
 
 
 class A23Arm:
-    """One A23 module instance == one bundle element (AI or OM)."""
+    """One A23 module instance == one bundle element (AI or OM).
+
+    `contract_schedule` is the CONTRACT-SCHEDULE reference frame (team_possession_prior_v1's own
+    2,990 team-game rows at P38 time; a synthetic superset frame in these blinded tests) carrying
+    at least team_id, season, game_date, game_id -- it must be a SUPERSET of every row this module
+    will ever see in `universe` (feature_construction.compute_rest_and_opener enforces this and
+    fails closed if it does not hold). Mirrors A24Arm's own `contract_schedule` constructor
+    argument for the identical reason (P37/EXEC-M6): rest(t, g) is a CONTRACT-SCHEDULE clock, not
+    a universe-row clock.
+    """
 
     arm_id = ARM_ID
 
-    def __init__(self, bundle: str, fold_ids, n_rows: int):
+    def __init__(self, bundle: str, contract_schedule, fold_ids, n_rows: int):
         if bundle not in ENUMERATED_BUNDLES:
             raise ValueError(f"bundle={bundle!r} is not one of the frozen P35 elements "
                              f"{ENUMERATED_BUNDLES}")
+        missing = [c for c in REQUIRED_UNIVERSE_COLS
+                  if c not in ("opp_team_id",) and c not in contract_schedule.columns]
+        if missing:
+            raise KeyError(f"A23 contract_schedule frame missing required columns {missing}")
         self.bundle = str(bundle)
         self.cap = BUNDLE_CAP[self.bundle]
+        self._contract_schedule = contract_schedule.reset_index(drop=True)
         self._fold_ids = [str(f) for f in fold_ids]
         self._n_rows = int(n_rows)
 
@@ -146,7 +160,12 @@ class A23Arm:
         out = bundle_contrast(
             universe["team_id"].to_numpy(), universe["season"].to_numpy(),
             universe["game_date"].to_numpy(), universe["game_id"].to_numpy(),
-            universe["opp_team_id"].to_numpy(), bundle=self.bundle)
+            universe["opp_team_id"].to_numpy(),
+            history_team_id=self._contract_schedule["team_id"].to_numpy(),
+            history_season=self._contract_schedule["season"].to_numpy(),
+            history_game_date=self._contract_schedule["game_date"].to_numpy(),
+            history_game_id=self._contract_schedule["game_id"].to_numpy(),
+            bundle=self.bundle)
         contrast = out["contrast"]
         if not np.all(np.isfinite(contrast)):
             raise ValueError(f"A23 bundle_{self.bundle}: the treatment contrast must be finite "
@@ -234,21 +253,23 @@ class A23Arm:
     def lag_specs(self) -> dict:
         rationale = (
             f"f(rest_own) - f(rest_opp), bundle_{self.bundle} (cap c={self.cap:g}): rest(t,g) is "
-            "built by feature_construction.py from the supplied universe frame's OWN rows "
-            "(team_id, season, game_date, game_id, opp_team_id), restricted per-row to the "
-            "team's own strictly-earlier SAME-SEASON rows only. No external artifact join is "
-            "performed by this module -- the universe frame IS the contract-schedule history -- "
-            "so this is a DERIVED_NO_JOIN construction, matching every other all-prior/trailing "
-            "construction in this program (A08 d_t/L_t, A09 d_t, A12 dev_prev, A16 dev_own-dev_opp: "
-            "none of them are declared PRIOR_GAME, because postgame_surrogate_guard's PRIOR_GAME "
-            "re-derivation verifies a single groupby+shift(n_back) value column, not a derived "
-            "difference/cap/opponent-lookup quantity). Strict lagging is instead established "
-            "directly by identity/synthetic tests in this unit (TESTS.py) against "
-            "feature_construction.py's pure functions."
+            "built by feature_construction.py against the SEPARATE contract_schedule history "
+            "frame bound at this module's construction (P37/EXEC-M6 remediation; A24's own "
+            "constructor-injected `contract_schedule` precedent for the identical reason -- the "
+            "module's prior rationale, 'the universe frame IS the contract-schedule history', was "
+            "measured false for the 8 opener teams' second 2021 games, P37 finding A3-B4), "
+            "restricted per-row to the team's own strictly-earlier SAME-SEASON contract-schedule "
+            "rows only. This is a DERIVED_NO_JOIN construction, matching every other all-prior/"
+            "trailing construction in this program (A08 d_t/L_t, A09 d_t, A12 dev_prev, A16 "
+            "dev_own-dev_opp, A24 rest(t,g) itself: none of them are declared PRIOR_GAME, because "
+            "postgame_surrogate_guard's PRIOR_GAME re-derivation verifies a single "
+            "groupby+shift(n_back) value column, not a derived difference/cap/opponent-lookup "
+            "quantity). Strict lagging is instead established directly by identity/synthetic "
+            "tests in this unit (TESTS.py) against feature_construction.py's pure functions."
         )
         return {
             TREATMENT_COL: {"column": TREATMENT_COL, "kind": "DERIVED_NO_JOIN",
-                            "source_artifact_id": "contract_schedule_universe/1",
+                            "source_artifact_id": "team_possession_prior_v1/via_constructor_injection",
                             "rationale": rationale},
         }
 
@@ -361,8 +382,8 @@ def evaluate_kill_conditions(per_fold_decidable: list[dict]) -> dict:
     }
 
 
-def make_arms(fold_ids, n_rows) -> list[A23Arm]:
+def make_arms(contract_schedule, fold_ids, n_rows) -> list[A23Arm]:
     """One module instance per frozen enumeration element (bundle in {AI, OM}); the runner never
     selects among them (RUNNER_INTERFACE.md section 1, which names A23's two bundles explicitly).
     """
-    return [A23Arm(b, fold_ids, n_rows) for b in ENUMERATED_BUNDLES]
+    return [A23Arm(b, contract_schedule, fold_ids, n_rows) for b in ENUMERATED_BUNDLES]

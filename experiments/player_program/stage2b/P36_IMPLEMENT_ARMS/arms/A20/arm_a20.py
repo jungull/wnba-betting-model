@@ -36,6 +36,24 @@ than 3 completed strictly-earlier same-season games in the source possessions da
 own trailing quantity). This is a per-row deterministic substitution of the CONTRAST z2 itself, not
 of ftr_own/ftr_opp individually -- exactly as A18 pins it for z1.
 
+P37/EXEC-M6 REMEDIATION (D039/D040 ratified ruling; supersedes the prior implementation flagged by
+auditor_3_arms_A14_A26 as finding A3-B1 / B-1): the module previously computed the expanding
+trailing window and the E=3 prior-game count over the rows of the supplied UNIVERSE frame. P35
+shared_frozen_amendments.construction_pins.n_clock_pin states, universally: "every other
+prior-game COUNT is computed on the CONTRACT SCHEDULE ... INCLUDING the four universe-excluded
+2021 opening-day games ... the universe-row clock is barred." A18 -- whose rule this card adopts
+verbatim ("E = 3 imputation as A18") -- counts distinct prior games on the POSSESSIONS frame,
+which the audit measured carries the IDENTICAL game set as the CONTRACT-SCHEDULE artifact
+(team_possession_prior_v1, 1,495 games; possessions_raw_v2 same 1,495 games, including the four
+universe-excluded 2021 openers). The fleet-wide EXEC-M6 adjudication resolves the n_clock_pin
+scope question (P35 finding A3-X2) toward the CONTRACT-SCHEDULE clock, per the pin's own universal
+text and frozen-bytes-precedence: this module now takes a SEPARATE ``contract_schedule`` frame at
+construction time (A24's own precedent for exactly this situation: a constructor-injected history
+frame, distinct from and a SUPERSET of the fitting universe, used to build every strictly-lagged
+prior-game quantity) and builds ftr_own/ftr_own_count against IT, not against ``universe``. The
+four universe-excluded 2021 opening-day games therefore correctly enter the trailing window and
+the E=3 count for the 8 opener teams' subsequent 2021 rows, matching A18's own clock exactly.
+
 DATA SOURCE AND WHY THIS MODULE IS A CLASS, NOT A PLAIN MODULE (disclosed, not silently assumed):
 ``end_reason`` and ``defense_team_id`` are NOT columns of the shared team-game universe that
 ``possession_features.load_universe`` builds (measured: that universe carries only
@@ -109,7 +127,8 @@ E_MIN_PRIOR_GAMES = 3
 
 P35_SPEC_SHA256 = "68ef22f4fca15a2e8d91eeeb9b84b86f86e8e9e7caab5e23e6a9b950385b4d32"
 
-REQUIRED_UNIVERSE_COLS = ("game_id", "team_id", "opp_team_id", "game_date", "season")
+REQUIRED_UNIVERSE_COLS = ("game_id", "team_id", "opp_team_id")
+REQUIRED_CONTRACT_COLS = ("game_id", "team_id", "game_date", "season")
 REQUIRED_POSSESSIONS_COLS = ("game_id", "defense_team_id", "end_reason")
 
 
@@ -153,17 +172,24 @@ def aggregate_game_team_rate(possessions_raw: pd.DataFrame) -> pd.Series:
 class ArmA20:
     """P36 RUNNER_INTERFACE-conformant module for A20_forced_turnover_contrast.
 
-    Constructed with ONE auxiliary frame beyond ``universe`` (A13's precedent: the frozen hooks
-    take no per-call arguments, so any data the card's construction needs beyond the universe frame
-    is bound at construction time): ``possessions_raw`` -- possession-level rows carrying
-    (game_id, defense_team_id, end_reason), read-only, never mutated.
+    Constructed with TWO auxiliary frames beyond ``universe`` (A13's/A24's precedent: the frozen
+    hooks take no per-call arguments, so any data the card's construction needs beyond the universe
+    frame is bound at construction time): ``possessions_raw`` -- possession-level rows carrying
+    (game_id, defense_team_id, end_reason), read-only, never mutated -- and ``contract_schedule``
+    -- the CONTRACT-SCHEDULE history frame (team_possession_prior_v1's own 2,990 team-game rows at
+    P38 time; a synthetic superset frame in tests) carrying at least (game_id, team_id, game_date,
+    season), which MUST be a superset of every row this module will ever see in ``universe`` (P37/
+    EXEC-M6 remediation: the trailing window and E=3 count are built against the CONTRACT-SCHEDULE
+    clock, not the smaller in-fold UNIVERSE, mirroring A24's own constructor-injected ``history``
+    argument for the identical reason).
     """
 
     arm_id = ARM_ID
 
-    def __init__(self, possessions_raw: pd.DataFrame, fold_ids: Sequence[str] = (),
-                n_rows: int | None = None):
+    def __init__(self, possessions_raw: pd.DataFrame, contract_schedule: pd.DataFrame,
+                fold_ids: Sequence[str] = (), n_rows: int | None = None):
         self._rate = aggregate_game_team_rate(possessions_raw)
+        self._own_trailing = self._compute_own_trailing(contract_schedule)
         self._fold_ids = [str(f) for f in fold_ids]
         self._n_rows = int(n_rows) if n_rows is not None else None
 
@@ -209,8 +235,9 @@ class ArmA20:
         return None
 
     # ---- feature construction --------------------------------------------------------
-    def _own_trailing_rate(self, universe: pd.DataFrame) -> pd.DataFrame:
-        """Per-row (own_mean, own_count) for the row's OWN team, aligned to ``universe.index``.
+    def _compute_own_trailing(self, contract_schedule: pd.DataFrame) -> pd.DataFrame:
+        """Per (team_id, game_id) (own_mean, own_count), built against the CONTRACT-SCHEDULE
+        history (P37/EXEC-M6), indexed by ["team_id", "game_id"] for O(1) lookup from build_design.
 
         own_mean(t, g) = mean of ftr_game(t, g') over every g' with the SAME season as g and
         game_date STRICTLY earlier than g's own game_date (P33 "same-season flat" window -- an
@@ -219,24 +246,24 @@ class ArmA20:
         column). A team's first same-season game gets own_mean := 0 (vacuous expanding mean,
         harmless because own_count = 0 < 3 always forces z2 := 0 for that row anyway).
         """
-        missing = [c for c in REQUIRED_UNIVERSE_COLS if c not in universe.columns]
+        missing = [c for c in REQUIRED_CONTRACT_COLS if c not in contract_schedule.columns]
         if missing:
             raise A20ConstructionFailure(
-                f"universe is missing required columns {missing}")
+                f"contract_schedule is missing required columns {missing}")
         tmp = pd.DataFrame({
-            "team_id": universe["team_id"].to_numpy(),
-            "game_id": universe["game_id"].to_numpy(),
-            "season": universe["season"].to_numpy(),
-            "game_date": pd.to_datetime(universe["game_date"]).to_numpy(),
-        }, index=universe.index)
+            "team_id": contract_schedule["team_id"].to_numpy(),
+            "game_id": contract_schedule["game_id"].to_numpy(),
+            "season": contract_schedule["season"].to_numpy(),
+            "game_date": pd.to_datetime(contract_schedule["game_date"]).to_numpy(),
+        })
 
         key = pd.MultiIndex.from_arrays([tmp["team_id"].to_numpy(), tmp["game_id"].to_numpy()])
         rate_vals = self._rate.reindex(key)
         if rate_vals.isna().any():
             n_missing = int(rate_vals.isna().sum())
             raise A20ConstructionFailure(
-                f"{n_missing} universe row(s) have no matching (team_id, game_id) in the supplied "
-                f"possessions_raw frame; ftr_game cannot be constructed for them")
+                f"{n_missing} contract_schedule row(s) have no matching (team_id, game_id) in the "
+                f"supplied possessions_raw frame; ftr_game cannot be constructed for them")
         tmp["ftr_game"] = rate_vals.to_numpy(dtype=float)
 
         # canonical ordering within (team, season): game_date then game_id ascending, mergesort
@@ -250,40 +277,47 @@ class ArmA20:
         tmp_sorted = tmp_sorted.assign(
             own_mean=prior_mean.fillna(0.0).to_numpy(),
             own_count=prior_count.to_numpy(dtype=float))
-        return tmp_sorted.reindex(universe.index)[["own_mean", "own_count"]]
+        if tmp_sorted.duplicated(["team_id", "game_id"]).any():
+            raise A20ConstructionFailure(
+                "A20: (team_id, game_id) is not unique in the supplied contract_schedule frame")
+        return tmp_sorted.set_index(["team_id", "game_id"])[["own_mean", "own_count"]]
 
     def build_design(self, fold, universe: pd.DataFrame) -> dict:
         """RUNNER_INTERFACE.md section 3. Fold-independent, like A16's dev_own/dev_opp: ftr_own is
         a deterministic, strictly-lagged per-row historical fact built from every row STRICTLY
-        earlier (by game_date) in the row's own season that exists anywhere in the supplied
-        universe, which is exactly what "prior-games-only, same-season" means regardless of which
-        rows are in a given fold's train/test split; ``fold`` is accepted per the frozen signature
-        and not otherwise used.
+        earlier (by game_date) in the row's own season that exists in the CONTRACT-SCHEDULE
+        history bound at construction (P37/EXEC-M6 -- not the smaller in-fold universe), which is
+        exactly what "prior-games-only, same-season" means regardless of which rows are in a given
+        fold's train/test split; ``fold`` is accepted per the frozen signature and not otherwise
+        used.
         """
         del fold  # signature-required, unused: see docstring
-        own = self._own_trailing_rate(universe)
+        missing = [c for c in REQUIRED_UNIVERSE_COLS if c not in universe.columns]
+        if missing:
+            raise A20ConstructionFailure(f"universe is missing required columns {missing}")
+
+        own_key = pd.MultiIndex.from_arrays(
+            [universe["team_id"].to_numpy(), universe["game_id"].to_numpy()])
+        missing_own = ~own_key.isin(self._own_trailing.index)
+        if missing_own.any():
+            raise A20ConstructionFailure(
+                f"{int(missing_own.sum())} universe row(s) have no matching (team_id, game_id) in "
+                f"the supplied contract_schedule history; contract_schedule must be a superset of "
+                f"every universe row (P37/EXEC-M6)")
+        own = self._own_trailing.loc[own_key]
         own_mean = own["own_mean"].to_numpy(dtype=float)
         own_count = own["own_count"].to_numpy(dtype=float)
 
-        lookup_mean = pd.Series(
-            own_mean,
-            index=pd.MultiIndex.from_arrays(
-                [universe["game_id"].to_numpy(), universe["team_id"].to_numpy()]))
-        lookup_count = pd.Series(own_count, index=lookup_mean.index)
-        if lookup_mean.index.has_duplicates:
-            raise A20ConstructionFailure(
-                "A20: (game_id, team_id) is not unique in the supplied universe; opponent lookup "
-                "requires exactly one row per team per game")
         opp_key = pd.MultiIndex.from_arrays(
-            [universe["game_id"].to_numpy(), universe["opp_team_id"].to_numpy()])
-        opp_mean = lookup_mean.reindex(opp_key).to_numpy(dtype=float)
-        opp_count = lookup_count.reindex(opp_key).to_numpy(dtype=float)
-        if np.isnan(opp_mean).any():
+            [universe["opp_team_id"].to_numpy(), universe["game_id"].to_numpy()])
+        missing_opp = ~opp_key.isin(self._own_trailing.index)
+        if missing_opp.any():
             raise A20ConstructionFailure(
-                "A20: opponent lookup failed for one or more rows -- every row's opp_team_id must "
-                "have its own row in the same universe at the same game_id (two-sided game "
-                "universe invariant); a NaN here means that invariant does not hold on the "
-                "supplied frame")
+                f"{int(missing_opp.sum())} universe row(s)' opponents have no matching "
+                f"(team_id, game_id) in the supplied contract_schedule history")
+        opp = self._own_trailing.loc[opp_key]
+        opp_mean = opp["own_mean"].to_numpy(dtype=float)
+        opp_count = opp["own_count"].to_numpy(dtype=float)
 
         insufficient = (own_count < E_MIN_PRIOR_GAMES) | (opp_count < E_MIN_PRIOR_GAMES)
         z2_raw = own_mean - opp_mean
@@ -307,7 +341,7 @@ class ArmA20:
             TREATMENT_COL: dict(
                 column=TREATMENT_COL,
                 kind="DERIVED_NO_JOIN",
-                source_artifact_id="possessions_raw_v2/via_constructor_injection",
+                source_artifact_id="possessions_raw_v2+team_possession_prior_v1/via_constructor_injection",
                 entity_keys=("team_id", "game_id", "season"),
                 order_column="game_date",
                 n_back=1,
@@ -317,15 +351,18 @@ class ArmA20:
                     "z2 = ftr_own - ftr_opp; ftr_team(t, g) is the mean, over team t's STRICTLY "
                     "EARLIER SAME-SEASON games only, of that game's own share of team t's "
                     "DEFENSIVE possessions whose end_reason is in the frozen E_TO={'turnover'} "
-                    "dictionary (P34 OP-1). Built from a possession-level auxiliary frame bound "
-                    "at this module's construction (A13's own precedent for exactly this "
-                    "situation: CONT_MAIN_COL/DEV_PREV_COL are likewise constructor-injected and "
-                    "declared DERIVED_NO_JOIN), and from an expanding (not fixed-shift) mean, "
-                    "which postgame_surrogate_guard.verify_prior_game_lag's single-shift "
-                    "re-derivation contract does not express (A16's own precedent for that "
-                    "second, independent reason). z2 := 0 whenever EITHER side has fewer than "
-                    "E_min_prior_games=3 strictly-earlier same-season games (card 'E=3 imputation "
-                    "as A18')."),
+                    "dictionary (P34 OP-1). Built from two auxiliary frames bound at this module's "
+                    "construction (A13's/A24's own precedent for exactly this situation: "
+                    "CONT_MAIN_COL/DEV_PREV_COL and A24's rest(t,g) are likewise "
+                    "constructor-injected and declared DERIVED_NO_JOIN): possessions_raw supplies "
+                    "ftr_game(t,g), and contract_schedule (P37/EXEC-M6 remediation; the CONTRACT "
+                    "SCHEDULE clock, not the smaller in-fold universe) supplies the strictly-"
+                    "earlier same-season window and E=3 count. Also DERIVED_NO_JOIN because this "
+                    "is an expanding (not fixed-shift) mean, which postgame_surrogate_guard."
+                    "verify_prior_game_lag's single-shift re-derivation contract does not express "
+                    "(A16's own precedent for that second, independent reason). z2 := 0 whenever "
+                    "EITHER side has fewer than E_min_prior_games=3 strictly-earlier same-season "
+                    "games (card 'E=3 imputation as A18')."),
             ),
         }
 
@@ -476,7 +513,7 @@ class ArmA20:
         }
 
 
-def make_arms(possessions_raw: pd.DataFrame, fold_ids: Sequence[str] = (),
-             n_rows: int | None = None) -> list[ArmA20]:
+def make_arms(possessions_raw: pd.DataFrame, contract_schedule: pd.DataFrame,
+             fold_ids: Sequence[str] = (), n_rows: int | None = None) -> list[ArmA20]:
     """Single-element arm -- one module instance, per RUNNER_INTERFACE.md section 1."""
-    return [ArmA20(possessions_raw, fold_ids, n_rows)]
+    return [ArmA20(possessions_raw, contract_schedule, fold_ids, n_rows)]

@@ -48,6 +48,21 @@ differential_contrast]):
   unlike A24). requires_franchise_continuity() therefore returns False (arm_a23.py), matching the
   A02/A03 precedent for arms absent from that list.
 
+P37/EXEC-M6 REMEDIATION (D039/D040 ratified ruling; supersedes the prior implementation flagged by
+auditor_3_arms_A14_A26 as finding A3-B4 / B-4): ``compute_rest_and_opener`` previously computed
+rest/opener status entirely from the fitting UNIVERSE frame (no separate contract-schedule input),
+on the module's own prior rationale that "the universe frame IS the contract-schedule history" --
+which the audit measured FALSE under the runner's calling convention: the four 2021 opening-day
+games are completed contract-schedule games (present, dated, in team_possession_prior_v1) but are
+EXCLUDED from the fitting universe, so the 8 opener teams' SECOND 2021 games were misclassified as
+openers (bundle_AI's contrast wrongly forced to 0; bundle_OM wrongly assigned the cap). The
+fleet-wide EXEC-M6 adjudication resolves this toward the CONTRACT-SCHEDULE clock (P35
+construction_pins.n_clock_pin: "every other prior-game COUNT is computed on the CONTRACT SCHEDULE
+... the universe-row clock is barred"), per A24's own in-fleet remedy pattern: this module now
+takes a SEPARATE ``history_*`` argument set (the contract-schedule history, a superset of every
+target row's own game) at the SAME call sites A24's ``compute_rest_days`` uses, and rest/opener
+are computed against that history, not against the target/universe frame's own rows.
+
 Every function here is a pure, deterministic transform of its inputs -- no I/O, no randomness, no
 same-row (current-game) dependency. STRICT LAGGING (a row's rest_own/rest_opp depend only on
 OTHER rows with a strictly earlier game_date, of the SAME team and SAME season, never on the
@@ -82,10 +97,22 @@ def _to_day_axis(values) -> np.ndarray:
     return pd.to_datetime(pd.Series(v)).to_numpy()
 
 
-def compute_rest_and_opener(team_id, season, game_date, game_id) -> tuple[np.ndarray, np.ndarray]:
+def compute_rest_and_opener(team_id, season, game_date, game_id, *,
+                            history_team_id, history_season, history_game_date, history_game_id
+                            ) -> tuple[np.ndarray, np.ndarray]:
     """rest_days[i] = days since team_id[i]'s previous COMPLETED SAME-SEASON game, strictly
-    earlier by (game_date, game_id) ascending; NaN and is_opener[i]=True when no such game exists
-    (the team's first game of that season in the supplied frame).
+    earlier by (game_date, game_id) ascending, computed against the supplied CONTRACT-SCHEDULE
+    ``history_*`` frame (P37/EXEC-M6 -- NOT the target/universe frame's own rows: "the universe
+    frame IS the contract-schedule history" was the prior, now-rejected rationale, measured false
+    for the 8 opener teams' second 2021 games -- P37 finding A3-B4). NaN and is_opener[i]=True when
+    no strictly-earlier same-season history row exists (the team's first game of that season on
+    the CONTRACT SCHEDULE, not merely the team's first UNIVERSE row of that season).
+
+    ``history_*`` MUST be a SUPERSET of every target row's own (game_id, season) (A24's own
+    precedent: a team's own current-game row is itself a legitimate contract-schedule row; it
+    never contributes to that row's OWN feature, only to strictly-later rows'). Raises ValueError
+    if that superset invariant does not hold, or if (team_id, season, game_id) is not unique in
+    the supplied history.
 
     Deterministic and row-order-invariant: grouping is by (team_id, season); ordering within a
     group is (game_date, game_id) ascending with a stable (mergesort) tie-break, matching the
@@ -93,26 +120,36 @@ def compute_rest_and_opener(team_id, season, game_date, game_id) -> tuple[np.nda
     construction_pins.a08_window_tie_break, reused rather than inventing a second convention, per
     the identical A16 precedent).
     """
-    n = len(team_id)
-    gd = _to_day_axis(game_date)
-    is_datetime = np.issubdtype(gd.dtype, np.datetime64)
-    df = pd.DataFrame({
-        "team_id": np.asarray(team_id),
-        "season": np.asarray(season),
-        "game_date": gd,
-        "game_id": np.asarray(game_id),
-        "_orig_idx": np.arange(n),
-    })
-    df = df.sort_values(["team_id", "season", "game_date", "game_id"], kind="mergesort")
-    prev_date = df.groupby(["team_id", "season"], sort=False)["game_date"].shift(1)
-    delta = df["game_date"] - prev_date
-    rest_days = (delta / np.timedelta64(1, "D")) if is_datetime else delta.astype(float)
-    is_opener = prev_date.isna()
+    hist = pd.DataFrame({
+        "team_id": np.asarray(history_team_id),
+        "season": np.asarray(history_season),
+        "game_date": _to_day_axis(history_game_date),
+        "game_id": np.asarray(history_game_id),
+    }).drop_duplicates(subset=["team_id", "season", "game_id"])
+    is_datetime = np.issubdtype(hist["game_date"].to_numpy().dtype, np.datetime64)
+    if hist.duplicated(["team_id", "season", "game_id"]).any():
+        raise ValueError("A23: (team_id, season, game_id) is not unique in the supplied "
+                         "contract-schedule history")
+    hist = hist.sort_values(["team_id", "season", "game_date", "game_id"], kind="mergesort")
+    prev_date = hist.groupby(["team_id", "season"], sort=False)["game_date"].shift(1)
+    delta = hist["game_date"] - prev_date
+    hist_rest = (delta / np.timedelta64(1, "D")) if is_datetime else delta.astype(float)
+    hist_opener = prev_date.isna()
 
-    out_rest = np.full(n, np.nan, dtype=float)
-    out_opener = np.zeros(n, dtype=bool)
-    out_rest[df["_orig_idx"].to_numpy()] = rest_days.to_numpy(dtype=float)
-    out_opener[df["_orig_idx"].to_numpy()] = is_opener.to_numpy()
+    lut_index = pd.MultiIndex.from_arrays(
+        [hist["team_id"].to_numpy(), hist["season"].to_numpy(), hist["game_id"].to_numpy()])
+    lut_rest = pd.Series(hist_rest.to_numpy(dtype=float), index=lut_index)
+    lut_opener = pd.Series(hist_opener.to_numpy(dtype=bool), index=lut_index)
+
+    key = pd.MultiIndex.from_arrays(
+        [np.asarray(team_id), np.asarray(season), np.asarray(game_id)])
+    missing = ~key.isin(lut_index)
+    if missing.any():
+        raise ValueError(
+            f"A23: {int(missing.sum())} target row(s) absent from the supplied contract-schedule "
+            f"history (history must be a superset of every target row's own game)")
+    out_rest = lut_rest.reindex(key).to_numpy(dtype=float)
+    out_opener = lut_opener.reindex(key).to_numpy(dtype=bool)
     return out_rest, out_opener
 
 
@@ -145,10 +182,14 @@ def _lookup_by_opponent(game_id: np.ndarray, team_id: np.ndarray, opp_team_id: n
     return lut.reindex(opp_key).to_numpy(dtype=float)
 
 
-def bundle_contrast(team_id, season, game_date, game_id, opp_team_id, *, bundle: str
-                    ) -> dict[str, np.ndarray]:
+def bundle_contrast(team_id, season, game_date, game_id, opp_team_id, *,
+                    history_team_id, history_season, history_game_date, history_game_id,
+                    bundle: str) -> dict[str, np.ndarray]:
     """The complete per-bundle construction: rest_own, rest_opp, f_own, f_opp (post opener rule),
     and the treatment contrast f_own - f_opp, all aligned to the input row order.
+
+    rest_own is computed against the supplied CONTRACT-SCHEDULE ``history_*`` (P37/EXEC-M6), a
+    superset of the target rows -- NOT against the target frame's own rows.
 
     bundle == "AI": cap 7; opener -> contrast forced to 0 on the row (symmetric fallback; see
         module docstring). f_own/f_opp are reported RAW (NaN on that side's own opener) for
@@ -160,7 +201,10 @@ def bundle_contrast(team_id, season, game_date, game_id, opp_team_id, *, bundle:
         raise ValueError(f"bundle={bundle!r} is not one of the frozen P35 elements "
                          f"{ENUMERATED_BUNDLES}")
     cap = BUNDLE_CAP[bundle]
-    rest_own, opener_own = compute_rest_and_opener(team_id, season, game_date, game_id)
+    rest_own, opener_own = compute_rest_and_opener(
+        team_id, season, game_date, game_id,
+        history_team_id=history_team_id, history_season=history_season,
+        history_game_date=history_game_date, history_game_id=history_game_id)
     f_own_raw = f_cap(rest_own, cap)
     rest_opp = _lookup_by_opponent(game_id, team_id, opp_team_id, rest_own)
     opener_opp = _lookup_by_opponent(game_id, team_id, opp_team_id, opener_own.astype(float)) > 0.5

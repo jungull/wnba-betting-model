@@ -263,6 +263,49 @@ def p27_prepass(gh, governor, F, folds, arm_id):
     return rec, excl, blockers, bundle, W
 
 
+def p25_fold_prepass(gh, governor, F, folds):
+    """D040: invoke the frozen P25 wrapper per fold EXACTLY as the runner's bundle loop does
+    (same wrapper, same argument pins, the fold's TRAINING design), and derive the P38
+    per-fold exclusion map from the guard's own verdicts. A block on the
+    FINAL_ASSEMBLED_DESIGN is never fold-local and becomes a whole-arm blocker (fail
+    closed). Returns (per_fold_records, exclusions, blockers); the full guard records are
+    dependency diagnostics only (no performance number exists at design time)."""
+    final_fold = {"fold_id": FINAL_FOLD_ID, "train_idx": np.arange(len(F)),
+                  "test_idx": np.empty(0, int)}
+    per_fold, excl, blockers = {}, {}, []
+    for fold in list(folds) + [final_fold]:
+        fid = str(fold["fold_id"])
+        bundle = governor.build_design(fold, F)
+        W = F.copy()
+        for name, v in bundle["columns"].items():
+            W[name] = np.asarray(v, float)
+        tr = np.asarray(fold["train_idx"], int)
+        W_tr = W.iloc[tr].reset_index(drop=True)
+        cand = [c for c in bundle["treatment_cols"] if c != "intercept"]
+        nuis = [c for c in bundle["nuisance_cols"] if c != "intercept"]
+        try:
+            rec = gh.p25_check(
+                W_tr, candidate_features=cand, nuisance_features=nuis,
+                preregistered_contrasts=governor.preregistered_contrasts(),
+                prereg_digest_expected=governor.prereg_digest_expected())
+            per_fold[fid] = {"verdict": "PASS", "record": rec}
+        except Exception as e:
+            rec = getattr(e, "record", None)
+            if not isinstance(rec, dict):
+                raise
+            fired = [{"kind": f.get("kind"), "feature": f.get("feature")}
+                     for f in rec.get("blocking", [])]
+            per_fold[fid] = {"verdict": "BLOCK", "fired": fired, "record": rec}
+            if fid == FINAL_FOLD_ID:
+                blockers.append("P25_FINAL_ASSEMBLED_DESIGN_BLOCK (not fold-local; the "
+                                "D040 wrapper does not apply; fail closed)")
+            else:
+                excl[fid] = ("P25_FOLD_LOCAL_BLOCK -> FOLD_UNEVALUABLE (frozen P25 guard "
+                             "per-fold verdict honoured at the call site, arm AND null "
+                             "identically; D040)")
+    return per_fold, excl, blockers
+
+
 def p26_bind_check(gh, record):
     """EXEC-M7: invoke the P26 wrapper's bind path (delegation into the frozen
     comparison_gate.require_matched_k0) at scoring time. Outcome classification:

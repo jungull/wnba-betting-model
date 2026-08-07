@@ -101,6 +101,24 @@ def main():
             if side.get("error_type"):
                 entry["error_type"] = side["error_type"]
                 entry["error"] = side.get("error")
+            if side.get("d040") is not None:
+                entry["d040"] = side["d040"]
+            if side.get("d040_p25_fold_verdicts") is not None:
+                entry["d040_p25_fold_verdicts"] = side["d040_p25_fold_verdicts"]
+            if side.get("d040_p25_tolerance_applied_folds"):
+                entry["d040_p25_tolerance_applied_folds"] = side[
+                    "d040_p25_tolerance_applied_folds"]
+        pfl = d / "P25_FOLD_LOCAL_RECORDS.json"
+        if pfl.exists():
+            entry["p25_fold_local_records_sha256"] = D.sha256_file(pfl)
+        for pre in ("P38_EXECUTION_SIDECAR.pre_D040.json",
+                    "GUARD_BLOCK_RECORD.pre_D040.json"):
+            pp = d / pre
+            if pp.exists():
+                entry.setdefault("pre_d040_preserved_sha256", {})[pre] = D.sha256_file(pp)
+                if pre.startswith("P38_EXECUTION_SIDECAR"):
+                    entry["status_pre_d040"] = json.loads(
+                        pp.read_text(encoding="utf-8")).get("status")
         blk = d / "BLOCK_VERDICT.json"
         if blk.exists():
             b = json.loads(blk.read_text(encoding="utf-8"))
@@ -111,6 +129,13 @@ def main():
         if exc.exists():
             entry["status"] = "EXCLUDED_PRE_P38_PER_D039"
             entry["exclusion_record_sha256"] = D.sha256_file(exc)
+        sup = d / "D040_SUPERSESSION.json"
+        if sup.exists():
+            entry["status_pre_d040"] = entry.get("status")
+            entry["status"] = "SUPERSEDED_BY_D040_ELEMENTS_FITTED"
+            entry["d040_supersession_sha256"] = D.sha256_file(sup)
+            entry["d040_fitted_elements"] = json.loads(
+                sup.read_text(encoding="utf-8")).get("fitted_elements")
         rc_p = d / "receipt.json"
         if rc_p.exists():
             entry["receipt"] = read_receipt_structural(rc_p)
@@ -174,7 +199,8 @@ def main():
         "node": "P38_BLINDED_FIT",
         "recorded_utc": datetime.now(timezone.utc).isoformat(),
         "epistemic_status": EPISTEMIC_STATUS,
-        "authority": "D039_P37_ADJUDICATION (DECISION_LEDGER.jsonl); GRAPH_POLICY s5",
+        "authority": "D039_P37_ADJUDICATION + D040_P38_FOLD_LOCAL_P25_AND_A08 "
+                     "(DECISION_LEDGER.jsonl); GRAPH_POLICY s3/s5",
         "code": {
             "commit": DISPATCH_COMMIT,
             "commit_provenance": DISPATCH_COMMIT_PROVENANCE,
@@ -255,6 +281,19 @@ def main():
                        "outcomes recorded per arm (bound / tolerated_r8_shape for "
                        "calibration_only raw-R8 shapes per the frozen P35 "
                        "r8_scope_adjudication / blocked)",
+            "D040": "per-fold P25 call-site wrapper (p38_wrappers.P25FoldLocalGuardView + "
+                    "p38_driver.p25_fold_prepass), the EXEC-M1 analogue for the runner's "
+                    "per-fold P25 audit, ruled a deterministic consequence of D039 "
+                    "(D040_P38_FOLD_LOCAL_P25_AND_A08): a fold-local P25 block records "
+                    "FOLD_UNEVALUABLE with the frozen guard's full record (sealed in the "
+                    "receipt's guard_records.p25_per_fold and in "
+                    "P25_FOLD_LOCAL_RECORDS.json) and the arm fits on remaining folds, "
+                    "arm AND null identically; FINAL-design or non-excluded-fold blocks "
+                    "fail closed. The seven first-pass P25-blocked instances re-ran under "
+                    "it; first-pass verdicts preserved under .pre_D040 names. A08 (both K "
+                    "elements) joined the fleet, its D039 exclusion condition met "
+                    "(REAUDIT_A08.md PASS, non-implementer re-audit). No frozen file "
+                    "edited.",
         },
         "arm_level_pins_carried": {
             "PIN-A13": "code's literal card-supported reading (any negative per-fold point "
@@ -283,12 +322,18 @@ def main():
                     "not be cited as the implemented rule",
         },
         "fleet": {
-            "fit_eligible_arm_ids_measured": 20,
-            "fit_eligible_module_instances_measured": 26,
-            "instances_fitted_attempted": 22,
-            "count_note": "D039 and the dispatch say '21 fit-eligible arms'; the measured "
-                          "count is 20 arm ids (22 implemented arms minus A08 and A24). "
-                          "Contradiction recorded in EXECUTION_LOG.md, not reconciled.",
+            "fit_eligible_arm_ids_measured": 21,
+            "fit_eligible_module_instances_measured": 28,
+            "instances_fitted_attempted": 24,
+            "count_note": "First pass (D039): measured 20 fit-eligible arm ids (22 "
+                          "implemented minus A08 and A24) = 26 module instances, vs the "
+                          "D039/dispatch text '21' -- contradiction recorded, not "
+                          "reconciled. D040 continuation: A08 joined (exclusion condition "
+                          "met), so measured counts are now 21 arm ids / 28 module "
+                          "instances / 24 instances run through the runner (the numeric "
+                          "coincidence with the D039 '21' is composition-different: D039's "
+                          "21 counted A21 and excluded A08; the measured 21 excludes A21 "
+                          "per PIN-A21 and includes A08 per D040).",
             "arms": arms,
         },
         "wall_seconds_fleet": wall_total,
@@ -318,6 +363,17 @@ def main():
                 "results; a coordinator ruling (EXEC-M1-analogue for the runner's per-fold "
                 "P22/P25 audits, or remediation nodes) is required before these arms can "
                 "fit."),
+            "P38-R1_disposition": (
+                "RESOLVED BY RULING D040_P38_FOLD_LOCAL_P25_AND_A08 (coordinator, "
+                "2026-08-06T23:41:49Z), which ruled the per-fold P25 call-site wrapper a "
+                "deterministic consequence of D039/EXEC-M1. The seven instances re-ran "
+                "under p38_wrappers.P25FoldLocalGuardView; every fold-local block verdict "
+                "stays in the sealed record (P38_EXECUTION_SIDECAR.pre_D040.json -- the "
+                "first-pass BLOCKED_GUARD sidecar, preserved byte-for-byte; "
+                "BLOCK_DIAGNOSTICS.json -- the frozen guard's full per-fold records, "
+                "untouched; P25_FOLD_LOCAL_RECORDS.json -- this pass's per-fold prepass "
+                "records; and the failing per-fold guard records carried unmodified "
+                "inside each sealed receipt's guard_records.p25_per_fold)."),
         },
     }
     (D.SEALED / "MANIFEST.json").write_text(

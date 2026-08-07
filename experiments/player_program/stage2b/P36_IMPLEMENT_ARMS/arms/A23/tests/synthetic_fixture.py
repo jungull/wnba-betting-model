@@ -79,6 +79,13 @@ def build_universe(n_games_per_team_per_season: int = 16, seed: int = 4747) -> p
     return df.reset_index(drop=True)
 
 
+def build_contract_schedule(df: pd.DataFrame) -> pd.DataFrame:
+    """The contract-schedule history frame (P37/EXEC-M6): by default, for tests that do not
+    specifically exercise the contract-vs-universe clock divergence, this is just the universe's
+    own (team_id, season, game_date, game_id) columns -- a trivial superset of itself."""
+    return df[["team_id", "season", "game_date", "game_id"]].reset_index(drop=True)
+
+
 def build_folds(df: pd.DataFrame) -> list[dict]:
     """Two chronological expanding folds with synthetic fold ids."""
     folds = []

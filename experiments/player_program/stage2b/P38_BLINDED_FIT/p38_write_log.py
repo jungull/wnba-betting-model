@@ -19,6 +19,11 @@ GUARD_BLOCKED = {k: v for k, v in ARMS.items() if v.get("status") == "BLOCKED_GU
 MANDATE_BLOCKED = {k: v for k, v in ARMS.items()
                    if v.get("status") == "BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE"}
 EXCLUDED = {k: v for k, v in ARMS.items() if v.get("status") == "EXCLUDED_PRE_P38_PER_D039"}
+SUPERSEDED = {k: v for k, v in ARMS.items()
+              if v.get("status") == "SUPERSEDED_BY_D040_ELEMENTS_FITTED"}
+D040_RERUN = {k: v for k, v in ARMS.items() if v.get("status_pre_d040") == "BLOCKED_GUARD"}
+D040_NEW = {k: v for k, v in ARMS.items()
+            if k.startswith("A08_K") and v.get("status") == "FITTED"}
 
 
 def arm_rows():
@@ -37,17 +42,20 @@ def arm_rows():
 
 
 def guard_block_rows():
+    """First-pass P25 block pattern (from the preserved BLOCK_DIAGNOSTICS.json extraction)
+    plus the D040 re-run outcome, per re-run instance."""
     rows = []
-    for k in sorted(GUARD_BLOCKED):
-        v = GUARD_BLOCKED[k]
+    for k in sorted(D040_RERUN):
+        v = D040_RERUN[k]
         pf = v.get("p25_per_fold_verdicts") or {}
         blocked_folds = [fid for fid, x in pf.items()
                          if isinstance(x, dict) and x.get("verdict") == "BLOCK"]
         fired = sorted({f"{kind}:{feat}" for fid, x in pf.items()
                         if isinstance(x, dict)
                         for kind, feat in x.get("fired", [])})
+        tol = v.get("d040_p25_tolerance_applied_folds") or []
         rows.append(f"| `{k}` | {', '.join(sorted(blocked_folds))} | "
-                    f"{'; '.join(fired)} |")
+                    f"{'; '.join(fired)} | {v.get('status')} | {', '.join(tol) or '-'} |")
     return "\n".join(rows)
 
 
@@ -55,10 +63,13 @@ log = f"""# P38_BLINDED_FIT -- EXECUTION_LOG (operational record; the node repor
 
 > **Epistemic status (verbatim, binding):** {EPI}
 
-Executor: P38_BLINDED_FIT (D039 dispatch, workflow wf_6972ebba-bdb). Executed
-{datetime.now(timezone.utc).isoformat()} on the commit recorded in the dispatch event
-(`{MANIFEST['code']['commit']}`; see MANIFEST.json code.commit_provenance -- git was not
-invoked by this node, per standing rule 4).
+Executor: P38_BLINDED_FIT (D039 dispatch, workflow wf_6972ebba-bdb), in TWO passes on the
+commit recorded in the dispatch event (`{MANIFEST['code']['commit']}`; see MANIFEST.json
+code.commit_provenance -- git was not invoked by this node, per standing rule 4):
+first pass 2026-08-06T23:39:49Z (D039 mandates EXEC-M1..M7); D040 continuation
+{datetime.now(timezone.utc).isoformat()} (ruling D040_P38_FOLD_LOCAL_P25_AND_A08:
+per-fold P25 call-site wrapper; seven P25-blocked instances re-run; A08 both K elements
+fitted). First-pass sealed verdicts are preserved under `.pre_D040` names, never erased.
 
 **This file contains ZERO comparative performance numbers.** Every result of every fit is
 sealed under `stage2b/SEALED_RESULTS/P38/` and was written there by the frozen runner
@@ -94,17 +105,22 @@ mirror of this log is `SPEC.json` beside it; the sealed manifest is
   rule as frozen; p-value formula consumed byte-unchanged (EXEC-M3);
   `cluster_bootstrap.py` sha256 `{MANIFEST['code']['runner_sources_sha256']['runner/cluster_bootstrap.py']}`.
 
-## 2. Fleet outcome (27 sealed entries, zero performance numbers)
+## 2. Fleet outcome after the D040 continuation ({len(ARMS)} sealed element directories, zero performance numbers)
 
 | element | status | wall s | evaluable folds | deactivated folds | receipt sha256 |
 |---|---|---|---|---|---|
 {arm_rows()}
 
-Counts: **{len(FITTED)} FITTED**, **{len(GUARD_BLOCKED)} BLOCKED_GUARD** (frozen P25 guard,
-see section 4), **{len(MANDATE_BLOCKED)} BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE**
+Counts: **{len(FITTED)} FITTED** ({len(D040_RERUN)} of them re-run under D040 after
+first-pass BLOCKED_GUARD, and {len(D040_NEW)} the new A08 K elements),
+**{len(GUARD_BLOCKED)} BLOCKED_GUARD remaining**,
+**{len(MANDATE_BLOCKED)} BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE**
 (EXEC-M6: A20, A23 x2; PIN-A21: A21), **{len(EXCLUDED)} EXCLUDED_PRE_P38_PER_D039**
-(A08 re-audit pending; A24 registry amendment pending). Fleet wall time
-{MANIFEST['wall_seconds_fleet']}s.
+(A24: registry amendment still pending), **{len(SUPERSEDED)} SUPERSEDED_BY_D040**
+(the A08_league_lag_level placeholder: its D039 exclusion condition was met and the two
+K elements fitted; the original EXCLUSION_RECORD.json is untouched beside
+D040_SUPERSESSION.json). Cumulative fleet wall time {MANIFEST['wall_seconds_fleet']}s
+(both passes; progress.jsonl carries each pass).
 
 ## 3. Executor mandates (EXEC-M1..M7) -- what was implemented, exactly
 
@@ -157,17 +173,39 @@ see section 4), **{len(MANDATE_BLOCKED)} BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDA
   frozen P35 r8_scope_adjudication scopes out -- the adjudicated (non-bind) wrapper
   validation passed for all three, and the refusal is recorded verbatim per arm
   (contradiction 4 below).
+* **D040** (this continuation) -- `p38_wrappers.P25FoldLocalGuardView` +
+  `p38_driver.p25_fold_prepass`: the EXEC-M1 analogue for the runner's per-fold P25
+  audit, ruled a deterministic consequence of D039 (D040_P38_FOLD_LOCAL_P25_AND_A08).
+  Section 4 below has the full mechanics and custody. Applied to every instance executed
+  in this continuation (for instances whose every P25 fold verdict PASSES, the prepass
+  records the verdicts and the tolerance never fires). FOLD_UNEVALUABLE exclusions
+  actually applied by the wrapper this pass: A05/A15/A17/A22 train_lt_2022 (each fits on
+  the remaining 4 folds); A12/A13 train_lt_2022 and A14 train_lt_2022..train_lt_2025
+  were ALREADY excluded by the first-pass P27/card machinery (EXEC-M1), so for them the
+  D040 wrapper's contribution is that the runner's bundle-loop audit of those excluded
+  folds' degenerate designs no longer escalates to a whole-arm refusal.
 
-## 4. The seven frozen-P25 guard blocks (results, and a RAISED finding)
+## 4. The seven frozen-P25 guard blocks: RAISED as P38-R1 (first pass), RESOLVED by D040 (this pass)
 
 The frozen runner audits EVERY fold's design with P22/P25 in its bundle loop, and a P25
 blocking finding in ANY single fold fails the whole arm closed. Seven instances blocked
-that way; the executor then re-invoked the frozen P25 wrapper per fold with the runner's
-own argument pins (diagnostics sealed per arm in `BLOCK_DIAGNOSTICS.json`; full guard
-records inside, never printed):
+that way on the first pass; the executor raised P38-R1 rather than tolerate P25 findings
+without a mandate, and the coordinator ruled (**D040_P38_FOLD_LOCAL_P25_AND_A08**, a
+deterministic consequence of D039/EXEC-M1): a task-specific per-fold P25 CALL-SITE
+wrapper -- never a guard edit -- honours the frozen guard's own fold-local verdicts. A
+fold whose P25 verdict is fold-local-blocked records **FOLD_UNEVALUABLE** with the full
+guard record (carried unmodified in the sealed receipt's `guard_records.p25_per_fold`
+and in `P25_FOLD_LOCAL_RECORDS.json`), and the arm fits on its remaining folds, arm AND
+null identically via the P38 fold governor. FINAL-design or non-excluded-fold P25 blocks
+still fail closed. Implemented as `p38_wrappers.P25FoldLocalGuardView` +
+`p38_driver.p25_fold_prepass`, mirroring EXEC-M1's `P27GuardHarnessView` exactly (the
+view cross-checks the runner's deterministic fold audit order by training-row count and
+refuses on any desynchronisation).
 
-| element | folds that BLOCK | findings fired (kind:feature) |
-|---|---|---|
+First-pass block pattern and D040 re-run outcome, per instance:
+
+| element | folds that BLOCKED (first pass) | findings fired (kind:feature) | D040 status | FOLD_UNEVALUABLE folds |
+|---|---|---|---|---|
 {guard_block_rows()}
 
 Every other fold PASSES and the FINAL_ASSEMBLED_DESIGN passes for all seven. Measured
@@ -185,13 +223,18 @@ mechanisms (structural facts, sealed):
    offset-determined whenever the fold's cross-game ties happen not to break constancy --
    which occurs only in the smallest fold, train_lt_2022.
 
-**RAISED, not resolved in-node (P38-R1):** this is R-F1's whole-arm-vs-per-fold shape in
-the runner's P25 branch, which P37 did not adjudicate and EXEC-M1 (worded for P27 only)
-does not cover. No ratified mandate authorises tolerating P25 findings at the call site,
-so the executor held the fail-closed line and the blocks stand as sealed results. A
-coordinator ruling (an EXEC-M1 analogue for the runner's per-fold P22/P25 audits, or
-remediation nodes) is required before these seven can fit. Fail-closed direction: this can
-only wrongly kill, never wrongly promote.
+**P38-R1 disposition:** RAISED on the first pass (the executor held the fail-closed line;
+no mandate then authorised tolerating P25 findings at the call site); RESOLVED by ruling
+D040 (coordinator, 2026-08-06T23:41:49Z) and executed in this continuation. Custody of
+every first-pass block verdict: `P38_EXECUTION_SIDECAR.pre_D040.json` (the first-pass
+BLOCKED_GUARD sidecar with the frozen harness's whole-arm refusal text, preserved
+byte-for-byte under the renamed path; the first pass wrote no separate
+GUARD_BLOCK_RECORD.json for these seven), `BLOCK_DIAGNOSTICS.json` (the frozen guard's
+FULL per-fold machine-readable records from the first-pass re-invocation, untouched),
+plus this pass's `P25_FOLD_LOCAL_RECORDS.json` and the failing fold's full guard record
+inside each sealed `receipt.json` (`guard_records.p25_per_fold[fold].passed == false`,
+verified in all seven). Nothing was erased; the re-run wrote beside the first-pass
+record, not over it.
 
 ## 5. Blocks and exclusions by ratified mandate (results)
 
@@ -202,21 +245,30 @@ only wrongly kill, never wrongly promote.
   re-audit. Fitting it would seal a non-preregistered result. Verdict sealed.
 * **A23 (both bundles)** -- BLOCKED, EXEC-M6 (as A20; rest misresolution on the 8 opener
   teams' second 2021 games measured by auditor 3). Verdicts sealed.
-* **A08** -- EXCLUDED pre-P38 (D039: remediation confirmed, fit-eligibility pending
-  non-implementer re-audit). Record sealed, with the EXEC-M4 pace-column obligation noted
-  for its entry.
+* **A08** -- first pass: EXCLUDED pre-P38 (D039, conditional on a non-implementer
+  re-audit). Condition MET: `P37_IMPLEMENTATION_AUDIT/REAUDIT_A08.md`, verdict PASS
+  (independent tie-heavy fixture; bitwise d_t parity with A09/A10; suite re-run passing).
+  D040 ruled both K elements fit-eligible; this continuation FITTED `A08_K20` and
+  `A08_K80` under the same discipline (contract-schedule archive constructor-bound as the
+  clock, caller-supplied `pace` computed by the frozen lagged_regulation_equivalent_pin
+  formula at the call site -- the EXEC-M4 obligation recorded at first pass -- named fold
+  policy, sealed receipts). The original EXCLUSION_RECORD.json is untouched;
+  D040_SUPERSESSION.json sits beside it.
 * **A24** -- EXCLUDED pre-P38 (D039 option (a): registry-appended amendment required
-  BEFORE A24 fits; not yet appended at execution time). Record sealed.
+  BEFORE A24 fits; not yet appended at either execution time). Record sealed. UNCHANGED
+  by D040 (the ruling's A24 lane is coordinator single-writer work, not this executor's).
 
 ## 6. Contradictions found (reported, never silently reconciled)
 
 1. **"21 fit-eligible arms" (D039 ruling text, dispatch, graph events) vs the measured
-   count of 20.** 22 arm ids are implemented under P36 (A06 was never implemented --
-   D021 amended it to INADMISSIBLE-UNTIL-RECEIPTED); 22 - A08 - A24 = 20 fit-eligible arm
-   ids = 26 fit-eligible module instances. The likely arithmetic source of "21" is
-   D026's "23 fit-eligible" (26 - A01/A04/A19) minus 2, which overlooks A06. This node
-   executed against the measured set: 22 instances run, 4 instances mandate-blocked
-   (A20, A21, A23 x2), matching 26.
+   count of 20 at first pass.** 22 arm ids are implemented under P36 (A06 was never
+   implemented -- D021 amended it to INADMISSIBLE-UNTIL-RECEIPTED); 22 - A08 - A24 = 20
+   fit-eligible arm ids = 26 fit-eligible module instances. The likely arithmetic source
+   of "21" is D026's "23 fit-eligible" (26 - A01/A04/A19) minus 2, which overlooks A06.
+   Post-D040 the measured count is 21 arm ids / 28 instances / 24 run through the runner
+   -- numerically equal to the D039 "21" but composition-DIFFERENT (D039's 21 counted A21
+   and excluded A08; the measured 21 excludes A21 per PIN-A21 and includes A08 per D040).
+   Recorded, not reconciled.
 2. **PIN-A21 vs the dispatch's fit-eligible list.** D039 simultaneously ratified PIN-A21
    verbatim (rebuild under a remediation node; implemented construction rejected) and
    dispatched P38 "on the 21 fit-eligible arms" with only A08/A24 excluded. The executor
@@ -235,29 +287,41 @@ only wrongly kill, never wrongly promote.
    in receipts; the true per-fold bases live in each sidecar's `fold_exclusions`.
 6. **P38-R1** (section 4): the runner audits card-deactivated/rule-collapsed folds'
    degenerate designs and escalates fold-local P25 findings to whole-arm refusals.
+   RESOLVED BY D040 in this continuation; the frozen runner's escalation behaviour itself
+   is unchanged (call-site wrapper only) and the contradiction remains on the record as a
+   fact about the frozen bytes.
+7. **The frozen runner's receipt labelling of D040 exclusions** (same shape as
+   contradiction 5): a FOLD_UNEVALUABLE fold under the D040 wrapper is labelled
+   "STRUCTURALLY_DEACTIVATED / card-pinned structural deactivation" by the frozen runner;
+   the true basis is in the sidecar's `fold_exclusions` ("P25_FOLD_LOCAL_BLOCK ->
+   FOLD_UNEVALUABLE ... D040") and in `P25_FOLD_LOCAL_RECORDS.json`.
 
 ## 7. What could not be established
 
 * The executing git commit was not re-measured in-process (standing rule 4); it is carried
   from the dispatch ledger event and must be confirmed by the coordinator/P39 against the
-  task-scoped commit.
+  task-scoped commit. The D040 continuation ran in the same working tree; its executor
+  sources are re-hashed in the refreshed manifest.
 * Byte-identity of the runner sources to the P36 baseline commit could not be verified
   in-node without git; the measured sha256 of every runner source, arm module, guard and
   P38 wrapper file is in the sealed manifest for P39 to check.
-* Whether the seven P25-blocked arms would pass under a per-fold reading (P38-R1) was NOT
-  computed: producing their fitted results without a ratified mandate would create sealed
-  numbers whose admissibility is undecided. Only guard verdicts were re-measured.
-* A08/A24 outcomes: pending their D039 conditions; nothing here prejudges them.
+* A24's outcome: pending its D039 condition (registry-appended amendment, coordinator
+  single-writer); nothing here prejudges it. A20/A21/A23 remediation builds are D039/D040
+  remediation-node work, not this executor's.
 
 ## 8. Custody
 
 Sealed manifest: `stage2b/SEALED_RESULTS/MANIFEST.json`. Per-arm receipts, sidecars, block
-verdicts, block diagnostics and exclusion records under `stage2b/SEALED_RESULTS/P38/<element>/`
-with sha256 in SPEC.json. Driver/wrapper sources and their hashes: `p38_driver.py`,
-`p38_wrappers.py`, `p38_run_fleet.py`, `p38_block_diagnostics.py`, `p38_finalize.py`,
-`p38_write_log.py` (hashes in the manifest and SPEC.json). Fleet progress: `progress.jsonl`.
-No frozen artifact was modified; no git command was run; nothing outside
-`stage2b/SEALED_RESULTS/` and `stage2b/P38_BLINDED_FIT/` was written.
+verdicts, block diagnostics, exclusion records, D040 fold-local P25 records
+(`P25_FOLD_LOCAL_RECORDS.json`), first-pass preservations (`*.pre_D040.json`) and the A08
+supersession note under `stage2b/SEALED_RESULTS/P38/<element>/` with sha256 in SPEC.json.
+Driver/wrapper sources and their hashes: `p38_driver.py`, `p38_wrappers.py`,
+`p38_run_fleet.py`, `p38_block_diagnostics.py`, `p38_finalize.py`, `p38_write_log.py`
+(hashes in the manifest and SPEC.json; these sources were EXTENDED for the D040
+continuation -- the frozen runner, harness, guards and arm modules were not touched).
+Fleet progress: `progress.jsonl` (both passes, append-only). No frozen artifact was
+modified; no git command was run; nothing outside `stage2b/SEALED_RESULTS/` and
+`stage2b/P38_BLINDED_FIT/` was written.
 """
 
 spec = {
@@ -265,22 +329,50 @@ spec = {
     "node": "P38_BLINDED_FIT",
     "recorded_utc": datetime.now(timezone.utc).isoformat(),
     "epistemic_status": EPI,
-    "authority": "D039_P37_ADJUDICATION",
+    "authority": "D039_P37_ADJUDICATION + D040_P38_FOLD_LOCAL_P25_AND_A08",
     "fold_policy_named": "EXPANDING_PRIOR_SEASONS",
     "sealed_manifest": {
         "path": "stage2b/SEALED_RESULTS/MANIFEST.json",
         "sha256": D.sha256_file(D.SEALED / "MANIFEST.json"),
     },
     "counts": {
-        "fit_eligible_arm_ids_measured": 20,
-        "fit_eligible_module_instances_measured": 26,
-        "instances_executed_through_runner": 22,
+        "fit_eligible_arm_ids_measured": 21,
+        "fit_eligible_module_instances_measured": 28,
+        "instances_executed_through_runner": 24,
         "fitted": len(FITTED),
         "blocked_by_frozen_guard": len(GUARD_BLOCKED),
         "blocked_by_ratified_mandate": len(MANDATE_BLOCKED),
         "excluded_pre_p38": len(EXCLUDED),
-        "count_contradiction": "D039/dispatch say 21 fit-eligible arms; measured 20 "
-                               "(A06 never implemented). Recorded, not reconciled.",
+        "superseded_by_d040": len(SUPERSEDED),
+        "d040_rerun_after_first_pass_guard_block": len(D040_RERUN),
+        "d040_new_a08_elements_fitted": len(D040_NEW),
+        "count_contradiction": "D039/dispatch say 21 fit-eligible arms; first-pass "
+                               "measured 20 (A06 never implemented). Post-D040 measured "
+                               "21 arm ids / 28 instances -- numerically equal to the "
+                               "D039 text but composition-different (excludes A21 per "
+                               "PIN-A21, includes A08 per D040). Recorded, not "
+                               "reconciled.",
+    },
+    "d040_continuation": {
+        "authority": "D040_P38_FOLD_LOCAL_P25_AND_A08 (DECISION_LEDGER.jsonl, "
+                     "2026-08-06T23:41:49Z; ruled a deterministic consequence of "
+                     "D039/EXEC-M1)",
+        "wrapper": "p38_wrappers.P25FoldLocalGuardView + p38_driver.p25_fold_prepass "
+                   "(task-specific call-site wrapper; no frozen file edited)",
+        "semantics": "fold-local P25 block -> FOLD_UNEVALUABLE with the frozen guard's "
+                     "full record (receipt guard_records.p25_per_fold + "
+                     "P25_FOLD_LOCAL_RECORDS.json); arm fits on remaining folds, arm AND "
+                     "null identically; FINAL-design / non-excluded-fold blocks fail "
+                     "closed",
+        "rerun_elements": sorted(D040_RERUN),
+        "a08_elements_fitted": sorted(D040_NEW),
+        "a08_fit_eligibility_basis": "D039 exclusion condition met: "
+                                     "P37_IMPLEMENTATION_AUDIT/REAUDIT_A08.md verdict "
+                                     "PASS (non-implementer targeted re-audit)",
+        "first_pass_custody": "P38_EXECUTION_SIDECAR.pre_D040.json preserved per re-run "
+                              "element; BLOCK_DIAGNOSTICS.json untouched; "
+                              "A08_league_lag_level EXCLUSION_RECORD.json untouched "
+                              "beside D040_SUPERSESSION.json",
     },
     "arms": {k: {kk: vv for kk, vv in v.items() if kk != "receipt"} |
                 ({"receipt_sha256": v.get("receipt_sha256_measured"),
@@ -303,10 +395,11 @@ spec = {
         "rule 4; commit carried from the dispatch ledger event)",
         "EXEC-M7 bind path raw re-validation vs frozen R8 scope adjudication for "
         "calibration_only arms (tolerated_r8_shape, recorded per arm)",
-        "runner labels P38-governor fold exclusions as card-pinned structural "
-        "deactivations (true bases in sidecars)",
+        "runner labels P38-governor fold exclusions (including D040 FOLD_UNEVALUABLE "
+        "folds) as card-pinned structural deactivations (true bases in sidecars)",
         "P38-R1: runner escalates fold-local P25 findings (including on card-deactivated/"
-        "rule-collapsed folds) to whole-arm refusals -- raised for coordinator ruling",
+        "rule-collapsed folds) to whole-arm refusals -- raised for coordinator ruling; "
+        "RESOLVED BY D040 at the call site (frozen runner behaviour unchanged)",
     ],
     "zero_performance_numbers": True,
     "wall_seconds_fleet": MANIFEST["wall_seconds_fleet"],

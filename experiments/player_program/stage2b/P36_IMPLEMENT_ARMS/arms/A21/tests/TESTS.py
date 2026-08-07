@@ -23,6 +23,7 @@ import traceback
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 HERE = Path(__file__).resolve().parent          # arms/A21/tests
 ARM_DIR = HERE.parent                            # arms/A21
@@ -433,12 +434,83 @@ def t14_arm_d_untouched_and_ownership():
     return {"ownership_ok": True}
 
 
+def t15_regression_possession_weighted_not_game_weighted():
+    """REGRESSION (P37 finding A3-B2 / D039-D040 PIN-A21): the frozen phrase "nc(t,g) = w-weighted
+    share of t's offensive possessions" is possession-weighted (a ratio of decayed SUMS of
+    possession counts), identical in shape to A17's short_off/short_def -- NOT a decayed MEAN of
+    per-game shares (game-weighted), which is what this arm's construction implemented before the
+    P37/D039-D040 EXEC-M6/PIN-A21 remediation (auditor 3 measured a 0.27 absolute divergence on a
+    [0,1] share on identical inputs). This test builds a small synthetic history with deliberately
+    UNEQUAL per-game possession counts (so the two aggregation levels provably diverge), and
+    asserts compute_nc reproduces the POSSESSION-weighted oracle exactly while differing
+    materially from the game-weighted-mean oracle the pre-remediation code would have produced --
+    the exact defect the audit found, captured as a fixture so it can never silently regress."""
+    team, opp, game = 500, 600, "G21"
+    # three strictly-earlier games for team `team`, with deliberately unequal possession counts
+    # and non_competitive_conservative flag rates, so the possession-weighted ratio and the
+    # game-weighted mean of per-game shares provably differ.
+    earlier = [
+        # (game_id, game_date, n_off, n_nc)
+        ("E1", 1, 40, 4),     # share 0.10, LARGE possession count
+        ("E2", 2, 5, 4),      # share 0.80, SMALL possession count
+        ("E3", 3, 10, 2),     # share 0.20, medium possession count
+    ]
+    target_date = 10
+    rows = []
+    for gid, gdate, n_off, n_nc in earlier:
+        n_nc_i = int(n_nc)
+        for k in range(int(n_off)):
+            rows.append({"game_id": gid, "game_date": gdate, "season": 9900,
+                        "offense_team_id": team,
+                        "non_competitive_conservative": float(k < n_nc_i)})
+    # opponent has one earlier game too, so nc_opp is defined (imputation irrelevant to this test)
+    rows.append({"game_id": "EOPP", "game_date": 1, "season": 9900, "offense_team_id": opp,
+                "non_competitive_conservative": 0.0})
+    # the target game itself (both sides) -- required so align_share finds the target row's key
+    rows.append({"game_id": game, "game_date": target_date, "season": 9900,
+                "offense_team_id": team, "non_competitive_conservative": 0.0})
+    rows.append({"game_id": game, "game_date": target_date, "season": 9900,
+                "offense_team_id": opp, "non_competitive_conservative": 0.0})
+    poss = pd.DataFrame(rows)
+    target = pd.DataFrame([{"team_id": team, "opponent_team_id": opp, "game_id": game,
+                            "game_date": target_date, "season": 9900}])
+
+    out = fc.compute_nc(poss, target)
+    nc_own = float(out["nc_own"][0])
+
+    # possession-weighted oracle (A17's own shape): decayed SUM(n_nc) / decayed SUM(n_off),
+    # rank_back 1-indexed from the most recent strictly-earlier game (E3=1, E2=2, E1=3)
+    base = 0.5 ** (1.0 / fc.HALF_LIFE_GAMES)
+    w = {"E3": base ** 1, "E2": base ** 2, "E1": base ** 3}
+    n_off_by = {"E1": 40.0, "E2": 5.0, "E3": 10.0}
+    n_nc_by = {"E1": 4.0, "E2": 4.0, "E3": 2.0}
+    possession_weighted = (sum(w[g] * n_nc_by[g] for g in w) /
+                           sum(w[g] * n_off_by[g] for g in w))
+
+    # game-weighted-mean oracle (the PRE-REMEDIATION, now-rejected construction): decayed mean of
+    # each game's OWN share (n_nc/n_off), weighted the same way but normalised by sum(w) alone
+    share_by = {g: n_nc_by[g] / n_off_by[g] for g in w}
+    game_weighted = sum(w[g] * share_by[g] for g in w) / sum(w.values())
+
+    check(abs(nc_own - possession_weighted) < 1e-9,
+          f"compute_nc reproduces the POSSESSION-weighted decayed-sum ratio (A17's shape) exactly "
+          f"(got {nc_own}, expected {possession_weighted})")
+    check(abs(nc_own - game_weighted) > 0.05,
+          f"compute_nc must NOT reproduce the rejected game-weighted decayed-mean-of-shares "
+          f"construction -- the two must diverge materially on this deliberately unequal-count "
+          f"fixture (the exact defect P37 finding A3-B2 measured) (got {nc_own}, rejected "
+          f"oracle {game_weighted})")
+    return {"nc_own": nc_own, "possession_weighted_oracle": possession_weighted,
+           "game_weighted_oracle_rejected": game_weighted}
+
+
 TESTS = [t01_conformance, t02_enumeration_element_exact, t03_feature_determinism,
         t04_strict_lagging, t05_empty_prior_set_imputation, t06_arm_vs_null_nesting,
         t07_p26_record_valid, t08_strict_lagging_p22, t09_franchise_continuity_receipt,
         t10_optional_hooks_shape, t11_depth_robustness_variant,
         t12_kill_condition_hooks_decidable, t13_end_to_end_synthetic,
-        t14_arm_d_untouched_and_ownership]
+        t14_arm_d_untouched_and_ownership,
+        t15_regression_possession_weighted_not_game_weighted]
 
 
 def main():
