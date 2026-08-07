@@ -1,0 +1,1530 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "player_program/stage3_score/k0_matched_score/1",
+  "title": "K0_MATCHED[arm_id::estimand] specification record - score family (E1/E2/E3)",
+  "description": "ONE record per (arm_id, estimand) ELEMENT - the S30 unit of testing. K0_MATCHED is a MAP keyed by element_id, never a single universal object; an element with no record has no authoritative control and cannot be adjudicated. This is the S-lane analog of the cycle-1 P26 schema (player_program/stage2b/k0_matched/1), extended per CYCLE2_TARGET_CONTRACT.md section 4 (FROZEN, sha256 87cd094af1dbc3af49d77d6a1d745f1f728a7d40214bb26bb60edbffd67d1710): per-estimand targets, explicit estimation_objective/response_family/p_clipping, the byte-pinned null-strength floor, the mechanical cannot-host declaration, the canonical nesting reading, and the section-2 coverage-predicate reference fields. This file constrains the SHAPE of a record; cross-field rules that JSON Schema cannot express are equally binding and are listed in x_cross_field_rules_binding below. A record that satisfies this schema and fails those rules is NOT a valid K0_MATCHED specification. No card is registrable before this schema freezes (S30 section 4, consistency finding B3).",
+  "x_measurement_provenance": {
+    "measured_by": "experiments/player_program/stage3_score/S32B_K0_CONTRACT/MEASURE.py",
+    "measurements": "experiments/player_program/stage3_score/S32B_K0_CONTRACT/MEASUREMENTS.json",
+    "note": "every const digest, column name, count and parameter in this schema was computed by MEASURE.py against the frozen artifacts on 2026-08-07; zero verification failures. The frozen store's sha256 matches the S30 freeze pin; the builder source on disk matches the producer sha256 recorded inside score_baselines.json; all four recorded input-artifact hashes match bytes on disk."
+  },
+  "x_cross_field_rules_binding": [
+    "R1: element_id == arm_id + '::' + estimand, exactly.",
+    "R2 (P26 1.3, carried): exclusion minimality - set(arm_spec.substantive_features) - set(k0_spec.substantive_features) == set(treatment_mechanism.treatment_terms) exactly; no treatment term re-enters k0_spec.structural_terms; set(arm_spec.structural_terms) == set(k0_spec.structural_terms) under the canonical containment reading.",
+    "R3: every null_granted_structural_terms[].term_name appears in k0_spec.structural_terms; under nesting_reading.arm_design_contains_null_granted_terms == true it appears in arm_spec.structural_terms too, and the routed structural-dimension strings are byte-identical on both sides.",
+    "R4 (P26 1.4, carried): every structural and treatment term appears in declaration_routing; a term with no route is invisible to the frozen gate and blocks.",
+    "R5 (P26 1.6, carried): lower-order closure - a treatment term 'FACTOR:feature' requires FACTOR's main effect in k0_spec.structural_terms unless FACTOR is itself substantive or a treatment term.",
+    "R6: registered_before_results must be true before any comparative result is visible; fold_local_fallback.registered_before_results likewise.",
+    "R7: when null_strength_floor.status == 'CANNOT_HOST', no gate result for this element is citable until cannot_host.s34_reproduction.reviewer_receipt_reference is non-null (an S34 reviewer REPRODUCED the mechanical demonstration; a persuasive argument is not a demonstration), and the BELOW-FLOOR NULL label is inseparable from every citation.",
+    "R8: coverage_predicate floors are measured against the declared base universe (1491 game clusters pooled; each fold's test clusters per-fold); a shortfall requires either whole_fold_structural_deactivation (card-declared, numeric trigger, symmetric, before any fit) or lower_floor_justification adjudicated at S33/S34.",
+    "R9: estimation_objective is declared identically for arm and K0; any per-arm deviation discovered at S36 voids the arm (S30 section 4, carried verbatim from cycle-1 P35).",
+    "R10: byte pins are verified against bytes, not names - a validator recomputes the column digest from the frozen store (or re-runs the frozen builder bytes and byte-matches the regenerated columns) before accepting the record. A self-reimplemented ingredient that matches the name but not the digest does not satisfy the null-strength floor.",
+    "R11: for E3, estimation_objective.p_clipping.lower < upper strictly (ordering not expressible in the schema; validator-owned)"
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "arm_id",
+    "estimand",
+    "element_id",
+    "primary_metric",
+    "arm_kind",
+    "treatment_mechanism",
+    "invariants",
+    "estimation_objective",
+    "null_strength_floor",
+    "nesting_reading",
+    "coverage_predicate",
+    "comparison_gate_binding",
+    "arm_spec",
+    "k0_spec",
+    "fold_local_fallback",
+    "verdict_label_policy",
+    "k0_flat_role",
+    "registered_before_results"
+  ],
+  "properties": {
+    "schema": {
+      "const": "k0_matched_score/1"
+    },
+    "arm_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The registry arm_id this matched null belongs to. An arm registered against multiple estimands contributes one record PER estimand; all its elements sit inside its single mechanism family for the Holm correction (S30 section 4)."
+    },
+    "estimand": {
+      "type": "string",
+      "enum": [
+        "E1_GAME_TOTAL",
+        "E2_FINAL_MARGIN_HOME",
+        "E3_HOME_WIN_PROB"
+      ],
+      "description": "The S30 section-1 estimand this element targets. Full-game settled quantities, OT included (D049). E1: sum of both teams' final points. E2: home minus away final points. E3: probability the home team is the settled winner, p in (0,1)."
+    },
+    "element_id": {
+      "type": "string",
+      "pattern": "^.+::(E1_GAME_TOTAL|E2_FINAL_MARGIN_HOME|E3_HOME_WIN_PROB)$",
+      "description": "arm_id + '::' + estimand. The key of the K0_MATCHED map. Two records may not share an element_id. Cross-field rule R1 binds it to the arm_id and estimand fields."
+    },
+    "primary_metric": {
+      "type": "string",
+      "enum": [
+        "mae",
+        "brier_raw_model_probability"
+      ],
+      "description": "Pinned per estimand by S30 section 4 (enforced by the estimand conditionals below): E1 and E2 -> mae; E3 -> brier_raw_model_probability (raw model probability vs settled indicator; the 10-bin calibration table is a receipted sealed output, never gating)."
+    },
+    "arm_kind": {
+      "type": "string",
+      "enum": [
+        "calibration_only",
+        "substantive_feature",
+        "structural_reparameterisation",
+        "level_transport",
+        "hierarchical_pooling",
+        "observation_purification"
+      ],
+      "description": "What KIND of claim the arm makes (P26 1.5, carried unchanged). The kind determines the shape of the matched null AND the verdict label the arm is eligible for. An arm may not be scored under a kind it did not declare before results."
+    },
+    "treatment_mechanism": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "statement",
+        "treatment_terms",
+        "tested_parameters",
+        "null_construction",
+        "claimed_signal_axes"
+      ],
+      "properties": {
+        "statement": {
+          "type": "string",
+          "minLength": 20,
+          "description": "The mechanism under test, in basketball terms. A feature list is not a mechanism."
+        },
+        "treatment_terms": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "description": "EXACTLY the terms the matched null excludes. Interaction terms use 'FACTOR:feature' form so that lower-order closure is checkable (rule R5)."
+        },
+        "tested_parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "role",
+              "null_value",
+              "null_value_meaning"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "slope",
+                  "intercept",
+                  "shrinkage_weight",
+                  "coefficient",
+                  "pooling_strength"
+                ]
+              },
+              "null_value": {
+                "type": "number"
+              },
+              "null_value_meaning": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "description": "Parameters the arm estimates that the matched null FIXES. Required non-empty for calibration_only, structural_reparameterisation and hierarchical_pooling (validator rule, carried from P26)."
+        },
+        "claimed_signal_axes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "team_identity",
+              "opponent_identity",
+              "league_time",
+              "season_time",
+              "venue",
+              "roster",
+              "possession_observation",
+              "support_size",
+              "score_observation",
+              "efficiency_observation",
+              "home_court",
+              "schedule_rest_travel",
+              "era_2024_charter_break",
+              "referee_crew",
+              "early_season_transient"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "The axes along which the arm CLAIMS its signal lives. The first eight are cycle-1's; the last seven are score-family additions matching the D047 directed-candidate families (S30 section 7). A permutation null must act on an axis in this list; permuting an axis the arm does not use destroys nothing."
+        },
+        "null_construction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "method",
+            "destroys_claimed_signal"
+          ],
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": [
+                "term_removal",
+                "parameter_fixed_at_null",
+                "targeted_permutation",
+                "structural_collapse"
+              ]
+            },
+            "permutation_axis": {
+              "type": "string"
+            },
+            "permutation_seed": {
+              "type": "integer"
+            },
+            "destroys_claimed_signal": {
+              "type": "string",
+              "minLength": 20,
+              "description": "How this construction removes the mechanism, stated against claimed_signal_axes. 'It permutes something' is not an answer."
+            }
+          }
+        }
+      }
+    },
+    "invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rows",
+        "target",
+        "folds",
+        "weights",
+        "offset",
+        "fallback_machinery",
+        "nuisance_terms",
+        "lower_order_structural_terms",
+        "independent_unit"
+      ],
+      "description": "Held IDENTICAL between the arm and its matched null. Row-set identity is a digest, not prose. target is bound to the record's estimand by the conditionals below - a record cannot swap targets, and the cycle-1 possession target is not representable here at all.",
+      "properties": {
+        "rows": {
+          "type": "string",
+          "minLength": 1,
+          "description": "comparison_gate.row_digest() string over GAME-CLUSTER keys; byte-identical on both sides. The game cluster is the only admissible independent unit; games are never split across folds or bootstrap draws (S30 section 2, F13 verbatim)."
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "E1_GAME_TOTAL",
+            "E2_FINAL_MARGIN_HOME",
+            "E3_HOME_WIN_PROB"
+          ],
+          "description": "Must equal the record's estimand (enforced below). Full-game settled quantity, OT included."
+        },
+        "folds": {
+          "const": [
+            "train_lt_2022",
+            "train_lt_2023",
+            "train_lt_2024",
+            "train_lt_2025",
+            "train_lt_2026"
+          ],
+          "description": "The five D006 expanding walk-forward folds, identical to cycle 1, pinned by S30 section 3. Not a free field."
+        },
+        "weights": {
+          "type": "string",
+          "minLength": 1
+        },
+        "offset": {
+          "type": "string",
+          "minLength": 1,
+          "description": "State comparison_gate.NONE ('none') explicitly if no offset; silence is not a declaration."
+        },
+        "fallback_machinery": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nuisance_terms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "lower_order_structural_terms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "independent_unit": {
+          "const": "game_cluster"
+        }
+      }
+    },
+    "estimation_objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "training_loss",
+        "response_family",
+        "shrinkage_regularization",
+        "p_clipping",
+        "matched_identically_for_arm_and_k0",
+        "s36_deviation_consequence"
+      ],
+      "description": "S30 section 4: estimation_objective / response family is an EXPLICITLY MATCHED dimension - every card declares the training loss (and any shrinkage/regularization and p-clipping bounds for E3) for arm and K0 identically. Never inferred from silence.",
+      "properties": {
+        "training_loss": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The exact loss minimised in training (e.g. 'l2_squared_error', 'l1_absolute_error', 'gaussian_mle', 'bernoulli_log_likelihood'). Free-form but explicit; identical string on both sides."
+        },
+        "response_family": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The response family / distributional assumption of the fit (e.g. 'gaussian_identity', 'bernoulli_logit'). Identical string on both sides."
+        },
+        "shrinkage_regularization": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Any shrinkage or regularization, with its strength and what it is applied to; 'none' stated explicitly if none."
+        },
+        "p_clipping": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applicable",
+            "lower",
+            "upper",
+            "statement"
+          ],
+          "description": "Probability clipping bounds. For E3 records: applicable must be true with numeric bounds strictly inside (0,1) (enforced by the E3 conditional below) - the model emits p in (0,1) and the Brier is computed on the RAW model probability. For E1/E2 records: applicable must be false and bounds null.",
+          "properties": {
+            "applicable": {
+              "type": "boolean"
+            },
+            "lower": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "upper": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "matched_identically_for_arm_and_k0": {
+          "const": true
+        },
+        "s36_deviation_consequence": {
+          "const": "ANY_PER_ARM_DEVIATION_DISCOVERED_AT_S36_VOIDS_THE_ARM",
+          "description": "Cycle-1 P35 clause, carried verbatim by S30 section 4."
+        }
+      }
+    },
+    "null_strength_floor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "delta_semantics"
+      ],
+      "description": "S30 section 4, leakage finding 2: every element's K0_MATCHED must carry, as receipted null-granted features (the cycle-1 K5/A07 pattern), the public composite's own frozen ingredients - PINNED TO BYTES, NEVER TO NAMES. The ingredients enter the K0 as structural/null-granted terms, never as substantive features, because the frozen gate blocks any K0 with n_substantive_features > 0 (measured: comparison_gate.k0_findings, kind k0_has_substantive_features). Delta thereby measures value beyond the public floor, not beyond an intercept.",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "NULL_GRANTED_INGREDIENTS_CARRIED",
+            "CANNOT_HOST"
+          ],
+          "description": "CARRIED is the normal path. CANNOT_HOST requires the mechanical demonstration block and permanently down-labels the element (S30 section 4)."
+        },
+        "delta_semantics": {
+          "const": "CHALLENGER_VS_K0_MEASURES_VALUE_BEYOND_THE_PUBLIC_FLOOR"
+        },
+        "null_granted_structural_terms": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/null_granted_term"
+          },
+          "description": "The frozen composite ingredients the K0 carries, each with a byte pin. Required when status is CARRIED; forbidden when CANNOT_HOST. Cross-field rule R3 binds each term_name into k0_spec.structural_terms (and, under containment, arm_spec.structural_terms)."
+        },
+        "cannot_host": {
+          "$ref": "#/$defs/cannot_host_block"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "NULL_GRANTED_INGREDIENTS_CARRIED"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "null_granted_structural_terms"
+            ],
+            "properties": {
+              "cannot_host": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "CANNOT_HOST"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "required": [
+              "cannot_host"
+            ],
+            "properties": {
+              "null_granted_structural_terms": false
+            }
+          }
+        }
+      ]
+    },
+    "nesting_reading": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_reading",
+        "arm_design_contains_null_granted_terms",
+        "deviation"
+      ],
+      "description": "S30 section 4 requires this schema to declare the canonical nesting reading: whether null-granted terms must appear in the arm's own design. CANONICAL, FROZEN HERE: cycle-1 containment (arm = null-granted terms + treatment). Reasons, both mechanical: (1) under containment, arm-minus-K0 differs by exactly the treatment terms, so challenger_vs_k0 stays a pure treatment contrast and the Layer A semantics of the frozen gate carry over unchanged; (2) the null-granted terms are carried in structural comparison_gate dimensions that Layer A requires BYTE-IDENTICAL on both sides - a non-nested arm (K0 carries ingredients the arm's design lacks) makes those declared dimension strings differ, which the frozen gate blocks as a Layer A dimension_mismatch, adjudicable only through the loud, permanent LAYER_A_OVERRIDE_CODE. Containment is therefore not merely preferred; the frozen machinery makes any other reading extraordinary by construction. A non-nested K0 is a harder test, not an exploit - but it must be declared before results and it changes what Delta means, so the deviation block forces the declaration.",
+      "properties": {
+        "canonical_reading": {
+          "const": "CYCLE1_CONTAINMENT_NULL_GRANTED_TERMS_PRESENT_IN_ARM_DESIGN"
+        },
+        "arm_design_contains_null_granted_terms": {
+          "type": "boolean"
+        },
+        "deviation": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "null when the record follows the canonical containment reading; a declared-deviation block otherwise (structure enforced by the conditional below)."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "arm_design_contains_null_granted_terms": {
+                "const": true
+              }
+            },
+            "required": [
+              "arm_design_contains_null_granted_terms"
+            ]
+          },
+          "then": {
+            "properties": {
+              "deviation": {
+                "const": null
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "arm_design_contains_null_granted_terms": {
+                "const": false
+              }
+            },
+            "required": [
+              "arm_design_contains_null_granted_terms"
+            ]
+          },
+          "then": {
+            "properties": {
+              "deviation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "justification",
+                  "label",
+                  "delta_semantics_change",
+                  "frozen_gate_consequence",
+                  "declared_before_results"
+                ],
+                "properties": {
+                  "justification": {
+                    "type": "string",
+                    "minLength": 40
+                  },
+                  "label": {
+                    "const": "NON_NESTED_K0_HARDER_TEST"
+                  },
+                  "delta_semantics_change": {
+                    "const": "CHALLENGER_VS_K0_IS_NOT_A_PURE_TREATMENT_CONTRAST_UNDER_NON_NESTING"
+                  },
+                  "frozen_gate_consequence": {
+                    "const": "STRUCTURAL_DIMENSION_STRINGS_DIFFER_ACROSS_SIDES_TRIPPING_LAYER_A_REQUIRES_LAYER_A_OVERRIDE_CODE"
+                  },
+                  "declared_before_results": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "coverage_predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "predicate_text",
+        "information_based_cutoff_valid_only",
+        "market_fields_barred",
+        "identical_for_arm_and_k0",
+        "base_universe_game_clusters",
+        "base_universe_team_game_rows",
+        "pooled_retention_floor",
+        "per_fold_test_retention_floor",
+        "lower_floor_justification",
+        "all_covered_sensitivity_row",
+        "whole_fold_structural_deactivation",
+        "selection_visibility"
+      ],
+      "description": "Reference fields matching S30 section 2. The arm and its K0_MATCHED share this identical declared coverage predicate.",
+      "properties": {
+        "predicate_text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Expressible solely in terms of strictly-prior data availability (e.g. 'both teams have >= N strictly-prior games this season'); never outcome terms, season-label convenience, or market-coverage terms."
+        },
+        "information_based_cutoff_valid_only": {
+          "const": true
+        },
+        "market_fields_barred": {
+          "const": true,
+          "description": "Market-odds fields inadmissible as features AND as coverage-predicate inputs this cycle (S30 section 8, P2B)."
+        },
+        "identical_for_arm_and_k0": {
+          "const": true
+        },
+        "base_universe_game_clusters": {
+          "const": 1491
+        },
+        "base_universe_team_game_rows": {
+          "const": 2982
+        },
+        "pooled_retention_floor": {
+          "const": 0.9
+        },
+        "per_fold_test_retention_floor": {
+          "const": 0.8
+        },
+        "lower_floor_justification": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "null when both floors are met. A lower floor of either kind requires an explicit justification adjudicated at S33/S34 and recorded in the card (S30 section 2.2)."
+        },
+        "all_covered_sensitivity_row": {
+          "const": "MANDATORY_NON_GATING",
+          "description": "Every arm is additionally scored on the full base universe with its card-declared fallback (the cycle-1 fallback_rules dimension), reported alongside the gated result."
+        },
+        "whole_fold_structural_deactivation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "declared"
+          ],
+          "description": "The ONLY path around the per-fold floor, in cycle 1's card-declared form only: symmetric in arm and K0, declared in the card with its numeric trigger before any fit. The cycle-1 D040 mid-cycle fold-local escalation path is NOT carried into this cycle (P42 C1).",
+          "properties": {
+            "declared": {
+              "type": "boolean"
+            },
+            "numeric_trigger": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "symmetric_in_arm_and_k0": {
+              "type": "boolean"
+            },
+            "declared_in_card_before_any_fit": {
+              "type": "boolean"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "declared": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "declared"
+                ]
+              },
+              "then": {
+                "required": [
+                  "numeric_trigger",
+                  "symmetric_in_arm_and_k0",
+                  "declared_in_card_before_any_fit"
+                ],
+                "properties": {
+                  "numeric_trigger": {
+                    "type": "number"
+                  },
+                  "symmetric_in_arm_and_k0": {
+                    "const": true
+                  },
+                  "declared_in_card_before_any_fit": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "selection_visibility": {
+          "const": "ADJUDICATION_REPORT_STATES_DROPPED_GAME_COUNT_AND_NAIVE_FLOOR_ERROR_ON_DROPPED_VS_KEPT"
+        }
+      }
+    },
+    "comparison_gate_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module_path",
+        "module_sha256",
+        "n_machine_dimensions",
+        "prose_to_machine_mapping"
+      ],
+      "description": "Pins the frozen gate this record is implemented against. The thirteen prose dimensions of S30 section 4 map onto the seventeen machine dimensions via comparison_gate.LAYER_A_STRICT (an import-time assertion in the frozen module proves the mapping covers every dimension exactly once); records implement against the MACHINE list, never a thirteen-item checklist. If the frozen module's bytes ever change, every record fails loudly here.",
+      "properties": {
+        "module_path": {
+          "const": "experiments/player_program/comparison_gate.py"
+        },
+        "module_sha256": {
+          "const": "c2d242581cc7551c6ce7d3aaf554f0cc18fd9b1f72677edd61ba95f91a7b5b92"
+        },
+        "n_machine_dimensions": {
+          "const": 17
+        },
+        "prose_to_machine_mapping": {
+          "const": "comparison_gate.LAYER_A_STRICT"
+        }
+      }
+    },
+    "arm_spec": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/side"
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "challenger"
+            }
+          }
+        }
+      ]
+    },
+    "k0_spec": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/side"
+        },
+        {
+          "properties": {
+            "role": {
+              "const": "k0"
+            },
+            "substantive_features": {
+              "maxItems": 0,
+              "description": "SCHEMA-UNSATISFIABLE with any entry: the frozen gate blocks any K0 with n_substantive_features > 0 (k0_has_substantive_features), so this schema makes the state unrepresentable rather than merely blocked downstream. Null-granted ingredients live in structural_terms and the routed structural dimensions."
+            }
+          }
+        }
+      ]
+    },
+    "fold_local_fallback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "trigger",
+        "numeric_threshold",
+        "action",
+        "registered_before_results"
+      ],
+      "description": "Carried from P26 (GATE_INVOCATION_CONTRACT section 4 pattern): a structural partition indicator identically zero in a fold is a blocking zero_variance finding ON THE CONTROL. The remedy must be frozen with a NUMERIC trigger before any result is visible. This node declares the FIELD; the S-lane guard node that owns the threshold sets it (no S-lane analog of P27 exists yet - stated, not papered over).",
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "trigger": {
+          "type": "string",
+          "minLength": 1
+        },
+        "numeric_threshold": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "drop_term_for_fold",
+            "collapse_to_parent_tier",
+            "refuse_to_score_fold",
+            "not_applicable"
+          ]
+        },
+        "registered_before_results": {
+          "type": "boolean"
+        }
+      }
+    },
+    "verdict_label_policy": {
+      "type": "string",
+      "minLength": 20,
+      "description": "The label this arm is eligible for given its kind. A calibration_only arm may NEVER be reported as feature value, however large challenger_vs_k0 is. A CANNOT_HOST element's every gate pass carries the BELOW-FLOOR NULL label inseparably."
+    },
+    "k0_flat_role": {
+      "const": "diagnostic_only",
+      "description": "K0_FLAT (intercept-only) is a DIAGNOSTIC REFERENCE. Beating K0_FLAT has NO promotion value. K0_MATCHED[element_id] is the sole authoritative promotion control (S30 section 4: K0_FLAT remains diagnostic only)."
+    },
+    "registered_before_results": {
+      "type": "boolean"
+    },
+    "distributional_secondary": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "OPTIONAL (S30 section 5). Present only if the arm additionally emits predictive distributions for E1/E2. CRPS and PIT are secondary, exploratory endpoints, sealed with the primaries and opened only at S40; no promotion may rest on a secondary endpoint.",
+      "additionalProperties": false,
+      "required": [
+        "functional_form",
+        "dispersion_estimation",
+        "quantile_grid",
+        "home_away_covariance_treatment",
+        "matched_between_arm_and_k0",
+        "endpoint_status"
+      ],
+      "properties": {
+        "functional_form": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The K0 itself emits a distribution of the SAME functional form."
+        },
+        "dispersion_estimation": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Matched dispersion estimation, train-years-only."
+        },
+        "quantile_grid": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Matched quantile grid where graded by pinball."
+        },
+        "home_away_covariance_treatment": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Matched treatment of home/away residual covariance (F13 4.3)."
+        },
+        "matched_between_arm_and_k0": {
+          "const": true
+        },
+        "endpoint_status": {
+          "const": "SECONDARY_EXPLORATORY_SEALED_UNTIL_S40_NEVER_A_PROMOTION_BASIS"
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "estimand": {
+            "const": "E1_GAME_TOTAL"
+          }
+        },
+        "required": [
+          "estimand"
+        ]
+      },
+      "then": {
+        "properties": {
+          "primary_metric": {
+            "const": "mae"
+          },
+          "invariants": {
+            "properties": {
+              "target": {
+                "const": "E1_GAME_TOTAL"
+              }
+            }
+          },
+          "estimation_objective": {
+            "properties": {
+              "p_clipping": {
+                "properties": {
+                  "applicable": {
+                    "const": false
+                  },
+                  "lower": {
+                    "type": "null"
+                  },
+                  "upper": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "estimand": {
+            "const": "E2_FINAL_MARGIN_HOME"
+          }
+        },
+        "required": [
+          "estimand"
+        ]
+      },
+      "then": {
+        "properties": {
+          "primary_metric": {
+            "const": "mae"
+          },
+          "invariants": {
+            "properties": {
+              "target": {
+                "const": "E2_FINAL_MARGIN_HOME"
+              }
+            }
+          },
+          "estimation_objective": {
+            "properties": {
+              "p_clipping": {
+                "properties": {
+                  "applicable": {
+                    "const": false
+                  },
+                  "lower": {
+                    "type": "null"
+                  },
+                  "upper": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "estimand": {
+            "const": "E3_HOME_WIN_PROB"
+          }
+        },
+        "required": [
+          "estimand"
+        ]
+      },
+      "then": {
+        "properties": {
+          "primary_metric": {
+            "const": "brier_raw_model_probability"
+          },
+          "invariants": {
+            "properties": {
+              "target": {
+                "const": "E3_HOME_WIN_PROB"
+              }
+            }
+          },
+          "estimation_objective": {
+            "properties": {
+              "p_clipping": {
+                "properties": {
+                  "applicable": {
+                    "const": true
+                  },
+                  "lower": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "exclusiveMaximum": 1
+                  },
+                  "upper": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "exclusiveMaximum": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "estimand": {
+            "const": "E1_GAME_TOTAL"
+          },
+          "null_strength_floor": {
+            "properties": {
+              "status": {
+                "const": "NULL_GRANTED_INGREDIENTS_CARRIED"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "estimand",
+          "null_strength_floor"
+        ]
+      },
+      "then": {
+        "properties": {
+          "null_strength_floor": {
+            "properties": {
+              "null_granted_structural_terms": {
+                "contains": {
+                  "properties": {
+                    "byte_pin": {
+                      "anyOf": [
+                        {
+                          "properties": {
+                            "column": {
+                              "const": "pred_total"
+                            }
+                          },
+                          "required": [
+                            "column"
+                          ]
+                        },
+                        {
+                          "properties": {
+                            "pin_kind": {
+                              "const": "builder_source_and_resolved_parameters"
+                            }
+                          },
+                          "required": [
+                            "pin_kind"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "byte_pin"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "estimand": {
+            "const": "E2_FINAL_MARGIN_HOME"
+          },
+          "null_strength_floor": {
+            "properties": {
+              "status": {
+                "const": "NULL_GRANTED_INGREDIENTS_CARRIED"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "estimand",
+          "null_strength_floor"
+        ]
+      },
+      "then": {
+        "properties": {
+          "null_strength_floor": {
+            "properties": {
+              "null_granted_structural_terms": {
+                "contains": {
+                  "properties": {
+                    "byte_pin": {
+                      "anyOf": [
+                        {
+                          "properties": {
+                            "column": {
+                              "const": "pred_margin"
+                            }
+                          },
+                          "required": [
+                            "column"
+                          ]
+                        },
+                        {
+                          "properties": {
+                            "pin_kind": {
+                              "const": "builder_source_and_resolved_parameters"
+                            }
+                          },
+                          "required": [
+                            "pin_kind"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "byte_pin"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "estimand": {
+            "const": "E3_HOME_WIN_PROB"
+          },
+          "null_strength_floor": {
+            "properties": {
+              "status": {
+                "const": "NULL_GRANTED_INGREDIENTS_CARRIED"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "estimand",
+          "null_strength_floor"
+        ]
+      },
+      "then": {
+        "properties": {
+          "null_strength_floor": {
+            "properties": {
+              "null_granted_structural_terms": {
+                "contains": {
+                  "properties": {
+                    "byte_pin": {
+                      "anyOf": [
+                        {
+                          "properties": {
+                            "column": {
+                              "const": "p_home"
+                            }
+                          },
+                          "required": [
+                            "column"
+                          ]
+                        },
+                        {
+                          "properties": {
+                            "pin_kind": {
+                              "const": "builder_source_and_resolved_parameters"
+                            }
+                          },
+                          "required": [
+                            "pin_kind"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "byte_pin"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "null_granted_term": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "term_name",
+        "routed_dimension",
+        "byte_pin"
+      ],
+      "properties": {
+        "term_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "routed_dimension": {
+          "type": "string",
+          "enum": [
+            "companion_components",
+            "preprocessing",
+            "fallback_rules"
+          ],
+          "description": "The structural comparison_gate dimension that carries this term, with an IDENTICAL declared string on both sides (P26 1.4 routing rule, carried). Never substantive_features."
+        },
+        "byte_pin": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/frozen_store_column_pin"
+            },
+            {
+              "$ref": "#/$defs/builder_source_pin"
+            }
+          ]
+        }
+      }
+    },
+    "frozen_store_column_pin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pin_kind",
+        "artifact_path",
+        "artifact_sha256",
+        "method_filter",
+        "sort_rule",
+        "canonicalisation",
+        "join_key_column",
+        "join_key_sha256",
+        "column",
+        "column_sha256",
+        "n_values",
+        "n_nan"
+      ],
+      "description": "Byte pin, path 1: the exact ingredient column of the frozen composite store, by column-level digest. Every const below was measured by MEASURE.py; a record naming a column must carry that column's exact measured digest, so a name-matching reimplementation is SCHEMA-UNSATISFIABLE. Validators additionally recompute the digest from the artifact (rule R10).",
+      "properties": {
+        "pin_kind": {
+          "const": "frozen_store_column_digest"
+        },
+        "artifact_path": {
+          "const": "experiments/market_program/SCORE_BASELINES/score_baseline_rows.parquet"
+        },
+        "artifact_sha256": {
+          "const": "5d1fc4c9af2334a6edd6ddffab91fe7cff5596578d9995937859a86cfc1e1452"
+        },
+        "method_filter": {
+          "const": "composite_pace_x_eff_v1"
+        },
+        "sort_rule": {
+          "const": "lexicographic on str(game_id) ascending"
+        },
+        "canonicalisation": {
+          "const": "floats via repr(float(v)) (NaN->'nan'); ints via str(int(v)); timestamps via .isoformat(); else str(v); joined with U+001F; UTF-8; sha256 hexdigest"
+        },
+        "join_key_column": {
+          "const": "game_id"
+        },
+        "join_key_sha256": {
+          "const": "d3a4b7fac5399f8d5c7e27b969e8e9901e6e44846f95c42af7967aa7eb51d249",
+          "description": "Digest of the sorted game_id column itself - pins the row alignment, so a column digest can never silently ride a different row order or subset."
+        },
+        "column": {
+          "type": "string",
+          "enum": [
+            "pred_home",
+            "pred_away",
+            "pred_total",
+            "pred_margin",
+            "p_home"
+          ]
+        },
+        "column_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "n_values": {
+          "const": 1465
+        },
+        "n_nan": {
+          "type": "integer"
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "column": {
+              "const": "pred_home"
+            },
+            "column_sha256": {
+              "const": "e754709cfc7b0779502af153b4b89e8a5d3ee3223b2e365bdc0d046e974d4525"
+            },
+            "n_nan": {
+              "const": 0
+            }
+          }
+        },
+        {
+          "properties": {
+            "column": {
+              "const": "pred_away"
+            },
+            "column_sha256": {
+              "const": "9178138c5f94cc4dbe981ebdc2a94d2e8d030e4b9337f9cb8c0f7d12e98adebe"
+            },
+            "n_nan": {
+              "const": 0
+            }
+          }
+        },
+        {
+          "properties": {
+            "column": {
+              "const": "pred_total"
+            },
+            "column_sha256": {
+              "const": "16c312aba2f964682f4d20a694b09890f4488f0e5bcdf31f827946158e145f3d"
+            },
+            "n_nan": {
+              "const": 0
+            }
+          }
+        },
+        {
+          "properties": {
+            "column": {
+              "const": "pred_margin"
+            },
+            "column_sha256": {
+              "const": "1d79ff3adeda3d66e26f3bda1702d36301da447d87828c474d488d793de44ff4"
+            },
+            "n_nan": {
+              "const": 0
+            }
+          }
+        },
+        {
+          "properties": {
+            "column": {
+              "const": "p_home"
+            },
+            "column_sha256": {
+              "const": "8a92c017e4f8606c3a7405116a455dc746493581454dc4dcbe1aab6d00b41989"
+            },
+            "n_nan": {
+              "const": 188
+            }
+          }
+        }
+      ]
+    },
+    "builder_source_pin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pin_kind",
+        "builder_path",
+        "builder_sha256",
+        "resolved_parameters",
+        "input_artifacts",
+        "regenerated_column_digests_must_match_frozen_store"
+      ],
+      "description": "Byte pin, path 2: the frozen builder source hash plus its resolved parameters and input-artifact hashes. Using this path obliges the consumer to RE-RUN the pinned builder bytes and byte-match the regenerated ingredient columns against the frozen-store column digests of path 1 - so the two paths pin the same bytes and name-matching remains unsatisfiable. bookie_baseline_metrics is deliberately absent: it feeds only the builder's market-comparison block, never the frozen prediction rows (verified by reading the builder source).",
+      "properties": {
+        "pin_kind": {
+          "const": "builder_source_and_resolved_parameters"
+        },
+        "builder_path": {
+          "const": "experiments/market_program/SCORE_BASELINES/build_score_baselines.py"
+        },
+        "builder_sha256": {
+          "const": "65b7a94213d11703b5820b34c49e0926c465fe20ca4fd1b4a82d8f39d5fd03f8"
+        },
+        "resolved_parameters": {
+          "const": {
+            "EFF_EWMA_SPAN": 10,
+            "EFF_ALPHA": 0.18181818181818182,
+            "EFF_MIN_HISTORY": 3,
+            "BLEND": 0.5,
+            "model_version": "composite_pace_x_eff_v1",
+            "win_prob": "logistic(intercept + slope*pred_margin) fitted on strictly-prior seasons only, walk-forward, never pooled; 2021 has no prior season and gets no p_home"
+          }
+        },
+        "input_artifacts": {
+          "const": [
+            {
+              "path": "data/masters/master_team.parquet",
+              "sha256": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528"
+            },
+            {
+              "path": "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+              "sha256": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18"
+            },
+            {
+              "path": "experiments/player_program/possessions_v2/possessions_raw_v2.parquet",
+              "sha256": "7200881fd811db9d0d6b10ea0a19b01ec7b6d027ee4567b9ef963241b15a4b1a"
+            }
+          ]
+        },
+        "regenerated_column_digests_must_match_frozen_store": {
+          "const": true
+        }
+      }
+    },
+    "cannot_host_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mechanical_demonstration_reference",
+        "demonstration_kind",
+        "s34_reproduction",
+        "verdict_label",
+        "label_inseparability",
+        "unqualified_pass_tally_eligible",
+        "s40_routing",
+        "d045_floor_recomputed_on_exact_universe_reported"
+      ],
+      "description": "S30 section 4: the cannot-host path is mechanical, labeled, and never promotes unqualified. A persuasive argument is not a demonstration.",
+      "properties": {
+        "mechanical_demonstration_reference": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the receipted artifact that DEMONSTRATES the blockage mechanically - the ingredient columns are unrepresentable in the declared design, or provably rank-deficient in it. Code that runs, not prose."
+        },
+        "demonstration_kind": {
+          "type": "string",
+          "enum": [
+            "ingredient_columns_unrepresentable_in_declared_design",
+            "ingredient_columns_provably_rank_deficient_in_declared_design"
+          ]
+        },
+        "s34_reproduction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "required",
+            "reviewer_receipt_reference"
+          ],
+          "properties": {
+            "required": {
+              "const": true
+            },
+            "reviewer_receipt_reference": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Path to the S34 reviewer's independent reproduction receipt. null until it exists; while null, NO gate result for this element is citable (cross-field rule R7)."
+            }
+          }
+        },
+        "verdict_label": {
+          "const": "FEATURE VALUE OVER OWN NULL ONLY \u2014 BELOW-FLOOR NULL"
+        },
+        "label_inseparability": {
+          "const": "THIS_LABEL_IS_INSEPARABLE_FROM_EVERY_CITATION_OF_THE_RESULT"
+        },
+        "unqualified_pass_tally_eligible": {
+          "const": false
+        },
+        "s40_routing": {
+          "const": "S40_ROUTES_ANY_WOULD_BE_PROMOTION_TO_THE_S42_USER_GATE"
+        },
+        "d045_floor_recomputed_on_exact_universe_reported": {
+          "const": true,
+          "description": "Non-gating: the element additionally reports its metric against the D045 floor recomputed on its exact universe."
+        }
+      }
+    },
+    "side": {
+      "type": "object",
+      "required": [
+        "name",
+        "role",
+        "pipeline_id",
+        "substantive_features",
+        "structural_terms",
+        "declaration_routing",
+        "comparison_gate_sidespec"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "challenger",
+            "k0"
+          ]
+        },
+        "pipeline_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "ASSERTED, NOT DEMONSTRATED (comparison_gate.REMAINING_GAPS, still open): the gate blocks when arm and K0 pipeline_ids differ but cannot prove the K0 artifact came from the arm's code path."
+        },
+        "substantive_features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "structural_terms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "description": "Non-substantive structural degrees of freedom, INCLUDING the null-granted composite ingredients. Carried in the structural comparison_gate dimensions; identical on both sides under the canonical containment reading."
+        },
+        "declaration_routing": {
+          "type": "object",
+          "description": "term -> which of the 17 comparison_gate dimensions carries it. A term with no route is undeclared and therefore invisible to the frozen gate (rule R4).",
+          "additionalProperties": {
+            "type": "string",
+            "enum": [
+              "intercept_treatment",
+              "calibration_freedom",
+              "penalty_treatment",
+              "exposure_offset",
+              "training_rows",
+              "evaluation_rows",
+              "chronological_folds",
+              "clipping",
+              "link_function",
+              "preprocessing",
+              "missing_value_handling",
+              "companion_components",
+              "fallback_rules",
+              "aggregation",
+              "candidate_universe",
+              "post_processing",
+              "prediction_universe",
+              "substantive_features"
+            ]
+          }
+        },
+        "comparison_gate_sidespec": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "intercept_treatment",
+            "calibration_freedom",
+            "penalty_treatment",
+            "exposure_offset",
+            "training_rows",
+            "evaluation_rows",
+            "chronological_folds",
+            "clipping",
+            "link_function",
+            "preprocessing",
+            "missing_value_handling",
+            "companion_components",
+            "fallback_rules",
+            "aggregation",
+            "candidate_universe",
+            "post_processing",
+            "prediction_universe"
+          ],
+          "description": "All seventeen comparison_gate.DIMENSIONS, stated (measured: len(DIMENSIONS) == 17). UNSPECIFIED is a blocking finding in the frozen gate; there is no dimension that means 'same as the other side'.",
+          "properties": {
+            "intercept_treatment": {},
+            "calibration_freedom": {
+              "type": "string",
+              "minLength": 1,
+              "description": "EXPLICIT, NEVER INFERRED FROM SILENCE (S30 section 4). Any post-fit rescaling, recentring, isotonic or affine fix-up - or the exact string 'none'. The one machine dimension the frozen gate separates from post_processing for exactly this reason."
+            },
+            "penalty_treatment": {},
+            "exposure_offset": {},
+            "training_rows": {},
+            "evaluation_rows": {},
+            "chronological_folds": {},
+            "clipping": {},
+            "link_function": {},
+            "preprocessing": {},
+            "missing_value_handling": {
+              "description": "For any K0 carrying p_home: the frozen store's p_home is NaN for all 188 covered 2021 games (walk-forward calibration has no prior season) - the declared handling of those rows is stated here, identically on both sides."
+            },
+            "companion_components": {},
+            "fallback_rules": {},
+            "aggregation": {},
+            "candidate_universe": {},
+            "post_processing": {},
+            "prediction_universe": {}
+          }
+        }
+      }
+    }
+  }
+}
