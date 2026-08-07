@@ -92,6 +92,8 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 * `experiments/player_program/stage3_score/S30_TARGET_CONTRACT/CYCLE2_TARGET_CONTRACT.md`
 * `experiments/player_program/stage3_score/S30_TARGET_CONTRACT/TARGET_CONTRACT.json`
+* `experiments/player_program/stage3_score/S30_TARGET_CONTRACT/CYCLE2_TARGET_CONTRACT_IDEATION_EDITION.md`
+* `experiments/player_program/stage3_score/S30_TARGET_CONTRACT/EDITION_DIFF_RECEIPT.json`
 
 ## Validation that will be run against your output
 

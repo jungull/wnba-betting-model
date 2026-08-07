@@ -6,19 +6,18 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `514f36d240532664762c02d7355e716faafb3e64` |
+| HEAD | `21ce994398bd808b0cea59733eab02b66b15631e` |
 | working tree | DIRTY |
-| nodes | 100 |
-| events | 327 |
+| nodes | 101 |
+| events | 333 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 16 |
-| PASSED | 67 |
-| READY | 7 |
-| RUNNING | 1 |
+| BLOCKED | 15 |
+| PASSED | 68 |
+| READY | 9 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 3 |
 
@@ -28,7 +27,7 @@ None open against a node.
 
 ## Running
 
-* `S30_TARGET_CONTRACT` — Cycle-2 score-family target contract: freeze estimands, universe, folds, gates
+None.
 
 ## Ready — next automatically scheduled
 
@@ -39,6 +38,8 @@ None open against a node.
 * `M16_RELATED_MARKET_COHERENCE` (market_intelligence) — Coherence checks across related markets (moneyline, spread, total, props)
 * `M17_SUSPENSION_REOPENING` (market_intelligence) — Market suspension and reopening microstructure on the high-frequency tape
 * `M21_EXECUTION_REALISM` (market_intelligence) — Execution realism: limits, slippage and decision-to-executable latency, measured
+* `S31_SCORE_IDEATION` (score) — Independent ideation wave on the frozen cycle-2 contract: isolated sources, no cross-exposure
+* `S32B_K0_CONTRACT` (score) — Score-family K0_MATCHED contract and machine schema (S-lane analog of P26)
 
 ## Passed
 
@@ -105,6 +106,7 @@ None open against a node.
 * `F15_PROSPECTIVE_VALIDATION` — Prospective validation design
 * `F16_PLAYER_PROPS` — Player props — last, by design
 * `R16_I11_SEAL_HONESTY` — Make I11's seal claim honest: obfuscation is not blinding
+* `S30_TARGET_CONTRACT` — Cycle-2 score-family target contract: freeze estimands, universe, folds, gates
 * `U10_PREDICTION_API_SCHEMA` — Model-agnostic versioned response schema built against fixtures
 * `U11_UI_SHELL` — UI shell built against fixtures or frozen outputs
 * `U12_PREDICTION_HISTORY` — Immutable prediction-history and model-version views
@@ -118,13 +120,13 @@ None open against a node.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | READY | RUNNING | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 0 | 1 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 0 | 1 | 0 |
-| market_intelligence | 5 | 9 | 7 | 0 | 0 | 1 |
-| operations | 0 | 12 | 0 | 0 | 2 | 0 |
-| possession | 0 | 25 | 0 | 0 | 2 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 | 0 |
-| score | 11 | 0 | 0 | 1 | 0 | 1 |
+| lane | BLOCKED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 1 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 1 | 0 |
+| market_intelligence | 5 | 9 | 7 | 0 | 1 |
+| operations | 0 | 12 | 0 | 2 | 0 |
+| possession | 0 | 25 | 0 | 2 | 1 |
+| product | 0 | 4 | 0 | 0 | 0 |
+| score | 10 | 1 | 2 | 0 | 1 |
