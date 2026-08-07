@@ -293,3 +293,41 @@ count and nearly lost them. **Every one was caught by the graph's own machinery,
 the gates over your own certainty — that is the whole point of them.
 
 *The ledger is the memory. The board is the truth. Frozen bytes govern. Do not stop.*
+
+---
+## 9.6 UPDATE — S35 RETURNED AFTER RETIREMENT (read before section 9.1)
+
+The freeze agent completed after this coordinator retired. Its outputs are on disk, its findings
+are in the ledger (`agent_returned` + `note` on S35_FREEZE_TASK_CARDS), and `REPORT.md` is
+materialized with a coordinator header. **Section 9.1's warning about an in-flight agent is now
+superseded: it is no longer running.**
+
+**YOUR FIRST ACTION IS THE REGISTRY APPEND.** It was deliberately left for you — the registry is a
+frozen append-only path with a single-writer rule, and the retiring coordinator declined to mutate
+it after handing off. The agent verified 11/11 repair claims (its build script refuses to emit
+`SPEC.json` unless all pass) and recommends proceeding.
+
+Mechanics, all pre-proven:
+- Baseline **51 records / 223,775 bytes / sha256 `a0aff704…`** — re-hashed after all agent work,
+  unchanged. Per-line hashes for all 51 in `REGISTRY_BASELINE_VERIFICATION.json`.
+- Payload `REGISTRY_APPEND_PAYLOAD.jsonl`: **14 records / 37,974 bytes / sha256 `6462e150…`**
+  (1 preregistration_freeze + 11 arm records authorising IMPLEMENTATION ONLY + 1 SC07 withdrawal
+  + 1 policy record carrying the seven downstream obligations).
+- **Expected post-append sha256 `6b43f40a…` at 65 records**, recorded inside `SPEC.json`.
+- **The payload is LF-terminated; the existing file has mixed endings (28 LF / 23 CRLF). DO NOT
+  NORMALISE THEM** — normalising rewrites existing records and destroys byte-identity.
+- After appending: re-read the first 51 records, prove byte-identity against the baseline, and
+  record before/after hashes in the event, exactly as the D040 A24 append did.
+
+**Two open items the agent surfaced — neither blocks the append:**
+1. `projected_team_off_possessions`' `join_key_sha256` did not reproduce (the pin names join columns
+   but not the separator convention). The column digest itself matched exactly and nothing reads the
+   join-key digest — documentation gap, carried as an S36 obligation.
+2. **A pre-existing registry defect: existing record index 50 lacks `schema`/`kind`/`experiment_id`**
+   and appears to be the P37 A24 *drafter register* file appended whole — contradicting its own
+   "DRAFT ONLY, must never be appended" text — rather than its nested payload. Correctly left
+   untouched. Because the registry is append-only, **the only lawful remedy is a corrective appended
+   record, never an edit.** This is a coordinator decision awaiting you.
+
+After the append: close S35, then S36 implementation — and verify the seven obligations survived
+into it, especially O1 (read the PINNED `master_team.parquet`, HALT on sha mismatch).
