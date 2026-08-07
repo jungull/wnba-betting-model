@@ -720,3 +720,176 @@ Two coordinator errors from this session, both already in the ledger: an **overs
 failure localises to layer 1" — it did not; layer 4 is VIABLE_BUT_UNVALIDATED), and an **over-broad
 safety rule** (13.2.1) that cost two running screens real work before being corrected in §13.2.2.
 Scope new rules narrowly and state claims at the strength the evidence supports.
+
+# 11. RETIREMENT HANDOFF — 2026-08-07, THIRD SUCCESSION (Coordinator #03 → #04)
+
+**You are Coordinator #04.** Identify yourself as "Coordinator #04" in every ledger event you write
+and in your closing status note. When you retire, name your successor `wnba-coordinator-05` and tell
+it that it is Coordinator #05, or the numbering dies here.
+
+**YOU WERE SUMMONED, NOT INTERRUPTED.** The newest event in `GRAPH_EVENTS.jsonl` is
+`coordinator_retired`. Per §12.3.1 that is the override — recent activity is this packet being
+written. **Do not stand down. Go straight to §11.4.**
+
+*Housekeeping: §10.15 appears TWICE in this file, identically. That is a duplicated commit, not two
+different sections. Read either one.*
+
+## 11.1 NOTHING IS IN FLIGHT
+
+Three E0 screens were dispatched and **all three returned and are closed**. No agent holds a write
+scope. Tree clean, **zero unpushed**, repository gate **PASS (35/35)** at `31ac447`. Verify anyway.
+
+## 11.2 STATE AT HANDOFF
+
+86 PASSED · 1 HALTED · 2 READY (both still deliberately parked — §9.4, reasons unchanged) ·
+3 USER_REQUIRED · 6 BLOCKED · 6 SUPERSEDED. Unchanged from the previous handoff: this session moved
+the **discovery** lane, which does not create graph nodes (§13.1), so the node counts are expected
+not to move.
+
+## 11.3 WHAT THIS COORDINATOR DID
+
+**Ran the second E0 sweep: 3 screens, 1 kill, 2 keep-as-lead.** Full detail in the ledger and in
+`experiments/idea_log.jsonl`; artifacts under `experiments/exploration/E0_I00{09,10,11}_*/`.
+
+| idea | subject | verdict |
+|---|---|---|
+| I0009 | opponent forced-TO pressure, **additive** | **keep-as-lead** |
+| I0010 | defence-vs-position interaction (T2 layer 3) | **kill** ×3 (pts/reb/ast) |
+| I0011 | how tendency is **estimated** | **keep-as-lead** ×3; kill on minutes; kill on the normalization arm |
+
+**The single most valuable output of the sweep is not a verdict — it is a defect in a live lane.**
+`props_edge.py` applies one frozen `ALPHA = 0.30` to **both** the efficiency channel and the exposure
+channel. Those channels want alphas **6–10× apart** (efficiency ≈0.03–0.05, exposure ≈0.25–0.30).
+Consequence: **the incumbent estimator loses to a plain season-to-date mean on all three counting
+stats in both scored seasons** (gap vs incumbent: pts +2.53%/+3.11%, reb +2.79%/+2.76%,
+ast +3.91%/+2.65% MAE on 2023/2024). The fix is a one-line constant change. **It is not authorised
+here** — it is an E1/E2 question, and it is NOT a score-lane unblock (D058 still halts that lane).
+
+**Also determined: I0007 does not run at E0, contrary to the worklist you inherited.** See §11.5.
+
+## 11.4 YOUR FIRST THREE ACTIONS, IN ORDER
+
+1. **Read §11.6 (the resolved baseline dependency) before designing any E1.** It changes what the two
+   live leads are worth.
+2. **Verify the tree** — clean, zero unpushed, gate green at `31ac447`.
+3. **The score lane is HALTED on a USER decision (D058) and fitting is NOT authorised.** Do not
+   attempt to clear it. §11.8 has the plain-language version of what the user must rule on; the user
+   was asked directly this session and **has not yet answered**. Do not re-ask on a loop — record and
+   proceed to discovery per D057's 70/20/10.
+
+## 11.5 THE WORKLIST, IN EXECUTION ORDER
+
+1. **The E1 for the two live leads — but ONLY against the corrected baseline.** See §11.6. This is
+   now the highest-value item because two leads' headline numbers are in question.
+2. **I0011's split-alpha finding → E1.** It is the most concrete, most actionable thing the discovery
+   lane has produced. It needs a proper out-of-sample E1 inside the exploration partition before it
+   is anything more than a lead. Note its family is `F_TENDENCY_ESTIMATOR`.
+3. **I0009 → E1**, if capacity allows. **Its first task is to control home/away** — teams may force
+   more turnovers at home, so a season pressure figure could partly encode venue. That is the most
+   likely remaining confound and the screen did not test it.
+4. **More E0 against T2 layer 3.** I0010 killed the *positional* formulation, but layer 3 is not
+   exhausted — what died is defence-vs-position specifically, because it proved to be overall
+   opponent strength in a costume. A formulation that is not collinear with overall team defence is
+   still unexplored.
+5. **I0007 — PARKED, do not dispatch as written.** The handoff you inherited said it was
+   "half-runnable now". **It is not.** The structural per-game series
+   (`experiments/channel_reval/predictions_v2.csv`) is `asof_granularity: "artifact"` with
+   `fit_through_season: 2026`, so §13.2.2 forbids it at E0 and filtering does not help; its
+   exploration-partition overlap is one season (2024, n=229) anyway; and the derived
+   `p3_downstream_rows.parquet` inherits the same defect. **Two things clear it, both real work:**
+   (a) a partition-safe rebuild of structural predictions restricted to 2021–2024 walk-forward, and
+   (b) the *other half* of the pairing — a player-layer forecast to decorrelate against — which does
+   not exist. Even a clean structural series only permits half the test.
+
+## 11.6 THE DEPENDENCY THAT RESOLVED THE EXPENSIVE WAY — READ BEFORE ANY E1
+
+This coordinator flagged, **before** the screens ran, that both live leads from sweep 1 are stated as
+**incremental value over the player's own recent rate** — and that I0011 was screening exactly that
+baseline. The dependency resolved badly:
+
+**I0011 showed the baseline IS materially improvable. Therefore both leads were measured against a
+weak baseline and their incremental value is very likely OVERSTATED** — a better baseline absorbs
+signal the lead is currently credited with. This affects:
+
+* rim finishing × opponent rim-defence allowance (+0.039)
+* pregame-observable height mismatch (+0.018–0.020, concentrated in forwards)
+
+**Both headline numbers are provisional until re-measured. The E1 must be designed against the
+split-alpha baseline, not the incumbent.** Had the E1 been parallelised with I0011 — which the
+inherited worklist implied — it would have preregistered against a baseline already known to be
+wrong. **Sequencing beat parallelism here; do not undo it.**
+
+## 11.7 DISCIPLINES FROM THIS SESSION — pay them forward
+
+1. **The no-op placebo.** A negative control that permutes a **grouping key** and then **recomputes
+   the aggregate from the permuted key** is a no-op: the permuted cell is the same row set renamed,
+   so every row still gets its own true value. It looks like a working placebo and tests nothing.
+   **Diagnostic signature: it reproduces the real number with sd exactly 0.000000.** The correct form
+   permutes the **assignment of an already-computed value to rows**. I0010 shipped this and caught it
+   itself. **Audit this in every past screen that claims a placebo.**
+2. **Verify a load-bearing placebo by reading the code, not the summary.** I0009's entire verdict
+   rests on its placebo, so this coordinator read the implementation rather than trusting the report.
+   It was genuine. That check is cheap and it is the difference between a lead and a mirage.
+3. **The `observed_time` tripwire.** `master_player.parquet` carries an `observed_time` column that is
+   a **local file mtime in mid-2026** (its manifest says it is not an as-of bound). Not leakage, but
+   writing the full master frame to CSV puts 2026 bytes in outputs and trips byte-level partition
+   checks. **Drop it before every write.**
+4. **Relay a defect to in-flight agents immediately.** I0010 found (1) and (3) while I0011 was still
+   running; both were sent to I0011 mid-flight, which is why its outputs are clean. Coordinators sit
+   where cross-screen information exists — use it.
+5. **An ambiguous null is not a negative** (inherited, and it earned its keep again). I0010's assist
+   kill rests on an allowance measure with split-half reliability **0.281** vs 0.557/0.644 for
+   pts/reb. It is flagged as **the kill worth overruling**, not banked.
+6. **Check collinearity with the obvious main effect before believing an interaction.** I0010 died
+   because positional allowance correlates ~+0.58 with overall opponent defence within
+   (season, position). And 93–94% of its variance for reb/ast is **between-position** — testing it
+   raw would have been testing `own × position dummy` and calling it matchup.
+
+## 11.8 USER-GATED — NEVER SELF-GRANT (unchanged)
+
+* **D058 — the cutoff-valid feature set.** THE live blocker. S37 finding A9: 13 ledger-UNPROVEN
+  fields are consumed by retained arms and **12 carry no cutoff-validity measurement** — schedule
+  identity columns, the back-to-back / 3-in-4 classes feeding SC06, the timezone shift that *is*
+  SC06's tz term, the possession prior feeding SC08's z1, and the prior box aggregates under every
+  lagged construction. Three options were put to the user: (a) commission the 12 measurements
+  (precedent: M_A1 did exactly this for `game_date`); (b) rule that §1's closed schedule-identity set
+  discharges §8 — **the ledger's own language appears to foreclose this** ("time-invariance is an
+  argument, not a timestamp"); (c) narrow the slate to arms consuming only measured fields.
+  **FITTING IS NOT AUTHORISED until this is settled.** The user was asked this session and has not
+  answered.
+* `P43_CHAMPION_DECISION` — replacing the frozen champion.
+* `M02B_VENDOR_PURCHASE_DECISION` — spending money, in any amount.
+* `S42_ADOPTION_DECISION` — adoption of any score model for wager-shaped use.
+* `O16_SHARED_SCHEMA_ADOPTION` — cross-branch shared-contract change.
+
+Both interpretations earlier coordinators flagged for ruling (§13.2 exploration partition; D063
+deployment authority) have been **ratified** — D062 and D064/13.9.1 respectively. Nothing else is
+pending on the user.
+
+## 11.9 WHAT THIS COORDINATOR GOT WRONG
+
+**Reproduced the exact failure it was warned about.** §10.14 records that the predecessor's
+over-broad contamination rule cost two screens real work. This coordinator's own first partition-
+verification script scanned raw bytes for the literals `2025`/`2026` and **declared a PARTITION
+VIOLATION** — falsely. It was matching **row counts that happen to equal 2026** and digit runs inside
+floats. Same failure mode, in a verification tool rather than a policy, committed by the coordinator
+who had just read the warning. Fixed into a **column-aware** check (parse each table, find
+season/date-like columns, test their *values*) rather than reported as a violation. **Over-broad
+checks destroy true findings as efficiently as loose ones admit false ones — and knowing that does
+not make you immune to it.**
+
+**Also:** staged agent output with `git add -A` while three agents held write scopes. Caught on the
+`git status` output before committing, so nothing broke — but it is the same mistake §8 records the
+first coordinator making twice. **Stage explicit paths while agents are live.**
+
+## 11.10 §12.3.1 — THE SUCCESSION TRIGGER YOU INHERIT
+
+**At roughly 60% of your context window — err EARLY, never late — begin retirement.** You cannot
+query your context percentage; that is why the threshold is conservative. Stop dispatching, close or
+document in-flight agents, write the packet, commit, verify `git status` is quiet and unpushed is 0,
+append `coordinator_retired` **last**, trigger `wnba-coordinator-05` as a one-time task ~3–4 minutes
+out telling it that it is **Coordinator #05** and that it must name #06, then **stop**.
+
+The procedure is a skill: `C:\Users\jgallagher\.claude\skills\coordinator-handoff\SKILL.md`.
+The test of a packet is not completeness but **actionability**: *could a fresh context, having read
+only this and the policy, take the next correct action without asking the user anything?*
