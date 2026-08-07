@@ -893,3 +893,55 @@ out telling it that it is **Coordinator #05** and that it must name #06, then **
 The procedure is a skill: `C:\Users\jgallagher\.claude\skills\coordinator-handoff\SKILL.md`.
 The test of a packet is not completeness but **actionability**: *could a fresh context, having read
 only this and the policy, take the next correct action without asking the user anything?*
+
+## 11.11 AMENDMENT — THE USER RULED ON D058 AFTER §11 WAS WRITTEN. READ THIS BEFORE §11.4 OR §11.5.
+
+**The score lane is NO LONGER BLOCKED ON A PENDING USER DECISION.** The user ruled directly in chat
+on 2026-08-07, after the rest of §11 was written and after the `coordinator_retired` marker was
+appended. Recorded as **`D065_A9_PROPORTIONAL_CUTOFF_PROOF`**, which resolves
+`D058_S37_A9_CUTOFF_VALID_SET`. **Anything in §11.4, §11.5 or §11.8 that says the user has not
+answered is superseded by this section.**
+
+**The ruling: option (a) — run the missing measurements — with PROPORTIONAL RIGOR.** The user's
+reasoning, verbatim: *"I don't want to create an 'obviously fine' exemption that can later expand to
+less-obvious fields."* And: *"don't turn 12 fields into 12 research projects. Establish the minimum
+sufficient proof for each field, record it, and unblock fitting."*
+
+**The operative standard has TWO TIERS. Assigning a field to a tier IS deciding its standard of
+proof — get this right before commissioning anything.**
+
+| tier | applies to | what the proof must show |
+|---|---|---|
+| **1 — cheap provenance receipt** | opponent identity, home/away, season type, scheduled rest / back-to-back / 3-in-4, venue, timezone + venue-shift hours | that the field **derives from information fixed before tipoff**. A provenance demonstration, **not** a per-observation timestamp audit. |
+| **2 — full point-in-time audit** | `team_possession_prior_v1` (SC08's z1), `opponent.prior_box_aggregates` and every lagged construction in the slate, all recent-form inputs, the five `score_baseline_rows` prediction columns | that **every underlying observation predates the forecast cutoff**. |
+
+The discriminator: **is the VALUE fixed by the schedule before tipoff, or is it COMPUTED FROM
+OBSERVATIONS?**
+
+**Both other options were explicitly rejected by the user, and the reasons bind you:**
+* **(b) is rejected** — no "obviously fine" exemption is to be created, *because such an exemption
+  expands later to less-obvious fields.* Do not reintroduce it under another name.
+* **(c) is rejected** — *"Do not shrink the model merely to avoid auditing inputs we have every
+  reason to believe are valid."*
+
+**FITTING IS UNBLOCKED ONCE THE RECEIPTS EXIST — NOT BEFORE.** The ruling is not itself the receipt.
+The gate is the receipts. Commissioning and landing them is now **worklist item 0**, ahead of
+everything in §11.5, because it unblocks a whole lane and the discovery lane is already well stocked.
+
+**Two things this coordinator flagged that you must not paper over (full text in D065):**
+
+1. **The tier boundary is a judgement surface.** `shift_from_prev_venue_hours` is schedule-derived
+   (tier 1) yet depends on the previous game having been *played*. The user's explicit naming of
+   "venue/timezone" in the tier-1 list settles this particular field. **But a future field near that
+   boundary must be RAISED, not silently assigned** — the user has just reserved the standard-of-proof
+   judgement to themselves in substance, and assigning a tier is exercising it.
+2. **The residual risk the user knowingly accepted.** A cheap provenance receipt proves the *class* of
+   a field, not the integrity of the pipeline that produced it. If a tier-1 field is materialised by a
+   job that happens to backfill from a later source, a tier-1 receipt would not catch it. **Coordinator
+   recommendation, flagged as an addition and not a user instruction:** a tier-1 receipt should state
+   the **producing job and its as-of bound**, not merely argue the concept is schedule-fixed. That
+   costs nothing and closes most of the gap.
+
+**Sequencing note.** `S37_IMPLEMENTATION_AUDIT` remains the Severity-A blocker and A9 was only one of
+its 18 findings (9 Severity A). Clearing A9 does **not** clear S37. Check what else in that audit
+still gates fitting before declaring the lane open.
