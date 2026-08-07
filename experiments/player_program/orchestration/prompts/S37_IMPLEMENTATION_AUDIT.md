@@ -70,6 +70,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 * auditors share no prompt or files with implementers (validate_graph rule)
 * every CUTOFF_UNPROVEN field used by an arm carries a receipted cutoff-validity measurement
 * every kill condition's diagnostic is verified to be a receipted output of the planned run
+* P22 postgame_surrogate_guard verified fit for purpose on SCORE surrogates (its cycle-1 tests target duration/minutes) before any per-column reliance; the current-game-deletion invariance receipt is checked at column grain with the per-source column classification recorded
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 

@@ -43,6 +43,21 @@ and its disposition in v2. Disagreements preserved; nothing averaged away.
 | N6 | C | multi-survivor rule undefined across metrics | §4: multi-survivor comparison operates within-estimand only; no cross-metric ordering defined or permitted |
 | N7 | C | DIRECTED channel authored by contaminated coordinator (inherent) | S34 criteria: every DIRECTED card checked against D047 text for scope creep + floor/bar reference ban checked |
 
+## Round 3 — final confirmations on v4 → v5
+
+Both reviewers independently converged on the SAME residual leak (the §7 identifiability
+bullet re-naming the directed interacting-structure mechanism inside the "redacted" ideation
+edition) — treated as one finding, cured once.
+
+| finding | sev | disposition in v5 |
+|---|---|---|
+| R2 V4-1 / R1 residual-B: identifiability bullet leaks the flagship directed mechanism into the ideation edition; cycle-1-nulls bullet implies expected arm families | B | §7 redaction scope widened: ideation edition replaces the identifiability bullet with its generic form ("any candidate whose structure has a scale or identification indeterminacy must register its identification constraint") and rephrases the cycle-1-nulls bullet conditionally; machine diff receipt added to the freeze obligations; S31 input_artifacts now names the IDEATION EDITION artifact |
+| R2 V4-2: deletion receipt at row grain proves nothing for mixed sources (master_team carries settled scores on schedule rows); as-played dates encode realized facts | B | §1 receipt re-scoped to COLUMN grain: closed enumerated schedule-identity column set (S34-extendable), valued as-of-cutoff never as-played; current-game rows retained with identity columns intact and every other column nulled, in every source; S37 records the per-source column classification |
+| R1 C: "cycle-1-style" deactivation elides the D040 mid-cycle path | C | §2 states the D040 mid-cycle fold-local escalation path is explicitly NOT carried (P42 C1 cited) |
+| R1/R2 C: stale "DRAFT v2" header | C | header bumped to v5 with round accounting |
+| R2 C: S32B canonical nesting reading undeclared | C | §4 requires the S32B schema to declare the canonical nesting reading (containment vs non-nested, non-nested = harder test) |
+| R1 C: P22 fit-for-purpose delegation could be lost at S37 prompt generation | C | S37 acceptance criteria now carry the P22 score-surrogate verification AND the column-grain receipt check; recorded here so the delegation survives |
+
 **Verified-clean list (reviewer 1):** F13 sd figures; D045 floor values and method name; universe
 counts; 5/37 inventory; thirteen-dimension prose list; fold names; B=10,000/2,000; gate clauses
 vs `primary_gate_applied_verbatim`; P42 §6 lesson; estimand feasibility from owned data

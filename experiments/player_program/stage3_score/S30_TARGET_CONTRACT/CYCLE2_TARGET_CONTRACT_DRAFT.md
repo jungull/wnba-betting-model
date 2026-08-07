@@ -1,8 +1,8 @@
 # CYCLE-2 TARGET CONTRACT — score family (game total · final margin · home win probability)
 
-**Status: DRAFT v2 — post red-team amendment, under re-verification. Nothing herein authorizes
-fitting until this contract is FROZEN, arms are preregistered with frozen cards, and
-implementation audits pass.**
+**Status: DRAFT v5 — post red-team rounds 1–3, under final confirmation. Nothing herein
+authorizes fitting until this contract is FROZEN, arms are preregistered with frozen cards,
+and implementation audits pass.**
 
 **Node:** `S30_TARGET_CONTRACT` · **Lane:** score · **Author:** coordinator (highest tier per
 GRAPH_POLICY §9: target and contract interpretation)
@@ -52,15 +52,18 @@ inside lagged rescales) are NOT swept up by this clause. The prohibition is enfo
   S37 audit;
 * every arm ships a frozen feature-lineage table (column → source artifact hash → lag
   semantics);
-* every arm ships a **current-game-deletion invariance receipt**, scoped to be satisfiable
-  by legitimate arms: the feature matrix is recomputed with the current game's rows deleted
-  from every consumed **realized/outcome-bearing source** (the possession stream, box
-  aggregates, score outcomes, any odds or injury store) while **retaining schedule-identity
-  rows** (the game's scheduled date, matchup, home/away designation — admissible pregame
-  facts that are the cutoff boundary itself, and without which rest/home features and the
-  row's own fold assignment are uncomputable). Byte-identity of the two matrices is the
-  machine-checkable proof that no same-game *realized* information entered the prediction
-  path. The S37 audit must additionally verify P22's guard is **fit for purpose on score
+* every arm ships a **current-game-deletion invariance receipt**, scoped at **column
+  grain** (sources are mixed — `master_team.parquet` carries settled scores on the same
+  rows as schedule identity, so source-grain retention proves nothing): schedule-identity
+  is a **closed, enumerated set of columns** — scheduled game date, opponent/matchup
+  identity, home/away designation, season — extendable only by S34 adjudication, and
+  valued **as-of-cutoff, never as-played** (a postponement-updated date encodes realized
+  facts; the F13 inventory's CUTOFF_INVALID wallclock-tip finding is the precedent). The
+  receipt recomputes the feature matrix with the current game's rows retained **only with
+  the identity columns intact and every other column nulled**, in every consumed source;
+  byte-identity of the two matrices proves no same-game *realized* information entered the
+  prediction path. The S37 audit records the per-source column classification so the check
+  is auditable, and must additionally verify P22's guard is **fit for purpose on score
   surrogates** (its cycle-1 tests target duration/minutes surrogates) before relying on it
   per-column.
 
@@ -81,8 +84,10 @@ estimands; it does not modify any existing one.
   2. **Minimum-coverage floor, pooled AND per-fold:** the predicate must retain **≥ 90% of
      the 1,491 clusters pooled** and **≥ 80% of every fold's test clusters** (concentrated
      trimming of a single fold is the exploit this second floor closes). The only path around
-     the per-fold floor is cycle-1-style **whole-fold structural deactivation** — symmetric
-     in arm and K0, declared in the card with its numeric trigger before any fit. A lower
+     the per-fold floor is **whole-fold structural deactivation** in cycle 1's card-declared
+     form only — symmetric in arm and K0, declared in the card with its numeric trigger
+     before any fit; the cycle-1 D040 *mid-cycle* fold-local escalation path is explicitly
+     NOT carried into this cycle (its receipts over-claimed "card-pinned", P42 C1). A lower
      floor of either kind requires an explicit justification adjudicated at S33/S34 and
      recorded in the card.
   3. **All-covered-games sensitivity row (mandatory, non-gating):** every arm is additionally
@@ -161,7 +166,11 @@ number exists before its primary verdict.
   Terminology pin (consistency finding C6): these ingredients enter the K0 as
   **structural/null-granted terms** in the S32B schema — never as substantive features —
   because the frozen gate machinery blocks any K0 with `n_substantive_features > 0`; this is
-  exactly how the cycle-1 K5/A07 null carried its incumbent-path features.
+  exactly how the cycle-1 K5/A07 null carried its incumbent-path features. The S32B schema
+  must also declare the canonical nesting reading: whether null-granted terms must appear in
+  the arm's own design (cycle-1 containment: arm = null terms + treatment) — a non-nested K0
+  is a harder test, not an exploit, but the schema says which reading governs so comparison
+  declarations stay well-defined.
 * **The cannot-host path is mechanical, labeled, and never promotes unqualified:** where an
   arm's architecture cannot host the null-granted ingredients, its card must **demonstrate
   the blockage mechanically** (the ingredient columns are unrepresentable in the declared
@@ -229,11 +238,18 @@ Consistency finding B4 exposed a real conflict in draft v1 (required coverage ar
 inside ideation packets vs D047 p3's "ideation packets stay isolated"), and its re-review
 caught the residue: this very section quotes D047, so a packet carrying THIS file would
 contain the directive text the packet must exclude. Resolution, frozen here:
-* **Two editions freeze together, both sha256-pinned in the freeze event.** The FULL edition
-  is this file. The **IDEATION EDITION** is byte-identical except this §7's
-  directed-candidate enumeration (the bullet below beginning "The user-directed families")
-  is replaced by a redaction notice stating that a directed-candidate set exists and enters
-  at S32 with provenance labels — naming no mechanism, no family, no area.
+* **Two editions freeze together, both sha256-pinned in the freeze event, with a machine
+  diff receipt proving they differ only in the named bullets.** The FULL edition is this
+  file. The **IDEATION EDITION** is byte-identical except: (i) the directed-candidate
+  enumeration (the bullet below beginning "The user-directed families") is replaced by a
+  redaction notice stating that a directed-candidate set exists and enters at S32 with
+  provenance labels — naming no mechanism, no family, no area; (ii) the identifiability
+  bullet below is replaced by its generic form — "any candidate whose structure has a scale
+  or identification indeterminacy must register its identification constraint explicitly" —
+  which is contamination-free and genuinely useful to ideation; and (iii) the cycle-1-nulls
+  bullet is rephrased conditionally ("any candidate acting on rest, schedule or home-court
+  context may not target pace mechanisms in the cycle-1 forms") without implying such
+  candidates are expected. Ideation sources' input artifact is the IDEATION EDITION.
 * **The ideation wave (S31) is fully isolated.** Packets contain ONLY the frozen IDEATION
   EDITION (which quotes no floor values and no D047 text) and the source's own prompt. No
   D045 numeric rows, no D046 priors, no D047 text, no coordinator ideas, no other source's
