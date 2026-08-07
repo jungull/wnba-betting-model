@@ -13,6 +13,15 @@ p38_wrappers.P25FoldLocalGuardView -- fold-local P25 blocks record FOLD_UNEVALUA
 the frozen guard's full record and the arm fits on its remaining folds; A08 (both K
 elements) joined the fleet, its D039 exclusion condition having been met (REAUDIT_A08.md
 PASS). Prior sealed verdicts are preserved under .pre_D040 names, never erased.
+
+FINAL-FITS pass (D040 ruling item (3) closed out): A20/A21/A23 rebuilt by their D039/D040
+remediation lane to the ratified rulings (EXEC-M6 contract clock for A20/A23; PIN-A21
+possession-weighted nc for A21), suites green; the A24 registry amendment (adjudicated
+franchise-debut fallback, D039 option (a)) APPENDED by the coordinator single-writer and
+VERIFIED here against its pins (p38_driver.verify_registry_amendment, fail closed). The
+five instances (A20, A21, A23 x2, A24) fit under the identical discipline; each prior
+BLOCK_VERDICT.json / EXCLUSION_RECORD.json is preserved byte-for-byte with a
+FINAL_FITS_SUPERSESSION.json sealed beside it citing the remediation records.
 """
 from __future__ import annotations
 
@@ -28,7 +37,8 @@ import pandas as pd
 
 import p38_driver as D
 from p38_wrappers import (FoldGovernor, P25FoldLocalGuardView, P27GuardHarnessView,
-                          a03_tier_records, a07_near_affinity_records, history_bound_a09,
+                          a03_tier_records, a07_near_affinity_records,
+                          a24_registry_fallback_build_design, history_bound_a09,
                           history_bound_a10, measure_clock_divergence)
 
 # the runner unsealing flag: P38 is the only context in which it may exist (RUNNER_INTERFACE
@@ -62,10 +72,13 @@ def write_json(path: Path, obj) -> str:
 # ------------------------------------------------------------------------------ inventory --
 def build_inventory(F, folds, archive, poss, lineup, prior):
     """Every fit-eligible module instance (one per enumeration element), with its P38
-    construction record. A24 is excluded pre-P38 (D039); A08 joined the fleet under D040
-    (its D039 exclusion condition -- a passed non-implementer re-audit -- was met);
-    A20/A21/A23 are blocked by executor mandate/pin (EXEC-M6 / PIN-A21) and never
-    constructed."""
+    construction record. History of this function across the three passes (all preserved
+    on the record, never erased): first pass -- A24 excluded pre-P38 (D039), A08 excluded
+    conditional, A20/A21/A23 blocked by executor mandate/pin (EXEC-M6 / PIN-A21) and never
+    constructed; D040 continuation -- A08 joined (re-audit PASS); FINAL-FITS pass -- A20/
+    A21/A23 constructed from their REMEDIATED modules (D039/D040 remediation lane, suites
+    green) and A24 constructed with its REGISTRY-ADJUDICATED franchise-debut fallback
+    applied at the call site after the appended registry verifies against its pins."""
     fold_ids = [f["fold_id"] for f in folds]
     n_rows = len(F)
     sched = archive[["game_id", "team_id", "game_date", "season"]]
@@ -208,6 +221,121 @@ def build_inventory(F, folds, archive, poss, lineup, prior):
                                   "algebraic identity in z5; residual divergence confined to "
                                   "2021 opener-team rows and early-season opponents' LOO "
                                   "means)"}, "extra": {}})
+
+    # ---- FINAL-FITS pass: the four remediated/amended arms (D040 ruling item (3)) ----------
+    # Directory keys deliberately REUSE the fleet's original sealed element keys so each
+    # receipt seals BESIDE the superseded BLOCK_VERDICT/EXCLUSION_RECORD (custody in one
+    # place); the receipt's own element_id is the remediated module's and is recorded as-is.
+    a20 = D.import_arm("A20", "arm_a20.py")
+    inv.append({"key": "A20_forced_turnover_contrast", "arm_code": "A20",
+                "module": a20.make_arms(poss, archive, fold_ids, n_rows)[0],
+                "m4": {"binding": "REMEDIATED per D039 EXEC-M6 (finding A3-B1): the "
+                                  "contract-schedule archive (2,990 rows / 1,495 games) is "
+                                  "constructor-injected as the trailing-window and E=3 "
+                                  "clock (n_clock_pin satisfied; the four universe-excluded "
+                                  "2021 opener games enter the 8 opener teams' windows); "
+                                  "possession-level rows constructor-injected for ftr "
+                                  "construction (A13 precedent). Suite re-run green by this "
+                                  "executor before fitting (T01..T17 incl. the T17 clock "
+                                  "regression, exit 0).",
+                       "history_rows": int(len(archive)),
+                       "history_games": int(archive["game_id"].nunique()),
+                       "fit_eligibility": "D040 item (3): remediation build per D039; "
+                                          "supersedes BLOCK_VERDICT.json in this directory "
+                                          "(preserved; see FINAL_FITS_SUPERSESSION.json)"},
+                "extra": {}})
+
+    a21 = D.import_arm("A21", "arm_a21.py")
+    inv.append({"key": "A21_garbage_time_contamination", "arm_code": "A21",
+                "module": a21.A21Arm(poss, fold_ids, n_rows),
+                "m4": {"binding": "REMEDIATED per D039 PIN-A21 (finding A3-B2): nc rebuilt "
+                                  "as A17's POSSESSION-WEIGHTED construction (the "
+                                  "preregistered reading; the rejected game-weighted "
+                                  "construction is preserved in the record, never fitted); "
+                                  "possessions_raw_v2 constructor-bound (season normalised "
+                                  "to int at the call site); caller-supplied "
+                                  "opponent_team_id column aliases the universe's own "
+                                  "opp_team_id under the card's column name. Remediation "
+                                  "suite 15/15 PASS (A21_TEST_RECEIPT.json).",
+                       "fit_eligibility": "D040 item (3): remediation build per D039 "
+                                          "PIN-A21; supersedes BLOCK_VERDICT.json in this "
+                                          "directory (preserved; see "
+                                          "FINAL_FITS_SUPERSESSION.json)",
+                       "element_id_note": "receipt element_id is the remediated module's "
+                                          "'A21_garbage_time_contamination__single'; the "
+                                          "sealed directory key retains the fleet's "
+                                          "original element key"},
+                "extra": {}})
+
+    a23 = D.import_arm("A23", "arm_a23.py")
+    a23_key = {"AI": "A23_rest_differential_contrast__bundle_AI",
+               "OM": "A23_rest_differential_contrast__bundle_OM"}
+    for inst in a23.make_arms(archive, fold_ids, n_rows):
+        inv.append({"key": a23_key[inst.bundle], "arm_code": "A23", "module": inst,
+                    "m4": {"binding": "REMEDIATED per D039 EXEC-M6 (finding A3-B4): rest "
+                                      "computed on the CONTRACT-SCHEDULE clock via a "
+                                      "constructor-injected contract_schedule frame (A24's "
+                                      "own pattern, named by the ruling as the in-fleet "
+                                      "remedy); the 8 opener teams' second 2021 games now "
+                                      "resolve against the contract schedule. Remediation "
+                                      "suite 10/10 PASS (TEST_RECEIPT.json).",
+                           "history_rows": int(len(archive)),
+                           "history_games": int(archive["game_id"].nunique()),
+                           "fit_eligibility": "D040 item (3): remediation build per D039; "
+                                              "supersedes BLOCK_VERDICT.json in this "
+                                              "directory (preserved; see "
+                                              "FINAL_FITS_SUPERSESSION.json)",
+                           "element_id_note": f"receipt element_id is the remediated "
+                                              f"module's 'A23_bundle_{inst.bundle}'; the "
+                                              "sealed directory key retains the fleet's "
+                                              "original element key"},
+                    "extra": {}})
+
+    # A24: the registry amendment is VERIFIED against its pins before construction; the
+    # adjudicated fallback is applied by a call-site build_design override running the
+    # arm's own frozen pure functions (never an arm-module edit).
+    reg_rec, reg_payload = D.verify_registry_amendment()
+    a24 = D.import_arm("A24", "arm_a24.py")
+    a24_inst = a24.A24Arm(archive, fold_ids, n_rows)
+    inv.append({"key": "A24_rest_advantage_symmetric", "arm_code": "A24",
+                "module": a24_inst,
+                "m4": {"binding": "contract-schedule archive constructor-bound (the frozen "
+                                  "module's own signature; rest is a CONTRACT-SCHEDULE "
+                                  "clock). REGISTRY-ADJUDICATED FALLBACK applied at the "
+                                  "call site (p38_wrappers."
+                                  "a24_registry_fallback_build_design): rest := cap (10) "
+                                  "wherever the amendment RULE's own predicate holds (no "
+                                  "strictly-earlier contract-schedule game), x unchanged "
+                                  "by the frozen formula. MEASURED-VS-REGISTERED SCOPE "
+                                  "CONTRADICTION RECORDED (never silently reconciled): "
+                                  "the rule predicate is structurally true not only for "
+                                  "the 3 registered franchise debuts (6 rows / 3 games) "
+                                  "but also for the four 2021 archive-start teams' "
+                                  "2021-05-15 first games (4 rows / 2 games; the archive "
+                                  "itself begins 2021-05-14) -- measured 7 own-side rows "
+                                  "/ 10 affected rows / 5 games, every row structurally "
+                                  "verified per call against the contract schedule (any "
+                                  "row outside the two verified classes fails closed); "
+                                  "full record sealed in "
+                                  "A24_REGISTRY_FALLBACK_SCOPE_RECORD.json. The frozen "
+                                  "module's own fail-closed build_design is "
+                                  "byte-untouched.",
+                       "registry_amendment_verified": reg_rec,
+                       "fit_eligibility": "D039 option (a) condition MET: amendment "
+                                          "appended by coordinator single-writer "
+                                          "(50->51 records) and verified here against "
+                                          "its pins; supersedes EXCLUSION_RECORD.json in "
+                                          "this directory (preserved; see "
+                                          "FINAL_FITS_SUPERSESSION.json)",
+                       "element_id_note": "receipt element_id is the frozen module's "
+                                          "'A24_rest_level_symmetric__single'; the sealed "
+                                          "directory key retains the fleet's original "
+                                          "element key"},
+                "extra": {},
+                "override": a24_registry_fallback_build_design(
+                    a24, a24_inst, reg_payload,
+                    scope_record_path=(D.SEALED_P38 / "A24_rest_advantage_symmetric"
+                                       / "A24_REGISTRY_FALLBACK_SCOPE_RECORD.json"))})
     return inv
 
 
@@ -444,6 +572,144 @@ BLOCKED_ARMS = {
     },
 }
 
+# ---- FINAL-FITS pass: supersession payloads (D040 ruling item (3) closed out) --------------
+# Every citation below is a ledger/artifact fact; git was never invoked by this node
+# (standing rule 4) -- commits are carried from orchestration/GRAPH_EVENTS.jsonl.
+REMEDIATION_COMMIT_PROVENANCE = {
+    "recorded_from": "orchestration/GRAPH_EVENTS.jsonl (git NOT invoked by this node, "
+                     "standing rule 4)",
+    "remediation_wave_commit": "4814a95474969ff1bdfd860b03447b295d505fdd",
+    "remediation_wave_commit_provenance": (
+        "GRAPH_EVENTS.jsonl coordinator check-in note ts 2026-08-07T00:03:30Z (repo.head "
+        "4814a95474969ff1bdfd860b03447b295d505fdd): 'it committed 4814a95 (D040 "
+        "continuation sealed ... A20/A21/A23 remediated; A24 registry amendment appended "
+        "50->51 single-writer with byte-identity verified)'"),
+    "remediation_landed_note": (
+        "GRAPH_EVENTS.jsonl note ts 2026-08-07T00:02:33Z (repo.head "
+        "32f30a16af31b9f7658c36b410a7b591eb6820b6): 'A20/A21/A23 re-implemented to the "
+        "ratified rulings with regression fixtures, suites green; A24 registry amendment "
+        "APPENDED by coordinator single-writer (50->51 records, baseline byte-identity "
+        "verified). Final fit wave dispatching: A20, A21, A23 x2, A24.'"),
+    "authorizing_rulings": "D039_P37_ADJUDICATION (EXEC-M6, PIN-A21, A24 option (a)) + "
+                           "D040_P38_FOLD_LOCAL_P25_AND_A08 item (3) "
+                           "(DECISION_LEDGER.jsonl)",
+}
+
+FINAL_FITS_REMEDIATION = {
+    "A20_forced_turnover_contrast": {
+        "supersedes": "BLOCK_VERDICT.json (BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE, "
+                      "EXEC-M6/A3-B1)",
+        "remediation": {
+            "ruling_closed": "EXEC-M6 (A3-B1): trailing ftr window and E=3 count re-derived "
+                             "on the CONTRACT-SCHEDULE clock via a constructor-injected "
+                             "contract_schedule frame (A24/A13 precedent); the barred "
+                             "universe-row clock is gone from the module",
+            "evidence_files": ["arms/A20/arm_a20.py", "arms/A20/TESTS.py"],
+            "suite": "re-run green by this executor immediately before this fit "
+                     "(T01..T17 incl. T17 contract-clock regression; ALL TESTS PASSED, "
+                     "exit 0; the suite writes no artifact file of its own)",
+        },
+    },
+    "A21_garbage_time_contamination": {
+        "supersedes": "BLOCK_VERDICT.json (BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE, "
+                      "PIN-A21/A3-B2)",
+        "remediation": {
+            "ruling_closed": "PIN-A21 (A3-B2): nc rebuilt as A17's POSSESSION-WEIGHTED "
+                             "construction (the preregistered reading, ratified verbatim "
+                             "by D039); the rejected game-weighted construction was never "
+                             "fitted",
+            "evidence_files": ["arms/A21/arm_a21.py", "arms/A21/feature_construction.py",
+                               "arms/A21/A21_TEST_RECEIPT.json"],
+            "suite": "15/15 PASS (A21_TEST_RECEIPT.json, remediation build)",
+        },
+    },
+    "A23_rest_differential_contrast__bundle_AI": {
+        "supersedes": "BLOCK_VERDICT.json (BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE, "
+                      "EXEC-M6/A3-B4)",
+        "remediation": {
+            "ruling_closed": "EXEC-M6 (A3-B4): rest computed on the CONTRACT-SCHEDULE "
+                             "clock via a constructor-injected contract_schedule frame "
+                             "(A24's constructor pattern, the ruling's named in-fleet "
+                             "remedy); the 8 opener teams' second 2021 games resolve "
+                             "correctly",
+            "evidence_files": ["arms/A23/arm_a23.py", "arms/A23/feature_construction.py",
+                               "arms/A23/TEST_RECEIPT.json"],
+            "suite": "10/10 PASS (TEST_RECEIPT.json, remediation build; both bundles)",
+        },
+    },
+    "A23_rest_differential_contrast__bundle_OM": {
+        "supersedes": "BLOCK_VERDICT.json (BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE, "
+                      "EXEC-M6/A3-B4)",
+        "remediation": {
+            "ruling_closed": "as bundle_AI (one remediation, two enumeration elements)",
+            "evidence_files": ["arms/A23/arm_a23.py", "arms/A23/feature_construction.py",
+                               "arms/A23/TEST_RECEIPT.json"],
+            "suite": "10/10 PASS (TEST_RECEIPT.json, remediation build; both bundles)",
+        },
+    },
+    "A24_rest_advantage_symmetric": {
+        "supersedes": "EXCLUSION_RECORD.json (EXCLUDED_PRE_P38_PER_D039, option (a) "
+                      "condition then unmet)",
+        "remediation": {
+            "ruling_closed": "D039 option (a) condition MET: the adjudicated franchise-"
+                             "debut fallback (rest := cap on a debuting team's own side) "
+                             "appended to arm_registry.jsonl by the coordinator "
+                             "single-writer as record 51 (experiment_id "
+                             "A24_rest_level_symmetric__franchise_debut_fallback_p37) and "
+                             "verified by this executor against its pins before "
+                             "construction; applied at the call site by p38_wrappers."
+                             "a24_registry_fallback_build_design over the arm's own "
+                             "frozen pure functions (frozen module byte-untouched)",
+            "evidence_files": ["arms/A24/arm_a24.py", "arms/A24/feature_construction.py",
+                               "arms/A24/TEST_RECEIPT.json"],
+            "suite": "14/14 PASS (TEST_RECEIPT.json; the frozen fail-closed module is "
+                     "unchanged -- the fallback lives in the registry amendment and the "
+                     "call-site wrapper)",
+        },
+    },
+}
+
+
+def write_final_fits_supersessions(keys):
+    """Seal FINAL_FITS_SUPERSESSION.json beside each preserved BLOCK_VERDICT/EXCLUSION
+    record for the elements fitted in this pass. Originals are NEVER modified or deleted;
+    idempotent (an existing supersession sidecar is left untouched)."""
+    for key in keys:
+        payload = FINAL_FITS_REMEDIATION.get(key)
+        if payload is None:
+            continue
+        out = D.SEALED_P38 / key / "FINAL_FITS_SUPERSESSION.json"
+        if out.exists():
+            log({"event": "final_fits_supersession_already_present", "element": key})
+            continue
+        evidence_hashes = {}
+        for rel in payload["remediation"]["evidence_files"]:
+            p = D.STAGE2B / "P36_IMPLEMENT_ARMS" / rel
+            if p.exists():
+                evidence_hashes[rel] = D.sha256_file(p)
+            else:
+                evidence_hashes[rel] = "ABSENT (recorded, not fabricated)"
+        rec = {
+            "schema": "p38_final_fits_supersession/1",
+            "element": key,
+            "supersedes": payload["supersedes"],
+            "superseded_record_preserved_byte_for_byte": True,
+            "authority": REMEDIATION_COMMIT_PROVENANCE["authorizing_rulings"],
+            "remediation": {**payload["remediation"],
+                            "evidence_file_sha256": evidence_hashes},
+            "remediation_commits": REMEDIATION_COMMIT_PROVENANCE,
+            "fitted_in_this_directory": "receipt.json + P38_EXECUTION_SIDECAR.json sealed "
+                                        "beside this record by the FINAL-FITS pass",
+            "recorded_by": "P38_BLINDED_FIT executor (FINAL-FITS pass)",
+            "fold_policy_named": D.FOLD_POLICY_NAMED,
+        }
+        if key == "A24_rest_advantage_symmetric":
+            reg_rec, _ = D.verify_registry_amendment()
+            rec["registry_amendment_verified"] = reg_rec
+        sha = write_json(out, rec)
+        log({"event": "final_fits_supersession_recorded", "element": key, "sha256": sha})
+
+
 EXCLUDED_PRE_P38 = {
     "A08_league_lag_level": {
         "basis": ("D039: A08 remediation CONFIRMED (12/12, bitwise d_t parity restored) but "
@@ -488,9 +754,15 @@ def main(argv):
             ((F["season"] == 2021) & F["team_id"].isin(set(openers["team_id"]))).sum()),
     }
 
-    # blocked / excluded records first (results, not failures)
+    # blocked / excluded records first (results, not failures). FINAL-FITS pass: a key
+    # whose directory carries FINAL_FITS_SUPERSESSION.json (or whose original record
+    # already exists) is never re-asserted -- the first-pass verdicts are preserved facts,
+    # not standing instructions.
     if not only:
         for key, payload in BLOCKED_ARMS.items():
+            if (D.SEALED_P38 / key / "FINAL_FITS_SUPERSESSION.json").exists() or \
+                    (D.SEALED_P38 / key / "BLOCK_VERDICT.json").exists():
+                continue
             rec = {"schema": "p38_block_verdict/1", "element_or_arm": key,
                    "verdict": "BLOCKED_AT_INVOCATION_BY_RATIFIED_MANDATE",
                    **payload,
@@ -499,6 +771,9 @@ def main(argv):
             sha = write_json(D.SEALED_P38 / key / "BLOCK_VERDICT.json", rec)
             log({"event": "block_recorded", "element": key, "sha256": sha})
         for key, payload in EXCLUDED_PRE_P38.items():
+            if (D.SEALED_P38 / key / "FINAL_FITS_SUPERSESSION.json").exists() or \
+                    (D.SEALED_P38 / key / "EXCLUSION_RECORD.json").exists():
+                continue
             rec = {"schema": "p38_exclusion_record/1", "arm": key,
                    "verdict": "EXCLUDED_PRE_P38_PER_D039", **payload,
                    "recorded_by": "P38_BLINDED_FIT executor", "authority": "D039"}
@@ -527,6 +802,17 @@ def main(argv):
     inventory = build_inventory(F, folds, archive, poss, lineup, prior)
     log({"event": "inventory_built", "n_instances": len(inventory),
          "elements": [e["key"] for e in inventory]})
+
+    # FINAL-FITS pass: registry verification on the record, then supersession sidecars
+    # sealed beside the preserved first-pass verdicts for the elements this run executes.
+    reg_rec, _ = D.verify_registry_amendment()
+    log({"event": "registry_amendment_verified",
+         "n_records": reg_rec["n_records_measured"],
+         "sha256": reg_rec["sha256_measured"], "match": reg_rec["match"],
+         "experiment_id": reg_rec["amendment"]["experiment_id"]})
+    executed_keys = [e["key"] for e in inventory
+                     if not only or e["arm_code"].upper() in only]
+    write_final_fits_supersessions(executed_keys)
 
     results = []
     for entry in inventory:

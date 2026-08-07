@@ -253,6 +253,188 @@ def measure_clock_divergence(align_fn, universe: pd.DataFrame, history: pd.DataF
             "d_t_rows_differing_universe_vs_contract_clock": d_diff}
 
 
+# ----------------------------------------------------------------- FINAL FITS: A24 fallback --
+def a24_registry_fallback_build_design(a24_module, inner, amendment_payload: dict,
+                                       scope_record_path=None):
+    """build_design override for A24 implementing the REGISTRY-ADJUDICATED franchise-debut
+    fallback (arm_registry.jsonl record 51, experiment_id
+    A24_rest_level_symmetric__franchise_debut_fallback_p37; D039 option (a), appended by the
+    coordinator single-writer BEFORE this fit).
+
+    The frozen module arm_a24.py FAILS CLOSED on rows with no prior contract-schedule game
+    because its card's own text never pinned a fallback -- correctly, per its GENUINE GAP
+    DISCLOSED note. The registry amendment closes that gap with an operative RULE sentence:
+    "For any team t and game g such that t has played no prior CONTRACT-SCHEDULE game
+    before g (t's franchise-debut game), define rest(t, g) := cap (10) -- the debuting team
+    is treated as fully rested. This extends the domain of rest(.,.) to a TOTAL FUNCTION
+    over the real universe", with x computed unchanged by the frozen formula. This override
+    runs the arm's OWN frozen pure functions (feature_construction.rest_level_symmetric and
+    _lookup_by_opponent -- byte-untouched) and applies the rule's substitution exactly
+    where the rule's own predicate holds (no strictly-earlier contract-schedule row).
+
+    MEASURED CONTRADICTION IN THE AMENDMENT, RECORDED AND NEVER SILENTLY RECONCILED: the
+    amendment's subordinate enumeration claims "Affected rows: exactly 3 debut games ... 6
+    rows total. No other row is affected: only a team with zero prior contract-schedule
+    games triggers the fallback, and each of the three named teams triggers it on exactly
+    one game". On the real universe the rule's own predicate is ALSO structurally true for
+    the four 2021 teams whose first contract-schedule game was NOT on the 2021-05-14
+    opening-day slate (the archive itself begins 2021-05-14, so a 2021-05-15 first game has
+    no prior contract row): teams 1611661319/1611661322/1611661328/1611661329, 4 own-side
+    rows across 2 games (those teams played each other), for a measured total of 7 own-side
+    predicate rows / 10 affected rows / 5 games -- vs the registered 3/6/3. The RULE
+    sentence is the operative frozen text and is the only reading under which the
+    amendment's own registered purpose ("a total function over the real universe") is
+    achieved; reading the enumeration as a scope limit would leave 4 rows undefined and the
+    arm unfittable, defeating the amendment's stated intent. Per the program's frozen-text-
+    precedence discipline (the same basis as EXEC-M6), the rule's predicate governs; this
+    wrapper VERIFIES structurally, per call, that every predicate row is either (i) one of
+    the three registered franchise debuts (2025/2026), or (ii) an archive-start 2021 row (a
+    team's first-ever contract-schedule game in the archive's own first season) -- ANY
+    other predicate row fails closed -- and seals the full measured-vs-registered record
+    in A24_REGISTRY_FALLBACK_SCOPE_RECORD.json (dependency diagnostics only; no
+    performance number exists at design time). Identical in arm and null by construction
+    (row-construction layer, shared by both members). No frozen file is edited; this is
+    the same call-site-wrapper discipline as EXEC-M4 (history_bound_a09).
+    """
+    fc = a24_module.fc
+    registered_debut_teams = {1611661331, 1611661327, 1611661332}
+    registered_facts = {"n_own_side_rows": 3, "n_affected_rows": 6, "n_affected_games": 3,
+                        "teams": sorted(registered_debut_teams)}
+
+    def build_design(fold, universe):
+        for c in ("team_id", "opp_team_id", "game_id", "game_date"):
+            if c not in universe.columns:
+                raise fc.A24ConstructionFailure(
+                    f"universe is missing required column {c!r} (team/opponent/game identity)")
+        cs = inner._contract_schedule
+        out = fc.rest_level_symmetric(
+            universe["team_id"].to_numpy(), universe["opp_team_id"].to_numpy(),
+            universe["game_id"].to_numpy(), universe["game_date"].to_numpy(),
+            history_team_id=cs["team_id"].to_numpy(),
+            history_game_date=cs["game_date"].to_numpy(),
+            history_game_id=cs["game_id"].to_numpy())
+
+        undef_own = out["undefined_own"]
+        affected = np.isnan(out["x"])
+        affected_games = set(str(g) for g in universe["game_id"].to_numpy()[affected])
+
+        # structural verification of the rule's predicate, row by row, against the
+        # contract schedule itself (fail closed on ANY row outside the two verified
+        # structural classes).
+        cs_sorted = cs.sort_values(["game_date", "game_id"], kind="mergesort")
+        first_cs = cs_sorted.groupby("team_id", sort=False).first()
+        archive_first_season = int(pd.to_datetime(cs["game_date"]).dt.year.min())
+        predicate_rows = []
+        for i in np.flatnonzero(undef_own):
+            t = int(universe["team_id"].iloc[i])
+            g = str(universe["game_id"].iloc[i])
+            gd = pd.Timestamp(universe["game_date"].iloc[i])
+            if t not in first_cs.index:
+                raise fc.A24ConstructionFailure(
+                    f"A24 registry fallback: predicate row team {t} absent from the "
+                    "contract schedule entirely -- fail closed")
+            frow = first_cs.loc[t]
+            n_prior = int(((cs["team_id"].to_numpy() == t)
+                           & (pd.to_datetime(cs["game_date"]).to_numpy()
+                              < np.datetime64(gd))).sum())
+            is_first_cs_game = (str(frow["game_id"]) == g) and (n_prior == 0)
+            season = int(gd.year)
+            if t in registered_debut_teams:
+                klass = "registered_franchise_debut"
+                ok = is_first_cs_game and season >= 2025
+            else:
+                klass = "archive_start_2021_boundary_row"
+                ok = is_first_cs_game and season == archive_first_season
+            if not ok:
+                raise fc.A24ConstructionFailure(
+                    f"A24 registry fallback: predicate row (team {t}, game {g}, season "
+                    f"{season}) is not structurally verified as {klass} -- failing closed "
+                    "rather than applying the fallback beyond the rule's own predicate")
+            predicate_rows.append({"row_index": int(i), "team_id": t, "game_id": g,
+                                   "season": season, "class": klass})
+        if not registered_debut_teams.issubset(
+                {r["team_id"] for r in predicate_rows}):
+            raise fc.A24ConstructionFailure(
+                "A24 registry fallback: the three registered franchise debuts were not all "
+                "found among the measured predicate rows -- the registered facts and the "
+                "measured universe disagree in a direction the rule text cannot explain; "
+                "fail closed")
+        measured_facts = {
+            "n_own_side_rows": int(undef_own.sum()),
+            "n_affected_rows": int(affected.sum()),
+            "n_affected_games": len(affected_games),
+            "teams": sorted({r["team_id"] for r in predicate_rows}),
+        }
+        scope_contradiction = (measured_facts["n_own_side_rows"]
+                               != registered_facts["n_own_side_rows"])
+        if scope_record_path is not None and not scope_record_path.exists():
+            import json as _json
+            scope_record_path.parent.mkdir(parents=True, exist_ok=True)
+            scope_record_path.write_text(_json.dumps({
+                "schema": "p38_a24_registry_fallback_scope_record/1",
+                "amendment_experiment_id": amendment_payload.get("experiment_id"),
+                "rule_operative_text": (amendment_payload.get("rule") or "")[:1200],
+                "registered_enumeration": registered_facts,
+                "measured_enumeration": measured_facts,
+                "measured_predicate_rows": predicate_rows,
+                "affected_game_ids": sorted(affected_games),
+                "contradiction_recorded": scope_contradiction,
+                "contradiction_statement": (
+                    "The amendment's registered enumeration ('exactly 3 debut games ... 6 "
+                    "rows total. No other row is affected') is measured FALSE on the real "
+                    "universe: the rule's own predicate (no prior contract-schedule game) "
+                    "is also structurally true for the four 2021 teams whose first "
+                    "contract game was 2021-05-15 (the archive begins 2021-05-14; an "
+                    "archive-start boundary fact, not a franchise debut). Measured: 7 "
+                    "own-side rows / 10 affected rows / 5 games. The RULE sentence is the "
+                    "operative frozen text (frozen-text precedence, the EXEC-M6 basis) "
+                    "and the only reading achieving the amendment's own registered "
+                    "purpose, 'extends the domain of rest(.,.) to a total function over "
+                    "the real universe'; the enumeration's error is REPORTED here and in "
+                    "EXECUTION_LOG.md, never silently reconciled."
+                    if scope_contradiction else
+                    "measured enumeration matches the registered enumeration"),
+                "identical_in_arm_and_null": True,
+                "no_performance_numbers": True,
+            }, indent=2, sort_keys=True), encoding="utf-8")
+
+        # the amendment's rule: rest := cap on the predicate side => f = min(cap, cap) = cap.
+        f_own_ext = np.where(undef_own, fc.CAP_DAYS, out["f_own"])
+        f_opp_ext = fc._lookup_by_opponent(
+            universe["game_id"].to_numpy(), universe["team_id"].to_numpy(),
+            universe["opp_team_id"].to_numpy(), f_own_ext)
+        x = (f_own_ext + f_opp_ext) / 2.0
+        if not np.all(np.isfinite(x)):
+            raise fc.A24ConstructionFailure(
+                "A24 registry fallback: x is still undefined on "
+                f"{int(np.sum(~np.isfinite(x)))} row(s) after the amendment's fallback -- "
+                "failing closed")
+
+        return {
+            "treatment_cols": [a24_module.TREATMENT_COL],
+            "nuisance_cols": [],
+            "k0_matched_design": {"treatment_cols": [], "nuisance_cols": [],
+                                  "comparison": "term_removal"},
+            "indicator_cols": [],
+            "columns": {a24_module.TREATMENT_COL: x},
+            "diagnostics": {
+                "fold_id": str(fold.get("fold_id")) if isinstance(fold, dict) else None,
+                "n_rows": int(len(universe)),
+                "registry_fallback_applied": {
+                    "experiment_id": amendment_payload.get("experiment_id"),
+                    "n_own_side_predicate_rows": int(undef_own.sum()),
+                    "n_affected_rows": int(affected.sum()),
+                    "affected_game_ids": sorted(affected_games),
+                    "predicate_team_ids": measured_facts["teams"],
+                    "substituted_value": float(fc.CAP_DAYS),
+                    "registered_vs_measured_contradiction_recorded": scope_contradiction,
+                    "scope_record": "A24_REGISTRY_FALLBACK_SCOPE_RECORD.json",
+                },
+            },
+        }
+    return build_design
+
+
 # --------------------------------------------------------------------------------- EXEC-M5 --
 def a03_tier_records(a03_module, universe: pd.DataFrame, folds: list) -> dict:
     """A03 tier_symmetry_check per real fold. The check conditions only on training-row

@@ -33,6 +33,16 @@ DISPATCH_COMMIT_PROVENANCE = (
     "docstring expects run_git=True at P38; rule 4 of this node's contract forbids running "
     "git. The executor chose rule 4 and recorded the commit from the ledger instead.")
 
+FINAL_FITS_COMMIT = "4814a95474969ff1bdfd860b03447b295d505fdd"
+FINAL_FITS_COMMIT_PROVENANCE = (
+    "The FINAL-FITS pass (A20, A21, A23 x2, A24) executed after the remediation wave "
+    "landed. Carried from orchestration/GRAPH_EVENTS.jsonl (git NOT invoked, standing "
+    "rule 4): the 2026-08-07T00:03:30Z coordinator check-in records repo.head "
+    "4814a95474969ff1bdfd860b03447b295d505fdd and names it as the commit carrying 'D040 "
+    "continuation sealed ... A20/A21/A23 remediated; A24 registry amendment appended "
+    "50->51 single-writer with byte-identity verified'. The executor sources and every "
+    "arm module are re-hashed below for P39 to confirm against the task-scoped commit.")
+
 P_VALUE_FORMULA = ("p = min(1, 2*min( (1+#{delta_b <= 0})/(B+1), "
                    "(1+#{delta_b >= 0})/(B+1) ))")
 
@@ -89,10 +99,11 @@ def main():
     arms = {}
     for d in sealed_dirs:
         entry = {"sealed_dir": f"stage2b/SEALED_RESULTS/P38/{d.name}"}
+        side_status = None
         side_p = d / "P38_EXECUTION_SIDECAR.json"
         if side_p.exists():
             side = json.loads(side_p.read_text(encoding="utf-8"))
-            entry["status"] = side.get("status")
+            entry["status"] = side_status = side.get("status")
             entry["sidecar_sha256"] = D.sha256_file(side_p)
             entry["fold_exclusions"] = side.get("fold_exclusions")
             entry["exec_m7_p26_bind_outcome"] = (side.get("exec_m7_p26_bind") or {}).get(
@@ -129,6 +140,29 @@ def main():
         if exc.exists():
             entry["status"] = "EXCLUDED_PRE_P38_PER_D039"
             entry["exclusion_record_sha256"] = D.sha256_file(exc)
+        # FINAL-FITS pass: a FINAL_FITS_SUPERSESSION.json beside a preserved BLOCK_VERDICT/
+        # EXCLUSION_RECORD means the element was subsequently FITTED under its remediation/
+        # amendment; the first-pass verdict is preserved (hash above) and the operative
+        # status is the sidecar's.
+        ffs = d / "FINAL_FITS_SUPERSESSION.json"
+        if ffs.exists():
+            entry["status_pre_final_fits"] = entry.get("status")
+            entry["status"] = side_status
+            entry["final_fits_supersession_sha256"] = D.sha256_file(ffs)
+            ffs_rec = json.loads(ffs.read_text(encoding="utf-8"))
+            entry["final_fits_supersedes"] = ffs_rec.get("supersedes")
+            entry["final_fits_remediation_commit"] = (
+                ffs_rec.get("remediation_commits") or {}).get("remediation_wave_commit")
+            if ffs_rec.get("measured_scope_contradiction") is not None:
+                entry["a24_measured_scope_contradiction"] = ffs_rec[
+                    "measured_scope_contradiction"]
+        sr = d / "A24_REGISTRY_FALLBACK_SCOPE_RECORD.json"
+        if sr.exists():
+            entry["a24_registry_fallback_scope_record_sha256"] = D.sha256_file(sr)
+        pre_ff = d / "P38_EXECUTION_SIDECAR.final_fits_attempt1_FAILED_PREPASS.json"
+        if pre_ff.exists():
+            entry.setdefault("final_fits_preserved_sha256", {})[pre_ff.name] = \
+                D.sha256_file(pre_ff)
         sup = d / "D040_SUPERSESSION.json"
         if sup.exists():
             entry["status_pre_d040"] = entry.get("status")
@@ -176,6 +210,8 @@ def main():
             "season_mask_equals_date_cutoff_mask": bool(fold_equiv[f["fold_id"]]),
         })
 
+    registry_rec, _ = D.verify_registry_amendment()
+
     code_hashes = {}
     for name in ("p38_driver.py", "p38_wrappers.py", "p38_run_fleet.py", "p38_finalize.py",
                  "p38_block_diagnostics.py", "p38_write_log.py"):
@@ -204,6 +240,8 @@ def main():
         "code": {
             "commit": DISPATCH_COMMIT,
             "commit_provenance": DISPATCH_COMMIT_PROVENANCE,
+            "final_fits_commit": FINAL_FITS_COMMIT,
+            "final_fits_commit_provenance": FINAL_FITS_COMMIT_PROVENANCE,
             "runner_sources_sha256": runner_hashes,
             "p38_executor_sources_sha256": code_hashes,
             "arm_module_sources_sha256": arm_file_hashes,
@@ -294,6 +332,32 @@ def main():
                     "elements) joined the fleet, its D039 exclusion condition met "
                     "(REAUDIT_A08.md PASS, non-implementer re-audit). No frozen file "
                     "edited.",
+            "FINAL_FITS": "the D039/D040 remediation lane closed out (D040 ruling item "
+                          "(3)): A20 rebuilt on the contract-schedule clock (EXEC-M6/"
+                          "A3-B1; suite re-run green by this executor incl. the T17 clock "
+                          "regression), A21 rebuilt possession-weighted per PIN-A21 "
+                          "(15/15), A23 rebuilt on the contract-schedule clock via the "
+                          "constructor-injected frame (EXEC-M6/A3-B4; 10/10, both "
+                          "bundles), A24 fitted after its registry amendment "
+                          "(adjudicated fallback, D039 option (a)) was appended by the "
+                          "coordinator single-writer and VERIFIED against its pins "
+                          "(51 records, sha256 match) -- the fallback applied by a "
+                          "call-site build_design override over the arm's own frozen "
+                          "pure functions (p38_wrappers."
+                          "a24_registry_fallback_build_design), with the amendment's "
+                          "registered-vs-measured scope contradiction RECORDED "
+                          "(A24_REGISTRY_FALLBACK_SCOPE_RECORD.json; registered 3 rows x "
+                          "2 = 6 affected over 3 games, measured 7 own-side predicate "
+                          "rows / 10 affected rows / 5 games -- the four 2021 "
+                          "archive-start teams' 2021-05-15 first games also satisfy the "
+                          "rule's predicate; rule text governs by frozen-text "
+                          "precedence, every predicate row structurally verified per "
+                          "call, contradiction reported never reconciled). Each "
+                          "first-pass BLOCK_VERDICT/EXCLUSION_RECORD preserved "
+                          "byte-for-byte with FINAL_FITS_SUPERSESSION.json sealed "
+                          "beside it citing the remediation commits from the ledger. "
+                          "All five sealed receipts carry the same discipline (named "
+                          "fold policy, seeds, zero performance numbers read).",
         },
         "arm_level_pins_carried": {
             "PIN-A13": "code's literal card-supported reading (any negative per-fold point "
@@ -322,20 +386,26 @@ def main():
                     "not be cited as the implemented rule",
         },
         "fleet": {
-            "fit_eligible_arm_ids_measured": 21,
-            "fit_eligible_module_instances_measured": 28,
-            "instances_fitted_attempted": 24,
+            "fit_eligible_arm_ids_measured": 22,
+            "fit_eligible_module_instances_measured": 29,
+            "instances_fitted_attempted": 29,
+            "instances_outstanding": 0,
             "count_note": "First pass (D039): measured 20 fit-eligible arm ids (22 "
                           "implemented minus A08 and A24) = 26 module instances, vs the "
                           "D039/dispatch text '21' -- contradiction recorded, not "
                           "reconciled. D040 continuation: A08 joined (exclusion condition "
-                          "met), so measured counts are now 21 arm ids / 28 module "
+                          "met), so measured counts became 21 arm ids / 28 module "
                           "instances / 24 instances run through the runner (the numeric "
                           "coincidence with the D039 '21' is composition-different: D039's "
                           "21 counted A21 and excluded A08; the measured 21 excludes A21 "
-                          "per PIN-A21 and includes A08 per D040).",
+                          "per PIN-A21 and includes A08 per D040). FINAL-FITS pass: the "
+                          "D039/D040 remediation lane closed (A20/A21/A23 rebuilt, suites "
+                          "green; A24 registry amendment appended and verified), so every "
+                          "one of the 22 implemented arm ids is fit-eligible = 29 module "
+                          "instances, all 29 run through the runner, 0 outstanding.",
             "arms": arms,
         },
+        "registry_amendment": registry_rec,
         "wall_seconds_fleet": wall_total,
         "data_ready_record": data_ready,
         "raised_findings": {

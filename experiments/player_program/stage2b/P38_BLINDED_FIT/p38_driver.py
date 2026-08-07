@@ -51,6 +51,58 @@ FOLD_POLICY_BASIS = ("D039 ratification of the P37 frozen-precedence analysis: t
 
 FINAL_FOLD_ID = "FINAL_ASSEMBLED_DESIGN"
 
+# ---- FINAL-FITS pass (D039 remediation lane closed out; D040 ruling item (3)) --------------
+# The A24 registry amendment is coordinator single-writer work; this executor only VERIFIES
+# the appended registry against the pins below before constructing A24 (fail closed on any
+# mismatch). Pin source: the coordinator's append record (GRAPH_EVENTS.jsonl note,
+# 2026-08-07T00:02:33Z: "A24 registry amendment APPENDED ... 50->51 records, baseline
+# byte-identity verified") and the dispatch of this final-fits pass.
+ARM_REGISTRY_PATH = PP / "arm_registry.jsonl"
+ARM_REGISTRY_RECORDS_PINNED = 51
+ARM_REGISTRY_SHA256_PINNED = \
+    "a0aff704ba2c70f2edf756c5dc765f0ab63fb528ecc1585f6fc8cfbbcf33a7a6"
+A24_AMENDMENT_EXPERIMENT_ID = "A24_rest_level_symmetric__franchise_debut_fallback_p37"
+
+
+def verify_registry_amendment() -> dict:
+    """Verify the appended arm registry against the final-fits pins and return the parsed
+    A24 franchise-debut fallback amendment payload plus the verification record. FAILS
+    CLOSED (RuntimeError) on any mismatch: A24 must not fit without its adjudicated
+    fallback amendment in the registry (D039 option (a); never a silent P38 patch)."""
+    measured_sha = sha256_file(ARM_REGISTRY_PATH)
+    lines = [l for l in ARM_REGISTRY_PATH.read_text(encoding="utf-8").splitlines()
+             if l.strip()]
+    rec = {
+        "path": "experiments/player_program/arm_registry.jsonl",
+        "n_records_measured": len(lines),
+        "n_records_pinned": ARM_REGISTRY_RECORDS_PINNED,
+        "sha256_measured": measured_sha,
+        "sha256_pinned": ARM_REGISTRY_SHA256_PINNED,
+        "match": (len(lines) == ARM_REGISTRY_RECORDS_PINNED
+                  and measured_sha == ARM_REGISTRY_SHA256_PINNED),
+    }
+    if not rec["match"]:
+        raise RuntimeError(f"arm_registry.jsonl does not match the final-fits pins: {rec}")
+    amendment_line = json.loads(lines[ARM_REGISTRY_RECORDS_PINNED - 1])
+    payloads = (amendment_line.get("registry_append") or {}).get("payloads") or []
+    payload = next((p for p in payloads
+                    if p.get("experiment_id") == A24_AMENDMENT_EXPERIMENT_ID), None)
+    if payload is None or payload.get("kind") != "fallback_adjudication" \
+            or payload.get("applies_to") != "A24_rest_level_symmetric":
+        raise RuntimeError(
+            "registry record 51 does not carry the adjudicated A24 franchise-debut "
+            f"fallback payload (experiment_id {A24_AMENDMENT_EXPERIMENT_ID}); refusing "
+            "to fit A24")
+    rec["amendment"] = {
+        "experiment_id": payload["experiment_id"],
+        "kind": payload["kind"],
+        "applies_to": payload["applies_to"],
+        "decision": payload.get("decision"),
+        "authorizing_decision": amendment_line.get("authorizing_decision"),
+        "rule_excerpt": (payload.get("rule") or "")[:400],
+    }
+    return rec, payload
+
 
 def sha256_file(p) -> str:
     h = hashlib.sha256()
@@ -106,6 +158,10 @@ def build_universe():
     F["own_est"] = F["team_pace_estimate"].astype(float)
     F["opp_est"] = F["opp_pace_estimate"].astype(float)
     F["opp_id"] = F["opp_team_id"]
+    # FINAL-FITS pass: A21's frozen card names the opponent key "opponent_team_id" (arm_a21
+    # _required_target_cols); same caller-supplied aliasing as opp_id for A22 -- the value
+    # is the universe's own opp_team_id, byte-identical, under the card's column name.
+    F["opponent_team_id"] = F["opp_team_id"]
 
     poss_home = pd.read_parquet(POSS_PARQUET,
                                 columns=["game_id", "offense_team_id", "is_home_offense"])
