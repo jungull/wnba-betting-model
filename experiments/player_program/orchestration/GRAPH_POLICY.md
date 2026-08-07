@@ -427,3 +427,33 @@ means only which seasons a file *contains* — it is not evidence of contaminati
 **This correction has a cost on the record:** the over-broad rule reached a running screen mid-flight
 and caused it to disqualify a valid result. Over-broad safety rules are not free — they destroy true
 findings as efficiently as loose ones admit false ones.
+
+**12.3.2 AMENDMENT — retire on SYMPTOMS, not on a guessed percentage** (`D068`, user directive
+2026-08-07). The "~60%, err EARLY" wording in 12.3.1 caused repeated premature handoffs:
+Coordinators #03 and #04 each retired inside an hour, on a guess, with context nowhere near full.
+
+**Premature retirement is the more common failure and it is expensive.** Every handoff costs a full
+packet write PLUS a full re-read by the successor (packet + policy + ledger + state). A coordinator
+retiring after 45 minutes can spend a third of its budget on ceremony. That is overhead, not caution.
+
+**You are NOT near the threshold** if you can still dispatch an agent, verify a result on bytes, and
+write a full annotation. In that state, keep working. Do not wind down "to be safe".
+
+**Retire only on an observable symptom:** you are summarising agent returns instead of reading them;
+you are skipping verification you would normally do; the harness has actually warned you about
+context, or auto-compaction has occurred; one more agent return would leave no room to process it;
+or the user says to hand off.
+
+**Floor:** do not retire before completing and closing a substantial unit of work. Retiring mid-unit
+forces the successor to reconstruct context you already had — the most wasteful possible handoff.
+
+**Numbering:** successor tasks are `wnba-coordinator-NN`, zero-padded increment, never date-stamped
+(dates collide when two coordinators retire the same day). The briefing must tell the successor its
+number, tell it to identify itself by that number in every ledger event and its closing note, and
+tell it to name ITS successor with the next increment. Without the third, the numbering dies at the
+first handoff.
+
+**Operational limit worth knowing:** a scheduled task is registered on the **machine that created
+it**. A successor summoned from a different device or a cloud session may exist on disk but never
+appear in the user's local scheduler, and therefore never fire there. State the task id you created
+in your closing note and ask the user to confirm it appears in their Scheduled list.
