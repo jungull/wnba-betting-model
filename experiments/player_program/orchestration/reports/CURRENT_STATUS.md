@@ -6,19 +6,18 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `4739d3cdf062b4dc651caf3f96f51977d969adb0` |
+| HEAD | `eda265765f7e201452abcc72a895668015c80167` |
 | working tree | DIRTY |
 | nodes | 87 |
-| events | 261 |
+| events | 321 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 14 |
-| PASSED | 57 |
-| READY | 4 |
-| RUNNING | 4 |
+| BLOCKED | 5 |
+| PASSED | 67 |
+| READY | 7 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 2 |
 
@@ -28,15 +27,15 @@ None open against a node.
 
 ## Running
 
-* `M09_TRUE_ARB_SCANNER` — True-arbitrage scanner over live multi-book capture: flags only, never orders
-* `M11_CONSENSUS_MODEL` — Multi-book consensus / fair-value model with preregistered vig treatment
-* `M25_MARKET_UI_FIXTURES` — Market screen shell against fixtures, extending the existing U11/U13 pattern
-* `P36_IMPLEMENT_ARMS` — Implement each arm, K0_FLAT, each K0_MATCHED, the shared runner and receipts
+None.
 
 ## Ready — next automatically scheduled
 
 * `M06_INJURY_REACTION_STUDY` (market_intelligence) — Injury-news reaction-time event study on point-in-time tape only
 * `M07_BOOK_LEAD_LAG` (market_intelligence) — Which book moves first: lead-lag measurement across synchronized captures
+* `M10_MIDDLES` (market_intelligence) — Middle-opportunity detection with per-book push semantics
+* `M13_PLAYER_VALUE_TRANSLATION` (market_intelligence) — Translate frozen fundamental-model outputs into priceable market terms
+* `M16_RELATED_MARKET_COHERENCE` (market_intelligence) — Coherence checks across related markets (moneyline, spread, total, props)
 * `M17_SUSPENSION_REOPENING` (market_intelligence) — Market suspension and reopening microstructure on the high-frequency tape
 * `M21_EXECUTION_REALISM` (market_intelligence) — Execution realism: limits, slippage and decision-to-executable latency, measured
 
@@ -57,6 +56,9 @@ None open against a node.
 * `M03_CAPTURE_UPGRADE` — High-frequency live odds capture: cadence measurement, event-driven bursts, latency fields
 * `M04_COMPETITOR_ARCHIVE_DESIGN` — Fixed-cutoff competitor-projection archive design with explicit licensing surface
 * `M05_EVENT_MARKET_LINKAGE` — Deterministic event-to-quote linkage with explicit censoring intervals
+* `M09_TRUE_ARB_SCANNER` — True-arbitrage scanner over live multi-book capture: flags only, never orders
+* `M11_CONSENSUS_MODEL` — Multi-book consensus / fair-value model with preregistered vig treatment
+* `M25_MARKET_UI_FIXTURES` — Market screen shell against fixtures, extending the existing U11/U13 pattern
 * `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
 * `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
 * `O12_PER_GAME_EXECUTION_SCOPE` — Per-game execution scope defect
@@ -78,6 +80,13 @@ None open against a node.
 * `P33_PREREGISTRATION_DRAFT` — Freeze every retained arm's complete specification
 * `P34_PREREGISTRATION_RED_TEAM` — Independent adversarial review of the preregistration
 * `P35_FREEZE_TASK_CARDS` — Freeze task cards and append registry records
+* `P36_IMPLEMENT_ARMS` — Implement each arm, K0_FLAT, each K0_MATCHED, the shared runner and receipts
+* `P37_IMPLEMENTATION_AUDIT` — Verify code matches formula, gates, receipts, parity
+* `P38_BLINDED_FIT` — Execute the frozen preregistered experiment into a sealed result directory
+* `P39_RESULT_INTEGRITY` — Verify sealed outputs without interpreting which arm won
+* `P40_PRIMARY_ADJUDICATION` — Open results; apply the preregistered primary possession gates
+* `P41_DOWNSTREAM_TURNOVER_CONFIRMATION` — Downstream turnover scoring for arms that passed the primary gate only
+* `P42_SCIENTIFIC_COMPLETION` — Accepted/null/failed decisions, bounded effects, uncertainty, limitations
 * `R10_O15_REPORT_REMEDIATION` — Write the missing O15_LOGOUT_SURVIVAL report from its own preserved evidence
 * `O16_SHARED_SCHEMA_ADOPTION` — Merge a shared schema or contract change proposed by the operations lane
 * `R11_P25_REPORT_REMEDIATION` — Write the missing P25_OFFSET_DEPENDENCY_GUARD report from its own preserved evidence
@@ -107,12 +116,12 @@ None open against a node.
 
 ## By lane
 
-| lane | BLOCKED | PASSED | READY | RUNNING | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 0 | 1 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 0 | 1 | 0 |
-| market_intelligence | 8 | 6 | 4 | 3 | 0 | 1 |
-| operations | 0 | 12 | 0 | 0 | 2 | 0 |
-| possession | 6 | 18 | 0 | 1 | 2 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 | 0 |
+| lane | BLOCKED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 1 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 1 | 0 |
+| market_intelligence | 5 | 9 | 7 | 0 | 1 |
+| operations | 0 | 12 | 0 | 2 | 0 |
+| possession | 0 | 25 | 0 | 2 | 1 |
+| product | 0 | 4 | 0 | 0 | 0 |
