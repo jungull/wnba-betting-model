@@ -1,0 +1,195 @@
+
+===== daily_refresh 2026-08-05T08:30:02 =====
+
+----- step: collect (C:\Users\jgallagher\wnba-betting-model\collect_refresh.py) -----
+
+== Phase A: 2021 postseason ==
+  pbp: 0 to fetch (17 already done)
+  misc: 0 to fetch (17 already done)
+  advanced: 0 to fetch (17 already done)
+
+== Phase A2: 2021-2023 regular-season TEAM gamelogs ==
+  2021: exists (192 games) — skip
+  2022: exists (216 games) — skip
+  2023: exists (240 games) — skip
+
+== Phase B: 2023 misc-stats repair ==
+  misc: 0 to fetch (260 already done)
+
+== Phase C: 2025 full season ==
+  pbp: 0 to fetch (202 already done)
+  misc: 0 to fetch (310 already done)
+  advanced: 0 to fetch (202 already done)
+
+== Phase D: 2026 season to date ==
+  pbp: 1 to fetch (224 already done)
+  misc: 1 to fetch (224 already done)
+  advanced: 1 to fetch (224 already done)
+
+== Phase E: validation ==
+{
+  "2021_postseason_games": 17,
+  "team_gamelog_2021_rs_games": 192,
+  "team_gamelog_2022_rs_games": 216,
+  "team_gamelog_2023_rs_games": 240,
+  "2023_misc_games": 260,
+  "2025_games_total": 310,
+  "2025_games_new": 202,
+  "2026_games_to_date": 225,
+  "2023_misc_files": 260,
+  "2023_misc_sample_nonzero_paint": "50/50",
+  "pbp_files_total_new": 509,
+  "pbp_schema_new_files": "v3 (camelCase; differs from data/playbyplay v2 files)",
+  "permanent_failures": []
+}
+
+Done. Outputs in data/refresh_2026/. Commit and push:  git checkout -b data-refresh-2026 && git add data/refresh_2026 && git commit -m 'Data refresh: 2021 PS, 2023 misc repair, 2025 completion, 2026 to date' && git push -u origin data-refresh-2026
+----- step collect: exit 0 in 29s -----
+
+----- step: masters (C:\Users\jgallagher\wnba-betting-model\build_masters.py) -----
+[1/8] player gamelogs ...
+      28,526 rows, 1,505 games
+[2/8] team gamelogs ...
+      3,010 rows, 1,505 games
+[3/8] per-game misc (snapshot of a live directory) ...
+      33,951 rows, 1,505 games, 5,425 DNP rows
+[4/8] per-game advanced ...
+      33,951 rows, 1,505 games
+[5/8] game identity index (team gl > player gl > shotcharts) ...
+      1,505 games indexed
+[6/8] master_player ...
+      33,951 rows
+[7/8] master_team ...
+      3,010 rows
+[8/8] validations + outputs ...
+
+============================================================================
+MASTER REBUILD SUMMARY
+============================================================================
+master_player rows: 2021-Pla:371  2021-Reg:4204  2022-Pla:514  2022-Reg:4747  2023-Pla:418  2023-Reg:5331  2024-Pla:517  2024-Reg:5360  2025-Pla:568  2025-Reg:6503  2026-Reg:5418
+master_team rows:   2021-Pla:34  2021-Reg:384  2022-Pla:46  2022-Reg:432  2023-Pla:40  2023-Reg:480  2024-Pla:44  2024-Reg:480  2025-Pla:48  2025-Reg:572  2026-Reg:450
+[1] box identity: 0 violations (3,010 checked)
+[2] channel identity: 0 violations (3,010 checked)
+[3] player-vs-team recon: 0 independent mismatches (3,010 real checks)
+[4a] drive team diff: 0 unexplained / 2,132 compared rows; categories {}
+[4b] drive paint diff: 0 mismatches / 1,636 non-2023 team-games; 2023 repaired: 480 team-games (mean |repair| 33.17)
+[5] coverage: 0 season-kind shortfalls
+DNP rows preserved: 5,425
+runtime: 37.0s   outputs: data/masters/
+============================================================================
+STATUS: PASS
+============================================================================
+----- step masters: exit 0 in 38s -----
+
+----- step: channel_base (C:\Users\jgallagher\wnba-betting-model\experiments\channel_reval\build_channel_base_v2.py) -----
+rows: 3010 | games: 1505
+box identity violations: 0 | negative np2: 0 (both must be 0)
+player-summed paint vs master_team.points_paint mismatches: 0
+opp mirror disagreements: 0
+player_sum-derived team rows carried (2021-23 reg. seasons): 0 -- channel inputs identical to real team rows (see module docstring)
+      ch_ft  ch_3pt  ch_paint  ch_np2
+year                                 
+2021   13.9    21.9      34.6    10.4
+2022   14.2    23.1      35.3     9.6
+2023   14.6    23.2      35.9     8.9
+2024   14.0    23.2      35.9     8.5
+2025   14.3    24.4      35.8     7.2
+2026   16.7    25.8      39.0     5.9
+^ sanity: paint ~34-36 and np2 ~7-10 every season; a season with paint ~0 means broken misc data
+wrote C:\Users\jgallagher\wnba-betting-model\experiments\channel_reval\channel_base_v2.csv
+----- step channel_base: exit 0 in 1s -----
+
+----- step: certify (C:\Users\jgallagher\wnba-betting-model\daily_certify.py) -----
+daily_certify - 2026-08-05T08:31:11-04:00
+========================================================================
+
+[PASS] duplicate game/player rows
+    checked 27 gamelog files; duplicate rows: 0
+
+[PASS] coverage by season (pbp/misc/advanced)
+    season | games | pbp | misc | advanced
+    -------|-------|-----|------|---------
+    2021   |   209 | 209 |  209 |      209
+    2022   |   239 | 239 |  239 |      239
+    2023   |   260 | 260 |  260 |      260
+    2024   |   262 | 262 |  262 |      262
+    2025   |   310 | 310 |  310 |      310
+    2026   |   225 | 225 |  225 |      225
+
+[PASS] odds capture freshness
+    newest snapshot: live_20260805T030002Z.json (2026-08-05T03:00:02+00:00)
+    schedule expectation: hourly 10:00-23:00 local; expected-latest 2026-08-04T23:00-04:00
+    lag vs expectation: 0 min
+
+[WARN] injury capture freshness
+    newest capture: raw/wnba_official_20260805T030002Z.pdf (2026-08-05T03:00:02+00:00)
+    age: 9.5 h | game day today: True (threshold 3h; hard fail 26h)
+    injury capture behind its cadence
+
+[PASS] schema fingerprint drift
+    37 dataset schemas match stored fingerprints
+
+[PASS] possession reconciliation (recent-game sample)
+    re-derived the 8 most recent games from raw pbp; 8 exact, 0 non-exact, 0 errored
+    ok   1022600218 (2026): exact 108-100, 159 possessions
+    ok   1022600219 (2026): exact 101-106, 173 possessions
+    ok   1022600220 (2026): exact 83-63, 158 possessions
+    ok   1022600221 (2026): exact 96-79, 152 possessions
+    ok   1022600222 (2026): exact 87-109, 159 possessions
+    ok   1022600223 (2026): exact 95-83, 156 possessions
+    ok   1022600224 (2026): exact 101-106, 170 possessions
+    ok   1022600225 (2026): exact 92-81, 149 possessions
+
+[WARN] pbp score reconciliation (sampled+incremental)
+    sample: 48 of 1505 games (newest 8 + rotating block 40) | eras {'v2': 40, 'v3': 8} | 48 exact, 0 non-exact, 0 errored
+    note 1022300067 (v2 2023): final exact but 1 duplicated row(s) dropped, 0 conflicting key(s), 0 checkpoint mismatch(es), 0 unattributed pts
+    note 1022300094 (v2 2023): final exact but 0 duplicated row(s) dropped, 0 conflicting key(s), 5 checkpoint mismatch(es), 0 unattributed pts
+
+[PASS] odds stale-book detection
+    scanned 14 live snapshots (live_20260804T140002Z.json .. live_20260805T030002Z.json); threshold 90 min on pregame events
+    betmgm           sightings  75 | stale   0 | max lag      2 min
+    betonlineag      sightings  69 | stale   0 | max lag      1 min
+    betrivers        sightings  83 | stale   0 | max lag      1 min
+    betus            sightings  53 | stale   0 | max lag      1 min
+    bovada           sightings  69 | stale   0 | max lag      6 min
+    draftkings       sightings  83 | stale   0 | max lag      1 min
+    fanatics         sightings  83 | stale   0 | max lag      1 min
+    fanduel          sightings  83 | stale   0 | max lag      1 min
+    lowvig           sightings  69 | stale   0 | max lag      1 min
+    mybookieag       sightings  14 | stale   0 | max lag      3 min
+    williamhill_us   sightings  69 | stale   0 | max lag     10 min
+
+[WARN] postponement / tip-time change detection
+    scanned 76 live snapshots, 21 events; 21 commence_time change(s), 0 pregame vanish(es)
+    TIP CHANGE Connecticut Sun @ Chicago Sky: 2026-07-31T00:10:00Z -> 2026-07-31T00:02:55Z (first seen live_20260731T010001Z.json; event c1d42f66)
+    TIP CHANGE Minnesota Lynx @ Toronto Tempo: 2026-07-31T00:10:00Z -> 2026-07-31T00:05:38Z (first seen live_20260731T010001Z.json; event ba08696d)
+    TIP CHANGE New York Liberty @ Las Vegas Aces: 2026-07-31T02:10:00Z -> 2026-07-31T02:05:50Z (first seen live_20260731T030001Z.json; event 86a42225)
+    TIP CHANGE Seattle Storm @ Atlanta Dream: 2026-07-31T23:30:00Z -> 2026-07-31T23:35:00Z (first seen live_20260731T235354Z.json; event 19a1dc62)
+    TIP CHANGE Dallas Wings @ Washington Mystics: 2026-07-31T23:30:00Z -> 2026-07-31T23:35:00Z (first seen live_20260731T235354Z.json; event 602eaac6)
+    TIP CHANGE Indiana Fever @ Portland Fire: 2026-08-01T02:00:00Z -> 2026-08-01T02:06:00Z (first seen live_20260801T025354Z.json; event 79a00262)
+    TIP CHANGE Las Vegas Aces @ Chicago Sky: 2026-08-01T17:00:00Z -> 2026-08-01T17:05:00Z (first seen live_20260801T170004Z.json; event d113b66e)
+    TIP CHANGE New York Liberty @ Phoenix Mercury: 2026-08-01T19:00:00Z -> 2026-08-01T19:02:00Z (first seen live_20260801T190022Z.json; event e9d3ed7c)
+    TIP CHANGE New York Liberty @ Phoenix Mercury: 2026-08-01T19:02:00Z -> 2026-08-01T19:04:00Z (first seen live_20260801T200005Z.json; event e9d3ed7c)
+    TIP CHANGE Connecticut Sun @ Dallas Wings: 2026-08-02T23:00:00Z -> 2026-08-02T23:03:00Z (first seen live_20260802T230003Z.json; event 8cb92d45)
+    TIP CHANGE Connecticut Sun @ Dallas Wings: 2026-08-02T23:03:00Z -> 2026-08-02T23:04:00Z (first seen live_20260803T000003Z.json; event 8cb92d45)
+    TIP CHANGE Toronto Tempo @ Golden State Valkyries: 2026-08-03T00:30:00Z -> 2026-08-03T00:34:00Z (first seen live_20260803T010003Z.json; event b69cd4ef)
+    WARN mode: this hook would FAIL once promoted (flip its *_FAIL_MODE switch at the top of the file)
+
+[PASS] fitted-artifact manifests (amendment v5 C3)
+    29/29 fitted artifacts attested; 0 unattested, 0 invalid, 0 hash-drifted, 0 absent
+
+========================================================================
+  PASS  duplicate game/player rows
+  PASS  coverage by season (pbp/misc/advanced)
+  PASS  odds capture freshness
+  WARN  injury capture freshness
+  PASS  schema fingerprint drift
+  PASS  possession reconciliation (recent-game sample)
+  WARN  pbp score reconciliation (sampled+incremental)
+  PASS  odds stale-book detection
+  WARN  postponement / tip-time change detection
+  PASS  fitted-artifact manifests (amendment v5 C3)
+
+SUMMARY: WARN  (0 fail, 3 warn, 7 pass/skip)
+----- step certify: exit 0 in 14s -----
+CHAIN GREEN

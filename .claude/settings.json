@@ -1,0 +1,136 @@
+{
+    "permissions":  {
+                        "allow":  [
+                                      "Bash(git push:*)",
+                                      "Bash(git fetch:*)",
+                                      "Bash(git add:*)",
+                                      "Bash(git commit:*)",
+                                      "Bash(git status:*)",
+                                      "Bash(git log:*)",
+                                      "Bash(git diff:*)",
+                                      "Bash(git merge:*)",
+                                      "Bash(git rev-parse:*)",
+                                      "Bash(git bundle:*)",
+                                      "Bash(python verify_all.py:*)",
+                                      "Bash(python daily_certify.py:*)",
+                                      "Bash(python asof_invariant.py:*)",
+                                      "Bash(python tests/:*)"
+                                  ]
+                    },
+    "statusLine":  {
+                       "type":  "command",
+                       "command":  "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}/.claude/hooks/context_status.ps1\"",
+                       "refreshInterval":  5
+                   },
+    "hooks":  {
+                  "Stop":  [
+                               {
+                                   "hooks":  [
+                                                 {
+                                                     "type":  "command",
+                                                     "command":  "powershell.exe",
+                                                     "args":  [
+                                                                  "-NoProfile",
+                                                                  "-ExecutionPolicy",
+                                                                  "Bypass",
+                                                                  "-File",
+                                                                  "${CLAUDE_PROJECT_DIR}/.claude/hooks/archive_for_codex.ps1"
+                                                              ],
+                                                     "timeout":  15
+                                                 },
+                                                 {
+                                                     "type":  "command",
+                                                     "command":  "powershell.exe",
+                                                     "args":  [
+                                                                  "-NoProfile",
+                                                                  "-ExecutionPolicy",
+                                                                  "Bypass",
+                                                                  "-File",
+                                                                  "${CLAUDE_PROJECT_DIR}/.claude/hooks/wait_for_codex_reply.ps1"
+                                                              ],
+                                                     "timeout":  86400,
+                                                     "async":  true,
+                                                     "asyncRewake":  true
+                                                 },
+                                                 {
+                                                     "type":  "command",
+                                                     "command":  "powershell.exe",
+                                                     "args":  [
+                                                                  "-NoProfile",
+                                                                  "-ExecutionPolicy",
+                                                                  "Bypass",
+                                                                  "-File",
+                                                                  "${CLAUDE_PROJECT_DIR}/.claude/hooks/dispatch_codex_review.ps1"
+                                                              ],
+                                                     "timeout":  3600,
+                                                     "async":  true
+                                                 },
+                                                 {
+                                                     "type":  "command",
+                                                     "command":  "powershell.exe",
+                                                     "args":  [
+                                                                  "-NoProfile",
+                                                                  "-ExecutionPolicy",
+                                                                  "Bypass",
+                                                                  "-File",
+                                                                  "${CLAUDE_PROJECT_DIR}/.claude/hooks/launch_claude_successor.ps1"
+                                                              ],
+                                                     "timeout":  3600,
+                                                     "async":  true
+                                                 }
+                                             ]
+                               }
+                           ],
+                  "StopFailure":  [
+                                      {
+                                          "hooks":  [
+                                                        {
+                                                            "type":  "command",
+                                                            "command":  "powershell.exe",
+                                                            "args":  [
+                                                                         "-NoProfile",
+                                                                         "-ExecutionPolicy",
+                                                                         "Bypass",
+                                                                         "-File",
+                                                                         "${CLAUDE_PROJECT_DIR}/.claude/hooks/archive_for_codex.ps1"
+                                                                     ],
+                                                            "timeout":  15
+                                                        },
+                                                        {
+                                                            "type":  "command",
+                                                            "command":  "powershell.exe",
+                                                            "args":  [
+                                                                         "-NoProfile",
+                                                                         "-ExecutionPolicy",
+                                                                         "Bypass",
+                                                                         "-File",
+                                                                         "${CLAUDE_PROJECT_DIR}/.claude/hooks/wait_for_codex_reply.ps1"
+                                                                     ],
+                                                            "timeout":  86400,
+                                                            "async":  true,
+                                                            "asyncRewake":  true
+                                                        }
+                                                    ]
+                                      }
+                                  ],
+                  "SessionStart":  [
+                                       {
+                                           "matcher":  "clear",
+                                           "hooks":  [
+                                                         {
+                                                             "type":  "command",
+                                                             "command":  "powershell.exe",
+                                                             "args":  [
+                                                                          "-NoProfile",
+                                                                          "-ExecutionPolicy",
+                                                                          "Bypass",
+                                                                          "-File",
+                                                                          "${CLAUDE_PROJECT_DIR}/.claude/hooks/load_rotation_handoff.ps1"
+                                                                      ],
+                                                             "timeout":  15
+                                                         }
+                                                     ]
+                                       }
+                                   ]
+              }
+}
