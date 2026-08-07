@@ -1,0 +1,66 @@
+﻿
+==============================================================================
+ROBUSTNESS -- reb x opponent pace x own rate
+==============================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 19642 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  manifest master_team.parquet                        asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_team:   raw 2990 -> partition+RS 1776 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  DENOMINATOR SANITY: sum(player possessions) vs 5 x team possessions
+    ratio med=0.992  p05=0.960  p95=1.023  corr(player-sum, team)=0.9342
+    corr(player possessions, player minutes) = 0.9919  (near 1 = possessions is essentially a minutes rescale)
+
+==============================================================================
+R1 -- NORMALISATION: per-100-possessions vs per-36-minutes
+==============================================================================
+
+  [per100poss] n=10167   corr(dpace, def_pre)=+0.1078
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.39955   0.000580    0.1133    0.002601     0.3560
+  2022         2484   0.39502   0.000102    0.0650    0.002948     0.3348
+  2023         2784   0.39225   0.000045   -0.0418    0.000734     0.1674
+  2024         2771   0.39836   0.000232    0.0993    0.000111     0.0640
+  POOLED      10167   0.38729   0.000164    0.0740    0.001071     0.2028
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0001638   0.0000588   0.0000844       0.075
+      dR2_OxM      0.0010713   0.0000639   0.0000874       0.000
+
+  [per36min] n=10899   corr(dpace, def_pre)=+0.3968
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2295   0.39244   0.000278    0.0610    0.002601     0.2561
+  2022         2669   0.39721   0.000466    0.0932    0.002655     0.2144
+  2023         2977   0.38869   0.000002    0.0070    0.000499     0.0963
+  2024         2958   0.39798   0.000115    0.0527    0.000036     0.0272
+  POOLED      10899   0.38833   0.000173    0.0552    0.000930     0.1326
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0001729   0.0000562   0.0000761       0.092
+      dR2_OxM      0.0009302   0.0000722   0.0001091       0.000
+
+==============================================================================
+R3 -- IS IT THE OPPONENT, OR JUST GAME VOLUME?
+==============================================================================
+  corr(opponent pace, own team pace) = -0.1072
+  control set                                R2  dR2_OxOppPace        beta
+  base only                             0.38729       0.001069      0.2026
+  + opp pace main                       0.38746       0.001071      0.2028
+  + own-team pace main & O x own        0.38784       0.000942      0.1915
+  + opp OREB-allowed & O x that         0.38801       0.000948      0.1920
+  + TOTAL game pace & O x total         0.38896       0.000027      5.2692
+
+  per-season, under the FULLEST control set:
+  season          n  dR2_OxOppPace        beta
+  2021         2128       0.000000     -0.5193
+  2022         2484       0.000405     14.6580
+  2023         2784       0.000086    -12.0119
+  2024         2771       0.000001      1.0075
+
+==============================================================================
+R2 -- FAMILY-WISE ERROR ACROSS THE WHOLE SWEEP
+==============================================================================
+  pooled null draws from 60 shipped placebo columns x 200 perms
+  candidate standardised statistic z = 10.69 (real 0.001071, null mean 0.000079, null sd 0.000093)
+  max-T null: mean=3.95 p95=6.53 max=9.34
+  FAMILY-WISE p (fraction of permutations whose BEST-of-60 exceeds the candidate) = 0.0000
+  (context) with 60 tests at a nominal 0.05 floor you expect 3.0 false positives
+
+Robustness done.

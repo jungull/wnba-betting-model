@@ -1,0 +1,103 @@
+﻿
+==============================================================================
+F2 -- AVAILABILITY-CONDITIONED MATCHUP
+==============================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 19642 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  dnp_reason non-empty rows: 19642 ; minutes==0 or null: 2925
+  appeared=1 rows: 16717 / 19642
+
+==============================================================================
+F2 / target = pts   (opponent specialist skill = blk)
+==============================================================================
+  roster pool size per (team,date): med=8 | delta: mean=0.0994 sd=0.3125 frac>0=0.460 frac>0.5=0.046 max=2.54
+  analysis rows: 10014 | rows where opp specialist degraded (delta>0.5): 565 (0.056)
+  (a) COLLINEARITY corr(M_delta, def_pre) within season = +0.1376 | per season {2021: 0.005, 2022: 0.12, 2023: 0.085, 2024: 0.197}
+      (reference) corr(opp_nominal_specialist, def_pre) = +0.0346  <- the LEVEL is the costume-prone part; the DELTA is the shock
+  (b) VAR DECOMP of M_delta: between-OPPONENT 0.169 / within 0.831 (12 opponents)
+      VAR DECOMP of M_delta: between-GAME 0.493 / within 0.507  (near 1.0 is EXPECTED: delta is a team-night quantity)
+  (c) SPLIT-HALF RELIABILITY of the blk/100 specialist instrument (players with >=20 games): r_half=0.8253  spearman-brown=0.9043  n=213
+  (d) EFFECT -- M_delta residualized on overall defence, main + own-rate interaction:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2088   0.18050   0.000150   -0.2982    0.001306    -1.2083
+  2022         2444   0.24658   0.000458    0.4022    0.002101     0.9578
+  2023         2743   0.26312   0.000619    0.7774    0.000282     0.4271
+  2024         2739   0.25816   0.000108    0.0656    0.000196     0.0769
+  POOLED      10014   0.23825   0.000121    0.1224    0.000101     0.1001
+  (d2) EFFECT -- orientation interaction (own points_paint-share x opponent shock):
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2088    0.000160    0.000078      0.2233
+  2022         2444    0.000458    0.000425      0.3719
+  2023         2743    0.000637    0.000002     -0.0399
+  2024         2739    0.000106    0.001127      0.1865
+  POOLED      10014    0.000120    0.000322      0.1796
+  (d3) CONTRAST mean pregame surprise per-100: specialist-degraded +0.3090 (n=565) vs intact -0.0994 (n=9449) -> gap +0.4085
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0001211   0.0000714   0.0000926       0.225
+      dR2_OxM      0.0001014   0.0000783   0.0001182       0.265
+  wrote f2_features_pts.csv  shape=(10014, 17)
+
+==============================================================================
+F2 / target = reb   (opponent specialist skill = dreb)
+==============================================================================
+  roster pool size per (team,date): med=8 | delta: mean=0.1720 sd=0.5057 frac>0=0.361 frac>0.5=0.066 max=4.07
+  analysis rows: 10014 | rows where opp specialist degraded (delta>0.5): 867 (0.087)
+  (a) COLLINEARITY corr(M_delta, def_pre) within season = -0.0492 | per season {2021: -0.157, 2022: -0.016, 2023: -0.117, 2024: 0.069}
+      (reference) corr(opp_nominal_specialist, def_pre) = -0.3258  <- the LEVEL is the costume-prone part; the DELTA is the shock
+  (b) VAR DECOMP of M_delta: between-OPPONENT 0.025 / within 0.975 (12 opponents)
+      VAR DECOMP of M_delta: between-GAME 0.521 / within 0.479  (near 1.0 is EXPECTED: delta is a team-night quantity)
+  (c) SPLIT-HALF RELIABILITY of the dreb/100 specialist instrument (players with >=20 games): r_half=0.8742  spearman-brown=0.9329  n=213
+  (d) EFFECT -- M_delta residualized on overall defence, main + own-rate interaction:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2088   0.40003   0.000445    0.1412    0.000222    -0.1536
+  2022         2444   0.39391   0.000252    0.0795    0.000221     0.0699
+  2023         2743   0.39163   0.000158   -0.0795    0.000012    -0.0212
+  2024         2739   0.39750   0.000611    0.1402    0.000006     0.0131
+  POOLED      10014   0.38701   0.000149    0.0705    0.000000     0.0017
+  (d2) EFFECT -- orientation interaction (own reb-share x opponent shock):
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2088    0.000445    0.000222     -0.1143
+  2022         2444    0.000248    0.000045      0.0323
+  2023         2743    0.000109    0.000032     -0.0358
+  2024         2739    0.000636    0.000001     -0.0045
+  POOLED      10014    0.000170    0.000026     -0.0289
+  (d3) CONTRAST mean pregame surprise per-100: specialist-degraded +0.2556 (n=867) vs intact -0.0364 (n=9147) -> gap +0.2920
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0001488   0.0000498   0.0000671       0.085
+      dR2_OxM      0.0000001   0.0000689   0.0001001       0.965
+  wrote f2_features_reb.csv  shape=(10014, 17)
+
+==============================================================================
+F2 / target = ast   (opponent specialist skill = stl)
+==============================================================================
+  roster pool size per (team,date): med=8 | delta: mean=0.0713 sd=0.1425 frac>0=0.505 frac>0.5=0.026 max=1.35
+  analysis rows: 10014 | rows where opp specialist degraded (delta>0.5): 342 (0.034)
+  (a) COLLINEARITY corr(M_delta, def_pre) within season = +0.0491 | per season {2021: 0.223, 2022: -0.136, 2023: -0.102, 2024: 0.135}
+      (reference) corr(opp_nominal_specialist, def_pre) = -0.0078  <- the LEVEL is the costume-prone part; the DELTA is the shock
+  (b) VAR DECOMP of M_delta: between-OPPONENT 0.050 / within 0.950 (12 opponents)
+      VAR DECOMP of M_delta: between-GAME 0.503 / within 0.497  (near 1.0 is EXPECTED: delta is a team-night quantity)
+  (c) SPLIT-HALF RELIABILITY of the stl/100 specialist instrument (players with >=20 games): r_half=0.5394  spearman-brown=0.7008  n=213
+  (d) EFFECT -- M_delta residualized on overall defence, main + own-rate interaction:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2088   0.32844   0.000101   -0.0419    0.000646    -0.1748
+  2022         2444   0.31903   0.000182   -0.0732    0.000003    -0.0090
+  2023         2743   0.34123   0.000264   -0.0714    0.000018    -0.0161
+  2024         2739   0.34174   0.000371    0.0615    0.002296     0.1413
+  POOLED      10014   0.32634   0.000000   -0.0025    0.000187     0.0540
+  (d2) EFFECT -- orientation interaction (own ast-share x opponent shock):
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2088    0.000101    0.000646     -0.1310
+  2022         2444    0.000197    0.000036     -0.0346
+  2023         2743    0.000252    0.000035     -0.0231
+  2024         2739    0.000413    0.002749      0.1654
+  POOLED      10014    0.000000    0.000154      0.0499
+  (d3) CONTRAST mean pregame surprise per-100: specialist-degraded +0.0988 (n=342) vs intact +0.1162 (n=9672) -> gap -0.0174
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000004   0.0000652   0.0000887       0.920
+      dR2_OxM      0.0001874   0.0001007   0.0001300       0.185
+  wrote f2_features_ast.csv  shape=(10014, 17)
+
+F2 done.

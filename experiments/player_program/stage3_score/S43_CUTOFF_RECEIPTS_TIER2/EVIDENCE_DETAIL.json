@@ -1,0 +1,4599 @@
+{
+ "measurement": "S43_TIER2_POINT_IN_TIME_CUTOFF_VALIDITY",
+ "commissioned_by": "user decision D065; discharges the tier-2 half of S37 finding A9",
+ "root": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program",
+ "standard": {
+  "user_ruling_verbatim": "Expected-possessions priors, prior-game box aggregates, recent-form inputs, and anything computed from historical data need the stronger point-in-time audit proving that every underlying observation predates the forecast cutoff. So don't turn 12 fields into 12 research projects. Establish the minimum sufficient proof for each field, record it, and unblock fitting.",
+  "d10_governing_rule_verbatim": "a field is CUTOFF_VALID for a row only if a per-row source observation timestamp exists and is <= that row's forecast_cutoff. No timestamp means CUTOFF_UNPROVEN. Structural plausibility is never a substitute.",
+  "decomposition": {
+   "E_event_claim": "every event whose realisation entered the value had finished before the row's forecast_cutoff. NECESSARY. Measured exhaustively here.",
+   "R_record_claim": "the repository's observation of those events existed before the cutoff. This is D10's timestamp test. NOT measurable: no capture timestamp exists on any target artifact. NOT manufactured here.",
+   "consequence": "FAIL(E) => CUTOFF_INVALID (no future capture receipt can rescue it). PASS(E) and no R => CUTOFF_UNPROVEN, with the gap named exactly."
+  }
+ },
+ "prohibitions": {
+  "no_fit": true,
+  "no_performance_number": true,
+  "observed_time_dropped_before_every_write": true,
+  "frozen_artifacts_modified": false,
+  "git_run": false
+ },
+ "reads": {
+  "experiments/prediction_contract_v4/game.parquet": "b9524667929184f0a73e73fd9e9aabba3074d4828f2b8acdecddd70ddfbfcac7",
+  "data/masters/master_team.parquet": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528",
+  "data/reference/tip_times.csv": "3bd2c4ab4d7f673f9010a40ac4ac904c88dbb039db4627b0e918d07810c4542a",
+  "experiments/player_program/possessions_v2/possessions_raw_v2.parquet": "7200881fd811db9d0d6b10ea0a19b01ec7b6d027ee4567b9ef963241b15a4b1a",
+  "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet": "c37c075148553920b79c9320ea03afb37986bfc752fc84dd695f154887c3db18",
+  "experiments/market_program/SCORE_BASELINES/score_baseline_rows.parquet": "5d1fc4c9af2334a6edd6ddffab91fe7cff5596578d9995937859a86cfc1e1452",
+  "experiments/market_program/SCORE_BASELINES/build_score_baselines.py": "65b7a94213d11703b5820b34c49e0926c465fe20ca4fd1b4a82d8f39d5fd03f8"
+ },
+ "cutoff_source": {
+  "artifact": "experiments/prediction_contract_v4/game.parquet",
+  "column": "forecast_cutoff",
+  "rows": 1495,
+  "policies": {
+   "date_only_prior_day_cutoff": 1088,
+   "exact_tip_T-90m": 407
+  },
+  "policy_definitions": {
+   "date_only_prior_day_cutoff": "18:00 UTC on the day BEFORE the game (D10 cutoff_definition)",
+   "exact_tip_T-90m": "scheduled tip minus 90 minutes"
+  },
+  "d10_ledger_field_26_tip_scheduled_contract_v4_screened": "CUTOFF_VALID",
+  "note": "this is the same forecast_cutoff column the D10 ledger itself joins to. It is the only per-row cutoff in the repository."
+ },
+ "universe": {
+  "full_schedule_clusters": 1495,
+  "full_schedule_rows": 2990,
+  "d010_excluded_date": "2021-05-14",
+  "universe_clusters": 1491,
+  "universe_rows": 2982,
+  "per_season_clusters": {
+   "2021": 205,
+   "2022": 239,
+   "2023": 260,
+   "2024": 262,
+   "2025": 310,
+   "2026": 215
+  },
+  "pinned_expectation": {
+   "clusters": 1491,
+   "rows": 2982
+  },
+  "matches_pin": true,
+  "cutoff_join_coverage": {
+   "universe_clusters_with_a_forecast_cutoff": 1491,
+   "universe_clusters_WITHOUT": []
+  },
+  "policy_over_universe_clusters": {
+   "date_only_prior_day_cutoff": 1084,
+   "exact_tip_T-90m": 407
+  }
+ },
+ "observation_time_witnesses": {
+  "witness_A": {
+   "artifact": "experiments/prediction_contract_v4/game.parquet",
+   "column": "scheduled_tip_time",
+   "admitted_quality": [
+    "observed_single",
+    "observed_revised"
+   ],
+   "games_witnessed": 407,
+   "d10_verdict_on_this_object": "CUTOFF_VALID (ledger #26)"
+  },
+  "witness_B": {
+   "artifact": "data/reference/tip_times.csv",
+   "column": "tip_utc",
+   "games_witnessed": 1219,
+   "d10_verdict_on_this_object": "CUTOFF_UNPROVEN (ledger #23)",
+   "admissibility": "ALARM ONLY - a market archive may raise a flag, never clear one (S33R precedent / S30 section 8 / P2B). Used here solely to PROVE violations; never to grant a pass.",
+   "covers_2021": false
+  },
+  "cross_check": {
+   "games_witnessed_by_both": 406,
+   "disagreements_gt_60s": 20,
+   "disagreeing_game_ids": [
+    "1022500116",
+    "1022500132",
+    "1022500162",
+    "1022500200",
+    "1022500220",
+    "1022500237",
+    "1022500239",
+    "1022500257",
+    "1022500274",
+    "1022600005",
+    "1022600008",
+    "1022600027",
+    "1022600063",
+    "1022600120",
+    "1022600142",
+    "1022600143",
+    "1022600170",
+    "1022600192",
+    "1042500131",
+    "1042500201"
+   ]
+  },
+  "coverage_over_full_schedule": {
+   "A_only": 1,
+   "B_only": 813,
+   "both": 406,
+   "witnessed_any": 1220,
+   "UNWITNESSED": 275,
+   "unwitnessed_by_season": {
+    "2021": 209,
+    "2022": 59,
+    "2023": 1,
+    "2024": 1,
+    "2025": 0,
+    "2026": 5
+   }
+  },
+  "game_date_is_a_LOCAL_date_not_a_UTC_date": {
+   "test": "hours from 00:00 UTC of game_date to the witnessed tip",
+   "n": 1220,
+   "min": 15.0,
+   "max": 27.0,
+   "reading": "max exceeds 24h, so game_date cannot be a UTC date; min exceeds 4h, consistent with an EASTERN calendar date. The unconditional lower bound used below (00:00 UTC of game_date) is therefore strictly conservative."
+  },
+  "event_completion_model": {
+   "END_LOWER_BOUND": "tip + 40 minutes of regulation game clock (+5 min per OT period). A final score cannot exist earlier under any circumstance. Wall clock is strictly longer, so this is a hard floor, never an estimate.",
+   "no_END_UPPER_BOUND_is_asserted": "this node declines to assert a wall-clock envelope, because an envelope is a plausibility argument in the direction of PASS and the ledger's rule forbids exactly that. Instead the SLACK (cutoff minus source tip) is reported, and a slack of >= 4 hours is recorded as 'event unambiguously complete' with the threshold stated.",
+   "SLACK_SAFE_HOURS": 4.0
+  }
+ },
+ "new_findings_measured": {
+  "N1_fold_train_moments_are_not_row_level_as_of": {
+   "what": "zscore_train() / center_on_train() / SC08's pooled_sd fallback / the lambda selection tail compute a FOLD-TRAIN constant over the whole training window and apply it to every training row, including rows whose own forecast_cutoff long precedes the last training observation.",
+   "consumers": [
+    "SC08 sigma_z_pace_prior and sigma_z_lagged_margin_sd (zscore_train)",
+    "SC08 pooled train margin sd fallback (36 clusters per the card)",
+    "SC04 and SC11 centred league drift (center_on_train)",
+    "SC01 and SC10 lambda selection on the train tail"
+   ],
+   "not_in_the_A9_table": true,
+   "measured": {
+    "train_lt_2022": {
+     "train_clusters": 205,
+     "latest_observation_entering_the_fold_train_moment": {
+      "game_id": "1042100404",
+      "game_date": "2021-10-17",
+      "end_lower_bound_utc": "2021-10-17 00:00:00+00:00"
+     },
+     "train_clusters_whose_own_cutoff_PRECEDES_that_observation": 205,
+     "share": 1.0
+    },
+    "train_lt_2023": {
+     "train_clusters": 444,
+     "latest_observation_entering_the_fold_train_moment": {
+      "game_id": "1042200304",
+      "game_date": "2022-09-18",
+      "end_lower_bound_utc": "2022-09-18 00:00:00+00:00"
+     },
+     "train_clusters_whose_own_cutoff_PRECEDES_that_observation": 444,
+     "share": 1.0
+    },
+    "train_lt_2024": {
+     "train_clusters": 704,
+     "latest_observation_entering_the_fold_train_moment": {
+      "game_id": "1042300304",
+      "game_date": "2023-10-18",
+      "end_lower_bound_utc": "2023-10-19 00:45:00+00:00"
+     },
+     "train_clusters_whose_own_cutoff_PRECEDES_that_observation": 704,
+     "share": 1.0
+    },
+    "train_lt_2025": {
+     "train_clusters": 966,
+     "latest_observation_entering_the_fold_train_moment": {
+      "game_id": "1042400305",
+      "game_date": "2024-10-20",
+      "end_lower_bound_utc": "2024-10-21 00:45:00+00:00"
+     },
+     "train_clusters_whose_own_cutoff_PRECEDES_that_observation": 966,
+     "share": 1.0
+    },
+    "train_lt_2026": {
+     "train_clusters": 1276,
+     "latest_observation_entering_the_fold_train_moment": {
+      "game_id": "1042500304",
+      "game_date": "2025-10-10",
+      "end_lower_bound_utc": "2025-10-11 00:40:00+00:00"
+     },
+     "train_clusters_whose_own_cutoff_PRECEDES_that_observation": 1276,
+     "share": 1.0
+    }
+   },
+   "scope_note": "TEST rows are unaffected: every fold's training seasons end before its test season begins. The defect, if the tier-2 standard binds training rows, is confined to training rows. This is the standard walk-forward convention, so the coordinator must decide whether D065's 'every underlying observation predates the forecast cutoff' binds per-row on training rows or only on evaluation rows. This node does not decide it."
+  },
+  "N2_same_day_prior_games_are_admitted_by_the_ROW_strict_convention": {
+   "what": "features_common.STRICTLY_PRIOR_STATEMENT admits an earlier SAME-DAY game_id as prior. Under the date_only_prior_day_cutoff policy the row's cutoff is 18:00 UTC on the day BEFORE, so a same-day source game is provably after the cutoff with no tip evidence required at all.",
+   "team_rows_whose_immediately_prior_own_game_is_SAME_DAY": 0,
+   "game_clusters_whose_immediately_prior_league_game_is_SAME_DAY": 917,
+   "note": "SC01's card and the pace producer both use the DATE-strict reading instead, so the slate contains two different meanings of 'strictly prior' with different point-in-time consequences. features_common's own docstring asserts the opposite rationale -- that the primitives exist so the phrase cannot mean eleven different things."
+  },
+  "N3_no_asof_granularity_manifest_on_either_consumed_artifact": {
+   "team_possession_prior_v1.parquet": "no sibling .manifest.json; asof_granularity UNDECLARED",
+   "score_baseline_rows.parquet": "no sibling .manifest.json; asof_granularity UNDECLARED",
+   "why_it_matters": "GRAPH_POLICY 13.2.2 makes the manifest the gate for relying on a pre-built artifact. Both artifacts were consumed by the frozen cards without one. This node established row granularity by re-derivation instead, which is stronger evidence than the manifest would have carried -- but the process control was absent."
+  }
+ },
+ "timestamp_provenance_trace": {
+  "why_this_section_exists": "a concurrent integrity audit found a cutoff-availability check that passes BY CONSTRUCTION: prediction_contract_v5.py:459 sets the S2 source's candidate_observed_time to pd.Timestamp(f'{season}-01-01T00:00:00Z'), a SYNTHETIC SEASON-START MARKER, and validate_projected_exposure.py:565 then asserts observed_after_cutoff == 0 for B_s2_weak_fallback, which cannot fail. It is disclosed at build_projected_exposure.py:128-135, so it is not concealed. This node treats it as the failure shape to test itself against.",
+  "timestamps_this_node_RELIES_ON": {
+   "forecast_cutoff": {
+    "artifact": "experiments/prediction_contract_v4/game.parquet",
+    "what_it_is": "the per-row decision boundary itself, not an observation timestamp",
+    "synthetic": "PARTLY, AND DECLARED: 1,088 of 1,495 rows use date_only_prior_day_cutoff = 18:00 UTC on the day before, which is a POLICY constant, not a measurement. It is the repository's own declared cutoff and the D10 ledger joins to the same column, so it is used here as given. Note the direction: a policy cutoff that sits EARLIER than a real one makes this audit STRICTER, never laxer."
+   },
+   "witness_A_scheduled_tip_time": {
+    "artifact": "experiments/prediction_contract_v4/game.parquet",
+    "capture_timestamp_column": "tip_time_observed_at",
+    "d10_verdict": "CUTOFF_VALID (ledger #26)",
+    "GENUINE_OR_SYNTHETIC": "GENUINE",
+    "trace": {
+     "rows": 407,
+     "n_null_capture_timestamps": 0,
+     "n_distinct_capture_timestamps": 199,
+     "capture_timestamp_range": [
+      "2025-07-05 14:55:37+00:00",
+      "2026-07-30 22:55:37+00:00"
+     ],
+     "rows_whose_capture_precedes_their_own_scheduled_tip": 407,
+     "rows_whose_capture_precedes_their_own_forecast_cutoff": 407,
+     "is_a_constant_marker": false,
+     "underlying_feed": {
+      "odds_extension": 405,
+      "props_historical": 2
+     }
+    },
+    "verdict": "199 distinct capture instants spanning 2025-07-05..2026-07-30, none null, every one preceding both its own tip and its own cutoff. This is a real capture series, not a marker. LIMITATION, stated: live capture only began in July 2025, so witness A exists for 2025/2026 games only and cannot witness 2021-2024 at all.",
+    "market_lineage_disclosed": "the underlying feed is odds_extension / props_historical, i.e. an odds feed. What makes it admissible under the D10 ledger is not its lineage but its screened per-row capture timestamp, which is exactly what witness B lacks."
+   },
+   "witness_B_tip_times_csv": {
+    "artifact": "data/reference/tip_times.csv",
+    "capture_timestamp_column": null,
+    "d10_verdict": "CUTOFF_UNPROVEN (ledger #23)",
+    "GENUINE_OR_SYNTHETIC": "GENUINE VALUES, NO CAPTURE TIMESTAMP",
+    "how_it_is_used_here": "ALARM ONLY. It is permitted to PROVE a violation and is never permitted to grant a pass, per the S33R precedent that a market archive 'may raise a flag, never clear one'. Every verdict in this receipt reports separately how many failures rest on witness B alone."
+   },
+   "REFUSED__master_team_observed_time": {
+    "what_it_is": "a LOCAL FILE MTIME IN MID-2026 (10 distinct values, all 2026-07-31 / 2026-08-01), which the manifest itself says is not an as-of bound",
+    "used_by_this_node": false,
+    "dropped_at_load": true,
+    "why": "treating it as the observation timestamp would manufacture exactly the false pass the coordinator relay describes -- except in the opposite direction, since it postdates every cutoff and would manufacture a universal FAIL. Either way it is not an observation time and this node never reads it."
+   }
+  },
+  "validations_TRACED_AND_NOT_CREDITED": [
+   {
+    "validation": "validate_projected_exposure.py::_r2 (line 546) observed_after_cutoff",
+    "what_timestamp_it_compares": "CONTRACT.candidate_observed_time vs forecast_cutoff",
+    "applies_to": "the PLAYER-candidate frame (evaluation_tier A_primary / B_transaction_sensitivity / B_s2_weak_fallback)",
+    "genuine": "MIXED. A_primary compares captured as-of roster times. B_s2_weak_fallback compares the SYNTHETIC season-start marker set at prediction_contract_v5.py:459 and therefore passes by construction.",
+    "credited_by_this_node": false,
+    "why_not": "it is not a check on any tier-2 target. It bounds the player-candidate roster path. team_possession_prior_v1 is built by build_pace(), which reads only possessions_raw_v2 plus the schedule identities (game_id, team_id, game_date, season) and never reads candidate_source, roster_evidence_regime or candidate_observed_time."
+   },
+   {
+    "validation": "validate_projected_exposure.py::pace_matches_independent_rederivation (line 674)",
+    "what_timestamp_it_compares": "NONE. It re-derives pace values without producer code.",
+    "genuine": "yes, but it is a CONSTRUCTION-ORDER check, not an observation-time check",
+    "credited_by_this_node": false,
+    "why_not": "this node re-derived the artifact independently rather than inheriting the claim; see targets.T1.exact_re_derivation. The independent re-derivation AGREES, which is why this node can speak about the source set at all -- but agreement about construction order is precisely what the D10 ledger already said is not observation time."
+   },
+   {
+    "validation": "PROJECTED_EXPOSURE_VALIDATION.json '35/35', cited by D10 field #49/#50",
+    "what_timestamp_it_compares": "no per-observation timestamp for the pace artifact",
+    "credited_by_this_node": false,
+    "why_not": "the D10 ledger had already discounted it in the same words this node was asked to engage with. This node neither credits nor re-litigates it."
+   },
+   {
+    "validation": "score_baseline_rows byte pins in S35/S36 runner_constants.INPUT_PINS",
+    "what_timestamp_it_compares": "NONE. Byte identity of a column, not observation time.",
+    "credited_by_this_node": "only as byte identity",
+    "why_not": "a byte pin proves the file has not changed. It says nothing about when the observations inside it existed. This node re-derived the columns from the builder's own inputs instead."
+   }
+  ],
+  "pace_artifact_isolation_from_the_S2_marker": {
+   "claim": "the synthetic S2 season-start marker cannot reach team_possession_prior_v1",
+   "code_evidence": "build_projected_exposure.build_pace(base) consumes only base[['game_id','team_id','game_date','season']] plus possessions_raw_v2; candidate_observed_time is not in load_inputs()'s `keep` list at all",
+   "measured_evidence": "this node re-derived all 2,990 rows of the artifact from master_team's schedule identities and the possession stream ALONE -- no contract v5 frame, no roster regime, no candidate timestamps -- and reproduced pace_level, pace_source, n_history_games, team_pace_estimate and projected_team_off_possessions exactly, including the frozen column byte pin.",
+   "reproduced_exactly": true,
+   "byte_pin_reproduced": true,
+   "conclusion": "isolation established by reproduction, not by reading the code. The S2 defect is real and is out of scope for these four targets."
+  },
+  "self_check": {
+   "did_this_node_credit_any_untraced_cutoff_availability_pass": false,
+   "every_verdict_rests_on": "either (a) a re-derivation of the producer's own source set plus a tip witness whose provenance is traced above, or (b) an unconditional calendar-date floor requiring no timestamp at all. No verdict in this receipt inherits another node's pass."
+  }
+ },
+ "targets": {
+  "T1_opp_pace_estimate": {
+   "target": "opponent.opp_pace_estimate class -- team_possession_prior_v1.parquet (projected_team_off_possessions), D10 ledger #50 (and #49)",
+   "consumed_by": [
+    "SC08_SIGMA_MARGIN_MAP z1 = z(projected_team_off_possessions)",
+    "experiments/market_program/SCORE_BASELINES/build_score_baselines.py (the composite baseline's pace factor -> pred_home/away/total/margin/p_home)"
+   ],
+   "d10_ledger_words_engaged_with": "those receipts attest construction order, not observation time... This is the sharpest case in the ledger of the difference between 'validated' and 'timestamped'.",
+   "artifact_contamination_check_graph_policy_13_2_2": {
+    "manifest_sibling_expected": "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet.manifest.json",
+    "manifest_sibling_present": false,
+    "asof_granularity_declared": null,
+    "granularity_established_by_re_derivation_instead": "row",
+    "evidence": "the producer's own selection predicate is `d < r.game_date` (same season, then prior season, then a league mean over strictly earlier dates). Every row's value therefore depends only on games on dates strictly before that row's own date, and this node reproduced all 2,990 rows exactly under that predicate. The artifact is ROW-granular AT DATE RESOLUTION. That is a stronger statement than the missing manifest carries, and a weaker one than cutoff validity requires."
+   },
+   "exact_re_derivation": {
+    "rows": 2990,
+    "level_mismatch": 0,
+    "source_mismatch": 0,
+    "n_history_mismatch": 0,
+    "estimate_max_abs_diff": 0.0,
+    "projected_max_abs_diff": 0.0,
+    "reproduces_frozen_artifact_exactly": true,
+    "frozen_column_pin_projected_team_off_possessions": {
+     "recomputed_column_sha256": "9078790427e0c3357dd8fe6a337fcc96852bfbfedaac48d963f5686894ac71bd",
+     "pinned": "9078790427e0c3357dd8fe6a337fcc96852bfbfedaac48d963f5686894ac71bd",
+     "recomputed_join_key_sha256": "6b8b2709af3890c40a2fbc14eec36f02a5eae048aece1480ce7f3929126dd59b",
+     "pinned_join_key": "6b8b2709af3890c40a2fbc14eec36f02a5eae048aece1480ce7f3929126dd59b",
+     "column_matches": true,
+     "join_key_matches": true
+    }
+   },
+   "contributing_source_set_size": {
+    "n_rows": 2982,
+    "min": 1,
+    "max": 10,
+    "mean": 9.1747,
+    "definition": "the explicit list of prior GAMES whose realised possession counts enter this row's value (last <= WINDOW_K=10 qualifying games, or the previous date's league mean at level 3)"
+   },
+   "coverage": "EXHAUSTIVE -- every one of the 2,982 universe team-game rows and all 1,491 clusters; no sampling",
+   "point_in_time_per_team_row": {
+    "event_claim_PASSES_on_rows": 2903,
+    "event_claim_FAILS_on_rows": 47,
+    "event_claim_NOT_ESTABLISHED_on_rows": 32,
+    "construction": "pace prior, per team-game row",
+    "rows_evaluated": 2982,
+    "verdict_counts": {
+     "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2903,
+     "INDETERMINATE_WITHIN_4H_BAND": 9,
+     "PROVEN_AFTER_CUTOFF": 47,
+     "UNWITNESSED_SOURCE_TIP": 23
+    },
+    "rows_with_an_observation_provably_after_their_own_cutoff": 47,
+    "share_of_rows_failing_the_event_claim": 0.015761,
+    "failures_by_witness_class": {
+     "B_market_archive_ALARM_ONLY": 47
+    },
+    "failures_resting_only_on_the_ALARM_ONLY_market_archive": 47,
+    "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+    "lateness_hours_of_failures": {
+     "min": 1.6666666666666667,
+     "p50": 5.666666666666667,
+     "max": 8.75
+    },
+    "by_cutoff_policy": {
+     "date_only_prior_day_cutoff": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2089,
+      "INDETERMINATE_WITHIN_4H_BAND": 9,
+      "PROVEN_AFTER_CUTOFF": 47,
+      "UNWITNESSED_SOURCE_TIP": 23
+     },
+     "exact_tip_T-90m": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 814
+     }
+    },
+    "by_season": {
+     "2021": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 387,
+      "UNWITNESSED_SOURCE_TIP": 23
+     },
+     "2022": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 466,
+      "INDETERMINATE_WITHIN_4H_BAND": 3,
+      "PROVEN_AFTER_CUTOFF": 9
+     },
+     "2023": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 511,
+      "PROVEN_AFTER_CUTOFF": 9
+     },
+     "2024": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 499,
+      "INDETERMINATE_WITHIN_4H_BAND": 5,
+      "PROVEN_AFTER_CUTOFF": 20
+     },
+     "2025": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 610,
+      "INDETERMINATE_WITHIN_4H_BAND": 1,
+      "PROVEN_AFTER_CUTOFF": 9
+     },
+     "2026": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 430
+     }
+    },
+    "slack_hours_when_measurable": {
+     "n": 9,
+     "min": 0.9166666666666666,
+     "p05": 0.95,
+     "p50": 2.0,
+     "max": 3.0
+    },
+    "examples_of_failures": [
+     {
+      "target_game_id": "1022200135",
+      "target_team_id": 1611661313,
+      "target_game_date": "2022-07-07",
+      "target_forecast_cutoff": "2022-07-06 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200133",
+      "source_game_date": "2022-07-06",
+      "source_end_lower_bound_utc": "2022-07-07 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200187",
+      "target_team_id": 1611661313,
+      "target_game_date": "2022-08-03",
+      "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200183",
+      "source_game_date": "2022-08-02",
+      "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300038",
+      "target_team_id": 1611661313,
+      "target_game_date": "2023-07-28",
+      "target_forecast_cutoff": "2023-07-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300142",
+      "source_game_date": "2023-07-27",
+      "source_end_lower_bound_utc": "2023-07-27 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300186",
+      "target_team_id": 1611661313,
+      "target_game_date": "2023-08-18",
+      "target_forecast_cutoff": "2023-08-17 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300182",
+      "source_game_date": "2023-08-17",
+      "source_end_lower_bound_utc": "2023-08-18 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400094",
+      "target_team_id": 1611661313,
+      "target_game_date": "2024-06-23",
+      "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400092",
+      "source_game_date": "2024-06-22",
+      "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022500036",
+      "target_team_id": 1611661313,
+      "target_game_date": "2025-05-30",
+      "target_forecast_cutoff": "2025-05-29 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022500033",
+      "source_game_date": "2025-05-29",
+      "source_end_lower_bound_utc": "2025-05-29 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200087",
+      "target_team_id": 1611661317,
+      "target_game_date": "2022-06-15",
+      "target_forecast_cutoff": "2022-06-14 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200083",
+      "source_game_date": "2022-06-14",
+      "source_end_lower_bound_utc": "2022-06-14 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400035",
+      "target_team_id": 1611661317,
+      "target_game_date": "2024-05-29",
+      "target_forecast_cutoff": "2024-05-28 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400032",
+      "source_game_date": "2024-05-28",
+      "source_end_lower_bound_utc": "2024-05-28 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400109",
+      "target_team_id": 1611661317,
+      "target_game_date": "2024-07-01",
+      "target_forecast_cutoff": "2024-06-30 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400108",
+      "source_game_date": "2024-06-30",
+      "source_end_lower_bound_utc": "2024-06-30 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400153",
+      "target_team_id": 1611661317,
+      "target_game_date": "2024-08-16",
+      "target_forecast_cutoff": "2024-08-15 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400149",
+      "source_game_date": "2024-08-15",
+      "source_end_lower_bound_utc": "2024-08-16 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022500078",
+      "target_team_id": 1611661317,
+      "target_game_date": "2025-06-19",
+      "target_forecast_cutoff": "2025-06-18 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022500077",
+      "source_game_date": "2025-06-18",
+      "source_end_lower_bound_utc": "2025-06-18 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300020",
+      "target_team_id": 1611661319,
+      "target_game_date": "2023-05-28",
+      "target_forecast_cutoff": "2023-05-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300017",
+      "source_game_date": "2023-05-27",
+      "source_end_lower_bound_utc": "2023-05-28 01:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300119",
+      "target_team_id": 1611661319,
+      "target_game_date": "2023-07-12",
+      "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300114",
+      "source_game_date": "2023-07-11",
+      "source_end_lower_bound_utc": "2023-07-12 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400119",
+      "target_team_id": 1611661319,
+      "target_game_date": "2024-07-05",
+      "target_forecast_cutoff": "2024-07-04 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400117",
+      "source_game_date": "2024-07-04",
+      "source_end_lower_bound_utc": "2024-07-05 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400159",
+      "target_team_id": 1611661319,
+      "target_game_date": "2024-08-18",
+      "target_forecast_cutoff": "2024-08-17 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400156",
+      "source_game_date": "2024-08-17",
+      "source_end_lower_bound_utc": "2024-08-17 20:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022500097",
+      "target_team_id": 1611661319,
+      "target_game_date": "2025-06-26",
+      "target_forecast_cutoff": "2025-06-25 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022500095",
+      "source_game_date": "2025-06-25",
+      "source_end_lower_bound_utc": "2025-06-26 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200128",
+      "target_team_id": 1611661320,
+      "target_game_date": "2022-07-04",
+      "target_forecast_cutoff": "2022-07-03 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200127",
+      "source_game_date": "2022-07-03",
+      "source_end_lower_bound_utc": "2022-07-03 22:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200187",
+      "target_team_id": 1611661320,
+      "target_game_date": "2022-08-03",
+      "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200183",
+      "source_game_date": "2022-08-02",
+      "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300031",
+      "target_team_id": 1611661320,
+      "target_game_date": "2023-06-03",
+      "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300029",
+      "source_game_date": "2023-06-02",
+      "source_end_lower_bound_utc": "2023-06-03 02:45:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400159",
+      "target_team_id": 1611661320,
+      "target_game_date": "2024-08-18",
+      "target_forecast_cutoff": "2024-08-17 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400157",
+      "source_game_date": "2024-08-17",
+      "source_end_lower_bound_utc": "2024-08-17 21:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400217",
+      "target_team_id": 1611661320,
+      "target_game_date": "2024-09-11",
+      "target_forecast_cutoff": "2024-09-10 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400214",
+      "source_game_date": "2024-09-10",
+      "source_end_lower_bound_utc": "2024-09-11 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400031",
+      "target_team_id": 1611661321,
+      "target_game_date": "2024-05-26",
+      "target_forecast_cutoff": "2024-05-25 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400029",
+      "source_game_date": "2024-05-25",
+      "source_end_lower_bound_utc": "2024-05-26 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400095",
+      "target_team_id": 1611661321,
+      "target_game_date": "2024-06-23",
+      "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400091",
+      "source_game_date": "2024-06-22",
+      "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400221",
+      "target_team_id": 1611661321,
+      "target_game_date": "2024-09-13",
+      "target_forecast_cutoff": "2024-09-12 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400218",
+      "source_game_date": "2024-09-12",
+      "source_end_lower_bound_utc": "2024-09-13 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022500103",
+      "target_team_id": 1611661321,
+      "target_game_date": "2025-06-28",
+      "target_forecast_cutoff": "2025-06-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022500099",
+      "source_game_date": "2025-06-27",
+      "source_end_lower_bound_utc": "2025-06-28 00:10:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     }
+    ]
+   },
+   "point_in_time_per_game_cluster_worst_side": {
+    "event_claim_PASSES_on_rows": 1426,
+    "event_claim_FAILS_on_rows": 44,
+    "event_claim_NOT_ESTABLISHED_on_rows": 21,
+    "construction": "pace prior, per game cluster (worst of the two sides) -- this is the grain SC08 consumes",
+    "rows_evaluated": 1491,
+    "verdict_counts": {
+     "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 1426,
+     "INDETERMINATE_WITHIN_4H_BAND": 7,
+     "PROVEN_AFTER_CUTOFF": 44,
+     "UNWITNESSED_SOURCE_TIP": 14
+    },
+    "rows_with_an_observation_provably_after_their_own_cutoff": 44,
+    "share_of_rows_failing_the_event_claim": 0.02951,
+    "failures_by_witness_class": {
+     "B_market_archive_ALARM_ONLY": 44
+    },
+    "failures_resting_only_on_the_ALARM_ONLY_market_archive": 44,
+    "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+    "lateness_hours_of_failures": {
+     "min": 1.6666666666666667,
+     "p50": 5.666666666666667,
+     "max": 8.75
+    },
+    "by_cutoff_policy": {
+     "date_only_prior_day_cutoff": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 1019,
+      "INDETERMINATE_WITHIN_4H_BAND": 7,
+      "PROVEN_AFTER_CUTOFF": 44,
+      "UNWITNESSED_SOURCE_TIP": 14
+     },
+     "exact_tip_T-90m": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 407
+     }
+    },
+    "by_season": {
+     "2021": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 191,
+      "UNWITNESSED_SOURCE_TIP": 14
+     },
+     "2022": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 229,
+      "INDETERMINATE_WITHIN_4H_BAND": 2,
+      "PROVEN_AFTER_CUTOFF": 8
+     },
+     "2023": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 251,
+      "PROVEN_AFTER_CUTOFF": 9
+     },
+     "2024": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 240,
+      "INDETERMINATE_WITHIN_4H_BAND": 4,
+      "PROVEN_AFTER_CUTOFF": 18
+     },
+     "2025": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 300,
+      "INDETERMINATE_WITHIN_4H_BAND": 1,
+      "PROVEN_AFTER_CUTOFF": 9
+     },
+     "2026": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 215
+     }
+    },
+    "slack_hours_when_measurable": {
+     "n": 7,
+     "min": 0.9166666666666666,
+     "p05": 0.9416666666666667,
+     "p50": 1.0,
+     "max": 2.0
+    },
+    "examples_of_failures": [
+     {
+      "target_game_id": "1022200057",
+      "target_team_id": null,
+      "target_game_date": "2022-06-01",
+      "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200052",
+      "source_game_date": "2022-05-31",
+      "source_end_lower_bound_utc": "2022-05-31 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200061",
+      "target_team_id": null,
+      "target_game_date": "2022-06-03",
+      "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200058",
+      "source_game_date": "2022-06-02",
+      "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200087",
+      "target_team_id": null,
+      "target_game_date": "2022-06-15",
+      "target_forecast_cutoff": "2022-06-14 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200083",
+      "source_game_date": "2022-06-14",
+      "source_end_lower_bound_utc": "2022-06-14 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200128",
+      "target_team_id": null,
+      "target_game_date": "2022-07-04",
+      "target_forecast_cutoff": "2022-07-03 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200127",
+      "source_game_date": "2022-07-03",
+      "source_end_lower_bound_utc": "2022-07-03 22:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200135",
+      "target_team_id": null,
+      "target_game_date": "2022-07-07",
+      "target_forecast_cutoff": "2022-07-06 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200133",
+      "source_game_date": "2022-07-06",
+      "source_end_lower_bound_utc": "2022-07-07 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200147",
+      "target_team_id": null,
+      "target_game_date": "2022-07-15",
+      "target_forecast_cutoff": "2022-07-14 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200144",
+      "source_game_date": "2022-07-14",
+      "source_end_lower_bound_utc": "2022-07-15 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200164",
+      "target_team_id": null,
+      "target_game_date": "2022-07-23",
+      "target_forecast_cutoff": "2022-07-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200162",
+      "source_game_date": "2022-07-22",
+      "source_end_lower_bound_utc": "2022-07-23 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200187",
+      "target_team_id": null,
+      "target_game_date": "2022-08-03",
+      "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200183",
+      "source_game_date": "2022-08-02",
+      "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300020",
+      "target_team_id": null,
+      "target_game_date": "2023-05-28",
+      "target_forecast_cutoff": "2023-05-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300017",
+      "source_game_date": "2023-05-27",
+      "source_end_lower_bound_utc": "2023-05-28 01:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300030",
+      "target_team_id": null,
+      "target_game_date": "2023-06-03",
+      "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300026",
+      "source_game_date": "2023-06-02",
+      "source_end_lower_bound_utc": "2023-06-02 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300031",
+      "target_team_id": null,
+      "target_game_date": "2023-06-03",
+      "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300029",
+      "source_game_date": "2023-06-02",
+      "source_end_lower_bound_utc": "2023-06-03 02:45:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300038",
+      "target_team_id": null,
+      "target_game_date": "2023-07-28",
+      "target_forecast_cutoff": "2023-07-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300142",
+      "source_game_date": "2023-07-27",
+      "source_end_lower_bound_utc": "2023-07-27 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300118",
+      "target_team_id": null,
+      "target_game_date": "2023-07-12",
+      "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300113",
+      "source_game_date": "2023-07-11",
+      "source_end_lower_bound_utc": "2023-07-11 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300119",
+      "target_team_id": null,
+      "target_game_date": "2023-07-12",
+      "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300114",
+      "source_game_date": "2023-07-11",
+      "source_end_lower_bound_utc": "2023-07-12 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300181",
+      "target_team_id": null,
+      "target_game_date": "2023-08-13",
+      "target_forecast_cutoff": "2023-08-12 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300176",
+      "source_game_date": "2023-08-12",
+      "source_end_lower_bound_utc": "2023-08-13 00:10:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300186",
+      "target_team_id": null,
+      "target_game_date": "2023-08-18",
+      "target_forecast_cutoff": "2023-08-17 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300182",
+      "source_game_date": "2023-08-17",
+      "source_end_lower_bound_utc": "2023-08-18 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300217",
+      "target_team_id": null,
+      "target_game_date": "2023-09-01",
+      "target_forecast_cutoff": "2023-08-31 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300213",
+      "source_game_date": "2023-08-31",
+      "source_end_lower_bound_utc": "2023-08-31 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400016",
+      "target_team_id": null,
+      "target_game_date": "2024-05-20",
+      "target_forecast_cutoff": "2024-05-19 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400014",
+      "source_game_date": "2024-05-19",
+      "source_end_lower_bound_utc": "2024-05-19 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400027",
+      "target_team_id": null,
+      "target_game_date": "2024-05-25",
+      "target_forecast_cutoff": "2024-05-24 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400024",
+      "source_game_date": "2024-05-24",
+      "source_end_lower_bound_utc": "2024-05-25 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400031",
+      "target_team_id": null,
+      "target_game_date": "2024-05-26",
+      "target_forecast_cutoff": "2024-05-25 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400029",
+      "source_game_date": "2024-05-25",
+      "source_end_lower_bound_utc": "2024-05-26 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400035",
+      "target_team_id": null,
+      "target_game_date": "2024-05-29",
+      "target_forecast_cutoff": "2024-05-28 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400032",
+      "source_game_date": "2024-05-28",
+      "source_end_lower_bound_utc": "2024-05-28 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400056",
+      "target_team_id": null,
+      "target_game_date": "2024-06-07",
+      "target_forecast_cutoff": "2024-06-06 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400054",
+      "source_game_date": "2024-06-06",
+      "source_end_lower_bound_utc": "2024-06-06 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400094",
+      "target_team_id": null,
+      "target_game_date": "2024-06-23",
+      "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400092",
+      "source_game_date": "2024-06-22",
+      "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400095",
+      "target_team_id": null,
+      "target_game_date": "2024-06-23",
+      "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400091",
+      "source_game_date": "2024-06-22",
+      "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400102",
+      "target_team_id": null,
+      "target_game_date": "2024-06-28",
+      "target_forecast_cutoff": "2024-06-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400099",
+      "source_game_date": "2024-06-27",
+      "source_end_lower_bound_utc": "2024-06-27 23:45:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     }
+    ]
+   }
+  },
+  "T2_T3_prior_box_and_recent_form": {
+   "target": "opponent.prior_box_aggregates (D10 ledger #51) AND every lagged-outcome / recent-form construction in the slate",
+   "enumeration_method": "read from the eleven arm modules and runner/features_common.py in this worktree, not taken from the A9 table",
+   "constructions": [
+    {
+     "arm": "SC01_OPP_ADJ_INTERACTING",
+     "construction": "ridge rating fit on strictly-prior two-season-window rows (pts of prior games)",
+     "sequencing_regime": "DATE_strict_team",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC02_A07_SCORE_TRANSIENT",
+     "construction": "prior_count(same_season=True): count of same-season strictly-prior COMPLETED games",
+     "sequencing_regime": "ROW_strict_team_same_season",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC03_SEASON_CARRYOVER_PRIOR",
+     "construction": "prior_season_aggregates: whole-PRIOR-SEASON settled margin/env means",
+     "sequencing_regime": "PRIOR_SEASON_team",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC03_SEASON_CARRYOVER_PRIOR",
+     "construction": "prior_count(same_season=True) fade clock",
+     "sequencing_regime": "ROW_strict_team_same_season",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC04_HCA_LEAGUE_DRIFT",
+     "construction": "league_prior_ewma(home_minus_away, halflife 60 league games)",
+     "sequencing_regime": "ROW_strict_league",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC05_HCA_TEAM_OFFSETS",
+     "construction": "prior_home_away_split(margin): strictly-prior own home/away means",
+     "sequencing_regime": "ROW_strict_team_career",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC08_SIGMA_MARGIN_MAP",
+     "construction": "prior_rolling_sd(margin, window 20): rolling sd of last <= 20 strictly-prior own settled margins",
+     "sequencing_regime": "ROW_strict_team_career",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC08_SIGMA_MARGIN_MAP",
+     "construction": "pace_prior(): the byte-pinned possession artifact",
+     "sequencing_regime": "DATE_strict_team",
+     "ledger_field": "opponent.opp_pace_estimate"
+    },
+    {
+     "arm": "SC10_FORM_TREND",
+     "construction": "prior_ewma(halflife 4, same_season) -- L_short RECENT FORM",
+     "sequencing_regime": "ROW_strict_team_same_season",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC10_FORM_TREND",
+     "construction": "prior_ewma(halflife 12, same_season) -- L_med RECENT FORM",
+     "sequencing_regime": "ROW_strict_team_same_season",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC10_FORM_TREND",
+     "construction": "prior_expanding_mean(same_season) -- L_long season-to-date anchor",
+     "sequencing_regime": "ROW_strict_team_same_season",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC10_FORM_TREND",
+     "construction": "orthogonalisation covariate: shift(1).rolling(window).mean() and shift(1).expanding().mean() on margin",
+     "sequencing_regime": "ROW_strict_team_same_season",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC11_LEAGUE_TOTAL_DRIFT",
+     "construction": "league_prior_ewma(total, halflife 60 league games)",
+     "sequencing_regime": "ROW_strict_league",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC12_ROBUST_INPUT_WINSOR",
+     "construction": "prior_ewma(span 10, career) on margin AND clip(margin,+/-15)",
+     "sequencing_regime": "ROW_strict_team_career",
+     "ledger_field": "opponent.prior_box_aggregates"
+    },
+    {
+     "arm": "SC12_ROBUST_INPUT_WINSOR",
+     "construction": "prior_count(same_season=False) support floor",
+     "sequencing_regime": "ROW_strict_team_career",
+     "ledger_field": "opponent.prior_box_aggregates"
+    }
+   ],
+   "sequencing_regimes_found": {
+    "ROW_strict": "ordered by (game_date, game_id), up to but NOT including the current row; an earlier SAME-DAY game_id DOES count as prior (features_common.STRICTLY_PRIOR_STATEMENT, verbatim)",
+    "DATE_strict": "game_date strictly earlier than the current row's game_date (SC01's card wording; the pace producer's `d < r.game_date`)",
+    "PRIOR_SEASON": "whole previous season aggregates, carried across the season boundary"
+   },
+   "coverage": "EXHAUSTIVE -- all 2,982 team-game rows (team regimes) / all 1,491 clusters (league regimes); no sampling. Only the LATEST contributing source per row is classified, which is sufficient and exact: the latest source binds, so if it clears the cutoff every earlier source does too.",
+   "point_in_time_by_regime": {
+    "ROW_strict_team_career": {
+     "event_claim_PASSES_on_rows": 2912,
+     "event_claim_FAILS_on_rows": 45,
+     "event_claim_NOT_ESTABLISHED_on_rows": 10,
+     "construction": "ROW_strict_team_career",
+     "rows_evaluated": 2982,
+     "verdict_counts": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2912,
+      "INDETERMINATE_WITHIN_4H_BAND": 9,
+      "NO_CONTRIBUTING_SOURCE": 15,
+      "PROVEN_AFTER_CUTOFF": 45,
+      "UNWITNESSED_SOURCE_TIP": 1
+     },
+     "rows_with_an_observation_provably_after_their_own_cutoff": 45,
+     "share_of_rows_failing_the_event_claim": 0.015091,
+     "failures_by_witness_class": {
+      "B_market_archive_ALARM_ONLY": 45
+     },
+     "failures_resting_only_on_the_ALARM_ONLY_market_archive": 45,
+     "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+     "lateness_hours_of_failures": {
+      "min": 1.6666666666666667,
+      "p50": 5.666666666666667,
+      "max": 8.75
+     },
+     "by_cutoff_policy": {
+      "date_only_prior_day_cutoff": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2100,
+       "INDETERMINATE_WITHIN_4H_BAND": 9,
+       "NO_CONTRIBUTING_SOURCE": 13,
+       "PROVEN_AFTER_CUTOFF": 45,
+       "UNWITNESSED_SOURCE_TIP": 1
+      },
+      "exact_tip_T-90m": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 812,
+       "NO_CONTRIBUTING_SOURCE": 2
+      }
+     },
+     "by_season": {
+      "2021": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 397,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "UNWITNESSED_SOURCE_TIP": 1
+      },
+      "2022": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 466,
+       "INDETERMINATE_WITHIN_4H_BAND": 3,
+       "PROVEN_AFTER_CUTOFF": 9
+      },
+      "2023": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 511,
+       "PROVEN_AFTER_CUTOFF": 9
+      },
+      "2024": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 499,
+       "INDETERMINATE_WITHIN_4H_BAND": 5,
+       "PROVEN_AFTER_CUTOFF": 20
+      },
+      "2025": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 611,
+       "INDETERMINATE_WITHIN_4H_BAND": 1,
+       "NO_CONTRIBUTING_SOURCE": 1,
+       "PROVEN_AFTER_CUTOFF": 7
+      },
+      "2026": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 428,
+       "NO_CONTRIBUTING_SOURCE": 2
+      }
+     },
+     "slack_hours_when_measurable": {
+      "n": 9,
+      "min": 0.9166666666666666,
+      "p05": 0.95,
+      "p50": 2.0,
+      "max": 3.0
+     },
+     "examples_of_failures": [
+      {
+       "target_game_id": "1022200057",
+       "target_team_id": 1611661325,
+       "target_game_date": "2022-06-01",
+       "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200052",
+       "source_game_date": "2022-05-31",
+       "source_end_lower_bound_utc": "2022-05-31 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200061",
+       "target_team_id": 1611661323,
+       "target_game_date": "2022-06-03",
+       "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200058",
+       "source_game_date": "2022-06-02",
+       "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200087",
+       "target_team_id": 1611661317,
+       "target_game_date": "2022-06-15",
+       "target_forecast_cutoff": "2022-06-14 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200083",
+       "source_game_date": "2022-06-14",
+       "source_end_lower_bound_utc": "2022-06-14 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200128",
+       "target_team_id": 1611661320,
+       "target_game_date": "2022-07-04",
+       "target_forecast_cutoff": "2022-07-03 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200127",
+       "source_game_date": "2022-07-03",
+       "source_end_lower_bound_utc": "2022-07-03 22:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200135",
+       "target_team_id": 1611661313,
+       "target_game_date": "2022-07-07",
+       "target_forecast_cutoff": "2022-07-06 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200133",
+       "source_game_date": "2022-07-06",
+       "source_end_lower_bound_utc": "2022-07-07 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200147",
+       "target_team_id": 1611661324,
+       "target_game_date": "2022-07-15",
+       "target_forecast_cutoff": "2022-07-14 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200144",
+       "source_game_date": "2022-07-14",
+       "source_end_lower_bound_utc": "2022-07-15 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200164",
+       "target_team_id": 1611661329,
+       "target_game_date": "2022-07-23",
+       "target_forecast_cutoff": "2022-07-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200162",
+       "source_game_date": "2022-07-22",
+       "source_end_lower_bound_utc": "2022-07-23 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200187",
+       "target_team_id": 1611661313,
+       "target_game_date": "2022-08-03",
+       "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200183",
+       "source_game_date": "2022-08-02",
+       "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200187",
+       "target_team_id": 1611661320,
+       "target_game_date": "2022-08-03",
+       "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200183",
+       "source_game_date": "2022-08-02",
+       "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300020",
+       "target_team_id": 1611661319,
+       "target_game_date": "2023-05-28",
+       "target_forecast_cutoff": "2023-05-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300017",
+       "source_game_date": "2023-05-27",
+       "source_end_lower_bound_utc": "2023-05-28 01:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300030",
+       "target_team_id": 1611661322,
+       "target_game_date": "2023-06-03",
+       "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300026",
+       "source_game_date": "2023-06-02",
+       "source_end_lower_bound_utc": "2023-06-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300031",
+       "target_team_id": 1611661320,
+       "target_game_date": "2023-06-03",
+       "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300029",
+       "source_game_date": "2023-06-02",
+       "source_end_lower_bound_utc": "2023-06-03 02:45:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300118",
+       "target_team_id": 1611661328,
+       "target_game_date": "2023-07-12",
+       "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300113",
+       "source_game_date": "2023-07-11",
+       "source_end_lower_bound_utc": "2023-07-11 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300119",
+       "target_team_id": 1611661319,
+       "target_game_date": "2023-07-12",
+       "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300114",
+       "source_game_date": "2023-07-11",
+       "source_end_lower_bound_utc": "2023-07-12 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300038",
+       "target_team_id": 1611661313,
+       "target_game_date": "2023-07-28",
+       "target_forecast_cutoff": "2023-07-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300142",
+       "source_game_date": "2023-07-27",
+       "source_end_lower_bound_utc": "2023-07-27 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300181",
+       "target_team_id": 1611661330,
+       "target_game_date": "2023-08-13",
+       "target_forecast_cutoff": "2023-08-12 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300176",
+       "source_game_date": "2023-08-12",
+       "source_end_lower_bound_utc": "2023-08-13 00:10:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300186",
+       "target_team_id": 1611661313,
+       "target_game_date": "2023-08-18",
+       "target_forecast_cutoff": "2023-08-17 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300182",
+       "source_game_date": "2023-08-17",
+       "source_end_lower_bound_utc": "2023-08-18 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300217",
+       "target_team_id": 1611661323,
+       "target_game_date": "2023-09-01",
+       "target_forecast_cutoff": "2023-08-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300213",
+       "source_game_date": "2023-08-31",
+       "source_end_lower_bound_utc": "2023-08-31 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400016",
+       "target_team_id": 1611661328,
+       "target_game_date": "2024-05-20",
+       "target_forecast_cutoff": "2024-05-19 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400014",
+       "source_game_date": "2024-05-19",
+       "source_end_lower_bound_utc": "2024-05-19 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400027",
+       "target_team_id": 1611661325,
+       "target_game_date": "2024-05-25",
+       "target_forecast_cutoff": "2024-05-24 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400024",
+       "source_game_date": "2024-05-24",
+       "source_end_lower_bound_utc": "2024-05-25 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400031",
+       "target_team_id": 1611661321,
+       "target_game_date": "2024-05-26",
+       "target_forecast_cutoff": "2024-05-25 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400029",
+       "source_game_date": "2024-05-25",
+       "source_end_lower_bound_utc": "2024-05-26 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400035",
+       "target_team_id": 1611661317,
+       "target_game_date": "2024-05-29",
+       "target_forecast_cutoff": "2024-05-28 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400032",
+       "source_game_date": "2024-05-28",
+       "source_end_lower_bound_utc": "2024-05-28 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400056",
+       "target_team_id": 1611661322,
+       "target_game_date": "2024-06-07",
+       "target_forecast_cutoff": "2024-06-06 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400054",
+       "source_game_date": "2024-06-06",
+       "source_end_lower_bound_utc": "2024-06-06 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400094",
+       "target_team_id": 1611661313,
+       "target_game_date": "2024-06-23",
+       "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400092",
+       "source_game_date": "2024-06-22",
+       "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400095",
+       "target_team_id": 1611661321,
+       "target_game_date": "2024-06-23",
+       "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400091",
+       "source_game_date": "2024-06-22",
+       "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      }
+     ]
+    },
+    "ROW_strict_team_same_season": {
+     "event_claim_PASSES_on_rows": 2851,
+     "event_claim_FAILS_on_rows": 45,
+     "event_claim_NOT_ESTABLISHED_on_rows": 10,
+     "construction": "ROW_strict_team_same_season",
+     "rows_evaluated": 2982,
+     "verdict_counts": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2851,
+      "INDETERMINATE_WITHIN_4H_BAND": 9,
+      "NO_CONTRIBUTING_SOURCE": 76,
+      "PROVEN_AFTER_CUTOFF": 45,
+      "UNWITNESSED_SOURCE_TIP": 1
+     },
+     "rows_with_an_observation_provably_after_their_own_cutoff": 45,
+     "share_of_rows_failing_the_event_claim": 0.015091,
+     "failures_by_witness_class": {
+      "B_market_archive_ALARM_ONLY": 45
+     },
+     "failures_resting_only_on_the_ALARM_ONLY_market_archive": 45,
+     "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+     "lateness_hours_of_failures": {
+      "min": 1.6666666666666667,
+      "p50": 5.666666666666667,
+      "max": 8.75
+     },
+     "by_cutoff_policy": {
+      "date_only_prior_day_cutoff": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2052,
+       "INDETERMINATE_WITHIN_4H_BAND": 9,
+       "NO_CONTRIBUTING_SOURCE": 61,
+       "PROVEN_AFTER_CUTOFF": 45,
+       "UNWITNESSED_SOURCE_TIP": 1
+      },
+      "exact_tip_T-90m": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 799,
+       "NO_CONTRIBUTING_SOURCE": 15
+      }
+     },
+     "by_season": {
+      "2021": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 397,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "UNWITNESSED_SOURCE_TIP": 1
+      },
+      "2022": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 454,
+       "INDETERMINATE_WITHIN_4H_BAND": 3,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "PROVEN_AFTER_CUTOFF": 9
+      },
+      "2023": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 499,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "PROVEN_AFTER_CUTOFF": 9
+      },
+      "2024": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 487,
+       "INDETERMINATE_WITHIN_4H_BAND": 5,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "PROVEN_AFTER_CUTOFF": 20
+      },
+      "2025": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 599,
+       "INDETERMINATE_WITHIN_4H_BAND": 1,
+       "NO_CONTRIBUTING_SOURCE": 13,
+       "PROVEN_AFTER_CUTOFF": 7
+      },
+      "2026": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 415,
+       "NO_CONTRIBUTING_SOURCE": 15
+      }
+     },
+     "slack_hours_when_measurable": {
+      "n": 9,
+      "min": 0.9166666666666666,
+      "p05": 0.95,
+      "p50": 2.0,
+      "max": 3.0
+     },
+     "examples_of_failures": [
+      {
+       "target_game_id": "1022200057",
+       "target_team_id": 1611661325,
+       "target_game_date": "2022-06-01",
+       "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200052",
+       "source_game_date": "2022-05-31",
+       "source_end_lower_bound_utc": "2022-05-31 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200061",
+       "target_team_id": 1611661323,
+       "target_game_date": "2022-06-03",
+       "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200058",
+       "source_game_date": "2022-06-02",
+       "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200087",
+       "target_team_id": 1611661317,
+       "target_game_date": "2022-06-15",
+       "target_forecast_cutoff": "2022-06-14 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200083",
+       "source_game_date": "2022-06-14",
+       "source_end_lower_bound_utc": "2022-06-14 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200128",
+       "target_team_id": 1611661320,
+       "target_game_date": "2022-07-04",
+       "target_forecast_cutoff": "2022-07-03 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200127",
+       "source_game_date": "2022-07-03",
+       "source_end_lower_bound_utc": "2022-07-03 22:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200135",
+       "target_team_id": 1611661313,
+       "target_game_date": "2022-07-07",
+       "target_forecast_cutoff": "2022-07-06 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200133",
+       "source_game_date": "2022-07-06",
+       "source_end_lower_bound_utc": "2022-07-07 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200147",
+       "target_team_id": 1611661324,
+       "target_game_date": "2022-07-15",
+       "target_forecast_cutoff": "2022-07-14 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200144",
+       "source_game_date": "2022-07-14",
+       "source_end_lower_bound_utc": "2022-07-15 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200164",
+       "target_team_id": 1611661329,
+       "target_game_date": "2022-07-23",
+       "target_forecast_cutoff": "2022-07-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200162",
+       "source_game_date": "2022-07-22",
+       "source_end_lower_bound_utc": "2022-07-23 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200187",
+       "target_team_id": 1611661313,
+       "target_game_date": "2022-08-03",
+       "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200183",
+       "source_game_date": "2022-08-02",
+       "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200187",
+       "target_team_id": 1611661320,
+       "target_game_date": "2022-08-03",
+       "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200183",
+       "source_game_date": "2022-08-02",
+       "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300020",
+       "target_team_id": 1611661319,
+       "target_game_date": "2023-05-28",
+       "target_forecast_cutoff": "2023-05-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300017",
+       "source_game_date": "2023-05-27",
+       "source_end_lower_bound_utc": "2023-05-28 01:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300030",
+       "target_team_id": 1611661322,
+       "target_game_date": "2023-06-03",
+       "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300026",
+       "source_game_date": "2023-06-02",
+       "source_end_lower_bound_utc": "2023-06-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300031",
+       "target_team_id": 1611661320,
+       "target_game_date": "2023-06-03",
+       "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300029",
+       "source_game_date": "2023-06-02",
+       "source_end_lower_bound_utc": "2023-06-03 02:45:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300118",
+       "target_team_id": 1611661328,
+       "target_game_date": "2023-07-12",
+       "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300113",
+       "source_game_date": "2023-07-11",
+       "source_end_lower_bound_utc": "2023-07-11 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300119",
+       "target_team_id": 1611661319,
+       "target_game_date": "2023-07-12",
+       "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300114",
+       "source_game_date": "2023-07-11",
+       "source_end_lower_bound_utc": "2023-07-12 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300038",
+       "target_team_id": 1611661313,
+       "target_game_date": "2023-07-28",
+       "target_forecast_cutoff": "2023-07-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300142",
+       "source_game_date": "2023-07-27",
+       "source_end_lower_bound_utc": "2023-07-27 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300181",
+       "target_team_id": 1611661330,
+       "target_game_date": "2023-08-13",
+       "target_forecast_cutoff": "2023-08-12 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300176",
+       "source_game_date": "2023-08-12",
+       "source_end_lower_bound_utc": "2023-08-13 00:10:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300186",
+       "target_team_id": 1611661313,
+       "target_game_date": "2023-08-18",
+       "target_forecast_cutoff": "2023-08-17 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300182",
+       "source_game_date": "2023-08-17",
+       "source_end_lower_bound_utc": "2023-08-18 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300217",
+       "target_team_id": 1611661323,
+       "target_game_date": "2023-09-01",
+       "target_forecast_cutoff": "2023-08-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300213",
+       "source_game_date": "2023-08-31",
+       "source_end_lower_bound_utc": "2023-08-31 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400016",
+       "target_team_id": 1611661328,
+       "target_game_date": "2024-05-20",
+       "target_forecast_cutoff": "2024-05-19 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400014",
+       "source_game_date": "2024-05-19",
+       "source_end_lower_bound_utc": "2024-05-19 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400027",
+       "target_team_id": 1611661325,
+       "target_game_date": "2024-05-25",
+       "target_forecast_cutoff": "2024-05-24 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400024",
+       "source_game_date": "2024-05-24",
+       "source_end_lower_bound_utc": "2024-05-25 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400031",
+       "target_team_id": 1611661321,
+       "target_game_date": "2024-05-26",
+       "target_forecast_cutoff": "2024-05-25 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400029",
+       "source_game_date": "2024-05-25",
+       "source_end_lower_bound_utc": "2024-05-26 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400035",
+       "target_team_id": 1611661317,
+       "target_game_date": "2024-05-29",
+       "target_forecast_cutoff": "2024-05-28 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400032",
+       "source_game_date": "2024-05-28",
+       "source_end_lower_bound_utc": "2024-05-28 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400056",
+       "target_team_id": 1611661322,
+       "target_game_date": "2024-06-07",
+       "target_forecast_cutoff": "2024-06-06 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400054",
+       "source_game_date": "2024-06-06",
+       "source_end_lower_bound_utc": "2024-06-06 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400094",
+       "target_team_id": 1611661313,
+       "target_game_date": "2024-06-23",
+       "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400092",
+       "source_game_date": "2024-06-22",
+       "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400095",
+       "target_team_id": 1611661321,
+       "target_game_date": "2024-06-23",
+       "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400091",
+       "source_game_date": "2024-06-22",
+       "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      }
+     ]
+    },
+    "DATE_strict_team": {
+     "event_claim_PASSES_on_rows": 2912,
+     "event_claim_FAILS_on_rows": 45,
+     "event_claim_NOT_ESTABLISHED_on_rows": 10,
+     "construction": "DATE_strict_team",
+     "rows_evaluated": 2982,
+     "verdict_counts": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2912,
+      "INDETERMINATE_WITHIN_4H_BAND": 9,
+      "NO_CONTRIBUTING_SOURCE": 15,
+      "PROVEN_AFTER_CUTOFF": 45,
+      "UNWITNESSED_SOURCE_TIP": 1
+     },
+     "rows_with_an_observation_provably_after_their_own_cutoff": 45,
+     "share_of_rows_failing_the_event_claim": 0.015091,
+     "failures_by_witness_class": {
+      "B_market_archive_ALARM_ONLY": 45
+     },
+     "failures_resting_only_on_the_ALARM_ONLY_market_archive": 45,
+     "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+     "lateness_hours_of_failures": {
+      "min": 1.6666666666666667,
+      "p50": 5.666666666666667,
+      "max": 8.75
+     },
+     "by_cutoff_policy": {
+      "date_only_prior_day_cutoff": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2100,
+       "INDETERMINATE_WITHIN_4H_BAND": 9,
+       "NO_CONTRIBUTING_SOURCE": 13,
+       "PROVEN_AFTER_CUTOFF": 45,
+       "UNWITNESSED_SOURCE_TIP": 1
+      },
+      "exact_tip_T-90m": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 812,
+       "NO_CONTRIBUTING_SOURCE": 2
+      }
+     },
+     "by_season": {
+      "2021": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 397,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "UNWITNESSED_SOURCE_TIP": 1
+      },
+      "2022": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 466,
+       "INDETERMINATE_WITHIN_4H_BAND": 3,
+       "PROVEN_AFTER_CUTOFF": 9
+      },
+      "2023": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 511,
+       "PROVEN_AFTER_CUTOFF": 9
+      },
+      "2024": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 499,
+       "INDETERMINATE_WITHIN_4H_BAND": 5,
+       "PROVEN_AFTER_CUTOFF": 20
+      },
+      "2025": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 611,
+       "INDETERMINATE_WITHIN_4H_BAND": 1,
+       "NO_CONTRIBUTING_SOURCE": 1,
+       "PROVEN_AFTER_CUTOFF": 7
+      },
+      "2026": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 428,
+       "NO_CONTRIBUTING_SOURCE": 2
+      }
+     },
+     "slack_hours_when_measurable": {
+      "n": 9,
+      "min": 0.9166666666666666,
+      "p05": 0.95,
+      "p50": 2.0,
+      "max": 3.0
+     },
+     "examples_of_failures": [
+      {
+       "target_game_id": "1022200057",
+       "target_team_id": 1611661325,
+       "target_game_date": "2022-06-01",
+       "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200052",
+       "source_game_date": "2022-05-31",
+       "source_end_lower_bound_utc": "2022-05-31 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200061",
+       "target_team_id": 1611661323,
+       "target_game_date": "2022-06-03",
+       "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200058",
+       "source_game_date": "2022-06-02",
+       "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200087",
+       "target_team_id": 1611661317,
+       "target_game_date": "2022-06-15",
+       "target_forecast_cutoff": "2022-06-14 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200083",
+       "source_game_date": "2022-06-14",
+       "source_end_lower_bound_utc": "2022-06-14 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200128",
+       "target_team_id": 1611661320,
+       "target_game_date": "2022-07-04",
+       "target_forecast_cutoff": "2022-07-03 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200127",
+       "source_game_date": "2022-07-03",
+       "source_end_lower_bound_utc": "2022-07-03 22:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200135",
+       "target_team_id": 1611661313,
+       "target_game_date": "2022-07-07",
+       "target_forecast_cutoff": "2022-07-06 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200133",
+       "source_game_date": "2022-07-06",
+       "source_end_lower_bound_utc": "2022-07-07 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200147",
+       "target_team_id": 1611661324,
+       "target_game_date": "2022-07-15",
+       "target_forecast_cutoff": "2022-07-14 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200144",
+       "source_game_date": "2022-07-14",
+       "source_end_lower_bound_utc": "2022-07-15 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200164",
+       "target_team_id": 1611661329,
+       "target_game_date": "2022-07-23",
+       "target_forecast_cutoff": "2022-07-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200162",
+       "source_game_date": "2022-07-22",
+       "source_end_lower_bound_utc": "2022-07-23 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200187",
+       "target_team_id": 1611661313,
+       "target_game_date": "2022-08-03",
+       "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200183",
+       "source_game_date": "2022-08-02",
+       "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200187",
+       "target_team_id": 1611661320,
+       "target_game_date": "2022-08-03",
+       "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200183",
+       "source_game_date": "2022-08-02",
+       "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300020",
+       "target_team_id": 1611661319,
+       "target_game_date": "2023-05-28",
+       "target_forecast_cutoff": "2023-05-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300017",
+       "source_game_date": "2023-05-27",
+       "source_end_lower_bound_utc": "2023-05-28 01:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300030",
+       "target_team_id": 1611661322,
+       "target_game_date": "2023-06-03",
+       "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300026",
+       "source_game_date": "2023-06-02",
+       "source_end_lower_bound_utc": "2023-06-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300031",
+       "target_team_id": 1611661320,
+       "target_game_date": "2023-06-03",
+       "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300029",
+       "source_game_date": "2023-06-02",
+       "source_end_lower_bound_utc": "2023-06-03 02:45:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300118",
+       "target_team_id": 1611661328,
+       "target_game_date": "2023-07-12",
+       "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300113",
+       "source_game_date": "2023-07-11",
+       "source_end_lower_bound_utc": "2023-07-11 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300119",
+       "target_team_id": 1611661319,
+       "target_game_date": "2023-07-12",
+       "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300114",
+       "source_game_date": "2023-07-11",
+       "source_end_lower_bound_utc": "2023-07-12 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300038",
+       "target_team_id": 1611661313,
+       "target_game_date": "2023-07-28",
+       "target_forecast_cutoff": "2023-07-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300142",
+       "source_game_date": "2023-07-27",
+       "source_end_lower_bound_utc": "2023-07-27 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300181",
+       "target_team_id": 1611661330,
+       "target_game_date": "2023-08-13",
+       "target_forecast_cutoff": "2023-08-12 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300176",
+       "source_game_date": "2023-08-12",
+       "source_end_lower_bound_utc": "2023-08-13 00:10:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300186",
+       "target_team_id": 1611661313,
+       "target_game_date": "2023-08-18",
+       "target_forecast_cutoff": "2023-08-17 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300182",
+       "source_game_date": "2023-08-17",
+       "source_end_lower_bound_utc": "2023-08-18 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300217",
+       "target_team_id": 1611661323,
+       "target_game_date": "2023-09-01",
+       "target_forecast_cutoff": "2023-08-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300213",
+       "source_game_date": "2023-08-31",
+       "source_end_lower_bound_utc": "2023-08-31 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400016",
+       "target_team_id": 1611661328,
+       "target_game_date": "2024-05-20",
+       "target_forecast_cutoff": "2024-05-19 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400014",
+       "source_game_date": "2024-05-19",
+       "source_end_lower_bound_utc": "2024-05-19 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400027",
+       "target_team_id": 1611661325,
+       "target_game_date": "2024-05-25",
+       "target_forecast_cutoff": "2024-05-24 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400024",
+       "source_game_date": "2024-05-24",
+       "source_end_lower_bound_utc": "2024-05-25 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400031",
+       "target_team_id": 1611661321,
+       "target_game_date": "2024-05-26",
+       "target_forecast_cutoff": "2024-05-25 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400029",
+       "source_game_date": "2024-05-25",
+       "source_end_lower_bound_utc": "2024-05-26 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400035",
+       "target_team_id": 1611661317,
+       "target_game_date": "2024-05-29",
+       "target_forecast_cutoff": "2024-05-28 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400032",
+       "source_game_date": "2024-05-28",
+       "source_end_lower_bound_utc": "2024-05-28 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400056",
+       "target_team_id": 1611661322,
+       "target_game_date": "2024-06-07",
+       "target_forecast_cutoff": "2024-06-06 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400054",
+       "source_game_date": "2024-06-06",
+       "source_end_lower_bound_utc": "2024-06-06 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400094",
+       "target_team_id": 1611661313,
+       "target_game_date": "2024-06-23",
+       "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400092",
+       "source_game_date": "2024-06-22",
+       "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400095",
+       "target_team_id": 1611661321,
+       "target_game_date": "2024-06-23",
+       "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400091",
+       "source_game_date": "2024-06-22",
+       "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      }
+     ]
+    },
+    "DATE_strict_team_same_season": {
+     "event_claim_PASSES_on_rows": 2851,
+     "event_claim_FAILS_on_rows": 45,
+     "event_claim_NOT_ESTABLISHED_on_rows": 10,
+     "construction": "DATE_strict_team_same_season",
+     "rows_evaluated": 2982,
+     "verdict_counts": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2851,
+      "INDETERMINATE_WITHIN_4H_BAND": 9,
+      "NO_CONTRIBUTING_SOURCE": 76,
+      "PROVEN_AFTER_CUTOFF": 45,
+      "UNWITNESSED_SOURCE_TIP": 1
+     },
+     "rows_with_an_observation_provably_after_their_own_cutoff": 45,
+     "share_of_rows_failing_the_event_claim": 0.015091,
+     "failures_by_witness_class": {
+      "B_market_archive_ALARM_ONLY": 45
+     },
+     "failures_resting_only_on_the_ALARM_ONLY_market_archive": 45,
+     "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+     "lateness_hours_of_failures": {
+      "min": 1.6666666666666667,
+      "p50": 5.666666666666667,
+      "max": 8.75
+     },
+     "by_cutoff_policy": {
+      "date_only_prior_day_cutoff": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2052,
+       "INDETERMINATE_WITHIN_4H_BAND": 9,
+       "NO_CONTRIBUTING_SOURCE": 61,
+       "PROVEN_AFTER_CUTOFF": 45,
+       "UNWITNESSED_SOURCE_TIP": 1
+      },
+      "exact_tip_T-90m": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 799,
+       "NO_CONTRIBUTING_SOURCE": 15
+      }
+     },
+     "by_season": {
+      "2021": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 397,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "UNWITNESSED_SOURCE_TIP": 1
+      },
+      "2022": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 454,
+       "INDETERMINATE_WITHIN_4H_BAND": 3,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "PROVEN_AFTER_CUTOFF": 9
+      },
+      "2023": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 499,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "PROVEN_AFTER_CUTOFF": 9
+      },
+      "2024": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 487,
+       "INDETERMINATE_WITHIN_4H_BAND": 5,
+       "NO_CONTRIBUTING_SOURCE": 12,
+       "PROVEN_AFTER_CUTOFF": 20
+      },
+      "2025": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 599,
+       "INDETERMINATE_WITHIN_4H_BAND": 1,
+       "NO_CONTRIBUTING_SOURCE": 13,
+       "PROVEN_AFTER_CUTOFF": 7
+      },
+      "2026": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 415,
+       "NO_CONTRIBUTING_SOURCE": 15
+      }
+     },
+     "slack_hours_when_measurable": {
+      "n": 9,
+      "min": 0.9166666666666666,
+      "p05": 0.95,
+      "p50": 2.0,
+      "max": 3.0
+     },
+     "examples_of_failures": [
+      {
+       "target_game_id": "1022200057",
+       "target_team_id": 1611661325,
+       "target_game_date": "2022-06-01",
+       "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200052",
+       "source_game_date": "2022-05-31",
+       "source_end_lower_bound_utc": "2022-05-31 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200061",
+       "target_team_id": 1611661323,
+       "target_game_date": "2022-06-03",
+       "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200058",
+       "source_game_date": "2022-06-02",
+       "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200087",
+       "target_team_id": 1611661317,
+       "target_game_date": "2022-06-15",
+       "target_forecast_cutoff": "2022-06-14 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200083",
+       "source_game_date": "2022-06-14",
+       "source_end_lower_bound_utc": "2022-06-14 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200128",
+       "target_team_id": 1611661320,
+       "target_game_date": "2022-07-04",
+       "target_forecast_cutoff": "2022-07-03 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200127",
+       "source_game_date": "2022-07-03",
+       "source_end_lower_bound_utc": "2022-07-03 22:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200135",
+       "target_team_id": 1611661313,
+       "target_game_date": "2022-07-07",
+       "target_forecast_cutoff": "2022-07-06 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200133",
+       "source_game_date": "2022-07-06",
+       "source_end_lower_bound_utc": "2022-07-07 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200147",
+       "target_team_id": 1611661324,
+       "target_game_date": "2022-07-15",
+       "target_forecast_cutoff": "2022-07-14 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200144",
+       "source_game_date": "2022-07-14",
+       "source_end_lower_bound_utc": "2022-07-15 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200164",
+       "target_team_id": 1611661329,
+       "target_game_date": "2022-07-23",
+       "target_forecast_cutoff": "2022-07-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200162",
+       "source_game_date": "2022-07-22",
+       "source_end_lower_bound_utc": "2022-07-23 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200187",
+       "target_team_id": 1611661313,
+       "target_game_date": "2022-08-03",
+       "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200183",
+       "source_game_date": "2022-08-02",
+       "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200187",
+       "target_team_id": 1611661320,
+       "target_game_date": "2022-08-03",
+       "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200183",
+       "source_game_date": "2022-08-02",
+       "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300020",
+       "target_team_id": 1611661319,
+       "target_game_date": "2023-05-28",
+       "target_forecast_cutoff": "2023-05-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300017",
+       "source_game_date": "2023-05-27",
+       "source_end_lower_bound_utc": "2023-05-28 01:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300030",
+       "target_team_id": 1611661322,
+       "target_game_date": "2023-06-03",
+       "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300026",
+       "source_game_date": "2023-06-02",
+       "source_end_lower_bound_utc": "2023-06-02 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300031",
+       "target_team_id": 1611661320,
+       "target_game_date": "2023-06-03",
+       "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300029",
+       "source_game_date": "2023-06-02",
+       "source_end_lower_bound_utc": "2023-06-03 02:45:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300118",
+       "target_team_id": 1611661328,
+       "target_game_date": "2023-07-12",
+       "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300113",
+       "source_game_date": "2023-07-11",
+       "source_end_lower_bound_utc": "2023-07-11 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300119",
+       "target_team_id": 1611661319,
+       "target_game_date": "2023-07-12",
+       "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300114",
+       "source_game_date": "2023-07-11",
+       "source_end_lower_bound_utc": "2023-07-12 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300038",
+       "target_team_id": 1611661313,
+       "target_game_date": "2023-07-28",
+       "target_forecast_cutoff": "2023-07-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300142",
+       "source_game_date": "2023-07-27",
+       "source_end_lower_bound_utc": "2023-07-27 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300181",
+       "target_team_id": 1611661330,
+       "target_game_date": "2023-08-13",
+       "target_forecast_cutoff": "2023-08-12 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300176",
+       "source_game_date": "2023-08-12",
+       "source_end_lower_bound_utc": "2023-08-13 00:10:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300186",
+       "target_team_id": 1611661313,
+       "target_game_date": "2023-08-18",
+       "target_forecast_cutoff": "2023-08-17 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300182",
+       "source_game_date": "2023-08-17",
+       "source_end_lower_bound_utc": "2023-08-18 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022300217",
+       "target_team_id": 1611661323,
+       "target_game_date": "2023-09-01",
+       "target_forecast_cutoff": "2023-08-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022300213",
+       "source_game_date": "2023-08-31",
+       "source_end_lower_bound_utc": "2023-08-31 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400016",
+       "target_team_id": 1611661328,
+       "target_game_date": "2024-05-20",
+       "target_forecast_cutoff": "2024-05-19 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400014",
+       "source_game_date": "2024-05-19",
+       "source_end_lower_bound_utc": "2024-05-19 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400027",
+       "target_team_id": 1611661325,
+       "target_game_date": "2024-05-25",
+       "target_forecast_cutoff": "2024-05-24 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400024",
+       "source_game_date": "2024-05-24",
+       "source_end_lower_bound_utc": "2024-05-25 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400031",
+       "target_team_id": 1611661321,
+       "target_game_date": "2024-05-26",
+       "target_forecast_cutoff": "2024-05-25 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400029",
+       "source_game_date": "2024-05-25",
+       "source_end_lower_bound_utc": "2024-05-26 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400035",
+       "target_team_id": 1611661317,
+       "target_game_date": "2024-05-29",
+       "target_forecast_cutoff": "2024-05-28 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400032",
+       "source_game_date": "2024-05-28",
+       "source_end_lower_bound_utc": "2024-05-28 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400056",
+       "target_team_id": 1611661322,
+       "target_game_date": "2024-06-07",
+       "target_forecast_cutoff": "2024-06-06 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400054",
+       "source_game_date": "2024-06-06",
+       "source_end_lower_bound_utc": "2024-06-06 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400094",
+       "target_team_id": 1611661313,
+       "target_game_date": "2024-06-23",
+       "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400092",
+       "source_game_date": "2024-06-22",
+       "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022400095",
+       "target_team_id": 1611661321,
+       "target_game_date": "2024-06-23",
+       "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022400091",
+       "source_game_date": "2024-06-22",
+       "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      }
+     ]
+    },
+    "ROW_strict_league": {
+     "event_claim_PASSES_on_rows": 314,
+     "event_claim_FAILS_on_rows": 1061,
+     "event_claim_NOT_ESTABLISHED_on_rows": 115,
+     "construction": "ROW_strict_league",
+     "rows_evaluated": 1491,
+     "verdict_counts": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF": 9,
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 305,
+      "INDETERMINATE_WITHIN_4H_BAND": 41,
+      "NO_CONTRIBUTING_SOURCE": 1,
+      "PROVEN_AFTER_CUTOFF": 910,
+      "PROVEN_AFTER_CUTOFF_no_tip_needed": 151,
+      "UNWITNESSED_SOURCE_TIP": 74
+     },
+     "rows_with_an_observation_provably_after_their_own_cutoff": 1061,
+     "share_of_rows_failing_the_event_claim": 0.711603,
+     "failures_by_witness_class": {
+      "A_contract_v4_observed": 184,
+      "B_market_archive_ALARM_ONLY": 726,
+      "NONE_unconditional_date_floor": 151
+     },
+     "failures_resting_only_on_the_ALARM_ONLY_market_archive": 726,
+     "failures_provable_from_CUTOFF_VALID_evidence_alone": 335,
+     "lateness_hours_of_failures": {
+      "min": 0.16666666666666666,
+      "p50": 8.666666666666666,
+      "max": 33.166666666666664
+     },
+     "by_cutoff_policy": {
+      "date_only_prior_day_cutoff": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 123,
+       "INDETERMINATE_WITHIN_4H_BAND": 7,
+       "NO_CONTRIBUTING_SOURCE": 1,
+       "PROVEN_AFTER_CUTOFF": 728,
+       "PROVEN_AFTER_CUTOFF_no_tip_needed": 151,
+       "UNWITNESSED_SOURCE_TIP": 74
+      },
+      "exact_tip_T-90m": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF": 9,
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 182,
+       "INDETERMINATE_WITHIN_4H_BAND": 34,
+       "PROVEN_AFTER_CUTOFF": 182
+      }
+     },
+     "by_season": {
+      "2021": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 27,
+       "NO_CONTRIBUTING_SOURCE": 1,
+       "PROVEN_AFTER_CUTOFF_no_tip_needed": 115,
+       "UNWITNESSED_SOURCE_TIP": 62
+      },
+      "2022": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 28,
+       "INDETERMINATE_WITHIN_4H_BAND": 3,
+       "PROVEN_AFTER_CUTOFF": 165,
+       "PROVEN_AFTER_CUTOFF_no_tip_needed": 31,
+       "UNWITNESSED_SOURCE_TIP": 12
+      },
+      "2023": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 34,
+       "INDETERMINATE_WITHIN_4H_BAND": 3,
+       "PROVEN_AFTER_CUTOFF": 222,
+       "PROVEN_AFTER_CUTOFF_no_tip_needed": 1
+      },
+      "2024": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 26,
+       "INDETERMINATE_WITHIN_4H_BAND": 1,
+       "PROVEN_AFTER_CUTOFF": 234,
+       "PROVEN_AFTER_CUTOFF_no_tip_needed": 1
+      },
+      "2025": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF": 4,
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 99,
+       "INDETERMINATE_WITHIN_4H_BAND": 17,
+       "PROVEN_AFTER_CUTOFF": 190
+      },
+      "2026": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF": 5,
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 91,
+       "INDETERMINATE_WITHIN_4H_BAND": 17,
+       "PROVEN_AFTER_CUTOFF": 99,
+       "PROVEN_AFTER_CUTOFF_no_tip_needed": 3
+      }
+     },
+     "slack_hours_when_measurable": {
+      "n": 50,
+      "min": 1.0,
+      "p05": 1.0,
+      "p50": 2.0,
+      "max": 7.0
+     },
+     "examples_of_failures": [
+      {
+       "target_game_id": "1022100006",
+       "target_team_id": null,
+       "target_game_date": "2021-05-15",
+       "target_forecast_cutoff": "2021-05-14 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100005",
+       "source_game_date": "2021-05-15",
+       "source_end_lower_bound_utc": "2021-05-15 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100008",
+       "target_team_id": null,
+       "target_game_date": "2021-05-16",
+       "target_forecast_cutoff": "2021-05-15 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100007",
+       "source_game_date": "2021-05-16",
+       "source_end_lower_bound_utc": "2021-05-16 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100010",
+       "target_team_id": null,
+       "target_game_date": "2021-05-18",
+       "target_forecast_cutoff": "2021-05-17 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100009",
+       "source_game_date": "2021-05-18",
+       "source_end_lower_bound_utc": "2021-05-18 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100011",
+       "target_team_id": null,
+       "target_game_date": "2021-05-18",
+       "target_forecast_cutoff": "2021-05-17 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100010",
+       "source_game_date": "2021-05-18",
+       "source_end_lower_bound_utc": "2021-05-18 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100013",
+       "target_team_id": null,
+       "target_game_date": "2021-05-19",
+       "target_forecast_cutoff": "2021-05-18 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100012",
+       "source_game_date": "2021-05-19",
+       "source_end_lower_bound_utc": "2021-05-19 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100016",
+       "target_team_id": null,
+       "target_game_date": "2021-05-21",
+       "target_forecast_cutoff": "2021-05-20 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100015",
+       "source_game_date": "2021-05-21",
+       "source_end_lower_bound_utc": "2021-05-21 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100017",
+       "target_team_id": null,
+       "target_game_date": "2021-05-21",
+       "target_forecast_cutoff": "2021-05-20 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100016",
+       "source_game_date": "2021-05-21",
+       "source_end_lower_bound_utc": "2021-05-21 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100018",
+       "target_team_id": null,
+       "target_game_date": "2021-05-21",
+       "target_forecast_cutoff": "2021-05-20 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100017",
+       "source_game_date": "2021-05-21",
+       "source_end_lower_bound_utc": "2021-05-21 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100021",
+       "target_team_id": null,
+       "target_game_date": "2021-05-23",
+       "target_forecast_cutoff": "2021-05-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100020",
+       "source_game_date": "2021-05-23",
+       "source_end_lower_bound_utc": "2021-05-23 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100022",
+       "target_team_id": null,
+       "target_game_date": "2021-05-23",
+       "target_forecast_cutoff": "2021-05-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100021",
+       "source_game_date": "2021-05-23",
+       "source_end_lower_bound_utc": "2021-05-23 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100025",
+       "target_team_id": null,
+       "target_game_date": "2021-05-25",
+       "target_forecast_cutoff": "2021-05-24 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100023",
+       "source_game_date": "2021-05-25",
+       "source_end_lower_bound_utc": "2021-05-25 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100026",
+       "target_team_id": null,
+       "target_game_date": "2021-05-25",
+       "target_forecast_cutoff": "2021-05-24 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100025",
+       "source_game_date": "2021-05-25",
+       "source_end_lower_bound_utc": "2021-05-25 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100030",
+       "target_team_id": null,
+       "target_game_date": "2021-05-28",
+       "target_forecast_cutoff": "2021-05-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100029",
+       "source_game_date": "2021-05-28",
+       "source_end_lower_bound_utc": "2021-05-28 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100031",
+       "target_team_id": null,
+       "target_game_date": "2021-05-28",
+       "target_forecast_cutoff": "2021-05-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100030",
+       "source_game_date": "2021-05-28",
+       "source_end_lower_bound_utc": "2021-05-28 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100032",
+       "target_team_id": null,
+       "target_game_date": "2021-05-28",
+       "target_forecast_cutoff": "2021-05-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100031",
+       "source_game_date": "2021-05-28",
+       "source_end_lower_bound_utc": "2021-05-28 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100034",
+       "target_team_id": null,
+       "target_game_date": "2021-05-29",
+       "target_forecast_cutoff": "2021-05-28 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100033",
+       "source_game_date": "2021-05-29",
+       "source_end_lower_bound_utc": "2021-05-29 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100036",
+       "target_team_id": null,
+       "target_game_date": "2021-05-30",
+       "target_forecast_cutoff": "2021-05-29 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100035",
+       "source_game_date": "2021-05-30",
+       "source_end_lower_bound_utc": "2021-05-30 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100037",
+       "target_team_id": null,
+       "target_game_date": "2021-05-30",
+       "target_forecast_cutoff": "2021-05-29 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100036",
+       "source_game_date": "2021-05-30",
+       "source_end_lower_bound_utc": "2021-05-30 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100039",
+       "target_team_id": null,
+       "target_game_date": "2021-06-01",
+       "target_forecast_cutoff": "2021-05-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100038",
+       "source_game_date": "2021-06-01",
+       "source_end_lower_bound_utc": "2021-06-01 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100040",
+       "target_team_id": null,
+       "target_game_date": "2021-06-01",
+       "target_forecast_cutoff": "2021-05-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100039",
+       "source_game_date": "2021-06-01",
+       "source_end_lower_bound_utc": "2021-06-01 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100041",
+       "target_team_id": null,
+       "target_game_date": "2021-06-01",
+       "target_forecast_cutoff": "2021-05-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100040",
+       "source_game_date": "2021-06-01",
+       "source_end_lower_bound_utc": "2021-06-01 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100043",
+       "target_team_id": null,
+       "target_game_date": "2021-06-03",
+       "target_forecast_cutoff": "2021-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100042",
+       "source_game_date": "2021-06-03",
+       "source_end_lower_bound_utc": "2021-06-03 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100044",
+       "target_team_id": null,
+       "target_game_date": "2021-06-03",
+       "target_forecast_cutoff": "2021-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100043",
+       "source_game_date": "2021-06-03",
+       "source_end_lower_bound_utc": "2021-06-03 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100046",
+       "target_team_id": null,
+       "target_game_date": "2021-06-04",
+       "target_forecast_cutoff": "2021-06-03 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100045",
+       "source_game_date": "2021-06-04",
+       "source_end_lower_bound_utc": "2021-06-04 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      },
+      {
+       "target_game_id": "1022100048",
+       "target_team_id": null,
+       "target_game_date": "2021-06-05",
+       "target_forecast_cutoff": "2021-06-04 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022100047",
+       "source_game_date": "2021-06-05",
+       "source_end_lower_bound_utc": "2021-06-05 00:00:00+00:00",
+       "source_witness": "NONE_unconditional_date_floor"
+      }
+     ]
+    },
+    "DATE_strict_league": {
+     "event_claim_PASSES_on_rows": 762,
+     "event_claim_FAILS_on_rows": 547,
+     "event_claim_NOT_ESTABLISHED_on_rows": 180,
+     "construction": "DATE_strict_league",
+     "rows_evaluated": 1491,
+     "verdict_counts": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 762,
+      "INDETERMINATE_WITHIN_4H_BAND": 25,
+      "NO_CONTRIBUTING_SOURCE": 2,
+      "PROVEN_AFTER_CUTOFF": 547,
+      "UNWITNESSED_SOURCE_TIP": 155
+     },
+     "rows_with_an_observation_provably_after_their_own_cutoff": 547,
+     "share_of_rows_failing_the_event_claim": 0.366868,
+     "failures_by_witness_class": {
+      "A_contract_v4_observed": 5,
+      "B_market_archive_ALARM_ONLY": 542
+     },
+     "failures_resting_only_on_the_ALARM_ONLY_market_archive": 542,
+     "failures_provable_from_CUTOFF_VALID_evidence_alone": 5,
+     "lateness_hours_of_failures": {
+      "min": 0.6666666666666666,
+      "p50": 7.666666666666667,
+      "max": 9.666666666666666
+     },
+     "by_cutoff_policy": {
+      "date_only_prior_day_cutoff": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 355,
+       "INDETERMINATE_WITHIN_4H_BAND": 25,
+       "NO_CONTRIBUTING_SOURCE": 2,
+       "PROVEN_AFTER_CUTOFF": 547,
+       "UNWITNESSED_SOURCE_TIP": 155
+      },
+      "exact_tip_T-90m": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 407
+      }
+     },
+     "by_season": {
+      "2021": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 74,
+       "NO_CONTRIBUTING_SOURCE": 2,
+       "UNWITNESSED_SOURCE_TIP": 129
+      },
+      "2022": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 82,
+       "INDETERMINATE_WITHIN_4H_BAND": 11,
+       "PROVEN_AFTER_CUTOFF": 120,
+       "UNWITNESSED_SOURCE_TIP": 26
+      },
+      "2023": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 96,
+       "INDETERMINATE_WITHIN_4H_BAND": 10,
+       "PROVEN_AFTER_CUTOFF": 154
+      },
+      "2024": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 73,
+       "INDETERMINATE_WITHIN_4H_BAND": 4,
+       "PROVEN_AFTER_CUTOFF": 185
+      },
+      "2025": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 227,
+       "PROVEN_AFTER_CUTOFF": 83
+      },
+      "2026": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 210,
+       "PROVEN_AFTER_CUTOFF": 5
+      }
+     },
+     "slack_hours_when_measurable": {
+      "n": 25,
+      "min": 1.0,
+      "p05": 1.0,
+      "p50": 1.0,
+      "max": 2.0
+     },
+     "examples_of_failures": [
+      {
+       "target_game_id": "1022200036",
+       "target_team_id": null,
+       "target_game_date": "2022-05-22",
+       "target_forecast_cutoff": "2022-05-21 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200035",
+       "source_game_date": "2022-05-21",
+       "source_end_lower_bound_utc": "2022-05-22 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200037",
+       "target_team_id": null,
+       "target_game_date": "2022-05-22",
+       "target_forecast_cutoff": "2022-05-21 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200035",
+       "source_game_date": "2022-05-21",
+       "source_end_lower_bound_utc": "2022-05-22 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200038",
+       "target_team_id": null,
+       "target_game_date": "2022-05-23",
+       "target_forecast_cutoff": "2022-05-22 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200037",
+       "source_game_date": "2022-05-22",
+       "source_end_lower_bound_utc": "2022-05-22 19:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200039",
+       "target_team_id": null,
+       "target_game_date": "2022-05-24",
+       "target_forecast_cutoff": "2022-05-23 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200038",
+       "source_game_date": "2022-05-23",
+       "source_end_lower_bound_utc": "2022-05-24 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200040",
+       "target_team_id": null,
+       "target_game_date": "2022-05-24",
+       "target_forecast_cutoff": "2022-05-23 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200038",
+       "source_game_date": "2022-05-23",
+       "source_end_lower_bound_utc": "2022-05-24 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200041",
+       "target_team_id": null,
+       "target_game_date": "2022-05-24",
+       "target_forecast_cutoff": "2022-05-23 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200038",
+       "source_game_date": "2022-05-23",
+       "source_end_lower_bound_utc": "2022-05-24 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200042",
+       "target_team_id": null,
+       "target_game_date": "2022-05-24",
+       "target_forecast_cutoff": "2022-05-23 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200038",
+       "source_game_date": "2022-05-23",
+       "source_end_lower_bound_utc": "2022-05-24 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200043",
+       "target_team_id": null,
+       "target_game_date": "2022-05-25",
+       "target_forecast_cutoff": "2022-05-24 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200042",
+       "source_game_date": "2022-05-24",
+       "source_end_lower_bound_utc": "2022-05-25 00:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200044",
+       "target_team_id": null,
+       "target_game_date": "2022-05-26",
+       "target_forecast_cutoff": "2022-05-25 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200043",
+       "source_game_date": "2022-05-25",
+       "source_end_lower_bound_utc": "2022-05-26 03:10:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200045",
+       "target_team_id": null,
+       "target_game_date": "2022-05-27",
+       "target_forecast_cutoff": "2022-05-26 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200044",
+       "source_game_date": "2022-05-26",
+       "source_end_lower_bound_utc": "2022-05-26 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200046",
+       "target_team_id": null,
+       "target_game_date": "2022-05-27",
+       "target_forecast_cutoff": "2022-05-26 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200044",
+       "source_game_date": "2022-05-26",
+       "source_end_lower_bound_utc": "2022-05-26 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200047",
+       "target_team_id": null,
+       "target_game_date": "2022-05-28",
+       "target_forecast_cutoff": "2022-05-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200046",
+       "source_game_date": "2022-05-27",
+       "source_end_lower_bound_utc": "2022-05-28 02:45:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200048",
+       "target_team_id": null,
+       "target_game_date": "2022-05-28",
+       "target_forecast_cutoff": "2022-05-27 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200046",
+       "source_game_date": "2022-05-27",
+       "source_end_lower_bound_utc": "2022-05-28 02:45:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200049",
+       "target_team_id": null,
+       "target_game_date": "2022-05-29",
+       "target_forecast_cutoff": "2022-05-28 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200048",
+       "source_game_date": "2022-05-28",
+       "source_end_lower_bound_utc": "2022-05-28 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200050",
+       "target_team_id": null,
+       "target_game_date": "2022-05-29",
+       "target_forecast_cutoff": "2022-05-28 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200048",
+       "source_game_date": "2022-05-28",
+       "source_end_lower_bound_utc": "2022-05-28 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200051",
+       "target_team_id": null,
+       "target_game_date": "2022-05-29",
+       "target_forecast_cutoff": "2022-05-28 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200048",
+       "source_game_date": "2022-05-28",
+       "source_end_lower_bound_utc": "2022-05-28 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200056",
+       "target_team_id": null,
+       "target_game_date": "2022-06-01",
+       "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200055",
+       "source_game_date": "2022-05-31",
+       "source_end_lower_bound_utc": "2022-06-01 03:10:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200057",
+       "target_team_id": null,
+       "target_game_date": "2022-06-01",
+       "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200055",
+       "source_game_date": "2022-05-31",
+       "source_end_lower_bound_utc": "2022-06-01 03:10:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200058",
+       "target_team_id": null,
+       "target_game_date": "2022-06-02",
+       "target_forecast_cutoff": "2022-06-01 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200057",
+       "source_game_date": "2022-06-01",
+       "source_end_lower_bound_utc": "2022-06-01 23:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200059",
+       "target_team_id": null,
+       "target_game_date": "2022-06-03",
+       "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200058",
+       "source_game_date": "2022-06-02",
+       "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200060",
+       "target_team_id": null,
+       "target_game_date": "2022-06-03",
+       "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200058",
+       "source_game_date": "2022-06-02",
+       "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200061",
+       "target_team_id": null,
+       "target_game_date": "2022-06-03",
+       "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200058",
+       "source_game_date": "2022-06-02",
+       "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200062",
+       "target_team_id": null,
+       "target_game_date": "2022-06-03",
+       "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200058",
+       "source_game_date": "2022-06-02",
+       "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200071",
+       "target_team_id": null,
+       "target_game_date": "2022-06-08",
+       "target_forecast_cutoff": "2022-06-07 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200070",
+       "source_game_date": "2022-06-07",
+       "source_end_lower_bound_utc": "2022-06-08 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      },
+      {
+       "target_game_id": "1022200072",
+       "target_team_id": null,
+       "target_game_date": "2022-06-08",
+       "target_forecast_cutoff": "2022-06-07 18:00:00+00:00",
+       "target_cutoff_policy": "date_only_prior_day_cutoff",
+       "latest_contributing_source_game_id": "1022200070",
+       "source_game_date": "2022-06-07",
+       "source_end_lower_bound_utc": "2022-06-08 02:40:00+00:00",
+       "source_witness": "B_market_archive_ALARM_ONLY"
+      }
+     ]
+    },
+    "PRIOR_SEASON_team": {
+     "event_claim_PASSES_on_rows": 2572,
+     "event_claim_FAILS_on_rows": 0,
+     "event_claim_NOT_ESTABLISHED_on_rows": 0,
+     "construction": "PRIOR_SEASON_team",
+     "rows_evaluated": 2982,
+     "verdict_counts": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 2572,
+      "NO_CONTRIBUTING_SOURCE": 410
+     },
+     "rows_with_an_observation_provably_after_their_own_cutoff": 0,
+     "share_of_rows_failing_the_event_claim": 0.0,
+     "failures_by_witness_class": {},
+     "failures_resting_only_on_the_ALARM_ONLY_market_archive": 0,
+     "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+     "lateness_hours_of_failures": null,
+     "by_cutoff_policy": {
+      "date_only_prior_day_cutoff": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 1758,
+       "NO_CONTRIBUTING_SOURCE": 410
+      },
+      "exact_tip_T-90m": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 814
+      }
+     },
+     "by_season": {
+      "2021": {
+       "NO_CONTRIBUTING_SOURCE": 410
+      },
+      "2022": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 478
+      },
+      "2023": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 520
+      },
+      "2024": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 524
+      },
+      "2025": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 620
+      },
+      "2026": {
+       "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 430
+      }
+     },
+     "slack_hours_when_measurable": null,
+     "examples_of_failures": []
+    }
+   }
+  },
+  "T4_score_baseline_prediction_columns": {
+   "target": "the five score_baseline_rows prediction columns pred_home / pred_away / pred_total / pred_margin / p_home",
+   "status_before_this_node": "byte pins + an S34-adjudicated registration + a line-numbered provenance argument, but NO cutoff-validity measurement. S37 section 8: their 'provenance argument was not re-derived from the builder's own inputs'.",
+   "artifact_contamination_check_graph_policy_13_2_2": {
+    "manifest_sibling_present": false,
+    "asof_granularity_declared": null,
+    "granularity_established_by_re_derivation_instead": "row (at DATE resolution) for pred_home/pred_away/pred_total/pred_margin; SEASON for the p_home calibration layer"
+   },
+   "builder": {
+    "path": "experiments/market_program/SCORE_BASELINES/build_score_baselines.py",
+    "sha256": "65b7a94213d11703b5820b34c49e0926c465fe20ca4fd1b4a82d8f39d5fd03f8",
+    "own_inputs_named_in_the_builder": [
+     "data/masters/master_team.parquet",
+     "experiments/player_program/projected_exposure_v1/team_possession_prior_v1.parquet",
+     "experiments/player_program/possessions_v2/possessions_raw_v2.parquet"
+    ]
+   },
+   "re_derivation_from_the_builders_own_inputs": {
+    "frozen_rows": 1465,
+    "re_derived_rows": 1465,
+    "game_id_sets_identical": true,
+    "columns": {
+     "pred_home": {
+      "max_abs_diff": 0.0,
+      "n_nan_frozen": 0,
+      "n_nan_re_derived": 0,
+      "nan_positions_identical": true
+     },
+     "pred_away": {
+      "max_abs_diff": 0.0,
+      "n_nan_frozen": 0,
+      "n_nan_re_derived": 0,
+      "nan_positions_identical": true
+     },
+     "pred_total": {
+      "max_abs_diff": 0.0,
+      "n_nan_frozen": 0,
+      "n_nan_re_derived": 0,
+      "nan_positions_identical": true,
+      "frozen_column_sha256_recomputed": "16c312aba2f964682f4d20a694b09890f4488f0e5bcdf31f827946158e145f3d",
+      "pinned": "16c312aba2f964682f4d20a694b09890f4488f0e5bcdf31f827946158e145f3d",
+      "byte_pin_reproduces": true,
+      "re_derived_column_sha256": "16c312aba2f964682f4d20a694b09890f4488f0e5bcdf31f827946158e145f3d",
+      "re_derivation_is_byte_identical_to_the_pin": true
+     },
+     "pred_margin": {
+      "max_abs_diff": 0.0,
+      "n_nan_frozen": 0,
+      "n_nan_re_derived": 0,
+      "nan_positions_identical": true,
+      "frozen_column_sha256_recomputed": "1d79ff3adeda3d66e26f3bda1702d36301da447d87828c474d488d793de44ff4",
+      "pinned": "1d79ff3adeda3d66e26f3bda1702d36301da447d87828c474d488d793de44ff4",
+      "byte_pin_reproduces": true,
+      "re_derived_column_sha256": "1d79ff3adeda3d66e26f3bda1702d36301da447d87828c474d488d793de44ff4",
+      "re_derivation_is_byte_identical_to_the_pin": true
+     },
+     "p_home": {
+      "max_abs_diff": 0.0,
+      "n_nan_frozen": 188,
+      "n_nan_re_derived": 188,
+      "nan_positions_identical": true,
+      "frozen_column_sha256_recomputed": "8a92c017e4f8606c3a7405116a455dc746493581454dc4dcbe1aab6d00b41989",
+      "pinned": "8a92c017e4f8606c3a7405116a455dc746493581454dc4dcbe1aab6d00b41989",
+      "byte_pin_reproduces": true,
+      "re_derived_column_sha256": "8a92c017e4f8606c3a7405116a455dc746493581454dc4dcbe1aab6d00b41989",
+      "re_derivation_is_byte_identical_to_the_pin": true
+     }
+    }
+   },
+   "walk_forward_calibration_layer": {
+    "rule": "logistic(pred_margin) fitted ONLY on seasons strictly earlier than the target's season, applied to that season; never pooled, never same-season",
+    "fits_by_season": {
+     "2021": null,
+     "2022": {
+      "n_train": 188,
+      "train_seasons": [
+       2021
+      ]
+     },
+     "2023": {
+      "n_train": 427,
+      "train_seasons": [
+       2021,
+       2022
+      ]
+     },
+     "2024": {
+      "n_train": 687,
+      "train_seasons": [
+       2021,
+       2022,
+       2023
+      ]
+     },
+     "2025": {
+      "n_train": 949,
+      "train_seasons": [
+       2021,
+       2022,
+       2023,
+       2024
+      ]
+     },
+     "2026": {
+      "n_train": 1256,
+      "train_seasons": [
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ]
+     }
+    },
+    "granularity": "SEASON, not row. Every training observation for season S belongs to a season that ended before season S began, so the SEASON bound implies the row bound for this layer; the binding constraint on p_home is therefore pred_margin's own date-strict source set, not the calibration fit."
+   },
+   "composite_method_coverage": {
+    "universe_clusters": 1491,
+    "clusters_carrying_composite_pace_x_eff_v1": 1465,
+    "clusters_falling_back_to_league_average_v1": 26,
+    "fallback_clusters_by_season": {
+     "2021": 17,
+     "2022": 0,
+     "2023": 0,
+     "2024": 0,
+     "2025": 3,
+     "2026": 6
+    }
+   },
+   "coverage": "EXHAUSTIVE -- all 1,491 universe clusters under both methods; no sampling",
+   "point_in_time_composite_pace_x_eff_v1": {
+    "event_claim_PASSES_on_rows": 1416,
+    "event_claim_FAILS_on_rows": 42,
+    "event_claim_NOT_ESTABLISHED_on_rows": 7,
+    "construction": "composite baseline: union of both teams' date-strict efficiency history and the pace prior's own source games",
+    "rows_evaluated": 1491,
+    "verdict_counts": {
+     "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 1416,
+     "INDETERMINATE_WITHIN_4H_BAND": 7,
+     "NO_CONTRIBUTING_SOURCE": 26,
+     "PROVEN_AFTER_CUTOFF": 42
+    },
+    "rows_with_an_observation_provably_after_their_own_cutoff": 42,
+    "share_of_rows_failing_the_event_claim": 0.028169,
+    "failures_by_witness_class": {
+     "B_market_archive_ALARM_ONLY": 42
+    },
+    "failures_resting_only_on_the_ALARM_ONLY_market_archive": 42,
+    "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+    "lateness_hours_of_failures": {
+     "min": 1.6666666666666667,
+     "p50": 5.666666666666667,
+     "max": 8.75
+    },
+    "by_cutoff_policy": {
+     "date_only_prior_day_cutoff": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 1015,
+      "INDETERMINATE_WITHIN_4H_BAND": 7,
+      "NO_CONTRIBUTING_SOURCE": 20,
+      "PROVEN_AFTER_CUTOFF": 42
+     },
+     "exact_tip_T-90m": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 401,
+      "NO_CONTRIBUTING_SOURCE": 6
+     }
+    },
+    "by_season": {
+     "2021": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 188,
+      "NO_CONTRIBUTING_SOURCE": 17
+     },
+     "2022": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 229,
+      "INDETERMINATE_WITHIN_4H_BAND": 2,
+      "PROVEN_AFTER_CUTOFF": 8
+     },
+     "2023": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 251,
+      "PROVEN_AFTER_CUTOFF": 9
+     },
+     "2024": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 240,
+      "INDETERMINATE_WITHIN_4H_BAND": 4,
+      "PROVEN_AFTER_CUTOFF": 18
+     },
+     "2025": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 299,
+      "INDETERMINATE_WITHIN_4H_BAND": 1,
+      "NO_CONTRIBUTING_SOURCE": 3,
+      "PROVEN_AFTER_CUTOFF": 7
+     },
+     "2026": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 209,
+      "NO_CONTRIBUTING_SOURCE": 6
+     }
+    },
+    "slack_hours_when_measurable": {
+     "n": 7,
+     "min": 0.9166666666666666,
+     "p05": 0.9416666666666667,
+     "p50": 1.0,
+     "max": 2.0
+    },
+    "examples_of_failures": [
+     {
+      "target_game_id": "1022200057",
+      "target_team_id": null,
+      "target_game_date": "2022-06-01",
+      "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200052",
+      "source_game_date": "2022-05-31",
+      "source_end_lower_bound_utc": "2022-05-31 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200061",
+      "target_team_id": null,
+      "target_game_date": "2022-06-03",
+      "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200058",
+      "source_game_date": "2022-06-02",
+      "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200087",
+      "target_team_id": null,
+      "target_game_date": "2022-06-15",
+      "target_forecast_cutoff": "2022-06-14 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200083",
+      "source_game_date": "2022-06-14",
+      "source_end_lower_bound_utc": "2022-06-14 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200128",
+      "target_team_id": null,
+      "target_game_date": "2022-07-04",
+      "target_forecast_cutoff": "2022-07-03 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200127",
+      "source_game_date": "2022-07-03",
+      "source_end_lower_bound_utc": "2022-07-03 22:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200135",
+      "target_team_id": null,
+      "target_game_date": "2022-07-07",
+      "target_forecast_cutoff": "2022-07-06 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200133",
+      "source_game_date": "2022-07-06",
+      "source_end_lower_bound_utc": "2022-07-07 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200147",
+      "target_team_id": null,
+      "target_game_date": "2022-07-15",
+      "target_forecast_cutoff": "2022-07-14 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200144",
+      "source_game_date": "2022-07-14",
+      "source_end_lower_bound_utc": "2022-07-15 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200164",
+      "target_team_id": null,
+      "target_game_date": "2022-07-23",
+      "target_forecast_cutoff": "2022-07-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200162",
+      "source_game_date": "2022-07-22",
+      "source_end_lower_bound_utc": "2022-07-23 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200187",
+      "target_team_id": null,
+      "target_game_date": "2022-08-03",
+      "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200183",
+      "source_game_date": "2022-08-02",
+      "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300020",
+      "target_team_id": null,
+      "target_game_date": "2023-05-28",
+      "target_forecast_cutoff": "2023-05-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300017",
+      "source_game_date": "2023-05-27",
+      "source_end_lower_bound_utc": "2023-05-28 01:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300030",
+      "target_team_id": null,
+      "target_game_date": "2023-06-03",
+      "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300026",
+      "source_game_date": "2023-06-02",
+      "source_end_lower_bound_utc": "2023-06-02 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300031",
+      "target_team_id": null,
+      "target_game_date": "2023-06-03",
+      "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300029",
+      "source_game_date": "2023-06-02",
+      "source_end_lower_bound_utc": "2023-06-03 02:45:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300038",
+      "target_team_id": null,
+      "target_game_date": "2023-07-28",
+      "target_forecast_cutoff": "2023-07-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300142",
+      "source_game_date": "2023-07-27",
+      "source_end_lower_bound_utc": "2023-07-27 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300118",
+      "target_team_id": null,
+      "target_game_date": "2023-07-12",
+      "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300113",
+      "source_game_date": "2023-07-11",
+      "source_end_lower_bound_utc": "2023-07-11 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300119",
+      "target_team_id": null,
+      "target_game_date": "2023-07-12",
+      "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300114",
+      "source_game_date": "2023-07-11",
+      "source_end_lower_bound_utc": "2023-07-12 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300181",
+      "target_team_id": null,
+      "target_game_date": "2023-08-13",
+      "target_forecast_cutoff": "2023-08-12 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300176",
+      "source_game_date": "2023-08-12",
+      "source_end_lower_bound_utc": "2023-08-13 00:10:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300186",
+      "target_team_id": null,
+      "target_game_date": "2023-08-18",
+      "target_forecast_cutoff": "2023-08-17 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300182",
+      "source_game_date": "2023-08-17",
+      "source_end_lower_bound_utc": "2023-08-18 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300217",
+      "target_team_id": null,
+      "target_game_date": "2023-09-01",
+      "target_forecast_cutoff": "2023-08-31 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300213",
+      "source_game_date": "2023-08-31",
+      "source_end_lower_bound_utc": "2023-08-31 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400016",
+      "target_team_id": null,
+      "target_game_date": "2024-05-20",
+      "target_forecast_cutoff": "2024-05-19 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400014",
+      "source_game_date": "2024-05-19",
+      "source_end_lower_bound_utc": "2024-05-19 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400027",
+      "target_team_id": null,
+      "target_game_date": "2024-05-25",
+      "target_forecast_cutoff": "2024-05-24 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400024",
+      "source_game_date": "2024-05-24",
+      "source_end_lower_bound_utc": "2024-05-25 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400031",
+      "target_team_id": null,
+      "target_game_date": "2024-05-26",
+      "target_forecast_cutoff": "2024-05-25 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400029",
+      "source_game_date": "2024-05-25",
+      "source_end_lower_bound_utc": "2024-05-26 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400035",
+      "target_team_id": null,
+      "target_game_date": "2024-05-29",
+      "target_forecast_cutoff": "2024-05-28 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400032",
+      "source_game_date": "2024-05-28",
+      "source_end_lower_bound_utc": "2024-05-28 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400056",
+      "target_team_id": null,
+      "target_game_date": "2024-06-07",
+      "target_forecast_cutoff": "2024-06-06 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400054",
+      "source_game_date": "2024-06-06",
+      "source_end_lower_bound_utc": "2024-06-06 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400094",
+      "target_team_id": null,
+      "target_game_date": "2024-06-23",
+      "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400092",
+      "source_game_date": "2024-06-22",
+      "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400095",
+      "target_team_id": null,
+      "target_game_date": "2024-06-23",
+      "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400091",
+      "source_game_date": "2024-06-22",
+      "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400102",
+      "target_team_id": null,
+      "target_game_date": "2024-06-28",
+      "target_forecast_cutoff": "2024-06-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400099",
+      "source_game_date": "2024-06-27",
+      "source_end_lower_bound_utc": "2024-06-27 23:45:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     }
+    ]
+   },
+   "point_in_time_league_average_v1_fallback": {
+    "event_claim_PASSES_on_rows": 762,
+    "event_claim_FAILS_on_rows": 547,
+    "event_claim_NOT_ESTABLISHED_on_rows": 182,
+    "construction": "league_average_v1: expanding league means over all games on strictly earlier dates -- evaluated on all 1,491 clusters",
+    "rows_evaluated": 1491,
+    "verdict_counts": {
+     "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 762,
+     "INDETERMINATE_WITHIN_4H_BAND": 25,
+     "PROVEN_AFTER_CUTOFF": 547,
+     "UNWITNESSED_SOURCE_TIP": 157
+    },
+    "rows_with_an_observation_provably_after_their_own_cutoff": 547,
+    "share_of_rows_failing_the_event_claim": 0.366868,
+    "failures_by_witness_class": {
+     "A_contract_v4_observed": 5,
+     "B_market_archive_ALARM_ONLY": 542
+    },
+    "failures_resting_only_on_the_ALARM_ONLY_market_archive": 542,
+    "failures_provable_from_CUTOFF_VALID_evidence_alone": 5,
+    "lateness_hours_of_failures": {
+     "min": 0.6666666666666666,
+     "p50": 7.666666666666667,
+     "max": 9.666666666666666
+    },
+    "by_cutoff_policy": {
+     "date_only_prior_day_cutoff": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 355,
+      "INDETERMINATE_WITHIN_4H_BAND": 25,
+      "PROVEN_AFTER_CUTOFF": 547,
+      "UNWITNESSED_SOURCE_TIP": 157
+     },
+     "exact_tip_T-90m": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 407
+     }
+    },
+    "by_season": {
+     "2021": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 74,
+      "UNWITNESSED_SOURCE_TIP": 131
+     },
+     "2022": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 82,
+      "INDETERMINATE_WITHIN_4H_BAND": 11,
+      "PROVEN_AFTER_CUTOFF": 120,
+      "UNWITNESSED_SOURCE_TIP": 26
+     },
+     "2023": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 96,
+      "INDETERMINATE_WITHIN_4H_BAND": 10,
+      "PROVEN_AFTER_CUTOFF": 154
+     },
+     "2024": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 73,
+      "INDETERMINATE_WITHIN_4H_BAND": 4,
+      "PROVEN_AFTER_CUTOFF": 185
+     },
+     "2025": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 227,
+      "PROVEN_AFTER_CUTOFF": 83
+     },
+     "2026": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 210,
+      "PROVEN_AFTER_CUTOFF": 5
+     }
+    },
+    "slack_hours_when_measurable": {
+     "n": 25,
+     "min": 1.0,
+     "p05": 1.0,
+     "p50": 1.0,
+     "max": 2.0
+    },
+    "examples_of_failures": [
+     {
+      "target_game_id": "1022200036",
+      "target_team_id": null,
+      "target_game_date": "2022-05-22",
+      "target_forecast_cutoff": "2022-05-21 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200035",
+      "source_game_date": "2022-05-21",
+      "source_end_lower_bound_utc": "2022-05-22 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200037",
+      "target_team_id": null,
+      "target_game_date": "2022-05-22",
+      "target_forecast_cutoff": "2022-05-21 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200035",
+      "source_game_date": "2022-05-21",
+      "source_end_lower_bound_utc": "2022-05-22 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200038",
+      "target_team_id": null,
+      "target_game_date": "2022-05-23",
+      "target_forecast_cutoff": "2022-05-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200037",
+      "source_game_date": "2022-05-22",
+      "source_end_lower_bound_utc": "2022-05-22 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200039",
+      "target_team_id": null,
+      "target_game_date": "2022-05-24",
+      "target_forecast_cutoff": "2022-05-23 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200038",
+      "source_game_date": "2022-05-23",
+      "source_end_lower_bound_utc": "2022-05-24 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200040",
+      "target_team_id": null,
+      "target_game_date": "2022-05-24",
+      "target_forecast_cutoff": "2022-05-23 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200038",
+      "source_game_date": "2022-05-23",
+      "source_end_lower_bound_utc": "2022-05-24 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200041",
+      "target_team_id": null,
+      "target_game_date": "2022-05-24",
+      "target_forecast_cutoff": "2022-05-23 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200038",
+      "source_game_date": "2022-05-23",
+      "source_end_lower_bound_utc": "2022-05-24 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200042",
+      "target_team_id": null,
+      "target_game_date": "2022-05-24",
+      "target_forecast_cutoff": "2022-05-23 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200038",
+      "source_game_date": "2022-05-23",
+      "source_end_lower_bound_utc": "2022-05-24 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200043",
+      "target_team_id": null,
+      "target_game_date": "2022-05-25",
+      "target_forecast_cutoff": "2022-05-24 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200042",
+      "source_game_date": "2022-05-24",
+      "source_end_lower_bound_utc": "2022-05-25 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200044",
+      "target_team_id": null,
+      "target_game_date": "2022-05-26",
+      "target_forecast_cutoff": "2022-05-25 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200043",
+      "source_game_date": "2022-05-25",
+      "source_end_lower_bound_utc": "2022-05-26 03:10:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200045",
+      "target_team_id": null,
+      "target_game_date": "2022-05-27",
+      "target_forecast_cutoff": "2022-05-26 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200044",
+      "source_game_date": "2022-05-26",
+      "source_end_lower_bound_utc": "2022-05-26 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200046",
+      "target_team_id": null,
+      "target_game_date": "2022-05-27",
+      "target_forecast_cutoff": "2022-05-26 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200044",
+      "source_game_date": "2022-05-26",
+      "source_end_lower_bound_utc": "2022-05-26 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200047",
+      "target_team_id": null,
+      "target_game_date": "2022-05-28",
+      "target_forecast_cutoff": "2022-05-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200046",
+      "source_game_date": "2022-05-27",
+      "source_end_lower_bound_utc": "2022-05-28 02:45:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200048",
+      "target_team_id": null,
+      "target_game_date": "2022-05-28",
+      "target_forecast_cutoff": "2022-05-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200046",
+      "source_game_date": "2022-05-27",
+      "source_end_lower_bound_utc": "2022-05-28 02:45:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200049",
+      "target_team_id": null,
+      "target_game_date": "2022-05-29",
+      "target_forecast_cutoff": "2022-05-28 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200048",
+      "source_game_date": "2022-05-28",
+      "source_end_lower_bound_utc": "2022-05-28 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200050",
+      "target_team_id": null,
+      "target_game_date": "2022-05-29",
+      "target_forecast_cutoff": "2022-05-28 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200048",
+      "source_game_date": "2022-05-28",
+      "source_end_lower_bound_utc": "2022-05-28 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200051",
+      "target_team_id": null,
+      "target_game_date": "2022-05-29",
+      "target_forecast_cutoff": "2022-05-28 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200048",
+      "source_game_date": "2022-05-28",
+      "source_end_lower_bound_utc": "2022-05-28 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200056",
+      "target_team_id": null,
+      "target_game_date": "2022-06-01",
+      "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200055",
+      "source_game_date": "2022-05-31",
+      "source_end_lower_bound_utc": "2022-06-01 03:10:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200057",
+      "target_team_id": null,
+      "target_game_date": "2022-06-01",
+      "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200055",
+      "source_game_date": "2022-05-31",
+      "source_end_lower_bound_utc": "2022-06-01 03:10:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200058",
+      "target_team_id": null,
+      "target_game_date": "2022-06-02",
+      "target_forecast_cutoff": "2022-06-01 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200057",
+      "source_game_date": "2022-06-01",
+      "source_end_lower_bound_utc": "2022-06-01 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200059",
+      "target_team_id": null,
+      "target_game_date": "2022-06-03",
+      "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200058",
+      "source_game_date": "2022-06-02",
+      "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200060",
+      "target_team_id": null,
+      "target_game_date": "2022-06-03",
+      "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200058",
+      "source_game_date": "2022-06-02",
+      "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200061",
+      "target_team_id": null,
+      "target_game_date": "2022-06-03",
+      "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200058",
+      "source_game_date": "2022-06-02",
+      "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200062",
+      "target_team_id": null,
+      "target_game_date": "2022-06-03",
+      "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200058",
+      "source_game_date": "2022-06-02",
+      "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200071",
+      "target_team_id": null,
+      "target_game_date": "2022-06-08",
+      "target_forecast_cutoff": "2022-06-07 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200070",
+      "source_game_date": "2022-06-07",
+      "source_end_lower_bound_utc": "2022-06-08 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200072",
+      "target_team_id": null,
+      "target_game_date": "2022-06-08",
+      "target_forecast_cutoff": "2022-06-07 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200070",
+      "source_game_date": "2022-06-07",
+      "source_end_lower_bound_utc": "2022-06-08 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     }
+    ]
+   },
+   "point_in_time_league_average_v1_ON_THE_26_CLUSTERS_THAT_ACTUALLY_USE_IT": {
+    "event_claim_PASSES_on_rows": 10,
+    "event_claim_FAILS_on_rows": 2,
+    "event_claim_NOT_ESTABLISHED_on_rows": 14,
+    "construction": "league_average_v1 restricted to the composite-uncovered clusters the universe actually falls back to",
+    "rows_evaluated": 26,
+    "verdict_counts": {
+     "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 10,
+     "PROVEN_AFTER_CUTOFF": 2,
+     "UNWITNESSED_SOURCE_TIP": 14
+    },
+    "rows_with_an_observation_provably_after_their_own_cutoff": 2,
+    "share_of_rows_failing_the_event_claim": 0.076923,
+    "failures_by_witness_class": {
+     "B_market_archive_ALARM_ONLY": 2
+    },
+    "failures_resting_only_on_the_ALARM_ONLY_market_archive": 2,
+    "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+    "lateness_hours_of_failures": {
+     "min": 5.666666666666667,
+     "p50": 6.166666666666667,
+     "max": 6.666666666666667
+    },
+    "by_cutoff_policy": {
+     "date_only_prior_day_cutoff": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 4,
+      "PROVEN_AFTER_CUTOFF": 2,
+      "UNWITNESSED_SOURCE_TIP": 14
+     },
+     "exact_tip_T-90m": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 6
+     }
+    },
+    "by_season": {
+     "2021": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 3,
+      "UNWITNESSED_SOURCE_TIP": 14
+     },
+     "2025": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 1,
+      "PROVEN_AFTER_CUTOFF": 2
+     },
+     "2026": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 6
+     }
+    },
+    "slack_hours_when_measurable": null,
+    "examples_of_failures": [
+     {
+      "target_game_id": "1022500013",
+      "target_team_id": null,
+      "target_game_date": "2025-05-21",
+      "target_forecast_cutoff": "2025-05-20 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022500011",
+      "source_game_date": "2025-05-20",
+      "source_end_lower_bound_utc": "2025-05-20 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022500019",
+      "target_team_id": null,
+      "target_game_date": "2025-05-23",
+      "target_forecast_cutoff": "2025-05-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022500016",
+      "source_game_date": "2025-05-22",
+      "source_end_lower_bound_utc": "2025-05-23 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     }
+    ]
+   },
+   "point_in_time_AS_CONSUMED_BY_THE_UNIVERSE": {
+    "event_claim_PASSES_on_rows": 1426,
+    "event_claim_FAILS_on_rows": 44,
+    "event_claim_NOT_ESTABLISHED_on_rows": 21,
+    "construction": "the C_margin / C_total / C_p_home columns as build_universe actually assembles them: composite where covered, league_average_v1 on the 26 uncovered clusters",
+    "rows_evaluated": 1491,
+    "verdict_counts": {
+     "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 1426,
+     "INDETERMINATE_WITHIN_4H_BAND": 7,
+     "PROVEN_AFTER_CUTOFF": 44,
+     "UNWITNESSED_SOURCE_TIP": 14
+    },
+    "rows_with_an_observation_provably_after_their_own_cutoff": 44,
+    "share_of_rows_failing_the_event_claim": 0.02951,
+    "failures_by_witness_class": {
+     "B_market_archive_ALARM_ONLY": 44
+    },
+    "failures_resting_only_on_the_ALARM_ONLY_market_archive": 44,
+    "failures_provable_from_CUTOFF_VALID_evidence_alone": 0,
+    "lateness_hours_of_failures": {
+     "min": 1.6666666666666667,
+     "p50": 5.666666666666667,
+     "max": 8.75
+    },
+    "by_cutoff_policy": {
+     "date_only_prior_day_cutoff": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 1019,
+      "INDETERMINATE_WITHIN_4H_BAND": 7,
+      "PROVEN_AFTER_CUTOFF": 44,
+      "UNWITNESSED_SOURCE_TIP": 14
+     },
+     "exact_tip_T-90m": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 407
+     }
+    },
+    "by_season": {
+     "2021": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 191,
+      "UNWITNESSED_SOURCE_TIP": 14
+     },
+     "2022": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 229,
+      "INDETERMINATE_WITHIN_4H_BAND": 2,
+      "PROVEN_AFTER_CUTOFF": 8
+     },
+     "2023": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 251,
+      "PROVEN_AFTER_CUTOFF": 9
+     },
+     "2024": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 240,
+      "INDETERMINATE_WITHIN_4H_BAND": 4,
+      "PROVEN_AFTER_CUTOFF": 18
+     },
+     "2025": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 300,
+      "INDETERMINATE_WITHIN_4H_BAND": 1,
+      "PROVEN_AFTER_CUTOFF": 9
+     },
+     "2026": {
+      "EVENT_COMPLETE_BEFORE_CUTOFF_no_tip_needed": 215
+     }
+    },
+    "slack_hours_when_measurable": {
+     "n": 7,
+     "min": 0.9166666666666666,
+     "p05": 0.9416666666666667,
+     "p50": 1.0,
+     "max": 2.0
+    },
+    "examples_of_failures": [
+     {
+      "target_game_id": "1022200057",
+      "target_team_id": null,
+      "target_game_date": "2022-06-01",
+      "target_forecast_cutoff": "2022-05-31 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200052",
+      "source_game_date": "2022-05-31",
+      "source_end_lower_bound_utc": "2022-05-31 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200061",
+      "target_team_id": null,
+      "target_game_date": "2022-06-03",
+      "target_forecast_cutoff": "2022-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200058",
+      "source_game_date": "2022-06-02",
+      "source_end_lower_bound_utc": "2022-06-03 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200087",
+      "target_team_id": null,
+      "target_game_date": "2022-06-15",
+      "target_forecast_cutoff": "2022-06-14 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200083",
+      "source_game_date": "2022-06-14",
+      "source_end_lower_bound_utc": "2022-06-14 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200128",
+      "target_team_id": null,
+      "target_game_date": "2022-07-04",
+      "target_forecast_cutoff": "2022-07-03 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200127",
+      "source_game_date": "2022-07-03",
+      "source_end_lower_bound_utc": "2022-07-03 22:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200135",
+      "target_team_id": null,
+      "target_game_date": "2022-07-07",
+      "target_forecast_cutoff": "2022-07-06 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200133",
+      "source_game_date": "2022-07-06",
+      "source_end_lower_bound_utc": "2022-07-07 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200147",
+      "target_team_id": null,
+      "target_game_date": "2022-07-15",
+      "target_forecast_cutoff": "2022-07-14 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200144",
+      "source_game_date": "2022-07-14",
+      "source_end_lower_bound_utc": "2022-07-15 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200164",
+      "target_team_id": null,
+      "target_game_date": "2022-07-23",
+      "target_forecast_cutoff": "2022-07-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200162",
+      "source_game_date": "2022-07-22",
+      "source_end_lower_bound_utc": "2022-07-23 00:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022200187",
+      "target_team_id": null,
+      "target_game_date": "2022-08-03",
+      "target_forecast_cutoff": "2022-08-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022200183",
+      "source_game_date": "2022-08-02",
+      "source_end_lower_bound_utc": "2022-08-02 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300020",
+      "target_team_id": null,
+      "target_game_date": "2023-05-28",
+      "target_forecast_cutoff": "2023-05-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300017",
+      "source_game_date": "2023-05-27",
+      "source_end_lower_bound_utc": "2023-05-28 01:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300030",
+      "target_team_id": null,
+      "target_game_date": "2023-06-03",
+      "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300026",
+      "source_game_date": "2023-06-02",
+      "source_end_lower_bound_utc": "2023-06-02 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300031",
+      "target_team_id": null,
+      "target_game_date": "2023-06-03",
+      "target_forecast_cutoff": "2023-06-02 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300029",
+      "source_game_date": "2023-06-02",
+      "source_end_lower_bound_utc": "2023-06-03 02:45:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300038",
+      "target_team_id": null,
+      "target_game_date": "2023-07-28",
+      "target_forecast_cutoff": "2023-07-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300142",
+      "source_game_date": "2023-07-27",
+      "source_end_lower_bound_utc": "2023-07-27 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300118",
+      "target_team_id": null,
+      "target_game_date": "2023-07-12",
+      "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300113",
+      "source_game_date": "2023-07-11",
+      "source_end_lower_bound_utc": "2023-07-11 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300119",
+      "target_team_id": null,
+      "target_game_date": "2023-07-12",
+      "target_forecast_cutoff": "2023-07-11 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300114",
+      "source_game_date": "2023-07-11",
+      "source_end_lower_bound_utc": "2023-07-12 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300181",
+      "target_team_id": null,
+      "target_game_date": "2023-08-13",
+      "target_forecast_cutoff": "2023-08-12 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300176",
+      "source_game_date": "2023-08-12",
+      "source_end_lower_bound_utc": "2023-08-13 00:10:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300186",
+      "target_team_id": null,
+      "target_game_date": "2023-08-18",
+      "target_forecast_cutoff": "2023-08-17 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300182",
+      "source_game_date": "2023-08-17",
+      "source_end_lower_bound_utc": "2023-08-18 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022300217",
+      "target_team_id": null,
+      "target_game_date": "2023-09-01",
+      "target_forecast_cutoff": "2023-08-31 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022300213",
+      "source_game_date": "2023-08-31",
+      "source_end_lower_bound_utc": "2023-08-31 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400016",
+      "target_team_id": null,
+      "target_game_date": "2024-05-20",
+      "target_forecast_cutoff": "2024-05-19 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400014",
+      "source_game_date": "2024-05-19",
+      "source_end_lower_bound_utc": "2024-05-19 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400027",
+      "target_team_id": null,
+      "target_game_date": "2024-05-25",
+      "target_forecast_cutoff": "2024-05-24 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400024",
+      "source_game_date": "2024-05-24",
+      "source_end_lower_bound_utc": "2024-05-25 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400031",
+      "target_team_id": null,
+      "target_game_date": "2024-05-26",
+      "target_forecast_cutoff": "2024-05-25 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400029",
+      "source_game_date": "2024-05-25",
+      "source_end_lower_bound_utc": "2024-05-26 02:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400035",
+      "target_team_id": null,
+      "target_game_date": "2024-05-29",
+      "target_forecast_cutoff": "2024-05-28 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400032",
+      "source_game_date": "2024-05-28",
+      "source_end_lower_bound_utc": "2024-05-28 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400056",
+      "target_team_id": null,
+      "target_game_date": "2024-06-07",
+      "target_forecast_cutoff": "2024-06-06 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400054",
+      "source_game_date": "2024-06-06",
+      "source_end_lower_bound_utc": "2024-06-06 23:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400094",
+      "target_team_id": null,
+      "target_game_date": "2024-06-23",
+      "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400092",
+      "source_game_date": "2024-06-22",
+      "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400095",
+      "target_team_id": null,
+      "target_game_date": "2024-06-23",
+      "target_forecast_cutoff": "2024-06-22 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400091",
+      "source_game_date": "2024-06-22",
+      "source_end_lower_bound_utc": "2024-06-22 19:40:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     },
+     {
+      "target_game_id": "1022400102",
+      "target_team_id": null,
+      "target_game_date": "2024-06-28",
+      "target_forecast_cutoff": "2024-06-27 18:00:00+00:00",
+      "target_cutoff_policy": "date_only_prior_day_cutoff",
+      "latest_contributing_source_game_id": "1022400099",
+      "source_game_date": "2024-06-27",
+      "source_end_lower_bound_utc": "2024-06-27 23:45:00+00:00",
+      "source_witness": "B_market_archive_ALARM_ONLY"
+     }
+    ]
+   }
+  }
+ }
+}

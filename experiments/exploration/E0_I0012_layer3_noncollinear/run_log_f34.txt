@@ -1,0 +1,521 @@
+﻿
+==============================================================================
+F3 / F4 -- STYLE (orthogonalized) and REST/TRAVEL
+==============================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 19642 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  manifest master_team.parquet                        asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_team:   raw 2990 -> partition+RS 1776 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  style coverage (non-null d3par): 0.892 of team-games
+  team_cities: 16 rows, 15 team_ids, tz mapped for 15
+  venue coords resolved on 1776 / 1776 team-games (1.000)
+  rest: med=2.0 | b2b share=0.026 | travel_km: med=883 p90=2689 max=4093 | tz_shift nonzero share=0.440
+
+==============================================================================
+target = pts
+==============================================================================
+
+--- F3 STYLE ---
+
+  [d3par]  n=10167
+  (a) COLLINEARITY corr(d3par, def_pre) within season = +0.1950 | per season {2021: 0.27, 2022: -0.006, 2023: 0.2, 2024: 0.341}
+      corr(d3par, opponent pts-allowed-per-100) = +0.2058
+  (b) VAR DECOMP: between-OPPONENT 0.372 / within 0.628 (12 opp) | between-GAME 0.518
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.5245 sb=0.6881 n=48
+  (d) EFFECT -- d3par residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.18054   0.000289   -0.2038    0.000147    -0.2127
+  2022         2484   0.24679   0.000015    0.0359    0.000126    -0.1018
+  2023         2784   0.26446   0.000012   -0.0418    0.000028    -0.0585
+  2024         2771   0.25713   0.000019   -0.0533    0.002236    -0.5377
+  POOLED      10167   0.23847   0.000021   -0.0512    0.000361    -0.2106
+  (d2) MATCHED interaction with player's own own_3par:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000287    0.000083     -0.1056
+  2022         2484    0.000015    0.003326      0.5336
+  2023         2784    0.000016    0.000751      0.3456
+  2024         2771    0.000030    0.000012     -0.0399
+  POOLED      10167    0.000025    0.000406      0.2238
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000212   0.0000810   0.0001236       0.625
+      dR2_OxM      0.0003614   0.0000605   0.0000859       0.010
+
+  [dtovf]  n=10167
+  (a) COLLINEARITY corr(dtovf, def_pre) within season = -0.4333 | per season {2021: -0.206, 2022: -0.414, 2023: -0.447, 2024: -0.653}
+      corr(dtovf, opponent pts-allowed-per-100) = -0.4585
+  (b) VAR DECOMP: between-OPPONENT 0.420 / within 0.580 (12 opp) | between-GAME 0.494
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.7772 sb=0.8747 n=48
+  (d) EFFECT -- dtovf residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.18054   0.000053    0.0548    0.000839     0.3147
+  2022         2484   0.24679   0.000064    0.0931    0.001105     0.3888
+  2023         2784   0.26446   0.000055   -0.1274    0.000033    -0.0911
+  2024         2771   0.25713   0.000022   -0.0600    0.000038    -0.0715
+  POOLED      10167   0.23847   0.000000    0.0026    0.000172     0.1598
+  (d2) MATCHED interaction with player's own own_tovr:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000055    0.000478     -0.1716
+  2022         2484    0.000065    0.000736      0.3059
+  2023         2784    0.000057    0.000376     -0.3587
+  2024         2771    0.000020    0.000057      0.0797
+  POOLED      10167    0.000000    0.000003     -0.0177
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000001   0.0000766   0.0001035       0.980
+      dR2_OxM      0.0001715   0.0000649   0.0000935       0.110
+
+  [dorebA]  n=10167
+  (a) COLLINEARITY corr(dorebA, def_pre) within season = +0.0978 | per season {2021: -0.007, 2022: 0.185, 2023: 0.206, 2024: 0.062}
+      corr(dorebA, opponent pts-allowed-per-100) = +0.0817
+  (b) VAR DECOMP: between-OPPONENT 0.331 / within 0.669 (12 opp) | between-GAME 0.511
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.4520 sb=0.6226 n=48
+  (d) EFFECT -- dorebA residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.18054   0.000782    0.2469    0.000187     0.1858
+  2022         2484   0.24679   0.000112    0.1436    0.000161     0.1758
+  2023         2784   0.26446   0.000601    0.3130    0.000005     0.0264
+  2024         2771   0.25713   0.000467    0.2310    0.001293     0.3583
+  POOLED      10167   0.23847   0.000455    0.2369    0.000316     0.2089
+  (d2) MATCHED interaction with player's own own_orebr:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000782    0.000460     -0.1852
+  2022         2484    0.000113    0.001461      0.4926
+  2023         2784    0.000592    0.000014     -0.0496
+  2024         2771    0.000485    0.000168      0.1403
+  POOLED      10167    0.000458    0.000025      0.0550
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0004547   0.0000796   0.0001099       0.020
+      dR2_OxM      0.0003159   0.0000686   0.0000925       0.015
+
+  [dpace]  n=10167
+  (a) COLLINEARITY corr(dpace, def_pre) within season = +0.1461 | per season {2021: 0.092, 2022: 0.298, 2023: -0.275, 2024: 0.39}
+      corr(dpace, opponent pts-allowed-per-100) = +0.1512
+  (b) VAR DECOMP: between-OPPONENT 0.350 / within 0.650 (12 opp) | between-GAME 0.476
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.6783 sb=0.8083 n=48
+  (d) EFFECT -- dpace residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.18054   0.000525    0.1928    0.001941     0.5601
+  2022         2484   0.24679   0.000181    0.1705    0.000042    -0.0819
+  2023         2784   0.26446   0.000764   -0.3573    0.000417     0.2490
+  2024         2771   0.25713   0.000005   -0.0282    0.000351     0.2218
+  POOLED      10167   0.23847   0.000032    0.0625    0.000179     0.1581
+  (d2) MATCHED interaction with player's own own_usg:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000542    0.000944      0.2670
+  2022         2484    0.000180    0.000004      0.0278
+  2023         2784    0.000704    0.000636      0.3261
+  2024         2771    0.000018    0.000132      0.1404
+  POOLED      10167    0.000028    0.000206      0.1614
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000316   0.0000788   0.0001233       0.515
+      dR2_OxM      0.0001791   0.0000749   0.0001141       0.135
+
+--- F4 REST / TRAVEL ---
+
+  [rest_dif]  n=10189  mean=-0.003 sd=1.466
+  (a) COLLINEARITY corr(rest_dif, def_pre) within season = -0.0305 | per season {2021: -0.029, 2022: -0.09, 2023: 0.022, 2024: -0.028}
+  (b) VAR DECOMP: between-TEAM 0.006 / within 0.994 (12 teams) | between-GAME 0.023
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.994 is the usable-variation number)
+  (d) EFFECT -- rest_dif residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.18027   0.000199   -0.1268    0.000296    -0.2158
+  2022         2487   0.24698   0.000023    0.0587    0.000150     0.1486
+  2023         2784   0.26446   0.000005   -0.0278    0.000812     0.3115
+  2024         2781   0.25700   0.000001    0.0126    0.000000     0.0044
+  POOLED      10189   0.23840   0.000008   -0.0313    0.000070     0.0939
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000079   0.0000710   0.0000886       0.790
+      dR2_OxM      0.0000700   0.0000758   0.0000976       0.375
+
+  [own_rest]  n=10189  mean=2.870 sd=1.340
+  (a) COLLINEARITY corr(own_rest, def_pre) within season = -0.0115 | per season {2021: -0.006, 2022: -0.081, 2023: 0.042, 2024: -0.001}
+  (b) VAR DECOMP: between-TEAM 0.001 / within 0.999 (12 teams) | between-GAME 0.707
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.999 is the usable-variation number)
+  (d) EFFECT -- own_rest residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.18027   0.000542   -0.2152    0.000007    -0.0363
+  2022         2487   0.24698   0.000066    0.0942    0.000825     0.3362
+  2023         2784   0.26446   0.000102   -0.1226    0.000096     0.1107
+  2024         2781   0.25700   0.000054   -0.0864    0.000110     0.1109
+  POOLED      10189   0.23840   0.000075   -0.0962    0.000168     0.1492
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000750   0.0000720   0.0001016       0.310
+      dR2_OxM      0.0001685   0.0000784   0.0000986       0.140
+
+  [own_travel]  n=10189  mean=1094.300 sd=1108.563
+  (a) COLLINEARITY corr(own_travel, def_pre) within season = -0.0201 | per season {2021: -0.099, 2022: -0.006, 2023: -0.005, 2024: 0.005}
+  (b) VAR DECOMP: between-TEAM 0.011 / within 0.989 (12 teams) | between-GAME 0.535
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.989 is the usable-variation number)
+  (d) EFFECT -- own_travel residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.18027   0.000111    0.1203    0.001884    -0.7039
+  2022         2487   0.24698   0.000029   -0.0586    0.000066     0.0855
+  2023         2784   0.26446   0.000709   -0.2982    0.000417     0.2104
+  2024         2781   0.25700   0.000087    0.1020    0.000134     0.1159
+  POOLED      10189   0.23840   0.000014   -0.0414    0.000038     0.0673
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000139   0.0000760   0.0000938       0.685
+      dR2_OxM      0.0000377   0.0000823   0.0001091       0.500
+
+  [own_b2b]  n=10189  mean=0.028 sd=0.164
+  (a) COLLINEARITY corr(own_b2b, def_pre) within season = +0.0444 | per season {2021: -0.04, 2022: 0.128, 2023: 0.022, 2024: 0.016}
+  (b) VAR DECOMP: between-TEAM 0.007 / within 0.993 (12 teams) | between-GAME 0.633
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.993 is the usable-variation number)
+  (d) EFFECT -- own_b2b residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.18027   0.000632    1.2093    0.000346     1.6822
+  2022         2487   0.24698   0.001150   -0.3286    0.000556     0.2423
+  2023         2784   0.26446   0.001012   -0.4694    0.000312    -0.2290
+  2024         2781   0.25700   0.000005    0.0183    0.000000     0.0026
+  POOLED      10189   0.23840   0.000190   -0.1534    0.000004     0.0195
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0001905   0.0000619   0.0000815       0.090
+      dR2_OxM      0.0000036   0.0000697   0.0001078       0.785
+  wrote f34_features_pts.csv  shape=(13753, 26)
+
+==============================================================================
+target = reb
+==============================================================================
+
+--- F3 STYLE ---
+
+  [d3par]  n=10167
+  (a) COLLINEARITY corr(d3par, def_pre) within season = -0.0655 | per season {2021: -0.136, 2022: -0.292, 2023: 0.081, 2024: 0.29}
+      corr(d3par, opponent pts-allowed-per-100) = +0.2058
+  (b) VAR DECOMP: between-OPPONENT 0.372 / within 0.628 (12 opp) | between-GAME 0.518
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.5245 sb=0.6881 n=48
+  (d) EFFECT -- d3par residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.39955   0.000413    0.1272    0.000475     0.1963
+  2022         2484   0.39502   0.000043    0.0338    0.000095     0.0475
+  2023         2784   0.39225   0.000056    0.0456    0.000555     0.1345
+  2024         2771   0.39836   0.000068    0.0534    0.000813    -0.1698
+  POOLED      10167   0.38729   0.000089    0.0546    0.000027     0.0295
+  (d2) MATCHED interaction with player's own own_3par:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000411    0.000421     -0.1242
+  2022         2484    0.000035    0.000058     -0.0392
+  2023         2784    0.000049    0.001761     -0.2632
+  2024         2771    0.000046    0.000013      0.0213
+  POOLED      10167    0.000073    0.000262     -0.0935
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000891   0.0000605   0.0000777       0.230
+      dR2_OxM      0.0000267   0.0000698   0.0000869       0.550
+
+  [dtovf]  n=10167
+  (a) COLLINEARITY corr(dtovf, def_pre) within season = +0.1624 | per season {2021: 0.399, 2022: -0.131, 2023: 0.402, 2024: -0.004}
+      corr(dtovf, opponent pts-allowed-per-100) = -0.4585
+  (b) VAR DECOMP: between-OPPONENT 0.420 / within 0.580 (12 opp) | between-GAME 0.494
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.7772 sb=0.8747 n=48
+  (d) EFFECT -- dtovf residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.39955   0.000331    0.0848    0.000001    -0.0060
+  2022         2484   0.39502   0.000097    0.0609    0.000018    -0.0248
+  2023         2784   0.39225   0.000099    0.0917    0.000193    -0.1241
+  2024         2771   0.39836   0.000022   -0.0262    0.000008    -0.0144
+  POOLED      10167   0.38729   0.000078    0.0511    0.000001    -0.0049
+  (d2) MATCHED interaction with player's own own_tovr:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000328    0.000316     -0.0831
+  2022         2484    0.000101    0.000234     -0.0854
+  2023         2784    0.000099    0.000016     -0.0380
+  2024         2771    0.000022    0.000012      0.0163
+  POOLED      10167    0.000079    0.000066     -0.0448
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000783   0.0000608   0.0000895       0.225
+      dR2_OxM      0.0000007   0.0000571   0.0000896       0.915
+
+  [dorebA]  n=10167
+  (a) COLLINEARITY corr(dorebA, def_pre) within season = +0.4465 | per season {2021: 0.669, 2022: 0.608, 2023: 0.107, 2024: 0.254}
+      corr(dorebA, opponent pts-allowed-per-100) = +0.0817
+  (b) VAR DECOMP: between-OPPONENT 0.331 / within 0.669 (12 opp) | between-GAME 0.511
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.4520 sb=0.6226 n=48
+  (d) EFFECT -- dorebA residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.39955   0.000004   -0.0110    0.000031    -0.0470
+  2022         2484   0.39502   0.000267   -0.1301    0.000623    -0.1800
+  2023         2784   0.39225   0.000577   -0.1357    0.000037     0.0327
+  2024         2771   0.39836   0.000034    0.0308    0.000469    -0.1074
+  POOLED      10167   0.38729   0.000038   -0.0356    0.000135    -0.0682
+  (d2) MATCHED interaction with player's own own_orebr:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000004    0.000011     -0.0175
+  2022         2484    0.000229    0.000136     -0.0878
+  2023         2784    0.000598    0.000142      0.0691
+  2024         2771    0.000082    0.000195     -0.0733
+  POOLED      10167    0.000028    0.000015     -0.0226
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000380   0.0000658   0.0001035       0.435
+      dR2_OxM      0.0001348   0.0000659   0.0001040       0.145
+
+  [dpace]  n=10167
+  (a) COLLINEARITY corr(dpace, def_pre) within season = +0.1078 | per season {2021: 0.325, 2022: -0.115, 2023: -0.06, 2024: 0.175}
+      corr(dpace, opponent pts-allowed-per-100) = +0.1512
+  (b) VAR DECOMP: between-OPPONENT 0.350 / within 0.650 (12 opp) | between-GAME 0.476
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.6783 sb=0.8083 n=48
+  (d) EFFECT -- dpace residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.39955   0.000580    0.1133    0.002601     0.3560
+  2022         2484   0.39502   0.000102    0.0650    0.002948     0.3348
+  2023         2784   0.39225   0.000045   -0.0418    0.000734     0.1674
+  2024         2771   0.39836   0.000232    0.0993    0.000111     0.0640
+  POOLED      10167   0.38729   0.000164    0.0740    0.001071     0.2028
+  (d2) MATCHED interaction with player's own own_usg:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000578    0.000572     -0.1134
+  2022         2484    0.000102    0.000576      0.1618
+  2023         2784    0.000044    0.001044     -0.2016
+  2024         2771    0.000226    0.000001     -0.0055
+  POOLED      10167    0.000159    0.000100     -0.0586
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0001638   0.0000570   0.0000805       0.085
+      dR2_OxM      0.0010713   0.0000790   0.0000928       0.000
+
+--- F4 REST / TRAVEL ---
+
+  [rest_dif]  n=10189  mean=-0.003 sd=1.466
+  (a) COLLINEARITY corr(rest_dif, def_pre) within season = -0.0252 | per season {2021: -0.016, 2022: -0.106, 2023: 0.029, 2024: 0.018}
+  (b) VAR DECOMP: between-TEAM 0.006 / within 0.994 (12 teams) | between-GAME 0.023
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.994 is the usable-variation number)
+  (d) EFFECT -- rest_dif residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.39931   0.000017   -0.0195    0.000177     0.0873
+  2022         2487   0.39545   0.000000   -0.0022    0.000594    -0.1499
+  2023         2784   0.39225   0.000038    0.0369    0.000888     0.1742
+  2024         2781   0.39929   0.000427   -0.1289    0.000001     0.0054
+  POOLED      10189   0.38757   0.000021   -0.0265    0.000035     0.0356
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000210   0.0000553   0.0000718       0.520
+      dR2_OxM      0.0000346   0.0000664   0.0000995       0.430
+
+  [own_rest]  n=10189  mean=2.870 sd=1.340
+  (a) COLLINEARITY corr(own_rest, def_pre) within season = -0.0416 | per season {2021: -0.073, 2022: -0.079, 2023: 0.022, 2024: 0.003}
+  (b) VAR DECOMP: between-TEAM 0.001 / within 0.999 (12 teams) | between-GAME 0.707
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.999 is the usable-variation number)
+  (d) EFFECT -- own_rest residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.39931   0.000284    0.0825    0.000000     0.0030
+  2022         2487   0.39545   0.000253   -0.0967    0.000000    -0.0013
+  2023         2784   0.39225   0.000067    0.0496    0.000127     0.0648
+  2024         2781   0.39929   0.000617   -0.1545    0.000001    -0.0058
+  POOLED      10189   0.38757   0.000016   -0.0228    0.000015     0.0227
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000156   0.0000702   0.0000934       0.645
+      dR2_OxM      0.0000147   0.0000630   0.0000954       0.600
+
+  [own_travel]  n=10189  mean=1094.300 sd=1108.563
+  (a) COLLINEARITY corr(own_travel, def_pre) within season = -0.0160 | per season {2021: -0.104, 2022: -0.004, 2023: 0.054, 2024: 0.013}
+  (b) VAR DECOMP: between-TEAM 0.011 / within 0.989 (12 teams) | between-GAME 0.535
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.989 is the usable-variation number)
+  (d) EFFECT -- own_travel residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.39931   0.000096    0.0589    0.000001     0.0066
+  2022         2487   0.39545   0.000001    0.0047    0.000151     0.0667
+  2023         2784   0.39225   0.000030   -0.0309    0.000247    -0.0847
+  2024         2781   0.39929   0.000211   -0.0843    0.001709    -0.2240
+  POOLED      10189   0.38757   0.000012   -0.0196    0.000177    -0.0769
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000115   0.0000623   0.0000950       0.660
+      dR2_OxM      0.0001770   0.0000640   0.0000935       0.095
+
+  [own_b2b]  n=10189  mean=0.028 sd=0.164
+  (a) COLLINEARITY corr(own_b2b, def_pre) within season = +0.0314 | per season {2021: -0.065, 2022: 0.109, 2023: -0.021, 2024: 0.007}
+  (b) VAR DECOMP: between-TEAM 0.007 / within 0.993 (12 teams) | between-GAME 0.633
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.993 is the usable-variation number)
+  (d) EFFECT -- own_b2b residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.39931   0.000037    0.1545    0.000214     1.7191
+  2022         2487   0.39545   0.000002    0.0074    0.000690    -0.1310
+  2023         2784   0.39225   0.000114   -0.0789    0.000064    -0.0542
+  2024         2781   0.39929   0.000003    0.0075    0.000503    -0.0872
+  POOLED      10189   0.38757   0.000001   -0.0066    0.000333    -0.0990
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000013   0.0000567   0.0000800       0.905
+      dR2_OxM      0.0003329   0.0000750   0.0001023       0.025
+  wrote f34_features_reb.csv  shape=(13753, 26)
+
+==============================================================================
+target = ast
+==============================================================================
+
+--- F3 STYLE ---
+
+  [d3par]  n=10167
+  (a) COLLINEARITY corr(d3par, def_pre) within season = +0.2479 | per season {2021: 0.383, 2022: 0.092, 2023: 0.305, 2024: 0.274}
+      corr(d3par, opponent pts-allowed-per-100) = +0.2058
+  (b) VAR DECOMP: between-OPPONENT 0.372 / within 0.628 (12 opp) | between-GAME 0.518
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.5245 sb=0.6881 n=48
+  (d) EFFECT -- d3par residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.32686   0.000170   -0.0579    0.000003     0.0121
+  2022         2484   0.31801   0.000064   -0.0264    0.000016    -0.0126
+  2023         2784   0.34144   0.000035   -0.0257    0.000022     0.0193
+  2024         2771   0.34266   0.000117    0.0466    0.000010     0.0134
+  POOLED      10167   0.32620   0.000012   -0.0140    0.000001     0.0037
+  (d2) MATCHED interaction with player's own own_3par:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000171    0.001225     -0.1491
+  2022         2484    0.000068    0.000105     -0.0340
+  2023         2784    0.000040    0.000224     -0.0671
+  2024         2771    0.000137    0.000115     -0.0443
+  POOLED      10167    0.000012    0.000256     -0.0636
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000123   0.0000556   0.0000793       0.620
+      dR2_OxM      0.0000009   0.0000760   0.0000908       0.915
+
+  [dtovf]  n=10167
+  (a) COLLINEARITY corr(dtovf, def_pre) within season = -0.3303 | per season {2021: -0.26, 2022: -0.118, 2023: -0.166, 2024: -0.695}
+      corr(dtovf, opponent pts-allowed-per-100) = -0.4585
+  (b) VAR DECOMP: between-OPPONENT 0.420 / within 0.580 (12 opp) | between-GAME 0.494
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.7772 sb=0.8747 n=48
+  (d) EFFECT -- dtovf residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.32686   0.000029   -0.0155    0.000005    -0.0095
+  2022         2484   0.31801   0.000199   -0.0571    0.000007     0.0105
+  2023         2784   0.34144   0.000011    0.0188    0.000433    -0.1122
+  2024         2771   0.34266   0.000018   -0.0220    0.000812    -0.1417
+  POOLED      10167   0.32620   0.000044   -0.0266    0.000225    -0.0655
+  (d2) MATCHED interaction with player's own own_tovr:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000018    0.000000     -0.0001
+  2022         2484    0.000198    0.000116      0.0414
+  2023         2784    0.000007    0.000000      0.0015
+  2024         2771    0.000001    0.000134     -0.0471
+  POOLED      10167    0.000037    0.000005     -0.0089
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000444   0.0000649   0.0000901       0.400
+      dR2_OxM      0.0002249   0.0000796   0.0000936       0.075
+
+  [dorebA]  n=10167
+  (a) COLLINEARITY corr(dorebA, def_pre) within season = -0.1287 | per season {2021: -0.495, 2022: 0.08, 2023: -0.059, 2024: 0.017}
+      corr(dorebA, opponent pts-allowed-per-100) = +0.0817
+  (b) VAR DECOMP: between-OPPONENT 0.331 / within 0.669 (12 opp) | between-GAME 0.511
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.4520 sb=0.6226 n=48
+  (d) EFFECT -- dorebA residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.32686   0.000128    0.0412    0.000015     0.0201
+  2022         2484   0.31801   0.000284    0.0813    0.000652     0.1152
+  2023         2784   0.34144   0.000288    0.0742    0.000000     0.0001
+  2024         2771   0.34266   0.000437    0.0812    0.000189     0.0515
+  POOLED      10167   0.32620   0.000188    0.0548    0.000063     0.0325
+  (d2) MATCHED interaction with player's own own_orebr:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000128    0.000038     -0.0206
+  2022         2484    0.000282    0.000119     -0.0491
+  2023         2784    0.000279    0.000001     -0.0054
+  2024         2771    0.000398    0.000005     -0.0085
+  POOLED      10167    0.000182    0.000023     -0.0192
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0001884   0.0000797   0.0001140       0.135
+      dR2_OxM      0.0000634   0.0000994   0.0001301       0.415
+
+  [dpace]  n=10167
+  (a) COLLINEARITY corr(dpace, def_pre) within season = -0.0441 | per season {2021: 0.007, 2022: 0.043, 2023: -0.454, 2024: 0.17}
+      corr(dpace, opponent pts-allowed-per-100) = +0.1512
+  (b) VAR DECOMP: between-OPPONENT 0.350 / within 0.650 (12 opp) | between-GAME 0.476
+  (c) SPLIT-HALF RELIABILITY (units=(season,team), odd/even games): r_half=0.6783 sb=0.8083 n=48
+  (d) EFFECT -- dpace residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.32686   0.000849    0.0885    0.000753     0.1197
+  2022         2484   0.31801   0.001252    0.1565    0.000263    -0.0680
+  2023         2784   0.34144   0.000852   -0.1442    0.000010     0.0144
+  2024         2771   0.34266   0.000318    0.0806    0.000288     0.0727
+  POOLED      10167   0.32620   0.000269    0.0655    0.000012     0.0146
+  (d2) MATCHED interaction with player's own own_usg:
+  scope           n       dR2_M     dR2_RxM    beta_RxM
+  2021         2128    0.000801    0.000505      0.0705
+  2022         2484    0.001252    0.001401     -0.1779
+  2023         2784    0.000859    0.000023     -0.0216
+  2024         2771    0.000278    0.000145      0.0502
+  POOLED      10167    0.000254    0.000000     -0.0005
+  (e) PLACEBO (200 perms, value-assignment permutation within season):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0002690   0.0000630   0.0000904       0.040
+      dR2_OxM      0.0000123   0.0001019   0.0001308       0.775
+
+--- F4 REST / TRAVEL ---
+
+  [rest_dif]  n=10189  mean=-0.003 sd=1.466
+  (a) COLLINEARITY corr(rest_dif, def_pre) within season = -0.0037 | per season {2021: -0.018, 2022: 0.01, 2023: 0.009, 2024: -0.011}
+  (b) VAR DECOMP: between-TEAM 0.006 / within 0.994 (12 teams) | between-GAME 0.023
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.994 is the usable-variation number)
+  (d) EFFECT -- rest_dif residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.32756   0.000075   -0.0280    0.000563    -0.1085
+  2022         2487   0.31810   0.000056   -0.0327    0.000403    -0.0873
+  2023         2784   0.34144   0.000013   -0.0151    0.000128     0.0418
+  2024         2781   0.34183   0.000050    0.0305    0.000560     0.0913
+  POOLED      10189   0.32608   0.000011   -0.0134    0.000001     0.0032
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000112   0.0000629   0.0000797       0.705
+      dR2_OxM      0.0000006   0.0000758   0.0001044       0.940
+
+  [own_rest]  n=10189  mean=2.870 sd=1.340
+  (a) COLLINEARITY corr(own_rest, def_pre) within season = +0.0182 | per season {2021: 0.032, 2022: -0.007, 2023: 0.036, 2024: 0.013}
+  (b) VAR DECOMP: between-TEAM 0.001 / within 0.999 (12 teams) | between-GAME 0.707
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.999 is the usable-variation number)
+  (d) EFFECT -- own_rest residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.32756   0.000001   -0.0029    0.000042     0.0300
+  2022         2487   0.31810   0.000077   -0.0364    0.001165    -0.1327
+  2023         2784   0.34144   0.000264   -0.0692    0.000043    -0.0251
+  2024         2781   0.34183   0.000179   -0.0575    0.000197     0.0567
+  POOLED      10189   0.32608   0.000090   -0.0378    0.000027    -0.0209
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000899   0.0000615   0.0000933       0.210
+      dR2_OxM      0.0000268   0.0000837   0.0001407       0.580
+
+  [own_travel]  n=10189  mean=1094.300 sd=1108.563
+  (a) COLLINEARITY corr(own_travel, def_pre) within season = +0.0167 | per season {2021: -0.004, 2022: 0.015, 2023: 0.002, 2024: 0.047}
+  (b) VAR DECOMP: between-TEAM 0.011 / within 0.989 (12 teams) | between-GAME 0.535
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.989 is the usable-variation number)
+  (d) EFFECT -- own_travel residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.32756   0.001598    0.1631    0.000319    -0.1024
+  2022         2487   0.31810   0.000217   -0.0584    0.000164    -0.0480
+  2023         2784   0.34144   0.000019   -0.0173    0.000437     0.0738
+  2024         2781   0.34183   0.000257   -0.0643    0.000046     0.0259
+  POOLED      10189   0.32608   0.000001   -0.0035    0.000005     0.0092
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000008   0.0000608   0.0000789       0.920
+      dR2_OxM      0.0000054   0.0000813   0.0001182       0.845
+
+  [own_b2b]  n=10189  mean=0.028 sd=0.164
+  (a) COLLINEARITY corr(own_b2b, def_pre) within season = +0.0055 | per season {2021: -0.014, 2022: 0.0, 2023: 0.016, 2024: 0.008}
+  (b) VAR DECOMP: between-TEAM 0.007 / within 0.993 (12 teams) | between-GAME 0.633
+  (c) RELIABILITY: n/a -- schedule fact, observed without measurement error (within-team share of variance = 0.993 is the usable-variation number)
+  (d) EFFECT -- own_b2b residualized on overall defence:
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2137   0.32756   0.000407   -0.3488    0.000071    -0.2035
+  2022         2487   0.31810   0.000043   -0.0229    0.000025    -0.0161
+  2023         2784   0.34144   0.000332   -0.0944    0.000629    -0.1089
+  2024         2781   0.34183   0.000075   -0.0254    0.000000    -0.0017
+  POOLED      10189   0.32608   0.000102   -0.0403    0.000074    -0.0312
+  (e) PLACEBO (200 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0001018   0.0000596   0.0000888       0.175
+      dR2_OxM      0.0000741   0.0000807   0.0001169       0.340
+  wrote f34_features_ast.csv  shape=(13753, 26)
+
+F3/F4 done.
