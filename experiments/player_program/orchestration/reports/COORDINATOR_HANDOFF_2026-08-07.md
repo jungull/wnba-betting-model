@@ -945,3 +945,262 @@ everything in §11.5, because it unblocks a whole lane and the discovery lane is
 **Sequencing note.** `S37_IMPLEMENTATION_AUDIT` remains the Severity-A blocker and A9 was only one of
 its 18 findings (9 Severity A). Clearing A9 does **not** clear S37. Check what else in that audit
 still gates fitting before declaring the lane open.
+
+---
+
+# 12. RETIREMENT HANDOFF — 2026-08-07, FOURTH SUCCESSION (Coordinator #04 → #05)
+
+**You are Coordinator #05.** Identify yourself as "Coordinator #05" in every ledger event you write
+and in your closing status note. When you retire, name your successor `wnba-coordinator-06` and tell
+it that it is Coordinator #06 **and that it must name #07** — or the numbering dies at your handoff.
+
+**YOU WERE SUMMONED, NOT INTERRUPTED.** If the newest event in `GRAPH_EVENTS.jsonl` is
+`coordinator_retired`, that is the §12.3.1 override. **Do not stand down. Go to §12.4.**
+
+## 12.1 READ THIS BEFORE YOUR BRIEFING — YOUR SCHEDULED-TASK PROMPT MAY BE STALE
+
+**Coordinator #04's briefing was materially wrong on the single most important point**, through no
+one's fault: it was written before the user ruled. It stated the score lane was halted on D058, that
+fitting was not authorised, and that #04 must **not** attempt to clear it. The user had in fact
+ruled (D065) minutes after #03 wrote the marker.
+
+**The lesson, which is now a standing discipline: the ledger and the handoff packet outrank your
+scheduled-task prompt.** Your prompt is a snapshot taken when your predecessor retired; the ledger
+is live. **Always diff your briefing against `DECISION_LEDGER.jsonl` and the newest ledger events
+before acting on it.** #04 recorded the conflict in the ledger explicitly rather than silently
+following the newer instruction — do the same, because a silent switch is indistinguishable from
+drift.
+
+## 12.2 STATE AT HANDOFF
+
+Live `graphctl.py ready` — **unchanged, and both are still deliberately parked (§9.4):**
+
+```
+M08_STALE_WINDOW   market_intelligence   Stale-line window measurement conditional on demonstrated lead-lag structure
+M22_CAPACITY       market_intelligence   Capacity analysis: how much money the measured opportunity classes can absorb
+```
+
+**86 PASSED · 1 HALTED · 2 READY (both parked) · 3 USER_REQUIRED · 6 BLOCKED · 6 SUPERSEDED.**
+Node counts are unchanged and are **expected** to be: discovery-lane work creates no graph nodes by
+design (§13.1), and the D065 receipts are *measurements* following the M_A1 precedent, not nodes.
+
+## 12.3 IN FLIGHT AT RETIREMENT — **DO NOT RE-DISPATCH. CHECK FOR RETURN EVENTS FIRST.**
+
+Three agents were still writing when #04 hit its threshold. **Each holds a write scope. Verify
+whether its directory is complete before touching anything in it, and never dispatch a second agent
+against the same scope** — two agents against one scope is the collision the whole guard exists to
+prevent.
+
+| # | agent | write scope | what clears it |
+|---|---|---|---|
+| 1 | **D065 tier-2 point-in-time audits** | `experiments/player_program/stage3_score/S43_CUTOFF_RECEIPTS_TIER2/` | `RECEIPTS.json` + `REPORT_BODY.md` + scripts present, and a stated verdict per target. **This is the other half of A9.** |
+| 2 | **E1 I0011 split-alpha** | `experiments/exploration/E1_I0011_split_alpha/` | `FINDINGS.json`, `NOTES.md`, and **`baseline/`** — the corrected baseline spec + runnable code. |
+| 3 | **E0 I0012 layer-3 non-collinear sweep** | `experiments/exploration/E0_I0012_layer3_noncollinear/` | `FINDINGS.json` + `NOTES.md`, one verdict line per formulation. |
+
+**If a directory is complete but the harness blocked the agent from writing its `REPORT_BODY.md`,
+materialize it yourself from the agent's returned text.** That happened once this session (the
+integrity audit) and the coordinator mandate requires it. Mark clearly that you materialized it and
+which artifact is authoritative.
+
+**Agent 2 owes an extra answer #04 requested mid-flight** — see §12.7, the baseline-equivalence
+check. If it returned without answering, carry the dependency forward explicitly rather than
+assuming equivalence.
+
+## 12.4 YOUR FIRST FOUR ACTIONS, IN ORDER
+
+1. **Diff your briefing against the ledger** (§12.1). Do not skip this.
+2. **Verify the tree.** #04 retired with **2 commits unpushed and three agents still writing** — it
+   could not push, because the pre-push gate correctly refuses a tree that changes while measured.
+   **`git status` first; push only once quiet.** The gate takes ~9 minutes — allow a long timeout.
+   If the push fails red, **fetch and check the real remote state before retrying** — a concurrent
+   push that already landed makes the retry's ref-lock expectation stale, and that looks like a
+   broken gate but is a benign race.
+3. **Close the three in-flight agents** (§12.3) before dispatching anything new.
+4. **Then the worklist, §12.5.**
+
+## 12.5 THE WORKLIST, IN EXECUTION ORDER
+
+0. **Close the three in-flight agents and commit their work.** Nothing else until this is done.
+1. **Tier-2 receipts — finish or re-commission.** If agent 1 returned an honest *cannot establish*
+   on any target, **that is a legitimate result, not a failure to retry away.** Record it and treat
+   the gap as the thing that must close before fitting. Do **not** resolve ambiguity in favour of
+   unblocking; #04 briefed that agent explicitly that an honest FAIL beats a manufactured pass, and
+   that instruction stands.
+2. **Worklist item 1 from §11.5 — the E1 for the two sweep-1 leads (rim finishing × rim-defence
+   allowance; pregame-observable height mismatch), against the CORRECTED baseline.** This was
+   deliberately held by #04 and by #03 before it. §11.6 is the reasoning and it has not changed: both
+   headline numbers are very likely **overstated** because they were measured against a baseline
+   I0011 showed is materially improvable. **Design this against agent 2's corrected baseline, not the
+   incumbent.** Sequencing beat parallelism here twice; do not undo it.
+3. **I0008 needs a noise floor before it is weighed against anything.** The integrity audit found it
+   has **no placebo of any kind** — its +0.018–0.020 incremental R² has never been compared to a
+   permutation null. I0006 proved *inside this program* that a plausible statistic can be beaten by
+   its own noise floor. **Run one before I0008's strength is compared to I0009's or I0011's in any
+   promotion decision.** Suggested construction: permute which opponent's roster-height aggregate
+   each row receives, keeping the aggregate keyed on true opponents.
+4. **Decide what to do about the weighted-R² convention.** Every ΔR² from the shared E0 `wls_r2`
+   helper is **~8% smaller** than the standard weighted figure (denominator is SST of the
+   sqrt-weight-transformed response about its own mean, not weighted SST about the weighted mean).
+   Direction is **conservative**, so nothing is overstated and no verdict changes — but cross-screen
+   rankings are quietly incomparable until one convention is adopted. Cheap to fix, worth doing
+   before leads are ranked against each other.
+5. **More E0 against T2 layer 3** — the largest genuinely unexplored surface and where the user
+   expects the most signal (§10.11). Agent 3's sweep is the first pass under the
+   *residualize-against-overall-opponent-defence-first* design rule. Whatever survives it, keep going;
+   what I0010 killed was the **positional formulation specifically**, not the layer.
+6. **I0009 → E2 is NOT yet appropriate.** Its E1 passed, but its live confound is opponent defensive
+   strength (r −0.405 pooled, **−0.619 in 2024**, which halves that season), and its walk-forward
+   effect is **+0.004003** — about 40% below the LOSO figure and the honest number. An E2 must handle
+   opponent strength explicitly and must state the screen count per §13.3.
+7. **I0007 — STILL PARKED, do not dispatch as written.** §11.5 item 5 has the full reasoning and it
+   is unchanged: the structural series is artifact-granular through 2026 (§13.2.2 forbids it at E0,
+   and filtering does not help), and the player-layer half of the pairing **does not exist**.
+
+## 12.6 USER-GATED — NEVER SELF-GRANT
+
+* **D066 — four tier-boundary questions raised by the tier-1 receipts. RAISED, NOT RULED.** Full text
+  in `DECISION_LEDGER.jsonl`. **The substantive one is R2:** the user's D065 ruling says
+  "**scheduled** rest/B2B/3-in-4", and **no scheduled-date artifact exists anywhere in the repo** —
+  all three fields use *as-played* dates. #04 refused to treat as-played as scheduled. It closes
+  either with one sentence from the user **or** by wiring SC06's existing A1-SENSITIVITY kill
+  (currently dead per S37 finding B3), which needs **no new data acquisition**. R1 (playoff rows,
+  where the discriminator's two clauses come apart), R3 (ledger #10 denotes two different quantities)
+  and R4 (#04's own tier assignment of `game_id`/`season`, disclosed for cheap overrule — nothing
+  else depends on it) are the others.
+* **D065 is ruled and is NOT re-openable** — option (a), two-tier proportional rigor. Options (b) and
+  (c) were **explicitly rejected** and the reasons bind you: no "obviously fine" exemption may be
+  created under any name, and the model is not to be shrunk to avoid auditing inputs there is every
+  reason to believe are valid.
+* `P43_CHAMPION_DECISION` · `M02B_VENDOR_PURCHASE_DECISION` · `S42_ADOPTION_DECISION` ·
+  `O16_SHARED_SCHEMA_ADOPTION` — unchanged.
+
+**FITTING REMAINS UNAUTHORISED, and be precise about why.** The receipts are the gate, not the
+ruling. And even when A9 fully closes, **S37 returned FAIL on 18 findings, 9 of them Severity A** —
+A1/A2/A3 are card-vs-code deviations that void arms *by the cards' own clause*, and A4–A8 are missing
+machinery. S37 §10's repair order is: A9 → A1/A2/A3 → A4/A5/A2's σ path → A6/A7/A8 → B1–B5, C1–C4.
+**Clearing A9 does not open the lane.**
+
+## 12.7 WHAT #04 COMPLETED
+
+| work | result |
+|---|---|
+| **D065 tier-1 receipts** | **10/10 `TIER1_RECEIPT_ISSUED`**, 0 violations on 2,982 rows across 10 identity tests |
+| **E1 I0009 additive pressure** | **keep-as-lead** — home/away is NOT the confound |
+| **Program-wide integrity audit** | **no shipped no-op placebo; no verdict downgraded** |
+
+**The tier-1 receipts vindicated the coordinator addition #03 recommended.** Requiring each receipt
+to name the **producing job and its as-of bound** — rather than merely argue the concept is
+schedule-fixed — surfaced that **`build_masters.py` has no as-of bound at all**: it globs
+completed-game artifacts and stamps `observed_time` as the max file mtime. The receipt *states* this
+rather than finessing it. What still makes the five schedule columns tier-1 is that the job derives
+them from **game identity, never from play** (`season`/`season_type` are pure functions of the
+`game_id` string; `opp_team_id` is the cluster complement). **Keep that requirement for all future
+receipts — it is the only reason this was found.**
+
+Two independent corroborations that the tier-1 measurement frame is faithful: the D10 ledger's 1,103
+timezone-shift replicates **exactly**, with the divergent readings fully decomposed (career clock
+1,129, +26; career + standard offsets — the consumed reading — 1,310, +181 = **exactly the Phoenix↔LA
+pair count**, since Phoenix skips DST); and **S37 finding B1 reproduced exactly** — career-vs-same-season
+clocks disagree on exactly **30 tz rows and 0 back-to-back rows**, confirming the defect is confined
+to the travel term.
+
+**I0009 E1 detail.** Venue is a real main effect (+0.640 TO/100 def poss at home, same sign all four
+seasons) but is **~29× smaller than team identity**, and the effect retains **100.1%** after venue
+control with β essentially unchanged. A venue-matched pressure measure is strictly *worse* and adds
+ΔR² 0.000020 on top of the venue-blind one — **the venue component carries no signal**, so this is
+**not** the I0010 costume shape. Placebos non-degenerate throughout (0/200 draws reach real on all
+ten statistics; real over largest draw 4.6×), reliability fine (split-half +0.573).
+
+**Integrity audit detail.** The highest-stakes item was I0006 — the only screen whose kill rests
+*entirely* on its placebo — and it holds. I0005's sd was unrecorded and was recovered by re-running
+from a copy (sd 0.007976, 2000/2000 unique draws, p reproduced exactly). **Nothing anywhere treats
+`master.observed_time` as an as-of bound**; every consumer refuses it or is conservative, and
+`tests/test_cbs_v8.py:532-534` asserts the bound derives from `game_date`. Four files *elsewhere*
+carry it with 2026 values — named in the audit so a future byte-check does not misreport them; none
+is an E0/E1 artifact and none is a partition violation.
+
+**A verified correction to §11.3's framing of the alpha defect.** #04 read the source rather than
+trusting the summary. The defect is real: `props_edge.py:203` defines one `ALPHA = 0.30`, applied at
+`:317` to the efficiency channel (`per36`) and `:319` to the exposure channel (`minutes`). **But
+§11.3 called the fix "a one-line constant change" and that undersells it** — line 203 is commented
+`# registered frozen family` and the module docstring calls it "the frozen committed baseline
+family", so changing it touches a **registered artifact**: a registry/erratum matter, not a free
+edit. Separately, #04 checked whether the docstring's **channel-sum equivalence** caveat ("breaks
+only if channels get per-channel alphas") blocks the fix. **It does not** — that caveat governs the
+four *scoring* channels sharing a common alpha, not the efficiency-vs-exposure split, which is
+multiplicative. Recorded so a future implementer neither trips on the registration nor wrongly fears
+the invariant.
+
+**One item routed onward, not asserted as a defect.** `prediction_contract_v5.py:477` sets
+`candidate_observed_time` for the S2 source to a **synthetic season-start marker**
+(`{season}-01-01T00:00:00Z`), and `validate_projected_exposure.py:565` then asserts
+`observed_after_cutoff == 0` and **passes — necessarily, because the marker was built to precede
+every cutoff.** That is a *manufactured cutoff-availability pass* by exactly the mechanism the
+tier-2 audit exists to catch. Already disclosed at `build_projected_exposure.py:128-135`, so it is
+not concealed. #04 relayed it to the in-flight tier-2 agent with the instruction that **a passing
+`observed_after_cutoff == 0` check is not itself evidence of cutoff validity — trace what timestamp
+it actually compares before crediting any existing pass.** Follow that up.
+
+## 12.8 DISCIPLINES FROM THIS SESSION — pay them forward
+
+1. **The ledger outranks your briefing.** §12.1. A scheduled-task prompt is a snapshot; the decision
+   ledger is live. Diff them before acting, and record any conflict explicitly.
+2. **Relay cross-screen defects to in-flight agents immediately.** Inherited from §11.7 #4 and it
+   earned its keep twice this session: the manufactured-cutoff-pass finding went to the tier-2 agent
+   mid-flight, and the weighted-R² convention went to the layer-3 sweep so its numbers would land
+   comparable. **Coordinators sit where cross-screen information exists — that is most of the job.**
+3. **Verify a load-bearing claim by reading the source, not the summary.** Inherited, and it produced
+   the alpha-registration correction above. The summary said "one-line fix"; the source said
+   "registered frozen family".
+4. **A tier assignment is a standard-of-proof judgement — disclose it even when you are confident.**
+   #04 assigned `game_id`/`season` to tier 1 and recorded the assignment for cheap overrule, noting
+   that nothing else depends on it. Cost: one paragraph. Benefit: the user can reverse it for the
+   price of one re-run.
+5. **An absent support is not a broken support — but say which it is.** The integrity audit found no
+   broken placebos and two screens with *no* placebo. Those are different findings with different
+   consequences, and collapsing them would have been wrong in both directions.
+6. **Check the whole enumeration, not just the items a predecessor named.** See §12.9 #1.
+
+## 12.9 WHAT #04 GOT WRONG — read this; it is the highest-value section
+
+1. **Reproduced the §11.6 dependency it had just been warned about — in a lane the packet did not
+   enumerate.** #04 correctly *held* worklist item 1 pending the corrected baseline. It then
+   **dispatched the I0009 E1 in parallel with the very screen producing that baseline** — and
+   I0009's entire effect is stated as incremental R² over a player-tendency baseline, the same
+   dependency family §11.6 exists to prevent. §11.6 named only the two sweep-1 leads, so this was not
+   a violation of the packet's letter — **but relying on a predecessor's enumeration being exhaustive
+   is exactly the assumption that cost this program twice.** It was caught by Coordinator #03 via the
+   user, not by #04. Partial mitigation was in place (the agent was briefed to flag baseline
+   provenance and did return the caveat unprompted: "all ΔR² are upper bounds, provisional against
+   the stronger baseline"), and #04 relayed a one-line equivalence check to the split-alpha agent
+   rather than assuming. **Probable resolution, which must still be CONFIRMED not assumed:** I0009's
+   baseline is a leave-one-out season rate, and I0011 found the efficiency channel wants α ≈ 0.03–0.05
+   — very nearly a season-to-date mean — so I0009 is likely already sitting on approximately the
+   endorsed baseline. **If agent 2 did not answer, carry this forward explicitly.**
+2. **Dispatched six agents against a 60% retirement threshold.** Previous sweeps ran three to five.
+   Two of the six produce registry-touching receipts that need *verification*, not a skim. **The
+   failure mode is not running out of work — it is running out of room and closing six things
+   sloppily.** #04 stopped dispatching when this was raised and closed three properly rather than
+   half-closing six, but it should not have dispatched the sixth. **Size the batch to what you can
+   CLOSE, not to what is independently dispatchable.**
+3. **Briefly concluded a file was missing from a bad path.** #04 ran `Test-Path` with a truncated
+   prefix (`data_lane\...` instead of `experiments\player_program\data_lane\...`) and treated the D10
+   ledger as absent. Self-corrected within a minute, and nothing depended on it — but it is the same
+   family as the over-broad-check failures §11.9 records: **confirm the path before concluding
+   absence.**
+
+## 12.10 §12.3.1 — THE SUCCESSION TRIGGER YOU INHERIT
+
+**At roughly 60% of your context window — err EARLY, never late — begin retirement.** You cannot
+query your context percentage; that is why the threshold is conservative. Signals: you are
+summarizing rather than reading; you are deferring verification you would normally do; **one more
+agent return would leave no room to process it.**
+
+Sequence: stop dispatching → close or document in-flight agents → write the packet → commit → verify
+`git status` quiet and unpushed **0** → append `coordinator_retired` **last** → trigger
+`wnba-coordinator-06` as a **one-time** task 3–4 minutes out, telling it that it is **Coordinator
+#06** and **that it must name #07** → **stop.**
+
+The procedure is a skill: `C:\Users\jgallagher\.claude\skills\coordinator-handoff\SKILL.md`.
+The test of a packet is not completeness but **actionability**: *could a fresh context, having read
+only this and the policy, take the next correct action without asking the user anything?*
