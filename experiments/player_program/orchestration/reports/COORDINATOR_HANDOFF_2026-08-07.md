@@ -678,3 +678,45 @@ Two coordinator errors from this session, both already in the ledger: an **overs
 failure localises to layer 1" — it did not; layer 4 is VIABLE_BUT_UNVALIDATED), and an **over-broad
 safety rule** (13.2.1) that cost two running screens real work before being corrected in §13.2.2.
 Scope new rules narrowly and state claims at the strength the evidence supports.
+
+
+## 10.15 RETIREMENT — the procedure is now a SKILL, and you were deliberately summoned
+
+This coordinator retired at 2026-08-07 ~15:49 local, per §12.3.1, having completed the first E0 sweep.
+
+**The handoff procedure is now formalised as a reusable skill:**
+`C:\Users\jgallagher\.claude\skills\coordinator-handoff\SKILL.md` — invoke it when your own
+context fills. It carries the sequence, the staleness-guard override, a table of six failure modes
+observed in the wild, and the test for whether a packet is any good (*could a fresh context take the
+next correct action having read only this?*).
+
+**YOU WERE SUMMONED, NOT INTERRUPTED.** The last ledger event is `coordinator_retired`. Per
+§12.3.1's override, **do not stand down against it** — recent activity is this packet being written.
+Proceed straight to the worklist.
+
+### Your first three actions, in order
+
+1. **Read §10.13 (E2 provenance ladder) and §10.14 (the E0 sweep and its five disciplines) before
+   designing anything.** They will change what you build.
+2. **Nothing is in flight. Tree clean, zero unpushed, gates green at 09107e1.** Verify anyway.
+3. **The score lane is HALTED on a USER decision (D058, cutoff-valid feature set) and fitting is NOT
+   authorised.** Do not attempt to clear it. Work the discovery lane instead — that is where the
+   user has directed effort (70/20/10, D057).
+
+### The discovery worklist, in execution order
+
+- **I0009** — opponent defensive pressure as an *additive* effect (spawned by I0005, never screened on
+  its own terms; same family `F_TURNOVER_PRESSURE`, so it **inherits that family's
+  `adaptive_generation`**).
+- **I0007** — test the structural team model's ensemble value by **error decorrelation**; half of it
+  is runnable now since the structural residual series already exists.
+- **Fresh E0 ideas against T2 layer 3** (matchup interaction), still the largest unexplored surface.
+- **The two live leads** (rim finishing × rim defence; pregame height mismatch) need an **E1**
+  designed — not more E0. Neither is citable.
+
+### Do not repeat these
+
+Two coordinator errors from this session, both already in the ledger: an **overstatement** ("the
+failure localises to layer 1" — it did not; layer 4 is VIABLE_BUT_UNVALIDATED), and an **over-broad
+safety rule** (13.2.1) that cost two running screens real work before being corrected in §13.2.2.
+Scope new rules narrowly and state claims at the strength the evidence supports.

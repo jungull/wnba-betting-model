@@ -62,6 +62,14 @@ KNOWN_EVENT_TYPES = set(EVENT_STATUS) | {
     "raw_output_frozen", "remediation_node_created", "commit_created",
     "merge_completed", "artifact_hashed", "decision_recorded", "note",
     "reconciliation", "retry_labelled", "replacement_labelled",
+    # Program-scoped, never node-scoped. GRAPH_POLICY 12.3.1 requires the retiring
+    # coordinator's LAST ledger write to be a `coordinator_retired` event, because the
+    # successor's staleness guard keys on it: a fresh event of this type means "you were
+    # deliberately summoned, do not stand down". Without a distinct type the override
+    # cannot distinguish a handoff from ordinary live activity, and the succession chain
+    # deadlocks. Added 2026-08-07 after the ledger correctly refused the event and exposed
+    # that 12.3.1 was unimplementable as written.
+    "coordinator_retired",
 }
 
 # ---------------------------------------------------------------- io
