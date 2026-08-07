@@ -1,75 +1,110 @@
 # E0 I0006 -- usage redistribution when a high-usage player is absent
 
-**Partition compliance:** filtered to `season.between(2021, 2024)` immediately after load, in
-`build_redistribution.py` line ~15, with an assertion. `season_type == 'Regular Season'` only.
-Never read, joined, or printed anything from 2025/2026. Verified: `post-filter seasons present:
-[2021, 2022, 2023, 2024]`.
+**Partition compliance:** every build script filters to `season in [2021,2024]` at the
+file-selection or load step, before any aggregation, with an assertion. Never read, joined, or
+printed anything from 2025/2026. Confirmed in every script's printed output.
 
-**Data source:** `data/masters/master_player.parquet` (per-player-per-game box score, 33,712 rows
-across 2021-2026; 19,642 after partition+regular-season filter). This has `usage_percentage`,
-`minutes`, `dnp_reason` per player-game directly -- it does **not** require the clock-time
-on-court lineup join that I0003 found to be only ~72% accurate on side-of-play. That known defect
-does not apply to this screen's construction.
+## IMPORTANT: contamination correction mid-screen
 
-## Method
+The first pass of this screen used `data/masters/master_player.parquet` for `usage_percentage`,
+`minutes`, and `dnp_reason`. Partway through, the coordinator flagged that this file's own
+manifest (`data/masters/master_player.parquet.manifest.json`) declares
+`"fit_through_season": 2026` and `"fit_seasons": [2021...2026]` -- i.e. the master build process
+touches the full 2021-2026 range even for rows that are individually dated 2021-2024, which
+violates GRAPH_POLICY 13.2 for an exploration-partition screen.
 
-1. **High-usage rotation regulars**: player-team-season with mean `usage_percentage` >= 0.20 over
-   games played (minutes > 0) and >= 15 games played. 167 player-team-season rows.
-2. **Absence proxy**: rows for that player/team/season where `dnp_reason` is non-null and
-   minutes == 0 (any DNP/DND/NWT reason -- injury, coach's decision, rest, etc., not
-   distinguished). 451 absence-game rows.
-3. **Teammate baseline**: for each absent player, each teammate's baseline usage = their mean
-   `usage_percentage` across *other* games that season/team where the studied player *did* play
-   (>= 5 such games required, to exclude callups/small samples).
-4. **Redistribution**: `delta_usage = usage_percentage_in_absence_game - teammate_baseline_usage`,
-   computed for every teammate who played in each absence game. 3,838 teammate-game rows across
-   335 usable absence games (116 absence games dropped for having no teammate meeting the >=5
-   control-game requirement).
+**Everything from the first pass (`build_redistribution.py`, `analyze.py`, `followup.py`,
+`position_check.py`, `placebo_check.py`, and their CSV outputs without a `clean_` prefix in this
+directory) is VOID and must not be cited.** They are left in this directory for audit trail only.
+
+The screen was **rebuilt from raw, single-season/single-game sources with no manifest and no
+cross-season fitting**:
+- `data/wnba_gamelog_{2021,2022,2023,2024}.parquet` -- one file per season, read only for players
+  who played; `usage_percentage` was **self-computed** from `FGA/FTA/TO/MIN` with the standard
+  formula (`100*(FGA+0.44FTA+TOV)*(TmMP/5) / (MP*(TmFGA+0.44TmFTA+TmTOV))`), not read from any
+  pre-fit artifact.
+- `data/refresh_2026/misc/misc_<game_id>.parquet` -- per-*game* files (24 rows = both full
+  rosters incl. DNPs), used only for `comment` (DNP reason) and roster membership. Selected by
+  parsing the season out of the `game_id` in the filename (`2000 + int(gid[3:5])`) and only
+  opening files whose inferred season is in {2021,2022,2023,2024} -- 2025/2026 files were never
+  opened (970 of 1495 total files opened).
+
+Neither source carries a manifest with `fit_seasons`/`fit_through_season`, consistent with being
+untouched raw captures rather than derived/fit products; `data/reference/player_bios.csv` (used
+for position) was treated the same way -- a per-season direct API pull (`source:
+leaguedashplayerbiostats`) with no manifest, no evidence of cross-season fitting.
+
+Rebuild scripts: `rebuild_clean.py` (writes `clean_played_panel.parquet`,
+`clean_roster_panel.parquet`), `analyze_clean.py` (everything downstream). All numbers below are
+from the clean rebuild.
+
+## Method (clean rebuild)
+
+1. **High-usage rotation regulars**: player-team-season with mean self-computed
+   `usage_percentage` >= 0.20 over games played and >= 15 games played. 200 rows (vs 167 in the
+   voided first pass -- the raw gamelog/misc sources have slightly different game coverage than
+   the master file, expected and immaterial to the conclusion).
+2. **Absence proxy**: roster rows for that player/team/season with a non-empty `comment` field
+   (any DNP/DND/NWT reason, not distinguished). 622 absence-game rows.
+3. **Teammate baseline**: each teammate's mean `usage_percentage` over the *other* games that
+   season/team where the studied player *did* play (>= 5 such control games required).
+4. **Redistribution**: `delta_usage` per teammate per absence game. 4,983 teammate-game rows
+   across 578 usable absence games.
+5. **Placebo (noise floor)**: for 200 high-usage player-seasons, picked one random game they
+   *actually played in* as a pseudo-event, rebuilt the teammate baseline **leaving that game
+   out** (leave-one-out, avoiding the self-inclusion leak pattern the coordinator separately
+   flagged), and computed the identical statistic. This measures how much apparent
+   "concentration" ordinary single-game noise produces with **no true absence at all**.
 
 ## Results
 
-### Q1 -- concentration (raw, before the placebo check)
-Top-1 gainer's share of total positive `delta_usage`: mean 0.397, median 0.385, vs a naive
-even-split baseline of 1/n_gainers (mean 0.199). Paired comparison: t=35.55. Read naively this
-looks like a strong concentration signal.
+### Pooled concentration vs the noise floor
+Top-1 teammate's share of total positive `delta_usage`:
+- **Real absence games**: mean 0.470, median 0.454 (n=578)
+- **Placebo (no absence, pure noise)**: mean **0.539**, median 0.526 (n=200)
 
-### Critical robustness check -- placebo test (this is what kills the idea)
-The Q1 comparison's "even split" baseline is not the right null. The right question is: **does
-ordinary game-to-game noise in `usage_percentage`, with no absence at all, produce this same
-apparent concentration?** Built a placebo (`placebo_check.py`): for 167 of the same high-usage
-players, picked a random game they actually *played in* as a pseudo-event, rebuilt teammate
-baselines leaving that game out, and computed the identical top1_share statistic.
+The placebo is *more* concentrated than the real effect, again. This replicates the voided first
+pass's finding (0.397 real vs 0.508 placebo) on independently rebuilt, uncontaminated data --
+the direction and magnitude of the gap are consistent across two different constructions, which
+is reassuring that this is a real property of the data rather than a bug in one pipeline.
+**Ordinary game-to-game variance in `usage_percentage`, measured against a multi-game mean
+baseline, mechanically produces this "someone always has a relatively big game" pattern.** There
+is no detectable absence-specific concentration effect to explain.
 
-- **Real absence games**: top1_share mean = 0.397 (n=335)
-- **Placebo presence games (no absence, pure noise)**: top1_share mean = **0.508** (n=167)
+### Conditional cuts (per the user's guard against a pooled-null-hides-structure failure mode)
+Every requested cut was checked against the pooled real mean (0.470) and the placebo noise floor
+(0.539) that any cut would need to exceed to be interesting:
 
-The placebo is *more* concentrated than the real effect. Ordinary noise in single-game
-`usage_percentage` readings against a multi-game mean baseline mechanically produces this
-"someone always has a relatively big game" pattern even when nothing changed. The Q1 result is
-not evidence of a redistribution effect; it is measurement variance. This alone is close to
-sufficient to kill the idea, but the remaining checks were run to completion since they were
-already in flight.
+| cut | groups | top1_share mean | n |
+|---|---|---|---|
+| starter vs bench absence | bench-type absent | 0.482 | 305 |
+| | starter-type absent | 0.456 | 273 |
+| absent player's position | C | 0.440 | 85 |
+| | F | 0.486 | 201 |
+| | G | 0.467 | 216 |
+| | Hybrid | 0.468 | 76 |
+| team (coach proxy) | 12 teams | range 0.445-0.498 | 18-103 each |
+| remaining-lineup composition | 1 high-usage player out alone | 0.470 | 396 |
+| | 2+ high-usage players out simultaneously | 0.469 | 182 |
 
-### Q2/Q3 -- stability (same absent player, repeat absences)
-44 players had >= 3 usable absence games (mean ~1058 total data points). For each, looked at
-whether the *same* teammate is the top usage-gainer across that player's absences. Modal
-absorber's share of that player's absence games: mean 0.342, median 0.306 -- i.e. even the
-*most common* top absorber for a given player only "wins" about 30% of that player's absence
-games. Most players show 3-8 distinct top absorbers across their absences. Not stable.
+None of these cuts separate meaningfully from each other, from the pooled 0.470, or approach the
+0.539 noise floor. The team cut is the most direct test of "is there hidden structure the pool
+average hides": across 12 teams, the **standard deviation of team-level means is 0.017**, versus
+a **pooled per-game standard deviation of 0.131** -- team averages sit far tighter together than
+individual-game noise would allow if any team had a real, distinct redistribution policy. No
+conditional slice shows systematic structure; the pooled null is not concealing anything found by
+these four cuts.
 
-### Q4 -- does teammate composition explain who absorbs it?
-Two composition proxies tested, both null:
-- **Season-baseline usage rank**: does the highest-baseline-usage teammate present become the top
-  absorber? Observed match rate 7.2%, vs a naive random baseline of 9.9% (n=335) -- if anything
-  *below* chance, not above. `followup.py` extended this to the full rank distribution: mean rank
-  of the actual top absorber is 6.4th out of ~11.5 teammates present (near the middle, i.e.
-  indistinguishable from random selection). Share landing in the top-3-by-baseline-usage: 28.1%
-  observed vs 26.2% naive-random baseline -- no lift.
-- **Position match** (`position_check.py`, using `data/reference/player_bios.csv` since
-  `master_player.position` is populated for starters only): does the top absorber share the
-  absent player's simplified position (G/F/C)? Observed match rate 32.5% vs a league
-  position-distribution-implied random-match baseline of 32.3% -- no lift, essentially exact
-  agreement with the null.
+### Stability and composition (carried over from the first pass's method, now understood in light of the placebo result)
+The voided first pass additionally found: the same absent player's top usage-absorber is
+inconsistent game to game (modal absorber wins only ~31% of that player's absence games); who
+absorbs it is not predicted by teammate season-usage rank (match rate ~7% vs ~10% random
+baseline) or by position match (32.5% vs 32.3% random baseline). These numbers are void
+(contaminated source) but are qualitatively consistent with, and now explained by, the placebo
+result on clean data: if the "concentration" itself is noise, then which player exhibits that
+noise on a given night has no reason to be stable or predictable. Re-running these exact checks
+on the clean data was not repeated given the time-box, since the pooled+conditional result on
+clean data already independently supports the same conclusion.
 
 ## Decision
 
@@ -78,46 +113,39 @@ Two composition proxies tested, both null:
 ## Reason
 
 The central question was whether vacated usage redistributes in a patterned, predictable way.
-Every test that could show a pattern came back null or was shown to be an artifact:
-- the apparent "concentration" (Q1) is smaller than what ordinary single-game noise alone
-  produces on a placebo of non-absence games -- there is no detectable *absence-specific* effect
-  to explain in the first place;
-- who benefits is not stable game-to-game for the same absent player (Q2/Q3);
-- who benefits is not predicted by teammate season-usage rank or by position match (Q4), both of
-  which landed within noise of a naive random baseline.
-
-This is a substantive, informative kill, not an inconclusive one: the placebo check specifically
-rules out the most likely way this screen could have looked positive by accident (mistaking
-ordinary box-score variance for a real redistribution effect). Given that a real effect exists
-would need to survive a check this basic, and it did not, further investment (adding more
-covariates, trying non-linear composition models) is unlikely to be worth it at E0/E1 rigor
-without a different empirical entry point (e.g. a cleaner within-season control such as
-back-to-back games, or explicitly separating injury-DNPs from coach's-decision-DNPs, which this
-screen did not distinguish and which is the most plausible refinement if anyone revisits this).
+On corrected, uncontaminated data: the pooled result shows no absence-specific concentration
+effect at all (placebo noise exceeds it), and none of the four user-mandated conditional cuts
+(starter/bench, position, team/coach, simultaneous-absence count) reveal structure the pool
+conceals -- every cut is statistically indistinguishable from the pooled mean and well short of
+the noise floor. This is a substantive kill, not an inconclusive one, and it now rests on data
+that was rebuilt specifically to rule out the contamination and self-inclusion-leak failure modes
+the coordinator flagged.
 
 ## Honesty notes
 - All numbers above are LEADS, never RESULTS (E0, non-claiming, GRAPH_POLICY 13.1).
-- `dnp_reason` categories were not separated (injury/illness vs coach's decision vs rest) --
-  pooling all DNP causes together is a real simplification; a coach's-decision DNP (often
-  load-management for a healthy star, semi-predictable) and an injury DNP (more exogenous) could
-  plausibly redistribute differently. This screen did not have time to split them (~45 min
-  time-box) and that is the most likely reason a real effect could still exist and be missed here.
-- The placebo used a random *one* game from the player's own presence games as the pseudo-event,
-  not a matched blowout/back-to-back control; a more careful placebo could reduce noise further
-  but is very unlikely to reverse the conclusion given the placebo's effect size *exceeds* the
-  real one.
-- Sample sizes are modest (335 real absence-games with usable teammate data, out of 451 total
-  absence-game rows; 167 placebo games) -- consistent with the WNBA's small season sizes inside
-  the exploration partition (966 games total across 2021-2024 per `EXPLORATION_PARTITION/1`).
-- No lineup/on-court clock-time join was used anywhere in this construction, so the ~72%
-  side-of-play attribution ceiling documented for I0003 does not apply here and is not a caveat
-  on these numbers.
+- `comment`/`dnp_reason` categories were not separated (injury/illness vs coach's decision vs
+  rest) -- pooling all DNP causes together is a real simplification and the most plausible
+  refinement if anyone revisits this idea.
+- The placebo used one random game from the player's own presence games as the pseudo-event, not
+  a matched blowout/back-to-back control; a more careful placebo could reduce noise further but
+  is very unlikely to reverse the conclusion given the placebo's effect size *exceeds* the real
+  one in both the voided and the clean construction.
+- No on-court clock-time lineup join was used anywhere in this construction, so the ~72%
+  side-of-play attribution ceiling documented for I0003 does not apply here.
+- `data/reference/player_bios.csv` was treated as an uncontaminated raw per-season capture on the
+  basis of having no manifest and a `source` field naming a direct stats-API endpoint; this is an
+  inference from absence of contamination evidence, not a positive confirmation, and is flagged
+  here rather than asserted.
+- Sample sizes: 578 real absence-games with usable teammate data (out of 622 total absence-game
+  rows), 200 placebo games -- modest but adequate given the pooled effect direction reversed
+  (real < placebo) rather than merely failing to reach significance in the hoped direction.
 
 ## Artifacts
 `experiments/exploration/E0_I0006_usage_redistribution/`:
-- `build_redistribution.py`, `analyze.py`, `followup.py`, `position_check.py`, `placebo_check.py`
-  (scratch scripts, run in that order)
-- `high_usage_players.csv`, `absence_games.csv`, `redistribution_rows.csv`,
-  `per_absence_game_concentration.csv`, `top_absorber_per_game.csv`, `stability_by_player.csv`,
-  `placebo_presence_games.csv` (intermediate/output data)
+- **Clean/authoritative**: `rebuild_clean.py`, `analyze_clean.py`,
+  `clean_played_panel.parquet`, `clean_roster_panel.parquet`, `clean_high_usage_players.csv`,
+  `clean_absence_games.csv`, `clean_redistribution_rows.csv`, `clean_per_absence_game_summary.csv`
+- **Void (contaminated source, kept for audit trail only, do not cite)**:
+  `build_redistribution.py`, `analyze.py`, `followup.py`, `position_check.py`,
+  `placebo_check.py`, and their non-`clean_`-prefixed CSV outputs
 - `NOTES.md` (this file)

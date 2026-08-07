@@ -594,3 +594,45 @@ restored once informed — this counter is the only honest accounting of how muc
 forbid use of a model that clears the bar**. **The AUTHORITY is unchanged** — §6 still reserves
 deployment and financial commitment to the user. E2 makes the case; the user makes the call. This
 interpretation is flagged in D063 for the user to confirm or overrule.
+
+
+## 10.14 FIRST E0 SWEEP COMPLETE — 5 screens, 3 kills, 2 iterates, and the disciplines they bought
+
+All five screens ran inside the exploration partition; **2025/26 was never touched** and this was
+verified on output bytes for every screen.
+
+| idea | subject | verdict |
+|---|---|---|
+| I0003 | rebound opportunity x secure rate | **kill** (construction, not thesis — confounded by ~72% attribution) |
+| I0004 | shot-location tendency x opponent allowance | **iterate**, narrowed to Restricted Area only |
+| I0005 | turnover tendency x opponent pressure | **kill** (13x smaller than the additive main effect; no replication) |
+| I0006 | usage redistribution on absence | **kill** (placebo more concentrated than the real effect) |
+| I0008 | height/size mismatch x rebounding | **iterate** (pregame-observable rung carries signal) |
+
+**Two leads worth E1 later, neither citable:** rim finishing vs opponent rim-defence allowance
+(+0.039, the one zone with real opponent dispersion), and pregame-observable height mismatch
+(+0.018-0.020 incremental R² over own recent rate, concentrated in **forwards** 0.37 vs centers 0.11).
+One new idea spawned: **I0009**, opponent defensive pressure as an *additive* effect, correctly not
+claimed by the screen that noticed it.
+
+**Disciplines these screens bought — apply them to every future screen:**
+
+1. **Run a placebo** whenever measuring concentration, redistribution, or response-to-an-event. I0006
+   would otherwise have reported "47% of vacated usage goes to one teammate" as a finding. The noise
+   floor was *higher*.
+2. **Persistence beats significance.** I0005 was nominally significant at p=0.004 on n=18,165 and was
+   killed because per-season partials were 0.058 / −0.002 / 0.021 / 0.002. At that n, a permutation
+   test certifies effects far too small to matter.
+3. **Leave-one-out any aggregate you then correlate against its own members.** I0004's strongest
+   apparent effect flipped sign under this correction.
+4. **Climb the attribution ladder** (§`E0_ATTRIBUTION_LADDER/1`). I0008's attribution-free rung found
+   signal; its attribution-dependent rung was uninterpretable. Running only the latter would have
+   missed a real effect.
+5. **A null through a noisy construction is not a negative.** I0003 and I0008-rung-3 both produced
+   nulls that cannot distinguish no-effect from bad-measurement. Say so; do not bank them.
+
+**Coordinator error to learn from:** the first contamination rule (13.2.1) was over-broad — wrong
+worktree and wrong criterion — and it cost **two** screens unnecessary work, including making one
+disqualify a valid result. Corrected in **§13.2.2**: the check keys on `asof_granularity`, not on
+which seasons a file contains. Over-broad safety rules destroy true findings as efficiently as loose
+ones admit false ones.
