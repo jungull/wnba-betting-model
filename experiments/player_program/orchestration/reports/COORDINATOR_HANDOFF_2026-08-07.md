@@ -1339,3 +1339,72 @@ combination of terms already in the model), so its β of 5.27 with per-season si
 7. **More E0 on layer 3, redirected:** personnel-matching is empty; aim at **possession volume** and
    the layer-2 OREB main effect.
 8. **I0007 — still parked**, reasons unchanged.
+
+### 12.11.4 SECOND AMENDMENT — THE LAST AGENT RETURNED. **NOTHING IS IN FLIGHT.**
+
+`E1_I0011_split_alpha` completed. **§12.3 is fully discharged; no agent holds a write scope.**
+
+**VERDICT: keep-as-lead ×3, but E0 OVERSTATED IT.** The lead **persisted** — 33 of 33 target×fold
+cells beat the incumbent across three protocols (LOSO, strictly-temporal walk-forward, within-season
+halves) — and the *shape* is more durable than the size: all 33 selections landed with
+α_eff ∈ [0.00, 0.10], α_exp ∈ [0.08, 0.40], ratio ≥ 4 in 30/33.
+
+**The main correction: E0's "+2.5–3.9% vs incumbent" confounded SPLITTING THE CHANNELS with TUNING AT
+ALL.** Adding the arm E0 omitted (best cell constrained to α_eff == α_exp, tuned on the same pool)
+shows **62–88% of E0's headline gap is plain retuning**. Split-specific residual: **rebounds +0.85 to
++1.16%** (cleanest, positive 11/11), **assists +0.68 to +0.85%** (10/11), **points only +0.33 to
++0.48% — smaller than its own across-fold sd**, hence *attenuated*. Two kills: **role-conditional
+alphas** (tiers genuinely prefer different α, but exploiting it moves MAE −0.219% to +0.172%, sd ≥
+|mean| in 17/18 cells, zero cells positive in all folds) and **per-fold tuning** (frozen (0.03, 0.30)
+matched or beat re-tuning everywhere — a *useful* kill).
+
+**THE CORRECTED BASELINE EXISTS: `own_rate_v2_split_alpha`**, at
+`experiments/exploration/E1_I0011_split_alpha/baseline/` — `SPEC.md`, runnable `corrected_baseline.py`,
+and a validator that hard-exits unless it reproduces the screen's grid to <1e-9 (24/24 MATCH). Frozen,
+no fitting, α_eff=0.03 on the per-36 rate × α_exp=0.30 on minutes, gate n_prior≥3, warm-up rule
+**measured not guessed**. **Worklist item 3 (§11.5 item 1) can now be designed against it.**
+
+#### THE BASELINE-EQUIVALENCE CHECK CAME BACK **NEGATIVE** — §12.9 #1 IS RESOLVED, AND THE ASSUMPTION WAS WRONG
+
+**The convenient assumption — that I0009 was already sitting on approximately the endorsed baseline —
+is FALSE.** The prior reasoning was **half right and its conclusion does not follow**: the premise
+holds (the *efficiency* channel is ≈ season-to-date, α≈0.03), **but the entire finding is that the
+EXPOSURE channel is not.** The decisive test, `EXPANDING_BOTH`, differs from the corrected baseline
+**only in α_exp** and loses by ΔR² **0.0097 / 0.0180 / 0.0110**.
+
+**Which direction I0009 moves depends on which baseline its headline is stated over — establish that
+first:**
+* **vs an expanding/shrunk tendency → REVISE DOWN.** Upper bound ΔR² **0.0055 pts / 0.0153 reb /
+  0.0085 ast**, realised only insofar as opponent pressure correlates with minutes recency.
+* **vs `player_tendency_loo` → do NOT revise down; if anything, UP.** The LOO rate is *stronger* than
+  the corrected baseline (R² 0.5129 vs 0.4928 on points).
+
+**SEPARATE INTEGRITY FLAG, AND IT IS THE SHARPER PROBLEM.** `player_tendency_loo` is a leave-one-out
+**full-season** rate, `(season_sum − y_t)/(n−1)` — **it reads the player's LATER games.** It is **not
+pregame-observable**, so an increment measured over it **is not a forecasting increment at all.** Any
+lead whose headline is stated over `player_tendency_loo` inherits this. **Mitigating fact:** I0009's
+E1 already rebuilt a fully pregame-observable expanding+shrunk tendency and retained **96.2%**, so the
+pregame-stated version of I0009 exists — and it is the one to which the **revise-down** branch
+applies. The split-alpha screen did **not** re-run I0009 and makes no claim about its result.
+
+**Lesson for the packet, stated because it nearly went the other way:** #04 was inclined to accept the
+equivalence as "probably benign" on plausible reasoning. **The reasoning was plausible and the
+conclusion was wrong.** One relayed question to an agent that already held both objects cost nothing
+and prevented a lead from being closed on a false premise. **When a dependency is "probably benign,"
+that is precisely the moment to spend one line confirming it.**
+
+**Placebo integrity — the strongest in the program so far.** 40 seeds, correct form:
+`NEG_other_player` sd 0.124380/0.046442/0.033702; `NEG_channel_scramble` (new, aimed specifically at
+this lead) sd 0.070305/0.031003/0.020052. Deterministic controls have sd 0 **by construction** (no
+permutation) and are labelled as such. **The screen ran the no-op diagnostic ON PURPOSE**: the
+defective regroup-and-recompute form reproduced the real number with delta +0.000000000 and sd
+**exactly 0.000000** on all three targets — the documented signature — proving the controls actually
+used are not of that kind. **That is the right way to use the §11.7 #1 discipline: as a positive
+test, not just a warning.**
+
+**New defect found, same family as the `props_edge.py` one:** `minutes_twostage.py` **carries the same
+pattern**. Its 0.30/0.10 split is by **entity** (player vs team), *not* by channel; within the player
+level it applies 0.30 uniformly to `minutes`, `min_share` **and `pf_per_min`** — a **rate** carrying
+the **exposure** alpha. Not changed, as instructed. **This closes the open question E0 raised about
+that file: it does NOT already implement this finding.** Also recorded: `master_player.possessions` is
+**clean** (0–95, median 39), unlike the corrupt `master_player.pace`.

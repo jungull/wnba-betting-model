@@ -1,0 +1,35 @@
+﻿================================================================================================
+1. STRUCTURAL -- season/date column values in every output (36 files)
+================================================================================================
+  alpha_surface.csv                            (no season column)
+  fold_arms.csv                                (no season column)
+  fold_contrasts.csv                           (no season column)
+  fold_summary.csv                             (no season column)
+  frame.parquet                                season=[2021, 2022, 2023, 2024] PASS
+      date col 'game_date': 2021-05-14 .. 2024-10-20 PASS
+  grid_metrics.parquet                         season=[2021, 2022, 2023, 2024] PASS
+  i0009_baseline_delta.csv                     (no season column)
+  placebo.csv                                  (no season column)
+  role_conditional.csv                         (no season column)
+  role_conditional_summary.csv                 (no season column)
+  slice_folds.csv                              (no season column)
+  slice_summary.csv                            (no season column)
+
+================================================================================================
+2. TARGETED TEXTUAL -- ISO dates in 2025/2026, or 2025/2026 next to a season word.
+   (bare digit runs inside floats and row counts are NOT flagged -- that is the
+    known false-positive mode this program has already been bitten by)
+================================================================================================
+  [season-adjacent] NOTES.md: ...revised.  ---  ## The exploration partition  Seasons **2021–2024 only**. The 2025/2026 confirmation holdout was **never** read...
+  [season-adjacent] NOTES.md: ...to 2021–2024 is sufficient**. `fit_through_season: 2026` records only which seasons the file *contai...
+  [season-adjacent] NOTES.md: ...coordinator in this program produced a false partition violation by scanning raw bytes for `2025`/`2026` and matching digit runs inside float...
+  [season-adjacent] verify_partition.py: ...ns that could      actually denote a holdout season: an ISO date beginning 2025-/2026-, or the      digits 2025/2026 adjacen...
+  [season-adjacent] baseline\SPEC.md: ...callers  The constants were established on **seasons 2021–2024 only**. The 2025/2026 confirmation holdout was never read by ...
+  [season-adjacent] baseline\corrected_baseline.py: ...---------- The constants were established on seasons 2021-2024 only. The 2025/2026 confirmation holdout was never read. Th...
+  [season-adjacent] baseline\validate_baseline.py: ...m screen knows what it is inheriting there.  PARTITION: 2021-2024 only. The 2025/2026 holdout is never read. """ import json ...
+
+================================================================================================
+VERDICT: structural violations = 0; targeted textual hits = 7
+A textual hit is only a violation if it is a DATA VALUE. Hits inside this
+script's own patterns, or inside prose describing the partition rule, are not.
+================================================================================================
