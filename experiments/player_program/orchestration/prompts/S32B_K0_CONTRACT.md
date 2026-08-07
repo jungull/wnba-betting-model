@@ -1,6 +1,6 @@
-# S31_SCORE_IDEATION — Independent ideation wave on the frozen cycle-2 contract: isolated sources, no cross-exposure
+# S32B_K0_CONTRACT — Score-family K0_MATCHED contract and machine schema (S-lane analog of P26)
 
-**Lane:** score  |  **Type:** audit  |  **Severity on failure:** A  |  **Role:** independent scientific ideation sources (structurally isolated)
+**Lane:** score  |  **Type:** documentation  |  **Severity on failure:** A  |  **Role:** contract author + independent verifier
 
 > This file is GENERATED from the node's contract in `PROGRAM_GRAPH.json`. It is the auditable
 > record of exactly what this node's agent was told. Do not edit it by hand.
@@ -33,7 +33,7 @@
 
 ## Epistemic status of your output
 
-IDEATION OUTPUT. Raw candidate mechanisms from isolated packets; frozen and hashed before any other source reads them.
+K0 CONTRACT. Defines representable matched controls for E1/E2/E3 including the null-strength floor (composite ingredients as receipted null-granted features) and the estimation-objective matched dimension; no card is registrable before this freezes.
 
 Write this verbatim into your report. It bounds what your output may later be cited for.
 
@@ -61,15 +61,17 @@ Write this verbatim into your report. It bounds what your output may later be ci
 
 ## Your mandate
 
-**Independent ideation wave on the frozen cycle-2 contract: isolated sources, no cross-exposure**
+**Score-family K0_MATCHED contract and machine schema (S-lane analog of P26)**
 
 Deliver exactly this, to the standard the acceptance criteria below describe. The criteria are not a summary of the mandate — they *are* the mandate.
 
 ## Acceptance criteria — your output is validated against exactly these
 
-* each source ran against an isolated packet containing ONLY the frozen contract (which prints no floor values) and its own prompt
-* no source saw another source output, any D045 numeric row, the D046 priors, the D047 directive text, or any coordinator idea
-* raw outputs frozen and hashed before synthesis reads them
+* the schema represents E1/E2/E3 K0_MATCHED records (the P26 schema pins the possession target and cannot)
+* the null-strength floor is machine-representable: composite frozen ingredients as receipted null-granted features, or a declared cannot-host claim with the BELOW-FLOOR-NULL label
+* estimation_objective / response family, p-clipping, and calibration_freedom are explicit schema fields
+* the 17-machine-dimension mapping of comparison_gate.py is cited and covered
+* an independent verifier context agrees before freeze
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 
@@ -81,13 +83,14 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 **Read:** `experiments/player_program/`, `experiments/market_program/`
 
-**Write (nothing outside this):** `experiments/player_program/stage3_score/S31_SCORE_IDEATION/`
+**Write (nothing outside this):** `experiments/player_program/stage3_score/S32B_K0_CONTRACT/`
 
 **Forbidden inputs:** `experiments/player_program/stage2b/SEALED_RESULTS`, `experiments/player_program/stage3_score/SEALED_RESULTS`
 
 **Required outputs:**
 
-* `experiments/player_program/stage3_score/S31_SCORE_IDEATION/RAW_SOURCES_MANIFEST.json`
+* `experiments/player_program/stage3_score/S32B_K0_CONTRACT/K0_MATCHED_SCHEMA_SCORE.json`
+* `experiments/player_program/stage3_score/S32B_K0_CONTRACT/REPORT.md`
 
 ## Validation that will be run against your output
 

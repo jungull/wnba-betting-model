@@ -67,9 +67,11 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 
 ## Acceptance criteria — your output is validated against exactly these
 
-* every retained candidate maps to frozen source bytes
+* every retained candidate maps to frozen source bytes or to the D047 directive (DIRECTED)
+* every candidate carries a provenance label (IDEATION_SOURCE_n vs USER_DIRECTED); directed candidates never count toward independent-source tallies
 * families are mechanistically distinct and each candidate is assigned exactly one primary family
 * the A07 transient re-entry (if retained) carries its concentration-kill diagnostic as a mandatory receipted output
+* every directed-candidate definition registers its identification constraint (F12 4.4 carry-forward)
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 
