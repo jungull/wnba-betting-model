@@ -703,20 +703,29 @@ class MockHttpFetchTests(unittest.TestCase):
         resp = FakeResponse(200, payload, headers={"x-requests-used": "3",
                                                     "x-requests-remaining": "997"})
         sess = FakeSession(resp)
-        games_json, raw, r = writer.fetch_odds_snapshot(sess, "FAKEKEY")
+        # M26_CAPTURE_MICROSTRUCTURE_REMEDIATION (defect 4): fetch_* now
+        # return a 4th element, `timing` -- a dict of our own witnessed
+        # request/response instants plus a best-effort vendor-clock-skew
+        # estimate (see market_snapshot_writer._timing / .estimate_clock_
+        # skew_seconds). Updated here to unpack it; behavior of the first
+        # three return values is unchanged.
+        games_json, raw, r, timing = writer.fetch_odds_snapshot(sess, "FAKEKEY")
         self.assertEqual(games_json, payload)
         self.assertEqual(json.loads(raw), payload)
         self.assertEqual(r.headers["x-requests-used"], "3")
         # apiKey travels as a params dict entry, never string-interpolated into the URL
         self.assertEqual(sess.calls[0][1]["apiKey"], "FAKEKEY")
         self.assertNotIn("FAKEKEY", sess.calls[0][0])
+        self.assertIn("response_received_ts", timing)
+        self.assertIn("rtt_seconds", timing)
 
     def test_fetch_event_props_snapshot_handles_422_without_raising(self):
         resp = FakeResponse(422, {"message": "bad market"})
         sess = FakeSession(resp)
-        ev_json, raw, r = writer.fetch_event_props_snapshot(sess, "FAKEKEY", "evt1")
+        ev_json, raw, r, timing = writer.fetch_event_props_snapshot(sess, "FAKEKEY", "evt1")
         self.assertIsNone(ev_json)
         self.assertEqual(r.status_code, 422)
+        self.assertIn("response_received_ts", timing)
 
 
 # ===================================================================== #

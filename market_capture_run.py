@@ -153,64 +153,154 @@ def _poll_and_write(session, key, game, obligation_type, label,
     event id resolved, its props scoped to that one event. Writes rows +
     one poll_log entry per endpoint hit. Never raises past this function: a
     failed poll is logged, not fatal to the rest of the run (matches every
-    existing capture script's per-item try/except discipline)."""
-    game_id = game["game_id"]
-    retrieval_ts = datetime.now(timezone.utc).isoformat()
-    n_written_total = n_rejected_total = 0
+    existing capture script's per-item try/except discipline).
 
-    entry = {"poll_ts": retrieval_ts, "game_id": game_id,
+    M26_CAPTURE_MICROSTRUCTURE_REMEDIATION fixes applied here (see that
+    node's REPORT.md for the full audit trail):
+
+    DEFECT 1 (game-odds endpoint wrote zero rows on all 21 measured polls):
+    root cause was this function filtering the slate-wide odds response by
+    OUR internal `game_id` (a league id / PROV-id, e.g. "1022600230"), while
+    every row `flatten_odds_payload` produces carries the VENDOR's own event
+    id (a hex uuid, e.g. "58beff9061f15ff3f416542cb51f4751") as `game_id` --
+    the two id spaces never intersect, so the filter silently zeroed every
+    poll's rows before validation even ran (HTTP 200, 0 written, 0 rejected,
+    no error -- exactly the symptom M16/coordinator measured). The fix:
+    resolve this game's vendor event id via `events_by_teams` (the same
+    lookup the props branch already used) BEFORE filtering, and filter on
+    THAT id instead. If no vendor event id resolves for this game, the
+    slate-wide odds response cannot be honestly attributed to this game at
+    all (the endpoint is not scopeable to one game) -- record that as an
+    explicit reason in the poll log rather than another silent zero.
+
+    DEFECT 2 (all books/markets shared one byte-identical retrieval_ts per
+    poll): partially fixed -- retrieval_ts is now witnessed fresh at the
+    instant EACH HTTP response is actually received (inside
+    fetch_odds_snapshot/fetch_event_props_snapshot's timing dict), not
+    computed once before both calls and reused. The odds call and the props
+    call now carry genuinely different, real retrieval_ts values. What this
+    does NOT fix, and cannot be fixed from this vendor without a poll-rate/
+    quota-ceiling decision this node is not authorized to make unilaterally:
+    within ONE HTTP response, all books/bookmakers arrive in a single JSON
+    payload with no per-book timing signal -- see REPORT.md defect-2 section
+    for the full reasoning and the decision packet this raises.
+    """
+    game_id = game["game_id"]
+    n_written_total = n_rejected_total = 0
+    event_id = events_by_teams.get((game["home"], game["away"]))
+
+    poll_ts_for_log = datetime.now(timezone.utc).isoformat()
+    entry = {"poll_ts": poll_ts_for_log, "game_id": game_id,
               "obligation_type": obligation_type, "label": label,
               "endpoint": writer.ODDS_URL, "n_rows_written": 0,
               "n_rows_rejected": 0}
-    try:
-        games_json, raw, resp = writer.fetch_odds_snapshot(session, key)
-        entry["http_status"] = resp.status_code
-        entry["credits_used"] = resp.headers.get("x-requests-used")
-        entry["credits_remaining"] = resp.headers.get("x-requests-remaining")
-        entry["credits_last"] = resp.headers.get("x-requests-last")
-        rows = writer.flatten_odds_payload(
-            games_json, retrieval_ts, poll_interval_seconds=poll_interval_seconds,
-            a_payload_hash=writer.payload_hash(raw))
-        rows = [r for r in rows if r["game_id"] == game_id]
-        chain = writer.ChainIndex(out_dir / writer.CHAIN_INDEX_JSON)
-        writer.attach_chain_fields(rows, chain, retrieval_ts)
-        n_written, rejected = writer.append_snapshot_rows(rows, out_dir)
-        chain.save()
-        entry["n_rows_written"], entry["n_rows_rejected"] = n_written, len(rejected)
-        entry["error"] = None
-        n_written_total += n_written
-        n_rejected_total += len(rejected)
-    except Exception as e:
-        entry["error"] = f"{type(e).__name__}: {e}"
-        print(f"WARNING: odds poll failed for {game_id} {obligation_type}/{label}: "
-              f"{entry['error']}", file=sys.stderr)
-    writer.append_poll_log(entry, out_dir)
+    if event_id is None:
+        entry["error"] = ("SKIPPED: no vendor event_id resolved for this game "
+                          "via /events team-name lookup; the game-odds "
+                          "endpoint returns the whole slate and is not "
+                          "scopeable to one game, so its rows cannot be "
+                          "honestly attributed to this game_id without an "
+                          "event_id to filter on (DEFECT 1 fix -- see "
+                          "M26_CAPTURE_MICROSTRUCTURE_REMEDIATION/REPORT.md)")
+        writer.append_poll_log(entry, out_dir)
+    else:
+        try:
+            games_json, raw, resp, timing = writer.fetch_odds_snapshot(session, key)
+            retrieval_ts = timing["response_received_ts"]
+            entry["poll_ts"] = retrieval_ts
+            entry["http_status"] = resp.status_code
+            entry["credits_used"] = resp.headers.get("x-requests-used")
+            entry["credits_remaining"] = resp.headers.get("x-requests-remaining")
+            entry["credits_last"] = resp.headers.get("x-requests-last")
+            a_payload_hash = writer.payload_hash(raw)
+            rows = writer.flatten_odds_payload(
+                games_json, retrieval_ts, poll_interval_seconds=poll_interval_seconds,
+                a_payload_hash=a_payload_hash)
+            # DEFECT 1 fix: filter on the vendor's own event id (what
+            # flatten_odds_payload actually stamped as row["game_id"]), not
+            # our internal game_id.
+            rows = [r for r in rows if r["game_id"] == str(event_id)]
 
-    event_id = events_by_teams.get((game["home"], game["away"]))
+            ingestion_ts = datetime.now(timezone.utc).isoformat()
+            roster = writer.RosterIndex(out_dir / writer.ROSTER_INDEX_JSON)
+            vanish_rows = writer.detect_vanished_chains(
+                rows, roster, roster_key=f"{game_id}:odds", game_id=game_id,
+                retrieval_ts=retrieval_ts, ingestion_ts=ingestion_ts,
+                poll_interval_seconds=poll_interval_seconds,
+                a_payload_hash=a_payload_hash)
+            rows = rows + vanish_rows
+
+            chain = writer.ChainIndex(out_dir / writer.CHAIN_INDEX_JSON)
+            writer.attach_chain_fields(rows, chain, retrieval_ts)
+            n_written, rejected = writer.append_snapshot_rows(rows, out_dir)
+            chain.save()
+            roster.save()
+            entry["n_rows_written"], entry["n_rows_rejected"] = n_written, len(rejected)
+            entry["n_rows_vanished_witnessed"] = len(vanish_rows)
+            entry["error"] = None
+            n_written_total += n_written
+            n_rejected_total += len(rejected)
+            writer.append_vendor_timing_log({**timing, "poll_ts": retrieval_ts,
+                                             "game_id": game_id,
+                                             "endpoint": writer.ODDS_URL}, out_dir)
+        except Exception as e:
+            entry["error"] = f"{type(e).__name__}: {e}"
+            print(f"WARNING: odds poll failed for {game_id} {obligation_type}/{label}: "
+                  f"{entry['error']}", file=sys.stderr)
+        writer.append_poll_log(entry, out_dir)
+
     if event_id is None:
         return n_written_total, n_rejected_total
 
-    p_entry = {"poll_ts": retrieval_ts, "game_id": game_id,
+    p_entry = {"poll_ts": datetime.now(timezone.utc).isoformat(), "game_id": game_id,
                "obligation_type": obligation_type, "label": label,
                "endpoint": writer.EVENT_ODDS_URL.format(event_id=event_id),
                "n_rows_written": 0, "n_rows_rejected": 0}
     try:
-        ev_json, raw, resp = writer.fetch_event_props_snapshot(session, key, event_id)
+        ev_json, raw, resp, timing = writer.fetch_event_props_snapshot(session, key, event_id)
+        retrieval_ts = timing["response_received_ts"]
+        p_entry["poll_ts"] = retrieval_ts
         p_entry["http_status"] = resp.status_code
         p_entry["credits_used"] = resp.headers.get("x-requests-used")
         p_entry["credits_remaining"] = resp.headers.get("x-requests-remaining")
         p_entry["credits_last"] = resp.headers.get("x-requests-last")
+        a_payload_hash = writer.payload_hash(raw)
         rows = writer.flatten_props_payload(
             ev_json, retrieval_ts, poll_interval_seconds=poll_interval_seconds,
-            a_payload_hash=writer.payload_hash(raw))
+            a_payload_hash=a_payload_hash)
+
+        ingestion_ts = datetime.now(timezone.utc).isoformat()
+        vanish_rows = []
+        if ev_json is not None:
+            # Guard: a 422 (ev_json is None -> flatten_props_payload
+            # returns []) means we-failed-to-get-a-normal-response, not "the
+            # vendor's active markets legitimately became empty". Running
+            # roster-diff on an empty `rows` here would falsely mark every
+            # previously-active chain as vanished and wipe the roster memory
+            # -- exactly the book-suspended vs. we-failed-to-poll conflation
+            # M17 flagged as unacceptable. Only diff the roster on a normal,
+            # well-formed response.
+            roster = writer.RosterIndex(out_dir / writer.ROSTER_INDEX_JSON)
+            vanish_rows = writer.detect_vanished_chains(
+                rows, roster, roster_key=f"{game_id}:props", game_id=game_id,
+                retrieval_ts=retrieval_ts, ingestion_ts=ingestion_ts,
+                poll_interval_seconds=poll_interval_seconds,
+                a_payload_hash=a_payload_hash)
+            roster.save()
+        rows = rows + vanish_rows
+
         chain = writer.ChainIndex(out_dir / writer.CHAIN_INDEX_JSON)
         writer.attach_chain_fields(rows, chain, retrieval_ts)
         n_written, rejected = writer.append_snapshot_rows(rows, out_dir)
         chain.save()
         p_entry["n_rows_written"], p_entry["n_rows_rejected"] = n_written, len(rejected)
+        p_entry["n_rows_vanished_witnessed"] = len(vanish_rows)
         p_entry["error"] = None
         n_written_total += n_written
         n_rejected_total += len(rejected)
+        writer.append_vendor_timing_log({**timing, "poll_ts": retrieval_ts,
+                                         "game_id": game_id,
+                                         "endpoint": p_entry["endpoint"]}, out_dir)
     except Exception as e:
         p_entry["error"] = f"{type(e).__name__}: {e}"
         print(f"WARNING: props poll failed for {game_id} {obligation_type}/{label}: "

@@ -28,6 +28,7 @@ import json
 import sys
 from dataclasses import asdict
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Optional
 
@@ -47,6 +48,24 @@ DEFAULT_SNAPSHOT_DIR = Path(__file__).resolve().parent / "data" / "market_snapsh
 SNAPSHOTS_CSV = "snapshots.csv"
 POLL_LOG_CSV = "poll_log.csv"
 CHAIN_INDEX_JSON = "_chain_index.json"
+ROSTER_INDEX_JSON = "_active_roster.json"
+
+# M26_CAPTURE_MICROSTRUCTURE_REMEDIATION (defect 4): a NEW, additive log --
+# never touches poll_log.csv's existing header/rows (append-only holds; a
+# schema addition to an existing CSV would misalign every already-written
+# row). One row per HTTP call, recording what this vendor's response
+# actually lets us bound: our own round-trip time (a coarse upper bound on
+# vendor+network latency, NOT a clean isolated vendor-latency figure) and an
+# HTTP-Date-header-derived clock-skew estimate (1-second resolution, and
+# itself conflated with one-way network transit -- see
+# `estimate_clock_skew_seconds` docstring for the exact caveat this carries).
+VENDOR_TIMING_LOG_CSV = "vendor_timing_log.csv"
+VENDOR_TIMING_LOG_COLUMNS = [
+    "poll_ts", "game_id", "endpoint", "request_sent_ts",
+    "response_received_ts", "rtt_seconds", "vendor_http_date",
+    "vendor_http_date_parsed_utc", "clock_skew_estimate_seconds",
+    "measurement_caveat",
+]
 
 POLL_LOG_COLUMNS = [
     "poll_ts", "game_id", "obligation_type", "label", "endpoint",
@@ -67,9 +86,79 @@ def _scrub(msg: str, key: Optional[str]) -> str:
 
 
 # ------------------------------------------------------------- fetch ------
+def _timing(request_sent_ts: str, t0: float, resp) -> dict:
+    """Defect-4 fix: the only latency/skew inputs this vendor's HTTP
+    response actually gives us -- our own witnessed round-trip and the
+    response's `Date` header, if present. See `estimate_clock_skew_seconds`
+    for the honest caveat on what the skew number does and doesn't mean."""
+    import time
+    response_received_ts = datetime.now(timezone.utc).isoformat()
+    rtt_seconds = round(time.monotonic() - t0, 6)
+    vendor_http_date = resp.headers.get("Date") if resp is not None else None
+    skew, parsed_date = estimate_clock_skew_seconds(
+        vendor_http_date, response_received_ts)
+    return {
+        "request_sent_ts": request_sent_ts,
+        "response_received_ts": response_received_ts,
+        "rtt_seconds": rtt_seconds,
+        "vendor_http_date": vendor_http_date,
+        "vendor_http_date_parsed_utc": parsed_date,
+        "clock_skew_estimate_seconds": skew,
+        "measurement_caveat": (
+            "rtt_seconds is round-trip wall-clock time for THIS process's "
+            "HTTP call (session.get -> response object available); it upper-"
+            "bounds vendor+network+our-own latency combined and does NOT "
+            "isolate vendor processing time alone -- report as "
+            "vendor_latency_bound=rtt_seconds with this caveat attached, "
+            "never as a clean vendor-only figure. clock_skew_estimate_seconds "
+            "is |our_response_received_ts - vendor's HTTP Date header|, "
+            "which conflates true clock skew with one-way network transit "
+            "time and is quantized to whole seconds (HTTP-date resolution) "
+            "-- it is an upper bound on skew, not an isolated skew value, "
+            "and is None if the vendor omitted a Date header."
+        ),
+    }
+
+
+def estimate_clock_skew_seconds(vendor_http_date: Optional[str],
+                                 response_received_ts: str):
+    """Best-effort clock-skew bound from the HTTP `Date` response header
+    (RFC 1123, e.g. 'Wed, 21 Oct 2015 07:28:00 GMT'). Returns
+    (skew_seconds_or_None, parsed_date_iso_or_None).
+
+    Honest limits, stated once here rather than re-derived at every call
+    site: (1) HTTP-date resolution is whole seconds, so this cannot bound
+    skew tighter than +/-1s even in the best case; (2) the delta also
+    includes one-way network transit from vendor to us, which this method
+    cannot separate from true clock skew (that would need NTP or a
+    round-trip-halving protocol this vendor does not offer); (3) some HTTP
+    stacks/CDNs rewrite or omit the Date header -- if absent, this returns
+    (None, None) rather than guessing."""
+    if not vendor_http_date:
+        return None, None
+    try:
+        vendor_dt = parsedate_to_datetime(vendor_http_date)
+        if vendor_dt.tzinfo is None:
+            vendor_dt = vendor_dt.replace(tzinfo=timezone.utc)
+        received_dt = datetime.fromisoformat(response_received_ts)
+        if received_dt.tzinfo is None:
+            received_dt = received_dt.replace(tzinfo=timezone.utc)
+        delta = (received_dt - vendor_dt).total_seconds()
+        return delta, vendor_dt.astimezone(timezone.utc).isoformat()
+    except (ValueError, TypeError):
+        return None, None
+
+
 def fetch_odds_snapshot(session, key: str, timeout=30):
     """One slate-wide live-odds call. Returns (games_json, raw_bytes,
-    response). Raises with the key scrubbed from any error text."""
+    response, timing_dict). Raises with the key scrubbed from any error
+    text. `timing_dict` is the defect-4 fix: our own witnessed
+    request/response instants plus a best-effort clock-skew estimate (see
+    `_timing`/`estimate_clock_skew_seconds`) -- recorded so vendor-latency
+    and clock-skew bounds are MEASURED, not silently absent."""
+    import time
+    request_sent_ts = datetime.now(timezone.utc).isoformat()
+    t0 = time.monotonic()
     try:
         r = session.get(ODDS_URL, params={"apiKey": key, "regions": "us",
                                           "markets": GAME_MARKETS,
@@ -78,27 +167,34 @@ def fetch_odds_snapshot(session, key: str, timeout=30):
         r.raise_for_status()
     except Exception as e:
         raise RuntimeError(_scrub(f"{type(e).__name__}: {e}", key)) from None
-    return r.json(), r.content, r
+    timing = _timing(request_sent_ts, t0, r)
+    return r.json(), r.content, r, timing
 
 
 def fetch_event_props_snapshot(session, key: str, event_id: str,
                                 markets=None, timeout=30):
     """One per-event props call, scoped to a single event_id (used both by
     the regular props ladder rung, over all in-window events, and by a
-    burst leg, scoped to the one triggering game's event)."""
+    burst leg, scoped to the one triggering game's event). Returns
+    (event_json, raw_bytes, response, timing_dict) -- see
+    `fetch_odds_snapshot` for what `timing_dict` carries."""
+    import time
     markets = markets or PROP_MARKETS
     url = EVENT_ODDS_URL.format(event_id=event_id)
+    request_sent_ts = datetime.now(timezone.utc).isoformat()
+    t0 = time.monotonic()
     try:
         r = session.get(url, params={"apiKey": key, "regions": "us",
                                      "markets": ",".join(markets),
                                      "oddsFormat": "american"},
                         timeout=timeout)
         if r.status_code == 422:
-            return None, r.content, r
+            return None, r.content, r, _timing(request_sent_ts, t0, r)
         r.raise_for_status()
     except Exception as e:
         raise RuntimeError(_scrub(f"{type(e).__name__}: {e}", key)) from None
-    return r.json(), r.content, r
+    timing = _timing(request_sent_ts, t0, r)
+    return r.json(), r.content, r, timing
 
 
 # --------------------------------------------------------- row-building ---
@@ -267,7 +363,117 @@ def attach_chain_fields(rows: list, chain: ChainIndex,
     return rows
 
 
+# ------------------------------------------------------- roster / absence -
+# M26_CAPTURE_MICROSTRUCTURE_REMEDIATION (defect 3, M17 finding): before
+# this fix, a (book, market, outcome) chain that vanished from the vendor's
+# response between two polls produced NO row at all -- silence, not a
+# witnessed event. RosterIndex persists which chains were `active` as of the
+# last poll THIS WRITER PATH processed for a given roster key, so the next
+# poll can detect "was active, now absent" and synthesize an explicit
+# market_status='missing' row with our own witnessed retrieval_ts. This
+# labels the transition 'missing', never 'suspended': The Odds API's
+# response shape carries no vendor-asserted suspension flag distinct from
+# silence (verified by the same write-path audit M17 did), so 'suspended'
+# would be a fabricated claim this writer refuses to make.
+class RosterIndex:
+    """Persisted map of roster_key -> sorted list of chain-key strings
+    ("game_id|book|market|outcome") active as of the most recently processed
+    poll under that key. `roster_key` is caller-scoped (e.g.
+    f"{game_id}:odds" vs f"{game_id}:props") so the game-odds and props
+    polls -- which see disjoint slices of a game's markets -- never
+    overwrite each other's memory of what's active."""
+
+    def __init__(self, path: Path):
+        self.path = path
+        self._data = {}
+        if path.exists():
+            try:
+                self._data = json.loads(path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                self._data = {}
+
+    def active_for(self, roster_key: str) -> set:
+        return set(self._data.get(roster_key, []))
+
+    def set_active(self, roster_key: str, chain_keys) -> None:
+        self._data[roster_key] = sorted(chain_keys)
+
+    def save(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self._data, indent=1), encoding="utf-8")
+
+
+def _chain_key_str(row: dict) -> str:
+    return "|".join([row.get("game_id") or "", row.get("book") or "",
+                     row.get("market") or "", row.get("outcome") or ""])
+
+
+def detect_vanished_chains(rows: list, roster: "RosterIndex", roster_key: str,
+                           game_id: str, retrieval_ts: str, ingestion_ts: str,
+                           poll_interval_seconds, a_payload_hash: str) -> list:
+    """Compare this poll's active chains (under `roster_key`) against the
+    roster persisted from the previous poll under the SAME key. Any chain
+    that was active last time and is absent from `rows` this time gets an
+    explicit synthetic row (market_status='missing') so the vanish is a
+    witnessed, timestamped event instead of silence. Mutates `roster` in
+    place to this poll's active set (caller must still call roster.save()
+    after this AND after attach_chain_fields, since attach_chain_fields does
+    not touch RosterIndex). Returns the list of synthetic vanish rows
+    (possibly empty) -- these still need `attach_chain_fields` +
+    `validate_row` like any other row; this function does not append them to
+    `rows` itself so the caller can log/count them distinctly."""
+    current_active = {_chain_key_str(r) for r in rows
+                      if r.get("market_status") == "active"}
+    prior_active = roster.active_for(roster_key)
+    vanished = sorted(prior_active - current_active)
+    vanish_rows = []
+    for key in vanished:
+        parts = key.split("|")
+        if len(parts) != 4:
+            continue
+        _, book, market, outcome = parts
+        if not book or not market or not outcome:
+            continue
+        vanish_rows.append({
+            "game_id": game_id, "book": book, "market": market,
+            "outcome": outcome, "line": None, "price": None,
+            "price_over": None, "price_under": None, "implied_prob": None,
+            "novig_prob": None, "market_status": "missing",
+            "vendor_ts": None, "vendor_ts_semantics": VENDOR_TS_SEMANTICS_DEFAULT,
+            "retrieval_ts": retrieval_ts, "ingestion_ts": ingestion_ts,
+            "max_staleness_bound": poll_interval_seconds,
+            "poll_interval_at_capture": poll_interval_seconds,
+            "vendor_latency_note": (
+                "WITNESSED_ABSENCE (M26 defect-3 fix): this (book, market, "
+                "outcome) was market_status=active in the immediately prior "
+                "poll processed under roster_key=" + roster_key + " and is "
+                "absent from this poll's vendor response. Labeled 'missing', "
+                "never 'suspended' -- this vendor's payload carries no "
+                "suspension flag distinct from silence."
+            ),
+            "payload_hash": a_payload_hash,
+        })
+    roster.set_active(roster_key, current_active)
+    return vanish_rows
+
+
 # --------------------------------------------------------------- writer ---
+def append_vendor_timing_log(entry: dict, out_dir: Path = DEFAULT_SNAPSHOT_DIR
+                             ) -> None:
+    """One row per HTTP call -- defect-4 fix. New file, additive only;
+    never touches poll_log.csv's existing schema (see VENDOR_TIMING_LOG_CSV
+    docstring at top of module for why a separate file, not new columns on
+    the existing log)."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / VENDOR_TIMING_LOG_CSV
+    hdr = _csv_header(path)
+    with open(path, "a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=VENDOR_TIMING_LOG_COLUMNS, extrasaction="ignore")
+        if hdr is None:
+            w.writeheader()
+        w.writerow({c: entry.get(c) for c in VENDOR_TIMING_LOG_COLUMNS})
+
+
 def _csv_header(path: Path):
     if not path.exists():
         return None
