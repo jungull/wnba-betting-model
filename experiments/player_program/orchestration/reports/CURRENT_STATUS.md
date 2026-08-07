@@ -6,20 +6,21 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `eda265765f7e201452abcc72a895668015c80167` |
+| HEAD | `514f36d240532664762c02d7355e716faafb3e64` |
 | working tree | DIRTY |
-| nodes | 87 |
-| events | 321 |
+| nodes | 100 |
+| events | 327 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 5 |
+| BLOCKED | 16 |
 | PASSED | 67 |
 | READY | 7 |
+| RUNNING | 1 |
 | SUPERSEDED | 6 |
-| USER_REQUIRED | 2 |
+| USER_REQUIRED | 3 |
 
 ## Severity A blockers
 
@@ -27,7 +28,7 @@ None open against a node.
 
 ## Running
 
-None.
+* `S30_TARGET_CONTRACT` — Cycle-2 score-family target contract: freeze estimands, universe, folds, gates
 
 ## Ready — next automatically scheduled
 
@@ -113,15 +114,17 @@ None.
 
 * `M02B_VENDOR_PURCHASE_DECISION` — Whether to buy vendor market data: purchases, subscriptions and credentials are the user's alone
 * `P43_CHAMPION_DECISION` — Whether to replace Arm D as the frozen champion
+* `S42_ADOPTION_DECISION` — Whether any fitted score model is adopted for operational or wager-shaped use: the user's alone
 
 ## By lane
 
-| lane | BLOCKED | PASSED | READY | SUPERSEDED | USER_REQUIRED |
-|---|---|---|---|---|---|
-| data | 0 | 5 | 0 | 1 | 0 |
-| future_research | 0 | 7 | 0 | 0 | 0 |
-| governance | 0 | 5 | 0 | 1 | 0 |
-| market_intelligence | 5 | 9 | 7 | 0 | 1 |
-| operations | 0 | 12 | 0 | 2 | 0 |
-| possession | 0 | 25 | 0 | 2 | 1 |
-| product | 0 | 4 | 0 | 0 | 0 |
+| lane | BLOCKED | PASSED | READY | RUNNING | SUPERSEDED | USER_REQUIRED |
+|---|---|---|---|---|---|---|
+| data | 0 | 5 | 0 | 0 | 1 | 0 |
+| future_research | 0 | 7 | 0 | 0 | 0 | 0 |
+| governance | 0 | 5 | 0 | 0 | 1 | 0 |
+| market_intelligence | 5 | 9 | 7 | 0 | 0 | 1 |
+| operations | 0 | 12 | 0 | 0 | 2 | 0 |
+| possession | 0 | 25 | 0 | 0 | 2 | 1 |
+| product | 0 | 4 | 0 | 0 | 0 | 0 |
+| score | 11 | 0 | 0 | 1 | 0 | 1 |
