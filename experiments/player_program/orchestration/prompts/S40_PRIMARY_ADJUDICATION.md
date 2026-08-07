@@ -70,6 +70,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 * every element receives a gate verdict with clause-by-clause accounting
 * adjudicated numbers flow to the board solely through the D036 pipeline
 * market comparison reported as context only, never as a gate
+* residual characterization per D051: OOF error distribution by season/fold/home-away and by strata declared BEFORE unsealing; correlation against the frozen candidate-correlate list with N, intervals and multiplicity treatment; correlates showing nothing preserved as permanent negatives; the scan is exploratory and may never promote or confirm anything
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 

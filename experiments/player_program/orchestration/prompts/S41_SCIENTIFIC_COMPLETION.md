@@ -72,6 +72,7 @@ Deliver exactly this, to the standard the acceptance criteria below describe. Th
 * failure explanations and downstream implications
 * unresolved limitations stated
 * a prospective-confirmation recommendation is given
+* the residual map (D051) is reported as its own section: what the remaining error correlates with, what it does not, and which cycle-3 decomposition targets that measurement supports - never intuition-selected targets
 
 ## Stop conditions — HALT and report rather than resolving these yourself
 
