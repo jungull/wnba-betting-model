@@ -1,0 +1,59 @@
+﻿loaded ra_common_frame: 30764 RA shots
+sorted(season.unique()) = [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+CELL headline_fully_pregame:  y = resid_B1_own_rate_v2_split_alpha   x = O2   n = 30764
+====================================================================================================
+  REAL (row-level x)        : corr=+0.028817  diff=+0.017574  beta=+0.373154
+  REAL (team-season-mean x) : corr=+0.044114  diff=+0.039135  beta=+0.647145   <- the comparator every permutation control below is scored against
+
+  D0  DEFECTIVE NO-OP (run on purpose, 400 draws)
+      corr  ref=+0.043985  mean=+0.043985  sd=0.0000000000  max|dev from ref|=0.00e+00
+      diff  ref=+0.039135  mean=+0.039135  sd=0.0000000000  max|dev from ref|=0.00e+00
+      beta  ref=+0.636786  mean=+0.636786  sd=0.0000000000  max|dev from ref|=0.00e+00
+      DEFECT SIGNATURE PRESENT (every draw bit-identical to the real number; sd 0 to float precision): True
+      => this control tests NOTHING. It is shown to prove P1/P2 below are genuine.
+
+  P1  GENUINE placebo (400 draws) -- permute computed value across teams
+      corr  real=+0.044114  mean=-0.001653  sd=0.009750  p05=-0.018132  p95=+0.014485  frac_ge_real=0.0000   |  row-level real=+0.028817  z=+3.13  frac_ge=0.0000
+      diff  real=+0.039135  mean=-0.000475  sd=0.009750  p05=-0.014559  p95=+0.015400  frac_ge_real=0.0000   |  row-level real=+0.017574  z=+1.85  frac_ge=0.0300
+      beta  real=+0.647145  mean=-0.023765  sd=0.141339  p05=-0.262887  p95=+0.209363  frac_ge_real=0.0000   |  row-level real=+0.373154  z=+2.81  frac_ge=0.0000
+
+  P2  GENUINE placebo (400 draws) -- shuffle values across rows (anti-conservative: destroys clustering)
+      corr  real=+0.044114  mean=-0.003682  sd=0.005514  frac_ge_real=0.0000   |  row-level real=+0.028817  z=+5.89  frac_ge=0.0000
+      diff  real=+0.039135  mean=-0.001771  sd=0.005551  frac_ge_real=0.0000   |  row-level real=+0.017574  z=+3.49  frac_ge=0.0000
+      beta  real=+0.647145  mean=-0.054011  sd=0.080896  frac_ge_real=0.0000   |  row-level real=+0.373154  z=+5.28  frac_ge=0.0000
+
+====================================================================================================
+CELL e0_cell_retrospective:  y = resid_B0_E0_leave_one_season_out   x = O1   n = 30764
+====================================================================================================
+  REAL (row-level x)        : corr=+0.043353  diff=+0.035956  beta=+0.725651
+  REAL (team-season-mean x) : corr=+0.060404  diff=+0.045790  beta=+1.015365   <- the comparator every permutation control below is scored against
+
+  D0  DEFECTIVE NO-OP (run on purpose, 400 draws)
+      corr  ref=+0.060412  mean=+0.060412  sd=0.0000000000  max|dev from ref|=0.00e+00
+      diff  ref=+0.045790  mean=+0.045790  sd=0.0000000000  max|dev from ref|=0.00e+00
+      beta  ref=+1.017752  mean=+1.017752  sd=0.0000000000  max|dev from ref|=0.00e+00
+      DEFECT SIGNATURE PRESENT (every draw bit-identical to the real number; sd 0 to float precision): True
+      => this control tests NOTHING. It is shown to prove P1/P2 below are genuine.
+
+  P1  GENUINE placebo (400 draws) -- permute computed value across teams
+      corr  real=+0.060404  mean=+0.004634  sd=0.010188  p05=-0.012675  p95=+0.023181  frac_ge_real=0.0000   |  row-level real=+0.043353  z=+3.80  frac_ge=0.0000
+      diff  real=+0.045790  mean=+0.005042  sd=0.009390  p05=-0.008646  p95=+0.021311  frac_ge_real=0.0000   |  row-level real=+0.035956  z=+3.29  frac_ge=0.0000
+      beta  real=+1.015365  mean=+0.078377  sd=0.172087  p05=-0.212593  p95=+0.391272  frac_ge_real=0.0000   |  row-level real=+0.725651  z=+3.76  frac_ge=0.0000
+
+  P2  GENUINE placebo (400 draws) -- shuffle values across rows (anti-conservative: destroys clustering)
+      corr  real=+0.060404  mean=+0.004196  sd=0.005636  frac_ge_real=0.0000   |  row-level real=+0.043353  z=+6.95  frac_ge=0.0000
+      diff  real=+0.045790  mean=+0.003336  sd=0.005351  frac_ge_real=0.0000   |  row-level real=+0.035956  z=+6.10  frac_ge=0.0000
+      beta  real=+1.015365  mean=+0.070538  sd=0.094737  frac_ge_real=0.0000   |  row-level real=+0.725651  z=+6.92  frac_ge=0.0000
+
+====================================================================================================
+DETERMINISTIC CONTROLS -- sd is 0 BY CONSTRUCTION (nothing random in them).
+This is NOT the D0 defect signature; do not confuse the two.
+====================================================================================================
+  C1 headline_fully_pregame     corr=+0.021262  diff=+0.007456  beta=+0.722720
+  C1 e0_cell_retrospective      corr=+0.021955  diff=+0.009215  beta=+0.733728
+
+  C2 (Above the Break 3, no real opponent dispersion) is reported in run_log_01 section 1: corr=+0.0027 diff=+0.0033 se=0.0051 -- indistinguishable from zero, as a negative-zone control should be. Deterministic, sd 0 by construction.
+
+wrote placebo_results.json  (partition re-asserted: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)])

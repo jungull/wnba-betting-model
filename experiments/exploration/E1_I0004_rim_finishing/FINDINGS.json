@@ -1,0 +1,1378 @@
+{
+  "screen_id": "E1_I0004_rim_finishing",
+  "stage": "E1",
+  "parent_screen": "experiments/exploration/E0_I0004_shot_location_allowance",
+  "idea": "I0004 -- player rim finishing (Restricted Area conversion) x opponent rim-defence allowance, net of pooled opponent defence and the player's own baseline",
+  "date": "2026-08-07",
+  "non_claiming_statement": "E1 is NON-CLAIMING. Nothing in this file is a RESULT. Everything here is a LEAD that has been asked one question -- does the effect persist under a basic season split/holdout INSIDE the exploration partition -- and nothing more. No preregistration, no walk-forward, no confirmation-holdout evaluation, no registry entry, no leaderboard row, no promotion decision is implied or requested. The 2025/2026 confirmation holdout was never read.",
+  "partition": {
+    "seasons_used": [
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "holdout_touched": false,
+    "holdout_seasons_never_read": [
+      2025,
+      2026
+    ],
+    "sources_read": [
+      "data/shotcharts/shots_{2021,2022,2023,2024}_{regular,playoffs}.parquet (8 files, 132,558 shots, 970 games)"
+    ],
+    "sources_deliberately_not_read": [
+      "data/shotcharts/shots_2025_*.parquet, shots_2026_*.parquet",
+      "data/zone_maps/*.csv -- E0 I0004 established their shrinkage priors are pooled across 2021-2026; that decision is preserved and zone rates are rebuilt from the raw per-season shot files instead"
+    ],
+    "filter_points": [
+      "build_and_measure.py FILTER-POINT 1 -- per-file season filter immediately after each read_parquet, with sorted(season.unique()) printed per file",
+      "build_and_measure.py FILTER-POINT 2 -- re-assert on the concatenated frame; assert season.max() <= 2024 and game_date.dt.year.max() <= 2024",
+      "build_and_measure.py FILTER-POINT 3 -- re-assert on the assembled RA frame before any statistic is computed",
+      "build_and_measure.py FILTER-POINT 4 -- re-assert on the player-game frame before the dR2 statistics",
+      "build_and_measure.py -- final re-assert immediately before every write",
+      "placebo.py FILTER-POINT 1 -- re-assert on load; re-assert before write",
+      "robustness.py FILTER-POINT 1 -- re-assert on load; re-assert before write"
+    ],
+    "verification_script": "verify_partition.py",
+    "verification_result": {
+      "structural_violations": 0,
+      "targeted_textual_hits": 14,
+      "textual_hits_adjudication": "All 14 are PROSE describing the partition rule itself -- this screen's own docstrings, NOTES.md, this FINDINGS.json, and the frozen baseline's SPEC.md / module docstring / validate_baseline.py docstring (plus the verification log re-scanning its own printed context lines). None is a data value. The count rises on re-scan because the log file records the context of each hit and is then itself scanned.",
+      "method_note": "Deliberately NOT a raw byte-scan for '2025'/'2026' -- that produced a FALSE partition violation in this program by matching row counts and digit runs inside floats. Season and date COLUMN VALUES are tested."
+    },
+    "artifact_contamination_check": {
+      "test_used": "manifest asof_granularity == 'row'",
+      "test_not_used": "fit_seasons / fit_through_season -- these say only what a file CONTAINS; a row-granular artifact filtered to 2021-2024 is safe",
+      "artifacts": [
+        {
+          "artifact": "data/shotcharts/shots_{season}_{type}.parquet",
+          "manifest_present": false,
+          "asof_granularity": null,
+          "adjudication": "No .manifest.json exists in data/shotcharts/ (0 found). These are RAW single-season sources -- the season IS the filename -- so there is no pooled quantity that could carry holdout information. Only the 8 files for 2021-2024 were opened.",
+          "safe": true
+        },
+        {
+          "artifact": "data/masters/master_player.parquet",
+          "manifest_present": true,
+          "asof_granularity": "row",
+          "fit_seasons_for_reference": [
+            2021,
+            2022,
+            2023,
+            2024,
+            2025,
+            2026
+          ],
+          "adjudication": "asof_granularity == 'row' -> safe when filtered. This screen's own code path never reads it; it is reached only inside the frozen baseline's validate_baseline.py, which scores E1_I0011's frame.parquet (seasons 2021-2024, asserted at load).",
+          "safe": true
+        },
+        {
+          "artifact": "experiments/exploration/E1_I0011_split_alpha/baseline/corrected_baseline.py",
+          "manifest_present": false,
+          "asof_granularity": null,
+          "adjudication": "Pure code. No season logic, no fitted data embedded; its two constants were established on 2021-2024 only (SPEC.md section 7). Imported, not reimplemented.",
+          "safe": true
+        },
+        {
+          "artifact": "data/zone_maps/*.csv",
+          "manifest_present": true,
+          "asof_granularity": "NOT READ",
+          "adjudication": "Not read. Shrinkage priors pooled 2021-2026 per E0 I0004. Decision preserved.",
+          "safe": true
+        }
+      ]
+    }
+  },
+  "r2_convention": {
+    "convention": "plain unweighted OLS R2 = 1 - SSE/SST, with SST taken about the UNWEIGHTED mean of the response",
+    "declared_explicitly": true,
+    "wls_r2_helper_used": false,
+    "comparability_note": "The shared E0 `wls_r2` helper was NOT used. That helper computes SST of the sqrt-weight-transformed response about ITS OWN mean rather than weighted SST about the weighted mean, which makes every dR2 from it roughly 8% too small. The direction is conservative, so nothing produced by it is overstated, but dR2 figures in this file are NOT comparable to three significant figures with dR2 figures from screens that used it.",
+    "standard_errors": "Slope SEs are reported both naive-OLS and cluster-robust (CR0) clustered on (opponent team, season) -- 48 clusters. The regressor is essentially constant within an opponent team-season, so the clustered SE is the honest one; the naive SE understates uncertainty. E0 I0004 reported neither, only an unclustered approximate SE of a mean difference."
+  },
+  "baseline_identification": {
+    "question": "Which baseline was the E0 I0004 headline actually stated over?",
+    "established_from": "code, not prose -- E0_I0004_shot_location_allowance/build_and_test.py L180-188 and robustness_loo.py L91-102",
+    "code_construct": "other = g[g['season'] != row['season']]; base = other['mk'].sum() / other['att'].sum()  (g grouped by PLAYER_ID x zone; gate other att >= 10)",
+    "answer": "B0 = a LEAVE-ONE-SEASON-OUT, attempt-weighted, player x zone conversion rate.",
+    "is_props_edge_shrunk_own_rate": false,
+    "is_player_tendency_loo_within_season": false,
+    "is_pregame_observable": false,
+    "why_not_pregame_observable": "For a 2021 shot, B0 is computed from the player's 2022/2023/2024 attempts -- it reads the player's LATER SEASONS. It is also CONSTANT within (player, season, zone), so it carries no within-season time variation and is not a 'recent rate' in any sense. An increment measured over it is therefore NOT a forecasting increment. This is a different object from player_tendency_loo (the within-season (season_sum - y_t)/(n-1) form) but it shares that form's fatal property, so the required correction is the same: rebuild a fully pregame-observable comparator before reporting any number.",
+    "direction_of_correction": "REVISE DOWN -- and additionally re-measure against a pregame-observable comparator, since the incumbent comparator is not one.",
+    "loo_disambiguation": {
+      "asked": "Is the 'LOO' in robustness_loo.py the fatal own-season kind or the benign opponent-construction kind?",
+      "answer": "BENIGN KIND. robustness_loo.py L75-88's LOO is leave-one-GAME-out over the OPPONENT-ALLOWANCE construction (excising the current game's makes/attempts from the opponent's season-zone tally). It is not a leave-one-out over the player's own season. The two objects are distinct and only the latter would be fatal.",
+      "separate_problem_found": "That opponent statistic is nonetheless a leave-one-game-out FULL-SEASON team rate, so it reads the OPPONENT's later games and is likewise not pregame-observable. BOTH sides of the E0 headline are retrospective. This screen therefore also builds a strictly-prior-games opponent allowance (O2) and reports the fully pregame-observable cell as the headline."
+    }
+  },
+  "e0_reproduction": {
+    "reproduced_exactly": true,
+    "published": {
+      "corr": 0.0444,
+      "diff": 0.0392,
+      "se": 0.0052,
+      "n": 34681
+    },
+    "reproduced": {
+      "n": 34681,
+      "corr": 0.04440434974644573,
+      "diff": 0.039216087905535706,
+      "se_diff": 0.005196406677113846
+    },
+    "all_zones_reproduced": {
+      "Above the Break 3": {
+        "n": 34961,
+        "corr": 0.002727638044536568,
+        "diff": 0.0033114714929014816,
+        "se_diff": 0.00509467212449632
+      },
+      "Corner 3": {
+        "n": 3872,
+        "corr": -0.015255953846764274,
+        "diff": -0.014693891389593828,
+        "se_diff": 0.015746810418763812
+      },
+      "In The Paint (Non-RA)": {
+        "n": 25436,
+        "corr": -0.0026575640759457786,
+        "diff": -0.0020728029566058678,
+        "se_diff": 0.0061447554308615634
+      },
+      "Mid-Range": {
+        "n": 22461,
+        "corr": 0.011038926790303149,
+        "diff": 0.019740330558583066,
+        "se_diff": 0.006457917996146203
+      },
+      "Restricted Area": {
+        "n": 34681,
+        "corr": 0.04440434974644573,
+        "diff": 0.039216087905535706,
+        "se_diff": 0.005196406677113846
+      }
+    },
+    "note": "E0's robustness_loo.py numbers were re-derived from the raw shot files before anything was changed. n, corr and diff match the published Restricted Area figures exactly."
+  },
+  "definitions": {
+    "B0_E0_leave_one_season_out": "E0's incumbent. Player x zone conversion rate from the player's OTHER seasons. NOT pregame-observable.",
+    "B1_own_rate_v2_split_alpha": "THE CORRECTED BASELINE. The frozen module E1_I0011_split_alpha/baseline/corrected_baseline.py, imported (not reimplemented), applied with the attempt as the exposure unit: minutes := Restricted-Area attempts in the game, target := RA makes. Its efficiency channel then yields EWMA_{alpha_eff=0.03}(makes/attempts) over the player's strictly-prior RA games within the season, gated at n_prior >= 3. Verified against a direct pandas ewm computation to max|diff| = 7.8e-16. Fully pregame-observable.",
+    "B2_shrunk_expanding_pregame": "Robustness variant. Attempt-weighted expanding prior-games RA rate shrunk toward the expanding prior league RA rate with K = 50 pseudo-attempts, gate n_prior >= 3. Fully pregame-observable. K was chosen by judgement, not tuned.",
+    "O1_E0_leave_one_game_out_full_season": "E0's opponent measure. Leave-one-game-out full-season opponent RA rate minus leave-one-game-out full-season opponent pooled rate. Retrospective.",
+    "O2_pregame_prior_games_only": "Opponent RA rate minus pooled rate over that opponent's STRICTLY PRIOR games in the season (expanding, shifted), gate >= 20 prior attempts on both legs. Fully pregame-observable.",
+    "row_set": "All cells are computed on the SAME 30,764 Restricted-Area shots -- every baseline and every opponent variant present. That is 88.7% of E0's own 34,681-shot row set; the shortfall is the n_prior >= 3 warm-up gate the corrected baseline imposes."
+  },
+  "re_measurement": {
+    "headline_cell": "B1_own_rate_v2_split_alpha|O2_pregame_prior_games_only",
+    "headline_meaning": "Fully pregame-observable on BOTH sides: corrected own-rate baseline (own_rate_v2_split_alpha) x strictly-prior-games opponent rim allowance.",
+    "e0_number_for_comparison": {
+      "corr": 0.0444,
+      "diff": 0.0392,
+      "se": 0.0052,
+      "n": 34681
+    },
+    "e0_cell_on_e0_own_rowset": {
+      "n": 34681,
+      "corr": 0.04440434974644573,
+      "diff": 0.039216087905535706,
+      "se_diff": 0.005196406677113846,
+      "beta": 0.7461017683274291,
+      "se_naive": 0.09013857537699459,
+      "se_cluster_opp_team_season": 0.09541970239635486,
+      "n_clusters": 48,
+      "r2": 0.001971746276404618,
+      "t_cluster": 7.8191584084832675,
+      "t_naive": 8.277274909293178
+    },
+    "grid_all_cells_common_rows": {
+      "B0_E0_leave_one_season_out|O1_E0_leave_one_game_out_full_season": {
+        "n": 30764,
+        "corr": 0.043353117388176265,
+        "diff": 0.035955974663162735,
+        "se_diff": 0.005505832266210131,
+        "beta": 0.725651163426491,
+        "se_naive": 0.09534364907187337,
+        "se_cluster_opp_team_season": 0.09395402478837134,
+        "n_clusters": 48,
+        "r2": 0.0018794927872727296,
+        "t_cluster": 7.723470762013643,
+        "t_naive": 7.610901937259291
+      },
+      "B0_E0_leave_one_season_out|O2_pregame_prior_games_only": {
+        "n": 30764,
+        "corr": 0.03555522460662541,
+        "diff": 0.02508282367158333,
+        "se_diff": 0.0055058310096269625,
+        "beta": 0.45266904972105715,
+        "se_naive": 0.07254298226721927,
+        "se_cluster_opp_team_season": 0.0800924005925102,
+        "n_clusters": 48,
+        "r2": 0.0012641739968272114,
+        "t_cluster": 5.651835209986055,
+        "t_naive": 6.240011584492154
+      },
+      "B1_own_rate_v2_split_alpha|O1_E0_leave_one_game_out_full_season": {
+        "n": 30764,
+        "corr": 0.03720373898249163,
+        "diff": 0.029793139233888415,
+        "se_diff": 0.005599918414110168,
+        "beta": 0.6333632728522129,
+        "se_naive": 0.09699698560411214,
+        "se_cluster_opp_team_season": 0.11783851394596423,
+        "n_clusters": 48,
+        "r2": 0.0013841181942774172,
+        "t_cluster": 5.374840972134515,
+        "t_naive": 6.529721196050878
+      },
+      "B1_own_rate_v2_split_alpha|O2_pregame_prior_games_only": {
+        "n": 30764,
+        "corr": 0.02881718165669519,
+        "diff": 0.01757439922911997,
+        "se_diff": 0.005599917136053939,
+        "beta": 0.3731535713274873,
+        "se_naive": 0.07379864940750896,
+        "se_cluster_opp_team_season": 0.09004020379286995,
+        "n_clusters": 48,
+        "r2": 0.0008304299586348041,
+        "t_cluster": 4.144299497432239,
+        "t_naive": 5.056373989542404
+      },
+      "B2_shrunk_expanding_pregame|O1_E0_leave_one_game_out_full_season": {
+        "n": 30764,
+        "corr": 0.03811967026181992,
+        "diff": 0.03129264180916517,
+        "se_diff": 0.005502156462059377,
+        "beta": 0.6376269415471089,
+        "se_naive": 0.09530034472490209,
+        "se_cluster_opp_team_season": 0.1151326695724485,
+        "n_clusters": 48,
+        "r2": 0.0014531092608697227,
+        "t_cluster": 5.53819297263732,
+        "t_naive": 6.690709707165374
+      },
+      "B2_shrunk_expanding_pregame|O2_pregame_prior_games_only": {
+        "n": 30764,
+        "corr": 0.029400013873639108,
+        "diff": 0.019539307700736322,
+        "se_diff": 0.00550215520631513,
+        "beta": 0.374054488000989,
+        "se_naive": 0.07250906014635819,
+        "se_cluster_opp_team_season": 0.08586644172685438,
+        "n_clusters": 48,
+        "r2": 0.0008643608157700156,
+        "t_cluster": 4.356236039113811,
+        "t_naive": 5.158727574815712
+      }
+    },
+    "fraction_of_e0_surviving": {
+      "B0_E0_leave_one_season_out|O1_E0_leave_one_game_out_full_season": {
+        "frac_of_E0_diff": 0.9172442516112943,
+        "frac_of_E0_corr": 0.9764215627967627
+      },
+      "B0_E0_leave_one_season_out|O2_pregame_prior_games_only": {
+        "frac_of_E0_diff": 0.6398679508056972,
+        "frac_of_E0_corr": 0.8007933469960679
+      },
+      "B1_own_rate_v2_split_alpha|O1_E0_leave_one_game_out_full_season": {
+        "frac_of_E0_diff": 0.7600290620889902,
+        "frac_of_E0_corr": 0.8379220491552168
+      },
+      "B1_own_rate_v2_split_alpha|O2_pregame_prior_games_only": {
+        "frac_of_E0_diff": 0.44832651094693804,
+        "frac_of_E0_corr": 0.6490356228985402
+      },
+      "B2_shrunk_expanding_pregame|O1_E0_leave_one_game_out_full_season": {
+        "frac_of_E0_diff": 0.7982816788052339,
+        "frac_of_E0_corr": 0.8585511320229712
+      },
+      "B2_shrunk_expanding_pregame|O2_pregame_prior_games_only": {
+        "frac_of_E0_diff": 0.49845172705960006,
+        "frac_of_E0_corr": 0.6621624746315115
+      }
+    },
+    "headline_numbers": {
+      "n": 30764,
+      "corr": 0.02881718165669519,
+      "diff_hi_minus_lo": 0.01757439922911997,
+      "ols_beta": 0.3731535713274873,
+      "se_naive": 0.07379864940750896,
+      "se_cluster_opp_team_season": 0.09004020379286995,
+      "n_clusters": 48,
+      "t_cluster": 4.144299497432239,
+      "r2_plain_unweighted": 0.0008304299586348041
+    },
+    "how_much_survives": {
+      "e0_published_diff": 0.0392,
+      "e0_published_corr": 0.0444,
+      "corrected_baseline_only_diff": 0.029793139233888415,
+      "corrected_baseline_only_pct_of_e0_diff": 76.00290620889902,
+      "fully_pregame_diff": 0.01757439922911997,
+      "fully_pregame_pct_of_e0_diff": 44.8326510946938,
+      "fully_pregame_pct_of_e0_corr": 64.90356228985402,
+      "plain_statement": "Swapping E0's non-pregame-observable own-rate baseline for the corrected own_rate_v2_split_alpha, holding E0's opponent measure fixed, cuts the hi-lo difference from +0.0392 to +0.0298 -- 76% survives. Additionally requiring the OPPONENT measure to be pregame-observable cuts it to +0.0176 -- 45% of the E0 headline survives. On the correlation metric 65% survives (+0.0444 -> +0.0288). The E0 headline was overstated by roughly 2.2x on the difference metric."
+    }
+  },
+  "per_season_betas": {
+    "note": "OLS slope of the shooting residual on the opponent rim allowance, by season, all cells on the common row set. Sign consistency is the E1 persistence question.",
+    "by_cell": {
+      "B0_E0_leave_one_season_out|O1_E0_leave_one_game_out_full_season": {
+        "2021": {
+          "beta": 0.70672515564978,
+          "corr": 0.04750781351775066,
+          "diff": 0.0324660933515688,
+          "n": 6322,
+          "t_cluster": 2.7871569377036596
+        },
+        "2022": {
+          "beta": 0.664469095478757,
+          "corr": 0.0377858282070351,
+          "diff": 0.02582770191833339,
+          "n": 7923,
+          "t_cluster": 2.9794503529474072
+        },
+        "2023": {
+          "beta": 0.8201019705913265,
+          "corr": 0.04960232523853685,
+          "diff": 0.026376112135235052,
+          "n": 8752,
+          "t_cluster": 5.474034199297857
+        },
+        "2024": {
+          "beta": 0.42670158041672557,
+          "corr": 0.020618486815822484,
+          "diff": -0.017373685100414205,
+          "n": 7767,
+          "t_cluster": 1.869425053428356
+        }
+      },
+      "B0_E0_leave_one_season_out|O2_pregame_prior_games_only": {
+        "2021": {
+          "beta": 0.48585513812831554,
+          "corr": 0.04021541928582445,
+          "diff": 0.03084827021454486,
+          "n": 6322,
+          "t_cluster": 2.4225613006855458
+        },
+        "2022": {
+          "beta": 0.34758353401859887,
+          "corr": 0.02861656275400175,
+          "diff": 0.01166356906420244,
+          "n": 7923,
+          "t_cluster": 2.019787795981824
+        },
+        "2023": {
+          "beta": 0.5026375252476613,
+          "corr": 0.033963702828593414,
+          "diff": 0.033415349277329275,
+          "n": 8752,
+          "t_cluster": 2.778904797540141
+        },
+        "2024": {
+          "beta": 0.33495342481590257,
+          "corr": 0.023955210142294257,
+          "diff": 0.027873026803739258,
+          "n": 7767,
+          "t_cluster": 2.3987230815909664
+        }
+      },
+      "B1_own_rate_v2_split_alpha|O1_E0_leave_one_game_out_full_season": {
+        "2021": {
+          "beta": 0.8932543750716921,
+          "corr": 0.059322212326774176,
+          "diff": 0.04764601611287804,
+          "n": 6322,
+          "t_cluster": 3.885571813510776
+        },
+        "2022": {
+          "beta": 0.6902972653265411,
+          "corr": 0.038486821669628635,
+          "diff": 0.02750548094596448,
+          "n": 7923,
+          "t_cluster": 3.12126145027049
+        },
+        "2023": {
+          "beta": 0.7322343605101878,
+          "corr": 0.043543254913778404,
+          "diff": 0.023155523542760226,
+          "n": 8752,
+          "t_cluster": 4.595572759758691
+        },
+        "2024": {
+          "beta": 0.3903957855956187,
+          "corr": 0.01851565633626483,
+          "diff": -0.017860544705082606,
+          "n": 7767,
+          "t_cluster": 1.779054773501904
+        }
+      },
+      "B1_own_rate_v2_split_alpha|O2_pregame_prior_games_only": {
+        "2021": {
+          "beta": 0.5653481982961817,
+          "corr": 0.046230597621387474,
+          "diff": 0.044801078519042345,
+          "n": 6322,
+          "t_cluster": 2.8558593866307573
+        },
+        "2022": {
+          "beta": 0.28087072229534044,
+          "corr": 0.022671824960454716,
+          "diff": 0.007940204700062993,
+          "n": 7923,
+          "t_cluster": 1.39643262273026
+        },
+        "2023": {
+          "beta": 0.4479688421109913,
+          "corr": 0.029760795617030853,
+          "diff": 0.030107767319260462,
+          "n": 8752,
+          "t_cluster": 2.439533442202746
+        },
+        "2024": {
+          "beta": 0.5090600952987832,
+          "corr": 0.03573436502637009,
+          "diff": 0.027354758872988313,
+          "n": 7767,
+          "t_cluster": 3.5120943868250403
+        }
+      },
+      "B2_shrunk_expanding_pregame|O1_E0_leave_one_game_out_full_season": {
+        "2021": {
+          "beta": 0.806804089676824,
+          "corr": 0.05447366279280786,
+          "diff": 0.038402958414927295,
+          "n": 6322,
+          "t_cluster": 3.5130313225190055
+        },
+        "2022": {
+          "beta": 0.6895178446715489,
+          "corr": 0.03917157022652903,
+          "diff": 0.025862526246907328,
+          "n": 7923,
+          "t_cluster": 3.0203188598372717
+        },
+        "2023": {
+          "beta": 0.7645492065892091,
+          "corr": 0.046213615900005015,
+          "diff": 0.024091677367468554,
+          "n": 8752,
+          "t_cluster": 4.633626741261287
+        },
+        "2024": {
+          "beta": 0.4118599041915179,
+          "corr": 0.019902547325000148,
+          "diff": -0.018741365354552838,
+          "n": 7767,
+          "t_cluster": 1.7588175092797262
+        }
+      },
+      "B2_shrunk_expanding_pregame|O2_pregame_prior_games_only": {
+        "2021": {
+          "beta": 0.5302057939102732,
+          "corr": 0.04407925690673857,
+          "diff": 0.0361477423962489,
+          "n": 6322,
+          "t_cluster": 2.7285905087086575
+        },
+        "2022": {
+          "beta": 0.34271476942257234,
+          "corr": 0.02818787947520605,
+          "diff": 0.01208789558442269,
+          "n": 7923,
+          "t_cluster": 1.8877608725582629
+        },
+        "2023": {
+          "beta": 0.5061609293683956,
+          "corr": 0.03418055191125559,
+          "diff": 0.03529676464527656,
+          "n": 8752,
+          "t_cluster": 2.6081684954226687
+        },
+        "2024": {
+          "beta": 0.37141655764499987,
+          "corr": 0.026564609489573038,
+          "diff": 0.026472870920269,
+          "n": 7767,
+          "t_cluster": 2.8070610407098693
+        }
+      }
+    },
+    "sign_consistency": {
+      "B0_E0_leave_one_season_out|O1_E0_leave_one_game_out_full_season": {
+        "n_seasons_positive": 4,
+        "n_seasons": 4
+      },
+      "B0_E0_leave_one_season_out|O2_pregame_prior_games_only": {
+        "n_seasons_positive": 4,
+        "n_seasons": 4
+      },
+      "B1_own_rate_v2_split_alpha|O1_E0_leave_one_game_out_full_season": {
+        "n_seasons_positive": 4,
+        "n_seasons": 4
+      },
+      "B1_own_rate_v2_split_alpha|O2_pregame_prior_games_only": {
+        "n_seasons_positive": 4,
+        "n_seasons": 4
+      },
+      "B2_shrunk_expanding_pregame|O1_E0_leave_one_game_out_full_season": {
+        "n_seasons_positive": 4,
+        "n_seasons": 4
+      },
+      "B2_shrunk_expanding_pregame|O2_pregame_prior_games_only": {
+        "n_seasons_positive": 4,
+        "n_seasons": 4
+      }
+    },
+    "half_split_inside_partition": {
+      "B0_E0_leave_one_season_out|O1_E0_leave_one_game_out_full_season": {
+        "2021_2022": {
+          "beta": 0.7032304723838854,
+          "corr": 0.04400996411325278,
+          "n": 14245
+        },
+        "2023_2024": {
+          "beta": 0.6855346436065529,
+          "corr": 0.03806156975837653,
+          "n": 16519
+        }
+      },
+      "B0_E0_leave_one_season_out|O2_pregame_prior_games_only": {
+        "2021_2022": {
+          "beta": 0.42465298711563176,
+          "corr": 0.03589574629976035,
+          "n": 14245
+        },
+        "2023_2024": {
+          "beta": 0.42195748869554905,
+          "corr": 0.029314666392312737,
+          "n": 16519
+        }
+      },
+      "B1_own_rate_v2_split_alpha|O1_E0_leave_one_game_out_full_season": {
+        "2021_2022": {
+          "beta": 0.7457605772333911,
+          "corr": 0.045915437644081555,
+          "n": 14245
+        },
+        "2023_2024": {
+          "beta": 0.5943582637971787,
+          "corr": 0.03241971543276195,
+          "n": 16519
+        }
+      },
+      "B1_own_rate_v2_split_alpha|O2_pregame_prior_games_only": {
+        "2021_2022": {
+          "beta": 0.36063561547765227,
+          "corr": 0.029990478248445317,
+          "n": 14245
+        },
+        "2023_2024": {
+          "beta": 0.47702779324878264,
+          "corr": 0.03255843674773996,
+          "n": 16519
+        }
+      },
+      "B2_shrunk_expanding_pregame|O1_E0_leave_one_game_out_full_season": {
+        "2021_2022": {
+          "beta": 0.7068532919662751,
+          "corr": 0.04430114981158398,
+          "n": 14245
+        },
+        "2023_2024": {
+          "beta": 0.6385228690947685,
+          "corr": 0.03544145529447186,
+          "n": 16519
+        }
+      },
+      "B2_shrunk_expanding_pregame|O2_pregame_prior_games_only": {
+        "2021_2022": {
+          "beta": 0.3838225818933438,
+          "corr": 0.032491645514753455,
+          "n": 14245
+        },
+        "2023_2024": {
+          "beta": 0.4406690863701692,
+          "corr": 0.030606004910149184,
+          "n": 16519
+        }
+      }
+    },
+    "e0_half_split_for_comparison": {
+      "2021_2022_corr": 0.049,
+      "2023_2024_corr": 0.034
+    }
+  },
+  "player_game_dR2": {
+    "what": "The 'incremental value over the player's own recent rate' claim in the form the frozen baseline was actually built for. Predict a player's Restricted-Area MAKES in a game. M0: ra_mk ~ 1 + split_alpha_projection. M1: adds exposure_channel * opponent_rim_allowance.",
+    "r2_convention": "plain unweighted OLS, 1 - SSE/SST about the unweighted mean",
+    "results": {
+      "O1_E0_leave_one_game_out_full_season|2021-2024": {
+        "m0": 0.20922795937418137,
+        "m0_coef": [
+          0.5808072604842632,
+          0.6982313541462425
+        ],
+        "m1": 0.21078563133785744,
+        "m1_coef": [
+          0.5428298878861062,
+          0.5800533195330184,
+          0.4673406532015594
+        ],
+        "dR2": 0.001557671963676066,
+        "n": 10742
+      },
+      "O1_E0_leave_one_game_out_full_season|2021": {
+        "m0": 0.22647113046096945,
+        "m0_coef": [
+          0.5357596656478093,
+          0.7225348767241518
+        ],
+        "m1": 0.2264884976506838,
+        "m1_coef": [
+          0.5309899460131272,
+          0.7114757853462732,
+          0.04697551774212422
+        ],
+        "dR2": 1.73671897143457e-05,
+        "n": 2269
+      },
+      "O1_E0_leave_one_game_out_full_season|2022": {
+        "m0": 0.19856384253841475,
+        "m0_coef": [
+          0.6290130814203843,
+          0.6693517136455926
+        ],
+        "m1": 0.19886982503701534,
+        "m1_coef": [
+          0.6088281663097386,
+          0.6158338848885011,
+          0.21908124255787947
+        ],
+        "dR2": 0.0003059824986005877,
+        "n": 2723
+      },
+      "O1_E0_leave_one_game_out_full_season|2023": {
+        "m0": 0.20014818352350627,
+        "m0_coef": [
+          0.5880375945473432,
+          0.695740370953189
+        ],
+        "m1": 0.20232178428002068,
+        "m1_coef": [
+          0.5437502851799043,
+          0.5549243074751595,
+          0.555959199593254
+        ],
+        "dR2": 0.0021736007565144044,
+        "n": 2911
+      },
+      "O1_E0_leave_one_game_out_full_season|2024": {
+        "m0": 0.2126995187544931,
+        "m0_coef": [
+          0.5695806646847461,
+          0.7064906005951523
+        ],
+        "m1": 0.21945337152739042,
+        "m1_coef": [
+          0.5130380649156183,
+          0.43476255905099004,
+          0.9941569930630993
+        ],
+        "dR2": 0.006753852772897306,
+        "n": 2839
+      },
+      "O1_E0_leave_one_game_out_full_season|2021-2022": {
+        "m0": 0.21190465896504906,
+        "m0_coef": [
+          0.583476134029598,
+          0.6945523569932173
+        ],
+        "m1": 0.21200481955094586,
+        "m1_coef": [
+          0.5719951358766068,
+          0.6660393718551321,
+          0.11870689313418416
+        ],
+        "dR2": 0.00010016058589679133,
+        "n": 4992
+      },
+      "O1_E0_leave_one_game_out_full_season|2023-2024": {
+        "m0": 0.20672388349242365,
+        "m0_coef": [
+          0.5784269454703211,
+          0.7013808215453546
+        ],
+        "m1": 0.21091924434243148,
+        "m1_coef": [
+          0.5263922133792914,
+          0.496983642744239,
+          0.7743915135662053
+        ],
+        "dR2": 0.004195360850007823,
+        "n": 5750
+      },
+      "O2_pregame_prior_games_only|2021-2024": {
+        "m0": 0.2094806218964329,
+        "m0_coef": [
+          0.5804189269198645,
+          0.698786597100897
+        ],
+        "m1": 0.21040293839010937,
+        "m1_coef": [
+          0.5565248810668657,
+          0.6220303960611558,
+          0.30471201522291735
+        ],
+        "dR2": 0.0009223164936764672,
+        "n": 10734
+      },
+      "O2_pregame_prior_games_only|2021": {
+        "m0": 0.22647113046096945,
+        "m0_coef": [
+          0.5357596656478093,
+          0.7225348767241518
+        ],
+        "m1": 0.22661951335481556,
+        "m1_coef": [
+          0.5241426629815659,
+          0.6948236368112359,
+          0.12375443456446289
+        ],
+        "dR2": 0.0001483828938461107,
+        "n": 2269
+      },
+      "O2_pregame_prior_games_only|2022": {
+        "m0": 0.19953390415554773,
+        "m0_coef": [
+          0.6275207599290219,
+          0.6714818724113888
+        ],
+        "m1": 0.19953390849009145,
+        "m1_coef": [
+          0.6274651070682935,
+          0.6713227363453419,
+          0.0006467899370852515
+        ],
+        "dR2": 4.33454372394948e-09,
+        "n": 2715
+      },
+      "O2_pregame_prior_games_only|2023": {
+        "m0": 0.20014818352350627,
+        "m0_coef": [
+          0.5880375945473432,
+          0.695740370953189
+        ],
+        "m1": 0.20157182427231835,
+        "m1_coef": [
+          0.5537273837866167,
+          0.5850830241392774,
+          0.42802476478100887
+        ],
+        "dR2": 0.0014236407488120717,
+        "n": 2911
+      },
+      "O2_pregame_prior_games_only|2024": {
+        "m0": 0.2126995187544931,
+        "m0_coef": [
+          0.5695806646847461,
+          0.7064906005951523
+        ],
+        "m1": 0.21711605517241928,
+        "m1_coef": [
+          0.5329328211250204,
+          0.5326017068766136,
+          0.6402032695564883
+        ],
+        "dR2": 0.004416536417926165,
+        "n": 2839
+      },
+      "O2_pregame_prior_games_only|2021-2022": {
+        "m0": 0.2124592298971747,
+        "m0_coef": [
+          0.582655185679276,
+          0.69575131171993
+        ],
+        "m1": 0.21247817241677402,
+        "m1_coef": [
+          0.5787827435690752,
+          0.6855741295388115,
+          0.04310499242575555
+        ],
+        "dR2": 1.89425195993298e-05,
+        "n": 4984
+      },
+      "O2_pregame_prior_games_only|2023-2024": {
+        "m0": 0.20672388349242365,
+        "m0_coef": [
+          0.5784269454703211,
+          0.7013808215453546
+        ],
+        "m1": 0.20959560053877813,
+        "m1_coef": [
+          0.5405667875199509,
+          0.5541627650204901,
+          0.5547234598648358
+        ],
+        "dR2": 0.0028717170463544717,
+        "n": 5750
+      }
+    },
+    "reading": "Pooled 2021-2024 with the pregame opponent measure, dR2 = +0.00092 on 10,734 player-games. All four seasons are non-negative, but 2022 is +0.0000004 and 2021 is +0.00015 -- i.e. two of the four seasons are indistinguishable from zero, and essentially all of the pooled effect comes from 2023 (+0.00142) and 2024 (+0.00442). The per-season interaction coefficients (+0.124, +0.001, +0.428, +0.640) rank the same way as the shot-level per-season betas, so this is the same signal measured with far less power, not a contradiction -- but the practical increment at the player-game level is about 0.001 R2 and is not stable season to season."
+  },
+  "placebo": {
+    "n_draws": 400,
+    "seed": 20260807,
+    "deliberate_noop_diagnostic": {
+      "purpose": "Run ON PURPOSE as a positive diagnostic, to demonstrate that the genuine controls below are genuine.",
+      "defective_design": "Permute the GROUPING KEY (a bijective relabel of opponent teams within season) and then RECOMPUTE the aggregate from the permuted key.",
+      "why_it_is_a_no_op": "A bijective relabel maps each permuted cell onto exactly the same row set under a different name, so every row still receives its OWN true value.",
+      "expected_signature": "reproduces the real number exactly, sd exactly 0.000000",
+      "observed": {
+        "headline_fully_pregame": {
+          "signature_confirmed": true,
+          "reference_is": "identity relabel through the same recompute pipeline",
+          "corr": {
+            "reference": 0.04398544925415757,
+            "mean_of_draws": 0.04398544925415759,
+            "sd": 1.38951676365506e-17,
+            "max_abs_dev_from_reference": 0.0
+          },
+          "diff": {
+            "reference": 0.03913511015284003,
+            "mean_of_draws": 0.03913511015284004,
+            "sd": 6.9475838182753e-18,
+            "max_abs_dev_from_reference": 0.0
+          },
+          "beta": {
+            "reference": 0.6367863804683076,
+            "mean_of_draws": 0.6367863804683074,
+            "sd": 2.223226821848096e-16,
+            "max_abs_dev_from_reference": 0.0
+          }
+        },
+        "e0_cell_retrospective": {
+          "signature_confirmed": true,
+          "reference_is": "identity relabel through the same recompute pipeline",
+          "corr": {
+            "reference": 0.06041204693608811,
+            "mean_of_draws": 0.06041204693608812,
+            "sd": 1.38951676365506e-17,
+            "max_abs_dev_from_reference": 0.0
+          },
+          "diff": {
+            "reference": 0.04578965484684377,
+            "mean_of_draws": 0.04578965484684376,
+            "sd": 6.9475838182753e-18,
+            "max_abs_dev_from_reference": 0.0
+          },
+          "beta": {
+            "reference": 1.0177519094251983,
+            "mean_of_draws": 1.0177519094251986,
+            "sd": 2.223226821848096e-16,
+            "max_abs_dev_from_reference": 0.0
+          }
+        }
+      },
+      "conclusion": "Signature confirmed on both cells: across 400 draws every draw is bit-identical to the identity-relabel reference (max deviation exactly 0.0) and sd is 0 to float precision (~1e-17 rounding dust from numpy's two-pass std on a constant array). This control tests NOTHING and is reported only as the contrast case."
+    },
+    "genuine_controls": {
+      "P1_permute_computed_value_across_teams": {
+        "design": "The CORRECT form: permute the assignment of an ALREADY-COMPUTED value to rows. The team-season allowance values are reshuffled across teams within season and re-assigned to shots. Preserves the marginal distribution and the clustered row structure; destroys only the true team<->allowance pairing.",
+        "is_the_one_to_read": true,
+        "by_cell": {
+          "headline_fully_pregame": {
+            "corr": {
+              "real": 0.044113512892881714,
+              "mean": -0.0016527948875996537,
+              "sd": 0.00975030455754002,
+              "p05": -0.018131504204709832,
+              "p95": 0.014484783484128976,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.02881718165669519,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 3.1250281839383227
+            },
+            "diff": {
+              "real": 0.03913511015284003,
+              "mean": -0.0004753866960922695,
+              "sd": 0.009749680132557047,
+              "p05": -0.01455876164729482,
+              "p95": 0.015399907756231759,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.01757439922911997,
+              "frac_ge_real_rowlevel": 0.03,
+              "z_rowlevel": 1.851320831022825
+            },
+            "beta": {
+              "real": 0.6471446976616512,
+              "mean": -0.02376508213955054,
+              "sd": 0.14133855281269575,
+              "p05": -0.2628870127522007,
+              "p95": 0.20936328707747343,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.37315357132749294,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 2.8082829883863805
+            }
+          },
+          "e0_cell_retrospective": {
+            "corr": {
+              "real": 0.060404151781474784,
+              "mean": 0.004633653708072712,
+              "sd": 0.0101877012130519,
+              "p05": -0.012674628722526105,
+              "p95": 0.023180991461941466,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.043353117388176265,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 3.8006084857002276
+            },
+            "diff": {
+              "real": 0.04578965484684377,
+              "mean": 0.0050419863198207,
+              "sd": 0.00938966233230802,
+              "p05": -0.008646418093236855,
+              "p95": 0.02131104686003593,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.035955974663162735,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 3.292342924513159
+            },
+            "beta": {
+              "real": 1.0153654814713826,
+              "mean": 0.07837737370024697,
+              "sd": 0.17208691930687245,
+              "p05": -0.21259270254673884,
+              "p95": 0.3912721578637949,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.7256511634264682,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 3.76131894471291
+            }
+          }
+        }
+      },
+      "P2_shuffle_computed_value_across_rows": {
+        "design": "Also a correct form, but it additionally destroys within-team clustering, so its sd is an UNDERSTATED noise floor. Reported for contrast only; P1 is the one to read.",
+        "is_the_one_to_read": false,
+        "by_cell": {
+          "headline_fully_pregame": {
+            "corr": {
+              "real": 0.044113512892881714,
+              "mean": -0.003681717087487488,
+              "sd": 0.005514364690577887,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.02881718165669519,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 5.893498266393567
+            },
+            "diff": {
+              "real": 0.03913511015284003,
+              "mean": -0.0017712503177208716,
+              "sd": 0.005551037221711184,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.01757439922911997,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 3.4850513109831533
+            },
+            "beta": {
+              "real": 0.6471446976616512,
+              "mean": -0.05401074489905031,
+              "sd": 0.08089566294902883,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.37315357132749294,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 5.280435324396726
+            }
+          },
+          "e0_cell_retrospective": {
+            "corr": {
+              "real": 0.060404151781474784,
+              "mean": 0.0041962873639751555,
+              "sd": 0.005635900258046137,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.043353117388176265,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 6.947750710864437
+            },
+            "diff": {
+              "real": 0.04578965484684377,
+              "mean": 0.0033360086332553697,
+              "sd": 0.005351097415077091,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.035955974663162735,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 6.0959394867300185
+            },
+            "beta": {
+              "real": 1.0153654814713826,
+              "mean": 0.07053762388932461,
+              "sd": 0.09473684192666817,
+              "frac_ge_real": 0.0,
+              "real_rowlevel": 0.7256511634264682,
+              "frac_ge_real_rowlevel": 0.0,
+              "z_rowlevel": 6.9150873748170705
+            }
+          }
+        }
+      }
+    },
+    "deterministic_controls": {
+      "note": "sd is 0 BY CONSTRUCTION -- there is nothing random in these. This is NOT the D0 defect signature and must not be confused with it.",
+      "controls": [
+        {
+          "control": "C1_opponent_pooled_fg_allowed_not_rim_specific",
+          "kind": "DETERMINISTIC",
+          "cell": "headline_fully_pregame",
+          "sd_note": "sd 0 by construction",
+          "n": 30764,
+          "corr": 0.02126191370149953,
+          "diff": 0.007455747558054121,
+          "beta": 0.7227202437354828
+        },
+        {
+          "control": "C1_opponent_pooled_fg_allowed_not_rim_specific",
+          "kind": "DETERMINISTIC",
+          "cell": "e0_cell_retrospective",
+          "sd_note": "sd 0 by construction",
+          "n": 30764,
+          "corr": 0.021954618283991038,
+          "diff": 0.00921501257734124,
+          "beta": 0.7337279043685812
+        },
+        {
+          "control": "C2_above_the_break_3_zone_no_real_dispersion",
+          "kind": "DETERMINISTIC",
+          "cell": "e0_cell_retrospective",
+          "sd_note": "sd 0 by construction",
+          "n": 34961,
+          "corr": 0.0027,
+          "diff": 0.0033,
+          "beta": null
+        }
+      ]
+    },
+    "headline_reading": "Headline cell (fully pregame), scored against the genuine P1 null of 400 draws: correlation z = +3.13 with 0/400 draws >= real; OLS slope z = +2.81 with 0/400 >= real; hi-lo difference z = +1.85 with 12/400 (frac 0.030) draws >= real. The difference metric is the weakest of the three. On the like-for-like team-season-mean comparator all three metrics are 0/400."
+  },
+  "robustness": {
+    "R1_net_of_pooled_opponent_defence": {
+      "why": "The lead claims the effect is net of POOLED opponent defence. Deterministic control C1 shows the shooting residual also correlates positively with the opponent's pooled FG% allowed (corr ~ +0.021), so the claim needed a direct test rather than an assumption.",
+      "test": "Put pooled allowance and rim-specific allowance in the SAME regression, SEs clustered on (opponent team, season).",
+      "results": {
+        "B1_own_rate_v2_split_alpha|O2_pregame_prior_games_only": {
+          "univariate": {
+            "coef": [
+              -0.06849350117194467,
+              0.3731535713274873
+            ],
+            "se_cluster": [
+              0.01679629715220432,
+              0.0900402037928699
+            ],
+            "r2": 0.0008304299586348041,
+            "n": 30764,
+            "n_clusters": 48
+          },
+          "bivariate_with_pooled": {
+            "coef": [
+              -0.33665013168312663,
+              0.6209158101163563,
+              0.3466935554234796
+            ],
+            "se_cluster": [
+              0.10713876145438361,
+              0.24187525764959095,
+              0.07559767772527629
+            ],
+            "r2": 0.0011599340963747151,
+            "n": 30764,
+            "n_clusters": 48
+          }
+        },
+        "B1_own_rate_v2_split_alpha|O1_E0_leave_one_game_out_full_season": {
+          "univariate": {
+            "coef": [
+              -0.11672221813889874,
+              0.6333632728522129
+            ],
+            "se_cluster": [
+              0.02167022872863663,
+              0.11783851394596456
+            ],
+            "r2": 0.0013841181942774172,
+            "n": 30764,
+            "n_clusters": 48
+          },
+          "bivariate_with_pooled": {
+            "coef": [
+              -0.388253318384776,
+              0.6278858611668497,
+              0.6088304809446321
+            ],
+            "se_cluster": [
+              0.08912325098115341,
+              0.19529286131536452,
+              0.10221485851516506
+            ],
+            "r2": 0.0017232546328433962,
+            "n": 30764,
+            "n_clusters": 48
+          }
+        },
+        "B0_E0_leave_one_season_out|O2_pregame_prior_games_only": {
+          "univariate": {
+            "coef": [
+              -0.07812584539936844,
+              0.45266904972105715
+            ],
+            "se_cluster": [
+              0.015290081995260989,
+              0.08009240059251069
+            ],
+            "r2": 0.0012641739968272114,
+            "n": 30764,
+            "n_clusters": 48
+          },
+          "bivariate_with_pooled": {
+            "coef": [
+              -0.34088494540430714,
+              0.6084178456971184,
+              0.4267416283039554
+            ],
+            "se_cluster": [
+              0.10217024815165145,
+              0.23385217054740928,
+              0.06891397083699795
+            ],
+            "r2": 0.0015914519651365477,
+            "n": 30764,
+            "n_clusters": 48
+          }
+        },
+        "B0_E0_leave_one_season_out|O1_E0_leave_one_game_out_full_season": {
+          "univariate": {
+            "coef": [
+              -0.12881988419485071,
+              0.725651163426491
+            ],
+            "se_cluster": [
+              0.017553764863954473,
+              0.09395402478837131
+            ],
+            "r2": 0.0018794927872727296,
+            "n": 30764,
+            "n_clusters": 48
+          },
+          "bivariate_with_pooled": {
+            "coef": [
+              -0.39888576095323464,
+              0.6244976927013802,
+              0.7012507542289728
+            ],
+            "se_cluster": [
+              0.06939756093009122,
+              0.1551485394402159,
+              0.07590197269070674
+            ],
+            "r2": 0.0022265428845396062,
+            "n": 30764,
+            "n_clusters": 48
+          }
+        }
+      },
+      "headline": {
+        "univariate_rim_beta": 0.3731535713274873,
+        "bivariate_rim_beta": 0.3466935554234796,
+        "pct_retained": 92.9090814246058
+      },
+      "conclusion": "The rim-specific term retains 93-97% of its univariate slope in every cell once pooled allowance is controlled, and its clustered t-statistic RISES. The 'net of pooled opponent defence' claim holds."
+    },
+    "R2_fixed_effects": {
+      "why": "Is the effect within-player, or composition -- which players happen to face permissive rim defences?",
+      "test": "Demean both sides within (player, season) and within (shooter's team, season); SEs clustered on (opponent team, season).",
+      "results": {
+        "player_season|B1_own_rate_v2_split_alpha|O2_pregame_prior_games_only": {
+          "coef": [
+            3.013717786742561e-18,
+            0.43177337121805137
+          ],
+          "se_cluster": [
+            0.0037738818305037658,
+            0.09273950702017486
+          ],
+          "r2": 0.001008076351977305,
+          "n": 30764,
+          "n_clusters": 48
+        },
+        "player_season|B1_own_rate_v2_split_alpha|O1_E0_leave_one_game_out_full_season": {
+          "coef": [
+            3.925581453343309e-18,
+            0.7042506829375014
+          ],
+          "se_cluster": [
+            0.0029687118030038285,
+            0.10890692779460782
+          ],
+          "r2": 0.001582332309202128,
+          "n": 30764,
+          "n_clusters": 48
+        },
+        "player_season|B0_E0_leave_one_season_out|O2_pregame_prior_games_only": {
+          "coef": [
+            1.8737163523462115e-18,
+            0.42163207526241564
+          ],
+          "se_cluster": [
+            0.003431409857337186,
+            0.0817929137739706
+          ],
+          "r2": 0.0009966947733328624,
+          "n": 30764,
+          "n_clusters": 48
+        },
+        "player_season|B0_E0_leave_one_season_out|O1_E0_leave_one_game_out_full_season": {
+          "coef": [
+            2.7444880787290887e-18,
+            0.6707786480370788
+          ],
+          "se_cluster": [
+            0.002579519942948125,
+            0.101096958078604
+          ],
+          "r2": 0.0014883832743629588,
+          "n": 30764,
+          "n_clusters": 48
+        },
+        "shooting_team_season|B1_own_rate_v2_split_alpha|O2_pregame_prior_games_only": {
+          "coef": [
+            1.4742054370012633e-18,
+            0.4501391540504512
+          ],
+          "se_cluster": [
+            0.0037717457207626518,
+            0.09227257225769266
+          ],
+          "r2": 0.0011054731015662789,
+          "n": 30764,
+          "n_clusters": 48
+        },
+        "shooting_team_season|B1_own_rate_v2_split_alpha|O1_E0_leave_one_game_out_full_season": {
+          "coef": [
+            1.4930248391115432e-18,
+            0.7134173193290614
+          ],
+          "se_cluster": [
+            0.0029789527259329505,
+            0.10621657693641481
+          ],
+          "r2": 0.0016352284445199095,
+          "n": 30764,
+          "n_clusters": 48
+        },
+        "shooting_team_season|B0_E0_leave_one_season_out|O2_pregame_prior_games_only": {
+          "coef": [
+            3.2987348318513112e-18,
+            0.44288979226756053
+          ],
+          "se_cluster": [
+            0.003572344083027734,
+            0.08486772699775433
+          ],
+          "r2": 0.00110734707008886,
+          "n": 30764,
+          "n_clusters": 48
+        },
+        "shooting_team_season|B0_E0_leave_one_season_out|O1_E0_leave_one_game_out_full_season": {
+          "coef": [
+            3.317267854430323e-18,
+            0.7065558913291742
+          ],
+          "se_cluster": [
+            0.002685329077717885,
+            0.1025846206410178
+          ],
+          "r2": 0.0016596709816563138,
+          "n": 30764,
+          "n_clusters": 48
+        }
+      },
+      "conclusion": "Under player-season fixed effects the headline slope RISES from +0.373 to +0.432 (t = +4.66); under shooting-team-season fixed effects to +0.450 (t = +4.88). The effect is within player and within team, not a composition artifact."
+    },
+    "negative_zone_control": {
+      "zone": "Above the Break 3",
+      "why": "E0's own dispersion test found NO real between-team dispersion in opponent allowance in this zone, so a correct measurement should find nothing here.",
+      "corr": 0.002727638044536568,
+      "diff": 0.0033114714929014816,
+      "se": 0.00509467212449632,
+      "conclusion": "corr +0.0027, diff +0.0033 against SE 0.0051 -- indistinguishable from zero, as it should be."
+    }
+  },
+  "verdicts": [
+    {
+      "target": "restricted_area_conversion_x_opponent_rim_allowance (existence and within-partition persistence)",
+      "verdict": "keep_as_lead",
+      "reasoning": "Persists on every axis tested. Fully pregame-observable on both sides: OLS slope +0.373, cluster-robust SE 0.090 over 48 opponent-team-season clusters (t = +4.14), plain unweighted R2 = 0.00083 on 30,764 RA shots. Positive in 4/4 seasons and in both halves of the partition. Retains 93% of its slope controlling for pooled opponent allowance, and STRENGTHENS under player-season and shooting-team-season fixed effects. Genuine permutation null (400 draws, values reassigned across teams): 0/400 >= real on correlation and slope. Negative-zone control (Above the Break 3) is flat."
+    },
+    {
+      "target": "the E0 headline MAGNITUDE (+0.0444 raw corr / +0.0392 diff, sd 0.0052)",
+      "verdict": "kill",
+      "reasoning": "Overstated by roughly 2.2x on the difference metric. E0 stated it over a leave-one-season-out own-zone rate that reads the player's LATER seasons and carries no within-season time variation, against an opponent measure that reads the opponent's LATER games. Neither side is pregame-observable, so the +0.0392 is not a forecasting increment at all. Re-measured with both sides pregame-observable it is +0.0176 (45% of the published diff) and corr +0.0288 (65%). The number as published should not be carried forward; the revised figures should replace it."
+    },
+    {
+      "target": "player-game dR2 of opponent rim allowance over own_rate_v2_split_alpha",
+      "verdict": "keep_as_lead",
+      "reasoning": "Persists in the weak sense E1 asks about -- non-negative in 4/4 seasons, pooled dR2 = +0.00092 on 10,734 player-games -- but it is small and unstable: 2022 is +0.0000004 and 2021 is +0.00015, so essentially all of it comes from 2023 and 2024. Kept because the per-season interaction coefficients rank identically to the shot-level per-season betas (same signal, far less power), NOT because the increment has been shown to be economically useful. Whether ~0.001 R2 is worth anything is an E2 question and is explicitly NOT claimed here."
+    },
+    {
+      "target": "Corner 3 / Above the Break 3 / Paint (Non-RA) / Mid-Range / Backcourt",
+      "verdict": "kill",
+      "reasoning": "Already killed at E0 for this framing; reproduced exactly here and not revisited. Above the Break 3 is retained only as a negative control."
+    }
+  ],
+  "could_not_establish": [
+    "No multiplicity correction across the 5 zones E0 tested. Restricted Area was pre-selected by an independent between-team dispersion test rather than by its interaction size, which mitigates the concern but does not remove it.",
+    "The shot-SELECTION / tendency channel was not tested -- whether a player's SHARE of shots taken at the rim shifts with the opponent's rim-share allowance. Only the conversion channel is measured here, same as E0.",
+    "Concentration by player type / role was not tested. The player-season fixed-effect result shows the effect is within-player, but not whether it is broad-based or driven by a subset of high-volume rim finishers.",
+    "No walk-forward and no preregistration -- deliberately out of E1 scope per GRAPH_POLICY section 13.",
+    "The B2 shrinkage constant K = 50 pseudo-attempts was chosen by judgement, not tuned. B2 is a robustness variant only; the headline uses B1, whose constants come from the frozen baseline.",
+    "The opponent allowance is built from shot-event data only. Whether the effect survives conditioning on pace, rest, or home/away was not tested."
+  ],
+  "artifacts": {
+    "scripts": [
+      "build_and_measure.py",
+      "placebo.py",
+      "robustness.py",
+      "verify_partition.py",
+      "make_findings.py"
+    ],
+    "run_logs": [
+      "run_log_00_validate_baseline.txt",
+      "run_log_01_build_and_measure.txt",
+      "run_log_02_placebo.txt",
+      "run_log_03_robustness.txt",
+      "run_log_04_verify_partition.txt"
+    ],
+    "data": [
+      "ra_common_frame.parquet",
+      "player_game_ra_frame.parquet",
+      "measure_results.json",
+      "placebo_results.json",
+      "robustness_results.json"
+    ],
+    "notes": "NOTES.md",
+    "sandbox": "_validate_sandbox/ -- an isolated COPY of the frozen baseline module plus E1_I0011's frame.parquet and grid_metrics.parquet. validate_baseline.py writes BASELINE_PERFORMANCE.json next to itself, so it was run against this copy rather than in the source screen's directory. Nothing outside this screen's own directory was written."
+  },
+  "baseline_validation": {
+    "script_run": "experiments/exploration/E1_I0011_split_alpha/baseline/validate_baseline.py (via the isolated copy in _validate_sandbox/)",
+    "log": "run_log_00_validate_baseline.txt",
+    "equivalence_checks": 24,
+    "equivalence_checks_matched": 24,
+    "max_abs_diff_vs_source_grid": 0.0,
+    "result": "REPRODUCES. All 24 module-vs-grid MAE checks match at |d| = 0.00e+00, far inside the 1e-9 requirement. The baseline is runnable and is the same estimator the source screen measured.",
+    "module": {
+      "id": "own_rate_v2_split_alpha",
+      "alpha_eff": 0.03,
+      "alpha_exp": 0.3,
+      "min_prior": 3
+    }
+  }
+}

@@ -1,0 +1,86 @@
+﻿[partition-check] frame seasons: [2021, 2022, 2023, 2024] (18212, 20)
+
+================================================================================================
+EQUIVALENCE CHECK -- module output vs the E1 grid, same cell, same rows
+================================================================================================
+  pts  corrected  2021  module 4.182768905  grid 4.182768905  |d| 0.00e+00  n 3433/3433  MATCH
+  pts  corrected  2022  module 3.966515713  grid 3.966515713  |d| 0.00e+00  n 4030/4030  MATCH
+  pts  corrected  2023  module 4.065448581  grid 4.065448581  |d| 0.00e+00  n 4435/4435  MATCH
+  pts  corrected  2024  module 4.033100877  grid 4.033100877  |d| 0.00e+00  n 4447/4447  MATCH
+  pts  incumbent  2021  module 4.262267918  grid 4.262267918  |d| 0.00e+00  n 3433/3433  MATCH
+  pts  incumbent  2022  module 4.093315351  grid 4.093315351  |d| 0.00e+00  n 4030/4030  MATCH
+  pts  incumbent  2023  module 4.187762522  grid 4.187762522  |d| 0.00e+00  n 4435/4435  MATCH
+  pts  incumbent  2024  module 4.147008954  grid 4.147008954  |d| 0.00e+00  n 4447/4447  MATCH
+  reb  corrected  2021  module 1.868328601  grid 1.868328601  |d| 0.00e+00  n 3433/3433  MATCH
+  reb  corrected  2022  module 1.764521970  grid 1.764521970  |d| 0.00e+00  n 4030/4030  MATCH
+  reb  corrected  2023  module 1.771885638  grid 1.771885638  |d| 0.00e+00  n 4435/4435  MATCH
+  reb  corrected  2024  module 1.757938287  grid 1.757938287  |d| 0.00e+00  n 4447/4447  MATCH
+  reb  incumbent  2021  module 1.915468652  grid 1.915468652  |d| 0.00e+00  n 3433/3433  MATCH
+  reb  incumbent  2022  module 1.811303207  grid 1.811303207  |d| 0.00e+00  n 4030/4030  MATCH
+  reb  incumbent  2023  module 1.821802441  grid 1.821802441  |d| 0.00e+00  n 4435/4435  MATCH
+  reb  incumbent  2024  module 1.814075719  grid 1.814075719  |d| 0.00e+00  n 4447/4447  MATCH
+  ast  corrected  2021  module 1.219685111  grid 1.219685111  |d| 0.00e+00  n 3433/3433  MATCH
+  ast  corrected  2022  module 1.224282391  grid 1.224282391  |d| 0.00e+00  n 4030/4030  MATCH
+  ast  corrected  2023  module 1.205440080  grid 1.205440080  |d| 0.00e+00  n 4435/4435  MATCH
+  ast  corrected  2024  module 1.202370737  grid 1.202370737  |d| 0.00e+00  n 4447/4447  MATCH
+  ast  incumbent  2021  module 1.250684948  grid 1.250684948  |d| 0.00e+00  n 3433/3433  MATCH
+  ast  incumbent  2022  module 1.277301527  grid 1.277301527  |d| 0.00e+00  n 4030/4030  MATCH
+  ast  incumbent  2023  module 1.254562316  grid 1.254562316  |d| 0.00e+00  n 4435/4435  MATCH
+  ast  incumbent  2024  module 1.231114056  grid 1.231114056  |d| 0.00e+00  n 4447/4447  MATCH
+  all equivalence checks MATCH.
+
+================================================================================================
+PER-SEASON MAE. The corrected baseline is a FROZEN estimator -- nothing is fit
+on any season -- so every season below is out-of-sample in the only sense that
+matters for a baseline.
+================================================================================================
+target season        n   corrected  per-target   incumbent   naive STD   vs INC%  vs naive%
+pts    2021       3433      4.1828      4.1783      4.2623      4.2137     1.865      0.733
+pts    2022       4030      3.9665      3.9664      4.0933      4.0357     3.098      1.714
+pts    2023       4435      4.0654      4.0641      4.1878      4.1027     2.921      0.907
+pts    2024       4447      4.0331      4.0307      4.1470      4.1065     2.747      1.788
+reb    2021       3433      1.8683      1.8683      1.9155      1.8923     2.461      1.268
+reb    2022       4030      1.7645      1.7645      1.8113      1.7988     2.583      1.906
+reb    2023       4435      1.7719      1.7719      1.8218      1.7965     2.740      1.371
+reb    2024       4447      1.7579      1.7579      1.8141      1.8032     3.095      2.512
+ast    2021       3433      1.2197      1.2197      1.2507      1.2232     2.479      0.284
+ast    2022       4030      1.2243      1.2243      1.2773      1.2457     4.151      1.719
+ast    2023       4435      1.2054      1.2054      1.2546      1.2278     3.915      1.824
+ast    2024       4447      1.2024      1.2024      1.2311      1.2255     2.335      1.885
+
+Across the four seasons (mean +- sd of the % gap):
+  pts   vs incumbent +2.658% sd 0.547 (4/4 positive: True)   vs naive +1.286% sd 0.543 (4/4 positive: True)
+  reb   vs incumbent +2.720% sd 0.275 (4/4 positive: True)   vs naive +1.764% sd 0.571 (4/4 positive: True)
+  ast   vs incumbent +3.220% sd 0.946 (4/4 positive: True)   vs naive +1.428% sd 0.766 (4/4 positive: True)
+
+================================================================================================
+HYGIENE VARIANT -- alphas REFIT with .fit() on the three training seasons of
+each LOSO fold, then scored on the held-out season. Confirms the frozen
+constants are not doing work that per-fold refitting would undo.
+NOTE: .fit() here uses a COARSE grid purely to exercise the public API at
+acceptable cost. The full 14x14 per-fold re-selection is done efficiently in
+../folds.py (arm SPLIT_tuned) and that is the authoritative version.
+================================================================================================
+target held-out  refit eff/exp     refit MAE  frozen MAE  frozen - refit
+pts    2021      0.03 / 0.20          4.1755      4.1828        +0.00725
+pts    2022      0.03 / 0.20          3.9680      3.9665        -0.00150
+pts    2023      0.03 / 0.20          4.0644      4.0654        +0.00108
+pts    2024      0.03 / 0.20          4.0309      4.0331        +0.00216
+reb    2021      0.03 / 0.30          1.8683      1.8683        +0.00000
+reb    2022      0.03 / 0.30          1.7645      1.7645        +0.00000
+reb    2023      0.03 / 0.30          1.7719      1.7719        +0.00000
+reb    2024      0.03 / 0.30          1.7579      1.7579        +0.00000
+ast    2021      0.03 / 0.30          1.2197      1.2197        +0.00000
+ast    2022      0.03 / 0.30          1.2243      1.2243        +0.00000
+ast    2023      0.03 / 0.30          1.2054      1.2054        +0.00000
+ast    2024      0.03 / 0.30          1.2024      1.2024        +0.00000
+
+================================================================================================
+WARM-UP -- rows the gate EXCLUDES (n_prior 1-2). What should a caller do there?
+================================================================================================
+target   n rows   warmup=std MAE   split-alpha MAE   incumbent MAE     best option
+pts        1233           4.3135            4.3580          4.3564      warmup_std
+reb        1233           2.0223            2.0450          2.0499      warmup_std
+ast        1233           1.2672            1.2794          1.2822      warmup_std
+
+wrote BASELINE_PERFORMANCE.json

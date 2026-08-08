@@ -1,0 +1,56 @@
+﻿====================================================================================================
+1. STRUCTURAL -- season/date column values in every output (24 files)
+====================================================================================================
+  player_game_ra_frame.parquet                   season=[2021, 2022, 2023, 2024] PASS
+      date col 'game_date': 2021-05-14 .. 2024-10-20 PASS
+  ra_common_frame.parquet                        season=[2021, 2022, 2023, 2024] PASS
+      date col 'GAME_DATE': 2021-05-21 .. 2024-10-20 PASS
+      date col 'game_date': 2021-05-21 .. 2024-10-20 PASS
+  _validate_sandbox\frame.parquet                season=[2021, 2022, 2023, 2024] PASS
+      date col 'game_date': 2021-05-14 .. 2024-10-20 PASS
+  _validate_sandbox\grid_metrics.parquet         season=[2021, 2022, 2023, 2024] PASS
+
+====================================================================================================
+2. ARTIFACT CONTAMINATION -- asof_granularity from each artifact's manifest
+====================================================================================================
+  data/shotcharts/shots_{2021,2022,2023,2024}_{regular,playoffs}.parquet
+      RAW per-season shot files; 8 opened, all inside the partition. No .manifest.json exists for these (checked: 0 manifest files in data/shotcharts/). They are raw single-season sources -- season is the FILENAME, so there is nothing pooled to contaminate. shots_2025_*, shots_2026_* were never opened.
+  data/zone_maps/*.csv
+      NOT READ. E0 I0004 established their shrinkage priors are pooled across 2021-2026. That decision is deliberately preserved; this screen rebuilds zone rates from the raw per-season shot files instead.
+
+  data/masters/master_player.parquet
+      asof_granularity = 'row'  -> SAFE when filtered
+      (fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026], fit_through_season=2026 -- these describe what the file CONTAINS and are NOT the contamination test)
+      Reached only via the frozen baseline's own validate_baseline.py, which scores E1_I0011's frame.parquet (seasons 2021-2024, asserted at load). This screen's own code path never reads it.
+
+  Frozen baseline module: experiments/exploration/E1_I0011_split_alpha/baseline/corrected_baseline.py -- pure code, contains no season logic and no fitted data; its constants were established on 2021-2024 only (SPEC.md section 7). Imported, not reimplemented.
+
+====================================================================================================
+3. TARGETED TEXTUAL -- ISO dates in 2025/2026, or 2025/2026 next to a season word.
+   Bare digit runs inside floats and row counts are NOT flagged -- that is the
+   known false-positive mode this program has already been bitten by.
+====================================================================================================
+  [ISO-date] FINDINGS.json: ...fence and the player's own baseline",
+   "date": "2026-08-07",
+   "non_claiming_statement": "E1 is NON-CLAIMIN...
+  [season-adjacent] NOTES.md: ...registry entry, no leaderboard row, no promotion. Seasons 2021–2024 only; the 2025/2026 confirmation holdout was never read, joined,...
+  [season-adjacent] build_and_measure.py: ...here is a RESULT.  PARTITION (GRAPH_POLICY 13.2): seasons 2021, 2022, 2023, 2024 ONLY. The 2025/2026 confirmation holdout is never read, joined, ...
+  [ISO-date] make_findings.py: ...ayer's "             "own baseline",     "date": "2026-08-07",      "non_claiming_statement":         "E1 is N...
+  [season-adjacent] make_findings.py: ...       "holdout_touched": False,         "holdout_seasons_never_read": [2025, 2026],         "sources_read": [             "da...
+  [season-adjacent] run_log_04_verify_partition.txt: ...ranularity = 'row'  -> SAFE when filtered
+       (fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026], fit_through_season=2026 -- these describe...
+  [season-adjacent] run_log_04_verify_partition.txt: ...[2021, 2022, 2023, 2024, 2025, 2026], fit_through_season=2026 -- these describe what the file CONTAINS and are ...
+  [season-adjacent] run_log_04_verify_partition.txt: ...here is a RESULT.  PARTITION (GRAPH_POLICY 13.2): seasons 2021, 2022, 2023, 2024 ONLY. The 2025/2026 confirmation holdout is never read, joined, ...
+  [season-adjacent] run_log_04_verify_partition.txt: ... for callers  The constants were established on **seasons 2021–2024 only**. The 2025/2026 confirmation holdout was never read by the s...
+  [season-adjacent] run_log_04_verify_partition.txt: ...--------------- The constants were established on seasons 2021-2024 only. The 2025/2026 confirmation holdout was never read. This mo...
+  [season-adjacent] run_log_04_verify_partition.txt: ...stream screen knows what it is inheriting there.  PARTITION: 2021-2024 only. The 2025/2026 holdout is never read. """ import json impor...
+  [season-adjacent] _validate_sandbox\baseline\SPEC.md: ... for callers  The constants were established on **seasons 2021–2024 only**. The 2025/2026 confirmation holdout was never read by the s...
+  [season-adjacent] _validate_sandbox\baseline\corrected_baseline.py: ...--------------- The constants were established on seasons 2021-2024 only. The 2025/2026 confirmation holdout was never read. This mo...
+  [season-adjacent] _validate_sandbox\baseline\validate_baseline.py: ...stream screen knows what it is inheriting there.  PARTITION: 2021-2024 only. The 2025/2026 holdout is never read. """ import json impor...
+
+====================================================================================================
+VERDICT: structural violations = 0; targeted textual hits = 14
+A textual hit is only a violation if it is a DATA VALUE. Hits inside this
+script's own regexes, or inside prose describing the partition rule, are not.
+holdout_touched = False
+====================================================================================================
