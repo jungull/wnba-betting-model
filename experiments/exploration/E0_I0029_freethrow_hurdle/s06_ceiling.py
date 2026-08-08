@@ -163,17 +163,46 @@ def wf_r2(d, target, cols):
     return r2_plain(y[m], yhat[m]), int(m.sum())
 
 
+# ---------------------------------------------------------------------------------------------
+# AN EXACT IDENTITY, WHICH IS ITSELF ONE OF THIS SCREEN'S FINDINGS.
+#
+# The composed honest forecast is ALGEBRAICALLY THE SAME NUMBER as the simple prior mean of ftm.
+# With n prior games, k of them with fta>0, S_fta = sum of prior fta and S_ftm = sum of prior ftm:
+#
+#     HON_A * HON_G * HON_C = (k/n) * (S_fta/k) * (S_ftm/S_fta) = S_ftm/n = prior mean of ftm
+#
+# So DECOMPOSING THE HURDLE BUYS EXACTLY NOTHING FOR A POINT FORECAST.  The three stage estimators
+# multiply straight back into the aggregate estimator.  Whatever the hurdle is worth, it is worth
+# it in the SHAPE OF THE DISTRIBUTION -- the 46.4% mass at zero -- and not in the conditional mean.
+# Asserted rather than asserted-in-prose, so it cannot quietly stop being true.
+_m = np.isfinite(F["FT_HONEST_COMPOSED"]) & np.isfinite(F["FT_HONEST_SIMPLE"])
+_maxdiff = float(np.abs(F.loc[_m, "FT_HONEST_COMPOSED"] - F.loc[_m, "FT_HONEST_SIMPLE"]).max())
+print("\n  IDENTITY CHECK: max |composed - simple prior mean| over %d rows = %.3e" % (_m.sum(), _maxdiff))
+print("  -> the hurdle decomposition is EXACTLY MEAN-PRESERVING.  It can only pay in distributional")
+print("     shape, never in the point forecast.  This is asserted, not asserted-in-prose.")
+assert _maxdiff < 1e-12, "the composition identity does not hold -- one of the stages is misbuilt"
+rep["hurdle_decomposition_is_exactly_mean_preserving"] = dict(
+    max_abs_difference=_maxdiff, n=int(_m.sum()),
+    algebra="(k/n)*(S_fta/k)*(S_ftm/S_fta) = S_ftm/n")
+
 prop = []
 for sname, smask in STRATA.items():
     bcols = resolve("B_COMPLETE", "y_pts")
     ok = smask & np.isfinite(F["y_pts"].to_numpy(float))
-    for c in bcols + ["FT_HONEST_COMPOSED", "FT_HONEST_SIMPLE"]:
+    for c in bcols + ["FT_HONEST_COMPOSED", "FT_HONEST_SIMPLE", "M02_opp_allowed_fta_pg",
+                      "M03_opp_allowed_ftm_pg"]:
         ok = ok & np.isfinite(F[c].to_numpy(float))
     d = F.loc[ok]
     r2b, nb = wf_r2(d, "y_pts", bcols)
     for add, label in [(["FT_HONEST_COMPOSED"], "+ composed honest FT forecast"),
                        (["FT_HONEST_SIMPLE"], "+ simple prior-mean FT forecast"),
                        (["FT_HONEST_COMPOSED", "FT_HONEST_SIMPLE"], "+ both FT forecasts"),
+                       (["M03_opp_allowed_ftm_pg"], "+ OPPONENT prior FTM-allowed per game"),
+                       (["M02_opp_allowed_fta_pg"], "+ OPPONENT prior FTA-allowed per game"),
+                       (["M02_opp_allowed_fta_pg", "M03_opp_allowed_ftm_pg"],
+                        "+ BOTH opponent FT-allowance terms"),
+                       (["FT_HONEST_SIMPLE", "M03_opp_allowed_ftm_pg"],
+                        "+ own FT forecast AND opponent FT-allowance"),
                        (["FT_ORACLE_REALISED"], "+ REALISED ftm [ORACLE UPPER BOUND]")]:
         r2a, na = wf_r2(d, "y_pts", bcols + add)
         prop.append(dict(stratum=sname, n=nb, walkforward=True, addition=label,
@@ -202,10 +231,27 @@ for s in sorted(F["season"].unique()):
         a, na = r2of("HON_A")            # stage A alone, scaled -- reported as a correlation proxy
         r2c, nc = r2of("FT_HONEST_COMPOSED")
         r2s, ns = r2of("FT_HONEST_SIMPLE")
-        cons.append(dict(season=int(s), stratum=sname, n=int(m.sum()),
-                         r2_ftm_composed_honest=r2c, r2_ftm_simple_prior_mean=r2s,
-                         corr_stageA_prior_with_ftm=float(np.corrcoef(
-                             d.loc[rows_ok, "HON_A"], y[rows_ok])[0, 1])))
+        # THE HEADLINE CLAIM, SEASON BY SEASON.  A result that lives in one season is not a
+        # result.  M03 (opponent prior FTM-allowed per game) is carried onto POINTS over
+        # B_COMPLETE within each season separately.  Single-season n is small, so these are
+        # reported as a DIRECTION-AND-STABILITY check, not as four independent tests.
+        row = dict(season=int(s), stratum=sname, n=int(m.sum()),
+                   r2_ftm_composed_honest=r2c, r2_ftm_simple_prior_mean=r2s,
+                   corr_stageA_prior_with_ftm=float(np.corrcoef(
+                       d.loc[rows_ok, "HON_A"], y[rows_ok])[0, 1]))
+        bc = resolve("B_COMPLETE", "y_pts")
+        kk = m.copy()
+        for cc in bc + ["y_pts", "M03_opp_allowed_ftm_pg", "M02_opp_allowed_fta_pg"]:
+            kk = kk & np.isfinite(F[cc].to_numpy(float))
+        dd = F.loc[kk]
+        if len(dd) > 300:
+            bf = BaseFit(dd["y_pts"].to_numpy(float), dd[bc].to_numpy(float))
+            for cn, tag in [("M03_opp_allowed_ftm_pg", "M03"), ("M02_opp_allowed_fta_pg", "M02")]:
+                xv = dd[cn].to_numpy(float)
+                row["dR2_points_" + tag] = bf.dr2(xv)
+                row["beta_points_" + tag] = bf.beta(xv)
+            row["n_points_cells"] = int(len(dd))
+        cons.append(row)
 CS = pd.DataFrame(cons)
 CS.to_csv(os.path.join(OUT, "per_season_consistency.csv"), index=False)
 print(CS.to_string(index=False))

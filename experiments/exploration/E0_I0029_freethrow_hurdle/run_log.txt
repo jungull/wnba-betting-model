@@ -1,0 +1,1281 @@
+﻿E0_I0029_freethrow_hurdle -- CONSOLIDATED RUN LOG
+PREREG SHA256 e1ef0849e5f79230e27a0baa8b63ce0e6a1f24cca0a3b261cbfa7ba67c69f757
+partition 2021-2024 (headline 2022-2024); 2025/2026 never read; champion never loaded
+
+Step order: s00 inspect -> s01 PREREG+HASH (no data) -> s02 build frame + leakage probes ->
+s03 oracle ladder per stage -> s04 common-denominator stage decomposition -> s05 screen (draws)
+-> s05b controls + injection power + matchup decomposition -> s06 ceiling + propagation ->
+s07 FINDINGS.json
+
+
+####################################################################################################
+### run_log_s00.txt
+####################################################################################################
+
+====================================================================================================
+0. FORBIDDEN ARTIFACTS -- declared and NOT opened
+====================================================================================================
+  NOT OPENED: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\w1_truth\player_game_availability.csv
+  NOT OPENED: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\w1_truth\roster_asof.csv
+  NOT OPENED: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\zone_maps
+
+====================================================================================================
+1. MANIFEST CHECK -- read from bytes this session, never cited from NOTES
+====================================================================================================
+  master_player.parquet        USABLE_IF_FILTERED  granularity=row fit_through=2026
+  master_team.parquet          USABLE_IF_FILTERED  granularity=row fit_through=2026
+
+====================================================================================================
+2. LOAD + PARTITION ASSERT ON VALUES
+====================================================================================================
+  raw master_player (33712, 78)
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  after partition filter (21462, 78)
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  appeared player-games (minutes>0): 18212
+
+====================================================================================================
+3. RE-DERIVING THE FEASIBILITY NUMBERS ON THE EXPLORATION PARTITION
+====================================================================================================
+  FT share of points          = 0.173663   (ideation quoted 0.1737 over SIX seasons)
+ season    n  ft_share_of_points  frac_fta_zero  mean_fta  mean_ftm  corr_ftm_pts  corr_fd_pts  fouls_drawn_null_frac
+   2021 3885            0.171737       0.477735  1.847362  1.493694      0.643020     0.653473                    0.0
+   2022 4519            0.173286       0.452755  1.899978  1.506085      0.638832     0.656589                    0.0
+   2023 4897            0.177077       0.462732  1.945477  1.553808      0.671970     0.687341                    0.0
+   2024 4911            0.172102       0.464875  1.900224  1.499084      0.675518     0.693943                    0.0
+
+  frac fta==0                 = 0.464035   (ideation quoted 0.4640)
+  corr(ftm, pts)              = +0.659477  (ideation quoted +0.6595)  -> bound R2 0.434911
+  corr(fouls_drawn, pts)      = +0.674848  (ideation quoted +0.6749)  -> bound R2 0.455420
+  fouls_drawn NULL fraction   = 0.000000  <-- COVERAGE IS NOT 100% INSIDE THE PARTITION IF >0
+  ftm/fta NULL fraction       = 0.000000 / 0.000000
+
+====================================================================================================
+4. THE HURDLE, DESCRIBED
+====================================================================================================
+  This is the number the whole screen turns on.  If free-throw production were a rate,
+  the zero mass would follow from a low rate.  It does not: the zero mass is far larger
+  than a Poisson with the observed mean would produce.
+  mean fta = 1.9011  ->  Poisson P(0) = 0.1494   OBSERVED P(0) = 0.4640   EXCESS = +0.3146
+
+  GIVEN fta>0 (n=9761, 53.6% of rows):
+    fta   mean 3.5470  sd 2.3312  median 3.0  max 21
+    ftm   mean 2.8255  sd 2.0966
+    ft%   mean 0.7850  sd 0.2775
+
+  fta value counts (top 12):
+fta
+0.0     8451
+1.0      989
+2.0     3706
+3.0     1021
+4.0     1614
+5.0      669
+6.0      727
+7.0      335
+8.0      285
+9.0      148
+10.0     114
+11.0      66
+
+====================================================================================================
+5. VARIANCE DECOMPOSITION OF ftm ACROSS THE HURDLE -- LAW OF TOTAL VARIANCE
+====================================================================================================
+  Var(ftm) = E[Var(ftm|A)] + Var(E[ftm|A]) where A = 1{fta>0}.
+  The SECOND term is the share of free-throw-point variance that is EXPLAINED BY THE
+  HURDLE ALONE -- i.e. by knowing only whether the player got to the line.
+  Var(ftm) = 4.341381    within = 2.355803 (54.26%)   BETWEEN (hurdle) = 1.985578 (45.74%)
+
+====================================================================================================
+6. IS ftm A MEANINGFUL SHARE OF POINTS VARIANCE, NOT JUST OF POINTS LEVEL?
+====================================================================================================
+  17.37%% of the POINTS TOTAL is a level statement.  What matters for a forecast is the
+  VARIANCE share and the covariance, so both are computed here.
+  Var(pts) = 56.2544 = Var(ftm) 4.3414 + Var(non-ft pts) 39.9837 + 2*Cov 11.9300
+  ftm share of Var(pts)                = 0.0772
+  ftm TOTAL contribution (Var+Cov)/Var = 0.1832
+
+  WROTE _s00.json
+
+####################################################################################################
+### run_log_s01.txt
+####################################################################################################
+
+====================================================================================================
+PREREGISTRATION -- no data loaded, no statistic computed
+====================================================================================================
+  candidates : 21
+  bases      : 5
+  targets    : 6
+  cells      : 280  (candidate x base x target)
+  strata     : 2  -> cell RUNS = 560
+
+  PREREG SHA256 = e1ef0849e5f79230e27a0baa8b63ce0e6a1f24cca0a3b261cbfa7ba67c69f757
+  WROTE _prereg.json
+
+####################################################################################################
+### run_log_s02.txt
+####################################################################################################
+python : C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029
+_freethrow_hurdle\s02_build_frame.py:379: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+At line:1 char:436
++ ... ow_hurdle"; python "$d\s02_build_frame.py" > "$d\run_log_s02.txt" 2>& ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\jgalla...= frame.copy()`:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  app["G02_placebo_noop__" + t] = 2.5 * src + 7.0            # COLLINEAR with the base by design
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethro
+w_hurdle\s02_build_frame.py:386: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of 
+calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  app["G03_placebo_perturbed__" + t] = pert
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethro
+w_hurdle\s02_build_frame.py:379: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of 
+calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  app["G02_placebo_noop__" + t] = 2.5 * src + 7.0            # COLLINEAR with the base by design
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethro
+w_hurdle\s02_build_frame.py:386: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of 
+calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  app["G03_placebo_perturbed__" + t] = pert
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethro
+w_hurdle\s02_build_frame.py:379: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of 
+calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  app["G02_placebo_noop__" + t] = 2.5 * src + 7.0            # COLLINEAR with the base by design
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethro
+w_hurdle\s02_build_frame.py:386: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of 
+calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  app["G03_placebo_perturbed__" + t] = pert
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethro
+w_hurdle\s02_build_frame.py:379: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of 
+calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  app["G02_placebo_noop__" + t] = 2.5 * src + 7.0            # COLLINEAR with the base by design
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethro
+w_hurdle\s02_build_frame.py:386: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of 
+calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  app["G03_placebo_perturbed__" + t] = pert
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethro
+w_hurdle\s02_build_frame.py:401: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of 
+calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  app["DECISION"] = ((app["n_prior"] >= 8) & (app["ref_trail5_minutes"] >= 24)).astype(int)
+
+====================================================================================================
+0. TIME-WINDOW TABLE (features AND inference)
+====================================================================================================
+  y_any_fta / y_fta_given / y_ftm_given / y_fta / y_ftm / y_ reads_future=True   RESPONSE ONLY
+  minutes (contemporaneous)                                  reads_future=True   ORACLE RUNG EXPOSURE ONLY (O2/O3/O4)
+  fta (contemporaneous)                                      reads_future=True   STAGE-C ORACLE EXPOSURE ONLY, and the row-selector for the CONDITIONAL subset
+  ref_mean__<t> / ref_ewma__<t> / ref_trail5__<t>            reads_future=False  BASE (B_SINGLE / B_COMPLETE)
+  ref_rate_x_min__<t> / ref_rate_floored__<t>                reads_future=False  BASE / honest rung H3
+  ref_mean_minutes / ref_trail5_minutes / ref_mean_pace / n_ reads_future=False  BASE
+  ref_pct__<t>                                               reads_future=False  BASE
+  is_home                                                    reads_future=False  BASE
+  F01..F10                                                   reads_future=False  CANDIDATE
+  M01..M06                                                   reads_future=False  CANDIDATE (opp_team_season level)
+  X01 / X02                                                  reads_future=False  CANDIDATE (interaction)
+  ORACLE_seasonmean__<t> / ORACLE_seasonrate__<t>            reads_future=True   ORACLE LADDER RUNG -- LABELLED
+  DECISION                                                   reads_future=False  STRATUM SELECTOR
+  G01_noise / G02_placebo_noop / G03_placebo_perturbed       reads_future=False  CONTROL
+
+====================================================================================================
+1. LOAD + PARTITION ASSERT
+====================================================================================================
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  appeared player-games: 18212
+
+====================================================================================================
+2. RESPONSES -- THE THREE HURDLE STAGES
+====================================================================================================
+  y_any_fta      n=18212  mean=  0.5360 sd=  0.4987   rowset=FULL
+  y_fta_given    n=9761   mean=  3.5470 sd=  2.3312   rowset=CONDITIONAL
+  y_ftm_given    n=9761   mean=  2.8255 sd=  2.0966   rowset=CONDITIONAL
+  y_fta          n=18212  mean=  1.9011 sd=  2.4580   rowset=FULL
+  y_ftm          n=18212  mean=  1.5144 sd=  2.0837   rowset=FULL
+  y_pts          n=18212  mean=  8.7202 sd=  7.5005   rowset=FULL
+  IDENTITY OK: ftm == 1{fta>0} * (ftm | fta>0), max abs deviation 0.000000
+
+====================================================================================================
+3. PLAYER-SIDE PRIOR-ONLY REFERENCES (shift(1) ALWAYS precedes the accumulator)
+====================================================================================================
+  y_fta_given    conditional refs from 9761 fta>0 rows -> defined on 0.9085 of ALL rows (0.9390 of conditional rows)
+  y_ftm_given    conditional refs from 9761 fta>0 rows -> defined on 0.9085 of ALL rows (0.9390 of conditional rows)
+  ORACLE columns built (season-wide; LABELLED, never in any base)
+
+====================================================================================================
+4. OPPONENT-SIDE PRIOR-ONLY AGGREGATES
+====================================================================================================
+  team-games: 1940
+  team-games with no opposing line found: 0 (0.000%)
+  M01_opp_pf_pg                  non-null 0.9744  mean 18.1135
+  M02_opp_allowed_fta_pg         non-null 0.9744  mean 18.4196
+  M03_opp_allowed_ftm_pg         non-null 0.9744  mean 14.6445
+  M04_opp_allowed_ft_rate        non-null 0.9744  mean 0.2697
+  M05_opp_allowed_hurdle_rate    non-null 0.9744  mean 0.5436
+  M06_opp_pace                   non-null 0.9744  mean 99.8370
+  opp_n_prior_games              non-null 1.0000  mean 19.9081
+
+====================================================================================================
+5. OWN-SIDE CANDIDATES -- every one is (prior sum)/(prior sum), never a mean of ratios
+====================================================================================================
+  F01_prior_ftr              non-null 0.9611  mean    0.2702  sd   0.2246
+  F02_prior_fd_pm            non-null 0.9652  mean    0.0832  sd   0.0442
+  F03_prior_ft_pct           non-null 0.9085  mean    0.7756  sd   0.1557
+  F04_prior_paint_share      non-null 0.9522  mean    0.4302  sd   0.2146
+  F05_prior_fga_pm           non-null 0.9652  mean    0.3207  sd   0.1019
+  F06_prior_fg3a_share       non-null 0.9611  mean    0.3352  sd   0.2210
+  F07_prior_hurdle_rate      non-null 0.9652  mean    0.5486  sd   0.3000
+  F08_prior_fta_given        non-null 0.9085  mean    3.2105  sd   1.2826
+  F09_prior_starter_rate     non-null 0.9652  mean    0.5284  sd   0.4395
+  F10_prior_pf_pm            non-null 0.9652  mean    0.0968  sd   0.0527
+
+====================================================================================================
+6. INTERACTIONS (D085 GUARD: both main effects go in the base, built in s04)
+====================================================================================================
+  X01 non-null 0.9650  sd 0.084495
+  X02 non-null 0.9609  sd 0.014468
+
+====================================================================================================
+7. CONTROLS
+====================================================================================================
+  y_any_fta     G02 affine copy of ref_mean__y_any_fta     | G03 perturbed  5140/17578 rows (29.2%), corr 0.7079
+  y_fta_given   G02 affine copy of ref_mean__y_fta_given   | G03 perturbed  4842/16546 rows (29.3%), corr 0.7034
+  y_ftm_given   G02 affine copy of ref_mean__y_ftm_given   | G03 perturbed  4846/16546 rows (29.3%), corr 0.7060
+  y_fta         G02 affine copy of ref_mean__y_fta         | G03 perturbed  5226/17578 rows (29.7%), corr 0.6985
+  y_ftm         G02 affine copy of ref_mean__y_ftm         | G03 perturbed  5228/17578 rows (29.7%), corr 0.6819
+  y_pts         G02 affine copy of ref_mean__y_pts         | G03 perturbed  5262/17578 rows (29.9%), corr 0.7125
+  G01 iid gaussian, seed 20260808
+
+====================================================================================================
+8. STRATA
+====================================================================================================
+  POOLED (headline 2022-24)    n=14327   of which fta>0: 7732   (54.0%)
+  DECISION (headline)          n=5111    of which fta>0: 3733   (73.0%)
+
+====================================================================================================
+9. BRUTE-FORCE LEAKAGE PROBES (recomputed from raw bytes, not inspected)
+====================================================================================================
+  [PASS] P1  ref_mean__y_ftm == prior expanding mean    n=300   prior_mismatch=0    contemp_mismatch=289
+  [PASS] P1b ref_mean__y_fta_given == prior COND mean   n=300   prior_mismatch=0    contemp_mismatch=157
+  [PASS] P1c D-01 fix changed the DOMAIN not the VALUES  max abs diff on conditional rows = 0.000e+00
+  [PASS] P1d availability no longer encodes the response: corr = +0.1138
+  [PASS] P2  F01_prior_ftr == sum(fta)/sum(fga) prior   n=300   prior_mismatch=0    contemp_mismatch=280
+  [PASS] P3  F02_prior_fd_pm == sum(fd)/sum(min) prior  n=300   prior_mismatch=0    contemp_mismatch=299
+  [PASS] P4  F09_prior_starter_rate (TIP-TIME guard)    n=300   prior_mismatch=0    contemp_mismatch=101
+  [PASS] P5  M01_opp_pf_pg == opp prior mean team pf    n=200   prior_mismatch=0    contemp_mismatch=196
+  [PASS] P5b M02_opp_allowed_fta_pg == opp prior mean   n=200   prior_mismatch=0    contemp_mismatch=200
+  [PASS] P6  interaction centring is PRIOR-ONLY (differs from full-sample: True)
+
+====================================================================================================
+10. WRITE FRAME
+====================================================================================================
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  wrote screen_frame.parquet (18212, 181)
+  WROTE _s02.json
+
+####################################################################################################
+### run_log_s03.txt
+####################################################################################################
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  frame (18212, 171)  headline seasons [2022, 2023, 2024]
+
+====================================================================================================
+1. THE LADDER, PER STAGE
+====================================================================================================
+
+--------------------------------------------------------------------------------------------------------
+  SUBSET: ALL (2022-2024)
+--------------------------------------------------------------------------------------------------------
+
+   y_any_fta     stage A       n=14327  sd_y=0.4984  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    0.3627   0.4538   0.17085
+     H1   EWMA prior (hl=5)                               honest    0.3602   0.4561   0.16253
+     H2   trailing-5 prior mean                           honest    0.3576   0.4722   0.10228
+     H3   prior rate(floored) x prior exposure            honest    0.3661   0.4548   0.16419
+     H4   walk-forward OLS on B_COMPLETE                  honest    0.3822   0.4424   0.20922
+     O1   SEASON-MEAN target                              ORACLE    0.3539   0.4207   0.28763
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    0.3242   0.4045   0.34150
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    0.3459   0.4445   0.20167
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    0.3577   0.4277   0.26340
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    0.3137   0.3928   0.37885
+
+   y_fta_given   stage B       n=7732   sd_y=2.3712  exposure=minutes  denominator=CONDITIONAL_SUBSET(fta>0)
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.6548   2.2462   0.10253
+     H1   EWMA prior (hl=5)                               honest    1.6670   2.2632   0.08887
+     H2   trailing-5 prior mean                           honest    1.7135   2.3366   0.02887
+     H3   prior rate(floored) x prior exposure            honest    1.6715   2.2623   0.09599
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.6463   2.2075   0.18021
+     O1   SEASON-MEAN target                              ORACLE    1.5055   2.0357   0.24706
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    1.5139   2.0248   0.25507
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    1.6937   2.2614   0.09675
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.5610   2.0991   0.21622
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    1.4178   1.9440   0.31335
+
+   y_ftm_given   stage C       n=7732   sd_y=2.1250  exposure=fta      denominator=CONDITIONAL_SUBSET(fta>0)
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.5043   2.0148   0.10093
+     H1   EWMA prior (hl=5)                               honest    1.5181   2.0319   0.08558
+     H2   trailing-5 prior mean                           honest    1.5600   2.0930   0.02979
+     H3   prior rate(floored) x prior exposure            honest    1.5043   2.0148   0.10093
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.4911   2.0037   0.16426
+     O1   SEASON-MEAN target                              ORACLE    1.3529   1.8257   0.24680
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    0.5817   0.7346   0.87806
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    0.6536   0.8548   0.83817
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.4761   1.9824   0.12958
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    0.5623   0.7128   0.88517
+
+   y_fta         stage AB      n=14327  sd_y=2.4796  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.5391   2.1139   0.27320
+     H1   EWMA prior (hl=5)                               honest    1.5362   2.1240   0.26624
+     H2   trailing-5 prior mean                           honest    1.5720   2.2026   0.21089
+     H3   prior rate(floored) x prior exposure            honest    1.5744   2.1423   0.26516
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.5593   2.1211   0.30468
+     O1   SEASON-MEAN target                              ORACLE    1.4408   1.9659   0.36649
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    1.3419   1.8737   0.42451
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    1.4865   2.0642   0.31773
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.4520   1.9856   0.35874
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    1.3209   1.8445   0.44229
+
+   y_ftm         stage ABC     n=14327  sd_y=2.0970  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.2856   1.8011   0.26230
+     H1   EWMA prior (hl=5)                               honest    1.2842   1.8116   0.25366
+     H2   trailing-5 prior mean                           honest    1.3133   1.8778   0.19809
+     H3   prior rate(floored) x prior exposure            honest    1.3192   1.8274   0.25360
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.3119   1.8243   0.28955
+     O1   SEASON-MEAN target                              ORACLE    1.2029   1.6765   0.35517
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    1.1306   1.6086   0.40634
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    1.2519   1.7707   0.29916
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.2110   1.6924   0.34863
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    1.1119   1.5835   0.42471
+
+   y_pts         stage ANCHOR  n=14327  sd_y=7.5827  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    4.0875   5.3931   0.49410
+     H1   EWMA prior (hl=5)                               honest    4.0583   5.3687   0.49868
+     H2   trailing-5 prior mean                           honest    4.1886   5.5595   0.46239
+     H3   prior rate(floored) x prior exposure            honest    4.1758   5.4558   0.48244
+     H4   walk-forward OLS on B_COMPLETE                  honest    4.1925   5.4900   0.50166
+     O1   SEASON-MEAN target                              ORACLE    3.8311   5.0349   0.55690
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    3.1535   4.2893   0.67842
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    3.4862   4.7015   0.61567
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    3.9190   5.1475   0.53913
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    3.0794   4.2043   0.69104
+
+--------------------------------------------------------------------------------------------------------
+  SUBSET: DECISION (>=8 prior, >=24 trail-5 min)
+--------------------------------------------------------------------------------------------------------
+
+   y_any_fta     stage A       n=5111   sd_y=0.4438  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    0.3185   0.4135   0.13173
+     H1   EWMA prior (hl=5)                               honest    0.3170   0.4157   0.12235
+     H2   trailing-5 prior mean                           honest    0.3140   0.4357   0.03596
+     H3   prior rate(floored) x prior exposure            honest    0.3186   0.4134   0.13202
+     H4   walk-forward OLS on B_COMPLETE                  honest    0.3281   0.4091   0.13870
+     O1   SEASON-MEAN target                              ORACLE    0.3157   0.3973   0.19861
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    0.3049   0.3901   0.22708
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    0.3128   0.4068   0.15971
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    0.3189   0.4005   0.18550
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    0.2759   0.3667   0.31716
+
+   y_fta_given   stage B       n=3733   sd_y=2.5847  exposure=minutes  denominator=CONDITIONAL_SUBSET(fta>0)
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.8691   2.4311   0.11505
+     H1   EWMA prior (hl=5)                               honest    1.8879   2.4533   0.09888
+     H2   trailing-5 prior mean                           honest    1.9618   2.5650   0.01492
+     H3   prior rate(floored) x prior exposure            honest    1.8704   2.4318   0.11461
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.8690   2.4218   0.14649
+     O1   SEASON-MEAN target                              ORACLE    1.7783   2.3181   0.19541
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    1.7651   2.2913   0.21392
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    1.8659   2.4123   0.12872
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.7789   2.3256   0.19022
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    1.6709   2.2037   0.27289
+
+   y_ftm_given   stage C       n=3733   sd_y=2.3165  exposure=fta      denominator=CONDITIONAL_SUBSET(fta>0)
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.6599   2.1735   0.11944
+     H1   EWMA prior (hl=5)                               honest    1.6789   2.1958   0.10128
+     H2   trailing-5 prior mean                           honest    1.7495   2.2901   0.02248
+     H3   prior rate(floored) x prior exposure            honest    1.6599   2.1735   0.11944
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.6663   2.1816   0.15018
+     O1   SEASON-MEAN target                              ORACLE    1.5756   2.0738   0.19836
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    0.6127   0.7788   0.88695
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    0.6459   0.8285   0.87206
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.6489   2.1589   0.13128
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    0.5807   0.7498   0.89520
+
+   y_fta         stage AB      n=5111   sd_y=2.8473  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.9567   2.5295   0.21063
+     H1   EWMA prior (hl=5)                               honest    1.9670   2.5483   0.19883
+     H2   trailing-5 prior mean                           honest    2.0513   2.6768   0.11606
+     H3   prior rate(floored) x prior exposure            honest    1.9576   2.5296   0.21055
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.9599   2.5321   0.22877
+     O1   SEASON-MEAN target                              ORACLE    1.8716   2.4274   0.27306
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    1.8095   2.3505   0.31841
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    1.8965   2.4558   0.25595
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.8752   2.4330   0.26973
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    1.7347   2.2857   0.35548
+
+   y_ftm         stage ABC     n=5111   sd_y=2.4561  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.6766   2.1896   0.20510
+     H1   EWMA prior (hl=5)                               honest    1.6901   2.2095   0.19062
+     H2   trailing-5 prior mean                           honest    1.7668   2.3212   0.10672
+     H3   prior rate(floored) x prior exposure            honest    1.6772   2.1898   0.20495
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.6859   2.2008   0.22521
+     O1   SEASON-MEAN target                              ORACLE    1.6066   2.1045   0.26573
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    1.5628   2.0468   0.30541
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    1.6328   2.1346   0.24452
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.6081   2.1085   0.26288
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    1.4987   1.9909   0.34280
+
+   y_pts         stage ANCHOR  n=5111   sd_y=7.5837  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    4.9863   6.3414   0.30066
+     H1   EWMA prior (hl=5)                               honest    5.0028   6.3440   0.30008
+     H2   trailing-5 prior mean                           honest    5.2372   6.6354   0.23430
+     H3   prior rate(floored) x prior exposure            honest    4.9844   6.3387   0.30124
+     H4   walk-forward OLS on B_COMPLETE                  honest    5.0361   6.3717   0.32224
+     O1   SEASON-MEAN target                              ORACLE    4.7661   6.0640   0.36050
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    4.2483   5.4515   0.48316
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    4.4251   5.6820   0.43853
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    4.8314   6.1418   0.34398
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    4.0968   5.2836   0.51450
+
+--------------------------------------------------------------------------------------------------------
+  SUBSET: ALL incl 2021 (power sensitivity)
+--------------------------------------------------------------------------------------------------------
+
+   y_any_fta     stage A       n=18212  sd_y=0.4986  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    0.3668   0.4573   0.15883
+     H1   EWMA prior (hl=5)                               honest    0.3647   0.4597   0.14998
+     H2   trailing-5 prior mean                           honest    0.3625   0.4757   0.08968
+     H3   prior rate(floored) x prior exposure            honest    0.3700   0.4581   0.15344
+     H4   walk-forward OLS on B_COMPLETE                  honest    0.3887   0.4401   0.21726
+     O1   SEASON-MEAN target                              ORACLE    0.3577   0.4229   0.28090
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    0.3286   0.4075   0.33224
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    0.3509   0.4485   0.18831
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    0.3616   0.4301   0.25613
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    0.3184   0.3957   0.37038
+
+   y_fta_given   stage B       n=9761   sd_y=2.3564  exposure=minutes  denominator=CONDITIONAL_SUBSET(fta>0)
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.6730   2.2519   0.08667
+     H1   EWMA prior (hl=5)                               honest    1.6819   2.2663   0.07494
+     H2   trailing-5 prior mean                           honest    1.7239   2.3346   0.01828
+     H3   prior rate(floored) x prior exposure            honest    1.6893   2.2669   0.08033
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.6193   2.1783   0.16191
+     O1   SEASON-MEAN target                              ORACLE    1.5079   2.0311   0.24078
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    1.5164   2.0248   0.24552
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    1.7121   2.2733   0.07513
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.5651   2.0964   0.20846
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    1.4195   1.9405   0.30702
+
+   y_ftm_given   stage C       n=9761   sd_y=2.1171  exposure=fta      denominator=CONDITIONAL_SUBSET(fta>0)
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.5218   2.0256   0.08453
+     H1   EWMA prior (hl=5)                               honest    1.5312   2.0393   0.07206
+     H2   trailing-5 prior mean                           honest    1.5714   2.0985   0.01744
+     H3   prior rate(floored) x prior exposure            honest    1.5218   2.0256   0.08453
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.4585   1.9558   0.15282
+     O1   SEASON-MEAN target                              ORACLE    1.3552   1.8264   0.24109
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    0.5791   0.7348   0.87715
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    0.6523   0.8579   0.83577
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.4927   1.9905   0.11598
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    0.5594   0.7123   0.88457
+
+   y_fta         stage AB      n=18212  sd_y=2.4676  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.5527   2.1255   0.25802
+     H1   EWMA prior (hl=5)                               honest    1.5495   2.1349   0.25142
+     H2   trailing-5 prior mean                           honest    1.5837   2.2101   0.19774
+     H3   prior rate(floored) x prior exposure            honest    1.5864   2.1523   0.25048
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.5453   2.0951   0.29716
+     O1   SEASON-MEAN target                              ORACLE    1.4500   1.9698   0.35776
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    1.3533   1.8801   0.41488
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    1.4996   2.0770   0.30201
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.4623   1.9911   0.34885
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    1.3308   1.8495   0.43381
+
+   y_ftm         stage ABC     n=18212  sd_y=2.0928  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    1.2996   1.8158   0.24714
+     H1   EWMA prior (hl=5)                               honest    1.2975   1.8253   0.23928
+     H2   trailing-5 prior mean                           honest    1.3268   1.8900   0.18433
+     H3   prior rate(floored) x prior exposure            honest    1.3309   1.8404   0.23916
+     H4   walk-forward OLS on B_COMPLETE                  honest    1.2970   1.7863   0.28676
+     O1   SEASON-MEAN target                              ORACLE    1.2126   1.6840   0.34676
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    1.1422   1.6184   0.39665
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    1.2659   1.7867   0.28290
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    1.2232   1.7015   0.33892
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    1.1230   1.5927   0.41571
+
+   y_pts         stage ANCHOR  n=18212  sd_y=7.5170  exposure=minutes  denominator=FULL_STRATUM
+     rung                                                 kind         MAE     RMSE        R2
+     REF  expanding prior mean (MATCHED)                  honest    4.1248   5.4294   0.47828
+     H1   EWMA prior (hl=5)                               honest    4.0943   5.4030   0.48335
+     H2   trailing-5 prior mean                           honest    4.2224   5.5904   0.44688
+     H3   prior rate(floored) x prior exposure            honest    4.2061   5.4887   0.46695
+     H4   walk-forward OLS on B_COMPLETE                  honest    4.1306   5.3835   0.49608
+     O1   SEASON-MEAN target                              ORACLE    3.8552   5.0538   0.54598
+     O2   ACTUAL exposure x SEASON-MEAN rate              ORACLE    3.1752   4.2982   0.67158
+     O4   ACTUAL exposure x prior rate(floored)           ORACLE    3.5101   4.7194   0.60590
+     O5   prior exposure x SEASON-MEAN rate               ORACLE    3.9477   5.1746   0.52610
+     O3   within-player-season OLS on ACTUAL exposure     ORACLE    3.0966   4.2098   0.68496
+
+====================================================================================================
+2. HEADLINE -- IRREDUCIBLE SHARE AND REACHABLE HEADROOM, PER STAGE
+====================================================================================================
+
+  SUBSET: ALL (2022-2024)
+   target        stage       n     sd_y    R2 REF   R2 best     R2 O2  IRREDUCIBLE    headroom
+                                          matched    honest    ORACLE   even to O2  O2-besthon
+   y_any_fta     A       14327   0.4984   0.17085   0.20922   0.34150       65.85%     0.13228
+   y_fta_given   B        7732   2.3712   0.10253   0.18021   0.25507       74.49%     0.07486
+   y_ftm_given   C        7732   2.1250   0.10093   0.16426   0.87806       12.19%     0.71381
+   y_fta         AB      14327   2.4796   0.27320   0.30468   0.42451       57.55%     0.11984
+   y_ftm         ABC     14327   2.0970   0.26230   0.28955   0.40634       59.37%     0.11678
+   y_pts         ANCHOR  14327   7.5827   0.49410   0.50166   0.67842       32.16%     0.17676
+
+  SUBSET: DECISION (>=8 prior, >=24 trail-5 min)
+   target        stage       n     sd_y    R2 REF   R2 best     R2 O2  IRREDUCIBLE    headroom
+                                          matched    honest    ORACLE   even to O2  O2-besthon
+   y_any_fta     A        5111   0.4438   0.13173   0.13870   0.22708       77.29%     0.08838
+   y_fta_given   B        3733   2.5847   0.11505   0.14649   0.21392       78.61%     0.06743
+   y_ftm_given   C        3733   2.3165   0.11944   0.15018   0.88695       11.31%     0.73677
+   y_fta         AB       5111   2.8473   0.21063   0.22877   0.31841       68.16%     0.08964
+   y_ftm         ABC      5111   2.4561   0.20510   0.22521   0.30541       69.46%     0.08020
+   y_pts         ANCHOR   5111   7.5837   0.30066   0.32224   0.48316       51.68%     0.16092
+
+  SUBSET: ALL incl 2021 (power sensitivity)
+   target        stage       n     sd_y    R2 REF   R2 best     R2 O2  IRREDUCIBLE    headroom
+                                          matched    honest    ORACLE   even to O2  O2-besthon
+   y_any_fta     A       18212   0.4986   0.15883   0.21726   0.33224       66.78%     0.11499
+   y_fta_given   B        9761   2.3564   0.08667   0.16191   0.24552       75.45%     0.08361
+   y_ftm_given   C        9761   2.1171   0.08453   0.15282   0.87715       12.29%     0.72433
+   y_fta         AB      18212   2.4676   0.25802   0.29716   0.41488       58.51%     0.11772
+   y_ftm         ABC     18212   2.0928   0.24714   0.28676   0.39665       60.33%     0.10989
+   y_pts         ANCHOR  18212   7.5170   0.47828   0.49608   0.67158       32.84%     0.17551
+
+====================================================================================================
+3. CALIBRATION ANCHOR -- does y_pts reproduce D081/D097 on THIS frame?
+====================================================================================================
+  y_pts IRREDUCIBLE even to O2 on the DECISION stratum = 51.6840%
+  D081 published 51.3%% ; D097 reproduced 51.68%% on n=5111.
+  This screen's decision-stratum n = 5111
+  deviation from D097 = 0.00 points  -> ON SCALE
+
+  WROTE oracle_ladder_ft.csv, ladder_summary.csv, baseline_accuracy.csv, _s03.json
+
+####################################################################################################
+### run_log_s04.txt
+####################################################################################################
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+
+====================================================================================================
+1. STAGE QUANTITIES AND THEIR THREE INFORMATION LEVELS
+====================================================================================================
+  LG   A mean 0.5443 | G mean 3.5891 | C mean 0.7837
+  HON  A mean 0.5491 | G mean 3.2411 | C mean 0.7763
+  ORA  A mean 0.5360 | G mean 3.2050 | C mean 0.7741
+
+====================================================================================================
+2. COMPOSED FORECASTS ON THE COMMON DENOMINATOR  SST(ftm), FULL STRATUM
+====================================================================================================
+
+  STRATUM POOLED (2022-2024)   n=14327  sd(ftm)=2.0879  SST=62450.0
+   composition                                     R2(ftm)         gain
+   all LEAGUE (no player information)             -0.00116             
+   HONEST stage A only                             0.20698     +0.20813
+   HONEST stage B only                             0.15014     +0.15129
+   HONEST stage C only                             0.01369     +0.01485
+   all HONEST                                      0.25502     +0.25618
+   all HONEST + ORACLE A                           0.50519     +0.25017
+   all HONEST + ORACLE B                           0.61290     +0.35788
+   all HONEST + ORACLE C                           0.31253     +0.05751
+   all ORACLE except A honest                      0.68566             
+   all ORACLE except B honest                      0.57299             
+   all ORACLE except C honest                      0.91086             
+   all ORACLE (identity check, must be 1.0)        1.00000             
+
+   (i)  HONEST PREDICTABILITY BOUGHT BY EACH STAGE  (LEAGUE -> HONEST, dR2 on SST(ftm))
+        stage A : +0.20813   (81.2% of the all-honest total 0.25618)
+        stage B : +0.15129   (59.1% of the all-honest total 0.25618)
+        stage C : +0.01485   (5.8% of the all-honest total 0.25618)
+   (ii) ORACLE HEADROOM PER STAGE ON THE SAME DENOMINATOR
+        stage  add-one-oracle leave-one-honest
+        A            +0.25017         +0.31434
+        B            +0.35788         +0.42701
+        C            +0.05751         +0.08914
+
+  STRATUM DECISION (2022-2024)   n=5111  sd(ftm)=2.4561  SST=30826.7
+   composition                                     R2(ftm)         gain
+   all LEAGUE (no player information)             -0.12433             
+   HONEST stage A only                             0.11583     +0.24016
+   HONEST stage B only                             0.04586     +0.17019
+   HONEST stage C only                            -0.09641     +0.02792
+   all HONEST                                      0.20510     +0.32943
+   all HONEST + ORACLE A                           0.42792     +0.22282
+   all HONEST + ORACLE B                           0.66292     +0.45782
+   all HONEST + ORACLE C                           0.27010     +0.06501
+   all ORACLE except A honest                      0.74124             
+   all ORACLE except B honest                      0.49223             
+   all ORACLE except C honest                      0.91688             
+   all ORACLE (identity check, must be 1.0)        1.00000             
+
+   (i)  HONEST PREDICTABILITY BOUGHT BY EACH STAGE  (LEAGUE -> HONEST, dR2 on SST(ftm))
+        stage A : +0.24016   (72.9% of the all-honest total 0.32943)
+        stage B : +0.17019   (51.7% of the all-honest total 0.32943)
+        stage C : +0.02792   (8.5% of the all-honest total 0.32943)
+   (ii) ORACLE HEADROOM PER STAGE ON THE SAME DENOMINATOR
+        stage  add-one-oracle leave-one-honest
+        A            +0.22282         +0.25876
+        B            +0.45782         +0.50777
+        C            +0.06501         +0.08312
+
+====================================================================================================
+3. PER-STAGE HONEST vs MATCHED-REFERENCE SKILL, ON EACH STAGE'S OWN DENOMINATOR
+====================================================================================================
+  Reported ALONGSIDE, never compared across stages (D099).  The matched reference for a
+  CONDITIONAL stage is built on the player's PRIOR fta>0 GAMES ONLY.
+   POOLED (2022-2024)     A  P(any FTA)          n=13848  sd= 0.4984  R2(matched prior ref)= 0.17085  
+   POOLED (2022-2024)     B  FTA | any           n=7282   sd= 2.3712  R2(matched prior ref)= 0.10253  
+   POOLED (2022-2024)     C  FTM | FTA           n=7282   sd= 2.1250  R2(matched prior ref)= 0.83817  uses REALISED fta as exposure -> ORACLE-EXPOSURE, not a pregame forecast
+   POOLED (2022-2024)     C' FT% | FTA           n=7282   sd= 0.2766  R2(matched prior ref)=-0.09932  
+   DECISION (2022-2024)   A  P(any FTA)          n=5111   sd= 0.4438  R2(matched prior ref)= 0.13173  
+   DECISION (2022-2024)   B  FTA | any           n=3733   sd= 2.5847  R2(matched prior ref)= 0.11505  
+   DECISION (2022-2024)   C  FTM | FTA           n=3733   sd= 2.3165  R2(matched prior ref)= 0.87206  uses REALISED fta as exposure -> ORACLE-EXPOSURE, not a pregame forecast
+   DECISION (2022-2024)   C' FT% | FTA           n=3733   sd= 0.2582  R2(matched prior ref)= 0.02962  
+
+====================================================================================================
+4. WRITE hurdle_stages.csv
+====================================================================================================
+  wrote C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethrow_hurdle\hurdle_stages.csv
+  WROTE _s04.json
+
+####################################################################################################
+### run_log_s05.txt
+####################################################################################################
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  prereg hash e1ef0849e5f79230e27a0baa8b63ce0e6a1f24cca0a3b261cbfa7ba67c69f757
+
+====================================================================================================
+1. SCREEN -- 600 draws, seed 20260808
+====================================================================================================
+
+  POOLED    y_any_fta     rowset=MAIN     n=12942  SST=3190.3
+
+  POOLED    y_any_fta     rowset=F08_ONLY n=12948  SST=3191.8
+
+  POOLED    y_fta_given   rowset=MAIN     n=7190   SST=40660.8
+
+  POOLED    y_fta_given   rowset=F08_ONLY n=7193   SST=40723.8
+
+  POOLED    y_ftm_given   rowset=MAIN     n=7278   SST=32835.7
+
+  POOLED    y_ftm_given   rowset=F08_ONLY n=7282   SST=32879.0
+
+  POOLED    y_fta         rowset=MAIN     n=12942  SST=81998.7
+
+  POOLED    y_fta         rowset=F08_ONLY n=12948  SST=82107.6
+
+  POOLED    y_ftm         rowset=MAIN     n=12942  SST=58788.3
+
+  POOLED    y_ftm         rowset=F08_ONLY n=12948  SST=58856.7
+
+  POOLED    y_pts         rowset=MAIN     n=12942  SST=748943.3
+
+  POOLED    y_pts         rowset=F08_ONLY n=12948  SST=749428.8
+
+  DECISION  y_any_fta     rowset=MAIN     n=5111   SST=1006.5
+
+  DECISION  y_any_fta     rowset=F08_ONLY n=5111   SST=1006.5
+
+  DECISION  y_fta_given   rowset=MAIN     n=3733   SST=24932.2
+
+  DECISION  y_fta_given   rowset=F08_ONLY n=3733   SST=24932.2
+
+  DECISION  y_ftm_given   rowset=MAIN     n=3733   SST=20027.4
+
+  DECISION  y_ftm_given   rowset=F08_ONLY n=3733   SST=20027.4
+
+  DECISION  y_fta         rowset=MAIN     n=5111   SST=41428.5
+
+  DECISION  y_fta         rowset=F08_ONLY n=5111   SST=41428.5
+
+  DECISION  y_ftm         rowset=MAIN     n=5111   SST=30826.7
+
+  DECISION  y_ftm         rowset=F08_ONLY n=5111   SST=30826.7
+
+  DECISION  y_pts         rowset=MAIN     n=5111   SST=293888.6
+
+  DECISION  y_pts         rowset=F08_ONLY n=5111   SST=293888.6
+
+  560 cell runs completed
+
+====================================================================================================
+2. FAMILY-WISE max-t WITHIN EACH (stratum, rowset, target) FAMILY
+====================================================================================================
+  wrote screen_results.csv and permutation_draws.npz (536 draw sets)
+  WROTE _s05.json
+
+  s05 computes and persists.  The CONTROLS, the STEP-2 decomposition and the survivor
+  table are in s05b_report.py, which reads screen_results.csv -- so a change to how the
+  results are READ never requires re-drawing 600 permutations per cell.
+
+####################################################################################################
+### run_log_s05b.txt
+####################################################################################################
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  prereg hash e1ef0849e5f79230e27a0baa8b63ce0e6a1f24cca0a3b261cbfa7ba67c69f757   560 cell runs
+
+====================================================================================================
+1. CONTROLS -- NEGATIVE CONTROL AND THE NO-OP PLACEBO
+====================================================================================================
+  G01_noise                n_cells=24   max|dR2|=6.460e-04  median p_correct=0.3619  frac p<0.05=0.083  median null sd=1.848e-04
+  G02_placebo_noop         n_cells=24   max|dR2|=0.000e+00  median p_correct=1.0000  frac p<0.05=0.000  median null sd=1.810e-04
+  G03_placebo_perturbed    n_cells=24   max|dR2|=1.030e-03  median p_correct=0.3478  frac p<0.05=0.208  median null sd=1.730e-04
+
+  FLOOR OF RESOLUTION (median null sd of the NO-OP placebo) = 1.810e-04
+  NO-OP CHECK      : max |dR2(G02)| over 24 cells = 0.000e+00 -> CONFIRMED NO-OP
+  NEGATIVE CONTROL : G01 clears the PER-CELL p<0.05 in 8.3% of its 24 cells (nominal 5%);
+                     it clears the FAMILY-WISE p<0.05 in 0.0% of them, which is the figure that matters
+                     max dR2 attained by pure noise = 6.460e-04 -- ANY REPORTED EFFECT SMALLER THAN THIS IS NOISE
+  PLACEBO IS NOT THE IDENTITY: median |dR2(G03)-dR2(G02)| = 1.139e-04 (0.6x floor).  This is
+  CORRECTLY SMALL -- G03 is a corrupted copy of a column already in the base, so the base
+  removes its signal.  The question that matters is answered by the injection below.
+
+====================================================================================================
+2. INJECTION POWER CHECK -- COULD THIS SCREEN HAVE FOUND WHAT IT SAYS IS NOT THERE?
+====================================================================================================
+
+  ---- STRATUM POOLED ---- (p is the CORRECT-LEVEL null; row-level shown for inflation)
+   target      carrier            null         injected    p_corr     p_row    infl detected
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.002057    0.0017    0.0017    3.16 YES   D089 largest measured, ALIVE
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.001127    0.0017    0.0017    2.56 YES   D079 shot mix, DEAD
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000500    0.0116    0.0017    2.12 YES   (intermediate)
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000129    0.1664    0.0566    1.82 no    D084 opp conversion, DEAD
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000050    0.4027    0.2463    1.73 no    (below every benchmark)
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017    6.66 no    D089 largest measured, ALIVE
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0017    5.63 no    D079 shot mix, DEAD
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0017    4.65 no    (intermediate)
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.0649    3.70 no    D084 opp conversion, DEAD
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.2496    3.34 no    (below every benchmark)
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.11 YES   D089 largest measured, ALIVE
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.001127    0.0017    0.0017    1.08 YES   D079 shot mix, DEAD
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000500    0.0033    0.0017    1.07 YES   (intermediate)
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000129    0.0915    0.0566    1.07 no    D084 opp conversion, DEAD
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000050    0.2928    0.2463    1.07 no    (below every benchmark)
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.002057    0.0017    0.0017    2.54 YES   D089 largest measured, ALIVE
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.001127    0.0033    0.0017    2.07 YES   D079 shot mix, DEAD
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000500    0.0250    0.0067    1.70 YES   (intermediate)
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000129    0.2396    0.1448    1.41 no    D084 opp conversion, DEAD
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000050    0.4559    0.3394    1.32 no    (below every benchmark)
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017   10.46 no    D089 largest measured, ALIVE
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0017    9.63 no    D079 shot mix, DEAD
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0033    8.84 no    (intermediate)
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.1498    8.06 no    D084 opp conversion, DEAD
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.3494    7.76 no    (below every benchmark)
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.48 YES   D089 largest measured, ALIVE
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.001127    0.0017    0.0017    1.47 YES   D079 shot mix, DEAD
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000500    0.0067    0.0033    1.46 YES   (intermediate)
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000129    0.1681    0.1015    1.46 no    D084 opp conversion, DEAD
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000050    0.3627    0.3128    1.46 no    (below every benchmark)
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.002057    0.0017    0.0017    2.10 YES   D089 largest measured, ALIVE
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.001127    0.0033    0.0017    1.72 YES   D079 shot mix, DEAD
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000500    0.0216    0.0067    1.43 YES   (intermediate)
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000129    0.1797    0.1481    1.22 no    D084 opp conversion, DEAD
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000050    0.3827    0.3927    1.15 no    (below every benchmark)
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017    8.33 no    D089 largest measured, ALIVE
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0017    7.63 no    D079 shot mix, DEAD
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0067    6.96 no    (intermediate)
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.1248    6.30 no    D084 opp conversion, DEAD
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.3361    6.04 no    (below every benchmark)
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.20 YES   D089 largest measured, ALIVE
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.001127    0.0017    0.0017    1.19 YES   D079 shot mix, DEAD
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000500    0.0116    0.0050    1.18 YES   (intermediate)
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000129    0.1647    0.1414    1.18 no    D084 opp conversion, DEAD
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000050    0.3794    0.3461    1.19 no    (below every benchmark)
+
+  ---- STRATUM DECISION ---- (p is the CORRECT-LEVEL null; row-level shown for inflation)
+   target      carrier            null         injected    p_corr     p_row    infl detected
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.002057    0.0033    0.0017    1.49 YES   D089 largest measured, ALIVE
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.001127    0.0150    0.0083    1.37 YES   D079 shot mix, DEAD
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000500    0.1248    0.0666    1.29 no    (intermediate)
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000129    0.4293    0.3062    1.26 no    D084 opp conversion, DEAD
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000050    0.6373    0.5574    1.26 no    (below every benchmark)
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.002057    0.9983    0.0017    2.17 no    D089 largest measured, ALIVE
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0067    1.77 no    D079 shot mix, DEAD
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0599    1.40 no    (intermediate)
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.3328    1.03 no    D084 opp conversion, DEAD
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.5441    0.88 no    (below every benchmark)
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.12 YES   D089 largest measured, ALIVE
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.001127    0.0067    0.0067    1.10 YES   D079 shot mix, DEAD
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000500    0.0566    0.0549    1.10 no    (intermediate)
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000129    0.3361    0.3361    1.10 no    D084 opp conversion, DEAD
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000050    0.5474    0.5507    1.10 no    (below every benchmark)
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.002057    0.0083    0.0017    1.72 YES   D089 largest measured, ALIVE
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.001127    0.0349    0.0100    1.51 YES   D079 shot mix, DEAD
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000500    0.1331    0.0882    1.35 no    (intermediate)
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000129    0.4260    0.3494    1.23 no    D084 opp conversion, DEAD
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000050    0.6123    0.5591    1.19 no    (below every benchmark)
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017    4.15 no    D089 largest measured, ALIVE
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0116    3.72 no    D079 shot mix, DEAD
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0832    3.30 no    (intermediate)
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.3810    2.88 no    D084 opp conversion, DEAD
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.5657    2.72 no    (below every benchmark)
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    0.98 YES   D089 largest measured, ALIVE
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.001127    0.0133    0.0083    0.98 YES   D079 shot mix, DEAD
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000500    0.0782    0.0882    0.99 no    (intermediate)
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000129    0.3760    0.3844    1.01 no    D084 opp conversion, DEAD
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000050    0.6040    0.5591    1.02 no    (below every benchmark)
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.002057    0.0067    0.0017    1.61 YES   D089 largest measured, ALIVE
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.001127    0.0333    0.0116    1.43 YES   D079 shot mix, DEAD
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000500    0.1381    0.0915    1.29 no    (intermediate)
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000129    0.4226    0.3777    1.20 no    D084 opp conversion, DEAD
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000050    0.6073    0.5940    1.18 no    (below every benchmark)
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017    2.74 no    D089 largest measured, ALIVE
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0083    2.35 no    D079 shot mix, DEAD
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0682    1.98 no    (intermediate)
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.3810    1.61 no    D084 opp conversion, DEAD
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.5607    1.46 no    (below every benchmark)
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.19 YES   D089 largest measured, ALIVE
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.001127    0.0150    0.0100    1.19 YES   D079 shot mix, DEAD
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000500    0.0899    0.0682    1.19 no    (intermediate)
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000129    0.3694    0.3827    1.21 no    D084 opp conversion, DEAD
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000050    0.5857    0.5657    1.21 no    (below every benchmark)
+
+  SMALLEST INJECTED dR2 DETECTED AT p<0.05 BY THE CORRECT-LEVEL NULL:
+    DECISION|y_any_fta|F02_prior_fd_pm         0.001127
+    DECISION|y_any_fta|M01_opp_pf_pg           0.001127
+    DECISION|y_ftm|F02_prior_fd_pm             0.001127
+    DECISION|y_ftm|M01_opp_pf_pg               0.001127
+    DECISION|y_pts|F02_prior_fd_pm             0.001127
+    DECISION|y_pts|M01_opp_pf_pg               0.001127
+    POOLED|y_any_fta|F02_prior_fd_pm           0.000500
+    POOLED|y_any_fta|M01_opp_pf_pg             0.000500
+    POOLED|y_ftm|F02_prior_fd_pm               0.000500
+    POOLED|y_ftm|M01_opp_pf_pg                 0.000500
+    POOLED|y_pts|F02_prior_fd_pm               0.000500
+    POOLED|y_pts|M01_opp_pf_pg                 0.000500
+
+  DETECTION RATE AT THE LARGEST MEASURED (alive) BENCHMARK 0.002057, BY NULL:
+    N_CYCLIC     0.0% of 6 configurations   (median p = 1.0000)
+    N_ENTITY   100.0% of 6 configurations   (median p = 0.0025)
+    N_PSWAP    100.0% of 6 configurations   (median p = 0.0017)
+
+  READ THIS CAREFULLY.  N_CYCLIC does not merely lack power -- it is DEGENERATE, returning
+  p ~ 1.0 against a signal it was handed by construction.  A within-player rotation leaves
+  each player's MEAN intact, and an own-history trait's signal is almost entirely BETWEEN
+  players, so the rotation preserves the very variation it is meant to destroy.  D093
+  introduced N_CYCLIC to repair an ANTICONSERVATIVE null; on a BETWEEN-entity candidate it
+  over-corrects into uselessness.  N_CYCLIC therefore CANNOT carry a null verdict for an
+  own-history candidate in this screen, and N_PSWAP is used for those instead.
+
+====================================================================================================
+3. STEP 2 -- THE MATCHUP QUESTION, DECOMPOSED
+====================================================================================================
+  Read the columns in this order.  A cell that is large over B_SINGLE and dies over
+  B_COMPLETE was reference incompleteness (D087).  A cell that survives B_COMPLETE and dies
+  over B_COMPLETE_PLUS_M02 was opponent FT-volume wearing a matchup's name.  An INTERACTION
+  that survives B_COMPLETE and dies over B_MATCHUP is D085 repeating itself EXACTLY.
+
+  ---- STRATUM POOLED ----
+   target        candidate                     dR2 B_SIN  dR2 B_CMP   dR2 +M02   p_corr     p_fw
+   y_any_fta     M01_opp_pf_pg                 3.914e-04  7.252e-04  4.375e-05   0.0083   0.1631
+   y_any_fta     M02_opp_allowed_fta_pg        7.230e-04  7.568e-04        n/a   0.0067   0.1764
+   y_any_fta     M03_opp_allowed_ftm_pg        6.924e-04  7.164e-04  4.085e-07   0.0083   0.1930
+   y_any_fta     M04_opp_allowed_ft_rate       7.877e-04  7.698e-04  2.306e-05   0.0067   0.1581
+   y_any_fta     M05_opp_allowed_hurdle_rate   1.391e-05  4.175e-05  1.732e-04   0.5391   1.0000
+   y_any_fta     M06_opp_pace                  6.988e-05  1.207e-04  1.878e-05   0.1747   0.9867
+   y_any_fta     X01_fd_x_oppfoul                    n/a  2.279e-04        n/a   0.0599   0.6506
+   y_any_fta     X02_ftr_x_oppftrate                 n/a  1.999e-04        n/a   0.0682   0.8053
+   y_fta_given   M01_opp_pf_pg                 4.399e-03  3.464e-03  1.809e-04   0.0017   0.0083
+   y_fta_given   M02_opp_allowed_fta_pg        4.153e-03  3.694e-03        n/a   0.0033   0.0083
+   y_fta_given   M03_opp_allowed_ftm_pg        4.522e-03  3.999e-03  3.053e-04   0.0033   0.0083
+   y_fta_given   M04_opp_allowed_ft_rate       3.031e-03  2.577e-03  6.967e-04   0.0033   0.0499
+   y_fta_given   M05_opp_allowed_hurdle_rate   1.837e-03  1.071e-03  3.091e-05   0.0383   0.4942
+   y_fta_given   M06_opp_pace                  2.264e-03  2.094e-03  1.034e-03   0.0067   0.1897
+   y_fta_given   X01_fd_x_oppfoul                    n/a  5.342e-04        n/a   0.0749   0.7837
+   y_fta_given   X02_ftr_x_oppftrate                 n/a  1.186e-04        n/a   0.2729   1.0000
+   y_ftm_given   M01_opp_pf_pg                 3.494e-03  2.935e-03  2.344e-04   0.0017   0.0067
+   y_ftm_given   M02_opp_allowed_fta_pg        3.270e-03  2.935e-03        n/a   0.0017   0.0100
+   y_ftm_given   M03_opp_allowed_ftm_pg        3.300e-03  3.009e-03  9.682e-05   0.0017   0.0116
+   y_ftm_given   M04_opp_allowed_ft_rate       2.240e-03  1.948e-03  7.501e-04   0.0033   0.0982
+   y_ftm_given   M05_opp_allowed_hurdle_rate   1.500e-03  1.181e-03  3.016e-06   0.0133   0.2413
+   y_ftm_given   M06_opp_pace                  1.756e-03  1.534e-03  7.333e-04   0.0133   0.2097
+   y_ftm_given   X01_fd_x_oppfoul                    n/a  4.258e-04        n/a   0.0849   0.8136
+   y_ftm_given   X02_ftr_x_oppftrate                 n/a  2.381e-04        n/a   0.2246   0.9933
+   y_fta         M01_opp_pf_pg                 2.572e-03  2.525e-03  1.979e-04   0.0017   0.0050
+   y_fta         M02_opp_allowed_fta_pg        2.578e-03  2.527e-03        n/a   0.0017   0.0083
+   y_fta         M03_opp_allowed_ftm_pg        2.715e-03  2.644e-03  1.209e-04   0.0017   0.0033
+   y_fta         M04_opp_allowed_ft_rate       2.132e-03  2.022e-03  1.339e-04   0.0033   0.0283
+   y_fta         M05_opp_allowed_hurdle_rate   7.301e-04  5.557e-04  8.463e-05   0.0715   0.7088
+   y_fta         M06_opp_pace                  9.983e-04  9.609e-04  3.693e-04   0.0033   0.1082
+   y_fta         X01_fd_x_oppfoul                    n/a  2.356e-04        n/a   0.0416   0.6156
+   y_fta         X02_ftr_x_oppftrate                 n/a  5.581e-07        n/a   0.9351   1.0000
+   y_ftm         M01_opp_pf_pg                 2.277e-03  2.379e-03  1.753e-04   0.0033   0.0150
+   y_ftm         M02_opp_allowed_fta_pg        2.355e-03  2.407e-03        n/a   0.0017   0.0150
+   y_ftm         M03_opp_allowed_ftm_pg        2.324e-03  2.385e-03  2.980e-05   0.0017   0.0116
+   y_ftm         M04_opp_allowed_ft_rate       1.891e-03  1.878e-03  1.747e-04   0.0017   0.0266
+   y_ftm         M05_opp_allowed_hurdle_rate   7.483e-04  6.357e-04  3.818e-05   0.0366   0.5108
+   y_ftm         M06_opp_pace                  9.002e-04  9.098e-04  3.483e-04   0.0116   0.1963
+   y_ftm         X01_fd_x_oppfoul                    n/a  2.653e-04        n/a   0.0483   0.6106
+   y_ftm         X02_ftr_x_oppftrate                 n/a  7.168e-06        n/a   0.7255   1.0000
+   y_pts         M01_opp_pf_pg                 3.355e-04  3.634e-04  1.068e-06   0.0499   0.6073
+   y_pts         M02_opp_allowed_fta_pg        4.846e-04  4.706e-04        n/a   0.0349   0.4476
+   y_pts         M03_opp_allowed_ftm_pg        6.327e-04  5.992e-04  1.892e-04   0.0166   0.2446
+   y_pts         M04_opp_allowed_ft_rate       1.874e-04  1.769e-04  7.086e-04   0.1531   0.9717
+   y_pts         M05_opp_allowed_hurdle_rate   4.791e-05  5.769e-05  5.223e-05   0.3594   1.0000
+   y_pts         M06_opp_pace                  2.429e-04  2.015e-04  8.352e-05   0.0549   0.6339
+   y_pts         X01_fd_x_oppfoul                    n/a  5.483e-05        n/a   0.2646   0.9983
+   y_pts         X02_ftr_x_oppftrate                 n/a  2.049e-05        n/a   0.4792   1.0000
+
+  ---- STRATUM DECISION ----
+   target        candidate                     dR2 B_SIN  dR2 B_CMP   dR2 +M02   p_corr     p_fw
+   y_any_fta     M01_opp_pf_pg                 3.689e-03  4.480e-03  6.409e-05   0.0017   0.0017
+   y_any_fta     M02_opp_allowed_fta_pg        4.480e-03  5.037e-03        n/a   0.0017   0.0017
+   y_any_fta     M03_opp_allowed_ftm_pg        4.456e-03  5.046e-03  5.243e-05   0.0017   0.0017
+   y_any_fta     M04_opp_allowed_ft_rate       4.735e-03  5.211e-03  1.981e-04   0.0017   0.0017
+   y_any_fta     M05_opp_allowed_hurdle_rate   2.935e-03  3.346e-03  1.678e-04   0.0033   0.0033
+   y_any_fta     M06_opp_pace                  7.350e-04  7.662e-04  2.045e-05   0.0333   0.5591
+   y_any_fta     X01_fd_x_oppfoul                    n/a  1.376e-06        n/a   0.9218   1.0000
+   y_any_fta     X02_ftr_x_oppftrate                 n/a  5.586e-04        n/a   0.0649   0.6855
+   y_fta_given   M01_opp_pf_pg                 8.108e-03  7.528e-03  1.347e-04   0.0017   0.0017
+   y_fta_given   M02_opp_allowed_fta_pg        8.691e-03  8.419e-03        n/a   0.0017   0.0017
+   y_fta_given   M03_opp_allowed_ftm_pg        8.901e-03  8.643e-03  2.324e-04   0.0017   0.0017
+   y_fta_given   M04_opp_allowed_ft_rate       7.095e-03  6.646e-03  6.882e-04   0.0017   0.0067
+   y_fta_given   M05_opp_allowed_hurdle_rate   4.898e-03  4.130e-03  7.252e-06   0.0050   0.0632
+   y_fta_given   M06_opp_pace                  3.984e-03  3.833e-03  1.153e-03   0.0116   0.2413
+   y_fta_given   X01_fd_x_oppfoul                    n/a  2.295e-03        n/a   0.0116   0.1265
+   y_fta_given   X02_ftr_x_oppftrate                 n/a  4.427e-04        n/a   0.1897   0.9617
+   y_ftm_given   M01_opp_pf_pg                 7.007e-03  6.595e-03  4.543e-05   0.0017   0.0050
+   y_ftm_given   M02_opp_allowed_fta_pg        8.212e-03  7.744e-03        n/a   0.0017   0.0017
+   y_ftm_given   M03_opp_allowed_ftm_pg        7.919e-03  7.425e-03  6.078e-07   0.0017   0.0017
+   y_ftm_given   M04_opp_allowed_ft_rate       6.717e-03  6.174e-03  5.632e-04   0.0017   0.0067
+   y_ftm_given   M05_opp_allowed_hurdle_rate   5.523e-03  5.104e-03  2.543e-04   0.0017   0.0100
+   y_ftm_given   M06_opp_pace                  3.450e-03  3.375e-03  9.713e-04   0.0116   0.2063
+   y_ftm_given   X01_fd_x_oppfoul                    n/a  2.524e-03        n/a   0.0116   0.1880
+   y_ftm_given   X02_ftr_x_oppftrate                 n/a  9.323e-04        n/a   0.0682   0.6090
+   y_fta         M01_opp_pf_pg                 9.007e-03  8.861e-03  1.966e-04   0.0017   0.0017
+   y_fta         M02_opp_allowed_fta_pg        9.856e-03  9.688e-03        n/a   0.0017   0.0017
+   y_fta         M03_opp_allowed_ftm_pg        1.013e-02  9.987e-03  3.024e-04   0.0017   0.0017
+   y_fta         M04_opp_allowed_ft_rate       8.730e-03  8.432e-03  1.522e-04   0.0017   0.0017
+   y_fta         M05_opp_allowed_hurdle_rate   5.771e-03  5.218e-03  4.983e-05   0.0017   0.0050
+   y_fta         M06_opp_pace                  3.493e-03  3.332e-03  7.161e-04   0.0133   0.2446
+   y_fta         X01_fd_x_oppfoul                    n/a  2.096e-03        n/a   0.0050   0.0250
+   y_fta         X02_ftr_x_oppftrate                 n/a  7.962e-05        n/a   0.5441   1.0000
+   y_ftm         M01_opp_pf_pg                 8.301e-03  8.579e-03  1.089e-04   0.0017   0.0017
+   y_ftm         M02_opp_allowed_fta_pg        9.560e-03  9.713e-03        n/a   0.0017   0.0017
+   y_ftm         M03_opp_allowed_ftm_pg        9.418e-03  9.606e-03  4.665e-05   0.0017   0.0017
+   y_ftm         M04_opp_allowed_ft_rate       8.398e-03  8.385e-03  1.897e-04   0.0017   0.0017
+   y_ftm         M05_opp_allowed_hurdle_rate   6.193e-03  5.940e-03  1.836e-04   0.0017   0.0050
+   y_ftm         M06_opp_pace                  3.267e-03  3.237e-03  6.691e-04   0.0150   0.2363
+   y_ftm         X01_fd_x_oppfoul                    n/a  2.575e-03        n/a   0.0017   0.0050
+   y_ftm         X02_ftr_x_oppftrate                 n/a  1.828e-04        n/a   0.3211   1.0000
+   y_pts         M01_opp_pf_pg                 1.465e-03  1.990e-03  4.320e-06   0.0033   0.0349
+   y_pts         M02_opp_allowed_fta_pg        2.028e-03  2.396e-03        n/a   0.0017   0.0133
+   y_pts         M03_opp_allowed_ftm_pg        2.529e-03  2.951e-03  1.057e-03   0.0017   0.0050
+   y_pts         M04_opp_allowed_ft_rate       1.318e-03  1.566e-03  8.715e-04   0.0050   0.1431
+   y_pts         M05_opp_allowed_hurdle_rate   7.266e-04  9.174e-04  1.739e-05   0.0449   0.5141
+   y_pts         M06_opp_pace                  3.576e-04  3.587e-04  8.960e-06   0.1215   0.8552
+   y_pts         X01_fd_x_oppfoul                    n/a  8.114e-04        n/a   0.0333   0.3744
+   y_pts         X02_ftr_x_oppftrate                 n/a  8.932e-06        n/a   0.8203   1.0000
+
+  ---- THE D085 GUARD: interactions over a base ALREADY CONTAINING BOTH MAIN EFFECTS ----
+   POOLED    y_any_fta     X01_fd_x_oppfoul       over B_COMPLETE  2.279e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  8.008e-05  p_corr 0.2479
+   POOLED    y_any_fta     X02_ftr_x_oppftrate    over B_COMPLETE  1.999e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.623e-04  p_corr nan
+   POOLED    y_fta_given   X01_fd_x_oppfoul       over B_COMPLETE  5.342e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.739e-04  p_corr 0.1215
+   POOLED    y_fta_given   X02_ftr_x_oppftrate    over B_COMPLETE  1.186e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  6.710e-06  p_corr nan
+   POOLED    y_ftm_given   X01_fd_x_oppfoul       over B_COMPLETE  4.258e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  5.461e-04  p_corr 0.0349
+   POOLED    y_ftm_given   X02_ftr_x_oppftrate    over B_COMPLETE  2.381e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  7.132e-05  p_corr nan
+   POOLED    y_fta         X01_fd_x_oppfoul       over B_COMPLETE  2.356e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  2.412e-04  p_corr 0.0349
+   POOLED    y_fta         X02_ftr_x_oppftrate    over B_COMPLETE  5.581e-07 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  9.902e-07  p_corr nan
+   POOLED    y_ftm         X01_fd_x_oppfoul       over B_COMPLETE  2.653e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.050e-04  p_corr 0.0300
+   POOLED    y_ftm         X02_ftr_x_oppftrate    over B_COMPLETE  7.168e-06 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  7.125e-06  p_corr nan
+   POOLED    y_pts         X01_fd_x_oppfoul       over B_COMPLETE  5.483e-05 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.293e-04  p_corr 0.0882
+   POOLED    y_pts         X02_ftr_x_oppftrate    over B_COMPLETE  2.049e-05 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.564e-06  p_corr nan
+   DECISION  y_any_fta     X01_fd_x_oppfoul       over B_COMPLETE  1.376e-06 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.703e-04  p_corr 0.3128
+   DECISION  y_any_fta     X02_ftr_x_oppftrate    over B_COMPLETE  5.586e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.518e-04  p_corr nan
+   DECISION  y_fta_given   X01_fd_x_oppfoul       over B_COMPLETE  2.295e-03 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  6.279e-04  p_corr 0.1032
+   DECISION  y_fta_given   X02_ftr_x_oppftrate    over B_COMPLETE  4.427e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.402e-04  p_corr nan
+   DECISION  y_ftm_given   X01_fd_x_oppfoul       over B_COMPLETE  2.524e-03 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.121e-03  p_corr 0.0516
+   DECISION  y_ftm_given   X02_ftr_x_oppftrate    over B_COMPLETE  9.323e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  5.983e-04  p_corr nan
+   DECISION  y_fta         X01_fd_x_oppfoul       over B_COMPLETE  2.096e-03 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  6.972e-04  p_corr 0.0616
+   DECISION  y_fta         X02_ftr_x_oppftrate    over B_COMPLETE  7.962e-05 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.193e-04  p_corr nan
+   DECISION  y_ftm         X01_fd_x_oppfoul       over B_COMPLETE  2.575e-03 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.068e-03  p_corr 0.0100
+   DECISION  y_ftm         X02_ftr_x_oppftrate    over B_COMPLETE  1.828e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  4.897e-04  p_corr nan
+   DECISION  y_pts         X01_fd_x_oppfoul       over B_COMPLETE  8.114e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  6.489e-04  p_corr 0.0483
+   DECISION  y_pts         X02_ftr_x_oppftrate    over B_COMPLETE  8.932e-06 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  7.384e-05  p_corr nan
+
+====================================================================================================
+4. SURVIVORS OVER B_COMPLETE (the only base that can carry a verdict)
+====================================================================================================
+  81 of 214 B_COMPLETE cells clear family-wise p<0.05
+   stratum   target        candidate                           dR2   p_corr     p_fw    infl
+   POOLED    y_ftm_given   F05_prior_fga_pm              1.430e-02   0.0017   0.0017    1.45
+   DECISION  y_fta         M03_opp_allowed_ftm_pg        9.987e-03   0.0017   0.0017    2.81
+   DECISION  y_ftm         M02_opp_allowed_fta_pg        9.713e-03   0.0017   0.0017    3.88
+   DECISION  y_fta         M02_opp_allowed_fta_pg        9.688e-03   0.0017   0.0017    2.92
+   DECISION  y_ftm         M03_opp_allowed_ftm_pg        9.606e-03   0.0017   0.0017    3.96
+   POOLED    y_ftm_given   F02_prior_fd_pm               8.965e-03   0.0017   0.0017    1.41
+   DECISION  y_fta         M01_opp_pf_pg                 8.861e-03   0.0017   0.0017    2.72
+   DECISION  y_fta_given   M03_opp_allowed_ftm_pg        8.643e-03   0.0017   0.0017    2.16
+   DECISION  y_ftm         M01_opp_pf_pg                 8.579e-03   0.0017   0.0017    3.47
+   POOLED    y_ftm_given   F07_prior_hurdle_rate         8.497e-03   0.0017   0.0017    1.31
+   DECISION  y_fta         M04_opp_allowed_ft_rate       8.432e-03   0.0017   0.0017    2.74
+   DECISION  y_fta_given   M02_opp_allowed_fta_pg        8.419e-03   0.0017   0.0017    2.23
+   DECISION  y_ftm         M04_opp_allowed_ft_rate       8.385e-03   0.0017   0.0017    3.91
+   POOLED    y_fta_given   F02_prior_fd_pm               7.978e-03   0.0017   0.0017    1.50
+   DECISION  y_ftm_given   M02_opp_allowed_fta_pg        7.744e-03   0.0017   0.0017    2.12
+   DECISION  y_fta_given   M01_opp_pf_pg                 7.528e-03   0.0017   0.0017    2.09
+   DECISION  y_ftm_given   M03_opp_allowed_ftm_pg        7.425e-03   0.0017   0.0017    2.12
+   POOLED    y_fta_given   F07_prior_hurdle_rate         7.309e-03   0.0017   0.0017    1.40
+   DECISION  y_fta_given   F02_prior_fd_pm               7.084e-03   0.0017   0.0017    0.92
+   DECISION  y_ftm_given   F02_prior_fd_pm               6.682e-03   0.0017   0.0017    1.33
+   DECISION  y_fta_given   M04_opp_allowed_ft_rate       6.646e-03   0.0017   0.0067    2.16
+   DECISION  y_ftm_given   M01_opp_pf_pg                 6.595e-03   0.0017   0.0050    1.94
+   DECISION  y_ftm_given   F05_prior_fga_pm              6.539e-03   0.0017   0.0017    1.31
+   DECISION  y_ftm_given   M04_opp_allowed_ft_rate       6.174e-03   0.0017   0.0067    2.12
+   DECISION  y_ftm         M05_opp_allowed_hurdle_rate   5.940e-03   0.0017   0.0050    3.46
+   POOLED    y_any_fta     F06_prior_fg3a_share          5.221e-03   0.0017   0.0017    1.14
+   DECISION  y_fta         M05_opp_allowed_hurdle_rate   5.218e-03   0.0017   0.0050    2.29
+   DECISION  y_any_fta     M04_opp_allowed_ft_rate       5.211e-03   0.0017   0.0017    1.68
+   POOLED    y_any_fta     F04_prior_paint_share         5.182e-03   0.0017   0.0017    1.30
+   DECISION  y_ftm_given   F07_prior_hurdle_rate         5.170e-03   0.0017   0.0017    1.23
+   DECISION  y_ftm_given   M05_opp_allowed_hurdle_rate   5.104e-03   0.0017   0.0100    2.24
+   DECISION  y_any_fta     M03_opp_allowed_ftm_pg        5.046e-03   0.0017   0.0017    1.61
+   DECISION  y_any_fta     M02_opp_allowed_fta_pg        5.037e-03   0.0017   0.0017    1.59
+   DECISION  y_fta_given   F07_prior_hurdle_rate         4.985e-03   0.0017   0.0017    0.94
+   DECISION  y_any_fta     M01_opp_pf_pg                 4.480e-03   0.0017   0.0017    1.66
+   POOLED    y_fta_given   M03_opp_allowed_ftm_pg        3.999e-03   0.0033   0.0083    2.46
+   POOLED    y_fta_given   M02_opp_allowed_fta_pg        3.694e-03   0.0033   0.0083    2.41
+   POOLED    y_any_fta     F02_prior_fd_pm               3.580e-03   0.0017   0.0017    1.24
+   DECISION  y_any_fta     F08_prior_fta_given           3.489e-03   0.0017   0.0017    1.08
+   POOLED    y_fta_given   M01_opp_pf_pg                 3.464e-03   0.0017   0.0083    2.08
+   DECISION  y_any_fta     M05_opp_allowed_hurdle_rate   3.346e-03   0.0033   0.0033    1.66
+   POOLED    y_ftm_given   M03_opp_allowed_ftm_pg        3.009e-03   0.0017   0.0116    2.16
+   DECISION  y_pts         M03_opp_allowed_ftm_pg        2.951e-03   0.0017   0.0050    1.52
+   POOLED    y_ftm_given   M01_opp_pf_pg                 2.935e-03   0.0017   0.0067    1.75
+   POOLED    y_ftm_given   M02_opp_allowed_fta_pg        2.935e-03   0.0017   0.0100    2.10
+   POOLED    y_fta_given   F05_prior_fga_pm              2.800e-03   0.0017   0.0033    1.37
+   POOLED    y_fta         F04_prior_paint_share         2.668e-03   0.0017   0.0017    1.51
+   POOLED    y_fta         M03_opp_allowed_ftm_pg        2.644e-03   0.0017   0.0033    3.36
+   POOLED    y_fta_given   M04_opp_allowed_ft_rate       2.577e-03   0.0033   0.0499    2.40
+   DECISION  y_ftm         X01_fd_x_oppfoul              2.575e-03   0.0017   0.0050    1.28
+   POOLED    y_fta         M02_opp_allowed_fta_pg        2.527e-03   0.0017   0.0083    3.55
+   POOLED    y_fta         M01_opp_pf_pg                 2.525e-03   0.0017   0.0050    3.14
+   POOLED    y_any_fta     F08_prior_fta_given           2.451e-03   0.0017   0.0017    1.16
+   DECISION  y_any_fta     F04_prior_paint_share         2.423e-03   0.0017   0.0017    1.01
+   POOLED    y_ftm         M02_opp_allowed_fta_pg        2.407e-03   0.0017   0.0150    4.15
+   DECISION  y_pts         M02_opp_allowed_fta_pg        2.396e-03   0.0017   0.0133    1.55
+   POOLED    y_ftm         M03_opp_allowed_ftm_pg        2.385e-03   0.0017   0.0116    3.80
+   POOLED    y_ftm         M01_opp_pf_pg                 2.379e-03   0.0033   0.0150    3.78
+   DECISION  y_any_fta     F01_prior_ftr                 2.310e-03   0.0017   0.0017    0.95
+   POOLED    y_ftm         F05_prior_fga_pm              2.245e-03   0.0017   0.0017    1.54
+
+  median correct-level/row-level null SD inflation across all cells: 1.27x
+  max inflation: 4.26x -- a row-level null would have been that many times too narrow
+
+  WROTE matchup_decomposition.csv, injection_power.csv, _s05.json
+
+####################################################################################################
+### run_log_s06.txt
+####################################################################################################
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+
+====================================================================================================
+1. ARITHMETIC CEILING -- every candidate, carried onto POINTS and onto FT POINTS
+====================================================================================================
+
+  ---- POOLED | response y_pts | sd_y=7.5840 | n=13402 ----
+   signal                      CEIL raw  CEIL resid      x D089  1sd move verdict
+   FT_ORACLE_REALISED [ORACLE]   1.642e-01   1.189e-01     57.7897    2.6148 ABOVE the largest measured (0.002057)
+   FT_HONEST_SIMPLE           3.914e-03   9.307e-04      0.4524    0.2314 below the dead shot-mix benchmark (0.001127)
+   FT_HONEST_COMPOSED         3.914e-03   9.307e-04      0.4524    0.2314 below the dead shot-mix benchmark (0.001127)
+   F02_prior_fd_pm            1.424e-03   7.922e-04      0.3851    0.2135 below the dead shot-mix benchmark (0.001127)
+   F09_prior_starter_rate     2.593e-03   6.139e-04      0.2984    0.1879 below the dead shot-mix benchmark (0.001127)
+   M03_opp_allowed_ftm_pg     5.628e-04   5.461e-04      0.2655    0.1772 below the dead shot-mix benchmark (0.001127)
+   M02_opp_allowed_fta_pg     4.187e-04   4.081e-04      0.1984    0.1532 below the dead shot-mix benchmark (0.001127)
+   M01_opp_pf_pg              3.460e-04   3.092e-04      0.1503    0.1333 below the dead shot-mix benchmark (0.001127)
+   F08_prior_fta_given        6.668e-04   2.762e-04      0.1343    0.1264 below the dead shot-mix benchmark (0.001127)
+   M06_opp_pace               2.563e-04   2.535e-04      0.1232    0.1207 below the dead shot-mix benchmark (0.001127)
+   F05_prior_fga_pm           1.625e-03   1.915e-04      0.0931    0.1050 below the dead shot-mix benchmark (0.001127)
+   M04_opp_allowed_ft_rate    1.429e-04   1.398e-04      0.0680    0.0897 below the dead shot-mix benchmark (0.001127)
+   F10_prior_pf_pm            1.734e-04   1.338e-04      0.0651    0.0877 below the dead shot-mix benchmark (0.001127)
+   F01_prior_ftr              9.459e-05   8.911e-05      0.0433    0.0716 BELOW BOTH DEAD BENCHMARKS
+   F06_prior_fg3a_share       7.557e-05   7.321e-05      0.0356    0.0649 BELOW BOTH DEAD BENCHMARKS
+   M05_opp_allowed_hurdle_rate   6.973e-05   6.622e-05      0.0322    0.0617 BELOW BOTH DEAD BENCHMARKS
+   F07_prior_hurdle_rate      1.795e-04   6.252e-05      0.0304    0.0600 BELOW BOTH DEAD BENCHMARKS
+   X01_fd_x_oppfoul           3.647e-05   3.557e-05      0.0173    0.0452 BELOW BOTH DEAD BENCHMARKS
+   F04_prior_paint_share      2.428e-05   2.416e-05      0.0117    0.0373 BELOW BOTH DEAD BENCHMARKS
+   X02_ftr_x_oppftrate        1.865e-05   1.864e-05      0.0091    0.0327 BELOW BOTH DEAD BENCHMARKS
+   G03_placebo_perturbed      3.737e-05   1.837e-05      0.0089    0.0325 BELOW BOTH DEAD BENCHMARKS
+   F03_prior_ft_pct           2.112e-06   1.978e-06      0.0010    0.0107 BELOW BOTH DEAD BENCHMARKS
+   G01_noise                  1.201e-06   1.200e-06      0.0006    0.0083 BELOW BOTH DEAD BENCHMARKS
+   G02_placebo_noop           0.000e+00   0.000e+00      0.0000    0.0000 BELOW BOTH DEAD BENCHMARKS
+
+  ---- POOLED | response y_ftm | sd_y=2.1152 | n=13402 ----
+   signal                      CEIL raw  CEIL resid      x D089  1sd move verdict
+   FT_ORACLE_REALISED [ORACLE]   1.000e+00   7.083e-01    344.3339    1.7802 ABOVE the largest measured (0.002057)
+   F05_prior_fga_pm           1.900e-02   2.389e-03      1.1616    0.1034 ABOVE the largest measured (0.002057)
+   M01_opp_pf_pg              2.439e-03   2.180e-03      1.0597    0.0988 ABOVE the largest measured (0.002057)
+   M02_opp_allowed_fta_pg     2.027e-03   1.976e-03      0.9607    0.0940 between the dead benchmarks and the live one
+   M03_opp_allowed_ftm_pg     2.021e-03   1.961e-03      0.9535    0.0937 between the dead benchmarks and the live one
+   M04_opp_allowed_ft_rate    1.560e-03   1.526e-03      0.7420    0.0826 between the dead benchmarks and the live one
+   F04_prior_paint_share      1.284e-03   1.279e-03      0.6220    0.0757 between the dead benchmarks and the live one
+   M06_opp_pace               9.526e-04   9.427e-04      0.4583    0.0649 below the dead shot-mix benchmark (0.001127)
+   F02_prior_fd_pm            2.595e-03   9.068e-04      0.4408    0.0637 below the dead shot-mix benchmark (0.001127)
+   F06_prior_fg3a_share       6.929e-04   6.495e-04      0.3158    0.0539 below the dead shot-mix benchmark (0.001127)
+   M05_opp_allowed_hurdle_rate   5.721e-04   5.431e-04      0.2640    0.0493 below the dead shot-mix benchmark (0.001127)
+   F01_prior_ftr              7.477e-04   4.907e-04      0.2385    0.0469 below the dead shot-mix benchmark (0.001127)
+   F03_prior_ft_pct           4.520e-04   4.036e-04      0.1962    0.0428 below the dead shot-mix benchmark (0.001127)
+   F08_prior_fta_given        1.064e-03   1.930e-04      0.0938    0.0296 below the dead shot-mix benchmark (0.001127)
+   X01_fd_x_oppfoul           1.494e-04   1.441e-04      0.0701    0.0254 below the dead shot-mix benchmark (0.001127)
+   F09_prior_starter_rate     4.793e-04   1.130e-04      0.0549    0.0225 BELOW BOTH DEAD BENCHMARKS
+   F10_prior_pf_pm            1.430e-04   1.095e-04      0.0533    0.0221 BELOW BOTH DEAD BENCHMARKS
+   G01_noise                  4.652e-05   4.650e-05      0.0226    0.0144 BELOW BOTH DEAD BENCHMARKS
+   X02_ftr_x_oppftrate        1.413e-05   1.411e-05      0.0069    0.0079 BELOW BOTH DEAD BENCHMARKS
+   F07_prior_hurdle_rate      2.082e-05   5.095e-06      0.0025    0.0048 BELOW BOTH DEAD BENCHMARKS
+   G03_placebo_perturbed      7.370e-06   3.981e-06      0.0019    0.0042 BELOW BOTH DEAD BENCHMARKS
+   FT_HONEST_COMPOSED         0.000e+00   0.000e+00      0.0000    0.0000 BELOW BOTH DEAD BENCHMARKS
+   FT_HONEST_SIMPLE           0.000e+00   0.000e+00      0.0000    0.0000 BELOW BOTH DEAD BENCHMARKS
+   G02_placebo_noop           0.000e+00   0.000e+00      0.0000    0.0000 BELOW BOTH DEAD BENCHMARKS
+
+  ---- DECISION | response y_pts | sd_y=7.5837 | n=5111 ----
+   signal                      CEIL raw  CEIL resid      x D089  1sd move verdict
+   FT_ORACLE_REALISED [ORACLE]   1.935e-01   1.564e-01     76.0392    2.9993 ABOVE the largest measured (0.002057)
+   M03_opp_allowed_ftm_pg     3.108e-03   2.951e-03      1.4344    0.4119 ABOVE the largest measured (0.002057)
+   M02_opp_allowed_fta_pg     2.513e-03   2.396e-03      1.1649    0.3712 ABOVE the largest measured (0.002057)
+   M01_opp_pf_pg              2.247e-03   1.990e-03      0.9674    0.3383 between the dead benchmarks and the live one
+   M04_opp_allowed_ft_rate    1.642e-03   1.566e-03      0.7612    0.3001 between the dead benchmarks and the live one
+   F02_prior_fd_pm            3.096e-03   1.288e-03      0.6264    0.2722 between the dead benchmarks and the live one
+   M05_opp_allowed_hurdle_rate   9.874e-04   9.174e-04      0.4460    0.2297 below the dead shot-mix benchmark (0.001127)
+   X01_fd_x_oppfoul           8.710e-04   8.114e-04      0.3945    0.2160 below the dead shot-mix benchmark (0.001127)
+   FT_HONEST_COMPOSED         2.407e-03   5.685e-04      0.2764    0.1808 below the dead shot-mix benchmark (0.001127)
+   FT_HONEST_SIMPLE           2.407e-03   5.685e-04      0.2764    0.1808 below the dead shot-mix benchmark (0.001127)
+   G01_noise                  4.959e-04   4.946e-04      0.2404    0.1687 below the dead shot-mix benchmark (0.001127)
+   F03_prior_ft_pct           5.510e-04   4.810e-04      0.2338    0.1663 below the dead shot-mix benchmark (0.001127)
+   M06_opp_pace               3.615e-04   3.587e-04      0.1744    0.1436 below the dead shot-mix benchmark (0.001127)
+   F07_prior_hurdle_rate      5.026e-04   1.974e-04      0.0959    0.1065 below the dead shot-mix benchmark (0.001127)
+   F08_prior_fta_given        5.283e-04   1.866e-04      0.0907    0.1036 below the dead shot-mix benchmark (0.001127)
+   G03_placebo_perturbed      2.142e-04   1.261e-04      0.0613    0.0852 BELOW BOTH DEAD BENCHMARKS
+   F01_prior_ftr              1.201e-04   1.028e-04      0.0500    0.0769 BELOW BOTH DEAD BENCHMARKS
+   F05_prior_fga_pm           1.419e-03   8.486e-05      0.0413    0.0699 BELOW BOTH DEAD BENCHMARKS
+   F09_prior_starter_rate     1.041e-04   4.595e-05      0.0223    0.0514 BELOW BOTH DEAD BENCHMARKS
+   F06_prior_fg3a_share       2.968e-05   2.883e-05      0.0140    0.0407 BELOW BOTH DEAD BENCHMARKS
+   F04_prior_paint_share      1.071e-05   1.048e-05      0.0051    0.0246 BELOW BOTH DEAD BENCHMARKS
+   X02_ftr_x_oppftrate        8.975e-06   8.932e-06      0.0043    0.0227 BELOW BOTH DEAD BENCHMARKS
+   F10_prior_pf_pm            4.090e-06   3.339e-06      0.0016    0.0139 BELOW BOTH DEAD BENCHMARKS
+   G02_placebo_noop           0.000e+00   0.000e+00      0.0000    0.0000 BELOW BOTH DEAD BENCHMARKS
+
+  ---- DECISION | response y_ftm | sd_y=2.4561 | n=5111 ----
+   signal                      CEIL raw  CEIL resid      x D089  1sd move verdict
+   FT_ORACLE_REALISED [ORACLE]   1.000e+00   7.788e-01    378.5870    2.1675 ABOVE the largest measured (0.002057)
+   M02_opp_allowed_fta_pg     1.019e-02   9.713e-03      4.7217    0.2421 ABOVE the largest measured (0.002057)
+   M03_opp_allowed_ftm_pg     1.012e-02   9.606e-03      4.6699    0.2407 ABOVE the largest measured (0.002057)
+   M01_opp_pf_pg              9.686e-03   8.579e-03      4.1705    0.2275 ABOVE the largest measured (0.002057)
+   M04_opp_allowed_ft_rate    8.791e-03   8.385e-03      4.0762    0.2249 ABOVE the largest measured (0.002057)
+   M05_opp_allowed_hurdle_rate   6.389e-03   5.940e-03      2.8875    0.1893 ABOVE the largest measured (0.002057)
+   M06_opp_pace               3.262e-03   3.237e-03      1.5738    0.1397 ABOVE the largest measured (0.002057)
+   X01_fd_x_oppfoul           2.823e-03   2.575e-03      1.2518    0.1246 ABOVE the largest measured (0.002057)
+   F02_prior_fd_pm            7.242e-03   1.609e-03      0.7821    0.0985 between the dead benchmarks and the live one
+   G01_noise                  6.478e-04   6.460e-04      0.3140    0.0624 below the dead shot-mix benchmark (0.001127)
+   F05_prior_fga_pm           8.595e-03   5.358e-04      0.2605    0.0569 below the dead shot-mix benchmark (0.001127)
+   F04_prior_paint_share      2.557e-04   2.454e-04      0.1193    0.0385 below the dead shot-mix benchmark (0.001127)
+   F07_prior_hurdle_rate      7.354e-04   2.040e-04      0.0992    0.0351 below the dead shot-mix benchmark (0.001127)
+   X02_ftr_x_oppftrate        1.860e-04   1.828e-04      0.0889    0.0332 below the dead shot-mix benchmark (0.001127)
+   F01_prior_ftr              5.229e-04   1.606e-04      0.0781    0.0311 below the dead shot-mix benchmark (0.001127)
+   F09_prior_starter_rate     3.187e-04   1.385e-04      0.0674    0.0289 below the dead shot-mix benchmark (0.001127)
+   F08_prior_fta_given        1.032e-03   1.211e-04      0.0589    0.0270 BELOW BOTH DEAD BENCHMARKS
+   G03_placebo_perturbed      1.774e-04   1.060e-04      0.0516    0.0253 BELOW BOTH DEAD BENCHMARKS
+   F06_prior_fg3a_share       1.278e-05   1.206e-05      0.0059    0.0085 BELOW BOTH DEAD BENCHMARKS
+   F10_prior_pf_pm            6.580e-06   5.343e-06      0.0026    0.0057 BELOW BOTH DEAD BENCHMARKS
+   F03_prior_ft_pct           5.909e-06   5.125e-06      0.0025    0.0056 BELOW BOTH DEAD BENCHMARKS
+   FT_HONEST_COMPOSED         0.000e+00   0.000e+00      0.0000    0.0000 BELOW BOTH DEAD BENCHMARKS
+   FT_HONEST_SIMPLE           0.000e+00   0.000e+00      0.0000    0.0000 BELOW BOTH DEAD BENCHMARKS
+   G02_placebo_noop           0.000e+00   0.000e+00      0.0000    0.0000 BELOW BOTH DEAD BENCHMARKS
+
+====================================================================================================
+2. PROPAGATION TO A POINTS FORECAST -- WALK-FORWARD, THE WHOLE CHANNEL AT ONCE
+====================================================================================================
+  A per-candidate ceiling can understate a channel whose value is in the COMPOSITION, so
+  the composed honest FT-points forecast is carried onto points as a single signal and an
+  ORACLE variant (perfect knowledge of realised ftm) bounds the channel absolutely.
+
+  IDENTITY CHECK: max |composed - simple prior mean| over 17578 rows = 1.332e-15
+  -> the hurdle decomposition is EXACTLY MEAN-PRESERVING.  It can only pay in distributional
+     shape, never in the point forecast.  This is asserted, not asserted-in-prose.
+   POOLED    n=9130    R2(points) base 0.50166 -> 0.50416   dR2 = +0.002503   + composed honest FT forecast
+   POOLED    n=9130    R2(points) base 0.50166 -> 0.50416   dR2 = +0.002503   + simple prior-mean FT forecast
+   POOLED    n=9130    R2(points) base 0.50166 -> 0.50416   dR2 = +0.002503   + both FT forecasts
+   POOLED    n=9130    R2(points) base 0.50166 -> 0.50216   dR2 = +0.000500   + OPPONENT prior FTM-allowed per game
+   POOLED    n=9130    R2(points) base 0.50166 -> 0.50207   dR2 = +0.000414   + OPPONENT prior FTA-allowed per game
+   POOLED    n=9130    R2(points) base 0.50166 -> 0.50100   dR2 = -0.000655   + BOTH opponent FT-allowance terms
+   POOLED    n=9130    R2(points) base 0.50166 -> 0.50462   dR2 = +0.002961   + own FT forecast AND opponent FT-allowance
+   POOLED    n=9130    R2(points) base 0.50166 -> 0.62664   dR2 = +0.124985   + REALISED ftm [ORACLE UPPER BOUND]
+   DECISION  n=3552    R2(points) base 0.32224 -> 0.32123   dR2 = -0.001014   + composed honest FT forecast
+   DECISION  n=3552    R2(points) base 0.32224 -> 0.32123   dR2 = -0.001014   + simple prior-mean FT forecast
+   DECISION  n=3552    R2(points) base 0.32224 -> 0.32123   dR2 = -0.001014   + both FT forecasts
+   DECISION  n=3552    R2(points) base 0.32224 -> 0.32511   dR2 = +0.002865   + OPPONENT prior FTM-allowed per game
+   DECISION  n=3552    R2(points) base 0.32224 -> 0.32448   dR2 = +0.002240   + OPPONENT prior FTA-allowed per game
+   DECISION  n=3552    R2(points) base 0.32224 -> 0.32551   dR2 = +0.003267   + BOTH opponent FT-allowance terms
+   DECISION  n=3552    R2(points) base 0.32224 -> 0.32388   dR2 = +0.001634   + own FT forecast AND opponent FT-allowance
+   DECISION  n=3552    R2(points) base 0.32224 -> 0.47885   dR2 = +0.156610   + REALISED ftm [ORACLE UPPER BOUND]
+
+====================================================================================================
+3. PER-SEASON CONSISTENCY OF THE HEADLINE STAGE RESULT
+====================================================================================================
+ season  stratum    n  r2_ftm_composed_honest  r2_ftm_simple_prior_mean  corr_stageA_prior_with_ftm  dR2_points_M03  beta_points_M03  dR2_points_M02  beta_points_M02  n_points_cells
+   2021   POOLED 3885                0.182933                  0.189735                    0.410162    1.191596e-07        -0.001212        0.000121         0.031789            3639
+   2021 DECISION 1320                0.143707                  0.143707                    0.376053    5.087219e-05         0.030989        0.000443         0.072312            1320
+   2022   POOLED 4519                0.200586                  0.208005                    0.421808    4.390918e-04         0.065597        0.000190         0.036525            4272
+   2022 DECISION 1559                0.180775                  0.180775                    0.397007    2.075235e-03         0.161542        0.001619         0.121729            1559
+   2023   POOLED 4897                0.282579                  0.289818                    0.471871    2.498853e-05         0.018092        0.000008         0.008808            4581
+   2023 DECISION 1776                0.228515                  0.228515                    0.417267    7.779076e-04         0.118973        0.000478         0.078660            1776
+   2024   POOLED 4911                0.270435                  0.277307                    0.480231    1.599998e-03         0.150763        0.001673         0.132065            4549
+   2024 DECISION 1776                0.196035                  0.196035                    0.379843    8.451164e-03         0.435081        0.007689         0.352112            1776
+
+====================================================================================================
+4. HISTORY-FLOOR SENSITIVITY (floor applied to the HISTORY only, never the response)
+====================================================================================================
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+ history_minutes_floor    target     n  r2_H3_rate_x_minutes
+                   0.0 y_any_fta 13848              0.170846
+                   0.0       ftm 13848              0.262298
+                   5.0 y_any_fta 13690              0.168913
+                   5.0       ftm 13690              0.259466
+                  10.0 y_any_fta 13402              0.164194
+                  10.0       ftm 13402              0.253595
+                  15.0 y_any_fta 12794              0.153558
+                  15.0       ftm 12794              0.241822
+                  20.0 y_any_fta 11602              0.136437
+                  20.0       ftm 11602              0.224065
+
+  WROTE arithmetic_ceiling.csv, propagation_walkforward.csv, per_season_consistency.csv, history_floor_curve.csv, _s06.json
+
+####################################################################################################
+### run_log_s07.txt
+####################################################################################################
+
+====================================================================================================
+FINDINGS.json WRITTEN
+====================================================================================================
+  prereg hash e1ef0849e5f79230e27a0baa8b63ce0e6a1f24cca0a3b261cbfa7ba67c69f757
+  560 cell runs, 81 survivors over B_COMPLETE
+  wrote C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0029_freethrow_hurdle\FINDINGS.json

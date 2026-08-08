@@ -9,6 +9,18 @@
 - cell RUNS (280 cells x 2 strata, POOLED and DECISION): **560**
 - **added since hash: 0   dropped since hash: 0**
 
+> **ONE DEPARTURE FROM THIS DOCUMENT, MADE AFTER THE HASH AND ON MEASURED POWER.** The
+> verdict-carrying null for `player_season` candidates was preregistered below as `N_CYCLIC`
+> (D093's within-player cyclic shift). An injection power check showed it is **degenerate** --
+> handed a signal of exactly `dR2 = 0.002057` it returns `p = 1.0000`, in 0 of 15 configurations
+> detected -- because a within-player rotation leaves each player's mean intact and an own-history
+> trait varies almost entirely *between* players. It was replaced by **`N_PSWAP`** (whole
+> player-season series reassigned within season), whose power was then measured on the same
+> injections. `N_CYCLIC` is still computed and reported for every cell in `screen_results.csv`
+> (`p_N_CYCLIC_EXCLUDED_no_power`) and is excluded from every verdict. **The candidate list, the
+> bases, the targets and the strata below are unchanged, so the hash stands and the added/dropped
+> counts remain 0/0.** See `DEFECTS.md` and `injection_power.csv`.
+
 The list was fixed and hashed by `s01_prereg.py`, which **loads no data and computes no statistic**.
 `s00_inspect.py` ran before it, but computes only descriptive quantities the ideation queue had
 **already published** (FT share of points, the zero fraction, the two marginal correlations) --

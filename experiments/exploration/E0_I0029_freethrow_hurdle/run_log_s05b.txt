@@ -1,0 +1,352 @@
+﻿  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  prereg hash e1ef0849e5f79230e27a0baa8b63ce0e6a1f24cca0a3b261cbfa7ba67c69f757   560 cell runs
+
+====================================================================================================
+1. CONTROLS -- NEGATIVE CONTROL AND THE NO-OP PLACEBO
+====================================================================================================
+  G01_noise                n_cells=24   max|dR2|=6.460e-04  median p_correct=0.3619  frac p<0.05=0.083  median null sd=1.848e-04
+  G02_placebo_noop         n_cells=24   max|dR2|=0.000e+00  median p_correct=1.0000  frac p<0.05=0.000  median null sd=1.810e-04
+  G03_placebo_perturbed    n_cells=24   max|dR2|=1.030e-03  median p_correct=0.3478  frac p<0.05=0.208  median null sd=1.730e-04
+
+  FLOOR OF RESOLUTION (median null sd of the NO-OP placebo) = 1.810e-04
+  NO-OP CHECK      : max |dR2(G02)| over 24 cells = 0.000e+00 -> CONFIRMED NO-OP
+  NEGATIVE CONTROL : G01 clears the PER-CELL p<0.05 in 8.3% of its 24 cells (nominal 5%);
+                     it clears the FAMILY-WISE p<0.05 in 0.0% of them, which is the figure that matters
+                     max dR2 attained by pure noise = 6.460e-04 -- ANY REPORTED EFFECT SMALLER THAN THIS IS NOISE
+  PLACEBO IS NOT THE IDENTITY: median |dR2(G03)-dR2(G02)| = 1.139e-04 (0.6x floor).  This is
+  CORRECTLY SMALL -- G03 is a corrupted copy of a column already in the base, so the base
+  removes its signal.  The question that matters is answered by the injection below.
+
+====================================================================================================
+2. INJECTION POWER CHECK -- COULD THIS SCREEN HAVE FOUND WHAT IT SAYS IS NOT THERE?
+====================================================================================================
+
+  ---- STRATUM POOLED ---- (p is the CORRECT-LEVEL null; row-level shown for inflation)
+   target      carrier            null         injected    p_corr     p_row    infl detected
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.002057    0.0017    0.0017    3.16 YES   D089 largest measured, ALIVE
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.001127    0.0017    0.0017    2.56 YES   D079 shot mix, DEAD
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000500    0.0116    0.0017    2.12 YES   (intermediate)
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000129    0.1664    0.0566    1.82 no    D084 opp conversion, DEAD
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000050    0.4027    0.2463    1.73 no    (below every benchmark)
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017    6.66 no    D089 largest measured, ALIVE
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0017    5.63 no    D079 shot mix, DEAD
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0017    4.65 no    (intermediate)
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.0649    3.70 no    D084 opp conversion, DEAD
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.2496    3.34 no    (below every benchmark)
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.11 YES   D089 largest measured, ALIVE
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.001127    0.0017    0.0017    1.08 YES   D079 shot mix, DEAD
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000500    0.0033    0.0017    1.07 YES   (intermediate)
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000129    0.0915    0.0566    1.07 no    D084 opp conversion, DEAD
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000050    0.2928    0.2463    1.07 no    (below every benchmark)
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.002057    0.0017    0.0017    2.54 YES   D089 largest measured, ALIVE
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.001127    0.0033    0.0017    2.07 YES   D079 shot mix, DEAD
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000500    0.0250    0.0067    1.70 YES   (intermediate)
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000129    0.2396    0.1448    1.41 no    D084 opp conversion, DEAD
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000050    0.4559    0.3394    1.32 no    (below every benchmark)
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017   10.46 no    D089 largest measured, ALIVE
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0017    9.63 no    D079 shot mix, DEAD
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0033    8.84 no    (intermediate)
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.1498    8.06 no    D084 opp conversion, DEAD
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.3494    7.76 no    (below every benchmark)
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.48 YES   D089 largest measured, ALIVE
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.001127    0.0017    0.0017    1.47 YES   D079 shot mix, DEAD
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000500    0.0067    0.0033    1.46 YES   (intermediate)
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000129    0.1681    0.1015    1.46 no    D084 opp conversion, DEAD
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000050    0.3627    0.3128    1.46 no    (below every benchmark)
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.002057    0.0017    0.0017    2.10 YES   D089 largest measured, ALIVE
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.001127    0.0033    0.0017    1.72 YES   D079 shot mix, DEAD
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000500    0.0216    0.0067    1.43 YES   (intermediate)
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000129    0.1797    0.1481    1.22 no    D084 opp conversion, DEAD
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000050    0.3827    0.3927    1.15 no    (below every benchmark)
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017    8.33 no    D089 largest measured, ALIVE
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0017    7.63 no    D079 shot mix, DEAD
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0067    6.96 no    (intermediate)
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.1248    6.30 no    D084 opp conversion, DEAD
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.3361    6.04 no    (below every benchmark)
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.20 YES   D089 largest measured, ALIVE
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.001127    0.0017    0.0017    1.19 YES   D079 shot mix, DEAD
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000500    0.0116    0.0050    1.18 YES   (intermediate)
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000129    0.1647    0.1414    1.18 no    D084 opp conversion, DEAD
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000050    0.3794    0.3461    1.19 no    (below every benchmark)
+
+  ---- STRATUM DECISION ---- (p is the CORRECT-LEVEL null; row-level shown for inflation)
+   target      carrier            null         injected    p_corr     p_row    infl detected
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.002057    0.0033    0.0017    1.49 YES   D089 largest measured, ALIVE
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.001127    0.0150    0.0083    1.37 YES   D079 shot mix, DEAD
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000500    0.1248    0.0666    1.29 no    (intermediate)
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000129    0.4293    0.3062    1.26 no    D084 opp conversion, DEAD
+   y_pts       M01_opp_pf_pg      N_ENTITY     0.000050    0.6373    0.5574    1.26 no    (below every benchmark)
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.002057    0.9983    0.0017    2.17 no    D089 largest measured, ALIVE
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0067    1.77 no    D079 shot mix, DEAD
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0599    1.40 no    (intermediate)
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.3328    1.03 no    D084 opp conversion, DEAD
+   y_pts       F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.5441    0.88 no    (below every benchmark)
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.12 YES   D089 largest measured, ALIVE
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.001127    0.0067    0.0067    1.10 YES   D079 shot mix, DEAD
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000500    0.0566    0.0549    1.10 no    (intermediate)
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000129    0.3361    0.3361    1.10 no    D084 opp conversion, DEAD
+   y_pts       F02_prior_fd_pm    N_PSWAP      0.000050    0.5474    0.5507    1.10 no    (below every benchmark)
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.002057    0.0083    0.0017    1.72 YES   D089 largest measured, ALIVE
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.001127    0.0349    0.0100    1.51 YES   D079 shot mix, DEAD
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000500    0.1331    0.0882    1.35 no    (intermediate)
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000129    0.4260    0.3494    1.23 no    D084 opp conversion, DEAD
+   y_ftm       M01_opp_pf_pg      N_ENTITY     0.000050    0.6123    0.5591    1.19 no    (below every benchmark)
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017    4.15 no    D089 largest measured, ALIVE
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0116    3.72 no    D079 shot mix, DEAD
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0832    3.30 no    (intermediate)
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.3810    2.88 no    D084 opp conversion, DEAD
+   y_ftm       F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.5657    2.72 no    (below every benchmark)
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    0.98 YES   D089 largest measured, ALIVE
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.001127    0.0133    0.0083    0.98 YES   D079 shot mix, DEAD
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000500    0.0782    0.0882    0.99 no    (intermediate)
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000129    0.3760    0.3844    1.01 no    D084 opp conversion, DEAD
+   y_ftm       F02_prior_fd_pm    N_PSWAP      0.000050    0.6040    0.5591    1.02 no    (below every benchmark)
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.002057    0.0067    0.0017    1.61 YES   D089 largest measured, ALIVE
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.001127    0.0333    0.0116    1.43 YES   D079 shot mix, DEAD
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000500    0.1381    0.0915    1.29 no    (intermediate)
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000129    0.4226    0.3777    1.20 no    D084 opp conversion, DEAD
+   y_any_fta   M01_opp_pf_pg      N_ENTITY     0.000050    0.6073    0.5940    1.18 no    (below every benchmark)
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.002057    1.0000    0.0017    2.74 no    D089 largest measured, ALIVE
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.001127    1.0000    0.0083    2.35 no    D079 shot mix, DEAD
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000500    1.0000    0.0682    1.98 no    (intermediate)
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000129    1.0000    0.3810    1.61 no    D084 opp conversion, DEAD
+   y_any_fta   F02_prior_fd_pm    N_CYCLIC     0.000050    1.0000    0.5607    1.46 no    (below every benchmark)
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.002057    0.0017    0.0017    1.19 YES   D089 largest measured, ALIVE
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.001127    0.0150    0.0100    1.19 YES   D079 shot mix, DEAD
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000500    0.0899    0.0682    1.19 no    (intermediate)
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000129    0.3694    0.3827    1.21 no    D084 opp conversion, DEAD
+   y_any_fta   F02_prior_fd_pm    N_PSWAP      0.000050    0.5857    0.5657    1.21 no    (below every benchmark)
+
+  SMALLEST INJECTED dR2 DETECTED AT p<0.05 BY THE CORRECT-LEVEL NULL:
+    DECISION|y_any_fta|F02_prior_fd_pm         0.001127
+    DECISION|y_any_fta|M01_opp_pf_pg           0.001127
+    DECISION|y_ftm|F02_prior_fd_pm             0.001127
+    DECISION|y_ftm|M01_opp_pf_pg               0.001127
+    DECISION|y_pts|F02_prior_fd_pm             0.001127
+    DECISION|y_pts|M01_opp_pf_pg               0.001127
+    POOLED|y_any_fta|F02_prior_fd_pm           0.000500
+    POOLED|y_any_fta|M01_opp_pf_pg             0.000500
+    POOLED|y_ftm|F02_prior_fd_pm               0.000500
+    POOLED|y_ftm|M01_opp_pf_pg                 0.000500
+    POOLED|y_pts|F02_prior_fd_pm               0.000500
+    POOLED|y_pts|M01_opp_pf_pg                 0.000500
+
+  DETECTION RATE AT THE LARGEST MEASURED (alive) BENCHMARK 0.002057, BY NULL:
+    N_CYCLIC     0.0% of 6 configurations   (median p = 1.0000)
+    N_ENTITY   100.0% of 6 configurations   (median p = 0.0025)
+    N_PSWAP    100.0% of 6 configurations   (median p = 0.0017)
+
+  READ THIS CAREFULLY.  N_CYCLIC does not merely lack power -- it is DEGENERATE, returning
+  p ~ 1.0 against a signal it was handed by construction.  A within-player rotation leaves
+  each player's MEAN intact, and an own-history trait's signal is almost entirely BETWEEN
+  players, so the rotation preserves the very variation it is meant to destroy.  D093
+  introduced N_CYCLIC to repair an ANTICONSERVATIVE null; on a BETWEEN-entity candidate it
+  over-corrects into uselessness.  N_CYCLIC therefore CANNOT carry a null verdict for an
+  own-history candidate in this screen, and N_PSWAP is used for those instead.
+
+====================================================================================================
+3. STEP 2 -- THE MATCHUP QUESTION, DECOMPOSED
+====================================================================================================
+  Read the columns in this order.  A cell that is large over B_SINGLE and dies over
+  B_COMPLETE was reference incompleteness (D087).  A cell that survives B_COMPLETE and dies
+  over B_COMPLETE_PLUS_M02 was opponent FT-volume wearing a matchup's name.  An INTERACTION
+  that survives B_COMPLETE and dies over B_MATCHUP is D085 repeating itself EXACTLY.
+
+  ---- STRATUM POOLED ----
+   target        candidate                     dR2 B_SIN  dR2 B_CMP   dR2 +M02   p_corr     p_fw
+   y_any_fta     M01_opp_pf_pg                 3.914e-04  7.252e-04  4.375e-05   0.0083   0.1631
+   y_any_fta     M02_opp_allowed_fta_pg        7.230e-04  7.568e-04        n/a   0.0067   0.1764
+   y_any_fta     M03_opp_allowed_ftm_pg        6.924e-04  7.164e-04  4.085e-07   0.0083   0.1930
+   y_any_fta     M04_opp_allowed_ft_rate       7.877e-04  7.698e-04  2.306e-05   0.0067   0.1581
+   y_any_fta     M05_opp_allowed_hurdle_rate   1.391e-05  4.175e-05  1.732e-04   0.5391   1.0000
+   y_any_fta     M06_opp_pace                  6.988e-05  1.207e-04  1.878e-05   0.1747   0.9867
+   y_any_fta     X01_fd_x_oppfoul                    n/a  2.279e-04        n/a   0.0599   0.6506
+   y_any_fta     X02_ftr_x_oppftrate                 n/a  1.999e-04        n/a   0.0682   0.8053
+   y_fta_given   M01_opp_pf_pg                 4.399e-03  3.464e-03  1.809e-04   0.0017   0.0083
+   y_fta_given   M02_opp_allowed_fta_pg        4.153e-03  3.694e-03        n/a   0.0033   0.0083
+   y_fta_given   M03_opp_allowed_ftm_pg        4.522e-03  3.999e-03  3.053e-04   0.0033   0.0083
+   y_fta_given   M04_opp_allowed_ft_rate       3.031e-03  2.577e-03  6.967e-04   0.0033   0.0499
+   y_fta_given   M05_opp_allowed_hurdle_rate   1.837e-03  1.071e-03  3.091e-05   0.0383   0.4942
+   y_fta_given   M06_opp_pace                  2.264e-03  2.094e-03  1.034e-03   0.0067   0.1897
+   y_fta_given   X01_fd_x_oppfoul                    n/a  5.342e-04        n/a   0.0749   0.7837
+   y_fta_given   X02_ftr_x_oppftrate                 n/a  1.186e-04        n/a   0.2729   1.0000
+   y_ftm_given   M01_opp_pf_pg                 3.494e-03  2.935e-03  2.344e-04   0.0017   0.0067
+   y_ftm_given   M02_opp_allowed_fta_pg        3.270e-03  2.935e-03        n/a   0.0017   0.0100
+   y_ftm_given   M03_opp_allowed_ftm_pg        3.300e-03  3.009e-03  9.682e-05   0.0017   0.0116
+   y_ftm_given   M04_opp_allowed_ft_rate       2.240e-03  1.948e-03  7.501e-04   0.0033   0.0982
+   y_ftm_given   M05_opp_allowed_hurdle_rate   1.500e-03  1.181e-03  3.016e-06   0.0133   0.2413
+   y_ftm_given   M06_opp_pace                  1.756e-03  1.534e-03  7.333e-04   0.0133   0.2097
+   y_ftm_given   X01_fd_x_oppfoul                    n/a  4.258e-04        n/a   0.0849   0.8136
+   y_ftm_given   X02_ftr_x_oppftrate                 n/a  2.381e-04        n/a   0.2246   0.9933
+   y_fta         M01_opp_pf_pg                 2.572e-03  2.525e-03  1.979e-04   0.0017   0.0050
+   y_fta         M02_opp_allowed_fta_pg        2.578e-03  2.527e-03        n/a   0.0017   0.0083
+   y_fta         M03_opp_allowed_ftm_pg        2.715e-03  2.644e-03  1.209e-04   0.0017   0.0033
+   y_fta         M04_opp_allowed_ft_rate       2.132e-03  2.022e-03  1.339e-04   0.0033   0.0283
+   y_fta         M05_opp_allowed_hurdle_rate   7.301e-04  5.557e-04  8.463e-05   0.0715   0.7088
+   y_fta         M06_opp_pace                  9.983e-04  9.609e-04  3.693e-04   0.0033   0.1082
+   y_fta         X01_fd_x_oppfoul                    n/a  2.356e-04        n/a   0.0416   0.6156
+   y_fta         X02_ftr_x_oppftrate                 n/a  5.581e-07        n/a   0.9351   1.0000
+   y_ftm         M01_opp_pf_pg                 2.277e-03  2.379e-03  1.753e-04   0.0033   0.0150
+   y_ftm         M02_opp_allowed_fta_pg        2.355e-03  2.407e-03        n/a   0.0017   0.0150
+   y_ftm         M03_opp_allowed_ftm_pg        2.324e-03  2.385e-03  2.980e-05   0.0017   0.0116
+   y_ftm         M04_opp_allowed_ft_rate       1.891e-03  1.878e-03  1.747e-04   0.0017   0.0266
+   y_ftm         M05_opp_allowed_hurdle_rate   7.483e-04  6.357e-04  3.818e-05   0.0366   0.5108
+   y_ftm         M06_opp_pace                  9.002e-04  9.098e-04  3.483e-04   0.0116   0.1963
+   y_ftm         X01_fd_x_oppfoul                    n/a  2.653e-04        n/a   0.0483   0.6106
+   y_ftm         X02_ftr_x_oppftrate                 n/a  7.168e-06        n/a   0.7255   1.0000
+   y_pts         M01_opp_pf_pg                 3.355e-04  3.634e-04  1.068e-06   0.0499   0.6073
+   y_pts         M02_opp_allowed_fta_pg        4.846e-04  4.706e-04        n/a   0.0349   0.4476
+   y_pts         M03_opp_allowed_ftm_pg        6.327e-04  5.992e-04  1.892e-04   0.0166   0.2446
+   y_pts         M04_opp_allowed_ft_rate       1.874e-04  1.769e-04  7.086e-04   0.1531   0.9717
+   y_pts         M05_opp_allowed_hurdle_rate   4.791e-05  5.769e-05  5.223e-05   0.3594   1.0000
+   y_pts         M06_opp_pace                  2.429e-04  2.015e-04  8.352e-05   0.0549   0.6339
+   y_pts         X01_fd_x_oppfoul                    n/a  5.483e-05        n/a   0.2646   0.9983
+   y_pts         X02_ftr_x_oppftrate                 n/a  2.049e-05        n/a   0.4792   1.0000
+
+  ---- STRATUM DECISION ----
+   target        candidate                     dR2 B_SIN  dR2 B_CMP   dR2 +M02   p_corr     p_fw
+   y_any_fta     M01_opp_pf_pg                 3.689e-03  4.480e-03  6.409e-05   0.0017   0.0017
+   y_any_fta     M02_opp_allowed_fta_pg        4.480e-03  5.037e-03        n/a   0.0017   0.0017
+   y_any_fta     M03_opp_allowed_ftm_pg        4.456e-03  5.046e-03  5.243e-05   0.0017   0.0017
+   y_any_fta     M04_opp_allowed_ft_rate       4.735e-03  5.211e-03  1.981e-04   0.0017   0.0017
+   y_any_fta     M05_opp_allowed_hurdle_rate   2.935e-03  3.346e-03  1.678e-04   0.0033   0.0033
+   y_any_fta     M06_opp_pace                  7.350e-04  7.662e-04  2.045e-05   0.0333   0.5591
+   y_any_fta     X01_fd_x_oppfoul                    n/a  1.376e-06        n/a   0.9218   1.0000
+   y_any_fta     X02_ftr_x_oppftrate                 n/a  5.586e-04        n/a   0.0649   0.6855
+   y_fta_given   M01_opp_pf_pg                 8.108e-03  7.528e-03  1.347e-04   0.0017   0.0017
+   y_fta_given   M02_opp_allowed_fta_pg        8.691e-03  8.419e-03        n/a   0.0017   0.0017
+   y_fta_given   M03_opp_allowed_ftm_pg        8.901e-03  8.643e-03  2.324e-04   0.0017   0.0017
+   y_fta_given   M04_opp_allowed_ft_rate       7.095e-03  6.646e-03  6.882e-04   0.0017   0.0067
+   y_fta_given   M05_opp_allowed_hurdle_rate   4.898e-03  4.130e-03  7.252e-06   0.0050   0.0632
+   y_fta_given   M06_opp_pace                  3.984e-03  3.833e-03  1.153e-03   0.0116   0.2413
+   y_fta_given   X01_fd_x_oppfoul                    n/a  2.295e-03        n/a   0.0116   0.1265
+   y_fta_given   X02_ftr_x_oppftrate                 n/a  4.427e-04        n/a   0.1897   0.9617
+   y_ftm_given   M01_opp_pf_pg                 7.007e-03  6.595e-03  4.543e-05   0.0017   0.0050
+   y_ftm_given   M02_opp_allowed_fta_pg        8.212e-03  7.744e-03        n/a   0.0017   0.0017
+   y_ftm_given   M03_opp_allowed_ftm_pg        7.919e-03  7.425e-03  6.078e-07   0.0017   0.0017
+   y_ftm_given   M04_opp_allowed_ft_rate       6.717e-03  6.174e-03  5.632e-04   0.0017   0.0067
+   y_ftm_given   M05_opp_allowed_hurdle_rate   5.523e-03  5.104e-03  2.543e-04   0.0017   0.0100
+   y_ftm_given   M06_opp_pace                  3.450e-03  3.375e-03  9.713e-04   0.0116   0.2063
+   y_ftm_given   X01_fd_x_oppfoul                    n/a  2.524e-03        n/a   0.0116   0.1880
+   y_ftm_given   X02_ftr_x_oppftrate                 n/a  9.323e-04        n/a   0.0682   0.6090
+   y_fta         M01_opp_pf_pg                 9.007e-03  8.861e-03  1.966e-04   0.0017   0.0017
+   y_fta         M02_opp_allowed_fta_pg        9.856e-03  9.688e-03        n/a   0.0017   0.0017
+   y_fta         M03_opp_allowed_ftm_pg        1.013e-02  9.987e-03  3.024e-04   0.0017   0.0017
+   y_fta         M04_opp_allowed_ft_rate       8.730e-03  8.432e-03  1.522e-04   0.0017   0.0017
+   y_fta         M05_opp_allowed_hurdle_rate   5.771e-03  5.218e-03  4.983e-05   0.0017   0.0050
+   y_fta         M06_opp_pace                  3.493e-03  3.332e-03  7.161e-04   0.0133   0.2446
+   y_fta         X01_fd_x_oppfoul                    n/a  2.096e-03        n/a   0.0050   0.0250
+   y_fta         X02_ftr_x_oppftrate                 n/a  7.962e-05        n/a   0.5441   1.0000
+   y_ftm         M01_opp_pf_pg                 8.301e-03  8.579e-03  1.089e-04   0.0017   0.0017
+   y_ftm         M02_opp_allowed_fta_pg        9.560e-03  9.713e-03        n/a   0.0017   0.0017
+   y_ftm         M03_opp_allowed_ftm_pg        9.418e-03  9.606e-03  4.665e-05   0.0017   0.0017
+   y_ftm         M04_opp_allowed_ft_rate       8.398e-03  8.385e-03  1.897e-04   0.0017   0.0017
+   y_ftm         M05_opp_allowed_hurdle_rate   6.193e-03  5.940e-03  1.836e-04   0.0017   0.0050
+   y_ftm         M06_opp_pace                  3.267e-03  3.237e-03  6.691e-04   0.0150   0.2363
+   y_ftm         X01_fd_x_oppfoul                    n/a  2.575e-03        n/a   0.0017   0.0050
+   y_ftm         X02_ftr_x_oppftrate                 n/a  1.828e-04        n/a   0.3211   1.0000
+   y_pts         M01_opp_pf_pg                 1.465e-03  1.990e-03  4.320e-06   0.0033   0.0349
+   y_pts         M02_opp_allowed_fta_pg        2.028e-03  2.396e-03        n/a   0.0017   0.0133
+   y_pts         M03_opp_allowed_ftm_pg        2.529e-03  2.951e-03  1.057e-03   0.0017   0.0050
+   y_pts         M04_opp_allowed_ft_rate       1.318e-03  1.566e-03  8.715e-04   0.0050   0.1431
+   y_pts         M05_opp_allowed_hurdle_rate   7.266e-04  9.174e-04  1.739e-05   0.0449   0.5141
+   y_pts         M06_opp_pace                  3.576e-04  3.587e-04  8.960e-06   0.1215   0.8552
+   y_pts         X01_fd_x_oppfoul                    n/a  8.114e-04        n/a   0.0333   0.3744
+   y_pts         X02_ftr_x_oppftrate                 n/a  8.932e-06        n/a   0.8203   1.0000
+
+  ---- THE D085 GUARD: interactions over a base ALREADY CONTAINING BOTH MAIN EFFECTS ----
+   POOLED    y_any_fta     X01_fd_x_oppfoul       over B_COMPLETE  2.279e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  8.008e-05  p_corr 0.2479
+   POOLED    y_any_fta     X02_ftr_x_oppftrate    over B_COMPLETE  1.999e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.623e-04  p_corr nan
+   POOLED    y_fta_given   X01_fd_x_oppfoul       over B_COMPLETE  5.342e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.739e-04  p_corr 0.1215
+   POOLED    y_fta_given   X02_ftr_x_oppftrate    over B_COMPLETE  1.186e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  6.710e-06  p_corr nan
+   POOLED    y_ftm_given   X01_fd_x_oppfoul       over B_COMPLETE  4.258e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  5.461e-04  p_corr 0.0349
+   POOLED    y_ftm_given   X02_ftr_x_oppftrate    over B_COMPLETE  2.381e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  7.132e-05  p_corr nan
+   POOLED    y_fta         X01_fd_x_oppfoul       over B_COMPLETE  2.356e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  2.412e-04  p_corr 0.0349
+   POOLED    y_fta         X02_ftr_x_oppftrate    over B_COMPLETE  5.581e-07 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  9.902e-07  p_corr nan
+   POOLED    y_ftm         X01_fd_x_oppfoul       over B_COMPLETE  2.653e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.050e-04  p_corr 0.0300
+   POOLED    y_ftm         X02_ftr_x_oppftrate    over B_COMPLETE  7.168e-06 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  7.125e-06  p_corr nan
+   POOLED    y_pts         X01_fd_x_oppfoul       over B_COMPLETE  5.483e-05 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.293e-04  p_corr 0.0882
+   POOLED    y_pts         X02_ftr_x_oppftrate    over B_COMPLETE  2.049e-05 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.564e-06  p_corr nan
+   DECISION  y_any_fta     X01_fd_x_oppfoul       over B_COMPLETE  1.376e-06 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.703e-04  p_corr 0.3128
+   DECISION  y_any_fta     X02_ftr_x_oppftrate    over B_COMPLETE  5.586e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.518e-04  p_corr nan
+   DECISION  y_fta_given   X01_fd_x_oppfoul       over B_COMPLETE  2.295e-03 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  6.279e-04  p_corr 0.1032
+   DECISION  y_fta_given   X02_ftr_x_oppftrate    over B_COMPLETE  4.427e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.402e-04  p_corr nan
+   DECISION  y_ftm_given   X01_fd_x_oppfoul       over B_COMPLETE  2.524e-03 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.121e-03  p_corr 0.0516
+   DECISION  y_ftm_given   X02_ftr_x_oppftrate    over B_COMPLETE  9.323e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  5.983e-04  p_corr nan
+   DECISION  y_fta         X01_fd_x_oppfoul       over B_COMPLETE  2.096e-03 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  6.972e-04  p_corr 0.0616
+   DECISION  y_fta         X02_ftr_x_oppftrate    over B_COMPLETE  7.962e-05 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  3.193e-04  p_corr nan
+   DECISION  y_ftm         X01_fd_x_oppfoul       over B_COMPLETE  2.575e-03 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  1.068e-03  p_corr 0.0100
+   DECISION  y_ftm         X02_ftr_x_oppftrate    over B_COMPLETE  1.828e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  4.897e-04  p_corr nan
+   DECISION  y_pts         X01_fd_x_oppfoul       over B_COMPLETE  8.114e-04 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  6.489e-04  p_corr 0.0483
+   DECISION  y_pts         X02_ftr_x_oppftrate    over B_COMPLETE  8.932e-06 (DIAGNOSTIC ONLY) | over its OWN MAIN EFFECTS  7.384e-05  p_corr nan
+
+====================================================================================================
+4. SURVIVORS OVER B_COMPLETE (the only base that can carry a verdict)
+====================================================================================================
+  81 of 214 B_COMPLETE cells clear family-wise p<0.05
+   stratum   target        candidate                           dR2   p_corr     p_fw    infl
+   POOLED    y_ftm_given   F05_prior_fga_pm              1.430e-02   0.0017   0.0017    1.45
+   DECISION  y_fta         M03_opp_allowed_ftm_pg        9.987e-03   0.0017   0.0017    2.81
+   DECISION  y_ftm         M02_opp_allowed_fta_pg        9.713e-03   0.0017   0.0017    3.88
+   DECISION  y_fta         M02_opp_allowed_fta_pg        9.688e-03   0.0017   0.0017    2.92
+   DECISION  y_ftm         M03_opp_allowed_ftm_pg        9.606e-03   0.0017   0.0017    3.96
+   POOLED    y_ftm_given   F02_prior_fd_pm               8.965e-03   0.0017   0.0017    1.41
+   DECISION  y_fta         M01_opp_pf_pg                 8.861e-03   0.0017   0.0017    2.72
+   DECISION  y_fta_given   M03_opp_allowed_ftm_pg        8.643e-03   0.0017   0.0017    2.16
+   DECISION  y_ftm         M01_opp_pf_pg                 8.579e-03   0.0017   0.0017    3.47
+   POOLED    y_ftm_given   F07_prior_hurdle_rate         8.497e-03   0.0017   0.0017    1.31
+   DECISION  y_fta         M04_opp_allowed_ft_rate       8.432e-03   0.0017   0.0017    2.74
+   DECISION  y_fta_given   M02_opp_allowed_fta_pg        8.419e-03   0.0017   0.0017    2.23
+   DECISION  y_ftm         M04_opp_allowed_ft_rate       8.385e-03   0.0017   0.0017    3.91
+   POOLED    y_fta_given   F02_prior_fd_pm               7.978e-03   0.0017   0.0017    1.50
+   DECISION  y_ftm_given   M02_opp_allowed_fta_pg        7.744e-03   0.0017   0.0017    2.12
+   DECISION  y_fta_given   M01_opp_pf_pg                 7.528e-03   0.0017   0.0017    2.09
+   DECISION  y_ftm_given   M03_opp_allowed_ftm_pg        7.425e-03   0.0017   0.0017    2.12
+   POOLED    y_fta_given   F07_prior_hurdle_rate         7.309e-03   0.0017   0.0017    1.40
+   DECISION  y_fta_given   F02_prior_fd_pm               7.084e-03   0.0017   0.0017    0.92
+   DECISION  y_ftm_given   F02_prior_fd_pm               6.682e-03   0.0017   0.0017    1.33
+   DECISION  y_fta_given   M04_opp_allowed_ft_rate       6.646e-03   0.0017   0.0067    2.16
+   DECISION  y_ftm_given   M01_opp_pf_pg                 6.595e-03   0.0017   0.0050    1.94
+   DECISION  y_ftm_given   F05_prior_fga_pm              6.539e-03   0.0017   0.0017    1.31
+   DECISION  y_ftm_given   M04_opp_allowed_ft_rate       6.174e-03   0.0017   0.0067    2.12
+   DECISION  y_ftm         M05_opp_allowed_hurdle_rate   5.940e-03   0.0017   0.0050    3.46
+   POOLED    y_any_fta     F06_prior_fg3a_share          5.221e-03   0.0017   0.0017    1.14
+   DECISION  y_fta         M05_opp_allowed_hurdle_rate   5.218e-03   0.0017   0.0050    2.29
+   DECISION  y_any_fta     M04_opp_allowed_ft_rate       5.211e-03   0.0017   0.0017    1.68
+   POOLED    y_any_fta     F04_prior_paint_share         5.182e-03   0.0017   0.0017    1.30
+   DECISION  y_ftm_given   F07_prior_hurdle_rate         5.170e-03   0.0017   0.0017    1.23
+   DECISION  y_ftm_given   M05_opp_allowed_hurdle_rate   5.104e-03   0.0017   0.0100    2.24
+   DECISION  y_any_fta     M03_opp_allowed_ftm_pg        5.046e-03   0.0017   0.0017    1.61
+   DECISION  y_any_fta     M02_opp_allowed_fta_pg        5.037e-03   0.0017   0.0017    1.59
+   DECISION  y_fta_given   F07_prior_hurdle_rate         4.985e-03   0.0017   0.0017    0.94
+   DECISION  y_any_fta     M01_opp_pf_pg                 4.480e-03   0.0017   0.0017    1.66
+   POOLED    y_fta_given   M03_opp_allowed_ftm_pg        3.999e-03   0.0033   0.0083    2.46
+   POOLED    y_fta_given   M02_opp_allowed_fta_pg        3.694e-03   0.0033   0.0083    2.41
+   POOLED    y_any_fta     F02_prior_fd_pm               3.580e-03   0.0017   0.0017    1.24
+   DECISION  y_any_fta     F08_prior_fta_given           3.489e-03   0.0017   0.0017    1.08
+   POOLED    y_fta_given   M01_opp_pf_pg                 3.464e-03   0.0017   0.0083    2.08
+   DECISION  y_any_fta     M05_opp_allowed_hurdle_rate   3.346e-03   0.0033   0.0033    1.66
+   POOLED    y_ftm_given   M03_opp_allowed_ftm_pg        3.009e-03   0.0017   0.0116    2.16
+   DECISION  y_pts         M03_opp_allowed_ftm_pg        2.951e-03   0.0017   0.0050    1.52
+   POOLED    y_ftm_given   M01_opp_pf_pg                 2.935e-03   0.0017   0.0067    1.75
+   POOLED    y_ftm_given   M02_opp_allowed_fta_pg        2.935e-03   0.0017   0.0100    2.10
+   POOLED    y_fta_given   F05_prior_fga_pm              2.800e-03   0.0017   0.0033    1.37
+   POOLED    y_fta         F04_prior_paint_share         2.668e-03   0.0017   0.0017    1.51
+   POOLED    y_fta         M03_opp_allowed_ftm_pg        2.644e-03   0.0017   0.0033    3.36
+   POOLED    y_fta_given   M04_opp_allowed_ft_rate       2.577e-03   0.0033   0.0499    2.40
+   DECISION  y_ftm         X01_fd_x_oppfoul              2.575e-03   0.0017   0.0050    1.28
+   POOLED    y_fta         M02_opp_allowed_fta_pg        2.527e-03   0.0017   0.0083    3.55
+   POOLED    y_fta         M01_opp_pf_pg                 2.525e-03   0.0017   0.0050    3.14
+   POOLED    y_any_fta     F08_prior_fta_given           2.451e-03   0.0017   0.0017    1.16
+   DECISION  y_any_fta     F04_prior_paint_share         2.423e-03   0.0017   0.0017    1.01
+   POOLED    y_ftm         M02_opp_allowed_fta_pg        2.407e-03   0.0017   0.0150    4.15
+   DECISION  y_pts         M02_opp_allowed_fta_pg        2.396e-03   0.0017   0.0133    1.55
+   POOLED    y_ftm         M03_opp_allowed_ftm_pg        2.385e-03   0.0017   0.0116    3.80
+   POOLED    y_ftm         M01_opp_pf_pg                 2.379e-03   0.0033   0.0150    3.78
+   DECISION  y_any_fta     F01_prior_ftr                 2.310e-03   0.0017   0.0017    0.95
+   POOLED    y_ftm         F05_prior_fga_pm              2.245e-03   0.0017   0.0017    1.54
+
+  median correct-level/row-level null SD inflation across all cells: 1.27x
+  max inflation: 4.26x -- a row-level null would have been that many times too narrow
+
+  WROTE matchup_decomposition.csv, injection_power.csv, _s05.json

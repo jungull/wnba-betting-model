@@ -367,6 +367,89 @@ def row_shuffle(x, rng):
     return x[rng.permutation(len(x))]
 
 
+# --------------------------------------------------------------------- vectorised null index maps
+# The three nulls above, expressed as INDEX MAPS so a fixed analysis row set yields one (n, ndraw)
+# integer matrix per null type and every cell sharing that row set can reuse it.  Living here
+# rather than in s05 so that s05 (which draws them) and s05b (which reuses them for the injection
+# power check) cannot drift apart.
+def idx_row(n, rng, ndraw):
+    return np.stack([rng.permutation(n) for _ in range(ndraw)], axis=1).astype(np.int32)
+
+
+def idx_cyclic(gid, rng, ndraw):
+    """Within-group CYCLIC SHIFT.  Rows must be sorted by (group, date).  Preserves each entity's
+    marginal distribution AND its serial correlation exactly (D093)."""
+    order = np.argsort(gid, kind="stable")
+    g = gid[order]
+    uq, start = np.unique(g, return_index=True)
+    lens = np.append(start[1:], len(g)) - start
+    gpos = np.arange(len(g)) - start[np.searchsorted(uq, g)]
+    gsl = lens[np.searchsorted(uq, g)]
+    gst = start[np.searchsorted(uq, g)]
+    out = np.empty((len(g), ndraw), np.int32)
+    for d in range(ndraw):
+        k = rng.integers(0, np.maximum(lens, 1))[np.searchsorted(uq, g)]
+        src_sorted = gst + (gpos + k) % gsl
+        out[order, d] = order[src_sorted]
+    return out
+
+
+def idx_entity(ent, season, rng, ndraw):
+    """ENTITY SWAP within season: each entity's whole ordered series is reassigned to another
+    entity's rows, wrapping cyclically when lengths differ.  This is the correct-level null for a
+    term that varies at an entity -- an opponent team-season, or a PLAYER-season.
+
+    Vectorised.  Rows are grouped by (season, entity) into a flat index `flat` with per-entity
+    offset `off` and length `ln`, so one draw is
+
+        col = flat[ off[sigma(ent)] + (pos_within_entity % ln[sigma(ent)]) ]
+
+    which is exactly the tile-and-truncate the loop version performed, with identical semantics.
+    The loop version was O(ndraw * n_entities) python iterations and made a player-level swap
+    (~1400 entities) too slow to run; this is two fancy-index gathers per draw.
+    """
+    ent = np.asarray(ent)
+    season = np.asarray(season)
+    n = len(ent)
+    # a single key per (season, entity) so entities never swap ACROSS seasons
+    key = pd.factorize(pd.Series(season).astype(str) + "|" + pd.Series(ent).astype(str))[0]
+    flat = np.argsort(key, kind="stable").astype(np.int32)
+    ks = key[flat]
+    uq, start = np.unique(ks, return_index=True)
+    ln = (np.append(start[1:], n) - start).astype(np.int64)
+    off = start.astype(np.int64)
+    kidx = np.searchsorted(uq, key)                     # entity ordinal for each row
+    pos = np.arange(n) - off[kidx]                      # ...but rows are not in `flat` order
+    # recompute pos in ORIGINAL row order: rank of each row inside its entity block
+    pos = np.empty(n, np.int64)
+    pos[flat] = np.arange(n) - np.repeat(off, ln)
+    # season of each entity ordinal, so the permutation stays within season
+    ent_season = np.empty(len(uq), object)
+    ent_season_arr = season[flat[off]]
+    out = np.empty((n, ndraw), np.int32)
+    seasons_u = np.unique(ent_season_arr)
+    groups = [np.flatnonzero(ent_season_arr == s) for s in seasons_u]
+    for d in range(ndraw):
+        sigma = np.arange(len(uq))
+        for g in groups:
+            if len(g) > 1:
+                sigma[g] = g[rng.permutation(len(g))]
+        se = sigma[kidx]
+        out[:, d] = flat[off[se] + (pos % ln[se])]
+    return out
+
+
+def batched_dr2(bf, Xp):
+    """dR2 for MANY candidate vectors at once.  Xp is (n, ndraw).  Identical algebra to
+    BaseFit.dr2, executed as two BLAS matmuls instead of ndraw python calls."""
+    T = bf.X @ (bf.XtXi @ (bf.X.T @ Xp))
+    R = Xp - T
+    den = np.einsum("ij,ij->j", R, R)
+    num = bf.e @ R
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.where(den > 1e-12, num * num / den, 0.0) / bf.sst
+
+
 def perm_p(real, draws, alternative="greater"):
     d = np.asarray(draws, float)
     d = d[np.isfinite(d)]

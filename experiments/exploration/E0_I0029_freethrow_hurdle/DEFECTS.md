@@ -73,6 +73,64 @@ prereg hash is unchanged and the added/dropped counts remain 0/0.
 
 ---
 
+## D-03 -- THE INJECTION FORMULA USED A SMALL-SIGNAL APPROXIMATION (severity: LOW)
+
+The power check injects a signal of exactly a target dR2. The first version solved
+`a = sqrt(T*SST) - c0`, which ignores that adding `a*u` to the response also inflates SST. The
+assertion `abs(achieved - T) < 1e-9` caught it immediately. The exact solution accounts for the
+SST change: `a^2 + 2*c0*a - K = 0` with `K = (c0^2 - T*SST)/(T-1)`. Every injected dR2 in
+`injection_power.csv` now reproduces its target to 1e-9, and the assertion is retained so it
+cannot silently drift.
+
+---
+
+## A METHOD FINDING THAT IS NOT A DEFECT IN THIS SCREEN, BUT AFFECTS THE PROGRAMME
+
+### THE WITHIN-PLAYER CYCLIC-SHIFT NULL IS DEGENERATE AGAINST A BETWEEN-PLAYER CANDIDATE
+
+D093 introduced the within-player cyclic shift because a plain within-player shuffle is
+**anticonservative** for running-mean regressors (p 0.0015 vs an honest 0.39), and this screen
+preregistered it as the correct-level null for every `player_season` candidate.
+
+**The injection check shows it does not merely lack power -- it is degenerate.** Handed a signal of
+exactly `dR2 = 0.002057` (the largest effect ever measured in this programme, and alive) carried by
+`F02_prior_fd_pm`, the cyclic null returns **p = 1.0000**. At every injected size, on every target,
+on both strata: **p = 1.0000, 0 of 15 configurations detected.**
+
+**The mechanism is simple once stated.** A cyclic rotation of a player's own history series leaves
+that player's **mean** exactly unchanged. An own-history trait -- how often a player draws fouls,
+how often she reaches the line -- varies overwhelmingly **between** players, not within a player's
+season. So the rotation preserves precisely the variation that carries the signal and destroys only
+the small within-player timing component. The null draws therefore reproduce the real statistic and
+often exceed it.
+
+**The fix, and it is a departure from the preregistration.** `N_PSWAP` was added: whole
+**player-season** series reassigned to other players within the season, exactly as `N_ENTITY` does
+for opponent teams. Its power was then measured on the same injections:
+
+| null | detects 0.002057 | detects 0.001127 | detects 0.000500 | detects 0.000129 |
+|---|---|---|---|---|
+| `N_ENTITY` (opponent) | yes, 6/6 | yes, 6/6 | 3/6 | 0/6 |
+| `N_PSWAP` (player) | yes, 6/6 | yes, 6/6 | 4/6 | 0/6 |
+| `N_CYCLIC` (player, preregistered) | **0/6** | **0/6** | **0/6** | **0/6** |
+
+`p_correct_level` is therefore taken as the max over `{N_ENTITY, N_PSWAP}` -- the nulls with
+**measured** power -- and `N_CYCLIC` is recorded in full in `screen_results.csv` (column
+`p_N_CYCLIC_EXCLUDED_no_power`) but excluded from every verdict. **This departure is made on
+measured power, not on preference**, and it is declared here, in `NOTES.md` and in `FINDINGS.json`.
+The candidate list, bases, targets and strata are unchanged, so the prereg hash still stands with
+0 added and 0 dropped.
+
+**Why this matters beyond this screen.** D093's repair was correct for the problem it addressed and
+D097 records that it "paid for itself" by catching a false positive. But it appears to have been
+applied to own-history candidates generally, and against those it is not conservative -- it is
+inert. **Any null verdict in this programme that rests on a within-player cyclic shift against a
+between-player candidate should be re-read as "not established" rather than "absent".** This screen
+cannot say how many such verdicts exist; it can only report that the null it inherited failed a
+power check it should have been given.
+
+---
+
 ## WHERE I COULD HAVE CHEATED, AND WHAT STOPS IT
 
 Listed because the constraint asks for it, and because every item here is a place where a

@@ -184,6 +184,44 @@ F["STEP_4_the_structural_question"] = dict(
 noop = R[R["candidate"] == "G02_placebo_noop"]
 pert = R[R["candidate"] == "G03_placebo_perturbed"]
 noise = R[R["candidate"] == "G01_noise"]
+PW = pd.read_csv(os.path.join(OUT, "injection_power.csv"))
+F["NULL_VALIDITY_a_departure_from_the_preregistration"] = dict(
+    what_changed=("the preregistered correct-level null for a player_season candidate was "
+                  "N_CYCLIC (D093's within-player cyclic shift).  It is REPLACED as the "
+                  "verdict-carrying null by N_PSWAP -- whole player-season series reassigned to "
+                  "other players within the season -- on MEASURED POWER.  The candidate list, "
+                  "bases, targets and strata are unchanged; the prereg hash stands, 0 added, "
+                  "0 dropped."),
+    why=("an INJECTION POWER CHECK handed each null a signal of exactly a known dR2 and asked "
+         "whether it found it.  N_CYCLIC returned p = 1.0000 at EVERY injected size including "
+         "0.002057, the largest effect ever measured in this programme.  A within-player rotation "
+         "leaves each player's MEAN unchanged, and an own-history trait varies almost entirely "
+         "BETWEEN players, so the rotation preserves precisely the variation it is meant to "
+         "destroy.  A null with no power cannot deliver a 'no effect' verdict."),
+    detection_rate_at_0_002057_by_null=s05["injection_power"][
+        "detection_rate_at_D089_benchmark_by_null"],
+    smallest_injected_dR2_detected=s05["injection_power"]["smallest_detected"],
+    N_CYCLIC_still_reported="screen_results.csv column p_N_CYCLIC_EXCLUDED_no_power",
+    implication_for_the_programme=(
+        "any null verdict in this programme resting on a within-player cyclic shift against a "
+        "BETWEEN-player candidate should be re-read as 'not established' rather than 'absent'.  "
+        "This screen cannot say how many such verdicts exist; it reports only that the null it "
+        "inherited failed a power check it should have been given."),
+    table="injection_power.csv")
+
+F["THE_HURDLE_DECOMPOSITION_IS_EXACTLY_MEAN_PRESERVING"] = dict(
+    identity="HON_A * HON_G * HON_C = (k/n)*(S_fta/k)*(S_ftm/S_fta) = S_ftm/n = prior mean of ftm",
+    max_abs_difference_over_17578_rows=s06["hurdle_decomposition_is_exactly_mean_preserving"][
+        "max_abs_difference"],
+    reading=("the three honest stage estimators multiply straight back into the aggregate "
+             "estimator, so DECOMPOSING THE HURDLE BUYS EXACTLY NOTHING FOR A POINT FORECAST.  "
+             "Whatever the hurdle is worth is worth it in the SHAPE of the distribution -- the "
+             "46.4% mass at zero -- and never in the conditional mean.  This is the sharpest form "
+             "of the structural finding in STEP 4: the champion emits a scalar plus a residual "
+             "quantile envelope, which is exactly the representation that cannot hold a zero "
+             "mass, and a mean-preserving decomposition is exactly the thing that would not have "
+             "shown up as a better point forecast if anyone had tried it."))
+
 F["controls"] = dict(
     negative_control_G01_noise=dict(max_abs_dR2=float(noise["dR2"].abs().max()),
                                     median_p_correct_level=float(noise["p_correct_level"].median()),
@@ -204,6 +242,54 @@ F["controls"] = dict(
         max_sd_inflation=float(R["sd_inflation_correct_over_row"].max()),
         note=("the row-level null is reported ONLY to expose this inflation and NEVER carries a "
               "verdict.  Cluster-robust SEs are not used: they moved t the wrong way twice here.")))
+
+dec_pts = C[(C["stratum"] == "DECISION") & (C["response"] == "y_pts")].set_index("signal")
+mdec = M[M["stratum"] == "DECISION"].set_index("candidate")
+F["VERDICT"] = dict(
+    which_stage_carries_the_predictability=(
+        "STAGE A, THE HURDLE.  On the common denominator SST(ftm) over the full DECISION stratum, "
+        "upgrading stage A from a league constant to the player's own matched prior reference buys "
+        "+0.24016 of the 0.32943 total; stage B buys +0.17019 and stage C, conversion, buys "
+        "+0.02792.  A player's own prior free-throw percentage barely predicts a single game's "
+        "percentage at all (R2 +0.0296 DECISION, -0.0993 POOLED).  So the predictability is in "
+        "WHETHER she reaches the line and HOW OFTEN, not in whether she makes them.  That is new: "
+        "every screen in this programme so far has modelled rates."),
+    does_it_reach_points_and_what_is_the_ceiling=(
+        "YES, AND THE CEILING IS THE LARGEST IN THE PROGRAMME -- but it is the OPPONENT side, not "
+        "the player's own free-throw process.  On the DECISION stratum against POINTS, the "
+        "opponent's strictly-prior FTM-allowed per game reaches dR2 = 0.002951 over B_COMPLETE "
+        "(p_correct 0.0017, family-wise 0.0050), a ceiling of 1.43x the 0.002057 benchmark, and "
+        "it survives out-of-sample: adding it to a walk-forward points forecast fitted on earlier "
+        "seasons only moves R2 from 0.32224 to 0.32511, +0.002865.  The player's OWN free-throw "
+        "forecast adds NOTHING to a points forecast (-0.001014 walk-forward) because the points "
+        "base already contains her prior points."),
+    but_it_is_one_dimension_not_a_channel=(
+        "every opponent construction collapses once the opponent's prior FTA-allowed per game is "
+        "in the base: on points, M01 fouls-committed 0.001990 -> 0.000004 (about 500x), M05 "
+        "hurdle-rate-allowed 0.000917 -> 0.000017, M06 pace 0.000359 -> 0.000009, M04 rate-form "
+        "0.001566 -> 0.000872, M03 0.002951 -> 0.001057 and no longer family-wise significant.  "
+        "The opponent matchup is ONE NUMBER -- how many free throws a team gives up -- wearing "
+        "six names.  That is the same shape D085 found and it must be reported as one degree of "
+        "freedom, not six."),
+    D085_reproduced_exactly=(
+        "X01, the foul-draw matchup interaction rebuilt on free throws, is 0.000811 over "
+        "B_COMPLETE on DECISION points and 0.000649 over a base containing BOTH its own main "
+        "effects, family-wise p 0.539 -- it does not clear.  On y_any_fta it is 1.376e-06.  D085's "
+        "result reproduces on a target D085 never tested."),
+    the_structural_finding=(
+        "the champion carries NO free-throw component at all on the player arm, while the TEAM arm "
+        "carries an explicit ch_ft channel.  And because the hurdle decomposition is exactly "
+        "mean-preserving, the only thing a free-throw decomposition could ever have bought the "
+        "player arm is DISTRIBUTIONAL SHAPE -- which is precisely what an EWMA scalar wrapped in a "
+        "residual quantile envelope cannot represent, and precisely where a 46.4% zero mass "
+        "lives.  This is a structural finding of the same shape as the cold-start constant."),
+    what_this_screen_does_NOT_claim=(
+        "it does not claim a bettable edge.  The surviving term is an OPPONENT TEAM-SEASON "
+        "quantity with roughly 12 effective values per season; the DECISION-stratum result does "
+        "NOT reproduce on POOLED (M03 dR2 0.000599, family-wise p 0.245), and E0 verdicts are "
+        "non-claiming.  It also does not close the feature channel: the honest reading is that "
+        "the player's own free-throw process is closed and the opponent's free-throw allowance is "
+        "OPEN and is the largest ceiling this programme has measured."))
 
 F["defects_found_in_this_screens_own_work"] = [
     dict(id="D-01", severity="HIGH", title="conditional references were response-conditioned",

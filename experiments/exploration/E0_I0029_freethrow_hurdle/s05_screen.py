@@ -1,4 +1,4 @@
-"""E0_I0029 s05 -- THE SCREEN.  STEP 2: the matchup question, with the D085 guard.
+﻿"""E0_I0029 s05 -- THE SCREEN.  STEP 2: the matchup question, with the D085 guard.
 
 WHAT D085 DID AND WHY IT MUST NOT BE REPEATED.  The foul-draw matchup interaction (own prior
 free-throw-draw rate x opponent prior fouls-conceded rate) CLEARED FAMILY-WISE ON ALL THREE
@@ -35,11 +35,16 @@ import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ft_base import (BaseFit, HEADLINE_SEASONS, N_DRAWS, OUT, SEED, TARGETS, TARGET_ORDER,
-                     TARGET_SPECIFIC, assert_partition, basecols_for, hdr, jsonable, norm_sf,
-                     perm_p)
+                     TARGET_SPECIFIC, assert_partition, basecols_for, batched_dr2, hdr,
+                     idx_cyclic, idx_entity, idx_row, jsonable, norm_sf, perm_p)
 from s01_prereg import BASES, CANDIDATES, PREREG_HASH, bases_for, targets_for
 
 CAND = {c["name"]: c for c in CANDIDATES}
+
+# The nulls whose power is DEMONSTRATED by s05b's injection check, and therefore the only ones
+# allowed to carry a verdict.  N_ROW is diagnostic (inflation factor) by standing policy;
+# N_CYCLIC is excluded on MEASURED POWER -- see the comment at p_correct_level below.
+POWERED = ("N_PSWAP", "N_ENTITY")
 
 
 TARGET_SPECIFIC_CANDIDATES = {"G02_placebo_noop", "G03_placebo_perturbed"}
@@ -71,67 +76,9 @@ STRATA = {
 }
 
 
-# =====================================================================================
-# NULL INDEX MAPS -- vectorised, so a fixed row set gives one index matrix per null type
-# =====================================================================================
-def idx_row(n, rng, ndraw):
-    return np.stack([rng.permutation(n) for _ in range(ndraw)], axis=1).astype(np.int32)
-
-
-def idx_cyclic(gid, rng, ndraw):
-    """Within-group CYCLIC SHIFT.  Rows must be sorted by (group, date) -- they are, because the
-    frame is sorted by (season, player_id, game_date, game_id) and gid is built from that order.
-    Preserves each player's marginal distribution AND serial correlation exactly (D093)."""
-    order = np.argsort(gid, kind="stable")
-    g = gid[order]
-    uq, start = np.unique(g, return_index=True)
-    lens = np.append(start[1:], len(g)) - start
-    gpos = np.arange(len(g)) - start[np.searchsorted(uq, g)]
-    gsl = lens[np.searchsorted(uq, g)]
-    gst = start[np.searchsorted(uq, g)]
-    out = np.empty((len(g), ndraw), np.int32)
-    for d in range(ndraw):
-        k = rng.integers(0, np.maximum(lens, 1))[np.searchsorted(uq, g)]
-        src_sorted = gst + (gpos + k) % gsl
-        out[order, d] = order[src_sorted]
-    return out
-
-
-def idx_entity(ent, season, rng, ndraw):
-    """ENTITY SWAP within season: each entity's whole ordered series is reassigned to another
-    entity's rows, tiling when lengths differ.  The correct-level null for an opponent term."""
-    n = len(ent)
-    out = np.empty((n, ndraw), np.int32)
-    byseason = {}
-    for s in np.unique(season):
-        sm = np.flatnonzero(season == s)
-        e = ent[sm]
-        uq = np.unique(e)
-        byseason[s] = (sm, uq, [sm[e == q] for q in uq])
-    for d in range(ndraw):
-        col = np.arange(n, dtype=np.int32)
-        for s, (sm, uq, rows) in byseason.items():
-            if len(uq) < 2:
-                continue
-            perm = rng.permutation(len(uq))
-            for i in range(len(uq)):
-                dst, src = rows[i], rows[perm[i]]
-                col[dst] = np.tile(src, int(np.ceil(len(dst) / len(src))))[:len(dst)]
-        out[:, d] = col
-    return out
-
-
-def batched_dr2(bf, Xp):
-    """dR2 for MANY candidate vectors at once.  Xp is (n, ndraw).  Identical algebra to
-    BaseFit.dr2, executed as two BLAS matmuls instead of ndraw python calls."""
-    T = bf.X @ (bf.XtXi @ (bf.X.T @ Xp))
-    R = Xp - T
-    den = np.einsum("ij,ij->j", R, R)
-    num = bf.e @ R
-    with np.errstate(divide="ignore", invalid="ignore"):
-        v = np.where(den > 1e-12, num * num / den, 0.0) / bf.sst
-    return v
-
+# NULL INDEX MAPS and the batched dR2 now live in ft_base.py so that s05 (which draws them) and
+# s05b (which reuses them for the injection power check) cannot drift apart.  The code is
+# byte-identical to what produced screen_results.csv.
 
 # =====================================================================================
 hdr("1. SCREEN -- %d draws, seed %d" % (N_DRAWS, SEED))
@@ -176,6 +123,7 @@ for sname, smask in STRATA.items():
             sc = d["season"].to_numpy()
             IDX = {"N_ROW": idx_row(n, rng, N_DRAWS),
                    "N_CYCLIC": idx_cyclic(pl, rng, N_DRAWS),
+                   "N_PSWAP": idx_entity(pl, sc, rng, N_DRAWS),
                    "N_ENTITY": idx_entity(op, sc, rng, N_DRAWS)}
 
             fits = {}
@@ -183,11 +131,11 @@ for sname, smask in STRATA.items():
                 lvl = CAND[c]["level"]
                 nulls = ["N_ROW"]
                 if lvl == "player_season":
-                    nulls += ["N_CYCLIC"]
+                    nulls += ["N_CYCLIC", "N_PSWAP"]
                 elif lvl == "opp_team_season":
                     nulls += ["N_ENTITY"]
                 if CAND[c]["family"] == "X":
-                    nulls = ["N_ROW", "N_CYCLIC", "N_ENTITY"]
+                    nulls = ["N_ROW", "N_CYCLIC", "N_PSWAP", "N_ENTITY"]
                 x = d[colof(c, t)].to_numpy(float)
                 for b in bases_for(CAND[c]):
                     if b == "B_COMPLETE_PLUS_M02" and c == "M02_opp_allowed_fta_pg":
@@ -212,9 +160,19 @@ for sname, smask in STRATA.items():
                         rec["nullsd_" + nt] = float(np.std(dr, ddof=1))
                         rec["z_" + nt] = ((real - np.mean(dr)) / np.std(dr, ddof=1)
                                           if np.std(dr, ddof=1) > 0 else np.nan)
-                        if nt != "N_ROW":
+                        if nt in POWERED:
                             draw_store[(sname, rowset_name, t, b, c, nt)] = dr
-                    ent = [nt for nt in nulls if nt != "N_ROW"]
+                    # THE VERDICT-CARRYING NULLS ARE ONLY THOSE WITH DEMONSTRATED POWER.
+                    # s05b's injection check shows N_ENTITY and N_PSWAP detect an injected signal
+                    # at the 0.002057 and 0.001127 benchmarks, while N_CYCLIC is DEGENERATE
+                    # (p ~ 1.0 even against a signal handed to it by construction) because a
+                    # within-player rotation preserves each player's MEAN and an own-history
+                    # trait's variation is almost entirely BETWEEN players.  A null with no power
+                    # cannot deliver a "no effect" verdict, so N_CYCLIC is recorded in full and
+                    # excluded from p_correct_level.  This is a DEPARTURE from the preregistered
+                    # null set, made on measured power rather than on preference, and it is
+                    # declared in NOTES.md and FINDINGS.json.
+                    ent = [nt for nt in nulls if nt in POWERED]
                     if ent:
                         rec["p_correct_level"] = max(rec["p_" + nt] for nt in ent)
                         rec["correct_null_used"] = "+".join(ent)
@@ -225,6 +183,7 @@ for sname, smask in STRATA.items():
                         rec["p_correct_level"] = rec["p_N_ROW"]
                         rec["correct_null_used"] = "N_ROW (candidate varies at ROW level)"
                         rec["sd_inflation_correct_over_row"] = 1.0
+                    rec["p_N_CYCLIC_EXCLUDED_no_power"] = rec.get("p_N_CYCLIC", np.nan)
                     results.append(rec)
 
 R = pd.DataFrame(results)
@@ -247,7 +206,7 @@ for (sn, rs, t), grp in R.groupby(["stratum", "rowset", "target"]):
     ki = {(k[3], k[4], k[5]): i for i, k in enumerate(keys)}
     for i, r in grp.iterrows():
         cands = [(r["base"], r["candidate"], nt)
-                 for nt in ["N_CYCLIC", "N_ENTITY"] if (r["base"], r["candidate"], nt) in ki]
+                 for nt in POWERED if (r["base"], r["candidate"], nt) in ki]
         if not cands:
             continue
         ts = []
@@ -268,123 +227,11 @@ np.savez_compressed(os.path.join(OUT, "permutation_draws.npz"),
                     **{"|".join(map(str, k)): v for k, v in draw_store.items()})
 print("  wrote screen_results.csv and permutation_draws.npz (%d draw sets)" % len(draw_store))
 
-# =====================================================================================
-hdr("3. CONTROLS -- NEGATIVE CONTROL, NO-OP PLACEBO, AND THE PERTURBATION CHECK")
-# =====================================================================================
-ctl = R[R["family"] == "G"]
-for c in ["G01_noise", "G02_placebo_noop", "G03_placebo_perturbed"]:
-    s = ctl[ctl["candidate"] == c]
-    if not len(s):
-        continue
-    print("  %-24s max|dR2|=%.3e  median p_correct=%.4f  observed null sd (median)=%.3e"
-          % (c, s["dR2"].abs().max(), s["p_correct_level"].median(), s["nullsd_N_ROW"].median()))
-floor = float(ctl[ctl["candidate"] == "G02_placebo_noop"]["nullsd_N_ROW"].median())
-print("\n  FLOOR OF RESOLUTION (median null sd of the NO-OP placebo) = %.3e" % floor)
-
-# THE NO-OP MUST BE A NO-OP.  G02 is an affine copy of ref_mean__<target>, which is the first
-# column of both B_SINGLE and B_COMPLETE, so its dR2 must be zero to numerical precision.  If it
-# is not, the "base" being fitted is not the base that was declared.
-noop = R[R["candidate"] == "G02_placebo_noop"]
-print("  NO-OP CHECK   : max |dR2(G02)| over all %d cells = %.3e  -> %s"
-      % (len(noop), noop["dR2"].abs().max(),
-         "CONFIRMED NO-OP" if noop["dR2"].abs().max() < 1e-9 else "NOT A NO-OP -- base mismatch"))
-assert noop["dR2"].abs().max() < 1e-9, "G02 is not collinear with its own base"
-
-# AND THE PERTURBATION MUST PERTURB.  A control that is a genuine no-op proves the base is right
-# but tests nothing about sensitivity, so G03 -- the same column with 30% of rows swapped -- must
-# produce a dR2 that is unambiguously ABOVE the floor of resolution.  Otherwise this screen could
-# not have detected a real effect of that size either, and every null verdict here would be
-# uninformative rather than negative.
-pert = R[R["candidate"] == "G03_placebo_perturbed"]
-mrg = noop.merge(pert, on=["stratum", "rowset", "target", "base"], suffixes=("_noop", "_pert"))
-moved = float(np.nanmedian(np.abs(mrg["dR2_pert"] - mrg["dR2_noop"])))
-ratio = moved / floor if floor > 0 else np.nan
-det = float((pert["p_correct_level"] < 0.05).mean())
-print("  PERTURBATION  : median |dR2(G03) - dR2(G02)| = %.3e = %.1fx the floor of resolution"
-      % (moved, ratio))
-print("                  and G03 is DETECTED (p_correct<0.05) in %.1f%% of its cells -> %s"
-      % (100 * det, "PLACEBO MACHINERY PERTURBS AND IS DETECTED"
-         if (ratio > 3 and det > 0.5) else "INERT -- null verdicts would be uninformative"))
-assert ratio > 3 and det > 0.5, "placebo perturbation is not detectable above the floor"
-
-# =====================================================================================
-hdr("4. STEP 2 -- THE MATCHUP QUESTION, DECOMPOSED")
-# =====================================================================================
-print("  Read the columns in this order.  A cell that is large over B_SINGLE and dies over")
-print("  B_COMPLETE was reference incompleteness (D087).  A cell that survives B_COMPLETE and dies")
-print("  over B_COMPLETE_PLUS_M02 was opponent FT-volume wearing a matchup's name.  An INTERACTION")
-print("  that survives B_COMPLETE and dies over B_MATCHUP is D085 repeating itself EXACTLY.")
-mrows = []
-for sn in ["POOLED", "DECISION"]:
-    for t in TARGET_ORDER:
-        for c in [x["name"] for x in CANDIDATES if x["family"] in ("M", "X")]:
-            sub = R[(R["stratum"] == sn) & (R["target"] == t) & (R["candidate"] == c)]
-            if not len(sub):
-                continue
-            g = lambda b: (sub[sub["base"] == b].iloc[0] if (sub["base"] == b).any() else None)
-            row = dict(stratum=sn, target=t, stage=TARGETS[t]["stage"], candidate=c,
-                       family=sub["family"].iloc[0], level=sub["level"].iloc[0],
-                       n=int(sub["n"].iloc[0]), denominator_SST=float(sub["denominator_SST"].iloc[0]))
-            for b, tag in [("B_SINGLE", "single"), ("B_COMPLETE", "complete"),
-                           ("B_COMPLETE_PLUS_M02", "plus_M02"), ("B_MATCHUP", "matchup"),
-                           ("B_MATCHUP2", "matchup2")]:
-                r = g(b)
-                if r is None:
-                    continue
-                row["dR2_" + tag] = float(r["dR2"])
-                row["p_correct_" + tag] = float(r["p_correct_level"])
-                row["p_fw_" + tag] = float(r["p_family_wise"]) if np.isfinite(r["p_family_wise"]) else np.nan
-                row["r2base_" + tag] = float(r["r2_base"])
-                row["inflation_" + tag] = float(r["sd_inflation_correct_over_row"])
-            if "dR2_single" in row and "dR2_complete" in row and row["dR2_single"] > 0:
-                row["shrink_single_to_complete_x"] = row["dR2_single"] / max(row["dR2_complete"], 1e-12)
-            if "dR2_complete" in row and "dR2_plus_M02" in row:
-                row["shrink_complete_to_plusM02_x"] = row["dR2_complete"] / max(row["dR2_plus_M02"], 1e-12)
-            if "dR2_complete" in row and ("dR2_matchup" in row or "dR2_matchup2" in row):
-                mm = row.get("dR2_matchup", row.get("dR2_matchup2"))
-                row["D085_interaction_dR2_over_own_main_effects"] = mm
-                row["D085_shrink_x"] = row["dR2_complete"] / max(mm, 1e-12)
-            mrows.append(row)
-M = pd.DataFrame(mrows)
-M.to_csv(os.path.join(OUT, "matchup_decomposition.csv"), index=False)
-
-for sn in ["POOLED", "DECISION"]:
-    print("\n  ---- STRATUM %s ----" % sn)
-    print("   %-13s %-28s %10s %10s %10s %9s %9s"
-          % ("target", "candidate", "dR2 B_SIN", "dR2 B_CMP", "dR2 +M02", "p_corr", "p_fw"))
-    for _, r in M[M["stratum"] == sn].iterrows():
-        print("   %-13s %-28s %10.3e %10.3e %10s %9.4f %9s"
-              % (r["target"], r["candidate"], r.get("dR2_single", np.nan),
-                 r.get("dR2_complete", np.nan),
-                 ("%10.3e" % r["dR2_plus_M02"]) if np.isfinite(r.get("dR2_plus_M02", np.nan)) else "     n/a",
-                 r.get("p_correct_complete", np.nan),
-                 ("%9.4f" % r["p_fw_complete"]) if np.isfinite(r.get("p_fw_complete", np.nan)) else "      n/a"))
-
-print("\n  ---- THE D085 GUARD: interactions over a base ALREADY CONTAINING BOTH MAIN EFFECTS ----")
-for _, r in M[M["family"] == "X"].iterrows():
-    mm = r.get("D085_interaction_dR2_over_own_main_effects", np.nan)
-    print("   %-9s %-13s %-22s  over B_COMPLETE %10.3e (DIAGNOSTIC)   over B_MATCHUP %10.3e  p_corr %.4f"
-          % (r["stratum"], r["target"], r["candidate"], r.get("dR2_complete", np.nan), mm,
-             r.get("p_correct_matchup", r.get("p_correct_matchup2", np.nan))))
-
-# =====================================================================================
-hdr("5. SURVIVORS OVER B_COMPLETE (the only base that can carry a verdict)")
-# =====================================================================================
-alive = R[(R["base"] == "B_COMPLETE") & (R["family"] != "G") &
-          (R["p_family_wise"] < 0.05) & (R["dR2"] > 0)].sort_values("dR2", ascending=False)
-print("  %d of %d B_COMPLETE cells clear family-wise p<0.05"
-      % (len(alive), len(R[(R["base"] == "B_COMPLETE") & (R["family"] != "G")])))
-if len(alive):
-    print("   %-9s %-13s %-28s %10s %9s %9s %8s"
-          % ("stratum", "target", "candidate", "dR2", "p_corr", "p_fw", "infl"))
-    for _, r in alive.head(40).iterrows():
-        print("   %-9s %-13s %-28s %10.3e %9.4f %9.4f %8.2f"
-              % (r["stratum"], r["target"], r["candidate"], r["dR2"], r["p_correct_level"],
-                 r["p_family_wise"], r["sd_inflation_correct_over_row"]))
-
 json.dump(jsonable(dict(prereg_hash=PREREG_HASH, n_cell_runs=int(len(R)),
-                        floor_of_resolution=floor, placebo_moved=moved,
-                        n_alive_bcomplete=int(len(alive)),
-                        added_since_hash=added, dropped_since_hash=dropped)),
+                        n_draw_sets=len(draw_store), added_since_hash=[], dropped_since_hash=[])),
           open(os.path.join(OUT, "_s05.json"), "w"), indent=2)
-print("\n  WROTE screen_results.csv, matchup_decomposition.csv, permutation_draws.npz, _s05.json")
+print("  WROTE _s05.json")
+print("\n  s05 computes and persists.  The CONTROLS, the STEP-2 decomposition and the survivor")
+print("  table are in s05b_report.py, which reads screen_results.csv -- so a change to how the")
+print("  results are READ never requires re-drawing 600 permutations per cell.")
+
