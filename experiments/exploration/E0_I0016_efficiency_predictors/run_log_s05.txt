@@ -1,0 +1,57 @@
+﻿
+====================================================================================================
+1. FINDINGS.json parses, and its headline fields
+====================================================================================================
+  top-level keys: ['screen', 'status', 'question', 'partition', 'inputs_and_manifests', 'frame', 'r2_convention', 'reference', 'nulls', 'multiplicity', 'attrition', 'noop_placebo', 'preselection', 'survivors_familywise_p05', 'all_cells']
+  cells recorded: 132   survivors detailed: 8
+  attrition: {"n_candidates": 44, "n_outcomes": 3, "n_cells": 132, "cleared_per_candidate_N1_within_entity_p05": 23, "cleared_per_candidate_N2_entity_swap_p05": 61, "cleared_per_candidate_BOTH_nulls_p05": 21, "cleared_familywise_maxt_worse_null_p05": 8, "cleared_familywise_N1_only_p05": 11, "cleared_familywise_N2_only_p05": 23, "would_have_cleared_on_NAIVE_row_level_p05": 65, "median_inflation_N1_over_row": 1.3386629306723847, "median_inflation_N2_over_row": 1.2669538909116378}
+  preselection: {"preselected": true, "file": "CANDIDATES_PRESELECTED.md", "sha256": "A39B4C270A2EBB3B527E639CB41138EFA6CCEAED88685C3929B27C787B4DC799", "frozen_at": "2026-08-07T23:46:05-04:00, before any statistic was computed", "candidates_added_after_seeing_results": 0, "candidates_dropped_after_seeing_results": 0}
+
+====================================================================================================
+2. VALUE-BASED PARTITION SWEEP over every artifact this screen wrote
+====================================================================================================
+  screenkit.assert_partition on COLUMN VALUES -- no byte scan.
+  *** date_cols IS PASSED EXPLICITLY, AND HERE IS WHY -- see KIT_BUG_REPRO.py. ***
+  assert_partition auto-detects date columns by `"date" in name.lower()`, and the word
+  candi-DATE contains 'date'. Columns named `candidate`, `n_candidates` and
+  `mae_with_candidate` are therefore parsed with pd.to_datetime, which on FLOATS does not
+  raise -- it reads them as epoch nanoseconds, returns 1970, and flags a violation on a
+  frame whose every real value is inside 2021-2024. The SEASON branch has a value-
+  plausibility guard for exactly this (`_is_season_valued`); the DATE branch has none.
+  Passing date_cols=[] would silence the TRUE alarm too (REPRO 4), so instead the real
+  date columns are named EXPLICITLY and a separate value-based date sweep is run below.
+    family_attrition.csv                                 ok=True  season_cols=[] date_cols=[]
+    grouping_levels.csv                                  ok=True  season_cols=[] date_cols=[]
+    kill_keep_log.csv                                    ok=True  season_cols=[] date_cols=[]
+    leakage_probes.csv                                   ok=True  season_cols=[] date_cols=[]
+    maxt_null_draws.csv                                  ok=True  season_cols=[] date_cols=[]
+    noop_placebo_draws.csv                               ok=True  season_cols=[] date_cols=[]
+    screen_frame.parquet                                 ok=True  season_cols=['season'] date_cols=['game_date']
+    screen_results.csv                                   ok=True  season_cols=[] date_cols=[]
+    screen_results_SUPERSEDED.csv                        ok=True  season_cols=[] date_cols=[]
+    FINDINGS.json::all_cells                             ok=True 
+
+  NOTE: the numeric year-value sweep inside assert_partition (which catches a year-valued
+        column with an innocuous name) runs unconditionally and is NOT affected by naming
+        date_cols explicitly. That guard is intact on every artifact above.
+
+  ALL ARTIFACTS INSIDE THE 2021-2024 PARTITION: True
+
+====================================================================================================
+3. Frame integrity re-checks
+====================================================================================================
+  rows=14852  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]  max game_date=2024-09-19
+  minutes > 0 on every row: True
+  n_prior >= 3 on every row: True
+  reference non-null: refB_ppm 1.0000  refB_ts 1.0000  refB_efg 1.0000
+  y non-null: y_ppm 1.0000  y_ts 0.9480  y_efg 0.9419
+
+====================================================================================================
+4. E0 HYGIENE: nothing outside this directory was written
+====================================================================================================
+    registry.jsonl           written by this screen: False
+    DECISION_LEDGER.jsonl    written by this screen: False
+    GRAPH_EVENTS.jsonl       written by this screen: False
+    idea_log.jsonl           written by this screen: False
+    E1_I0004_efficiency_transfer/ : never read, never written (no path reference exists in
+                                    any script in this directory)

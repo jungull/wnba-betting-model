@@ -1,0 +1,129 @@
+﻿
+====================================================================================================
+1. ATTRITION -- the honest count
+====================================================================================================
+{
+  "n_candidates": 44,
+  "n_outcomes": 3,
+  "n_cells": 132,
+  "cleared_per_candidate_N1_within_entity_p05": 23,
+  "cleared_per_candidate_N2_entity_swap_p05": 61,
+  "cleared_per_candidate_BOTH_nulls_p05": 21,
+  "cleared_familywise_maxt_worse_null_p05": 8,
+  "cleared_familywise_N1_only_p05": 11,
+  "cleared_familywise_N2_only_p05": 23,
+  "would_have_cleared_on_NAIVE_row_level_p05": 65,
+  "median_inflation_N1_over_row": 1.3386629306723847,
+  "median_inflation_N2_over_row": 1.2669538909116378
+}
+
+  NEGATIVE CONTROL G01_noise:
+outcome      dr2  p_N1_within_entity  p_N2_entity_swap  p_familywise_maxt  p_row_level_NAIVE
+    ppm 0.000061            0.344426          0.296173                1.0           0.281198
+     ts 0.000066            0.321131          0.326123                1.0           0.339434
+    efg 0.000075            0.302829          0.314476                1.0           0.281198
+
+  SANITY ANCHOR E06_pl_efg_prior (IS the efg reference by construction):
+outcome      dr2  p_N1_within_entity  p_N2_entity_swap  p_familywise_maxt
+    ppm 0.007171            0.001664          0.001664           0.001664
+     ts 0.000884            1.000000          0.001664           1.000000
+    efg 0.000000            1.000000          1.000000           1.000000
+
+====================================================================================================
+2. THE D076 TRAP, MEASURED ON THIS FAMILY: raw-error prediction is NOT differential skill
+====================================================================================================
+  Ten cells that best predict the REFERENCE'S RAW ERROR MAGNITUDE, with their dR2:
+outcome                candidate      dr2  corr_with_abs_resid  p_familywise_maxt  abs_corr_abs_resid
+     ts        C07_pl_usage_rank 0.004473             0.348708           0.001664            0.348708
+    efg        C07_pl_usage_rank 0.003144             0.346889           0.001664            0.346889
+     ts      F03_minutes_load_7d 0.004106            -0.263062           1.000000            0.263062
+    efg      F03_minutes_load_7d 0.003079            -0.254556           1.000000            0.254556
+     ts       B06_pl_ftpts_per36 0.001794            -0.225630           1.000000            0.225630
+     ts B03_pl_fouls_drawn_per36 0.002471            -0.221942           1.000000            0.221942
+     ts C04_teammate_usg_present 0.000491             0.218220           0.885191            0.218220
+     ts     B05_matchup_fouldraw 0.002980            -0.215650           0.001664            0.215650
+    efg C04_teammate_usg_present 0.000118             0.212388           1.000000            0.212388
+    efg       B06_pl_ftpts_per36 0.000695            -0.208443           1.000000            0.208443
+
+  corr(|corr_with_abs_resid|, dR2) across all 132 cells = 0.5519
+  -> a candidate can rank top-10 on predicting error magnitude and still be dead on skill.
+
+====================================================================================================
+3. SURVIVOR FORENSICS
+====================================================================================================
+  decision stratum (>=8 prior appearances AND trailing-5 minutes >= 24): 5673 of 14852 rows (38.2%)
+
+  --- ppm | E06_pl_efg_prior   dR2=0.007171  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.004901  p_N1=0.0017 p_N2=0.0017 (n=11933)
+      alternate entity team_season           : dR2=0.007171  p_N1=0.0017 p_N2=0.0017
+      DECISION STRATUM (n=5673)                 : dR2=0.002835  p_N1=0.0017 p_N2=0.0017
+      per-season dR2: {2021: 0.00634, 2022: 0.0127, 2023: 0.00359, 2024: 0.01024}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.07950  (=-1.722 pts/game equiv); in-sample skill vs reference = +0.7064%
+
+  --- ppm | C07_pl_usage_rank   dR2=0.006592  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.000898  p_N1=0.0017 p_N2=0.0017 (n=11904)
+      alternate entity player_season         : dR2=0.006592  p_N1=1.0000 p_N2=0.0017
+      DECISION STRATUM (n=5670)                 : dR2=0.002297  p_N1=0.0017 p_N2=0.0017
+      per-season dR2: {2021: 0.0053, 2022: 0.00714, 2023: 0.0073, 2024: 0.00689}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.04255  (=-0.922 pts/game equiv); in-sample skill vs reference = +0.9515%
+
+  --- ts | C07_pl_usage_rank   dR2=0.004473  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.000001  p_N1=0.9351 p_N2=0.9168 (n=11364)
+      alternate entity player_season         : dR2=0.004473  p_N1=1.0000 p_N2=0.0017
+      DECISION STRATUM (n=5651)                 : dR2=0.000112  p_N1=0.5158 p_N2=0.4526
+      per-season dR2: {2021: 0.00401, 2022: 0.00413, 2023: 0.00466, 2024: 0.0055}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.05059  (=n/a pts/game equiv); in-sample skill vs reference = +2.3038%
+
+  --- ppm | C04_teammate_usg_present   dR2=0.003300  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.001644  p_N1=0.0017 p_N2=0.0017 (n=11933)
+      alternate entity player_season         : dR2=0.003300  p_N1=0.0100 p_N2=0.0017
+      DECISION STRATUM (n=5673)                 : dR2=0.004963  p_N1=0.0017 p_N2=0.0017
+      per-season dR2: {2021: 0.00104, 2022: 0.00432, 2023: 0.00393, 2024: 0.00439}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.04062  (=-0.879 pts/game equiv); in-sample skill vs reference = +0.6841%
+
+  --- efg | C07_pl_usage_rank   dR2=0.003144  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.000061  p_N1=0.4692 p_N2=0.4592 (n=11298)
+      alternate entity player_season         : dR2=0.003144  p_N1=1.0000 p_N2=0.0017
+      DECISION STRATUM (n=5649)                 : dR2=0.000034  p_N1=0.7038 p_N2=0.6889
+      per-season dR2: {2021: 0.0022, 2022: 0.00294, 2023: 0.00435, 2024: 0.00324}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.03448  (=n/a pts/game equiv); in-sample skill vs reference = +2.2438%
+
+  --- ts | B05_matchup_fouldraw   dR2=0.002980  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.000802  p_N1=0.0166 p_N2=0.0033 (n=11390)
+      + own main effects ['B03_pl_fouls_drawn_per36', 'A08_opp_pf']: dR2=0.000000  p_N1=0.9484 p_N2=0.9468
+      + main effects AND reliability          : dR2=0.000011  p_N1=0.7121 p_N2=0.6872
+      alternate entity player_season         : dR2=0.002980  p_N1=0.6889 p_N2=0.0017
+      DECISION STRATUM (n=5654)                 : dR2=0.000429  p_N1=0.2745 p_N2=0.1431
+      per-season dR2: {2021: 0.00195, 2022: 0.00467, 2023: 0.00206, 2024: 0.00356}
+      per-season SIGN: {2021: 1.0, 2022: 1.0, 2023: 1.0, 2024: 1.0}
+      practical: decile spread on ref-residual = +0.05785  (=n/a pts/game equiv); in-sample skill vs reference = +2.2862%
+
+  --- ppm | B05_matchup_fouldraw   dR2=0.001448  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.001337  p_N1=0.0017 p_N2=0.0017 (n=11933)
+      + own main effects ['B03_pl_fouls_drawn_per36', 'A08_opp_pf']: dR2=0.000025  p_N1=0.5025 p_N2=0.5025
+      + main effects AND reliability          : dR2=0.000176  p_N1=0.1215 p_N2=0.1015
+      alternate entity player_season         : dR2=0.001448  p_N1=1.0000 p_N2=0.0017
+      DECISION STRATUM (n=5673)                 : dR2=0.002498  p_N1=0.0017 p_N2=0.0017
+      per-season dR2: {2021: 0.001, 2022: 0.0045, 2023: 0.00052, 2024: 0.00155}
+      per-season SIGN: {2021: 1.0, 2022: 1.0, 2023: 1.0, 2024: 1.0}
+      practical: decile spread on ref-residual = +0.03240  (=0.701 pts/game equiv); in-sample skill vs reference = +0.5014%
+
+  --- efg | B05_matchup_fouldraw   dR2=0.001217  fw p=0.0033
+      + n_prior, prior5_minutes in base : dR2=0.000202  p_N1=0.1631 p_N2=0.1215 (n=11324)
+      + own main effects ['B03_pl_fouls_drawn_per36', 'A08_opp_pf']: dR2=0.000001  p_N1=0.8968 p_N2=0.9018
+      + main effects AND reliability          : dR2=0.000025  p_N1=0.5874 p_N2=0.6223
+      alternate entity player_season         : dR2=0.001217  p_N1=0.2346 p_N2=0.0017
+      DECISION STRATUM (n=5652)                 : dR2=0.000006  p_N1=0.8869 p_N2=0.8536
+      per-season dR2: {2021: 0.00082, 2022: 0.00232, 2023: 0.00108, 2024: 0.00091}
+      per-season SIGN: {2021: 1.0, 2022: 1.0, 2023: 1.0, 2024: 1.0}
+      practical: decile spread on ref-residual = +0.04444  (=n/a pts/game equiv); in-sample skill vs reference = +2.2077%
+
+====================================================================================================
+4. WRITE FINDINGS.json
+====================================================================================================
+  wrote FINDINGS.json (8 survivors detailed, 132 cells recorded)

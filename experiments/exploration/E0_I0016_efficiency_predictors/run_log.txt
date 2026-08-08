@@ -1,0 +1,742 @@
+﻿PRESELECTION FROZEN at 2026-08-07T23:46:05.5123601-04:00 sha256=A39B4C270A2EBB3B527E639CB41138EFA6CCEAED88685C3929B27C787B4DC799
+(re-verified at 2026-08-08T00:36:35.7683166-04:00: sha256=A39B4C270A2EBB3B527E639CB41138EFA6CCEAED88685C3929B27C787B4DC799 -- unchanged since freezing)
+
+==============================================================================================================
+=== run_log_s01.txt ===
+==============================================================================================================
+
+====================================================================================================
+1. MANIFEST CHECKS -- read from disk at call time, not cited from notes
+====================================================================================================
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+     -> usable_at_e0_e1=True  fit_through_season=2026
+  check_manifest master_team.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+     -> usable_at_e0_e1=True  fit_through_season=2026
+  check_manifest analysis_frame.parquet -> UNVERIFIABLE (no manifest)
+     -> usable_at_e0_e1=False  fit_through_season=None
+  check_manifest shots_2023_regular.parquet -> UNVERIFIABLE (no manifest)
+     -> usable_at_e0_e1=False  fit_through_season=None
+  check_manifest player_game_availability.csv             granularity='artifact' -> UNUSABLE
+     -> usable_at_e0_e1=False  fit_through_season=2026
+  check_manifest roster_asof.csv                          granularity='artifact' -> UNUSABLE
+     -> usable_at_e0_e1=False  fit_through_season=2026
+
+  USED: master_player.parquet, master_team.parquet (both asof_granularity='row').
+  NOT USED: analysis_frame.parquet (UNVERIFIABLE), shotcharts/* (UNVERIFIABLE).
+  NOT OPENED: w1_truth availability/roster (artifact-granular, fit_through_season 2026),
+              data/zone_maps/* (forbidden).  Availability is rebuilt from box membership.
+
+====================================================================================================
+2. LOAD + PARTITION FILTER (VALUE-BASED)
+====================================================================================================
+  raw master_player (33712, 78)   raw master_team (2990, 65)
+  after season filter: master_player (21462, 78)  master_team (1940, 65)
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+  master_player partition: ok=True
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+  master_team partition: ok=True
+
+====================================================================================================
+3. TEAM-LEVEL STRICTLY-PRIOR AGGREGATES (from master_team)
+====================================================================================================
+  team prior table: (1940, 23) rows, 23 columns
+
+====================================================================================================
+4. PLAYER FRAME + STRICTLY-PRIOR PLAYER AGGREGATES (from master_player)
+====================================================================================================
+  appeared player-game rows 2021-2024: 18212  (players=265, games=970)
+  season_type counts: {'Regular Season': 16717, 'Playoffs': 1495}
+
+====================================================================================================
+5. TEAMMATE CONTEXT -- availability REBUILT FROM BOX MEMBERSHIP (D076 method)
+====================================================================================================
+
+====================================================================================================
+6. MERGE TEAM + OPPONENT PRIOR CONTEXT
+====================================================================================================
+
+====================================================================================================
+7. OUTCOMES + STRICTLY-PRIOR REFERENCES
+====================================================================================================
+  reference fallback accounting: {
+  "ppm": {
+    "n_from_player_prior_B": 17578,
+    "n_from_league_prior_B": 630,
+    "n_still_nan_B": 4,
+    "n_from_player_prior_A": 17578,
+    "n_still_nan_A": 4
+  },
+  "ts": {
+    "n_from_player_prior_B": 17513,
+    "n_from_league_prior_B": 695,
+    "n_still_nan_B": 4,
+    "n_from_player_prior_A": 17513,
+    "n_still_nan_A": 4
+  },
+  "efg": {
+    "n_from_player_prior_B": 17504,
+    "n_from_league_prior_B": 704,
+    "n_still_nan_B": 4,
+    "n_from_player_prior_A": 17504,
+    "n_still_nan_A": 4
+  }
+}
+
+====================================================================================================
+8. SCREEN FRAME: Regular Season, >= 3 prior appearances
+====================================================================================================
+  screen frame: 14852 rows, 247 players, 827 games, seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+
+====================================================================================================
+9. LEAKAGE PROBES (trap 2).  Names lie in BOTH directions -- probe, do not trust labels.
+====================================================================================================
+  future_leakage_probe: n=14252
+    corr(refB_ppm                , own strictly-after-date future) = +0.6741
+    corr(refA_ppm                , own strictly-after-date future) = +0.6571
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.023511
+    -> 'refB_ppm' predicts the entity's UNPLAYED FUTURE better than 'refA_ppm' (|0.6741| vs |0.6571|) and adds dR2=0.0235 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment.
+  future_leakage_probe: n=14252
+    corr(_LEAKY_control_ppm      , own strictly-after-date future) = +0.8465
+    corr(refB_ppm                , own strictly-after-date future) = +0.6741
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.273145
+    -> '_LEAKY_control_ppm' predicts the entity's UNPLAYED FUTURE better than 'refB_ppm' (|0.8465| vs |0.6741|) and adds dR2=0.2731 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment.
+
+  candidates found in frame: 44
+  ['A01_opp_efg_allowed', 'A02_opp_ts_allowed', 'A03_opp_paintpts_allowed', 'A04_opp_blk', 'A05_opp_fg3pct_allowed', 'A06_opp_fg3a_share_allowed', 'A07_opp_ftrate_allowed', 'A08_opp_pf', 'A09_opp_stl', 'A10_opp_defrtg', 'A11_opp_fastbreak_allowed', 'A12_opp_2ndchance_allowed', 'B01_pl_ftrate', 'B02_pl_ftpct', 'B03_pl_fouls_drawn_per36', 'B04_matchup_ftrate', 'B05_matchup_fouldraw', 'B06_pl_ftpts_per36', 'C01_tm_usage_hhi', 'C02_tm_ast_per_game', 'C03_tm_ast_rate', 'C04_teammate_usg_present', 'C05_top_usg_teammate_out', 'C06_top_usg_teammate_out_lastgame', 'C07_pl_usage_rank', 'C08_vacated_usg', 'D01_tm_poss_per40', 'D02_opp_poss_per40', 'D03_pace_sum', 'D04_pl_fastbreak_share', 'D05_transition_x_pace', 'D06_tm_fastbreak_pts', 'E01_pl_fg3a_share', 'E02_pl_paintpts_share', 'E03_pl_blocked_rate', 'E04_3pt_vs_opp_perim', 'E05_paint_vs_opp_rim', 'E06_pl_efg_prior', 'E07_pl_2ndchance_share', 'F01_b2b_x_fg3a_share', 'F02_b2b_x_ftrate', 'F03_minutes_load_7d', 'F04_load_x_fg3a_share', 'G01_noise']
+
+  candidates the probe FLAGS as out-predicting the reference on the unplayed future: 0
+  NOTE: this probe is a positive detector, NOT a certificate.  Constructions were read too;
+        see the TIME-WINDOW TABLE in NOTES.md, which names every column and its window.
+
+====================================================================================================
+10. FAST-dR2 IDENTITY CHECK against screenkit.delta_r2_plain (kit is ground truth)
+====================================================================================================
+  max |fast dR2 - screenkit.delta_r2_plain| over 12 candidates = 2.143e-16
+  -> fast path VERIFIED against the kit; used for the permutation loops only.
+
+====================================================================================================
+11. WRITE
+====================================================================================================
+  wrote screen_frame.parquet (14852, 67)
+  candidate non-null coverage (fraction of rows):
+    A01_opp_efg_allowed                1.0000
+    A02_opp_ts_allowed                 1.0000
+    A03_opp_paintpts_allowed           1.0000
+    A04_opp_blk                        1.0000
+    A05_opp_fg3pct_allowed             1.0000
+    A06_opp_fg3a_share_allowed         1.0000
+    A07_opp_ftrate_allowed             1.0000
+    A08_opp_pf                         1.0000
+    A09_opp_stl                        1.0000
+    A10_opp_defrtg                     1.0000
+    A11_opp_fastbreak_allowed          1.0000
+    A12_opp_2ndchance_allowed          1.0000
+    B01_pl_ftrate                      0.9995
+    B02_pl_ftpct                       0.9646
+    B03_pl_fouls_drawn_per36           1.0000
+    B04_matchup_ftrate                 0.9995
+    B05_matchup_fouldraw               1.0000
+    B06_pl_ftpts_per36                 1.0000
+    C01_tm_usage_hhi                   1.0000
+    C02_tm_ast_per_game                1.0000
+    C03_tm_ast_rate                    1.0000
+    C04_teammate_usg_present           1.0000
+    C05_top_usg_teammate_out           1.0000
+    C06_top_usg_teammate_out_lastgame  1.0000
+    C07_pl_usage_rank                  0.9970
+    C08_vacated_usg                    1.0000
+    D01_tm_poss_per40                  1.0000
+    D02_opp_poss_per40                 1.0000
+    D03_pace_sum                       1.0000
+    D04_pl_fastbreak_share             0.9954
+    D05_transition_x_pace              0.9954
+    D06_tm_fastbreak_pts               1.0000
+    E01_pl_fg3a_share                  0.9995
+    E02_pl_paintpts_share              0.9954
+    E03_pl_blocked_rate                0.9995
+    E04_3pt_vs_opp_perim               0.9995
+    E05_paint_vs_opp_rim               0.9954
+    E06_pl_efg_prior                   0.9995
+    E07_pl_2ndchance_share             0.9954
+    F01_b2b_x_fg3a_share               0.9995
+    F02_b2b_x_ftrate                   0.9995
+    F03_minutes_load_7d                1.0000
+    F04_load_x_fg3a_share              0.9995
+    G01_noise                          1.0000
+
+==============================================================================================================
+=== run_log_s02_SUPERSEDED_decomposition_read_future.txt ===
+==============================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+
+  frame (14852, 67)   candidates 44   outcomes ['ppm', 'ts', 'efg']   draws 600
+
+====================================================================================================
+A. NO-OP PLACEBO (mandatory).  Report the OBSERVED sd, do not round it to zero.
+====================================================================================================
+  noop_placebo: real=0.0007493126226  sd=1.084e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=1.084e-19 < tol=1e-15, real reproduced)
+  observed sd = 1.084202e-19   distinct draw values = 1   is_noop = True
+
+====================================================================================================
+B. SCREEN
+====================================================================================================
+    ppm  A01_opp_efg_allowed                    3.7s elapsed
+    ppm  A12_opp_2ndchance_allowed             43.7s elapsed
+    ppm  C05_top_usg_teammate_out              87.9s elapsed
+    ppm  E02_pl_paintpts_share                127.5s elapsed
+    ts   A01_opp_efg_allowed                  176.9s elapsed
+    ts   A12_opp_2ndchance_allowed            217.6s elapsed
+    ts   C05_top_usg_teammate_out             258.9s elapsed
+    ts   E02_pl_paintpts_share                297.5s elapsed
+    efg  A01_opp_efg_allowed                  348.2s elapsed
+    efg  A12_opp_2ndchance_allowed            392.4s elapsed
+    efg  C05_top_usg_teammate_out             438.1s elapsed
+    efg  E02_pl_paintpts_share                491.7s elapsed
+
+  264 cells screened in 541.8s (0 errors)
+
+====================================================================================================
+C. FAMILY-WISE MAX-T ACROSS ALL 264 CELLS (from the correct-level draws)
+====================================================================================================
+  cells: 264
+  cleared per-candidate at the CORRECT level (p<0.05): 107
+  cleared FAMILY-WISE (max-t, p<0.05):                 47
+  would have cleared on the NAIVE ROW-LEVEL null:      121   <-- contrast only
+  median inflation sd_correct/sd_row = 1.253
+
+  TOP 25 BY dR2:
+outcome                candidate component     n  n_groups      dr2  p_correct_level  p_familywise_maxt  p_row_level_NAIVE
+    efg         E06_pl_efg_prior    within 13984       596 0.040729         0.001664           0.001664           0.001664
+    efg         E06_pl_efg_prior   between 13984       596 0.040729         0.001664           0.001664           0.001664
+     ts         E06_pl_efg_prior    within 14073       596 0.037333         0.001664           0.001664           0.001664
+     ts         E06_pl_efg_prior   between 14073       596 0.026536         0.001664           0.001664           0.001664
+    ppm         E06_pl_efg_prior    within 14844       600 0.021435         0.001664           0.001664           0.001664
+     ts      F03_minutes_load_7d   between 14079       596 0.010614         0.001664           0.001664           0.001664
+    efg      F03_minutes_load_7d   between 13989       596 0.008652         0.001664           0.001664           0.001664
+    ppm       B06_pl_ftpts_per36    within 14852       600 0.007830         0.001664           0.001664           0.001664
+    ppm      F03_minutes_load_7d   between 14852       600 0.007669         0.001664           0.001664           0.001664
+    ppm        C07_pl_usage_rank    within 14807        48 0.006569         0.001664           0.001664           0.001664
+    ppm       B06_pl_ftpts_per36   between 14852       600 0.005821         0.001664           0.001664           0.001664
+     ts        C07_pl_usage_rank    within 14042        48 0.004157         0.001664           0.001664           0.001664
+     ts       B06_pl_ftpts_per36   between 14079       596 0.004120         0.001664           0.001664           0.001664
+    ppm C04_teammate_usg_present    within 14852        48 0.004061         0.001664           0.001664           0.001664
+     ts B03_pl_fouls_drawn_per36   between 14079       596 0.003616         0.001664           0.001664           0.001664
+    ppm B03_pl_fouls_drawn_per36   between 14852       600 0.003348         0.001664           0.001664           0.001664
+    efg        C07_pl_usage_rank    within 13952        48 0.002824         0.001664           0.001664           0.001664
+     ts       A02_opp_ts_allowed   between 14079        48 0.002778         0.001664           0.001664           0.001664
+     ts       B06_pl_ftpts_per36    within 14079       596 0.002491         0.001664           0.001664           0.001664
+     ts      A01_opp_efg_allowed   between 14079        48 0.002419         0.001664           0.006656           0.001664
+    ppm B03_pl_fouls_drawn_per36    within 14852       600 0.002388         0.001664           0.001664           0.001664
+    ppm           A10_opp_defrtg   between 14852        48 0.002376         0.001664           0.003328           0.001664
+     ts     B05_matchup_fouldraw    within 14079        48 0.002364         0.001664           0.001664           0.001664
+    efg      A01_opp_efg_allowed   between 13989        48 0.002065         0.001664           0.008319           0.001664
+    efg       A02_opp_ts_allowed   between 13989        48 0.002035         0.001664           0.006656           0.001664
+
+==============================================================================================================
+=== run_log_s02.txt ===
+==============================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+
+  frame (14852, 67)   candidates 44   outcomes ['ppm', 'ts', 'efg']   draws 600
+
+====================================================================================================
+A. NO-OP PLACEBO (mandatory).  Report the OBSERVED sd, do not round it to zero.
+====================================================================================================
+  noop_placebo: real=0.0007493126226  sd=1.084e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=1.084e-19 < tol=1e-15, real reproduced)
+  noop_placebo: real=0.0007493126226  sd=2.168e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=2.168e-19 < tol=1e-15, real reproduced)
+  identity placebo observed sd = 1.084202e-19  (distinct draw values = 1, is_noop=True)
+  relabel-the-key placebo observed sd = 2.168404e-19  is_noop=True   <-- confirms a key-relabel control would test NOTHING here
+  entity-swap draws sd over 30 draws = 1.785413e-04   <-- NOT a no-op (this is the point)
+
+====================================================================================================
+B. SCREEN -- 132 cells, three nulls each
+====================================================================================================
+    ppm  A01_opp_efg_allowed                dR2=0.000749  p_N1=0.8286 p_N2=0.0050      2.4s
+    ppm  A12_opp_2ndchance_allowed          dR2=0.000186  p_N1=0.5258 p_N2=0.1448     32.2s
+    ppm  C05_top_usg_teammate_out           dR2=0.000844  p_N1=0.0017 p_N2=0.0033     79.7s
+    ppm  E02_pl_paintpts_share              dR2=0.000007  p_N1=0.5724 p_N2=0.7637    124.9s
+    ts   A01_opp_efg_allowed                dR2=0.000783  p_N1=0.9983 p_N2=0.0116    186.1s
+    ts   A12_opp_2ndchance_allowed          dR2=0.000002  p_N1=0.8303 p_N2=0.8785    219.4s
+    ts   C05_top_usg_teammate_out           dR2=0.000054  p_N1=0.3444 p_N2=0.4160    263.4s
+    ts   E02_pl_paintpts_share              dR2=0.002320  p_N1=0.0033 p_N2=0.0017    304.3s
+    efg  A01_opp_efg_allowed                dR2=0.000528  p_N1=0.9967 p_N2=0.0266    368.8s
+    efg  A12_opp_2ndchance_allowed          dR2=0.000018  p_N1=0.3860 p_N2=0.6256    396.6s
+    efg  C05_top_usg_teammate_out           dR2=0.000101  p_N1=0.2629 p_N2=0.2446    440.6s
+    efg  E02_pl_paintpts_share              dR2=0.001862  p_N1=0.0948 p_N2=0.0017    479.6s
+
+  132 cells screened in 533.0s
+
+====================================================================================================
+C. FAMILY-WISE MAX-T ACROSS ALL 132 CELLS -- computed on BOTH nulls, worse one reported
+====================================================================================================
+  cells: 132
+  cleared per-candidate on BOTH correct-level nulls (max p < 0.05): 21
+    ... on N1 (within-entity-season) alone:  23
+    ... on N2 (entity-label swap) alone:     61
+  cleared FAMILY-WISE (max-t over 132 cells, worse of the two nulls): 8
+  would have cleared on the NAIVE ROW-LEVEL null: 65   <-- CONTRAST ONLY
+  median inflation sd_N1/sd_row = 1.339   sd_N2/sd_row = 1.267
+
+  TOP 30 BY dR2:
+outcome                candidate     n  n_entity_seasons      dr2  dr2_sign  p_N1_within_entity  p_N2_entity_swap  p_correct_level  p_familywise_maxt  p_row_level_NAIVE
+    ppm         E06_pl_efg_prior 14844               600 0.007171      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm        C07_pl_usage_rank 14807                48 0.006592      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts        C07_pl_usage_rank 14042                48 0.004473      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts      F03_minutes_load_7d 14079               596 0.004106       1.0            0.580699          0.001664         0.580699           1.000000           0.001664
+    ppm C04_teammate_usg_present 14852                48 0.003300      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    efg        C07_pl_usage_rank 13952                48 0.003144      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    efg      F03_minutes_load_7d 13989               596 0.003079       1.0            0.772047          0.001664         0.772047           1.000000           0.001664
+     ts     B05_matchup_fouldraw 14079                48 0.002980       1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts B03_pl_fouls_drawn_per36 14079               596 0.002471       1.0            0.998336          0.001664         0.998336           1.000000           0.001664
+     ts    E02_pl_paintpts_share 14036               591 0.002320       1.0            0.003328          0.001664         0.003328           0.625624           0.001664
+    ppm      F03_minutes_load_7d 14852               600 0.002215       1.0            0.856905          0.001664         0.856905           1.000000           0.001664
+     ts   E07_pl_2ndchance_share 14036               591 0.002065       1.0            0.009983          0.001664         0.009983           0.885191           0.001664
+    efg   E07_pl_2ndchance_share 13950               591 0.002027       1.0            0.003328          0.001664         0.003328           0.782030           0.001664
+    efg    E02_pl_paintpts_share 13950               591 0.001862       1.0            0.094842          0.001664         0.094842           1.000000           0.001664
+     ts       B06_pl_ftpts_per36 14079               596 0.001794       1.0            1.000000          0.001664         1.000000           1.000000           0.001664
+    ppm     B05_matchup_fouldraw 14852                48 0.001448       1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm           A10_opp_defrtg 14852                48 0.001443       1.0            0.870216          0.001664         0.870216           1.000000           0.001664
+     ts        E01_pl_fg3a_share 14073               596 0.001221      -1.0            0.259567          0.001664         0.259567           1.000000           0.001664
+    efg     B05_matchup_fouldraw 13989                48 0.001217       1.0            0.001664          0.001664         0.001664           0.003328           0.001664
+    ppm B03_pl_fouls_drawn_per36 14852               600 0.001172       1.0            1.000000          0.001664         1.000000           1.000000           0.001664
+     ts               A08_opp_pf 14079                48 0.001094       1.0            0.920133          0.001664         0.920133           1.000000           0.003328
+     ts      E03_pl_blocked_rate 14073               596 0.001079       1.0            0.001664          0.001664         0.001664           0.051581           0.001664
+     ts       A02_opp_ts_allowed 14079                48 0.001077       1.0            0.998336          0.006656         0.998336           1.000000           0.001664
+     ts   A07_opp_ftrate_allowed 14079                48 0.001069       1.0            0.973378          0.001664         0.973378           1.000000           0.001664
+    ppm       D02_opp_poss_per40 14852                48 0.001061       1.0            0.668885          0.003328         0.668885           1.000000           0.001664
+     ts     E04_3pt_vs_opp_perim 14073                48 0.001017      -1.0            0.004992          0.001664         0.004992           0.066556           0.001664
+    efg      C02_tm_ast_per_game 13989                48 0.001012       1.0            0.991681          0.001664         0.991681           1.000000           0.001664
+    efg B03_pl_fouls_drawn_per36 13989               596 0.001007       1.0            0.667221          0.001664         0.667221           1.000000           0.001664
+    efg          C03_tm_ast_rate 13989                48 0.000958       1.0            0.745424          0.001664         0.745424           1.000000           0.001664
+     ts         E06_pl_efg_prior 14073               596 0.000884      -1.0            1.000000          0.001664         1.000000           1.000000           0.001664
+
+  SURVIVORS (family-wise p < 0.05 on the worse of the two correct-level nulls):
+outcome                candidate     n  n_entity_seasons      dr2  dr2_sign  p_N1_within_entity  p_N2_entity_swap  p_correct_level  p_familywise_maxt  p_row_level_NAIVE
+    ppm         E06_pl_efg_prior 14844               600 0.007171      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm        C07_pl_usage_rank 14807                48 0.006592      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts        C07_pl_usage_rank 14042                48 0.004473      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm C04_teammate_usg_present 14852                48 0.003300      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    efg        C07_pl_usage_rank 13952                48 0.003144      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts     B05_matchup_fouldraw 14079                48 0.002980       1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm     B05_matchup_fouldraw 14852                48 0.001448       1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    efg     B05_matchup_fouldraw 13989                48 0.001217       1.0            0.001664          0.001664         0.001664           0.003328           0.001664
+
+==============================================================================================================
+=== run_log_s03.txt ===
+==============================================================================================================
+
+====================================================================================================
+1. ATTRITION -- the honest count
+====================================================================================================
+{
+  "n_candidates": 44,
+  "n_outcomes": 3,
+  "n_cells": 132,
+  "cleared_per_candidate_N1_within_entity_p05": 23,
+  "cleared_per_candidate_N2_entity_swap_p05": 61,
+  "cleared_per_candidate_BOTH_nulls_p05": 21,
+  "cleared_familywise_maxt_worse_null_p05": 8,
+  "cleared_familywise_N1_only_p05": 11,
+  "cleared_familywise_N2_only_p05": 23,
+  "would_have_cleared_on_NAIVE_row_level_p05": 65,
+  "median_inflation_N1_over_row": 1.3386629306723847,
+  "median_inflation_N2_over_row": 1.2669538909116378
+}
+
+  NEGATIVE CONTROL G01_noise:
+outcome      dr2  p_N1_within_entity  p_N2_entity_swap  p_familywise_maxt  p_row_level_NAIVE
+    ppm 0.000061            0.344426          0.296173                1.0           0.281198
+     ts 0.000066            0.321131          0.326123                1.0           0.339434
+    efg 0.000075            0.302829          0.314476                1.0           0.281198
+
+  SANITY ANCHOR E06_pl_efg_prior (IS the efg reference by construction):
+outcome      dr2  p_N1_within_entity  p_N2_entity_swap  p_familywise_maxt
+    ppm 0.007171            0.001664          0.001664           0.001664
+     ts 0.000884            1.000000          0.001664           1.000000
+    efg 0.000000            1.000000          1.000000           1.000000
+
+====================================================================================================
+2. THE D076 TRAP, MEASURED ON THIS FAMILY: raw-error prediction is NOT differential skill
+====================================================================================================
+  Ten cells that best predict the REFERENCE'S RAW ERROR MAGNITUDE, with their dR2:
+outcome                candidate      dr2  corr_with_abs_resid  p_familywise_maxt  abs_corr_abs_resid
+     ts        C07_pl_usage_rank 0.004473             0.348708           0.001664            0.348708
+    efg        C07_pl_usage_rank 0.003144             0.346889           0.001664            0.346889
+     ts      F03_minutes_load_7d 0.004106            -0.263062           1.000000            0.263062
+    efg      F03_minutes_load_7d 0.003079            -0.254556           1.000000            0.254556
+     ts       B06_pl_ftpts_per36 0.001794            -0.225630           1.000000            0.225630
+     ts B03_pl_fouls_drawn_per36 0.002471            -0.221942           1.000000            0.221942
+     ts C04_teammate_usg_present 0.000491             0.218220           0.885191            0.218220
+     ts     B05_matchup_fouldraw 0.002980            -0.215650           0.001664            0.215650
+    efg C04_teammate_usg_present 0.000118             0.212388           1.000000            0.212388
+    efg       B06_pl_ftpts_per36 0.000695            -0.208443           1.000000            0.208443
+
+  corr(|corr_with_abs_resid|, dR2) across all 132 cells = 0.5519
+  -> a candidate can rank top-10 on predicting error magnitude and still be dead on skill.
+
+====================================================================================================
+3. SURVIVOR FORENSICS
+====================================================================================================
+  decision stratum (>=8 prior appearances AND trailing-5 minutes >= 24): 5673 of 14852 rows (38.2%)
+
+  --- ppm | E06_pl_efg_prior   dR2=0.007171  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.004901  p_N1=0.0017 p_N2=0.0017 (n=11933)
+      alternate entity team_season           : dR2=0.007171  p_N1=0.0017 p_N2=0.0017
+      DECISION STRATUM (n=5673)                 : dR2=0.002835  p_N1=0.0017 p_N2=0.0017
+      per-season dR2: {2021: 0.00634, 2022: 0.0127, 2023: 0.00359, 2024: 0.01024}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.07950  (=-1.722 pts/game equiv); in-sample skill vs reference = +0.7064%
+
+  --- ppm | C07_pl_usage_rank   dR2=0.006592  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.000898  p_N1=0.0017 p_N2=0.0017 (n=11904)
+      alternate entity player_season         : dR2=0.006592  p_N1=1.0000 p_N2=0.0017
+      DECISION STRATUM (n=5670)                 : dR2=0.002297  p_N1=0.0017 p_N2=0.0017
+      per-season dR2: {2021: 0.0053, 2022: 0.00714, 2023: 0.0073, 2024: 0.00689}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.04255  (=-0.922 pts/game equiv); in-sample skill vs reference = +0.9515%
+
+  --- ts | C07_pl_usage_rank   dR2=0.004473  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.000001  p_N1=0.9351 p_N2=0.9168 (n=11364)
+      alternate entity player_season         : dR2=0.004473  p_N1=1.0000 p_N2=0.0017
+      DECISION STRATUM (n=5651)                 : dR2=0.000112  p_N1=0.5158 p_N2=0.4526
+      per-season dR2: {2021: 0.00401, 2022: 0.00413, 2023: 0.00466, 2024: 0.0055}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.05059  (=n/a pts/game equiv); in-sample skill vs reference = +2.3038%
+
+  --- ppm | C04_teammate_usg_present   dR2=0.003300  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.001644  p_N1=0.0017 p_N2=0.0017 (n=11933)
+      alternate entity player_season         : dR2=0.003300  p_N1=0.0100 p_N2=0.0017
+      DECISION STRATUM (n=5673)                 : dR2=0.004963  p_N1=0.0017 p_N2=0.0017
+      per-season dR2: {2021: 0.00104, 2022: 0.00432, 2023: 0.00393, 2024: 0.00439}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.04062  (=-0.879 pts/game equiv); in-sample skill vs reference = +0.6841%
+
+  --- efg | C07_pl_usage_rank   dR2=0.003144  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.000061  p_N1=0.4692 p_N2=0.4592 (n=11298)
+      alternate entity player_season         : dR2=0.003144  p_N1=1.0000 p_N2=0.0017
+      DECISION STRATUM (n=5649)                 : dR2=0.000034  p_N1=0.7038 p_N2=0.6889
+      per-season dR2: {2021: 0.0022, 2022: 0.00294, 2023: 0.00435, 2024: 0.00324}
+      per-season SIGN: {2021: -1.0, 2022: -1.0, 2023: -1.0, 2024: -1.0}
+      practical: decile spread on ref-residual = -0.03448  (=n/a pts/game equiv); in-sample skill vs reference = +2.2438%
+
+  --- ts | B05_matchup_fouldraw   dR2=0.002980  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.000802  p_N1=0.0166 p_N2=0.0033 (n=11390)
+      + own main effects ['B03_pl_fouls_drawn_per36', 'A08_opp_pf']: dR2=0.000000  p_N1=0.9484 p_N2=0.9468
+      + main effects AND reliability          : dR2=0.000011  p_N1=0.7121 p_N2=0.6872
+      alternate entity player_season         : dR2=0.002980  p_N1=0.6889 p_N2=0.0017
+      DECISION STRATUM (n=5654)                 : dR2=0.000429  p_N1=0.2745 p_N2=0.1431
+      per-season dR2: {2021: 0.00195, 2022: 0.00467, 2023: 0.00206, 2024: 0.00356}
+      per-season SIGN: {2021: 1.0, 2022: 1.0, 2023: 1.0, 2024: 1.0}
+      practical: decile spread on ref-residual = +0.05785  (=n/a pts/game equiv); in-sample skill vs reference = +2.2862%
+
+  --- ppm | B05_matchup_fouldraw   dR2=0.001448  fw p=0.0017
+      + n_prior, prior5_minutes in base : dR2=0.001337  p_N1=0.0017 p_N2=0.0017 (n=11933)
+      + own main effects ['B03_pl_fouls_drawn_per36', 'A08_opp_pf']: dR2=0.000025  p_N1=0.5025 p_N2=0.5025
+      + main effects AND reliability          : dR2=0.000176  p_N1=0.1215 p_N2=0.1015
+      alternate entity player_season         : dR2=0.001448  p_N1=1.0000 p_N2=0.0017
+      DECISION STRATUM (n=5673)                 : dR2=0.002498  p_N1=0.0017 p_N2=0.0017
+      per-season dR2: {2021: 0.001, 2022: 0.0045, 2023: 0.00052, 2024: 0.00155}
+      per-season SIGN: {2021: 1.0, 2022: 1.0, 2023: 1.0, 2024: 1.0}
+      practical: decile spread on ref-residual = +0.03240  (=0.701 pts/game equiv); in-sample skill vs reference = +0.5014%
+
+  --- efg | B05_matchup_fouldraw   dR2=0.001217  fw p=0.0033
+      + n_prior, prior5_minutes in base : dR2=0.000202  p_N1=0.1631 p_N2=0.1215 (n=11324)
+      + own main effects ['B03_pl_fouls_drawn_per36', 'A08_opp_pf']: dR2=0.000001  p_N1=0.8968 p_N2=0.9018
+      + main effects AND reliability          : dR2=0.000025  p_N1=0.5874 p_N2=0.6223
+      alternate entity player_season         : dR2=0.001217  p_N1=0.2346 p_N2=0.0017
+      DECISION STRATUM (n=5652)                 : dR2=0.000006  p_N1=0.8869 p_N2=0.8536
+      per-season dR2: {2021: 0.00082, 2022: 0.00232, 2023: 0.00108, 2024: 0.00091}
+      per-season SIGN: {2021: 1.0, 2022: 1.0, 2023: 1.0, 2024: 1.0}
+      practical: decile spread on ref-residual = +0.04444  (=n/a pts/game equiv); in-sample skill vs reference = +2.2077%
+
+====================================================================================================
+4. WRITE FINDINGS.json
+====================================================================================================
+  wrote FINDINGS.json (8 survivors detailed, 132 cells recorded)
+
+==============================================================================================================
+=== run_log_s04.txt ===
+==============================================================================================================
+
+====================================================================================================
+PER-FAMILY ATTRITION (cells = candidates x 3 outcomes)
+====================================================================================================
+        cells  candidates   max_dr2  cleared_N1_p05  cleared_N2_p05  cleared_BOTH_p05  cleared_FAMILYWISE_p05  would_clear_ROW_NAIVE_p05                                 family_name
+family                                                                                                                                                                              
+A          36          12  0.001443               2              19                 1                       0                         23          opponent defensive matchup quality
+B          18           6  0.002980               3              10                 3                       3                         10              foul-draw / free-throw channel
+C          24           8  0.006592               6              10                 6                       4                         10                            teammate context
+D          18           6  0.001061               2               2                 1                       0                          2                           pace / transition
+E          21           7  0.007171              10              14                10                       1                         14               shot-mix / shot-quality proxy
+F          12           4  0.004106               0               6                 0                       0                          6  rest & load x shooting (interactions only)
+G           3           1  0.000075               0               0                 0                       0                          0                            negative control
+
+====================================================================================================
+EVERY CELL, RANKED BY dR2 -- the kill/keep log
+====================================================================================================
+outcome                candidate family    entity_level     n  n_entity_seasons      dr2  dr2_sign  p_N1_within_entity  p_N2_entity_swap  p_correct_level  p_familywise_maxt  p_row_level_NAIVE  spread_refresid_decile  corr_with_abs_resid  skill_vs_reference  dr2_over_refA     VERDICT
+    ppm         E06_pl_efg_prior      E   player_season 14844               600 0.007171      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664               -0.079498            -0.056132            0.007064       0.005489 KEEP (lead)
+    ppm        C07_pl_usage_rank      C     team_season 14807                48 0.006592      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664               -0.042548             0.116581            0.009515       0.007382 KEEP (lead)
+     ts        C07_pl_usage_rank      C     team_season 14042                48 0.004473      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664               -0.050589             0.348708            0.023038       0.004336 KEEP (lead)
+     ts      F03_minutes_load_7d      F   player_season 14079               596 0.004106       1.0            0.580699          0.001664         0.580699           1.000000           0.001664                0.043320            -0.263062            0.021058       0.004126        KILL
+    ppm C04_teammate_usg_present      C     team_season 14852                48 0.003300      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664               -0.040618             0.089585            0.006841       0.003542 KEEP (lead)
+    efg        C07_pl_usage_rank      C     team_season 13952                48 0.003144      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664               -0.034476             0.346889            0.022438       0.003097 KEEP (lead)
+    efg      F03_minutes_load_7d      F   player_season 13989               596 0.003079       1.0            0.772047          0.001664         0.772047           1.000000           0.001664                0.038885            -0.254556            0.021393       0.003141        KILL
+     ts     B05_matchup_fouldraw      B opp_team_season 14079                48 0.002980       1.0            0.001664          0.001664         0.001664           0.001664           0.001664                0.057847            -0.215650            0.022862       0.003068 KEEP (lead)
+     ts B03_pl_fouls_drawn_per36      B   player_season 14079               596 0.002471       1.0            0.998336          0.001664         0.998336           1.000000           0.001664                0.051600            -0.221942            0.022413       0.002564        KILL
+     ts    E02_pl_paintpts_share      E   player_season 14036               591 0.002320       1.0            0.003328          0.001664         0.003328           0.625624           0.001664                0.046346            -0.056134            0.021724       0.002216        KILL
+    ppm      F03_minutes_load_7d      F   player_season 14852               600 0.002215       1.0            0.856905          0.001664         0.856905           1.000000           0.001664                0.023627            -0.148742            0.005830       0.002055        KILL
+     ts   E07_pl_2ndchance_share      E   player_season 14036               591 0.002065       1.0            0.009983          0.001664         0.009983           0.885191           0.001664                0.065580            -0.020320            0.020854       0.002120        KILL
+    efg   E07_pl_2ndchance_share      E   player_season 13950               591 0.002027       1.0            0.003328          0.001664         0.003328           0.782030           0.001664                0.062010            -0.009499            0.022733       0.002155        KILL
+    efg    E02_pl_paintpts_share      E   player_season 13950               591 0.001862       1.0            0.094842          0.001664         0.094842           1.000000           0.001664                0.041853            -0.044851            0.023036       0.001856        KILL
+     ts       B06_pl_ftpts_per36      B   player_season 14079               596 0.001794       1.0            1.000000          0.001664         1.000000           1.000000           0.001664                0.035662            -0.225630            0.021905       0.002006        KILL
+    ppm     B05_matchup_fouldraw      B opp_team_season 14852                48 0.001448       1.0            0.001664          0.001664         0.001664           0.001664           0.001664                0.032397            -0.024145            0.005014       0.003038 KEEP (lead)
+    ppm           A10_opp_defrtg      A opp_team_season 14852                48 0.001443       1.0            0.870216          0.001664         0.870216           1.000000           0.001664                0.027268             0.004810            0.004667       0.001509        KILL
+     ts        E01_pl_fg3a_share      E   player_season 14073               596 0.001221      -1.0            0.259567          0.001664         0.259567           1.000000           0.001664               -0.024790             0.112756            0.021337       0.001138        KILL
+    efg     B05_matchup_fouldraw      B opp_team_season 13989                48 0.001217       1.0            0.001664          0.001664         0.001664           0.003328           0.001664                0.044435            -0.195851            0.022077       0.001118 KEEP (lead)
+    ppm B03_pl_fouls_drawn_per36      B   player_season 14852               600 0.001172       1.0            1.000000          0.001664         1.000000           1.000000           0.001664                0.023435            -0.025199            0.004761       0.002739        KILL
+     ts               A08_opp_pf      A opp_team_season 14079                48 0.001094       1.0            0.920133          0.001664         0.920133           1.000000           0.003328                0.019617             0.008205            0.021257       0.001052        KILL
+     ts      E03_pl_blocked_rate      E   player_season 14073               596 0.001079       1.0            0.001664          0.001664         0.001664           0.051581           0.001664                0.031637             0.031397            0.020906       0.000984        KILL
+     ts       A02_opp_ts_allowed      A opp_team_season 14079                48 0.001077       1.0            0.998336          0.006656         0.998336           1.000000           0.001664                0.033502             0.001239            0.021038       0.001062        KILL
+     ts   A07_opp_ftrate_allowed      A opp_team_season 14079                48 0.001069       1.0            0.973378          0.001664         0.973378           1.000000           0.001664                0.030514             0.015363            0.021127       0.001068        KILL
+    ppm       D02_opp_poss_per40      D opp_team_season 14852                48 0.001061       1.0            0.668885          0.003328         0.668885           1.000000           0.001664                0.038446             0.020818            0.004222       0.000961        KILL
+     ts     E04_3pt_vs_opp_perim      E opp_team_season 14073                48 0.001017      -1.0            0.004992          0.001664         0.004992           0.066556           0.001664               -0.026461             0.111842            0.021215       0.000948        KILL
+    efg      C02_tm_ast_per_game      C     team_season 13989                48 0.001012       1.0            0.991681          0.001664         0.991681           1.000000           0.001664                0.035756             0.003473            0.021718       0.001338        KILL
+    efg B03_pl_fouls_drawn_per36      B   player_season 13989               596 0.001007       1.0            0.667221          0.001664         0.667221           1.000000           0.001664                0.037341            -0.203010            0.021902       0.000922        KILL
+    efg          C03_tm_ast_rate      C     team_season 13989                48 0.000958       1.0            0.745424          0.001664         0.745424           1.000000           0.001664                0.039590             0.011188            0.021505       0.001211        KILL
+     ts         E06_pl_efg_prior      E   player_season 14073               596 0.000884      -1.0            1.000000          0.001664         1.000000           1.000000           0.001664               -0.006592            -0.090677            0.020858       0.000059        KILL
+    ppm C05_top_usg_teammate_out      C     team_season 14852                48 0.000844       1.0            0.001664          0.003328         0.003328           0.174709           0.001664                0.002649            -0.001689            0.004531       0.000835        KILL
+     ts     E05_paint_vs_opp_rim      E opp_team_season 14036                48 0.000827       1.0            0.006656          0.003328         0.006656           0.504160           0.001664                0.035657            -0.047498            0.020690       0.000774        KILL
+    ppm       A02_opp_ts_allowed      A opp_team_season 14852                48 0.000805       1.0            0.833611          0.003328         0.833611           1.000000           0.003328                0.029132             0.001141            0.004207       0.000814        KILL
+     ts      A01_opp_efg_allowed      A opp_team_season 14079                48 0.000783       1.0            0.998336          0.011647         0.998336           1.000000           0.003328                0.024447            -0.002745            0.020773       0.000771        KILL
+    ppm      A01_opp_efg_allowed      A opp_team_season 14852                48 0.000749       1.0            0.828619          0.004992         0.828619           1.000000           0.003328                0.024146            -0.001808            0.004183       0.000771        KILL
+     ts          C03_tm_ast_rate      C     team_season 14079                48 0.000716       1.0            0.660566          0.003328         0.660566           1.000000           0.001664                0.036608             0.009220            0.020335       0.000927        KILL
+    efg      E03_pl_blocked_rate      E   player_season 13984               596 0.000701       1.0            0.001664          0.009983         0.009983           0.490849           0.001664                0.027260             0.046513            0.021738       0.000642        KILL
+    ppm       B06_pl_ftpts_per36      B   player_season 14852               600 0.000696       1.0            1.000000          0.001664         1.000000           1.000000           0.001664               -0.005036            -0.010420            0.004316       0.002299        KILL
+    efg       B06_pl_ftpts_per36      B   player_season 13989               596 0.000695       1.0            0.831947          0.009983         0.831947           1.000000           0.003328                0.022842            -0.208443            0.021586       0.000615        KILL
+     ts           A10_opp_defrtg      A opp_team_season 14079                48 0.000694       1.0            0.998336          0.011647         0.998336           1.000000           0.001664                0.026539            -0.001585            0.020785       0.000701        KILL
+    efg       A02_opp_ts_allowed      A opp_team_season 13989                48 0.000691       1.0            0.998336          0.013311         0.998336           1.000000           0.003328                0.028668             0.006228            0.021933       0.000676        KILL
+    efg              A04_opp_blk      A opp_team_season 13989                48 0.000684      -1.0            0.066556          0.009983         0.066556           1.000000           0.001664               -0.028429             0.004642            0.021850       0.000712        KILL
+    efg        E01_pl_fg3a_share      E   player_season 13984               596 0.000674      -1.0            0.342762          0.003328         0.342762           1.000000           0.004992               -0.018003             0.097654            0.022019       0.000581        KILL
+     ts      C02_tm_ast_per_game      C     team_season 14079                48 0.000668       1.0            0.981697          0.001664         0.981697           1.000000           0.003328                0.033131             0.004146            0.020623       0.000894        KILL
+     ts              A04_opp_blk      A opp_team_season 14079                48 0.000653      -1.0            0.113145          0.021631         0.113145           1.000000           0.008319               -0.027659             0.009221            0.020552       0.000670        KILL
+
+  ... full 132-row kill/keep log written to kill_keep_log.csv
+
+====================================================================================================
+GROUPING-LEVEL AUDIT (screenkit.detect_grouping_level on every cell)
+====================================================================================================
+  status counts: {'NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE': 69, 'COARSER_LEVEL_FOUND': 63}
+  declared entity vs kit's coarsest constant level:
+declared_entity_level  status                                               
+opp_team_season        COARSER_LEVEL_FOUND                                      39
+                       NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE    12
+player_season          NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE    45
+team_season            COARSER_LEVEL_FOUND                                      24
+                       NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE    12
+
+  n_groups at declared entity (distinct values): [48, 572, 576, 591, 596, 600]
+  any cell where the feature IS constant within the declared entity: 0
+  -> every candidate varies within its entity-season, which is exactly why neither of the
+     kit's two schemes alone covers the between-entity question (see NOTES kit feedback).
+
+====================================================================================================
+ROW-LEVEL NULL: how much would it have over-passed?
+====================================================================================================
+  cells clearing per-candidate on the NAIVE row-level null : 65 of 132
+  cells clearing on BOTH correct-level nulls                : 21 of 132
+  cells clearing FAMILY-WISE                                : 8 of 132
+  median sd inflation N1/row = 1.339   N2/row = 1.267   max N1/row = 21.060
+  cells where the row-level null passes but BOTH correct nulls fail: 45
+
+====================================================================================================
+REFERENCE ROBUSTNESS: dR2 over REF-B vs over REF-A, for the 8 family-wise survivors
+====================================================================================================
+outcome                candidate      dr2  dr2_over_refA  paired_dr2_cand_minus_ref  paired_p_cluster  paired_p_row_NAIVE
+    ppm         E06_pl_efg_prior 0.007171       0.005489                   0.017482            0.0005              0.0005
+    ppm        C07_pl_usage_rank 0.006592       0.007382                   0.017013            0.0005              0.0005
+     ts        C07_pl_usage_rank 0.004473       0.004336                   0.056341            0.0005              0.0005
+    ppm C04_teammate_usg_present 0.003300       0.003542                   0.013769            0.0005              0.0005
+    efg        C07_pl_usage_rank 0.003144       0.003097                   0.062392            0.0005              0.0005
+     ts     B05_matchup_fouldraw 0.002980       0.003068                   0.055103            0.0005              0.0005
+    ppm     B05_matchup_fouldraw 0.001448       0.003038                   0.011917            0.0005              0.0005
+    efg     B05_matchup_fouldraw 0.001217       0.001118                   0.061223            0.0005              0.0005
+
+==============================================================================================================
+=== run_log_kit_bug.txt ===
+==============================================================================================================
+python : C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\_screen_
+kit\screenkit.py:1433: UserWarning: Could not infer format, so each element will be parsed individually, falling back 
+to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+At line:1 char:441
++ ... E0_I0016_efficiency_predictors"; python KIT_BUG_REPRO.py 2>&1 | Tee-O ...
++                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\jgalla...ecify a format.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  d = pd.to_datetime(df[c], errors="coerce")
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\_screen_kit\scree
+nkit.py:1433: UserWarning: Could not infer format, so each element will be parsed individually, falling back to 
+`dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  d = pd.to_datetime(df[c], errors="coerce")
+====================================================================================================
+REPRO 1 -- a clean 2021-2024 frame with a column named 'candidate' RAISES
+====================================================================================================
+  frame:
+ season  game_date            candidate  mae_with_candidate  n_candidates
+   2021 2021-06-01  A01_opp_efg_allowed              0.1234            44
+   2022 2022-06-01 B05_matchup_fouldraw              0.2345            44
+   2023 2023-06-01    C07_pl_usage_rank              0.3456            44
+   2024 2024-06-01            G01_noise              0.4567            44
+
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    date   col mae_with_candidate       YEARS  = [1970]
+    date   col n_candidates             YEARS  = [1970]
+    skipped    candidate                name is date-like but no value parsed as a date
+    -> VIOLATIONS: ["date column 'mae_with_candidate' has out-of-partition YEAR VALUES [1970]", "date column 'n_candidates' has out-of-partition YEAR VALUES [1970]"]
+  -> RAISED PartitionViolation: date column 'mae_with_candidate' has out-of-partition YEAR VALUES [1970]; date column 'n_candidates' has out-of-partition YEAR VALUES [1970]
+
+  every value in this frame is inside 2021-2024. The only columns that failed are the ones
+  whose NAMES contain the substring 'date' by way of the word 'candi-DATE'.
+
+====================================================================================================
+REPRO 2 -- the mechanism, step by step
+====================================================================================================
+  'date' in 'candidate'            -> True
+  'date' in 'mae_with_candidate'   -> True
+  'date' in 'n_candidates'         -> True
+  'date' in 'update_flag'          -> True
+  'date' in 'validated'            -> True
+
+  pd.to_datetime(pd.Series([0.1234, 0.2345, 0.3456])) does NOT raise; it returns
+    ['1970-01-01', '1970-01-01', '1970-01-01']
+  year values -> [1970]   (1970, i.e. the epoch, which is outside every real partition)
+
+====================================================================================================
+REPRO 3 -- the SEASON branch already guards against exactly this; the DATE branch does not
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022]
+    date   col candidate_mae            YEARS  = [1970]
+    skipped    _team_season_2025        name is season-like but VALUES are not seasons (range 0.00012..0.00034) -> NOT a season column, skipped
+    -> VIOLATIONS: ["date column 'candidate_mae' has out-of-partition YEAR VALUES [1970]"]
+
+  skipped_name_only (the GUARDED branch): ['_team_season_2025']
+  checked_date_cols (the UNGUARDED branch): ['candidate_mae']
+  violations: ["date column 'candidate_mae' has out-of-partition YEAR VALUES [1970]"]
+
+  -> ASYMMETRY CONFIRMED: the season branch skips a name-only match; the date branch does not.
+
+====================================================================================================
+REPRO 4 -- the workaround is a FALSE-PASS DOOR, which is why this is worth fixing
+====================================================================================================
+  with the default date detection, the real 2026 date IS caught: violations=["date column 'game_date' has out-of-partition YEAR VALUES [2026]"]
+  with the caller's natural workaround date_cols=[], the SAME frame passes: ok=True violations=[]
+
+  -> the obvious way to silence the false alarm silences the TRUE alarm as well.
+
+DEFECT REPRODUCED AS DESCRIBED.
+
+==============================================================================================================
+=== run_log_s05.txt ===
+==============================================================================================================
+
+====================================================================================================
+1. FINDINGS.json parses, and its headline fields
+====================================================================================================
+  top-level keys: ['screen', 'status', 'question', 'partition', 'inputs_and_manifests', 'frame', 'r2_convention', 'reference', 'nulls', 'multiplicity', 'attrition', 'noop_placebo', 'preselection', 'survivors_familywise_p05', 'all_cells']
+  cells recorded: 132   survivors detailed: 8
+  attrition: {"n_candidates": 44, "n_outcomes": 3, "n_cells": 132, "cleared_per_candidate_N1_within_entity_p05": 23, "cleared_per_candidate_N2_entity_swap_p05": 61, "cleared_per_candidate_BOTH_nulls_p05": 21, "cleared_familywise_maxt_worse_null_p05": 8, "cleared_familywise_N1_only_p05": 11, "cleared_familywise_N2_only_p05": 23, "would_have_cleared_on_NAIVE_row_level_p05": 65, "median_inflation_N1_over_row": 1.3386629306723847, "median_inflation_N2_over_row": 1.2669538909116378}
+  preselection: {"preselected": true, "file": "CANDIDATES_PRESELECTED.md", "sha256": "A39B4C270A2EBB3B527E639CB41138EFA6CCEAED88685C3929B27C787B4DC799", "frozen_at": "2026-08-07T23:46:05-04:00, before any statistic was computed", "candidates_added_after_seeing_results": 0, "candidates_dropped_after_seeing_results": 0}
+
+====================================================================================================
+2. VALUE-BASED PARTITION SWEEP over every artifact this screen wrote
+====================================================================================================
+  screenkit.assert_partition on COLUMN VALUES -- no byte scan.
+  *** date_cols IS PASSED EXPLICITLY, AND HERE IS WHY -- see KIT_BUG_REPRO.py. ***
+  assert_partition auto-detects date columns by `"date" in name.lower()`, and the word
+  candi-DATE contains 'date'. Columns named `candidate`, `n_candidates` and
+  `mae_with_candidate` are therefore parsed with pd.to_datetime, which on FLOATS does not
+  raise -- it reads them as epoch nanoseconds, returns 1970, and flags a violation on a
+  frame whose every real value is inside 2021-2024. The SEASON branch has a value-
+  plausibility guard for exactly this (`_is_season_valued`); the DATE branch has none.
+  Passing date_cols=[] would silence the TRUE alarm too (REPRO 4), so instead the real
+  date columns are named EXPLICITLY and a separate value-based date sweep is run below.
+    family_attrition.csv                                 ok=True  season_cols=[] date_cols=[]
+    grouping_levels.csv                                  ok=True  season_cols=[] date_cols=[]
+    kill_keep_log.csv                                    ok=True  season_cols=[] date_cols=[]
+    leakage_probes.csv                                   ok=True  season_cols=[] date_cols=[]
+    maxt_null_draws.csv                                  ok=True  season_cols=[] date_cols=[]
+    noop_placebo_draws.csv                               ok=True  season_cols=[] date_cols=[]
+    screen_frame.parquet                                 ok=True  season_cols=['season'] date_cols=['game_date']
+    screen_results.csv                                   ok=True  season_cols=[] date_cols=[]
+    screen_results_SUPERSEDED.csv                        ok=True  season_cols=[] date_cols=[]
+    FINDINGS.json::all_cells                             ok=True 
+
+  NOTE: the numeric year-value sweep inside assert_partition (which catches a year-valued
+        column with an innocuous name) runs unconditionally and is NOT affected by naming
+        date_cols explicitly. That guard is intact on every artifact above.
+
+  ALL ARTIFACTS INSIDE THE 2021-2024 PARTITION: True
+
+====================================================================================================
+3. Frame integrity re-checks
+====================================================================================================
+  rows=14852  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]  max game_date=2024-09-19
+  minutes > 0 on every row: True
+  n_prior >= 3 on every row: True
+  reference non-null: refB_ppm 1.0000  refB_ts 1.0000  refB_efg 1.0000
+  y non-null: y_ppm 1.0000  y_ts 0.9480  y_efg 0.9419
+
+====================================================================================================
+4. E0 HYGIENE: nothing outside this directory was written
+====================================================================================================
+    registry.jsonl           written by this screen: False
+    DECISION_LEDGER.jsonl    written by this screen: False
+    GRAPH_EVENTS.jsonl       written by this screen: False
+    idea_log.jsonl           written by this screen: False
+    E1_I0004_efficiency_transfer/ : never read, never written (no path reference exists in
+                                    any script in this directory)
+
+==============================================================================================================
+=== run_log_s06.txt ===
+==============================================================================================================
+
+====================================================================================================
+FINDINGS.json finalised
+====================================================================================================
+  keys: ['screen', 'status', 'question', 'partition', 'inputs_and_manifests', 'frame', 'r2_convention', 'reference', 'nulls', 'multiplicity', 'attrition', 'noop_placebo', 'preselection', 'survivors_familywise_p05', 'all_cells', 'headline', 'per_family_attrition', 'leads', 'principal_kills', 'design_defect_found_and_corrected', 'kit_feedback', 'limitations', 'hygiene']
+  bytes: 245717
+
+  HEADLINE: THREE candidates clear a family-wise correction against a matched strictly-prior reference, and NONE of them is a defensive matchup. The opponent defensive-matchup family is DEAD: 0 of 36 cells survive, best dR2 0.00144. Attrition 132 cells -> 21 per-candidate -> 8 family-wise -> 3 distinct candidates, of which 2 fail their own follow-up kill tests. LEADS, NOT RESULTS.
+
+  LEAD 1  ppm | E06_pl_efg_prior                 dR2=0.007171  fw p=0.0017  survives kill tests: True
+          spread: -0.0795 points/minute across outer deciles ~= -1.72 points per game
+
+  LEAD 2  ppm | C04_teammate_usg_present         dR2=0.003300  fw p=0.0017  survives kill tests: True
+          spread: -0.0406 points/minute across outer deciles ~= -0.88 points per game
+
+  LEAD 3  C07_pl_usage_rank (ppm 0.00659, ts 0.00447, efg 0.00314) dR2=0.006592  fw p=0.0017  survives kill tests: False
+          spread: -0.0425 points/minute across outer deciles ~= -0.92 points per game (ppm)
+

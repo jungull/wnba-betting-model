@@ -1,0 +1,73 @@
+﻿python : C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\_screen_
+kit\screenkit.py:1433: UserWarning: Could not infer format, so each element will be parsed individually, falling back 
+to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+At line:1 char:441
++ ... E0_I0016_efficiency_predictors"; python KIT_BUG_REPRO.py 2>&1 | Tee-O ...
++                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\jgalla...ecify a format.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  d = pd.to_datetime(df[c], errors="coerce")
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\_screen_kit\scree
+nkit.py:1433: UserWarning: Could not infer format, so each element will be parsed individually, falling back to 
+`dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  d = pd.to_datetime(df[c], errors="coerce")
+====================================================================================================
+REPRO 1 -- a clean 2021-2024 frame with a column named 'candidate' RAISES
+====================================================================================================
+  frame:
+ season  game_date            candidate  mae_with_candidate  n_candidates
+   2021 2021-06-01  A01_opp_efg_allowed              0.1234            44
+   2022 2022-06-01 B05_matchup_fouldraw              0.2345            44
+   2023 2023-06-01    C07_pl_usage_rank              0.3456            44
+   2024 2024-06-01            G01_noise              0.4567            44
+
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    date   col mae_with_candidate       YEARS  = [1970]
+    date   col n_candidates             YEARS  = [1970]
+    skipped    candidate                name is date-like but no value parsed as a date
+    -> VIOLATIONS: ["date column 'mae_with_candidate' has out-of-partition YEAR VALUES [1970]", "date column 'n_candidates' has out-of-partition YEAR VALUES [1970]"]
+  -> RAISED PartitionViolation: date column 'mae_with_candidate' has out-of-partition YEAR VALUES [1970]; date column 'n_candidates' has out-of-partition YEAR VALUES [1970]
+
+  every value in this frame is inside 2021-2024. The only columns that failed are the ones
+  whose NAMES contain the substring 'date' by way of the word 'candi-DATE'.
+
+====================================================================================================
+REPRO 2 -- the mechanism, step by step
+====================================================================================================
+  'date' in 'candidate'            -> True
+  'date' in 'mae_with_candidate'   -> True
+  'date' in 'n_candidates'         -> True
+  'date' in 'update_flag'          -> True
+  'date' in 'validated'            -> True
+
+  pd.to_datetime(pd.Series([0.1234, 0.2345, 0.3456])) does NOT raise; it returns
+    ['1970-01-01', '1970-01-01', '1970-01-01']
+  year values -> [1970]   (1970, i.e. the epoch, which is outside every real partition)
+
+====================================================================================================
+REPRO 3 -- the SEASON branch already guards against exactly this; the DATE branch does not
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022]
+    date   col candidate_mae            YEARS  = [1970]
+    skipped    _team_season_2025        name is season-like but VALUES are not seasons (range 0.00012..0.00034) -> NOT a season column, skipped
+    -> VIOLATIONS: ["date column 'candidate_mae' has out-of-partition YEAR VALUES [1970]"]
+
+  skipped_name_only (the GUARDED branch): ['_team_season_2025']
+  checked_date_cols (the UNGUARDED branch): ['candidate_mae']
+  violations: ["date column 'candidate_mae' has out-of-partition YEAR VALUES [1970]"]
+
+  -> ASYMMETRY CONFIRMED: the season branch skips a name-only match; the date branch does not.
+
+====================================================================================================
+REPRO 4 -- the workaround is a FALSE-PASS DOOR, which is why this is worth fixing
+====================================================================================================
+  with the default date detection, the real 2026 date IS caught: violations=["date column 'game_date' has out-of-partition YEAR VALUES [2026]"]
+  with the caller's natural workaround date_cols=[], the SAME frame passes: ok=True violations=[]
+
+  -> the obvious way to silence the false alarm silences the TRUE alarm as well.
+
+DEFECT REPRODUCED AS DESCRIBED.

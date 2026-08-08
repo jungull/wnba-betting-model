@@ -1,0 +1,172 @@
+﻿
+====================================================================================================
+1. MANIFEST CHECKS -- read from disk at call time, not cited from notes
+====================================================================================================
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+     -> usable_at_e0_e1=True  fit_through_season=2026
+  check_manifest master_team.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+     -> usable_at_e0_e1=True  fit_through_season=2026
+  check_manifest analysis_frame.parquet -> UNVERIFIABLE (no manifest)
+     -> usable_at_e0_e1=False  fit_through_season=None
+  check_manifest shots_2023_regular.parquet -> UNVERIFIABLE (no manifest)
+     -> usable_at_e0_e1=False  fit_through_season=None
+  check_manifest player_game_availability.csv             granularity='artifact' -> UNUSABLE
+     -> usable_at_e0_e1=False  fit_through_season=2026
+  check_manifest roster_asof.csv                          granularity='artifact' -> UNUSABLE
+     -> usable_at_e0_e1=False  fit_through_season=2026
+
+  USED: master_player.parquet, master_team.parquet (both asof_granularity='row').
+  NOT USED: analysis_frame.parquet (UNVERIFIABLE), shotcharts/* (UNVERIFIABLE).
+  NOT OPENED: w1_truth availability/roster (artifact-granular, fit_through_season 2026),
+              data/zone_maps/* (forbidden).  Availability is rebuilt from box membership.
+
+====================================================================================================
+2. LOAD + PARTITION FILTER (VALUE-BASED)
+====================================================================================================
+  raw master_player (33712, 78)   raw master_team (2990, 65)
+  after season filter: master_player (21462, 78)  master_team (1940, 65)
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+  master_player partition: ok=True
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+  master_team partition: ok=True
+
+====================================================================================================
+3. TEAM-LEVEL STRICTLY-PRIOR AGGREGATES (from master_team)
+====================================================================================================
+  team prior table: (1940, 23) rows, 23 columns
+
+====================================================================================================
+4. PLAYER FRAME + STRICTLY-PRIOR PLAYER AGGREGATES (from master_player)
+====================================================================================================
+  appeared player-game rows 2021-2024: 18212  (players=265, games=970)
+  season_type counts: {'Regular Season': 16717, 'Playoffs': 1495}
+
+====================================================================================================
+5. TEAMMATE CONTEXT -- availability REBUILT FROM BOX MEMBERSHIP (D076 method)
+====================================================================================================
+
+====================================================================================================
+6. MERGE TEAM + OPPONENT PRIOR CONTEXT
+====================================================================================================
+
+====================================================================================================
+7. OUTCOMES + STRICTLY-PRIOR REFERENCES
+====================================================================================================
+  reference fallback accounting: {
+  "ppm": {
+    "n_from_player_prior_B": 17578,
+    "n_from_league_prior_B": 630,
+    "n_still_nan_B": 4,
+    "n_from_player_prior_A": 17578,
+    "n_still_nan_A": 4
+  },
+  "ts": {
+    "n_from_player_prior_B": 17513,
+    "n_from_league_prior_B": 695,
+    "n_still_nan_B": 4,
+    "n_from_player_prior_A": 17513,
+    "n_still_nan_A": 4
+  },
+  "efg": {
+    "n_from_player_prior_B": 17504,
+    "n_from_league_prior_B": 704,
+    "n_still_nan_B": 4,
+    "n_from_player_prior_A": 17504,
+    "n_still_nan_A": 4
+  }
+}
+
+====================================================================================================
+8. SCREEN FRAME: Regular Season, >= 3 prior appearances
+====================================================================================================
+  screen frame: 14852 rows, 247 players, 827 games, seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+
+====================================================================================================
+9. LEAKAGE PROBES (trap 2).  Names lie in BOTH directions -- probe, do not trust labels.
+====================================================================================================
+  future_leakage_probe: n=14252
+    corr(refB_ppm                , own strictly-after-date future) = +0.6741
+    corr(refA_ppm                , own strictly-after-date future) = +0.6571
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.023511
+    -> 'refB_ppm' predicts the entity's UNPLAYED FUTURE better than 'refA_ppm' (|0.6741| vs |0.6571|) and adds dR2=0.0235 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment.
+  future_leakage_probe: n=14252
+    corr(_LEAKY_control_ppm      , own strictly-after-date future) = +0.8465
+    corr(refB_ppm                , own strictly-after-date future) = +0.6741
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.273145
+    -> '_LEAKY_control_ppm' predicts the entity's UNPLAYED FUTURE better than 'refB_ppm' (|0.8465| vs |0.6741|) and adds dR2=0.2731 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment.
+
+  candidates found in frame: 44
+  ['A01_opp_efg_allowed', 'A02_opp_ts_allowed', 'A03_opp_paintpts_allowed', 'A04_opp_blk', 'A05_opp_fg3pct_allowed', 'A06_opp_fg3a_share_allowed', 'A07_opp_ftrate_allowed', 'A08_opp_pf', 'A09_opp_stl', 'A10_opp_defrtg', 'A11_opp_fastbreak_allowed', 'A12_opp_2ndchance_allowed', 'B01_pl_ftrate', 'B02_pl_ftpct', 'B03_pl_fouls_drawn_per36', 'B04_matchup_ftrate', 'B05_matchup_fouldraw', 'B06_pl_ftpts_per36', 'C01_tm_usage_hhi', 'C02_tm_ast_per_game', 'C03_tm_ast_rate', 'C04_teammate_usg_present', 'C05_top_usg_teammate_out', 'C06_top_usg_teammate_out_lastgame', 'C07_pl_usage_rank', 'C08_vacated_usg', 'D01_tm_poss_per40', 'D02_opp_poss_per40', 'D03_pace_sum', 'D04_pl_fastbreak_share', 'D05_transition_x_pace', 'D06_tm_fastbreak_pts', 'E01_pl_fg3a_share', 'E02_pl_paintpts_share', 'E03_pl_blocked_rate', 'E04_3pt_vs_opp_perim', 'E05_paint_vs_opp_rim', 'E06_pl_efg_prior', 'E07_pl_2ndchance_share', 'F01_b2b_x_fg3a_share', 'F02_b2b_x_ftrate', 'F03_minutes_load_7d', 'F04_load_x_fg3a_share', 'G01_noise']
+
+  candidates the probe FLAGS as out-predicting the reference on the unplayed future: 0
+  NOTE: this probe is a positive detector, NOT a certificate.  Constructions were read too;
+        see the TIME-WINDOW TABLE in NOTES.md, which names every column and its window.
+
+====================================================================================================
+10. FAST-dR2 IDENTITY CHECK against screenkit.delta_r2_plain (kit is ground truth)
+====================================================================================================
+  max |fast dR2 - screenkit.delta_r2_plain| over 12 candidates = 2.143e-16
+  -> fast path VERIFIED against the kit; used for the permutation loops only.
+
+====================================================================================================
+11. WRITE
+====================================================================================================
+  wrote screen_frame.parquet (14852, 67)
+  candidate non-null coverage (fraction of rows):
+    A01_opp_efg_allowed                1.0000
+    A02_opp_ts_allowed                 1.0000
+    A03_opp_paintpts_allowed           1.0000
+    A04_opp_blk                        1.0000
+    A05_opp_fg3pct_allowed             1.0000
+    A06_opp_fg3a_share_allowed         1.0000
+    A07_opp_ftrate_allowed             1.0000
+    A08_opp_pf                         1.0000
+    A09_opp_stl                        1.0000
+    A10_opp_defrtg                     1.0000
+    A11_opp_fastbreak_allowed          1.0000
+    A12_opp_2ndchance_allowed          1.0000
+    B01_pl_ftrate                      0.9995
+    B02_pl_ftpct                       0.9646
+    B03_pl_fouls_drawn_per36           1.0000
+    B04_matchup_ftrate                 0.9995
+    B05_matchup_fouldraw               1.0000
+    B06_pl_ftpts_per36                 1.0000
+    C01_tm_usage_hhi                   1.0000
+    C02_tm_ast_per_game                1.0000
+    C03_tm_ast_rate                    1.0000
+    C04_teammate_usg_present           1.0000
+    C05_top_usg_teammate_out           1.0000
+    C06_top_usg_teammate_out_lastgame  1.0000
+    C07_pl_usage_rank                  0.9970
+    C08_vacated_usg                    1.0000
+    D01_tm_poss_per40                  1.0000
+    D02_opp_poss_per40                 1.0000
+    D03_pace_sum                       1.0000
+    D04_pl_fastbreak_share             0.9954
+    D05_transition_x_pace              0.9954
+    D06_tm_fastbreak_pts               1.0000
+    E01_pl_fg3a_share                  0.9995
+    E02_pl_paintpts_share              0.9954
+    E03_pl_blocked_rate                0.9995
+    E04_3pt_vs_opp_perim               0.9995
+    E05_paint_vs_opp_rim               0.9954
+    E06_pl_efg_prior                   0.9995
+    E07_pl_2ndchance_share             0.9954
+    F01_b2b_x_fg3a_share               0.9995
+    F02_b2b_x_ftrate                   0.9995
+    F03_minutes_load_7d                1.0000
+    F04_load_x_fg3a_share              0.9995
+    G01_noise                          1.0000

@@ -1,0 +1,88 @@
+﻿  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+
+  frame (14852, 67)   candidates 44   outcomes ['ppm', 'ts', 'efg']   draws 600
+
+====================================================================================================
+A. NO-OP PLACEBO (mandatory).  Report the OBSERVED sd, do not round it to zero.
+====================================================================================================
+  noop_placebo: real=0.0007493126226  sd=1.084e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=1.084e-19 < tol=1e-15, real reproduced)
+  noop_placebo: real=0.0007493126226  sd=2.168e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=2.168e-19 < tol=1e-15, real reproduced)
+  identity placebo observed sd = 1.084202e-19  (distinct draw values = 1, is_noop=True)
+  relabel-the-key placebo observed sd = 2.168404e-19  is_noop=True   <-- confirms a key-relabel control would test NOTHING here
+  entity-swap draws sd over 30 draws = 1.785413e-04   <-- NOT a no-op (this is the point)
+
+====================================================================================================
+B. SCREEN -- 132 cells, three nulls each
+====================================================================================================
+    ppm  A01_opp_efg_allowed                dR2=0.000749  p_N1=0.8286 p_N2=0.0050      2.4s
+    ppm  A12_opp_2ndchance_allowed          dR2=0.000186  p_N1=0.5258 p_N2=0.1448     32.2s
+    ppm  C05_top_usg_teammate_out           dR2=0.000844  p_N1=0.0017 p_N2=0.0033     79.7s
+    ppm  E02_pl_paintpts_share              dR2=0.000007  p_N1=0.5724 p_N2=0.7637    124.9s
+    ts   A01_opp_efg_allowed                dR2=0.000783  p_N1=0.9983 p_N2=0.0116    186.1s
+    ts   A12_opp_2ndchance_allowed          dR2=0.000002  p_N1=0.8303 p_N2=0.8785    219.4s
+    ts   C05_top_usg_teammate_out           dR2=0.000054  p_N1=0.3444 p_N2=0.4160    263.4s
+    ts   E02_pl_paintpts_share              dR2=0.002320  p_N1=0.0033 p_N2=0.0017    304.3s
+    efg  A01_opp_efg_allowed                dR2=0.000528  p_N1=0.9967 p_N2=0.0266    368.8s
+    efg  A12_opp_2ndchance_allowed          dR2=0.000018  p_N1=0.3860 p_N2=0.6256    396.6s
+    efg  C05_top_usg_teammate_out           dR2=0.000101  p_N1=0.2629 p_N2=0.2446    440.6s
+    efg  E02_pl_paintpts_share              dR2=0.001862  p_N1=0.0948 p_N2=0.0017    479.6s
+
+  132 cells screened in 533.0s
+
+====================================================================================================
+C. FAMILY-WISE MAX-T ACROSS ALL 132 CELLS -- computed on BOTH nulls, worse one reported
+====================================================================================================
+  cells: 132
+  cleared per-candidate on BOTH correct-level nulls (max p < 0.05): 21
+    ... on N1 (within-entity-season) alone:  23
+    ... on N2 (entity-label swap) alone:     61
+  cleared FAMILY-WISE (max-t over 132 cells, worse of the two nulls): 8
+  would have cleared on the NAIVE ROW-LEVEL null: 65   <-- CONTRAST ONLY
+  median inflation sd_N1/sd_row = 1.339   sd_N2/sd_row = 1.267
+
+  TOP 30 BY dR2:
+outcome                candidate     n  n_entity_seasons      dr2  dr2_sign  p_N1_within_entity  p_N2_entity_swap  p_correct_level  p_familywise_maxt  p_row_level_NAIVE
+    ppm         E06_pl_efg_prior 14844               600 0.007171      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm        C07_pl_usage_rank 14807                48 0.006592      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts        C07_pl_usage_rank 14042                48 0.004473      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts      F03_minutes_load_7d 14079               596 0.004106       1.0            0.580699          0.001664         0.580699           1.000000           0.001664
+    ppm C04_teammate_usg_present 14852                48 0.003300      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    efg        C07_pl_usage_rank 13952                48 0.003144      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    efg      F03_minutes_load_7d 13989               596 0.003079       1.0            0.772047          0.001664         0.772047           1.000000           0.001664
+     ts     B05_matchup_fouldraw 14079                48 0.002980       1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts B03_pl_fouls_drawn_per36 14079               596 0.002471       1.0            0.998336          0.001664         0.998336           1.000000           0.001664
+     ts    E02_pl_paintpts_share 14036               591 0.002320       1.0            0.003328          0.001664         0.003328           0.625624           0.001664
+    ppm      F03_minutes_load_7d 14852               600 0.002215       1.0            0.856905          0.001664         0.856905           1.000000           0.001664
+     ts   E07_pl_2ndchance_share 14036               591 0.002065       1.0            0.009983          0.001664         0.009983           0.885191           0.001664
+    efg   E07_pl_2ndchance_share 13950               591 0.002027       1.0            0.003328          0.001664         0.003328           0.782030           0.001664
+    efg    E02_pl_paintpts_share 13950               591 0.001862       1.0            0.094842          0.001664         0.094842           1.000000           0.001664
+     ts       B06_pl_ftpts_per36 14079               596 0.001794       1.0            1.000000          0.001664         1.000000           1.000000           0.001664
+    ppm     B05_matchup_fouldraw 14852                48 0.001448       1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm           A10_opp_defrtg 14852                48 0.001443       1.0            0.870216          0.001664         0.870216           1.000000           0.001664
+     ts        E01_pl_fg3a_share 14073               596 0.001221      -1.0            0.259567          0.001664         0.259567           1.000000           0.001664
+    efg     B05_matchup_fouldraw 13989                48 0.001217       1.0            0.001664          0.001664         0.001664           0.003328           0.001664
+    ppm B03_pl_fouls_drawn_per36 14852               600 0.001172       1.0            1.000000          0.001664         1.000000           1.000000           0.001664
+     ts               A08_opp_pf 14079                48 0.001094       1.0            0.920133          0.001664         0.920133           1.000000           0.003328
+     ts      E03_pl_blocked_rate 14073               596 0.001079       1.0            0.001664          0.001664         0.001664           0.051581           0.001664
+     ts       A02_opp_ts_allowed 14079                48 0.001077       1.0            0.998336          0.006656         0.998336           1.000000           0.001664
+     ts   A07_opp_ftrate_allowed 14079                48 0.001069       1.0            0.973378          0.001664         0.973378           1.000000           0.001664
+    ppm       D02_opp_poss_per40 14852                48 0.001061       1.0            0.668885          0.003328         0.668885           1.000000           0.001664
+     ts     E04_3pt_vs_opp_perim 14073                48 0.001017      -1.0            0.004992          0.001664         0.004992           0.066556           0.001664
+    efg      C02_tm_ast_per_game 13989                48 0.001012       1.0            0.991681          0.001664         0.991681           1.000000           0.001664
+    efg B03_pl_fouls_drawn_per36 13989               596 0.001007       1.0            0.667221          0.001664         0.667221           1.000000           0.001664
+    efg          C03_tm_ast_rate 13989                48 0.000958       1.0            0.745424          0.001664         0.745424           1.000000           0.001664
+     ts         E06_pl_efg_prior 14073               596 0.000884      -1.0            1.000000          0.001664         1.000000           1.000000           0.001664
+
+  SURVIVORS (family-wise p < 0.05 on the worse of the two correct-level nulls):
+outcome                candidate     n  n_entity_seasons      dr2  dr2_sign  p_N1_within_entity  p_N2_entity_swap  p_correct_level  p_familywise_maxt  p_row_level_NAIVE
+    ppm         E06_pl_efg_prior 14844               600 0.007171      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm        C07_pl_usage_rank 14807                48 0.006592      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts        C07_pl_usage_rank 14042                48 0.004473      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm C04_teammate_usg_present 14852                48 0.003300      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    efg        C07_pl_usage_rank 13952                48 0.003144      -1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+     ts     B05_matchup_fouldraw 14079                48 0.002980       1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    ppm     B05_matchup_fouldraw 14852                48 0.001448       1.0            0.001664          0.001664         0.001664           0.001664           0.001664
+    efg     B05_matchup_fouldraw 13989                48 0.001217       1.0            0.001664          0.001664         0.001664           0.003328           0.001664
