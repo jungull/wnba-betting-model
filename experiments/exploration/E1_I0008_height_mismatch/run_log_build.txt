@@ -1,0 +1,52 @@
+﻿==============================================================================
+MANIFEST / GRAPH_POLICY 13.2.2 CHECK -- read from bytes, this session
+==============================================================================
+{
+  "artifact": "data/masters/master_player.parquet",
+  "manifest_present": true,
+  "asof_granularity": "row",
+  "fit_seasons": [
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "fit_through_season": 2026,
+  "content_sha256": "52e084efaad5c08444b407c64c18d55b57ff5a1e13491cc908dfd960b8641dce",
+  "13_2_2_test": "asof_granularity == 'row'",
+  "13_2_2_pass": true
+}
+{
+  "artifact": "data/reference/player_bios.csv",
+  "manifest_present": false,
+  "asof_granularity": null,
+  "note": "Static biographical data (height_inches / weight_lbs / position_raw), keyed (player_id, season). No manifest sibling exists; not a statistically fit artifact. Filtered to 2021-2024 on season column values anyway.",
+  "13_2_2_pass": null
+}
+
+==============================================================================
+LOAD + FILTER
+==============================================================================
+master_player raw: (33712, 78) raw seasons present: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024), np.int64(2025), np.int64(2026)]
+  [partition] master_player after FILTER-POINT: seasons = [2021, 2022, 2023, 2024]  rows = 21462
+  [partition] master_player after FILTER-POINT: game_date range = 2021-05-14 00:00:00 .. 2024-10-20 00:00:00
+player_bios raw: (1058, 17) raw seasons present: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024), np.int64(2025), np.int64(2026)]
+  [partition] player_bios after FILTER-POINT: seasons = [2021, 2022, 2023, 2024]  rows = 648
+  [partition] master_player after minutes>0: seasons = [2021, 2022, 2023, 2024]  rows = 18212
+  [partition] master_player after minutes>0: game_date range = 2021-05-14 00:00:00 .. 2024-10-20 00:00:00
+own height matched on: 1.0 of rows
+  [partition] after bios merge: seasons = [2021, 2022, 2023, 2024]  rows = 18212
+  [partition] after bios merge: game_date range = 2021-05-14 00:00:00 .. 2024-10-20 00:00:00
+  [partition] roster height profile: seasons = [2021, 2022, 2023, 2024]  rows = 48
+team-season roster profiles: (48, 3)
+  [partition] rotation height profile: seasons = [2021, 2022, 2023, 2024]  rows = 48
+team-season rotation profiles: (48, 3)
+rows with rung1 diff: 18212
+rows with rung2 diff: 18212
+  [partition] FINAL frame (re-assert before write): seasons = [2021, 2022, 2023, 2024]  rows = 18212
+  [partition] FINAL frame (re-assert before write): game_date range = 2021-05-14 00:00:00 .. 2024-10-20 00:00:00
+wrote frame.parquet: (18212, 23)
+wrote manifest_checks.json
+DONE build_frame

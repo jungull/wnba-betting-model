@@ -1,0 +1,54 @@
+﻿  [partition] frame.parquet on load: seasons = [2021, 2022, 2023, 2024]  rows = 18212
+
+==============================================================================
+(1) DOES THE OPPONENT-SPECIFIC RESIDUAL CLEAR ITS OWN NOISE FLOOR?
+    model: target ~ own_recent_rate + own_height  [+ opponent_roster_aggregate]
+==============================================================================
+  [partition] rows / OREB%: seasons = [2021, 2022, 2023, 2024]  rows = 16345
+
+  OREB%   n=16345
+    R2(own rate + own height)                     = 0.127865
+    R2(own rate + own height + opponent aggregate) = 0.128127
+    OPPONENT-SPECIFIC incremental R2 = +0.000262   beta_own_height=+0.003067  beta_opp=-0.001824
+    classical F(1, 16341) = 4.914   (t = +2.217)
+    NULL (permute which already-computed opponent aggregate each row gets), 400 draws
+      mean = +0.00011883   sd = 0.00016019   max = +0.00125984
+      frac_ge_real = 0.1425  -> INSIDE its own noise floor
+  [partition] rows / DREB%: seasons = [2021, 2022, 2023, 2024]  rows = 16345
+
+  DREB%   n=16345
+    R2(own rate + own height)                     = 0.161546
+    R2(own rate + own height + opponent aggregate) = 0.161841
+    OPPONENT-SPECIFIC incremental R2 = +0.000295   beta_own_height=+0.005422  beta_opp=-0.003556
+    classical F(1, 16341) = 5.749   (t = +2.398)
+    NULL (permute which already-computed opponent aggregate each row gets), 400 draws
+      mean = +0.00011399   sd = 0.00014160   max = +0.00085532
+      frac_ge_real = 0.0950  -> INSIDE its own noise floor
+
+==============================================================================
+(2) THE 'CONCENTRATED IN FORWARDS' CLAIM, DECOMPOSED (DREB%, rung1)
+==============================================================================
+  [partition] position=G: seasons = [2021, 2022, 2023, 2024]  rows = 3557
+
+  position=G  n=3557   raw corr(height_diff, DREB%) = +0.1531
+    dR2 height_diff over own-rate                = +0.002493
+    dR2 OWN HEIGHT alone over own-rate           = +0.002534
+    dR2 OPPONENT aggregate given own height      = +0.000035   beta_opp=-0.000708
+    share of the height_diff effect that is OWN HEIGHT = 101.6%
+  [partition] position=F: seasons = [2021, 2022, 2023, 2024]  rows = 3540
+
+  position=F  n=3540   raw corr(height_diff, DREB%) = +0.3632
+    dR2 height_diff over own-rate                = +0.011067
+    dR2 OWN HEIGHT alone over own-rate           = +0.009824
+    dR2 OPPONENT aggregate given own height      = +0.001254   beta_opp=-0.005938
+    share of the height_diff effect that is OWN HEIGHT = 88.8%
+  [partition] position=C: seasons = [2021, 2022, 2023, 2024]  rows = 1781
+
+  position=C  n=1781   raw corr(height_diff, DREB%) = +0.0998
+    dR2 height_diff over own-rate                = +0.001771
+    dR2 OWN HEIGHT alone over own-rate           = +0.000848
+    dR2 OPPONENT aggregate given own height      = +0.002323   beta_opp=-0.008305
+    share of the height_diff effect that is OWN HEIGHT = 47.9%
+
+wrote stage1_addendum.json
+DONE stage1_addendum

@@ -1,0 +1,114 @@
+﻿==============================================================================
+E1 I0008 STAGE 1 -- NOISE FLOOR (THE GATE)
+==============================================================================
+R2 convention: plain_unweighted_ols_r2 | plain unweighted OLS, SST about the unweighted mean. NOT the E0 wls_r2 helper.
+
+  [partition] frame.parquet on load: seasons = [2021, 2022, 2023, 2024]  rows = 18212
+aggregate recomputation check: max|recomputed - stored| = 0.000e+00  (must be ~0)
+distinct team-season aggregates: 48  (teams per season: {2021: 12, 2022: 12, 2023: 12, 2024: 12})
+opponent roster mean height: min=71.203 max=73.819 sd=0.554 inches
+player own height:           min=64.0 max=83.0 sd=3.489 inches
+
+  [partition] analysis rows rung1 (whole roster) / OREB%: seasons = [2021, 2022, 2023, 2024]  rows = 16345
+------------------------------------------------------------------------------
+REAL EFFECT -- rung1 (whole roster) on OREB%   n=16345
+  R2(own recent rate only)          = 0.107749
+  R2(own recent rate + height diff) = 0.128009
+  REAL incremental R2               = +0.020260   beta=+0.003026
+  [A] NO-OP CONTROL (permute grouping key, recompute aggregate), 50 draws
+      mean = +0.020276   sd = 0.000000  (sd exact = 0.000e+00)
+      distinct values across all 50 draws = 1
+      unpermuted-key reference (same recompute path) = +0.020276
+      max|draw - unpermuted reference| = 0.000e+00
+      (stored-column real dR2 = +0.020260; the ~1e-5 offset is the subset recompute, not the permutation)
+      DIAGNOSTIC (sd exactly 0.000000, every draw identical, real number reproduced) -> CONFIRMED NO-OP (as predicted -- this control tests nothing)
+  [B1] REAL CONTROL, team-level permutation of the aggregate, 400 draws
+       mean = +0.019606   sd = 0.000545   min = +0.017995   max = +0.021579
+       frac_ge_real = 0.1025   (identity permutations drawn: 0)
+  [B2] REAL CONTROL, row-level within-season shuffle, 400 draws
+       mean = +0.019556   sd = 0.000376   min = +0.018375   max = +0.020930
+       frac_ge_real = 0.0350
+       z(real vs B1 null) = +1.200
+  [decomposition] dR2 from OWN HEIGHT alone over own-rate      = +0.020116
+  [decomposition] dR2 from OPPONENT aggregate, given own height = +0.000262   beta_opp=-0.001824
+
+  [partition] analysis rows rung1 (whole roster) / DREB%: seasons = [2021, 2022, 2023, 2024]  rows = 16345
+------------------------------------------------------------------------------
+REAL EFFECT -- rung1 (whole roster) on DREB%   n=16345
+  R2(own recent rate only)          = 0.144217
+  R2(own recent rate + height diff) = 0.161763
+  REAL incremental R2               = +0.017546   beta=+0.005355
+  [A] NO-OP CONTROL (permute grouping key, recompute aggregate), 50 draws
+      mean = +0.017577   sd = 0.000000  (sd exact = 0.000e+00)
+      distinct values across all 50 draws = 1
+      unpermuted-key reference (same recompute path) = +0.017577
+      max|draw - unpermuted reference| = 0.000e+00
+      (stored-column real dR2 = +0.017546; the ~1e-5 offset is the subset recompute, not the permutation)
+      DIAGNOSTIC (sd exactly 0.000000, every draw identical, real number reproduced) -> CONFIRMED NO-OP (as predicted -- this control tests nothing)
+  [B1] REAL CONTROL, team-level permutation of the aggregate, 400 draws
+       mean = +0.016852   sd = 0.000508   min = +0.015299   max = +0.018272
+       frac_ge_real = 0.0725   (identity permutations drawn: 0)
+  [B2] REAL CONTROL, row-level within-season shuffle, 400 draws
+       mean = +0.016828   sd = 0.000366   min = +0.015857   max = +0.017829
+       frac_ge_real = 0.0225
+       z(real vs B1 null) = +1.363
+  [decomposition] dR2 from OWN HEIGHT alone over own-rate      = +0.017329
+  [decomposition] dR2 from OPPONENT aggregate, given own height = +0.000295   beta_opp=-0.003556
+
+  [partition] analysis rows rung2 (top-8 rotation) / OREB%: seasons = [2021, 2022, 2023, 2024]  rows = 16345
+------------------------------------------------------------------------------
+REAL EFFECT -- rung2 (top-8 rotation) on OREB%   n=16345
+  R2(own recent rate only)          = 0.107749
+  R2(own recent rate + height diff) = 0.127731
+  REAL incremental R2               = +0.019982   beta=+0.002973
+  [A] NO-OP CONTROL (permute grouping key, recompute aggregate), 50 draws
+      mean = +0.020276   sd = 0.000000  (sd exact = 0.000e+00)
+      distinct values across all 50 draws = 1
+      unpermuted-key reference (same recompute path) = +0.020276
+      max|draw - unpermuted reference| = 0.000e+00
+      (stored-column real dR2 = +0.019982; the ~1e-5 offset is the subset recompute, not the permutation)
+      DIAGNOSTIC (sd exactly 0.000000, every draw identical, real number reproduced) -> CONFIRMED NO-OP (as predicted -- this control tests nothing)
+  [B1] REAL CONTROL, team-level permutation of the aggregate, 400 draws
+       mean = +0.019168   sd = 0.000729   min = +0.016579   max = +0.021384
+       frac_ge_real = 0.1325   (identity permutations drawn: 0)
+  [B2] REAL CONTROL, row-level within-season shuffle, 400 draws
+       mean = +0.019179   sd = 0.000442   min = +0.017571   max = +0.020751
+       frac_ge_real = 0.0450
+       z(real vs B1 null) = +1.117
+  [decomposition] dR2 from OWN HEIGHT alone over own-rate      = +0.020116
+  [decomposition] dR2 from OPPONENT aggregate, given own height = +0.000240   beta_opp=-0.001344
+
+  [partition] analysis rows rung2 (top-8 rotation) / DREB%: seasons = [2021, 2022, 2023, 2024]  rows = 16345
+------------------------------------------------------------------------------
+REAL EFFECT -- rung2 (top-8 rotation) on DREB%   n=16345
+  R2(own recent rate only)          = 0.144217
+  R2(own recent rate + height diff) = 0.161506
+  REAL incremental R2               = +0.017288   beta=+0.005258
+  [A] NO-OP CONTROL (permute grouping key, recompute aggregate), 50 draws
+      mean = +0.017577   sd = 0.000000  (sd exact = 0.000e+00)
+      distinct values across all 50 draws = 1
+      unpermuted-key reference (same recompute path) = +0.017577
+      max|draw - unpermuted reference| = 0.000e+00
+      (stored-column real dR2 = +0.017288; the ~1e-5 offset is the subset recompute, not the permutation)
+      DIAGNOSTIC (sd exactly 0.000000, every draw identical, real number reproduced) -> CONFIRMED NO-OP (as predicted -- this control tests nothing)
+  [B1] REAL CONTROL, team-level permutation of the aggregate, 400 draws
+       mean = +0.016440   sd = 0.000645   min = +0.014333   max = +0.018237
+       frac_ge_real = 0.0950   (identity permutations drawn: 0)
+  [B2] REAL CONTROL, row-level within-season shuffle, 400 draws
+       mean = +0.016419   sd = 0.000489   min = +0.014919   max = +0.017669
+       frac_ge_real = 0.0425
+       z(real vs B1 null) = +1.316
+  [decomposition] dR2 from OWN HEIGHT alone over own-rate      = +0.017329
+  [decomposition] dR2 from OPPONENT aggregate, given own height = +0.000261   beta_opp=-0.002576
+
+==============================================================================
+GATE DECISION
+==============================================================================
+  rung1_height_diff|offensive_rebound_percentage             real=+0.020260  null_mean=+0.019606  frac_ge_real=0.1025  -> INSIDE NOISE FLOOR
+  rung1_height_diff|defensive_rebound_percentage             real=+0.017546  null_mean=+0.016852  frac_ge_real=0.0725  -> INSIDE NOISE FLOOR
+  rung2_height_diff|offensive_rebound_percentage             real=+0.019982  null_mean=+0.019168  frac_ge_real=0.1325  -> INSIDE NOISE FLOOR
+  rung2_height_diff|defensive_rebound_percentage             real=+0.017288  null_mean=+0.016440  frac_ge_real=0.0950  -> INSIDE NOISE FLOOR
+
+  GATE: KILL -- lead is DEAD, do not proceed to Stage 2
+wrote stage1_noise_floor.json
+DONE stage1_noise_floor
