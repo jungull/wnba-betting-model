@@ -1,0 +1,117 @@
+﻿
+====================================================================================================
+A. FRAME
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  joined frame (14852, 62)  (1:1, lossless)
+  players=247 teams=12 opp=12 games=827 dates=313 seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+B. detect_grouping_level ON BOTH CARRIERS -- recorded BEFORE any null is chosen
+====================================================================================================
+  detect_grouping_level(P01_c04_prevgame): n_rows=14852  dtype=float64  distinct values overall=14505
+    level            n_groups   distinct    constant? row==?     acf1 max within-group distinct
+    row                 14852      14505          YES    YES      n/a 1
+    player_game         14852      14505          YES    YES      n/a 1
+    team_game            1632       1628           no     no   +0.005 12
+    opp_team_game        1632       1628           no     no   +0.005 12
+    game                  827        827           no     no   +0.031 23
+    game_date             313        313           no     no   +0.052 112
+    player_season         600        581           no     no   +0.476 37
+    team_season            48         48           no     no   +0.618 363
+    opp_team_season         48         48           no     no   +0.291 345
+    season                  4          4           no     no   +0.676 4012
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'P01_c04_prevgame': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+  P01_c04_prevgame: within-player-season acf1 = {'n_groups': 600, 'min_group_size': 1, 'median_group_size': 28.0, 'order_basis': 'order_col', 'n_pairs': 14252, 'acf1': 0.47600663079653677}
+  detect_grouping_level(A10_opp_defrtg): n_rows=14852  dtype=float64  distinct values overall=1632
+    level            n_groups   distinct    constant? row==?     acf1 max within-group distinct
+    row                 14852       1632          YES    YES      n/a 1
+    player_game         14852       1632          YES    YES      n/a 1
+    team_game            1632       1632          YES     no   +0.897 1
+    opp_team_game        1632       1632          YES     no   +0.897 1
+    game                  827        827           no     no   -0.010 2
+    game_date             313        313           no     no   +0.018 12
+    player_season         600        250           no     no   +0.091 37
+    team_season            48         48           no     no   +0.099 37
+    opp_team_season         48         48           no     no   +0.040 38
+    season                  4          4           no     no   +0.118 444
+    -> status=COARSER_LEVEL_FOUND
+    -> COARSEST CONSTANT LEVEL = 'team_game'  == THE CORRECT PERMUTATION LEVEL
+  A10_opp_defrtg: within-player-season acf1 = {'n_groups': 600, 'min_group_size': 1, 'median_group_size': 28.0, 'order_basis': 'order_col', 'n_pairs': 14252, 'acf1': 0.09052903105911812}
+
+====================================================================================================
+C. FAST dR2 vs screenkit.delta_r2_plain ON REAL DATA (must agree to ~1e-12)
+====================================================================================================
+  fast=4.844132072594e-04  kit=4.844132072595e-04  |diff|=7.551e-17
+
+====================================================================================================
+D. NULL DRAW SETS -- the programme's real nulls, 600 draws each, seed 20260808
+====================================================================================================
+  POOLED    B_SINGLE    N_A_within_player_cyclic         n=14852  grp=600   real=2.200e-03 mu=2.132e-03 sd=6.831e-04 p=0.4326    6.4s
+  POOLED    B_SINGLE    N_B_entity_swap_team_season      n=14852  grp=48    real=2.200e-03 mu=9.864e-05 sd=1.234e-04 p=0.0017    0.7s
+  POOLED    B_SINGLE    N_C_entity_swap_opp_team_season  n=14852  grp=48    real=1.443e-03 mu=1.044e-04 sd=1.434e-04 p=0.0017    0.8s
+  POOLED    B_SINGLE    N_D_within_date_opp_swap         n=14852  grp=1632  real=1.443e-03 mu=3.502e-05 sd=4.881e-05 p=0.0017    3.3s
+  POOLED    B_SINGLE    N_R_row_level_CONTRAST_ONLY      n=14852  grp=14852 real=2.200e-03 mu=5.540e-05 sd=8.156e-05 p=0.0017    0.9s
+  POOLED    B_SINGLE    N_R_row_level_CONTRAST_ONLY_OPP  n=14852  grp=14852 real=1.443e-03 mu=5.888e-05 sd=8.855e-05 p=0.0017    1.4s
+  POOLED    B_COMPLETE  N_A_within_player_cyclic         n=14852  grp=600   real=4.844e-04 mu=4.905e-04 sd=3.287e-04 p=0.4443    7.4s
+  POOLED    B_COMPLETE  N_B_entity_swap_team_season      n=14852  grp=48    real=4.844e-04 mu=7.936e-05 sd=1.009e-04 p=0.0116    0.6s
+  POOLED    B_COMPLETE  N_C_entity_swap_opp_team_season  n=14852  grp=48    real=1.691e-03 mu=1.067e-04 sd=1.499e-04 p=0.0017    0.7s
+  POOLED    B_COMPLETE  N_D_within_date_opp_swap         n=14852  grp=1632  real=1.691e-03 mu=3.551e-05 sd=4.909e-05 p=0.0017    2.2s
+  POOLED    B_COMPLETE  N_R_row_level_CONTRAST_ONLY      n=14852  grp=14852 real=4.844e-04 mu=5.555e-05 sd=8.348e-05 p=0.0100    0.6s
+  POOLED    B_COMPLETE  N_R_row_level_CONTRAST_ONLY_OPP  n=14852  grp=14852 real=1.691e-03 mu=5.810e-05 sd=8.758e-05 p=0.0017    0.6s
+  DECISION  B_SINGLE    N_A_within_player_cyclic         n=5673   grp=343   real=2.911e-03 mu=1.218e-03 sd=6.407e-04 p=0.0116    3.6s
+  DECISION  B_SINGLE    N_B_entity_swap_team_season      n=5673   grp=48    real=2.911e-03 mu=1.766e-04 sd=2.277e-04 p=0.0017    0.4s
+  DECISION  B_SINGLE    N_C_entity_swap_opp_team_season  n=5673   grp=48    real=8.185e-03 mu=4.157e-04 sd=5.432e-04 p=0.0017    0.4s
+  DECISION  B_SINGLE    N_D_within_date_opp_swap         n=5673   grp=1388  real=8.185e-03 mu=1.054e-04 sd=1.511e-04 p=0.0017    1.5s
+  DECISION  B_SINGLE    N_R_row_level_CONTRAST_ONLY      n=5673   grp=5673  real=2.911e-03 mu=1.229e-04 sd=1.591e-04 p=0.0017    0.2s
+  DECISION  B_SINGLE    N_R_row_level_CONTRAST_ONLY_OPP  n=5673   grp=5673  real=8.185e-03 mu=1.304e-04 sd=1.835e-04 p=0.0017    0.4s
+  DECISION  B_COMPLETE  N_A_within_player_cyclic         n=5673   grp=343   real=2.342e-03 mu=9.208e-04 sd=5.520e-04 p=0.0116    3.7s
+  DECISION  B_COMPLETE  N_B_entity_swap_team_season      n=5673   grp=48    real=2.342e-03 mu=1.661e-04 sd=2.153e-04 p=0.0017    0.4s
+  DECISION  B_COMPLETE  N_C_entity_swap_opp_team_season  n=5673   grp=48    real=8.599e-03 mu=4.259e-04 sd=5.514e-04 p=0.0017    0.4s
+  DECISION  B_COMPLETE  N_D_within_date_opp_swap         n=5673   grp=1388  real=8.599e-03 mu=1.115e-04 sd=1.587e-04 p=0.0017    1.5s
+  DECISION  B_COMPLETE  N_R_row_level_CONTRAST_ONLY      n=5673   grp=5673  real=2.342e-03 mu=1.230e-04 sd=1.606e-04 p=0.0017    0.3s
+  DECISION  B_COMPLETE  N_R_row_level_CONTRAST_ONLY_OPP  n=5673   grp=5673  real=8.599e-03 mu=1.297e-04 sd=1.805e-04 p=0.0017    0.2s
+
+  wrote s03_null_meta.csv and s03_null_draws.npz   total 40.7s
+ stratum       base                            null     n  n_groups  null_sd  t_crit_percell
+  POOLED   B_SINGLE        N_A_within_player_cyclic 14852       600 0.000683        1.770261
+  POOLED   B_SINGLE     N_B_entity_swap_team_season 14852        48 0.000123        1.993518
+  POOLED   B_SINGLE N_C_entity_swap_opp_team_season 14852        48 0.000143        2.052777
+  POOLED   B_SINGLE        N_D_within_date_opp_swap 14852      1632 0.000049        2.014081
+  POOLED   B_SINGLE     N_R_row_level_CONTRAST_ONLY 14852     14852 0.000082        1.867420
+  POOLED   B_SINGLE N_R_row_level_CONTRAST_ONLY_OPP 14852     14852 0.000089        1.905141
+  POOLED B_COMPLETE        N_A_within_player_cyclic 14852       600 0.000329        1.872765
+  POOLED B_COMPLETE     N_B_entity_swap_team_season 14852        48 0.000101        2.179010
+  POOLED B_COMPLETE N_C_entity_swap_opp_team_season 14852        48 0.000150        1.979539
+  POOLED B_COMPLETE        N_D_within_date_opp_swap 14852      1632 0.000049        2.051113
+  POOLED B_COMPLETE     N_R_row_level_CONTRAST_ONLY 14852     14852 0.000083        1.773958
+  POOLED B_COMPLETE N_R_row_level_CONTRAST_ONLY_OPP 14852     14852 0.000088        1.836903
+DECISION   B_SINGLE        N_A_within_player_cyclic  5673       343 0.000641        1.662407
+DECISION   B_SINGLE     N_B_entity_swap_team_season  5673        48 0.000228        2.128075
+DECISION   B_SINGLE N_C_entity_swap_opp_team_season  5673        48 0.000543        2.066720
+DECISION   B_SINGLE        N_D_within_date_opp_swap  5673      1388 0.000151        1.937489
+DECISION   B_SINGLE     N_R_row_level_CONTRAST_ONLY  5673      5673 0.000159        2.183239
+DECISION   B_SINGLE N_R_row_level_CONTRAST_ONLY_OPP  5673      5673 0.000184        2.214230
+DECISION B_COMPLETE        N_A_within_player_cyclic  5673       343 0.000552        1.665884
+DECISION B_COMPLETE     N_B_entity_swap_team_season  5673        48 0.000215        2.265068
+DECISION B_COMPLETE N_C_entity_swap_opp_team_season  5673        48 0.000551        2.112805
+DECISION B_COMPLETE        N_D_within_date_opp_swap  5673      1388 0.000159        1.881623
+DECISION B_COMPLETE     N_R_row_level_CONTRAST_ONLY  5673      5673 0.000161        2.082414
+DECISION B_COMPLETE N_R_row_level_CONTRAST_ONLY_OPP  5673      5673 0.000181        2.283376

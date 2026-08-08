@@ -1,0 +1,171 @@
+﻿
+====================================================================================================
+STEP 04 -- ADJUDICATION
+====================================================================================================
+  prereg sha256 verified: 895bac8bc2255c9d660ac956873884eefbc95ddab6128fd80cbf90b8cbc6dac0
+  partition[s04 input]: season-valued=['season']  date=['game_date']  anchors=['season', 'game_date']
+
+====================================================================================================
+4a. CONTAINMENT RECOMPUTED FROM MASKS  (the CSV label round-trip bug, closed)
+====================================================================================================
+  A cell LABEL is not a cell VALUE. Recomputing every D1 cell's containment by
+  rebuilding the mask in memory, so no label ever passes through a file.
+
+  *** 103 of 104 D1-flagged cells are >= 99% inside is_fallback. ***
+
+  cells NOT fully contained:
+                  arm   target            partition cell  n_rows  share_inside_fallback  n_outside_fallback  n_distinct_pred             verdict
+cbs_v15_player_oof_v5 p_active P13_tip_time_quality  nan    1071                0.98226                  19                3 NOT_FULLY_CONTAINED
+
+====================================================================================================
+4b. region overlap matrix -- are the candidate regions distinct populations?
+====================================================================================================
+                  arm                        A                        B   nA   nB  n_both  share_of_A_inside_B  share_of_B_inside_A
+cbs_v15_player_oof_v5           R1_is_fallback         R2_is_cold_start 5378 3563    3563               0.6625               1.0000
+cbs_v15_player_oof_v5           R1_is_fallback      R3_fallback_level_2 5378 1815    1815               0.3375               1.0000
+cbs_v15_player_oof_v5           R1_is_fallback R4_tip_time_quality_null 5378 1071    1071               0.1991               1.0000
+cbs_v15_player_oof_v5           R1_is_fallback        R6_fit_ineligible 5378 3808    3456               0.6426               0.9076
+cbs_v15_player_oof_v5         R2_is_cold_start      R3_fallback_level_2 3563 1815       0               0.0000               0.0000
+cbs_v15_player_oof_v5         R2_is_cold_start R4_tip_time_quality_null 3563 1071    1071               0.3006               1.0000
+cbs_v15_player_oof_v5         R2_is_cold_start        R6_fit_ineligible 3563 3808    2983               0.8372               0.7834
+cbs_v15_player_oof_v5      R3_fallback_level_2 R4_tip_time_quality_null 1815 1071       0               0.0000               0.0000
+cbs_v15_player_oof_v5      R3_fallback_level_2        R6_fit_ineligible 1815 3808     473               0.2606               0.1242
+cbs_v15_player_oof_v5 R4_tip_time_quality_null        R6_fit_ineligible 1071 3808    1071               1.0000               0.2812
+   cbs_v14_player_oof           R1_is_fallback         R2_is_cold_start 2459 1050    1050               0.4270               1.0000
+   cbs_v14_player_oof           R1_is_fallback      R3_fallback_level_2 2459 1409    1409               0.5730               1.0000
+   cbs_v14_player_oof           R1_is_fallback R4_tip_time_quality_null 2459    0       0               0.0000               0.0000
+   cbs_v14_player_oof           R1_is_fallback        R6_fit_ineligible 2459    0       0               0.0000               0.0000
+   cbs_v14_player_oof         R2_is_cold_start      R3_fallback_level_2 1050 1409       0               0.0000               0.0000
+   cbs_v14_player_oof         R2_is_cold_start R4_tip_time_quality_null 1050    0       0               0.0000               0.0000
+   cbs_v14_player_oof         R2_is_cold_start        R6_fit_ineligible 1050    0       0               0.0000               0.0000
+   cbs_v14_player_oof      R3_fallback_level_2 R4_tip_time_quality_null 1409    0       0               0.0000               0.0000
+   cbs_v14_player_oof      R3_fallback_level_2        R6_fit_ineligible 1409    0       0               0.0000               0.0000
+   cbs_v14_player_oof R4_tip_time_quality_null        R6_fit_ineligible    0    0       0               0.0000               0.0000
+
+====================================================================================================
+4c. ARE THE D2 FLAGS REAL CLIPPING?  where does the mass actually sit
+====================================================================================================
+                  arm                      target                        partition  cell  n_rows  n_distinct_pred  share_at_zero  share_at_one  share_at_cell_min  share_at_cell_max  top1_share  top1_value
+   cbs_v14_player_oof player_scoring_distribution P14_player_season_game_index_bin 10-19    4265             3355       0.010785           0.0           0.010785           0.000234    0.010785         0.0
+cbs_v15_player_oof_v5 player_scoring_distribution P14_player_season_game_index_bin 10-19    4105             3260       0.011693           0.0           0.011693           0.000487    0.011693         0.0
+cbs_v15_player_oof_v5 player_scoring_distribution      P07_n_prior_appearances_bin   5-9    3046             2123       0.014773           0.0           0.014773           0.000328    0.014773         0.0
+cbs_v15_player_oof_v5 player_scoring_distribution            P06_n_prior_games_bin   5-9    3046             2123       0.014773           0.0           0.014773           0.000328    0.014773         0.0
+   cbs_v14_player_oof player_scoring_distribution            P06_n_prior_games_bin   5-9    2890             2090       0.022837           0.0           0.022837           0.000346    0.022837         0.0
+   cbs_v14_player_oof player_scoring_distribution      P07_n_prior_appearances_bin   5-9    2890             2090       0.022837           0.0           0.022837           0.000346    0.022837         0.0
+   cbs_v14_player_oof player_scoring_distribution P14_player_season_game_index_bin   5-9    2035             1775       0.018182           0.0           0.018182           0.000491    0.018182         0.0
+cbs_v15_player_oof_v5 player_scoring_distribution P14_player_season_game_index_bin   5-9    1562             1215       0.027529           0.0           0.027529           0.001280    0.027529         0.0
+cbs_v15_player_oof_v5 player_scoring_distribution            P06_n_prior_games_bin   3-4    1512              834       0.044312           0.0           0.044312           0.001323    0.044312         0.0
+cbs_v15_player_oof_v5 player_scoring_distribution      P07_n_prior_appearances_bin   3-4    1512              834       0.044312           0.0           0.044312           0.001323    0.044312         0.0
+   cbs_v14_player_oof player_scoring_distribution            P06_n_prior_games_bin   3-4    1235              842       0.041296           0.0           0.041296           0.001619    0.041296         0.0
+   cbs_v14_player_oof player_scoring_distribution      P07_n_prior_appearances_bin   3-4    1235              842       0.041296           0.0           0.041296           0.001619    0.041296         0.0
+   cbs_v14_player_oof player_scoring_distribution P14_player_season_game_index_bin   3-4     672              636       0.020833           0.0           0.020833           0.001488    0.020833         0.0
+cbs_v15_player_oof_v5 player_scoring_distribution P14_player_season_game_index_bin   3-4     379              344       0.042216           0.0           0.042216           0.002639    0.042216         0.0
+cbs_v15_player_oof_v5 player_scoring_distribution             P18_candidate_source S1|S2     335              317       0.017910           0.0           0.017910           0.002985    0.017910         0.0
+
+  cells with >=1% of mass at an ABSOLUTE BOUND (0 or 1): 15
+
+  floor check across every (arm,target): exact-zero and negative prediction counts
+                  arm                      target     n  n_exact_zero  n_negative  min_pred  max_pred  n_q05_negative  n_q05_exact_zero
+cbs_v15_player_oof_v5 player_scoring_distribution 21617           135           0  0.000000   31.4799               0              9233
+cbs_v15_player_oof_v5      e_minutes_given_active 21617             0           0  0.940018   41.8809               0              3328
+cbs_v15_player_oof_v5              attempts_usage 21617            13           0  0.000000   25.3501               0              6634
+cbs_v15_player_oof_v5                    p_active 21617             0           0  0.027336    0.9924               0                 0
+   cbs_v14_player_oof player_scoring_distribution 17809           140           0  0.000000   31.8385               0              8626
+   cbs_v14_player_oof      e_minutes_given_active 17809             0           0  0.857534   41.9267               0              3122
+   cbs_v14_player_oof              attempts_usage 17809            12           0  0.000000   25.5370               0              6200
+   cbs_v14_player_oof                    p_active 17809             0           0  0.016975    0.9965               0                 0
+
+====================================================================================================
+4d. THE D6 COVERAGE REGIONS -- pre-game definable, and they get the full treatment
+====================================================================================================
+                  arm                      target                      partition                         cell  n_rows  n_scoreable    cov90    cov50  sd_ratio
+cbs_v15_player_oof_v5 player_scoring_distribution              P15_universe_tier                            B     352           14 0.928571 0.857143  1.207701
+cbs_v15_player_oof_v5 player_scoring_distribution               P17_fit_eligible                        False     352           14 0.928571 0.857143  1.207701
+cbs_v15_player_oof_v5      e_minutes_given_active              P15_universe_tier                            B     352           14 0.714286 0.357143  1.209049
+cbs_v15_player_oof_v5              attempts_usage              P15_universe_tier                            B     352           14 0.857143 0.642857  1.083269
+cbs_v15_player_oof_v5              attempts_usage               P17_fit_eligible                        False     352           14 0.857143 0.642857  1.083269
+cbs_v15_player_oof_v5      e_minutes_given_active               P17_fit_eligible                        False     352           14 0.714286 0.357143  1.209049
+cbs_v15_player_oof_v5 player_scoring_distribution            P16_evaluation_tier    B_transaction_sensitivity     113           14 0.928571 0.857143  1.476937
+cbs_v15_player_oof_v5      e_minutes_given_active            P16_evaluation_tier    B_transaction_sensitivity     113           14 0.714286 0.357143  1.317722
+cbs_v15_player_oof_v5 player_scoring_distribution     P20_roster_evidence_regime retrospective_effective_date     113           14 0.928571 0.857143  1.476937
+cbs_v15_player_oof_v5 player_scoring_distribution P19_team_assignment_confidence                     probable     113           14 0.928571 0.857143  1.476937
+cbs_v15_player_oof_v5      e_minutes_given_active P19_team_assignment_confidence                     probable     113           14 0.714286 0.357143  1.317722
+cbs_v15_player_oof_v5      e_minutes_given_active     P20_roster_evidence_regime retrospective_effective_date     113           14 0.714286 0.357143  1.317722
+cbs_v15_player_oof_v5              attempts_usage            P16_evaluation_tier    B_transaction_sensitivity     113           14 0.857143 0.642857  1.206627
+cbs_v15_player_oof_v5              attempts_usage P19_team_assignment_confidence                     probable     113           14 0.857143 0.642857  1.206627
+cbs_v15_player_oof_v5              attempts_usage     P20_roster_evidence_regime retrospective_effective_date     113           14 0.857143 0.642857  1.206627
+
+  Nominal coverage is 0.90 and 0.50. These are NON-FALLBACK rows, so this is a defect
+  the known cold-start region does NOT explain.
+
+====================================================================================================
+4e. ROUTING GAINS for every ADMISSIBLE region, incl. the D6 regions and disjoint unions
+====================================================================================================
+    layer_oof_v5           player_scoring_distribution    R1_is_fallback                 n= 5378  champ/base  +27.79%  GAIN  +3.1893% (worst  +0.5182%) p=0.0002
+    layer_oof_v5           player_scoring_distribution    R2_is_cold_start               n= 3563  champ/base   +9.75%  GAIN  +0.4245% (worst  +0.0331%) p=0.0002
+    layer_oof_v5           player_scoring_distribution    R3_fallback_level_2            n= 1815  champ/base  +38.99%  GAIN  +2.7735% (worst  +0.4808%) p=0.0002
+    layer_oof_v5           player_scoring_distribution    R4_tip_time_quality_null       n= 1071  champ/base  +11.09%  GAIN  +0.3347% (worst  +0.0178%) p=0.0002
+    layer_oof_v5           player_scoring_distribution    R6_fit_ineligible              n= 3808  champ/base   +9.86%  GAIN  +0.3446% (worst  -0.0238%) p=0.0005
+    layer_oof_v5           player_scoring_distribution    R7_fb_or_fit_ineligible        n= 5730  champ/base  +27.56%  GAIN  +3.1832% (worst  +0.4726%) p=0.0002
+    layer_oof_v5           player_scoring_distribution    R8_fit_ineligible_nonfallback  n=  352  champ/base  -22.57%  GAIN  -0.0202% (worst  -0.0456%) p=nan
+    layer_oof_v5           e_minutes_given_active         R1_is_fallback                 n= 5378  champ/base  +41.92%  GAIN  +5.4050% (worst  +0.7252%) p=0.0002
+    layer_oof_v5           e_minutes_given_active         R2_is_cold_start               n= 3563  champ/base   +9.34%  GAIN  +0.5061% (worst  +0.0404%) p=0.0002
+    layer_oof_v5           e_minutes_given_active         R3_fallback_level_2            n= 1815  champ/base  +65.73%  GAIN  +4.9069% (worst  +0.6849%) p=0.0002
+    layer_oof_v5           e_minutes_given_active         R4_tip_time_quality_null       n= 1071  champ/base  +11.54%  GAIN  +0.3972% (worst  +0.0044%) p=0.0002
+    layer_oof_v5           e_minutes_given_active         R6_fit_ineligible              n= 3808  champ/base   +9.72%  GAIN  +0.4027% (worst  -0.0050%) p=0.0002
+    layer_oof_v5           e_minutes_given_active         R7_fb_or_fit_ineligible        n= 5730  champ/base  +41.48%  GAIN  +5.4009% (worst  +0.6998%) p=0.0002
+    layer_oof_v5           e_minutes_given_active         R8_fit_ineligible_nonfallback  n=  352  champ/base   -1.59%  GAIN  -0.0020% (worst  -0.0254%) p=nan
+    layer_oof_v5           attempts_usage                 R1_is_fallback                 n= 5378  champ/base  +35.30%  GAIN  +4.5064% (worst  +0.6779%) p=0.0002
+    layer_oof_v5           attempts_usage                 R2_is_cold_start               n= 3563  champ/base  +10.40%  GAIN  +0.5527% (worst  +0.0257%) p=0.0002
+    layer_oof_v5           attempts_usage                 R3_fallback_level_2            n= 1815  champ/base  +53.20%  GAIN  +3.9607% (worst  +0.6522%) p=0.0002
+    layer_oof_v5           attempts_usage                 R4_tip_time_quality_null       n= 1071  champ/base  +11.84%  GAIN  +0.4369% (worst  +0.0097%) p=0.0002
+    layer_oof_v5           attempts_usage                 R6_fit_ineligible              n= 3808  champ/base  +10.72%  GAIN  +0.4540% (worst  -0.0199%) p=0.0002
+    layer_oof_v5           attempts_usage                 R7_fb_or_fit_ineligible        n= 5730  champ/base  +34.97%  GAIN  +4.4978% (worst  +0.6403%) p=0.0002
+    layer_oof_v5           attempts_usage                 R8_fit_ineligible_nonfallback  n=  352  champ/base  -11.96%  GAIN  -0.0119% (worst  -0.0376%) p=nan
+    layer_oof_v5           p_active                       R1_is_fallback                 n= 2268  champ/base  -57.71%  GAIN  -4.9621% (worst  -7.7159%) p=0.0002
+    layer_oof_v5           p_active                       R2_is_cold_start               n=  936  champ/base  -81.60%  GAIN  -2.8174% (worst  -3.3472%) p=0.0002
+    layer_oof_v5           p_active                       R3_fallback_level_2            n= 1332  champ/base  -36.64%  GAIN  -1.7357% (worst  -4.9651%) p=0.0002
+    layer_oof_v5           p_active                       R4_tip_time_quality_null       n= 1071  champ/base  -87.39%  GAIN  -3.3521% (worst  -4.2909%) p=0.0002
+    layer_oof_v5           p_active                       R6_fit_ineligible              n= 3808  champ/base  -75.09%  GAIN  -3.2966% (worst  -4.7119%) p=0.0002
+    layer_oof_v5           p_active                       R7_fb_or_fit_ineligible        n= 4424  champ/base  -54.46%  GAIN  -5.0840% (worst  -7.5765%) p=0.0002
+    layer_oof_v5           p_active                       R8_fit_ineligible_nonfallback  n= 2156  champ/base   -3.51%  GAIN  -0.0223% (worst  -0.2278%) p=0.6553
+    4_player_oof           player_scoring_distribution    R1_is_fallback                 n= 2459  champ/base  +28.50%  GAIN  +3.2817% (worst  +0.5096%) p=0.0002
+    4_player_oof           player_scoring_distribution    R2_is_cold_start               n= 1050  champ/base   +8.93%  GAIN  +0.4040% (worst  +0.0299%) p=0.0002
+    4_player_oof           player_scoring_distribution    R3_fallback_level_2            n= 1409  champ/base  +41.05%  GAIN  +2.8721% (worst  +0.4797%) p=0.0002
+    4_player_oof           e_minutes_given_active         R1_is_fallback                 n= 2459  champ/base  +40.17%  GAIN  +5.4344% (worst  +0.7368%) p=0.0002
+    4_player_oof           e_minutes_given_active         R2_is_cold_start               n= 1050  champ/base   +8.87%  GAIN  +0.5142% (worst  +0.0301%) p=0.0002
+    4_player_oof           e_minutes_given_active         R3_fallback_level_2            n= 1409  champ/base  +63.47%  GAIN  +4.9128% (worst  +0.7067%) p=0.0002
+    4_player_oof           attempts_usage                 R1_is_fallback                 n= 2459  champ/base  +35.51%  GAIN  +4.5002% (worst  +0.6931%) p=0.0002
+    4_player_oof           attempts_usage                 R2_is_cold_start               n= 1050  champ/base  +10.24%  GAIN  +0.5415% (worst  +0.0634%) p=0.0002
+    4_player_oof           attempts_usage                 R3_fallback_level_2            n= 1409  champ/base  +53.49%  GAIN  +3.9528% (worst  +0.6297%) p=0.0002
+    4_player_oof           p_active                       R1_is_fallback                 n= 1466  champ/base  +23.72%  GAIN  +2.0846% (worst  -0.3683%) p=0.0002
+    4_player_oof           p_active                       R2_is_cold_start               n=  489  champ/base   +0.29%  GAIN  +0.0096% (worst  -0.3047%) p=0.8558
+    4_player_oof           p_active                       R3_fallback_level_2            n=  977  champ/base  +38.26%  GAIN  +2.0821% (worst  -0.0636%) p=0.0002
+
+  wrote routing_gains.csv (40, 27)
+
+====================================================================================================
+4f. THE HEADLINE, measured against D081's OWN reference column (exact comparability)
+====================================================================================================
+    layer_oof_v5           player_scoring_distribution    R1_is_fallback          -0.2222% -> +2.6735%   GAIN +2.8957%
+    layer_oof_v5           player_scoring_distribution    R2_is_cold_start        -0.2222% -> -0.1455%   GAIN +0.0767%
+    layer_oof_v5           player_scoring_distribution    R3_fallback_level_2     -0.2222% -> +2.5947%   GAIN +2.8169%
+    layer_oof_v5           e_minutes_given_active         R1_is_fallback          +3.5549% -> +8.6500%   GAIN +5.0951%
+    layer_oof_v5           e_minutes_given_active         R2_is_cold_start        +3.5549% -> +3.6584%   GAIN +0.1035%
+    layer_oof_v5           e_minutes_given_active         R3_fallback_level_2     +3.5549% -> +8.5435%   GAIN +4.9885%
+    layer_oof_v5           attempts_usage                 R1_is_fallback          +0.1152% -> +4.2455%   GAIN +4.1303%
+    layer_oof_v5           attempts_usage                 R2_is_cold_start        +0.1152% -> +0.2059%   GAIN +0.0907%
+    layer_oof_v5           attempts_usage                 R3_fallback_level_2     +0.1152% -> +4.1510%   GAIN +4.0358%
+    4_player_oof           player_scoring_distribution    R1_is_fallback          -1.8261% -> +1.4495%   GAIN +3.2756%
+    4_player_oof           player_scoring_distribution    R2_is_cold_start        -1.8261% -> -1.4136%   GAIN +0.4125%
+    4_player_oof           player_scoring_distribution    R3_fallback_level_2     -1.8261% -> +1.0383%   GAIN +2.8644%
+    4_player_oof           e_minutes_given_active         R1_is_fallback          +1.0469% -> +6.4686%   GAIN +5.4217%
+    4_player_oof           e_minutes_given_active         R2_is_cold_start        +1.0469% -> +1.5640%   GAIN +0.5171%
+    4_player_oof           e_minutes_given_active         R3_fallback_level_2     +1.0469% -> +5.9488%   GAIN +4.9020%
+    4_player_oof           attempts_usage                 R1_is_fallback          -1.7341% -> +2.7508%   GAIN +4.4849%
+    4_player_oof           attempts_usage                 R2_is_cold_start        -1.7341% -> -1.1849%   GAIN +0.5492%
+    4_player_oof           attempts_usage                 R3_fallback_level_2     -1.7341% -> +2.2033%   GAIN +3.9374%
+
+  D081 reported points: pooled skill -0.22%% -> +1.36%% by fixing this region.
+  THIS SCREEN, same reference, same region: -0.2222% -> +2.6735%  (gain +2.8957%)
+  wrote C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0028_degeneracy_sweep\_s04.json

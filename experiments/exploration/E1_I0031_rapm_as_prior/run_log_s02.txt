@@ -1,0 +1,125 @@
+﻿
+====================================================================================================
+STEP 2 -- RAPM AS A FEATURE   (candidate sha256 79331a724bbde189 verified)
+====================================================================================================
+  guard ok  analysis frame reload                          n=13879   {'season': [2022, 2023, 2024]}
+
+--- Base imputation: missingness moved INTO the base as indicators, so no row is dropped ------------
+    pts      design width 13 (11 values + 2 missingness indicators); all finite: True
+    minutes  design width 13 (11 values + 2 missingness indicators); all finite: True
+    fga      design width 13 (11 values + 2 missingness indicators); all finite: True
+    ppm      design width 10 (10 values + 0 missingness indicators); all finite: True
+
+====================================================================================================
+STEP 2a -- DETECTION: in-sample dR2 of the RAPM block over the COMPLETE base
+====================================================================================================
+  Denominator rule (D099): every dR2 is reported BOTH on its own stratum's SST and on the
+  FULL wf_eval SST, so the two rows are comparable.  `sst_basis` names which.
+
+  relabeller verified: 475 player-seasons, identity relabelling round-trips exactly.
+    pts      wf_eval_2023_24      n= 9517  R2base=0.51772  dR2=+0.002576  perm p=0.0010  null95=+0.001333
+    pts      decision_stratum_wf  n= 3549  R2base=0.32426  dR2=+0.004075  perm p=0.0755  null95=+0.004439
+    minutes  wf_eval_2023_24      n= 9517  R2base=0.67457  dR2=+0.001397  perm p=0.0005  null95=+0.000825
+    minutes  decision_stratum_wf  n= 3549  R2base=0.27251  dR2=+0.004041  perm p=0.0620  null95=+0.004207
+    fga      wf_eval_2023_24      n= 9517  R2base=0.64251  dR2=+0.001459  perm p=0.0015  null95=+0.000950
+    fga      decision_stratum_wf  n= 3549  R2base=0.47454  dR2=+0.002640  perm p=0.1699  null95=+0.003429
+    ppm      wf_eval_2023_24      n= 9517  R2base=0.19463  dR2=+0.003103  perm p=0.0035  null95=+0.002167
+    ppm      decision_stratum_wf  n= 3549  R2base=0.25775  dR2=+0.004259  perm p=0.1289  null95=+0.005108
+
+--- Per-candidate marginal dR2 over the complete base (wf_eval), for decomposition ------------------
+target                    fga   minutes       ppm       pts
+candidate                                                  
+has_rapm_f          +0.000308 +0.000034 +0.002000 +0.000892
+log_total_poss_imp  +0.000075 +0.000320 +0.000498 +0.000023
+net_100_lam1000_imp +0.000060 +0.000405 +0.000000 +0.000052
+net_100_lam2000_imp +0.000048 +0.000330 +0.000000 +0.000034
+net_100_lam5000_imp +0.000027 +0.000218 +0.000000 +0.000012
+net_100_lam500_imp  +0.000069 +0.000462 +0.000000 +0.000070
+z_drapm_100_imp     +0.000011 +0.000018 +0.000056 +0.000012
+z_net_100_imp       +0.000027 +0.000142 +0.000002 +0.000022
+z_net_x_poss        +0.000026 +0.000125 +0.000002 +0.000019
+z_orapm_100_imp     +0.000130 +0.000199 +0.000090 +0.000125
+
+====================================================================================================
+STEP 2b -- FORECAST: walk-forward OLS, coefficients from STRICTLY EARLIER seasons only
+====================================================================================================
+  2023 rows scored by coefficients fitted on 2022; 2024 rows by coefficients fitted on
+  2022+2023.  BASE and BASE+RAPM are fitted the same way on the same rows, so the skill
+  difference is differential skill, not a difference in what each side was allowed to see.
+
+  structural-availability sources registered for 9 design columns
+     b_prevseason_pts           undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_role_pts                 undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_prevseason_minutes       undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_role_minutes             undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_prevseason_fga           undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_role_fga                 undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_prevseason_ppm           undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_role_ppm                 undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_pl_prior_season_games    undefined on 2022 rows=0.237  on 2023 rows=0.168
+      pts base               fold 2023: train n= 4362  cols 13->11  alpha=30        inner-val MAE=4.0303  dropped=['b_prevseason_pts', 'b_role_pts']
+      pts base               fold 2024: train n= 9110  cols 13->13  alpha=300       inner-val MAE=4.0774  dropped=-
+      pts base+RAPM          fold 2023: train n= 4362  cols 23->21  alpha=100       inner-val MAE=4.0550  dropped=['b_prevseason_pts', 'b_role_pts']
+      pts base+RAPM          fold 2024: train n= 9110  cols 23->23  alpha=100       inner-val MAE=4.0960  dropped=-
+    pts      wf_eval_2023_24      n= 9517  MAE base=4.22102  +RAPM=4.19919  skill=+0.5172%  p=0.0065
+    pts      decision_stratum_wf  n= 3549  MAE base=5.12667  +RAPM=5.09626  skill=+0.5930%  p=0.0125
+      minutes base           fold 2023: train n= 4362  cols 13->11  alpha=0.001     inner-val MAE=4.7212  dropped=['b_prevseason_minutes', 'b_role_minutes']
+      minutes base           fold 2024: train n= 9110  cols 13->13  alpha=30        inner-val MAE=4.5993  dropped=-
+      minutes base+RAPM      fold 2023: train n= 4362  cols 23->21  alpha=3         inner-val MAE=4.7888  dropped=['b_prevseason_minutes', 'b_role_minutes']
+      minutes base+RAPM      fold 2024: train n= 9110  cols 23->23  alpha=0.001     inner-val MAE=4.6092  dropped=-
+    minutes  wf_eval_2023_24      n= 9517  MAE base=4.89014  +RAPM=4.95376  skill=-1.3010%  p=0.0005
+    minutes  decision_stratum_wf  n= 3549  MAE base=4.27826  +RAPM=4.36604  skill=-2.0518%  p=0.0005
+      fga base               fold 2023: train n= 4362  cols 13->11  alpha=0.001     inner-val MAE=2.5221  dropped=['b_prevseason_fga', 'b_role_fga']
+      fga base               fold 2024: train n= 9110  cols 13->13  alpha=100       inner-val MAE=2.5092  dropped=-
+      fga base+RAPM          fold 2023: train n= 4362  cols 23->21  alpha=10        inner-val MAE=2.5443  dropped=['b_prevseason_fga', 'b_role_fga']
+      fga base+RAPM          fold 2024: train n= 9110  cols 23->23  alpha=0.1       inner-val MAE=2.5132  dropped=-
+    fga      wf_eval_2023_24      n= 9517  MAE base=2.58737  +RAPM=2.58118  skill=+0.2394%  p=0.2104
+    fga      decision_stratum_wf  n= 3549  MAE base=2.93763  +RAPM=2.92484  skill=+0.4353%  p=0.1049
+      ppm base               fold 2023: train n= 4362  cols 10-> 8  alpha=10        inner-val MAE=0.1777  dropped=['b_prevseason_ppm', 'b_role_ppm']
+      ppm base               fold 2024: train n= 9110  cols 10->10  alpha=300       inner-val MAE=0.1848  dropped=-
+      ppm base+RAPM          fold 2023: train n= 4362  cols 20->18  alpha=30        inner-val MAE=0.1788  dropped=['b_prevseason_ppm', 'b_role_ppm']
+      ppm base+RAPM          fold 2024: train n= 9110  cols 20->20  alpha=100       inner-val MAE=0.1841  dropped=-
+    ppm      wf_eval_2023_24      n= 9517  MAE base=0.18366  +RAPM=0.18241  skill=+0.6850%  p=0.0005
+    ppm      decision_stratum_wf  n= 3549  MAE base=0.15540  +RAPM=0.15345  skill=+1.2545%  p=0.0005
+
+====================================================================================================
+STEP 2c -- NEGATIVE CONTROL AND PLACEBOS (constraint 8)
+====================================================================================================
+  NO-OP placebo   : cells changed = 0 of 138790  -> VERIFIED to perturb NOTHING
+  PERTURBED placebo: cells changed = 138790 of 138790  -> VERIFIED to ACTUALLY PERTURB
+  NEGATIVE control : rows whose RAPM block changed = 13594 of 13879  (player-season relabel)
+
+variant  negative_control_relabelled  noop_placebo  perturbed_placebo      real
+target                                                                         
+fga                        +0.000891     +0.001459          +0.001459 +0.001459
+minutes                    +0.000754     +0.001397          +0.001397 +0.001397
+ppm                        +0.001228     +0.003103          +0.003103 +0.003103
+pts                        +0.001076     +0.002576          +0.002576 +0.002576
+
+  no-op placebo reproduces the real dR2 EXACTLY for every target: True
+
+====================================================================================================
+STEP 2d -- DECOMPOSE ANY SURVIVOR AGAINST ITS OWN COMPONENTS
+====================================================================================================
+target                         fga   minutes       ppm       pts
+component                                                       
+everything_but_existence +0.000592 +0.000868 +0.001834 +0.000972
+everything_but_net       +0.001358 +0.001100 +0.002631 +0.002299
+existence_only           +0.000308 +0.000034 +0.002000 +0.000892
+full_block               +0.001459 +0.001397 +0.003103 +0.002576
+net_only                 +0.000196 +0.000579 +0.000485 +0.000320
+net_plus_existence       +0.000437 +0.000409 +0.002149 +0.001041
+off_def_split            +0.000179 +0.000200 +0.000205 +0.000172
+reliability_only         +0.000095 +0.000439 +0.000511 +0.000040
+
+====================================================================================================
+WRITE
+====================================================================================================
+  wrote rapm_as_feature.csv (16 rows)
+  wrote rapm_feature_marginal_dr2.csv (40 rows)
+  wrote rapm_feature_wf_folds.csv (per-fold rank handling)
+  wrote rapm_feature_decomposition.csv (64 rows)
+  wrote rapm_feature_controls.csv (16 rows)
+  wrote permutation_draws_feature_dr2.csv (16000 draws), permutation_draws_feature_paired.csv (16000 draws)
+  wrote _s02.json
+DONE s02

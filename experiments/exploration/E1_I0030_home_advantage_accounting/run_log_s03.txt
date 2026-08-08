@@ -1,0 +1,106 @@
+﻿
+====================================================================================================
+S03 PLAYER-LEVEL RECONCILIATION
+====================================================================================================
+  regular-season partition: 888 games, 1776 team-games, 19642 player-rows
+
+====================================================================================================
+A. THE RECONCILIATION -- both sides and the residual
+====================================================================================================
+  N_home team-games = 888   N_away team-games = 888
+  TEAM SIDE:  mean home pts = 82.36712   mean away pts = 81.40203   G = +0.965090
+  PLAYER SIDE: sum_i f_i^H*pbar_i^H = 82.36712   sum_i f_i^A*pbar_i^A = 81.40203
+  RECONSTRUCTION ERROR vs the team means: home 0.000e+00  away 0.000e+00
+
+  *** THE RECONCILIATION ***
+    team-level home effect G                     = +0.965090 pts / game
+    (1) WITHIN-PLAYER  sum fbar_i*(pbar^H-pbar^A) = +1.314419   (136.2% of G)
+    (2) COMPOSITION    sum pbar_bar*(f^H-f^A)     = -0.349329   (-36.2% of G)
+    (1)+(2)                                      = +0.965090
+    RESIDUAL (must be ~0 by construction)        = -4.245e-16
+    |(1)+(2) - G|                                = 4.219e-15
+
+====================================================================================================
+B. SPLITTING THE WITHIN-PLAYER TERM: minutes vs points-per-minute
+====================================================================================================
+    WITHIN-PLAYER total                     = +1.314419
+      via MINUTES PER APPEARANCE            = +0.241000  (18.3% of the within term)
+      via POINTS PER MINUTE                 = +1.073419  (81.7% of the within term)
+      residual                              = -8.882e-16
+
+====================================================================================================
+C. THE SAME RECONCILIATION ON FREE THROWS MADE (the channel s02 located)
+====================================================================================================
+    team-level FT-makes home effect          = +0.941441
+      within-player                          = +0.987779  (104.9%)
+      composition                            = -0.046338  (-4.9%)
+    team-level FT-ATTEMPTS home effect       = +1.086712
+      within-player                          = +1.154547  (106.2%)
+      composition                            = -0.067835  (-6.2%)
+
+====================================================================================================
+A2. NULL FOR THE DECOMPOSITION TERMS (whole decomposition recomputed per draw)
+====================================================================================================
+  G                real=+0.96509  null sd=0.45205  t=+2.13  p=0.0345
+  within_player    real=+1.31442  null sd=0.59958  t=+2.19  p=0.0275
+  composition      real=-0.34933  null sd=0.57848  t=-0.60  p=0.5449
+  -> the sign-flip preserves N_H=N_A=888 exactly, so the composition term is being
+     tested against its own honest null and not against zero.
+
+====================================================================================================
+D. PLAYER-LEVEL HOME/AWAY CONTRASTS, per-game paired, correct-level null
+====================================================================================================
+           candidate  n_games  home_mean  away_mean     diff  null_sd        t  p_pergame_signflip
+              pts_eq      888    8.85412    8.75418  0.09993  0.06133  1.62933             0.10279
+              min_eq      888   21.63505   21.64170 -0.00665  0.09958 -0.06675             0.94665
+              ppm_eq      888    0.36687    0.35952  0.00735  0.00323  2.27420             0.02270
+              ppm_mw      888    0.40929    0.40446  0.00483  0.00227  2.12834             0.03410
+              fga_eq      888    7.33975    7.33231  0.00743  0.04340  0.17121             0.86396
+      fga_per_min_mw      888    0.33937    0.33887  0.00051  0.00135  0.37460             0.70746
+            fgapm_eq      888    0.31885    0.31761  0.00124  0.00216  0.57403             0.56257
+              fta_eq      888    1.99804    1.88197  0.11607  0.03124  3.71529             0.00015
+      fta_per_min_mw      888    0.09229    0.08687  0.00541  0.00132  4.10029             0.00005
+            ftapm_eq      888    0.08588    0.07801  0.00787  0.00310  2.53628             0.00050
+             fg3a_eq      888    2.38026    2.38593 -0.00567  0.03078 -0.18430             0.85511
+             efg_pct      888    0.49581    0.49621 -0.00041  0.00343 -0.11896             0.90310
+              ts_pct      888    0.53982    0.53740  0.00242  0.00322  0.75152             0.45368
+              n_used      888    9.41329    9.41216  0.00113  0.04182  0.02693             1.00000
+         hhi_minutes      888    0.13158    0.13161 -0.00004  0.00054 -0.07284             0.93925
+starter_minute_share      888    0.71301    0.71292  0.00010  0.00344  0.02838             0.97765
+
+====================================================================================================
+E. WHERE INSIDE THE PLAYER LEVEL DOES IT SIT?  (the leak hunt)
+====================================================================================================
+  concentration of the within-player term:
+    top   1 players of 265 contribute +0.2514 of +1.3144 (19%)
+    top   5 players of 265 contribute +0.9705 of +1.3144 (74%)
+    top  10 players of 265 contribute +1.6252 of +1.3144 (124%)
+    top  25 players of 265 contribute +2.9374 of +1.3144 (223%)
+    top  50 players of 265 contribute +4.1162 of +1.3144 (313%)
+    top 100 players of 265 contribute +4.9015 of +1.3144 (373%)
+    players with a POSITIVE home contribution: 128 of 265 (48.3%)
+
+  BY MINUTES TIER (home minus away, per appearance):
+    pts      {'bench <10': 0.0182, 'rotation 10-20': 0.0665, 'starter 20-28': -0.0538, 'star >28': 0.5433}
+    minutes  {'bench <10': -0.1028, 'rotation 10-20': 0.0762, 'starter 20-28': -0.0157, 'star >28': 0.1569}
+    fta      {'bench <10': -0.0173, 'rotation 10-20': 0.039, 'starter 20-28': 0.1387, 'star >28': 0.2577}
+    ftm      {'bench <10': 0.0135, 'rotation 10-20': 0.0255, 'starter 20-28': 0.1045, 'star >28': 0.2463}
+    fga      {'bench <10': 0.0133, 'rotation 10-20': 0.0153, 'starter 20-28': -0.0549, 'star >28': 0.2018}
+
+====================================================================================================
+F. BLOWOUT AND ROTATION CHECKS -- the leaks the brief named
+====================================================================================================
+  home team wins 53.15% of regular-season games (n=888)
+  mean |margin| = 11.24
+  n_used                 home-minus-away = +0.00113   p=1.0000
+  hhi_minutes            home-minus-away = -0.00004   p=0.9393
+  starter_minute_share   home-minus-away = +0.00010   p=0.9777
+
+  CLOSE GAMES ONLY (|margin| <= 8, n=392):
+    pts    = -0.1709  p=0.5338
+    ftm    = +0.6454  p=0.0731
+    fta    = +0.8418  p=0.0416
+    pf     = -0.5077  p=0.0347
+    fg3m   = +0.1429  p=0.4580
+
+  wrote player_reconciliation.csv, per_player_contributions.csv, by_minutes_tier.csv, _s03.json

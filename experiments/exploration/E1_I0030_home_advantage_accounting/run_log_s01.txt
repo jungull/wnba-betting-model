@@ -1,0 +1,81 @@
+﻿
+====================================================================================================
+S01 GUARDS AND BUILD
+====================================================================================================
+  prereg hash verified: d513e27ade1afa01c4c1e9fc16ed33d773c648ebd41785c6b6fae2f63bc81f7d
+
+====================================================================================================
+1. MANIFEST CHECK -- read from bytes this session
+====================================================================================================
+  check_manifest master_team.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest possessions.parquet -> UNVERIFIABLE (no manifest)
+  check_manifest decomp_frame.parquet -> UNVERIFIABLE (no manifest)
+
+====================================================================================================
+2. LOAD AND PARTITION ASSERT (value-based, after every filter)
+====================================================================================================
+  team frame (1940, 68)  games=970  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  player frame (21462, 81)  appeared=18212  dnp=3250
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  venue table: 15 teams, offsets [-7, -5, -4]
+  venue rows retained (teams present in the 2021-2024 partition): 12 of 15
+
+====================================================================================================
+2b. STRUCTURAL ASSERTS -- the design, verified rather than assumed
+====================================================================================================
+  every game has exactly 2 team rows and exactly 1 home team: OK (970 games)
+  SUM OF PLAYER POINTS == TEAM POINTS on every team-game: max |diff| = 0
+  sum of player minutes vs team minutes: max |diff| = 0.066667 (rounding in the mm:ss source)
+  team minutes IDENTICAL for both teams in 970 of 970 games (100.00%)
+  distinct team-minute totals observed: [200.0, 225.0, 250.0]
+
+====================================================================================================
+3. GROUPING-LEVEL DETECTION for is_home -- BEFORE choosing a null
+====================================================================================================
+  detect_grouping_level(is_home): n_rows=1940  dtype=int64  distinct values overall=2
+    level            n_groups   distinct    constant? row==?     acf1 max within-group distinct
+    game                  970          2           no     no   -0.500 2
+    season                  4          2           no     no   +0.070 2
+    team                   12          2           no     no   +0.067 2
+    team_season            48          2           no     no   +0.065 2
+    team_game            1940          2          YES    YES      n/a 1
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'is_home': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+  status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+  recommended_permutation_level = None
+  -> NO coarser constant level exists.  A row-level permutation is anticonservative,
+     AND it does not even respect the design (it produces games with two home teams).
+     The exact test for this design is the PER-GAME SIGN FLIP on the paired difference,
+     implemented in ha_base.paired_game_signflip.  That is what carries every verdict.
+
+====================================================================================================
+4. TRAVEL COLUMNS -- strictly prior schedule only
+====================================================================================================
+  strictly-prior check on prev_game_date: OK on 1892 of 1940 team-games
+  travel arm counts (team-games with a previous game): {'eastbound': 365, 'westbound': 359, 'same_zone_travel': 554, 'no_travel': 614}
+  tz_delta distribution: {-3.0: 94, -2.0: 101, -1.0: 164, 0.0: 1168, 1.0: 166, 2.0: 106, 3.0: 93}
+
+====================================================================================================
+6. PARTITION ASSERT AFTER CONSTRUCTION (values again, on the built frames)
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    date   col prev_game_date           YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'prev_game_date', 'season']
+    -> PASS
+
+  wrote _team_frame.parquet (1940, 89) and _player_frame.parquet (21462, 86)
+  wrote _s01.json

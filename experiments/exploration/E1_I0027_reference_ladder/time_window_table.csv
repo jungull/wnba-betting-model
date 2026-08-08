@@ -1,0 +1,14 @@
+stage,ingredient,window_consumed,verdict
+R0_LEAGUE,same-season league value,"all games in the same season on STRICTLY EARLIER DATES (date-blocked, so same-day games are excluded)",prior-only
+R0_LEAGUE,previous-season league value (chain step 2),"the whole previous season; seasons are calendar-disjoint, asserted by assert_season_disjoint",prior-only
+R0_LEAGUE,GRAND (chain step 3),the whole frame; FIRES ONLY on rows with neither an earlier same-season game nor a previous season in the frame; counted and reported as grand_fallback_rows,"NOT prior-only -- named, counted, and never in an evaluation set"
+R1_PLAYER_EXPAND,player's expanding prior mean,"the player's own same-season games at an EARLIER position in the date-sorted group; prefix arrays indexed at h, never h+1",prior-only
+R2_EWMA_TUNED,tuned EWMA of the player's prior games,as R1,prior-only
+R2_EWMA_TUNED,"half-life / mode / shrinkage (pts, minutes, fga, ppm)","D094's grid, selected on 2022-2023 and evaluated on 2023-2024; imported, not re-searched",prior-only by D094's construction
+R2_EWMA_TUNED,"half-life (reb, ast)","selected inside this screen on TRAIN SEASONS ONLY, frozen and hashed before any re-priced figure",prior-only
+R2/R3/R4,shrinkage target `prior_season`,"the player's own PREVIOUS season, whole; calendar-disjoint",prior-only
+R3_RATE_X_MINUTES,EWMA(rate) x EWMA(minutes),"as R1, both factors",prior-only
+R4_RICH_LOOKUP,the feature columns,each is a rung or a prior-only aggregate above,prior-only
+R4_RICH_LOOKUP,THE BLEND COEFFICIENTS (inference step),OLS fitted on seasons STRICTLY EARLIER than the season being scored; the earliest season is unscored,prior-only
+re-price,lead coefficients (inference step),"refitted on seasons strictly earlier than the scored season, matching D089/D098's walk-forward protocol",prior-only
+re-price,the denominator SST,"computed on the realised response of the FULL scored row set; uses the response only, never a forecast, and is identical across every arm of a comparison",uses realised y of the scored set -- as every R2 denominator must; identical across arms

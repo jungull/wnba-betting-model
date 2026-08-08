@@ -1,0 +1,51 @@
+﻿
+====================================================================================================
+BUILD -- base frame + RAPM + D094 estimators + raw plus-minus
+====================================================================================================
+  guard ok  rapm_walkforward after filter                  n=598     {'season': [2022, 2023, 2024]}
+  decomp_frame  shape=(13879, 122)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]  max_date=2024-10-20
+  RAPM join coverage by season (row level):
+            mean   sum  size
+season                      
+2022    0.763182  3329  4362
+2023    0.831508  3948  4748
+2024    0.861816  4110  4769
+  RAPM coverage at player-season level: 367 / 475 = 0.773
+  VERIFIED: every RAPM column is CONSTANT within (season, player_id) -> the honest null relabels whole player-seasons, not rows.
+
+--- Rebuilding D094's walk-forward-selected best simple estimator per target ------------------------
+    pts      rebuilt wf MAE=4.1475852209  D094 stored=4.1475852209  diff=0.00e+00
+    minutes  rebuilt wf MAE=4.8845280846  D094 stored=4.8845280846  diff=8.88e-16
+    fga      rebuilt wf MAE=2.5588360013  D094 stored=2.5588360013  diff=0.00e+00
+    ppm      rebuilt wf MAE=0.1802930175  D094 stored=0.1802930175  diff=0.00e+00
+  D094 REPRODUCED EXACTLY (all four targets, <1e-9).  Standing on the same ground.
+  wrote d094_reproduction.csv (4 rows)
+
+--- Raw per-game plus_minus -> strictly-prior aggregates (a DIFFERENT OBJECT from RAPM) -------------
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  guard ok  master_player after filter                     n=21462   {'season': [2021, 2022, 2023, 2024]}
+  master_player appeared rows with a finite plus_minus, 2021-2024: 18212  (seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)])
+  plus-minus feature coverage on the scored frame:
+pm_run_mean       0.994884
+pm_per36_prior    0.994884
+pm_ewma5          0.994884
+pm_ewma2          0.994884
+pm_prev_season    0.771093
+
+--- COMPLETE base reference: EVERY prior measurement of the target already in the frame -------------
+    pts      11 base columns, all-finite on 0.9280 of rows
+    minutes  11 base columns, all-finite on 0.9280 of rows
+    fga      11 base columns, all-finite on 0.9280 of rows
+    ppm      10 base columns, all-finite on 1.0000 of rows
+  strata: wf_eval=9517  decision_stratum=5107  decision_stratum&wf=3549  data_poor=999  data_poor&wf=657
+  assert_partition_values analysis frame           PASS  season_cols=['season'] date_cols=['gdate']
+  wrote analysis_frame.parquet  shape=(13879, 200)
+
+====================================================================================================
+PREREGISTRATION -- candidate list frozen and hashed BEFORE any candidate/outcome statistic
+====================================================================================================
+  CANDIDATE LIST SHA256 = 79331a724bbde189d17a887400e36587ee53d8cf242411b2baeec765cda7c026
+  wrote CANDIDATES_PRESELECTED.md  (10 RAPM, 5 plus-minus, 3 controls, 6 ref variants, 5 cold-start variants)
+  wrote _prereg.json
+
+PREREG COMPLETE.

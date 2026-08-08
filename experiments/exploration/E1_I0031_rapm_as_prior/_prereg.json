@@ -1,0 +1,325 @@
+{
+  "candidate_sha256": "79331a724bbde189d17a887400e36587ee53d8cf242411b2baeec765cda7c026",
+  "n_added_after_prereg": 0,
+  "n_dropped_after_prereg": 0,
+  "rapm_candidates": [
+    [
+      "R01",
+      "net_100_lam2000_imp",
+      "PRIMARY. Net RAPM at FIXED lambda=2000 -> comparable across emit seasons. Season-level, strictly prior."
+    ],
+    [
+      "R02",
+      "net_100_lam500_imp",
+      "Net RAPM, weakest regularisation (most player-specific)."
+    ],
+    [
+      "R03",
+      "net_100_lam1000_imp",
+      "Net RAPM, lambda=1000."
+    ],
+    [
+      "R04",
+      "net_100_lam5000_imp",
+      "Net RAPM, strongest fixed regularisation."
+    ],
+    [
+      "R05",
+      "z_net_100_imp",
+      "Net RAPM at the artifact's own lambda_chosen, z-scored WITHIN emit season (lambda varies 50x across seasons -- see s00)."
+    ],
+    [
+      "R06",
+      "z_orapm_100_imp",
+      "OFFENSIVE RAPM, within-season z."
+    ],
+    [
+      "R07",
+      "z_drapm_100_imp",
+      "DEFENSIVE RAPM, within-season z."
+    ],
+    [
+      "R08",
+      "log_total_poss_imp",
+      "log(1+total possessions) behind the RAPM fit = its reliability."
+    ],
+    [
+      "R09",
+      "has_rapm_f",
+      "Indicator that a RAPM value EXISTS. Its absence is itself information (a true rookie has no prior-season possessions)."
+    ],
+    [
+      "R10",
+      "z_net_x_poss",
+      "z_net_100 x log_total_poss: does RAPM matter more when better estimated?"
+    ]
+  ],
+  "pm_candidates": [
+    [
+      "P01",
+      "pm_ewma5_imp",
+      "EWMA (half-life 5) of the player's own prior SAME-SEASON per-game plus_minus. GAME-level -- can move within season."
+    ],
+    [
+      "P02",
+      "pm_ewma2_imp",
+      "EWMA half-life 2 of prior same-season plus_minus (short memory)."
+    ],
+    [
+      "P03",
+      "pm_run_mean_imp",
+      "Expanding mean of prior same-season plus_minus."
+    ],
+    [
+      "P04",
+      "pm_per36_prior_imp",
+      "sum(prior plus_minus)/sum(prior minutes) x 36, same season."
+    ],
+    [
+      "P05",
+      "pm_prev_season_imp",
+      "The player's PREVIOUS-SEASON mean plus_minus (unadjusted season-level analogue of RAPM)."
+    ]
+  ],
+  "controls": [
+    [
+      "N01",
+      "rapm_negcontrol",
+      "NEGATIVE CONTROL. R01's values relabelled across player-seasons WITHIN emit season, fixed seed 20260808. Must show ~zero."
+    ],
+    [
+      "N02",
+      "rapm_noop_placebo",
+      "NO-OP PLACEBO. R01 multiplied by 1.0 and re-derived through the same code path; VERIFIED to change no value (and therefore to reproduce the real statistic to machine precision)."
+    ],
+    [
+      "N03",
+      "rapm_perturbed_placebo",
+      "PERTURBED PLACEBO. R01 + 1e-6*sd; VERIFIED to actually change every value, so the placebo machinery is live."
+    ]
+  ],
+  "reference_variants": [
+    [
+      "V0",
+      "D094 selected cell, UNCHANGED (shrink target as selected).  THE INCUMBENT."
+    ],
+    [
+      "V1",
+      "shrink target := RAPM-only map g_S(rapm), g fitted on seasons < S."
+    ],
+    [
+      "V2",
+      "shrink target := 0.5*prior_season_mean + 0.5*g_S(rapm)  (fixed weight, no fitting)."
+    ],
+    [
+      "V3",
+      "shrink target := prior_season_mean where it exists, else g_S(rapm)  (coverage fill)."
+    ],
+    [
+      "V4",
+      "shrink target := h_S(prior_season_mean, rapm), h an OLS fitted on seasons < S."
+    ],
+    [
+      "V5",
+      "shrink target := h_S(prior_season_mean) only -- V4 WITHOUT RAPM.  This is the DECOMPOSITION control: it isolates 'refit the map' from 'add RAPM'."
+    ]
+  ],
+  "coldstart_variants": [
+    [
+      "C0",
+      "D092 P5d_blend_k2: lambda(n)*own_running_mean + (1-lambda)*(league+depth+draft), lambda(n)=n/(n+2).  THE INCUMBENT, read from E1_I0020 (READ ONLY, credited)."
+    ],
+    [
+      "C1",
+      "C0 with the structural prior REPLACED by g_S(rapm)."
+    ],
+    [
+      "C2",
+      "C0 with the structural prior AUGMENTED by g_S(rapm) (equal-weight average)."
+    ],
+    [
+      "C3",
+      "C0's structural prior + a RAPM term fitted walk-forward on seasons < S."
+    ],
+    [
+      "C4",
+      "structural prior = g_S(rapm) ONLY, no depth, no draft.  Isolates RAPM's own content."
+    ]
+  ],
+  "base_cols": {
+    "pts": [
+      "est_pts",
+      "ref_pts",
+      "pl_pts_mean5",
+      "pl_pts_sd5",
+      "prevseason_pts",
+      "lgexp_pts",
+      "role_pts",
+      "pl_games_prior",
+      "pl_minutes_prior",
+      "pl_career_games_prior",
+      "pl_prior_season_games"
+    ],
+    "minutes": [
+      "est_minutes",
+      "ref_minutes",
+      "pl_min_mean5",
+      "pl_min_sd5",
+      "prevseason_minutes",
+      "lgexp_minutes",
+      "role_minutes",
+      "pl_games_prior",
+      "pl_minutes_prior",
+      "pl_career_games_prior",
+      "pl_prior_season_games"
+    ],
+    "fga": [
+      "est_fga",
+      "ref_fga",
+      "pl_fga_mean5",
+      "pl_fga_sd5",
+      "prevseason_fga",
+      "lgexp_fga",
+      "role_fga",
+      "pl_games_prior",
+      "pl_minutes_prior",
+      "pl_career_games_prior",
+      "pl_prior_season_games"
+    ],
+    "ppm": [
+      "est_ppm",
+      "ref_ppm",
+      "refA_ppm",
+      "prevseason_ppm",
+      "lgexp_ppm",
+      "role_ppm",
+      "pl_games_prior",
+      "pl_minutes_prior",
+      "pl_career_games_prior",
+      "pl_prior_season_games"
+    ]
+  },
+  "d094_selected_cells": {
+    "pts": {
+      "A": {
+        "target": "pts",
+        "mode": "composite",
+        "memory_kind": "ewma",
+        "memory_param": 5.0,
+        "shrink_target": "league",
+        "shrink_k": 0.5,
+        "floor": 0.0
+      },
+      "B": {
+        "target": "pts",
+        "mode": "composite",
+        "memory_kind": "ewma",
+        "memory_param": 8.0,
+        "shrink_target": "prior_season",
+        "shrink_k": 0.5,
+        "floor": 0.0
+      }
+    },
+    "minutes": {
+      "A": {
+        "target": "minutes",
+        "mode": "equal",
+        "memory_kind": "ewma",
+        "memory_param": 2.0,
+        "shrink_target": "none",
+        "shrink_k": 0.0,
+        "floor": 0.0
+      },
+      "B": {
+        "target": "minutes",
+        "mode": "equal",
+        "memory_kind": "ewma",
+        "memory_param": 2.0,
+        "shrink_target": "none",
+        "shrink_k": 0.0,
+        "floor": 0.0
+      }
+    },
+    "fga": {
+      "A": {
+        "target": "fga",
+        "mode": "equal",
+        "memory_kind": "ewma",
+        "memory_param": 3.0,
+        "shrink_target": "none",
+        "shrink_k": 0.0,
+        "floor": 0.0
+      },
+      "B": {
+        "target": "fga",
+        "mode": "equal",
+        "memory_kind": "ewma",
+        "memory_param": 5.0,
+        "shrink_target": "prior_season",
+        "shrink_k": 0.5,
+        "floor": 0.0
+      }
+    },
+    "ppm": {
+      "A": {
+        "target": "ppm",
+        "mode": "mean_of_prior_ratios",
+        "memory_kind": "expanding",
+        "memory_param": 0.0,
+        "shrink_target": "league",
+        "shrink_k": 2.0,
+        "floor": 0.0
+      },
+      "B": {
+        "target": "ppm",
+        "mode": "mean_of_prior_ratios",
+        "memory_kind": "ewma",
+        "memory_param": 40.0,
+        "shrink_target": "prior_season",
+        "shrink_k": 2.0,
+        "floor": 0.0
+      }
+    }
+  },
+  "d094_reproduction": [
+    {
+      "target": "pts",
+      "mae_wf_rebuilt": 4.147585220885528,
+      "mae_wf_D094_stored": 4.147585220885528,
+      "abs_diff": 0.0,
+      "cellA": "pts composite ewma 5.0 league 0.5 0.0",
+      "cellB": "pts composite ewma 8.0 prior_season 0.5 0.0"
+    },
+    {
+      "target": "minutes",
+      "mae_wf_rebuilt": 4.884528084606726,
+      "mae_wf_D094_stored": 4.884528084606725,
+      "abs_diff": 8.881784197001252e-16,
+      "cellA": "minutes equal ewma 2.0 none 0.0 0.0",
+      "cellB": "minutes equal ewma 2.0 none 0.0 0.0"
+    },
+    {
+      "target": "fga",
+      "mae_wf_rebuilt": 2.558836001322271,
+      "mae_wf_D094_stored": 2.558836001322271,
+      "abs_diff": 0.0,
+      "cellA": "fga equal ewma 3.0 none 0.0 0.0",
+      "cellB": "fga equal ewma 5.0 prior_season 0.5 0.0"
+    },
+    {
+      "target": "ppm",
+      "mae_wf_rebuilt": 0.18029301753872462,
+      "mae_wf_D094_stored": 0.18029301753872462,
+      "abs_diff": 0.0,
+      "cellA": "ppm mean_of_prior_ratios expanding 0.0 league 2.0 0.0",
+      "cellB": "ppm mean_of_prior_ratios ewma 40.0 prior_season 2.0 0.0"
+    }
+  ],
+  "strata": {
+    "wf_eval": 9517,
+    "decision_stratum_wf": 3549,
+    "data_poor": 999,
+    "data_poor_wf": 657
+  },
+  "rapm_row_coverage": 0.8204481590892716
+}

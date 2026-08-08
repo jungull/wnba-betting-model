@@ -1,0 +1,189 @@
+﻿
+====================================================================================================
+STEP 02 -- PREREGISTERED DEGENERACY SWEEP
+====================================================================================================
+  prereg sha256 verified: 895bac8bc2255c9d660ac956873884eefbc95ddab6128fd80cbf90b8cbc6dac0
+  partition[s02 input]: season-valued=['season']  date=['game_date']  anchors=['season', 'game_date']
+  work frame (157704, 79)
+  thresholds (verbatim from _prereg.json): {"D1_min_rows": 100, "D1_max_distinct": 5, "D1_sd_ratio": 0.05, "D2_min_rows": 50, "D2_share": 0.01, "D3_min_cluster": 50, "D3_min_players": 2, "D4_min_rows": 100, "D4_max_distinct_sd": 2, "D4_corr": 0.05, "D5_min_rows": 50, "D5_modal_share": 0.01, "D6_min_rows": 100, "D6_coverage_tol": 0.1}
+
+====================================================================================================
+2a. D081 ANCHOR CROSS-CHECK -- score against D081's OWN stored reference column
+====================================================================================================
+    cbs_v15_player_oof_v5    player_scoring_distribution    n=13879  vs D081 ref=-0.2222%  vs rebuilt ref=-2.0749%
+    cbs_v15_player_oof_v5    e_minutes_given_active         n=13879  vs D081 ref=+3.5549%  vs rebuilt ref=+1.4383%
+    cbs_v15_player_oof_v5    attempts_usage                 n=13879  vs D081 ref=+0.1152%  vs rebuilt ref=-2.0879%
+    cbs_v14_player_oof       player_scoring_distribution    n=13879  vs D081 ref=-1.8261%  vs rebuilt ref=-2.0990%
+    cbs_v14_player_oof       e_minutes_given_active         n=13879  vs D081 ref=+1.0469%  vs rebuilt ref=+0.8279%
+    cbs_v14_player_oof       attempts_usage                 n=13879  vs D081 ref=-1.7341%  vs rebuilt ref=-2.1334%
+
+  D081 published pooled POINTS skill = -0.22%. The v15/points row above is the
+  direct comparison. The rebuilt reference is HARDER (lower MAE), so it scores the
+  champion lower; both are reported and the routing gains below are computed
+  against BOTH denominators so no gain rests on a reference choice.
+
+====================================================================================================
+2b. sweep
+====================================================================================================
+    swept cbs_v15_player_oof_v5    player_scoring_distribution    cells so far: 231
+    swept cbs_v15_player_oof_v5    e_minutes_given_active         cells so far: 462
+    swept cbs_v15_player_oof_v5    attempts_usage                 cells so far: 693
+    swept cbs_v15_player_oof_v5    p_active                       cells so far: 924
+    swept cbs_v14_player_oof       player_scoring_distribution    cells so far: 1096
+    swept cbs_v14_player_oof       e_minutes_given_active         cells so far: 1268
+    swept cbs_v14_player_oof       attempts_usage                 cells so far: 1440
+    swept cbs_v14_player_oof       p_active                       cells so far: 1612
+
+  wrote region_table.csv  (1612, 42)
+
+====================================================================================================
+2c. flag counts by defect family (ALL-season cells only, to avoid triple counting)
+====================================================================================================
+    D1_flag   flagged  104 of  404 cells
+    D2_flag   flagged  121 of  404 cells
+    D3_flag   flagged  312 of  404 cells
+    D4_flag   flagged  333 of  404 cells
+    D5_flag   flagged  331 of  404 cells
+    D6_flag   flagged  126 of  404 cells
+
+====================================================================================================
+2d. target-level defect summary (P01_global, season=ALL)
+====================================================================================================
+                  arm                      target  n_rows  n_scoreable  n_distinct_pred  sd_pred  sd_truth  sd_ratio  top1_share  top1_value  n_distinct_pred_sd  sd_null_share  corr_sd_absresid  q_cross_rows  point_outside_interval_rows    cov90    cov50  dup_cluster_size  dup_cluster_players
+cbs_v15_player_oof_v5 player_scoring_distribution   21617        14262            12553 5.201092  7.567555  0.687288    0.101911    8.722117                   3            0.0         -0.008851             0                            0 0.876665 0.472725              2203                  275
+cbs_v15_player_oof_v5      e_minutes_given_active   21617        14262            12616 8.537707 10.756110  0.793754    0.101911   21.517524                   3            0.0         -0.006414             0                            0 0.867410 0.496494              2203                  275
+cbs_v15_player_oof_v5              attempts_usage   21617        14262            12609 3.940752  5.364008  0.734666    0.101911    7.279573                   3            0.0          0.000165             0                            0 0.865517 0.482261              2203                  275
+cbs_v15_player_oof_v5                    p_active   21617        18192            17706 0.291575  0.411546  0.708487    0.104917    0.800000                   0            1.0               NaN             0                            0      NaN      NaN              2268                  275
+   cbs_v14_player_oof player_scoring_distribution   17809        13879            12194 5.582797  7.580032  0.736514    0.048683    8.690909                   3            0.0         -0.012232             0                            0 0.875423 0.470783               867                  164
+   cbs_v14_player_oof      e_minutes_given_active   17809        13879            12257 9.161418 10.762944  0.851200    0.048683   21.612421                   3            0.0         -0.007958             0                            0 0.865408 0.494128               867                  164
+   cbs_v14_player_oof              attempts_usage   17809        13879            12249 4.212600  5.359607  0.785991    0.048683    7.315041                   3            0.0         -0.003477             0                            0 0.867065 0.482023               867                  164
+   cbs_v14_player_oof                    p_active   17809        17809            16138 0.272238  0.414713  0.656449    0.082318    0.800000                   0            1.0               NaN             0                            0      NaN      NaN              1466                  239
+
+====================================================================================================
+2e. every D1-flagged cell, season=ALL, ranked by row count
+====================================================================================================
+                  arm                      target                        partition                                    cell  n_rows  n_distinct_pred      sd_pred  sd_truth     sd_ratio  top1_share
+cbs_v15_player_oof_v5 player_scoring_distribution                  P02_is_fallback                                    True    5378                3 1.381975e-02  7.192645 1.921373e-03    0.409632
+cbs_v15_player_oof_v5 player_scoring_distribution                 P04_component_id player_scoring_distribution/prefix_mean    5378                3 1.381975e-02  7.192645 1.921373e-03    0.409632
+cbs_v15_player_oof_v5      e_minutes_given_active                 P04_component_id      e_minutes_given_active/prefix_mean    5378                3 8.777345e-02 10.909187 8.045828e-03    0.409632
+cbs_v15_player_oof_v5      e_minutes_given_active                  P02_is_fallback                                    True    5378                3 8.777345e-02 10.909187 8.045828e-03    0.409632
+cbs_v15_player_oof_v5              attempts_usage                  P02_is_fallback                                    True    5378                3 3.599911e-02  5.324140 6.761489e-03    0.409632
+cbs_v15_player_oof_v5              attempts_usage                 P04_component_id              attempts_usage/prefix_mean    5378                3 3.599911e-02  5.324140 6.761489e-03    0.409632
+cbs_v15_player_oof_v5 player_scoring_distribution               P03_fallback_level                                       3    3563                3 1.400532e-02  6.773156 2.067768e-03    0.422678
+cbs_v15_player_oof_v5 player_scoring_distribution                P05_is_cold_start                                    True    3563                3 1.400532e-02  6.773156 2.067768e-03    0.422678
+cbs_v15_player_oof_v5              attempts_usage                P05_is_cold_start                                    True    3563                3 3.510557e-02  5.336752 6.578078e-03    0.422678
+cbs_v15_player_oof_v5              attempts_usage               P03_fallback_level                                       3    3563                3 3.510557e-02  5.336752 6.578078e-03    0.422678
+cbs_v15_player_oof_v5              attempts_usage      P07_n_prior_appearances_bin                                       0    3563                3 3.510557e-02  5.336752 6.578078e-03    0.422678
+cbs_v15_player_oof_v5 player_scoring_distribution            P06_n_prior_games_bin                                       0    3563                3 1.400532e-02  6.773156 2.067768e-03    0.422678
+cbs_v15_player_oof_v5      e_minutes_given_active            P06_n_prior_games_bin                                       0    3563                3 8.575783e-02 10.483084 8.180592e-03    0.422678
+cbs_v15_player_oof_v5      e_minutes_given_active                P05_is_cold_start                                    True    3563                3 8.575783e-02 10.483084 8.180592e-03    0.422678
+cbs_v15_player_oof_v5      e_minutes_given_active               P03_fallback_level                                       3    3563                3 8.575783e-02 10.483084 8.180592e-03    0.422678
+cbs_v15_player_oof_v5 player_scoring_distribution      P07_n_prior_appearances_bin                                       0    3563                3 1.400532e-02  6.773156 2.067768e-03    0.422678
+cbs_v15_player_oof_v5      e_minutes_given_active      P07_n_prior_appearances_bin                                       0    3563                3 8.575783e-02 10.483084 8.180592e-03    0.422678
+cbs_v15_player_oof_v5              attempts_usage            P06_n_prior_games_bin                                       0    3563                3 3.510557e-02  5.336752 6.578078e-03    0.422678
+   cbs_v14_player_oof              attempts_usage                 P04_component_id              attempts_usage/prefix_mean    2459                3 3.701031e-02  5.225308 7.082895e-03    0.352582
+   cbs_v14_player_oof              attempts_usage                  P02_is_fallback                                    True    2459                3 3.701031e-02  5.225308 7.082895e-03    0.352582
+   cbs_v14_player_oof player_scoring_distribution                 P04_component_id player_scoring_distribution/prefix_mean    2459                3 1.294423e-02  7.239081 1.788105e-03    0.352582
+   cbs_v14_player_oof      e_minutes_given_active                 P04_component_id      e_minutes_given_active/prefix_mean    2459                3 8.959068e-02 11.092562 8.076644e-03    0.352582
+   cbs_v14_player_oof      e_minutes_given_active                  P02_is_fallback                                    True    2459                3 8.959068e-02 11.092562 8.076644e-03    0.352582
+   cbs_v14_player_oof player_scoring_distribution                  P02_is_fallback                                    True    2459                3 1.294423e-02  7.239081 1.788105e-03    0.352582
+cbs_v15_player_oof_v5                    p_active                  P02_is_fallback                                    True    2268                1 2.220936e-16  0.319652 6.947986e-16    1.000000
+cbs_v15_player_oof_v5                    p_active                 P04_component_id              p_active/declared_constant    2268                1 2.220936e-16  0.319652 6.947986e-16    1.000000
+cbs_v15_player_oof_v5 player_scoring_distribution               P03_fallback_level                                       2    1815                3 1.344525e-02  7.394382 1.818306e-03    0.384022
+cbs_v15_player_oof_v5              attempts_usage               P03_fallback_level                                       2    1815                3 3.744676e-02  5.319410 7.039647e-03    0.384022
+cbs_v15_player_oof_v5      e_minutes_given_active               P03_fallback_level                                       2    1815                3 9.103104e-02 11.112057 8.192096e-03    0.384022
+   cbs_v14_player_oof                    p_active                 P04_component_id              p_active/declared_constant    1466                1 1.110602e-16  0.402068 2.762223e-16    1.000000
+   cbs_v14_player_oof                    p_active                  P02_is_fallback                                    True    1466                1 1.110602e-16  0.402068 2.762223e-16    1.000000
+   cbs_v14_player_oof      e_minutes_given_active               P03_fallback_level                                       2    1409                3 9.269019e-02 11.196409 8.278565e-03    0.362669
+   cbs_v14_player_oof              attempts_usage               P03_fallback_level                                       2    1409                3 3.827553e-02  5.229344 7.319374e-03    0.362669
+   cbs_v14_player_oof player_scoring_distribution               P03_fallback_level                                       2    1409                3 1.285500e-02  7.259816 1.770707e-03    0.362669
+cbs_v15_player_oof_v5                    p_active               P03_fallback_level                                       2    1332                1 1.110640e-16  0.366777 3.028105e-16    1.000000
+cbs_v15_player_oof_v5              attempts_usage             P13_tip_time_quality                                     nan    1071                3 3.542986e-02  5.608274 6.317427e-03    0.431373
+cbs_v15_player_oof_v5                    p_active             P13_tip_time_quality                                     nan    1071                3 3.866819e-02  0.000000          NaN    0.982260
+cbs_v15_player_oof_v5 player_scoring_distribution             P13_tip_time_quality                                     nan    1071                3 1.398373e-02  7.143608 1.957517e-03    0.431373
+cbs_v15_player_oof_v5      e_minutes_given_active             P13_tip_time_quality                                     nan    1071                3 8.654446e-02 10.170885 8.509038e-03    0.431373
+   cbs_v14_player_oof      e_minutes_given_active                P05_is_cold_start                                    True    1050                3 8.522336e-02 10.877918 7.834529e-03    0.414286
+   cbs_v14_player_oof player_scoring_distribution            P06_n_prior_games_bin                                       0    1050                3 1.298964e-02  7.198450 1.804505e-03    0.414286
+   cbs_v14_player_oof              attempts_usage               P03_fallback_level                                       3    1050                3 3.521559e-02  5.219497 6.746932e-03    0.414286
+   cbs_v14_player_oof      e_minutes_given_active            P06_n_prior_games_bin                                       0    1050                3 8.522336e-02 10.877918 7.834529e-03    0.414286
+   cbs_v14_player_oof player_scoring_distribution      P07_n_prior_appearances_bin                                       0    1050                3 1.298964e-02  7.198450 1.804505e-03    0.414286
+   cbs_v14_player_oof              attempts_usage                P05_is_cold_start                                    True    1050                3 3.521559e-02  5.219497 6.746932e-03    0.414286
+   cbs_v14_player_oof      e_minutes_given_active      P07_n_prior_appearances_bin                                       0    1050                3 8.522336e-02 10.877918 7.834529e-03    0.414286
+   cbs_v14_player_oof              attempts_usage      P07_n_prior_appearances_bin                                       0    1050                3 3.521559e-02  5.219497 6.746932e-03    0.414286
+   cbs_v14_player_oof              attempts_usage            P06_n_prior_games_bin                                       0    1050                3 3.521559e-02  5.219497 6.746932e-03    0.414286
+   cbs_v14_player_oof player_scoring_distribution               P03_fallback_level                                       3    1050                3 1.298964e-02  7.198450 1.804505e-03    0.414286
+   cbs_v14_player_oof player_scoring_distribution                P05_is_cold_start                                    True    1050                3 1.298964e-02  7.198450 1.804505e-03    0.414286
+   cbs_v14_player_oof      e_minutes_given_active               P03_fallback_level                                       3    1050                3 8.522336e-02 10.877918 7.834529e-03    0.414286
+   cbs_v14_player_oof                    p_active               P03_fallback_level                                       2     977                1 1.110792e-16  0.409565 2.712127e-16    1.000000
+cbs_v15_player_oof_v5                    p_active                P05_is_cold_start                                    True     936                1 0.000000e+00  0.164590 0.000000e+00    1.000000
+cbs_v15_player_oof_v5                    p_active               P03_fallback_level                                       3     936                1 0.000000e+00  0.164590 0.000000e+00    1.000000
+cbs_v15_player_oof_v5 player_scoring_distribution            P06_n_prior_games_bin                                       2     924                3 1.328093e-02  7.416043 1.790838e-03    0.373377
+cbs_v15_player_oof_v5      e_minutes_given_active            P06_n_prior_games_bin                                       2     924                3 9.219994e-02 11.049666 8.344138e-03    0.373377
+cbs_v15_player_oof_v5              attempts_usage            P06_n_prior_games_bin                                       2     924                3 3.796700e-02  5.316163 7.141806e-03    0.373377
+cbs_v15_player_oof_v5 player_scoring_distribution      P07_n_prior_appearances_bin                                       2     924                3 1.328093e-02  7.416043 1.790838e-03    0.373377
+cbs_v15_player_oof_v5      e_minutes_given_active      P07_n_prior_appearances_bin                                       2     924                3 9.219994e-02 11.049666 8.344138e-03    0.373377
+cbs_v15_player_oof_v5              attempts_usage      P07_n_prior_appearances_bin                                       2     924                3 3.796700e-02  5.316163 7.141806e-03    0.373377
+cbs_v15_player_oof_v5      e_minutes_given_active            P06_n_prior_games_bin                                       1     891                3 8.970022e-02 11.145346 8.048223e-03    0.395062
+cbs_v15_player_oof_v5              attempts_usage            P06_n_prior_games_bin                                       1     891                3 3.685445e-02  5.316942 6.931512e-03    0.395062
+cbs_v15_player_oof_v5 player_scoring_distribution      P07_n_prior_appearances_bin                                       1     891                3 1.361960e-02  7.361547 1.850100e-03    0.395062
+cbs_v15_player_oof_v5 player_scoring_distribution            P06_n_prior_games_bin                                       1     891                3 1.361960e-02  7.361547 1.850100e-03    0.395062
+cbs_v15_player_oof_v5      e_minutes_given_active      P07_n_prior_appearances_bin                                       1     891                3 8.970022e-02 11.145346 8.048223e-03    0.395062
+cbs_v15_player_oof_v5              attempts_usage      P07_n_prior_appearances_bin                                       1     891                3 3.685445e-02  5.316942 6.931512e-03    0.395062
+   cbs_v14_player_oof              attempts_usage            P06_n_prior_games_bin                                       2     740                3 3.825428e-02  5.105521 7.492729e-03    0.363514
+   cbs_v14_player_oof      e_minutes_given_active            P06_n_prior_games_bin                                       2     740                3 9.262622e-02 11.252876 8.231337e-03    0.363514
+   cbs_v14_player_oof player_scoring_distribution      P07_n_prior_appearances_bin                                       2     740                3 1.284291e-02  7.122363 1.803181e-03    0.363514
+   cbs_v14_player_oof              attempts_usage      P07_n_prior_appearances_bin                                       2     740                3 3.825428e-02  5.105521 7.492729e-03    0.363514
+   cbs_v14_player_oof      e_minutes_given_active      P07_n_prior_appearances_bin                                       2     740                3 9.262622e-02 11.252876 8.231337e-03    0.363514
+   cbs_v14_player_oof player_scoring_distribution            P06_n_prior_games_bin                                       2     740                3 1.284291e-02  7.122363 1.803181e-03    0.363514
+cbs_v15_player_oof_v5                    p_active P14_player_season_game_index_bin                                       1     734                1 1.110980e-16  0.332975 3.336529e-16    1.000000
+cbs_v15_player_oof_v5                    p_active P14_player_season_game_index_bin                                       0     734                1 1.110980e-16  0.176086 6.309303e-16    1.000000
+cbs_v15_player_oof_v5      e_minutes_given_active P14_player_season_game_index_bin                                       0     734                3 8.978217e-02 10.584945 8.482062e-03    0.374659
+cbs_v15_player_oof_v5      e_minutes_given_active P14_player_season_game_index_bin                                       1     734                3 8.978217e-02 10.860450 8.266891e-03    0.374659
+cbs_v15_player_oof_v5 player_scoring_distribution P14_player_season_game_index_bin                                       1     734                3 1.349557e-02  7.176705 1.880468e-03    0.374659
+cbs_v15_player_oof_v5 player_scoring_distribution P14_player_season_game_index_bin                                       0     734                3 1.349557e-02  7.327059 1.841880e-03    0.374659
+cbs_v15_player_oof_v5              attempts_usage P14_player_season_game_index_bin                                       0     734                3 3.693318e-02  5.750350 6.422770e-03    0.374659
+cbs_v15_player_oof_v5              attempts_usage P14_player_season_game_index_bin                                       1     734                3 3.693318e-02  5.562802 6.639312e-03    0.374659
+cbs_v15_player_oof_v5      e_minutes_given_active P14_player_season_game_index_bin                                       2     733                3 8.984346e-02 10.603341 8.473127e-03    0.375171
+cbs_v15_player_oof_v5 player_scoring_distribution P14_player_season_game_index_bin                                       2     733                3 1.349416e-02  8.041957 1.677970e-03    0.375171
+cbs_v15_player_oof_v5              attempts_usage P14_player_season_game_index_bin                                       2     733                3 3.695824e-02  5.720284 6.460910e-03    0.375171
+cbs_v15_player_oof_v5                    p_active P14_player_season_game_index_bin                                       2     733                1 1.110981e-16  0.380899 2.916733e-16    1.000000
+   cbs_v14_player_oof player_scoring_distribution            P06_n_prior_games_bin                                       1     669                3 1.287759e-02  7.392709 1.741932e-03    0.361734
+   cbs_v14_player_oof      e_minutes_given_active            P06_n_prior_games_bin                                       1     669                3 9.282884e-02 11.152400 8.323665e-03    0.361734
+   cbs_v14_player_oof              attempts_usage      P07_n_prior_appearances_bin                                       1     669                3 3.832712e-02  5.340475 7.176724e-03    0.361734
+   cbs_v14_player_oof player_scoring_distribution      P07_n_prior_appearances_bin                                       1     669                3 1.287759e-02  7.392709 1.741932e-03    0.361734
+   cbs_v14_player_oof              attempts_usage            P06_n_prior_games_bin                                       1     669                3 3.832712e-02  5.340475 7.176724e-03    0.361734
+   cbs_v14_player_oof      e_minutes_given_active      P07_n_prior_appearances_bin                                       1     669                3 9.282884e-02 11.152400 8.323665e-03    0.361734
+   cbs_v14_player_oof player_scoring_distribution P14_player_season_game_index_bin                                       0     489                3 1.293973e-02  7.404461 1.747559e-03    0.343558
+   cbs_v14_player_oof                    p_active               P03_fallback_level                                       3     489                1 0.000000e+00  0.386243 0.000000e+00    1.000000
+   cbs_v14_player_oof              attempts_usage P14_player_season_game_index_bin                                       0     489                3 3.751422e-02  5.311405 7.062955e-03    0.343558
+   cbs_v14_player_oof                    p_active                P05_is_cold_start                                    True     489                1 0.000000e+00  0.386243 0.000000e+00    1.000000
+   cbs_v14_player_oof      e_minutes_given_active P14_player_season_game_index_bin                                       0     489                3 9.082986e-02 10.697858 8.490472e-03    0.343558
+   cbs_v14_player_oof                    p_active P14_player_season_game_index_bin                                       0     489                1 0.000000e+00  0.386243 0.000000e+00    1.000000
+   cbs_v14_player_oof              attempts_usage P14_player_season_game_index_bin                                       1     488                3 3.755109e-02  5.343869 7.026948e-03    0.344262
+   cbs_v14_player_oof player_scoring_distribution P14_player_season_game_index_bin                                       1     488                3 1.293895e-02  7.349156 1.760603e-03    0.344262
+   cbs_v14_player_oof                    p_active P14_player_season_game_index_bin                                       1     488                1 1.111362e-16  0.405548 2.740400e-16    1.000000
+   cbs_v14_player_oof      e_minutes_given_active P14_player_season_game_index_bin                                       1     488                3 9.092114e-02 10.858817 8.373025e-03    0.344262
+   cbs_v14_player_oof player_scoring_distribution P14_player_season_game_index_bin                                       2     487                3 1.292679e-02  7.251546 1.782626e-03    0.344969
+   cbs_v14_player_oof      e_minutes_given_active P14_player_season_game_index_bin                                       2     487                3 9.088249e-02 10.989764 8.269740e-03    0.344969
+   cbs_v14_player_oof              attempts_usage P14_player_season_game_index_bin                                       2     487                3 3.753854e-02  5.120427 7.331134e-03    0.344969
+   cbs_v14_player_oof                    p_active P14_player_season_game_index_bin                                       2     487                1 0.000000e+00  0.413079 0.000000e+00    1.000000
+
+====================================================================================================
+2f. D6 -- quantile crossings and point-outside-interval, anywhere
+====================================================================================================
+    NONE. No quantile crossing and no point outside its own [q05,q95] anywhere
+    in 2022-2024, on either arm, on any target that emits quantiles.
+
+====================================================================================================
+2g. D6 -- interval coverage against realised outcomes (P01_global)
+====================================================================================================
+                  arm                      target    cov90    cov50  n_scoreable
+cbs_v15_player_oof_v5 player_scoring_distribution 0.876665 0.472725        14262
+cbs_v15_player_oof_v5      e_minutes_given_active 0.867410 0.496494        14262
+cbs_v15_player_oof_v5              attempts_usage 0.865517 0.482261        14262
+cbs_v15_player_oof_v5                    p_active      NaN      NaN        18192
+   cbs_v14_player_oof player_scoring_distribution 0.875423 0.470783        13879
+   cbs_v14_player_oof      e_minutes_given_active 0.865408 0.494128        13879
+   cbs_v14_player_oof              attempts_usage 0.867065 0.482023        13879
+   cbs_v14_player_oof                    p_active      NaN      NaN        17809
+  wrote C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0028_degeneracy_sweep\_s02.json

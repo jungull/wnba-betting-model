@@ -1,0 +1,623 @@
+
+
+####################################################################################################
+### run_log_s00.txt
+####################################################################################################
+﻿
+====================================================================================================
+S00 PREREGISTRATION
+====================================================================================================
+  wrote C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E1_I0030_home_advantage_accounting\CANDIDATES_PRESELECTED.md
+  SHA256 = d513e27ade1afa01c4c1e9fc16ed33d773c648ebd41785c6b6fae2f63bc81f7d
+  family size = 38
+  PREREGISTERED DIRECTION: eastbound (tz_delta >= +1) HURTS the travelling team (negative on points and on points per possession).
+
+
+####################################################################################################
+### run_log_s01.txt
+####################################################################################################
+﻿
+====================================================================================================
+S01 GUARDS AND BUILD
+====================================================================================================
+  prereg hash verified: d513e27ade1afa01c4c1e9fc16ed33d773c648ebd41785c6b6fae2f63bc81f7d
+
+====================================================================================================
+1. MANIFEST CHECK -- read from bytes this session
+====================================================================================================
+  check_manifest master_team.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest possessions.parquet -> UNVERIFIABLE (no manifest)
+  check_manifest decomp_frame.parquet -> UNVERIFIABLE (no manifest)
+
+====================================================================================================
+2. LOAD AND PARTITION ASSERT (value-based, after every filter)
+====================================================================================================
+  team frame (1940, 68)  games=970  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  player frame (21462, 81)  appeared=18212  dnp=3250
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  venue table: 15 teams, offsets [-7, -5, -4]
+  venue rows retained (teams present in the 2021-2024 partition): 12 of 15
+
+====================================================================================================
+2b. STRUCTURAL ASSERTS -- the design, verified rather than assumed
+====================================================================================================
+  every game has exactly 2 team rows and exactly 1 home team: OK (970 games)
+  SUM OF PLAYER POINTS == TEAM POINTS on every team-game: max |diff| = 0
+  sum of player minutes vs team minutes: max |diff| = 0.066667 (rounding in the mm:ss source)
+  team minutes IDENTICAL for both teams in 970 of 970 games (100.00%)
+  distinct team-minute totals observed: [200.0, 225.0, 250.0]
+
+====================================================================================================
+3. GROUPING-LEVEL DETECTION for is_home -- BEFORE choosing a null
+====================================================================================================
+  detect_grouping_level(is_home): n_rows=1940  dtype=int64  distinct values overall=2
+    level            n_groups   distinct    constant? row==?     acf1 max within-group distinct
+    game                  970          2           no     no   -0.500 2
+    season                  4          2           no     no   +0.070 2
+    team                   12          2           no     no   +0.067 2
+    team_season            48          2           no     no   +0.065 2
+    team_game            1940          2          YES    YES      n/a 1
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'is_home': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+  status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+  recommended_permutation_level = None
+  -> NO coarser constant level exists.  A row-level permutation is anticonservative,
+     AND it does not even respect the design (it produces games with two home teams).
+     The exact test for this design is the PER-GAME SIGN FLIP on the paired difference,
+     implemented in ha_base.paired_game_signflip.  That is what carries every verdict.
+
+====================================================================================================
+4. TRAVEL COLUMNS -- strictly prior schedule only
+====================================================================================================
+  strictly-prior check on prev_game_date: OK on 1892 of 1940 team-games
+  travel arm counts (team-games with a previous game): {'eastbound': 365, 'westbound': 359, 'same_zone_travel': 554, 'no_travel': 614}
+  tz_delta distribution: {-3.0: 94, -2.0: 101, -1.0: 164, 0.0: 1168, 1.0: 166, 2.0: 106, 3.0: 93}
+
+====================================================================================================
+6. PARTITION ASSERT AFTER CONSTRUCTION (values again, on the built frames)
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    date   col prev_game_date           YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'prev_game_date', 'season']
+    -> PASS
+
+  wrote _team_frame.parquet (1940, 89) and _player_frame.parquet (21462, 86)
+  wrote _s01.json
+
+
+####################################################################################################
+### run_log_s02.txt
+####################################################################################################
+﻿
+====================================================================================================
+S02 TEAM EFFECT AND DECOMPOSITION
+====================================================================================================
+  prereg hash verified: d513e27ade1afa01c4c1e9fc16ed33d773c648ebd41785c6b6fae2f63bc81f7d
+  paired game frame: (970, 79)  (970 games)
+
+====================================================================================================
+STEP 1 -- THE TEAM-LEVEL HOME EFFECT, 2021-2024
+====================================================================================================
+  candidate  n_games  home_mean  away_mean     diff  null_sd  t_signflip  p_pergame_signflip  p_familywise_max_t
+        fta      970   18.43814   17.25464  1.18351  0.25289     4.67996             0.00005             0.00005
+        ftm      970   14.74330   13.68969  1.05361  0.22220     4.74172             0.00005             0.00005
+fouls_drawn      970   17.68969   17.05670  0.63299  0.14784     4.28173             0.00005             0.00015
+         pf      970   17.05670   17.69072 -0.63402  0.14792    -4.28630             0.00005             0.00015
+        pts      970   82.54433   81.18041  1.36392  0.44114     3.09182             0.00160             0.02905
+pts_per_min      970    0.41000    0.40317  0.00684  0.00220     3.10268             0.00160             0.02835
+        ppp      970    1.00468    0.98897  0.01571  0.00559     2.81063             0.00475             0.06945
+        tov      970   13.89175   14.35979 -0.46804  0.16628    -2.81478             0.00495             0.06885
+     ts_pct      970    0.54087    0.53605  0.00482  0.00309     1.56100             0.11779             0.75671
+        ast      970   20.07732   19.78351  0.29381  0.19327     1.52027             0.13184             0.78396
+     ft_pct      969    0.79953    0.79305  0.00643  0.00495     1.29905             0.19279             0.90070
+       poss      970   82.24887   82.13122  0.11765  0.09268     1.26939             0.20604             0.91285
+    fg3_pct      970    0.34476    0.33988  0.00489  0.00454     1.07714             0.27844             0.96915
+       fg3m      970    7.68351    7.58144  0.10206  0.13208     0.77271             0.44558             0.99725
+    efg_pct      970    0.49716    0.49536  0.00179  0.00328     0.54747             0.58347             0.99980
+        fgm      970   30.05876   29.95464  0.10412  0.19186     0.54271             0.59057             0.99980
+       fg2a      970   46.20825   46.07113  0.13711  0.32517     0.42167             0.67917             1.00000
+     fg_pct      970    0.44068    0.43955  0.00113  0.00279     0.40362             0.68617             1.00000
+        fga      970   68.37423   68.28557  0.08866  0.25926     0.34197             0.73401             1.00000
+    fg2_pct      970    0.48632    0.48719 -0.00087  0.00361    -0.24055             0.81241             1.00000
+       fg3a      970   22.16598   22.21443 -0.04845  0.24905    -0.19455             0.84511             1.00000
+       dreb      970   26.35567   26.32371  0.03196  0.21060     0.15175             0.88536             1.00000
+       oreb      970    8.12990    8.10619  0.02371  0.15765     0.15040             0.88626             1.00000
+       fg2m      970   22.37526   22.37320  0.00206  0.19918     0.01035             0.99600             1.00000
+    minutes      970  201.36598  201.36598  0.00000  0.00000         NaN             1.00000                 NaN
+
+====================================================================================================
+THE NAIVE ROW-LEVEL NULL -- CONTRAST ONLY, never a verdict
+====================================================================================================
+  pts       sd(correct)=0.43430  sd(row NAIVE)=0.49863  inflation=0.871x   p_correct=0.00250  p_row=0.00500
+  ppp       sd(correct)=0.00554  sd(row NAIVE)=0.00577  inflation=0.960x   p_correct=0.00500  p_row=0.00650
+  poss      sd(correct)=0.09280  sd(row NAIVE)=0.21764  inflation=0.426x   p_correct=0.20890  p_row=0.57221
+  minutes   sd(correct)=0.00000  sd(row NAIVE)=0.27815  inflation=0.000x   p_correct=1.00000  p_row=1.00000
+  NOTE: for THIS design the row-level null is WIDER, not narrower, because pooling the
+  two teams' values across games throws in the whole between-game variation that the
+  pairing removes.  The naive null is therefore CONSERVATIVE here rather than
+  anticonservative -- the opposite of the usual direction in this programme, and worth
+  saying plainly: a screen that used it would have UNDERSTATED the home effect, not
+  overstated it.
+
+====================================================================================================
+STEP 2 -- DECOMPOSING THE TEAM EFFECT.  Which component carries it?
+====================================================================================================
+
+  ---- stratum: ALL_2021_2024 (n=970 games) ----
+  pts = poss x ppp                   total=+1.3639 = volume +0.1252 (PACE (possessions)) + rate +1.2387 (EFFICIENCY (pts per poss))   residual=1.42e-14
+  pts = teamminutes x pts/min        total=+1.3639 = volume +0.0000 (MINUTES BUDGET) + rate +1.3639 (SCORING RATE per team minute)   residual=1.42e-14
+  fgm = fga x fg%                    total=+0.1041 = volume +0.0389 (shot volume) + rate +0.0652 (shot accuracy)   residual=6.88e-15
+  fg2m = fg2a x fg2%                 total=+0.0021 = volume +0.0898 (2pt volume) + rate -0.0877 (2pt accuracy)   residual=4.55e-15
+  fg3m = fg3a x fg3%                 total=+0.1021 = volume -0.0112 (3pt volume) + rate +0.1133 (3pt accuracy)   residual=2.22e-15
+  ftm = fta x ft%                    total=+1.0382 = volume +0.9400 (FT volume) + rate +0.0982 (FT accuracy)   residual=4.44e-15
+  EXACT POINTS IDENTITY on the home-minus-away gap (ALL_2021_2024):
+      2pt_makes_x2           +0.00412
+      3pt_makes_x3           +0.30619
+      ft_makes_x1            +1.05361
+      SUM                    +1.36392
+      observed_pts_gap       +1.36392
+      residual               +0.00000
+      ft_share_of_gap        +0.77249
+      identity_maxabs        +0.00000
+
+  ---- stratum: REGULAR_SEASON (n=888 games) ----
+  pts = poss x ppp                   total=+0.9651 = volume +0.1419 (PACE (possessions)) + rate +0.8232 (EFFICIENCY (pts per poss))   residual=1.42e-14
+  pts = teamminutes x pts/min        total=+0.9651 = volume +0.0000 (MINUTES BUDGET) + rate +0.9651 (SCORING RATE per team minute)   residual=1.42e-14
+  fgm = fga x fg%                    total=-0.0214 = volume +0.0388 (shot volume) + rate -0.0602 (shot accuracy)   residual=6.88e-15
+  fg2m = fg2a x fg2%                 total=-0.0878 = volume +0.0768 (2pt volume) + rate -0.1646 (2pt accuracy)   residual=4.55e-15
+  fg3m = fg3a x fg3%                 total=+0.0664 = volume +0.0085 (3pt volume) + rate +0.0579 (3pt accuracy)   residual=2.22e-15
+  ftm = fta x ft%                    total=+0.9245 = volume +0.8597 (FT volume) + rate +0.0648 (FT accuracy)   residual=4.44e-15
+  EXACT POINTS IDENTITY on the home-minus-away gap (REGULAR_SEASON):
+      2pt_makes_x2           -0.17568
+      3pt_makes_x3           +0.19932
+      ft_makes_x1            +0.94144
+      SUM                    +0.96509
+      observed_pts_gap       +0.96509
+      residual               +0.00000
+      ft_share_of_gap        +0.97550
+      identity_maxabs        +0.00000
+
+====================================================================================================
+THE TWO STRUCTURAL FACTS, MEASURED
+====================================================================================================
+  F1  team minutes identical home vs away in 970 of 970 games (100.00%); mean gap = 0
+      => the home effect CANNOT be 'the home team plays more minutes'.  It is not that
+         this is small; it is that the quantity is IDENTICAL BY CONSTRUCTION.
+  F2  box-estimated possessions gap = +0.1176 (sd of the gap 2.873).  Real possessions are
+      equal between the two teams to within one; the residual gap here is the
+      estimator's own asymmetry (0.44*FTA and the OREB term), not extra pace.
+      Pace is a GAME property: corr(home poss, away poss) = 0.8161
+
+====================================================================================================
+NEGATIVE CONTROLS AND PLACEBO
+====================================================================================================
+  NC1 randomly relabelled home team, pts gap = -0.0113  p=0.9816  (must be null)
+  NC2 'larger team_id' contrast on pts = -0.7804  p=0.0731  (must be null)
+  NC2b 'larger team_id' contrast on ftm = -0.5856  p=0.0086  (must be null)
+  *** NC2 ALSO FAILS, AND THE REASON IS DIAGNOSTIC RATHER THAN FATAL. ***
+      team_id is not a meaningless label: it orders the franchises, and franchise
+      identity encodes team STRENGTH.  Low ids in this partition are NYL/PHO/LVA/LAS,
+      high ids are SEA/CHI/ATL, and those groups are not equally good.  Any FIXED
+      team-level label therefore picks up a quality contrast and cannot be a null.
+      This is exactly the confound that home/away does NOT have, and the reason is
+      measurable: every team plays BOTH roles, so team strength cancels inside the
+      home-minus-away contrast.  That balance is checked next rather than asserted.
+
+  HOME/AWAY BALANCE BY TEAM (2021-2024 pooled):
+                     n   h  home_frac
+team_abbreviation                    
+ATL                152  74   0.486842
+CHI                168  84   0.500000
+CON                178  90   0.505618
+DAL                157  78   0.496815
+IND                150  74   0.493333
+LAS                148  74   0.500000
+LVA                178  93   0.522472
+MIN                164  83   0.506098
+NYL                173  88   0.508671
+PHO                163  79   0.484663
+SEA                157  79   0.503185
+WAS                152  74   0.486842
+  max |home_frac - 0.5| over (season, team) cells = 0.0306
+  noop_placebo: real=1.363917526  sd=2.220e-16  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=2.220e-16 < tol=1e-15, real reproduced). YOU STILL NEED A CONTROL THAT CAN FAIL: permute the ASSIGNMENT of already-computed values with screenkit.permutation_null (scheme=SCHEME_WITHIN_CYCLIC if the feature is autocorrelated), or -- if the statistic is a function of PER-ENTITY fits, where relabelling the entity key is a bijection on whole groups and therefore always a no-op -- use screenkit.per_entity_control, which runs the vacuous arm and a genuine arm side by side.
+  NC3 identity placebo: is_noop=True observed sd=2.22e-16 n_distinct=1
+  ... and the control that MUST perturb (the per-game sign flip itself): null sd on
+      the pts gap = 0.44114 over 20000 draws, 1226 distinct draw values -- it is not the
+      identity, so the verdict-carrying control is demonstrably non-vacuous.
+
+  wrote team_effect.csv, decomposition.csv, permutation_draws_team.csv, _s02.json
+
+
+####################################################################################################
+### run_log_s03.txt
+####################################################################################################
+﻿
+====================================================================================================
+S03 PLAYER-LEVEL RECONCILIATION
+====================================================================================================
+  regular-season partition: 888 games, 1776 team-games, 19642 player-rows
+
+====================================================================================================
+A. THE RECONCILIATION -- both sides and the residual
+====================================================================================================
+  N_home team-games = 888   N_away team-games = 888
+  TEAM SIDE:  mean home pts = 82.36712   mean away pts = 81.40203   G = +0.965090
+  PLAYER SIDE: sum_i f_i^H*pbar_i^H = 82.36712   sum_i f_i^A*pbar_i^A = 81.40203
+  RECONSTRUCTION ERROR vs the team means: home 0.000e+00  away 0.000e+00
+
+  *** THE RECONCILIATION ***
+    team-level home effect G                     = +0.965090 pts / game
+    (1) WITHIN-PLAYER  sum fbar_i*(pbar^H-pbar^A) = +1.314419   (136.2% of G)
+    (2) COMPOSITION    sum pbar_bar*(f^H-f^A)     = -0.349329   (-36.2% of G)
+    (1)+(2)                                      = +0.965090
+    RESIDUAL (must be ~0 by construction)        = -4.245e-16
+    |(1)+(2) - G|                                = 4.219e-15
+
+====================================================================================================
+B. SPLITTING THE WITHIN-PLAYER TERM: minutes vs points-per-minute
+====================================================================================================
+    WITHIN-PLAYER total                     = +1.314419
+      via MINUTES PER APPEARANCE            = +0.241000  (18.3% of the within term)
+      via POINTS PER MINUTE                 = +1.073419  (81.7% of the within term)
+      residual                              = -8.882e-16
+
+====================================================================================================
+C. THE SAME RECONCILIATION ON FREE THROWS MADE (the channel s02 located)
+====================================================================================================
+    team-level FT-makes home effect          = +0.941441
+      within-player                          = +0.987779  (104.9%)
+      composition                            = -0.046338  (-4.9%)
+    team-level FT-ATTEMPTS home effect       = +1.086712
+      within-player                          = +1.154547  (106.2%)
+      composition                            = -0.067835  (-6.2%)
+
+====================================================================================================
+A2. NULL FOR THE DECOMPOSITION TERMS (whole decomposition recomputed per draw)
+====================================================================================================
+  G                real=+0.96509  null sd=0.45205  t=+2.13  p=0.0345
+  within_player    real=+1.31442  null sd=0.59958  t=+2.19  p=0.0275
+  composition      real=-0.34933  null sd=0.57848  t=-0.60  p=0.5449
+  -> the sign-flip preserves N_H=N_A=888 exactly, so the composition term is being
+     tested against its own honest null and not against zero.
+
+====================================================================================================
+D. PLAYER-LEVEL HOME/AWAY CONTRASTS, per-game paired, correct-level null
+====================================================================================================
+           candidate  n_games  home_mean  away_mean     diff  null_sd        t  p_pergame_signflip
+              pts_eq      888    8.85412    8.75418  0.09993  0.06133  1.62933             0.10279
+              min_eq      888   21.63505   21.64170 -0.00665  0.09958 -0.06675             0.94665
+              ppm_eq      888    0.36687    0.35952  0.00735  0.00323  2.27420             0.02270
+              ppm_mw      888    0.40929    0.40446  0.00483  0.00227  2.12834             0.03410
+              fga_eq      888    7.33975    7.33231  0.00743  0.04340  0.17121             0.86396
+      fga_per_min_mw      888    0.33937    0.33887  0.00051  0.00135  0.37460             0.70746
+            fgapm_eq      888    0.31885    0.31761  0.00124  0.00216  0.57403             0.56257
+              fta_eq      888    1.99804    1.88197  0.11607  0.03124  3.71529             0.00015
+      fta_per_min_mw      888    0.09229    0.08687  0.00541  0.00132  4.10029             0.00005
+            ftapm_eq      888    0.08588    0.07801  0.00787  0.00310  2.53628             0.00050
+             fg3a_eq      888    2.38026    2.38593 -0.00567  0.03078 -0.18430             0.85511
+             efg_pct      888    0.49581    0.49621 -0.00041  0.00343 -0.11896             0.90310
+              ts_pct      888    0.53982    0.53740  0.00242  0.00322  0.75152             0.45368
+              n_used      888    9.41329    9.41216  0.00113  0.04182  0.02693             1.00000
+         hhi_minutes      888    0.13158    0.13161 -0.00004  0.00054 -0.07284             0.93925
+starter_minute_share      888    0.71301    0.71292  0.00010  0.00344  0.02838             0.97765
+
+====================================================================================================
+E. WHERE INSIDE THE PLAYER LEVEL DOES IT SIT?  (the leak hunt)
+====================================================================================================
+  concentration of the within-player term:
+    top   1 players of 265 contribute +0.2514 of +1.3144 (19%)
+    top   5 players of 265 contribute +0.9705 of +1.3144 (74%)
+    top  10 players of 265 contribute +1.6252 of +1.3144 (124%)
+    top  25 players of 265 contribute +2.9374 of +1.3144 (223%)
+    top  50 players of 265 contribute +4.1162 of +1.3144 (313%)
+    top 100 players of 265 contribute +4.9015 of +1.3144 (373%)
+    players with a POSITIVE home contribution: 128 of 265 (48.3%)
+
+  BY MINUTES TIER (home minus away, per appearance):
+    pts      {'bench <10': 0.0182, 'rotation 10-20': 0.0665, 'starter 20-28': -0.0538, 'star >28': 0.5433}
+    minutes  {'bench <10': -0.1028, 'rotation 10-20': 0.0762, 'starter 20-28': -0.0157, 'star >28': 0.1569}
+    fta      {'bench <10': -0.0173, 'rotation 10-20': 0.039, 'starter 20-28': 0.1387, 'star >28': 0.2577}
+    ftm      {'bench <10': 0.0135, 'rotation 10-20': 0.0255, 'starter 20-28': 0.1045, 'star >28': 0.2463}
+    fga      {'bench <10': 0.0133, 'rotation 10-20': 0.0153, 'starter 20-28': -0.0549, 'star >28': 0.2018}
+
+====================================================================================================
+F. BLOWOUT AND ROTATION CHECKS -- the leaks the brief named
+====================================================================================================
+  home team wins 53.15% of regular-season games (n=888)
+  mean |margin| = 11.24
+  n_used                 home-minus-away = +0.00113   p=1.0000
+  hhi_minutes            home-minus-away = -0.00004   p=0.9393
+  starter_minute_share   home-minus-away = +0.00010   p=0.9777
+
+  CLOSE GAMES ONLY (|margin| <= 8, n=392):
+    pts    = -0.1709  p=0.5338
+    ftm    = +0.6454  p=0.0731
+    fta    = +0.8418  p=0.0416
+    pf     = -0.5077  p=0.0347
+    fg3m   = +0.1429  p=0.4580
+
+  wrote player_reconciliation.csv, per_player_contributions.csv, by_minutes_tier.csv, _s03.json
+
+
+####################################################################################################
+### run_log_s04.txt
+####################################################################################################
+﻿
+====================================================================================================
+S04 MAIN-EFFECT TEST AND REFERENCE ABSORPTION
+====================================================================================================
+  frame: (16717, 86)   seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  decision stratum (>=8 prior apps, trailing-5 mean minutes >=24): 5673 of 16717 rows (33.9%)
+
+====================================================================================================
+A. THE SIZE OF THE THING BEING LOOKED FOR (before any test)
+====================================================================================================
+  pts      home-away per appearance = +0.10149   sd = 7.4569   increment vs a blended reference = +0.05074
+           => 0.6805% of one sd; the LARGEST dR2 a perfect home term could add is 4.631e-05
+  minutes  home-away per appearance = -0.00254   sd = 10.4924   increment vs a blended reference = -0.00127
+           => -0.0121% of one sd; the LARGEST dR2 a perfect home term could add is 1.468e-08
+  ppm      home-away per appearance = +0.00721   sd = 0.2759   increment vs a blended reference = +0.00360
+           => 1.3060% of one sd; the LARGEST dR2 a perfect home term could add is 1.706e-04
+  fga      home-away per appearance = +0.00918   sd = 5.2714   increment vs a blended reference = +0.00459
+           => 0.0871% of one sd; the LARGEST dR2 a perfect home term could add is 7.586e-07
+  fta      home-away per appearance = +0.11522   sd = 2.4735   increment vs a blended reference = +0.05761
+           => 2.3291% of one sd; the LARGEST dR2 a perfect home term could add is 5.425e-04
+  This is computed BEFORE any model is fitted and it is the whole explanation of the
+  programme's player-level nulls: the quantity is real and it is roughly 1% of a
+  player's own game-to-game spread.
+
+====================================================================================================
+B. WALK-FORWARD MAIN-EFFECT TEST
+====================================================================================================
+
+  --- POOLED ---
+ target                 reference     n  mae_base  mae_full  mae_improvement_pct  dR2_commonSST  p_cluster  beta_home_2024
+    pts    REF_EXPANDING_COMPLETE 13152  4.105198  4.104847             0.008546       0.000060   0.584354        0.171285
+    pts        REF_EWMA8_COMPLETE 13152  4.079920  4.080249            -0.008067       0.000065   0.556361        0.167186
+    pts REF_VENUE_SPLIT_EXPANDING 13152  4.258922  4.259353            -0.010115      -0.000059   0.311922        0.021112
+    pts     REF_VENUE_SPLIT_EWMA8 13152  4.244158  4.244362            -0.004826      -0.000036   0.341915        0.017682
+minutes    REF_EXPANDING_COMPLETE 13152  5.176234  5.176448            -0.004129      -0.000047   0.248188        0.063329
+minutes        REF_EWMA8_COMPLETE 13152  4.974550  4.974621            -0.001426      -0.000027   0.383904        0.039097
+minutes REF_VENUE_SPLIT_EXPANDING 13152  5.345966  5.346861            -0.016733      -0.000097   0.111222        0.068015
+minutes     REF_VENUE_SPLIT_EWMA8 13152  5.251899  5.252333            -0.008270      -0.000067   0.125719        0.044051
+    ppm    REF_EXPANDING_COMPLETE 13152  0.182242  0.182277            -0.019113       0.000104   0.736066        0.012148
+    ppm        REF_EWMA8_COMPLETE 13152  0.183027  0.183084            -0.030973       0.000075   0.828793        0.012574
+    ppm REF_VENUE_SPLIT_EXPANDING 13152  0.189800  0.189821            -0.011353      -0.000040   0.650087        0.004980
+    ppm     REF_VENUE_SPLIT_EWMA8 13152  0.190091  0.190113            -0.011426      -0.000049   0.486128        0.004417
+    fga    REF_EXPANDING_COMPLETE 13152  2.588345  2.588636            -0.011244      -0.000053   0.335166        0.038794
+    fga        REF_EWMA8_COMPLETE 13152  2.543947  2.544163            -0.008499      -0.000030   0.506623        0.029472
+    fga REF_VENUE_SPLIT_EXPANDING 13152  2.690633  2.691126            -0.018353      -0.000132   0.055736        0.023196
+    fga     REF_VENUE_SPLIT_EWMA8 13152  2.669181  2.669477            -0.011077      -0.000081   0.084479        0.017458
+
+  --- DECISION_STRATUM ---
+ target                 reference    n  mae_base  mae_full  mae_improvement_pct  dR2_commonSST  p_cluster  beta_home_2024
+    pts    REF_EXPANDING_COMPLETE 4517  4.992433  4.991045             0.027802       0.000107   0.168458        0.171285
+    pts        REF_EWMA8_COMPLETE 4517  4.982612  4.981815             0.015993       0.000096   0.224444        0.167186
+    pts REF_VENUE_SPLIT_EXPANDING 4517  5.124349  5.125047            -0.013615      -0.000037   0.450887        0.021112
+    pts     REF_VENUE_SPLIT_EWMA8 4517  5.115076  5.115408            -0.006500      -0.000020   0.538615        0.017682
+minutes    REF_EXPANDING_COMPLETE 4517  4.623184  4.623872            -0.014866      -0.000012   0.566358        0.063329
+minutes        REF_EWMA8_COMPLETE 4517  4.407202  4.407610            -0.009267      -0.000011   0.494876        0.039097
+minutes REF_VENUE_SPLIT_EXPANDING 4517  4.733918  4.736342            -0.051216      -0.000071   0.063484        0.068015
+minutes     REF_VENUE_SPLIT_EWMA8 4517  4.632114  4.634040            -0.041575      -0.000051   0.076231        0.044051
+    ppm    REF_EXPANDING_COMPLETE 4517  0.151828  0.151723             0.069438       0.000069   0.622344        0.012148
+    ppm        REF_EWMA8_COMPLETE 4517  0.152335  0.152257             0.051282       0.000046   0.774306        0.012574
+    ppm REF_VENUE_SPLIT_EXPANDING 4517  0.156585  0.156575             0.006809      -0.000032   0.597101        0.004980
+    ppm     REF_VENUE_SPLIT_EWMA8 4517  0.156404  0.156396             0.005562      -0.000032   0.512122        0.004417
+    fga    REF_EXPANDING_COMPLETE 4517  2.948581  2.948728            -0.004984      -0.000029   0.419145        0.038794
+    fga        REF_EWMA8_COMPLETE 4517  2.897649  2.897824            -0.006060      -0.000019   0.508873        0.029472
+    fga REF_VENUE_SPLIT_EXPANDING 4517  3.035004  3.035804            -0.026363      -0.000058   0.260185        0.023196
+    fga     REF_VENUE_SPLIT_EWMA8 4517  3.008164  3.008604            -0.014611      -0.000028   0.437141        0.017458
+
+====================================================================================================
+C. REFERENCE ABSORPTION -- venue-split reference vs all-games reference
+====================================================================================================
+  pts      expanding   MAE venue-split=4.25892  all-games=4.10520  improvement=-3.745%  dR2=-4.111e-02  p=0.0002
+  pts      ewma8       MAE venue-split=4.24416  all-games=4.07992  improvement=-4.026%  dR2=-4.351e-02  p=0.0002
+  minutes  expanding   MAE venue-split=5.34597  all-games=5.17623  improvement=-3.279%  dR2=-2.736e-02  p=0.0002
+  minutes  ewma8       MAE venue-split=5.25190  all-games=4.97455  improvement=-5.575%  dR2=-4.227e-02  p=0.0002
+  ppm      expanding   MAE venue-split=0.18980  all-games=0.18224  improvement=-4.147%  dR2=-7.490e-02  p=0.0002
+  ppm      ewma8       MAE venue-split=0.19009  all-games=0.18303  improvement=-3.860%  dR2=-7.338e-02  p=0.0002
+  fga      expanding   MAE venue-split=2.69063  all-games=2.58834  improvement=-3.952%  dR2=-3.191e-02  p=0.0002
+  fga      ewma8       MAE venue-split=2.66918  all-games=2.54395  improvement=-4.923%  dR2=-3.816e-02  p=0.0002
+
+====================================================================================================
+D. NEGATIVE CONTROL -- a fake venue label through the identical pipeline
+====================================================================================================
+  pts   REAL_is_home    dR2=+6.549e-05  p=0.5564  MAE improvement=-0.0081%
+  pts   FAKE_label      dR2=-2.327e-05  p=0.5251  MAE improvement=-0.0046%
+  ppm   REAL_is_home    dR2=+7.532e-05  p=0.8288  MAE improvement=-0.0310%
+  ppm   FAKE_label      dR2=-2.832e-05  p=0.7063  MAE improvement=+0.0008%
+
+  wrote main_effect_test.csv, reference_absorption.csv, _s04.json
+
+
+####################################################################################################
+### run_log_s05.txt
+####################################################################################################
+﻿
+====================================================================================================
+S05 PER-PLAYER HETEROGENEITY
+====================================================================================================
+  players with >=20 home AND >=20 away appearances: 149 of 265  (14294 rows)
+  within-player acf1(is_home) = 0.04577 over 14145 pairs, 149 groups
+  (home stands and road trips come in RUNS, so this is not zero -- which is exactly why
+   the cyclic shift, not the shuffle, is the admissible null here.)
+
+====================================================================================================
+TARGET: pts
+====================================================================================================
+  per-player home-minus-away pts: mean=+0.14991  sd=1.21582  IQR=1.54726  n=149
+  per_entity_control(['player_id'], feature=is_home, scheme=within_cyclic): real = 1.215816457
+    ARM 1 RELABEL  (the vacuous one)            sd = 4.441e-17  distinct = 2  -> CONFIRMED NO-OP
+    ARM 2 GENUINE  (within_cyclic)              sd = 0.0714881   p = 0.1089  acf1 = +0.0458
+    -> RELABEL ARM: CONFIRMED VACUOUS (sd = 4.441e-17 over 25 draws, 2 distinct values) -- relabelling ['player_id'] is a bijection on whole groups and tests NOTHING. GENUINE ARM (is_home inside ['player_id']): sd = 0.0714881, p = 0.1089 over 2000 draws -- THIS control can fail, and this is the one to report.
+  ARM 1 relabel (VACUOUS by construction): is_noop=True sd=4.44e-17
+  ARM 2 cyclic  (can fail): real sd=1.21582  null mean=1.12719  null sd=0.07149  p=0.1089
+  controls_are_informative = True
+  UNSAFE within-SHUFFLE arm (D093's trap, reported for the gap only): null sd=0.07434  p=0.2324
+
+====================================================================================================
+TARGET: ppm
+====================================================================================================
+  per-player home-minus-away ppm: mean=+0.00754  sd=0.05480  IQR=0.06304  n=149
+  per_entity_control(['player_id'], feature=is_home, scheme=within_cyclic): real = 0.05480079345
+    ARM 1 RELABEL  (the vacuous one)            sd = 6.206e-18  distinct = 2  -> CONFIRMED NO-OP
+    ARM 2 GENUINE  (within_cyclic)              sd = 0.00350263   p = 0.0770  acf1 = +0.0458
+    -> RELABEL ARM: CONFIRMED VACUOUS (sd = 6.206e-18 over 25 draws, 2 distinct values) -- relabelling ['player_id'] is a bijection on whole groups and tests NOTHING. GENUINE ARM (is_home inside ['player_id']): sd = 0.00350263, p = 0.0770 over 2000 draws -- THIS control can fail, and this is the one to report.
+  ARM 1 relabel (VACUOUS by construction): is_noop=True sd=6.21e-18
+  ARM 2 cyclic  (can fail): real sd=0.05480  null mean=0.04966  null sd=0.00350  p=0.0770
+  controls_are_informative = True
+  UNSAFE within-SHUFFLE arm (D093's trap, reported for the gap only): null sd=0.00337  p=0.0720
+
+====================================================================================================
+TARGET: fta
+====================================================================================================
+  per-player home-minus-away fta: mean=+0.12354  sd=0.46853  IQR=0.51726  n=149
+  per_entity_control(['player_id'], feature=is_home, scheme=within_cyclic): real = 0.4685322155
+    ARM 1 RELABEL  (the vacuous one)            sd = 9.155e-17  distinct = 3  -> CONFIRMED NO-OP
+    ARM 2 GENUINE  (within_cyclic)              sd = 0.0285456   p = 0.0535  acf1 = +0.0458
+    -> RELABEL ARM: CONFIRMED VACUOUS (sd = 9.155e-17 over 25 draws, 3 distinct values) -- relabelling ['player_id'] is a bijection on whole groups and tests NOTHING. GENUINE ARM (is_home inside ['player_id']): sd = 0.0285456, p = 0.0535 over 2000 draws -- THIS control can fail, and this is the one to report.
+  ARM 1 relabel (VACUOUS by construction): is_noop=True sd=9.16e-17
+  ARM 2 cyclic  (can fail): real sd=0.46853  null mean=0.42114  null sd=0.02855  p=0.0535
+  controls_are_informative = True
+  UNSAFE within-SHUFFLE arm (D093's trap, reported for the gap only): null sd=0.03025  p=0.1194
+
+====================================================================================================
+TARGET: fta_pm
+====================================================================================================
+  per-player home-minus-away fta_pm: mean=+0.00520  sd=0.02626  IQR=0.02563  n=149
+  per_entity_control(['player_id'], feature=is_home, scheme=within_cyclic): real = 0.02626348331
+    ARM 1 RELABEL  (the vacuous one)            sd = 2.944e-18  distinct = 3  -> CONFIRMED NO-OP
+    ARM 2 GENUINE  (within_cyclic)              sd = 0.00231823   p = 0.6912  acf1 = +0.0458
+    -> RELABEL ARM: CONFIRMED VACUOUS (sd = 2.944e-18 over 25 draws, 3 distinct values) -- relabelling ['player_id'] is a bijection on whole groups and tests NOTHING. GENUINE ARM (is_home inside ['player_id']): sd = 0.00231823, p = 0.6912 over 2000 draws -- THIS control can fail, and this is the one to report.
+  ARM 1 relabel (VACUOUS by construction): is_noop=True sd=2.94e-18
+  ARM 2 cyclic  (can fail): real sd=0.02626  null mean=0.02749  null sd=0.00232  p=0.6912
+  controls_are_informative = True
+  UNSAFE within-SHUFFLE arm (D093's trap, reported for the gap only): null sd=0.00248  p=0.7561
+
+  wrote heterogeneity.csv, permutation_draws_heterogeneity_*.csv, _s05.json
+
+
+####################################################################################################
+### run_log_s06.txt
+####################################################################################################
+﻿
+====================================================================================================
+S06 EASTBOUND TRAVEL -- PREREGISTERED DIRECTIONAL TEST
+====================================================================================================
+  PREREGISTERED (hash d513e27ade1a): eastbound HURTS -- NEGATIVE on pts and ppp.
+  team-games with a strictly-prior previous game: 1728
+  arm counts: {'eastbound': 341, 'westbound': 331, 'same_zone_travel': 532, 'no_travel': 524}
+
+====================================================================================================
+A. THE CONFOUND CHECK -- is this the dead rest/schedule family in new clothes?
+====================================================================================================
+                    n  rest_days  is_home  own_pre_pts      pts     ppp     poss
+arm                                                                             
+eastbound         341     3.5924   0.3812      81.6594  82.4721  0.9964  82.8570
+no_travel         524     3.0821   0.8664      81.6946  81.9924  1.0012  81.9508
+same_zone_travel  532     2.7538   0.3026      81.5417  81.2707  0.9904  82.1007
+westbound         331     3.9728   0.3595      81.6282  82.3625  1.0027  82.1877
+  -> eastbound and westbound are almost entirely AWAY-team states (is_home near 0 for
+     the crossing arms) and 'no_travel' is mostly a home stand.  Any raw contrast
+     between them is therefore MOSTLY THE HOME EFFECT, not travel.  The adjusted arm
+     below holds is_home and rest fixed; the raw arm is reported to expose the size of
+     the confound rather than to be believed.
+
+====================================================================================================
+B. RAW ARM CONTRASTS (confounded -- reported, not believed)
+====================================================================================================
+    pts      eastbound          mean= 82.4721   vs no_travel  81.9924   diff=+0.4798
+    pts      westbound          mean= 82.3625   vs no_travel  81.9924   diff=+0.3702
+    pts      same_zone_travel   mean= 81.2707   vs no_travel  81.9924   diff=-0.7217
+    ppp      eastbound          mean=  0.9964   vs no_travel   1.0012   diff=-0.0048
+    ppp      westbound          mean=  1.0027   vs no_travel   1.0012   diff=+0.0015
+    ppp      same_zone_travel   mean=  0.9904   vs no_travel   1.0012   diff=-0.0108
+    poss     eastbound          mean= 82.8570   vs no_travel  81.9508   diff=+0.9062
+    poss     westbound          mean= 82.1877   vs no_travel  81.9508   diff=+0.2369
+    poss     same_zone_travel   mean= 82.1007   vs no_travel  81.9508   diff=+0.1499
+    fta      eastbound          mean= 18.7566   vs no_travel  18.2347   diff=+0.5219
+    fta      westbound          mean= 16.9124   vs no_travel  18.2347   diff=-1.3223
+    fta      same_zone_travel   mean= 18.0432   vs no_travel  18.2347   diff=-0.1915
+    fg_pct   eastbound          mean=  0.4419   vs no_travel   0.4408   diff=+0.0011
+    fg_pct   westbound          mean=  0.4449   vs no_travel   0.4408   diff=+0.0041
+    fg_pct   same_zone_travel   mean=  0.4368   vs no_travel   0.4408   diff=-0.0040
+
+====================================================================================================
+C. ADJUSTED CONTRASTS, with the cyclic-shift null
+====================================================================================================
+  rows after dropping any missing covariate: 1728 (from 1728)
+  within-(season,team) acf1(eastbound) = -0.15047  -- non-zero, so the SHUFFLE is inadmissible (K6) and the CYCLIC shift is used
+  within-(season,team) acf1(westbound) = -0.11561  -- non-zero, so the SHUFFLE is inadmissible (K6) and the CYCLIC shift is used
+  within-(season,team) acf1(same_zone_travel) = 0.09993  -- non-zero, so the SHUFFLE is inadmissible (K6) and the CYCLIC shift is used
+    pts  eastbound          beta=+0.85623 (null sd 0.62093)  dR2=9.482e-04  p(dR2)=0.1877  p(beta<=obs, PREREGISTERED lower tail)=0.8685
+    pts  westbound          beta=+0.56065 (null sd 0.60139)  dR2=3.923e-04  p(dR2)=0.3647  p(beta<=obs, PREREGISTERED lower tail)=0.7828
+    pts  same_zone_travel   beta=-0.53230 (null sd 0.54095)  dR2=4.627e-04  p(dR2)=0.3754  p(beta<=obs, PREREGISTERED lower tail)=0.2612
+    ppp  eastbound          beta=+0.00110 (null sd 0.00711)  dR2=1.176e-05  p(dR2)=0.8795  p(beta<=obs, PREREGISTERED lower tail)=0.4714
+    ppp  westbound          beta=+0.00762 (null sd 0.00714)  dR2=5.419e-04  p(dR2)=0.2947  p(beta<=obs, PREREGISTERED lower tail)=0.8233
+    ppp  same_zone_travel   beta=-0.00547 (null sd 0.00621)  dR2=3.658e-04  p(dR2)=0.4181  p(beta<=obs, PREREGISTERED lower tail)=0.2814
+
+====================================================================================================
+D. THE SHARPEST TEST -- eastbound vs westbound, ROAD GAMES ONLY
+====================================================================================================
+  Restricting to away games removes the is_home confound entirely and compares the two
+  crossing directions against each other.  If circadian phase advance is the mechanism,
+  eastbound must be WORSE than westbound here.  If they are the same, it is not.
+  road crossing games: eastbound n=211, westbound n=212
+    pts  raw east-minus-west = +0.0057   adjusted beta = +0.30813 (null sd 0.90730)   p(PREREGISTERED lower tail) = 0.4026
+    ppp  raw east-minus-west = -0.0090   adjusted beta = -0.00496 (null sd 0.01023)   p(PREREGISTERED lower tail) = 0.2557
+
+====================================================================================================
+E. DOSE RESPONSE -- does the size of the crossing matter?
+====================================================================================================
+            n      pts     ppp    rest
+tz_delta                              
+-3.0       55  81.7273  1.0014  4.8727
+-2.0       58  81.3448  0.9911  3.6552
+-1.0       99  82.9697  1.0075  4.4141
+ 0.0      441  80.6689  0.9864  2.5170
+ 1.0       98  82.0000  0.9924  2.7041
+ 2.0       63  84.2540  1.0116  3.6984
+ 3.0       50  80.0400  0.9686  4.0000
+
+  wrote travel_directional.csv, permutation_draws_travel_*.csv, _s06.json
+
+
+####################################################################################################
+### run_log_s07.txt
+####################################################################################################
+﻿
+====================================================================================================
+S07 ATTENDANCE FEASIBILITY -- INVENTORY ONLY
+====================================================================================================
+  scanned 5612 tabular artifacts under data/ for a column matching /attend/i
+  artifacts carrying such a column: 0
+
+  every mention of attendance in the repository, and what it actually is:
+    - experiments/market_program/FREE_DATA_SURVEY/stats_surface/endpoint_coverage_report.json
+        the string ATTENDANCE appears as an available FIELD NAME on an upstream stats endpoint the programme surveyed but did not ingest
+    - experiments/player_program/data_lane/D11_LIVE_INFORMATION_CAPTURE/capture_schema.py
+        an `attendance_actual` key in a LIVE-capture schema definition -- a placeholder in a forward-looking capture spec, not a populated historical column
+    - project_docs/FEATURE_LAB_CATALOG.md
+        catalogue row 99, 'Attendance/TV context', marked N/A and 'not captured; noted'
+    - experiments/player_program/stage3_score/S31_SCORE_IDEATION/raw_sources/SOURCE_2_domain.md and SOURCE_4_falsificationist.md
+        PROSE noting that 2021 ran under attendance restrictions; used as a narrative reason to expect home advantage to drift, never as a measured column
+    - project_docs/WNBA_Odds_Research_Report.md
+        a single league-wide press figure ('400,000+ fans in May 2024') in a prose report -- one aggregate number, not a per-game series
+
+  VERDICT: ATTENDANCE DATA DOES NOT EXIST IN THIS REPOSITORY.  No tabular artifact under data/ carries a per-game attendance column; every mention is either a field name on an un-ingested upstream endpoint, a placeholder key in a forward-looking live-capture schema, a catalogue row explicitly marked 'not captured', or prose.  The user's conditional -- 'maybe its conditional on attendance but idk how we would model that' -- cannot be tested at all with what is here.  PER THE BRIEF THIS STAGE STOPS: no proxy (arena capacity, market size, weekend/weeknight, season progress, 2021-vs-later) is built or reported as an attendance answer, because none of them is attendance and presenting one as such would be the exact substitution the brief forbids.
+  wrote _s07.json

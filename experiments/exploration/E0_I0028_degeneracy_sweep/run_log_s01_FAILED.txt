@@ -1,0 +1,94 @@
+﻿
+====================================================================================================
+STEP 01 -- LOAD, JOIN, BUILD PRIORS
+====================================================================================================
+  prereg sha256 verified: 895bac8bc2255c9d660ac956873884eefbc95ddab6128fd80cbf90b8cbc6dac0
+
+====================================================================================================
+1a. contract / truth frame
+====================================================================================================
+  contract frame: 35627 rows total -> 17809 rows in 2022-2024 (17818 dropped: 2021 + holdout)
+  seasons present: [np.int64(2022), np.int64(2023), np.int64(2024)]   date span: 2022-05-08 .. 2024-10-20
+  partition[contract]: season-valued=['season']  date=['game_date']  anchors=['season', 'game_date']
+
+  season calendar ranges (must be disjoint for prev-season aggregates to be prior):
+    season 2022: 2022-05-08 .. 2022-09-18
+    season 2023: 2023-05-21 .. 2023-10-18
+    season 2024: 2024-05-16 .. 2024-10-20
+
+====================================================================================================
+1b. the 2021 fold -- CONFIRM the known non-finding, then never use it
+====================================================================================================
+    cbs_v15_player_oof_v5    {'fold_id': 'season:2021', 'n_train_rows': 0, 'model_was_fitted': False, 'degenerate': True}
+    cbs_v14_player_oof       {'fold_id': 'season:2021', 'n_train_rows': 0, 'model_was_fitted': False, 'degenerate': True}
+  -> 2021 is degenerate BY DESIGN. Excluded from every discovery claim (prereg C1).
+
+====================================================================================================
+1c. champion output inventory
+====================================================================================================
+    cbs_v15_player_oof_v5    player_scoring_distribution     21617 rows  sidecar matched  21617
+    cbs_v15_player_oof_v5    e_minutes_given_active          21617 rows  sidecar matched  21617
+    cbs_v15_player_oof_v5    attempts_usage                  21617 rows  sidecar matched  21617
+    cbs_v15_player_oof_v5    p_active                        21617 rows  sidecar matched  21617
+    cbs_v14_player_oof       player_scoring_distribution     17809 rows  sidecar matched  17809
+    cbs_v14_player_oof       e_minutes_given_active          17809 rows  sidecar matched  17809
+    cbs_v14_player_oof       attempts_usage                  17809 rows  sidecar matched  17809
+    cbs_v14_player_oof       p_active                        17809 rows  sidecar matched  17809
+
+                  arm                      target  n_rows  n_seasons  pred_point_null  pred_sd_null  q_null  n_components  fallback_share
+cbs_v15_player_oof_v5 player_scoring_distribution   21617          3                0             0       0             2        0.248786
+cbs_v15_player_oof_v5      e_minutes_given_active   21617          3                0             0       0             2        0.248786
+cbs_v15_player_oof_v5              attempts_usage   21617          3                0             0       0             2        0.248786
+cbs_v15_player_oof_v5                    p_active   21617          3                0         21617   21617             2        0.104917
+   cbs_v14_player_oof player_scoring_distribution   17809          3                0             0       0             2        0.138076
+   cbs_v14_player_oof      e_minutes_given_active   17809          3                0             0       0             2        0.138076
+   cbs_v14_player_oof              attempts_usage   17809          3                0             0       0             2        0.138076
+   cbs_v14_player_oof                    p_active   17809          3                0         17809   17809             2        0.082318
+
+====================================================================================================
+1d. strictly-prior baselines
+====================================================================================================
+  priors built: shift(1) BEFORE cumsum; league means shifted BY DATE
+  ref_ columns: ['ref_pts', 'ref_minutes', 'ref_fga', 'ref_appeared']
+  partition[post-priors]: season-valued=['season']  date=['game_date']  anchors=['season', 'game_date']
+
+====================================================================================================
+1e. assemble the long working frame  (one row per arm x target x row_uid)
+====================================================================================================
+    cbs_v15_player_oof_v5    player_scoring_distribution    pred= 21617  joined= 17809  unmatched=3808  scoreable= 13879
+    cbs_v15_player_oof_v5    e_minutes_given_active         pred= 21617  joined= 17809  unmatched=3808  scoreable= 13879
+    cbs_v15_player_oof_v5    attempts_usage                 pred= 21617  joined= 17809  unmatched=3808  scoreable= 13879
+    cbs_v15_player_oof_v5    p_active                       pred= 21617  joined= 17809  unmatched=3808  scoreable= 17809
+    cbs_v14_player_oof       player_scoring_distribution    pred= 17809  joined= 17809  unmatched=  0  scoreable= 13879
+    cbs_v14_player_oof       e_minutes_given_active         pred= 17809  joined= 17809  unmatched=  0  scoreable= 13879
+    cbs_v14_player_oof       attempts_usage                 pred= 17809  joined= 17809  unmatched=  0  scoreable= 13879
+    cbs_v14_player_oof       p_active                       pred= 17809  joined= 17809  unmatched=  0  scoreable= 17809
+
+  working frame: (142472, 71)
+python : Traceback (most recent call last):
+At line:1 char:453
++ ... eneracy_sweep"; Set-Location $d; python "$d\s01_load.py" 2>&1 | Tee-O ...
++                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0028_
+degeneracy_sweep\s01_load.py", line 149, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0028_
+degeneracy_sweep\s01_load.py", line 90, in main
+    B.assert_partition(w[["season", "game_date"]], label="work_frame")
+                       ~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jgallagher\AppData\Roaming\Python\Python313\site-packages\pandas\core\frame.py", line 4384, in 
+__getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\jgallagher\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\base.py", line 6302, in 
+_get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jgallagher\AppData\Roaming\Python\Python313\site-packages\pandas\core\indexes\base.py", line 6355, in 
+_raise_if_missing
+    raise KeyError(f"{not_found} not in index")
+KeyError: "['season'] not in index"

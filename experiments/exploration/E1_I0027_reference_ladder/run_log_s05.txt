@@ -1,0 +1,112 @@
+﻿
+====================================================================================================
+0. re-hash the frozen preregistration
+====================================================================================================
+  sha256 8079f632ea1bc159bdb993e1e1efdf49d6f73c11e5ade1b5398bdffb8dac24db  MATCH
+
+====================================================================================================
+1. D089 + D099 -- the E1_I0018 frame, DECISION stratum, seasons 2022-2024
+====================================================================================================
+  tv frame (14852, 59) ; eff frame (14852, 67)
+  join keys available: ['season', 'player_id', 'game_id']
+  after join: (14852, 60) ; A10_opp_defrtg non-null on 14852 rows
+  DECISION stratum rows (all seasons): 5673
+
+  COMMON SCORED ROW SET (identical for every arm below): n = 3165
+    SST(points) = 189594.813270      SST(ppm) = 160.747265
+    per season: {2023: 1596, 2024: 1569}
+
+====================================================================================================
+2. ANCHOR -- reproduce D089's own construction and reference before changing anything
+====================================================================================================
+  D089 own protocol (ppm model x m_hat), on THIS screen's common row set:
+    dR2 = +0.002357036   (published on its own row set n=4517: +0.0023492235735383)
+    n=3165  cluster p=0.03774  row-NAIVE p=0.04124
+
+  D099 own construction (defence main effect over B_COMPLETE + usage, ppm):
+    dR2 = +0.010297255   (published +0.005028055896626 on n=4514)
+    n=3165  cluster p=0.00025
+
+  D099 own construction, POINTS response:
+    dR2 = +0.005343400   (published +0.003335424864284 on n=4514)
+    n=3165  cluster p=0.00025
+
+  READ THE TWO ANCHORS BEFORE THE RATIOS: they isolate the ROW-SET change from the REFERENCE change.
+  Anchor/published tells you how much the smaller row set moved the number; repriced/anchor tells you how much the REFERENCE moved it.
+
+====================================================================================================
+2b. HOW GOOD IS EACH RUNG *ON THESE ROWS*?  (the ladder's order is not stratum-invariant)
+====================================================================================================
+  points   R0_LEAGUE            MAE   7.047147   R2(common SST) -0.399228
+  points   R1_PLAYER_EXPAND     MAE   5.042420   R2(common SST) +0.309470
+  points   R2_EWMA_TUNED        MAE   5.029113   R2(common SST) +0.317607
+  points   R3_RATE_X_MINUTES    MAE   5.055283   R2(common SST) +0.314235
+  points   R4_RICH_LOOKUP       MAE   5.041584   R2(common SST) +0.322121
+  ppm      R0_LEAGUE            MAE   0.186349   R2(common SST) -0.146866
+  ppm      R1_PLAYER_EXPAND     MAE   0.152144   R2(common SST) +0.248895
+  ppm      R2_EWMA_TUNED        MAE   0.151173   R2(common SST) +0.260082
+  ppm      R3_RATE_X_MINUTES    MAE   0.151706   R2(common SST) +0.258931
+  ppm      R4_RICH_LOOKUP       MAE   0.152007   R2(common SST) +0.260266
+
+====================================================================================================
+3. RE-PRICE on the ladder
+====================================================================================================
+  D089_teammate_volume     points  base=R1_PLAYER_EXPAND   dR2 +0.006419366  n=3165  p_cluster=0.06523  (MAE 5.0492 -> 5.0443)
+  D089_teammate_volume     points  base=R2_EWMA_TUNED      dR2 +0.003914592  n=3165  p_cluster=0.14521  (MAE 5.0391 -> 5.0396)
+  D089_teammate_volume     points  base=R4_RICH_LOOKUP     dR2 +0.003572290  n=3165  p_cluster=0.20670  (MAE 5.2196 -> 5.2159)
+  D099_opponent_defence    points  base=R1_PLAYER_EXPAND   dR2 +0.005177365  n=3165  p_cluster=0.00025  (MAE 5.0289 -> 5.0098)
+  D099_opponent_defence    points  base=R2_EWMA_TUNED      dR2 +0.004574871  n=3165  p_cluster=0.00025  (MAE 5.0175 -> 4.9999)
+  D099_opponent_defence    points  base=R4_RICH_LOOKUP     dR2 +0.004549855  n=3165  p_cluster=0.00225  (MAE 5.0856 -> 5.0690)
+  D099_opponent_defence    ppm     base=R1_PLAYER_EXPAND   dR2 +0.010277747  n=3165  p_cluster=0.00025  (MAE 0.1514 -> 0.1503)
+  D099_opponent_defence    ppm     base=R2_EWMA_TUNED      dR2 +0.009647015  n=3165  p_cluster=0.00050  (MAE 0.1511 -> 0.1501)
+  D099_opponent_defence    ppm     base=R4_RICH_LOOKUP     dR2 +0.011279465  n=3165  p_cluster=0.00025  (MAE 0.1573 -> 0.1561)
+  NEGATIVE_CONTROL_noise   points  base=R1_PLAYER_EXPAND   dR2 +0.000083239  n=3165  p_cluster=0.84579  (MAE 5.0492 -> 5.0515)
+  NEGATIVE_CONTROL_noise   points  base=R2_EWMA_TUNED      dR2 -0.000010570  n=3165  p_cluster=0.98025  (MAE 5.0391 -> 5.0411)
+  NEGATIVE_CONTROL_noise   points  base=R4_RICH_LOOKUP     dR2 -0.000296114  n=3165  p_cluster=0.57111  (MAE 5.2196 -> 5.2233)
+
+====================================================================================================
+4. correct-level null for the prior-history regressors (cyclic, not shuffle)
+====================================================================================================
+  P01_c04_prevgame       {'feature': 'P01_c04_prevgame', 'scheme': 'within_cyclic', 'real': 0.0037165844616046965, 'p': 0.07792207792207792, 'null_sd': nan}
+  A10_opp_defrtg         {'feature': 'A10_opp_defrtg', 'scheme': 'within_cyclic', 'real': 0.005331196269763358, 'p': 0.000999000999000999, 'null_sd': nan}
+  G01_noise              {'feature': 'G01_noise', 'scheme': 'within_cyclic', 'real': 5.508467639687059e-05, 'p': 0.6093906093906094, 'null_sd': nan}
+
+====================================================================================================
+5. D092 -- the cold-start operating rule, re-priced on the ladder
+====================================================================================================
+  tier_frame (13879, 125) ; placeholders_pts (13879, 22)
+  reproduction: pooled MAE(rule) = 4.035010863560213  (published 4.035010863560213)
+                pooled skill vs D076 ref = 0.035062396968632  (published 0.03506239696863178)
+  rung coverage on the 13879 tier rows: {'R0_LEAGUE': 13879, 'R1_PLAYER_EXPAND': 13879, 'R2_EWMA_TUNED': 13879, 'R3_RATE_X_MINUTES': 13879, 'R4_RICH_LOOKUP': 13879}
+  R0_LEAGUE            n=13879  MAE(rule)=4.03501  MAE(rung)=6.12522  skill=+0.34125   [same rows, vs D076 ref: +0.03506]
+  R1_PLAYER_EXPAND     n=13879  MAE(rule)=4.03501  MAE(rung)=4.09729  skill=+0.01520   [same rows, vs D076 ref: +0.03506]
+  R2_EWMA_TUNED        n=13879  MAE(rule)=4.03501  MAE(rung)=4.04392  skill=+0.00220   [same rows, vs D076 ref: +0.03506]
+  R3_RATE_X_MINUTES    n=13879  MAE(rule)=4.03501  MAE(rung)=4.01654  skill=-0.00460   [same rows, vs D076 ref: +0.03506]
+  R4_RICH_LOOKUP       n=13879  MAE(rule)=4.03501  MAE(rung)=4.23982  skill=+0.04831   [same rows, vs D076 ref: +0.03506]
+
+====================================================================================================
+6. reprice_table.csv
+====================================================================================================
+
+====================================================================================================
+7. ranking_change.csv -- the operative question
+====================================================================================================
+                                   comparable_family                               lead  quoted_figure  rank_by_quoted  repriced_on_canonical_rung  rank_by_repriced  p_cluster_signflip_repriced  p_cyclic_repriced rank_changed                                                                                                                                                                                                                                                  reason
+0  POINTS dR2, identical 3165-row set, identical SST  D089 teammate volume (prior-only)       0.002349             2.0                    0.003572               2.0                     0.206698           0.077922        False                                                                                                                                                                                                                                                     NaN
+1  POINTS dR2, identical 3165-row set, identical SST              D099 opponent defence       0.003335             1.0                    0.004550               1.0                     0.002249           0.000999        False                                                                                                                                                                                                                                                     NaN
+2                                       NOT RANKABLE            D092 cold-start tiering            NaN             NaN                         NaN               NaN                          NaN                NaN          NaN  METRIC MISMATCH: an MAE SKILL RATIO, not a dR2. Cannot be ranked against a dR2 under D1 without recomputing it as a dR2 on the same rows; and its row set (the whole tier frame, cold-start heavy) is disjoint in character from the DECISION stratum.
+3                                       NOT RANKABLE        D074/D079 shot-mix attempts            NaN             NaN                         NaN               NaN                          NaN                NaN          NaN                                                                                                                                                    RESPONSE MISMATCH (D1): zone attempt counts are not points. No denominator makes the two comparable.
+4                                       NOT RANKABLE       D072 I0009 additive pressure            NaN             NaN                         NaN               NaN                          NaN                NaN          NaN                                                                                                                                                                                       RESPONSE MISMATCH (D1), already recorded by D072 ruling 4 itself.
+
+  RANK SWAPS AMONG THE COMPARABLE FAMILY: 0
+  ORDER BY QUOTED    : ['D099 opponent defence', 'D089 teammate volume (prior-only)']
+  ORDER BY RE-PRICED : ['D099 opponent defence', 'D089 teammate volume (prior-only)']
+                                  lead                                 response                                status  quoted_figure  repriced_figure  ratio_repriced_over_quoted  quoted_n  repriced_n
+0    D089 teammate volume (prior-only)                                   points                             RE-PRICED       0.002349         0.003572                    1.520626      4517      3165.0
+1                D099 opponent defence                                      ppm                             RE-PRICED       0.005028         0.011279                    2.243305      4514      3165.0
+2                D099 opponent defence                                   points                             RE-PRICED       0.003335         0.004550                    1.364101      4514      3165.0
+3              D092 cold-start tiering              points (MAE skill, not dR2)                             RE-PRICED       0.035062         0.048307                    1.377744     13879     13879.0
+4  D074/D079 shot-mix attempts channel           restricted-area attempt counts  SKIPPED_CANNOT_REPRICE_WITHOUT_RERUN       0.016853              NaN                         NaN     51473         NaN
+5         D072 I0009 additive pressure  turnovers per 100 offensive possessions  SKIPPED_CANNOT_REPRICE_WITHOUT_RERUN       0.000413              NaN                         NaN     18165         NaN
+
+  wrote reprice_table.csv, reprice_by_rung.csv, d092_reprice_by_rung.csv, cyclic_null.csv, _s05.json

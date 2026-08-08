@@ -1,0 +1,232 @@
+{
+  "time_window_table": [
+    {
+      "column": "y_any_fta / y_fta_given / y_ftm_given / y_fta / y_ftm / y_pts",
+      "construction": "THIS GAME's box score",
+      "window": "[game]",
+      "reads_future": true,
+      "role": "RESPONSE ONLY",
+      "evidence": "never appears on the right-hand side of any fit in this screen"
+    },
+    {
+      "column": "minutes (contemporaneous)",
+      "construction": "THIS GAME's minutes",
+      "window": "[game]",
+      "reads_future": true,
+      "role": "ORACLE RUNG EXPOSURE ONLY (O2/O3/O4)",
+      "evidence": "s03 uses d['minutes'] exclusively inside rungs LABELLED ORACLE; no honest rung and no candidate touches it"
+    },
+    {
+      "column": "fta (contemporaneous)",
+      "construction": "THIS GAME's free-throw attempts",
+      "window": "[game]",
+      "reads_future": true,
+      "role": "STAGE-C ORACLE EXPOSURE ONLY, and the row-selector for the CONDITIONAL subset",
+      "evidence": "stage C conditions on fta>0 BY DEFINITION -- that is what 'given attempts' means.  Its dR2 is therefore reported on the conditional subset's own SST and is re-expressed on the common denominator in s04 before any cross-stage claim."
+    },
+    {
+      "column": "ref_mean__<t> / ref_ewma__<t> / ref_trail5__<t>",
+      "construction": "shift(1) then expanding().mean() / ewm(hl=5) / rolling(5) of the target, inside (season, player_id), rows sorted by (game_date, game_id).  For the CONDITIONAL targets these are built on the player's PRIOR fta>0 GAMES ONLY.",
+      "window": "(-inf, game_date) within season",
+      "reads_future": false,
+      "role": "BASE (B_SINGLE / B_COMPLETE)",
+      "evidence": "probe P1 recomputes from raw bytes; probe P1c shows it differs from the contemporaneous-inclusive version"
+    },
+    {
+      "column": "ref_rate_x_min__<t> / ref_rate_floored__<t>",
+      "construction": "(prior sum of target over prior games with minutes>=FLOOR) / (prior sum of EXPOSURE over those games), times the prior mean exposure",
+      "window": "(-inf, game_date) within season",
+      "reads_future": false,
+      "role": "BASE / honest rung H3",
+      "evidence": "probe P2; the floor is applied to the HISTORY only, never to the response"
+    },
+    {
+      "column": "ref_mean_minutes / ref_trail5_minutes / ref_mean_pace / n_prior",
+      "construction": "shift(1) then expanding/rolling over the player's own prior games",
+      "window": "(-inf, game_date) within season",
+      "reads_future": false,
+      "role": "BASE",
+      "evidence": "probe P1 machinery, same prefix"
+    },
+    {
+      "column": "ref_pct__<t>",
+      "construction": "shift(1) then expanding().mean() of the advanced-box percentage companion (usage_percentage / true_shooting_percentage)",
+      "window": "(-inf, game_date) within season",
+      "reads_future": false,
+      "role": "BASE",
+      "evidence": "probe P1 machinery"
+    },
+    {
+      "column": "is_home",
+      "construction": "schedule attribute, known before tip",
+      "window": "[game, pregame]",
+      "reads_future": false,
+      "role": "BASE",
+      "evidence": "fixture attribute, not an outcome"
+    },
+    {
+      "column": "F01..F10",
+      "construction": "ratios and per-minute rates of the player's OWN strictly-prior box quantities; every one is (prior sum)/(prior sum), never a mean of ratios",
+      "window": "(-inf, game_date) within season",
+      "reads_future": false,
+      "role": "CANDIDATE",
+      "evidence": "probes P2 (F01), P3 (F02); F09 aggregates starter_flag over PRIOR games only -- the CONTEMPORANEOUS starter_flag is a TIP-TIME observation and is never used"
+    },
+    {
+      "column": "M01..M06",
+      "construction": "the OPPONENT team's strictly-prior per-game means, over the OPPONENT's own earlier games in the same season, built from the opposing box totals",
+      "window": "(-inf, game_date) within season, opponent's own games",
+      "reads_future": false,
+      "role": "CANDIDATE (opp_team_season level)",
+      "evidence": "probe P5 recomputes M01/M02 from raw bytes; probe P5c shows they differ from the version that includes TONIGHT's game"
+    },
+    {
+      "column": "X01 / X02",
+      "construction": "centred product of two columns already declared above",
+      "window": "(-inf, game_date)",
+      "reads_future": false,
+      "role": "CANDIDATE (interaction)",
+      "evidence": "algebraic function of clean inputs; centring uses PRIOR-ONLY season-to-date league means (probe P6)"
+    },
+    {
+      "column": "ORACLE_seasonmean__<t> / ORACLE_seasonrate__<t>",
+      "construction": "the player's WHOLE-SEASON mean of the target / whole-season per-exposure rate, INCLUDING games after this one",
+      "window": "ENTIRE SEASON",
+      "reads_future": true,
+      "role": "ORACLE LADDER RUNG -- LABELLED",
+      "evidence": "deliberately retrospective.  NO dR2 IS EVER PUBLISHED OVER A BASE CONTAINING THESE.  They appear only as ladder rungs O1/O2/O5, always in the ORACLE column."
+    },
+    {
+      "column": "DECISION",
+      "construction": "n_prior>=8 AND trailing-5 prior mean minutes>=24 -- both strictly prior",
+      "window": "(-inf, game_date)",
+      "reads_future": false,
+      "role": "STRATUM SELECTOR",
+      "evidence": "composed of two prior-only columns; selecting on them does not condition on this game's outcome"
+    },
+    {
+      "column": "G01_noise / G02_placebo_noop / G03_placebo_perturbed",
+      "construction": "seed-fixed RNG / affine copy of ref_mean / ref_mean with 30% of values swapped pairwise",
+      "window": "n/a",
+      "reads_future": false,
+      "role": "CONTROL",
+      "evidence": "G02 must give dR2~0 by collinearity; G03 must MOVE the statistic (verified s04)"
+    }
+  ],
+  "identity_ok": true,
+  "team_games_unmatched": 0,
+  "placebo_perturbation": [
+    {
+      "target": "y_any_fta",
+      "rows_changed": 5140,
+      "frac_changed": 0.2924109682557743,
+      "corr_with_source": 0.707907472312887
+    },
+    {
+      "target": "y_fta_given",
+      "rows_changed": 4842,
+      "frac_changed": 0.29263870421854227,
+      "corr_with_source": 0.7034159168467716
+    },
+    {
+      "target": "y_ftm_given",
+      "rows_changed": 4846,
+      "frac_changed": 0.2928804544905113,
+      "corr_with_source": 0.7059779989605743
+    },
+    {
+      "target": "y_fta",
+      "rows_changed": 5226,
+      "frac_changed": 0.29730344749118215,
+      "corr_with_source": 0.6984841533240576
+    },
+    {
+      "target": "y_ftm",
+      "rows_changed": 5228,
+      "frac_changed": 0.2974172260780521,
+      "corr_with_source": 0.6819204097631678
+    },
+    {
+      "target": "y_pts",
+      "rows_changed": 5262,
+      "frac_changed": 0.29935146205484126,
+      "corr_with_source": 0.7124934850234794
+    }
+  ],
+  "stratum_POOLED": {
+    "n": 14327,
+    "n_cond": 7732,
+    "frac_cond": 0.539680323864033
+  },
+  "stratum_DECISION": {
+    "n": 5111,
+    "n_cond": 3733,
+    "frac_cond": 0.7303854431618079
+  },
+  "leakage_probes": [
+    {
+      "probe": "P1  ref_mean__y_ftm == prior expanding mean",
+      "passed": true,
+      "n_checked": 300,
+      "detail": "mismatch_vs_PRIOR=0 ; mismatch_vs_CONTEMPORANEOUS=289 (must be >0)"
+    },
+    {
+      "probe": "P1b ref_mean__y_fta_given == prior COND mean",
+      "passed": true,
+      "n_checked": 300,
+      "detail": "mismatch_vs_PRIOR=0 ; mismatch_vs_CONTEMPORANEOUS=157 (must be >0)"
+    },
+    {
+      "probe": "P1c D-01 fix changed the DOMAIN, not the VALUES",
+      "passed": true,
+      "n_checked": 9166,
+      "detail": "max abs diff on conditional rows=0.000e+00 ; domain change on conditional rows=+0.000000 ; defined on 0.9085 of ALL rows now vs 0.5033 before"
+    },
+    {
+      "probe": "P1d conditional-ref AVAILABILITY no longer encodes the response",
+      "passed": true,
+      "n_checked": 18212,
+      "detail": "corr(notna(ref_mean__y_fta_given), y_any_fta) = +0.1138 (was +1.0 by construction before the D-01 fix)"
+    },
+    {
+      "probe": "P2  F01_prior_ftr == sum(fta)/sum(fga) prior",
+      "passed": true,
+      "n_checked": 300,
+      "detail": "mismatch_vs_PRIOR=0 ; mismatch_vs_CONTEMPORANEOUS=280 (must be >0)"
+    },
+    {
+      "probe": "P3  F02_prior_fd_pm == sum(fd)/sum(min) prior",
+      "passed": true,
+      "n_checked": 300,
+      "detail": "mismatch_vs_PRIOR=0 ; mismatch_vs_CONTEMPORANEOUS=299 (must be >0)"
+    },
+    {
+      "probe": "P4  F09_prior_starter_rate (TIP-TIME guard)",
+      "passed": true,
+      "n_checked": 300,
+      "detail": "mismatch_vs_PRIOR=0 ; mismatch_vs_CONTEMPORANEOUS=101 (must be >0)"
+    },
+    {
+      "probe": "P5  M01_opp_pf_pg == opp prior mean team pf",
+      "passed": true,
+      "n_checked": 200,
+      "detail": "mismatch_vs_PRIOR=0 ; mismatch_vs_CONTEMPORANEOUS=196 (must be >0)"
+    },
+    {
+      "probe": "P5b M02_opp_allowed_fta_pg == opp prior mean",
+      "passed": true,
+      "n_checked": 200,
+      "detail": "mismatch_vs_PRIOR=0 ; mismatch_vs_CONTEMPORANEOUS=200 (must be >0)"
+    },
+    {
+      "probe": "P6  interaction centring is PRIOR-ONLY, not full-sample",
+      "passed": true,
+      "n_checked": 17574,
+      "detail": "matches prior-expanding league mean=True ; differs from full-sample centring=True"
+    }
+  ],
+  "frame_shape": [
+    18212,
+    181
+  ]
+}

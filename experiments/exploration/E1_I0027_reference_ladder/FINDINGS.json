@@ -1,0 +1,1439 @@
+{
+ "screen": "E1_I0027_reference_ladder",
+ "question": "Build one canonical, strictly-prior-games-only reference ladder; re-price the ledger's live and recently-killed leads against the SAME rung; and answer whether the ranking of those leads changes when they are measured consistently.",
+ "HEADLINE": {
+  "does_the_ranking_change": "NO AMONG THE LEADS THAT CAN BE RANKED AT ALL -- AND ONLY TWO OF THE FIVE CAN BE. On the identical 3165-row set with one denominator, D099's opponent-defence effect outranks D089's teammate-volume channel both before (+0.003335 vs +0.002349) and after (+0.004550 vs +0.003572) re-pricing. Zero rank swaps. SO THE REFERENCE PROBLEM IS A REPORTING PROBLEM FOR THE ORDERING, NOT A DECISION PROBLEM.",
+  "BUT_THE_EVIDENTIAL_STANDING_DOES_CHANGE_AND_THAT_IS_A_DECISION_PROBLEM": "D089 -- filed by its own decision entry as 'the programme's best usable lead' -- clears a correct-level null against its OWN reference (cluster p 0.0377 on these rows) and DOES NOT clear one against the canonical rung: cluster sign-flip p 0.2067, within-player cyclic p 0.0779. D099 clears against every rung (p 0.0022 and 0.0010). The magnitudes keep their order; the confidence does not.",
+  "THREE_OF_FIVE_LEADS_ARE_NOT_RANKABLE_AGAINST_EACH_OTHER_AT_ALL": "D074/D079 (zone attempt counts), D072 (turnovers per 100 possessions) and D092 (an MAE skill ratio, not a dR2) fail the same-response or same-metric test. No denominator repairs that. The programme has been ordering them anyway. THAT is the larger defect this screen found: the ranking was not merely measured against inconsistent references, it was assembled from quantities that are not commensurable in the first place.",
+  "the_reference_moves_numbers_in_BOTH_directions": "Once the row-set change is held separate from the reference change, D089's increment GROWS 1.52x on a stronger reference while D099's points increment SHRINKS to 0.85x. A programme that assumed 'a better reference always shrinks a lead' would have been wrong half the time here."
+ },
+ "step1_the_ladder": {
+  "definition": "REFERENCE_LADDER.md; implementation refladder.py; spec sha256 8079f632ea1bc159bdb993e1e1efdf49d6f73c11e5ade1b5398bdffb8dac24db, frozen by s03_prereg.py BEFORE any re-priced figure",
+  "rungs": [
+   "R0_LEAGUE",
+   "R1_PLAYER_EXPAND",
+   "R2_EWMA_TUNED",
+   "R3_RATE_X_MINUTES",
+   "R4_RICH_LOOKUP"
+  ],
+  "canonical_rung": "R4_RICH_LOOKUP",
+  "targets": [
+   "pts",
+   "minutes",
+   "fga",
+   "ppm",
+   "reb",
+   "ast"
+  ],
+  "canon_per_target": {
+   "pts": {
+    "mode": "composite",
+    "half_life": 8.0,
+    "shrink": "prior_season",
+    "k": 0.5,
+    "floor": 0.0,
+    "source": "D094 idx 3044"
+   },
+   "minutes": {
+    "mode": "equal",
+    "half_life": 2.0,
+    "shrink": "none",
+    "k": 0.0,
+    "floor": 0.0,
+    "source": "D094 idx 2379"
+   },
+   "fga": {
+    "mode": "equal",
+    "half_life": 5.0,
+    "shrink": "prior_season",
+    "k": 0.5,
+    "floor": 0.0,
+    "source": "D094 idx 2849"
+   },
+   "ppm": {
+    "mode": "mean_of_prior_ratios",
+    "half_life": 40.0,
+    "shrink": "prior_season",
+    "k": 2.0,
+    "floor": 0.0,
+    "source": "D094 idx 3662"
+   },
+   "reb": {
+    "mode": "equal",
+    "half_life": 5.0,
+    "shrink": "prior_season",
+    "k": 0.5,
+    "floor": 0.0,
+    "source": "selected in E1_I0027 on train seasons [2021, 2022] only, D094's grid, mode/shrinkage adopted from D094 unchanged"
+   },
+   "ast": {
+    "mode": "equal",
+    "half_life": 8.0,
+    "shrink": "prior_season",
+    "k": 0.5,
+    "floor": 0.0,
+    "source": "selected in E1_I0027 on train seasons [2021, 2022] only, D094's grid, mode/shrinkage adopted from D094 unchanged"
+   }
+  },
+  "reused_from_D094_not_re_derived": [
+   "EWMA beats SMA beats expanding on all four measured targets",
+   "half-lives: minutes 2, attempts 5, points 8, points-per-minute 40 (a ~20x spread)",
+   "shrinkage is weak and never toward the league; always toward the player's own prior season",
+   "a realised-minutes floor on the history hurts monotonically, so the floor is 0 everywhere"
+  ],
+  "measured_here_because_D094_never_measured_them": {
+   "rebound_half_life": 5.0,
+   "assist_half_life": 8.0,
+   "selection_set": [
+    2021,
+    2022
+   ],
+   "note": "selected on train seasons only, frozen and hashed before any re-priced figure; NOT used in any re-priced figure (all re-prices are points or points-per-minute)"
+  },
+  "ladder_table": [
+   {
+    "target": "pts",
+    "rung": "R0_LEAGUE",
+    "n_scored": 9808,
+    "mae": 6.2660559549,
+    "r2_common_sst": -0.0005439999,
+    "sst_common": 589742.956668026,
+    "status": "ok",
+    "skill_vs_R1": -0.5043762929
+   },
+   {
+    "target": "pts",
+    "rung": "R1_PLAYER_EXPAND",
+    "n_scored": 9808,
+    "mae": 4.1652184926,
+    "r2_common_sst": 0.5001474351,
+    "sst_common": 589742.956668026,
+    "status": "ok",
+    "skill_vs_R1": 0.0
+   },
+   {
+    "target": "pts",
+    "rung": "R2_EWMA_TUNED",
+    "n_scored": 9808,
+    "mae": 4.0835544852,
+    "r2_common_sst": 0.5228294406,
+    "sst_common": 589742.956668026,
+    "status": "ok",
+    "skill_vs_R1": 0.0196061761
+   },
+   {
+    "target": "pts",
+    "rung": "R3_RATE_X_MINUTES",
+    "n_scored": 9808,
+    "mae": 4.0639595026,
+    "r2_common_sst": 0.5184084382,
+    "sst_common": 589742.956668026,
+    "status": "ok",
+    "skill_vs_R1": 0.024310607
+   },
+   {
+    "target": "pts",
+    "rung": "R4_RICH_LOOKUP",
+    "n_scored": 9808,
+    "mae": 4.0670156998,
+    "r2_common_sst": 0.530375741,
+    "sst_common": 589742.956668026,
+    "status": "ok",
+    "skill_vs_R1": 0.0235768647
+   },
+   {
+    "target": "minutes",
+    "rung": "R0_LEAGUE",
+    "n_scored": 9808,
+    "mae": 9.5576898203,
+    "r2_common_sst": -0.0005857523,
+    "sst_common": 1197002.18469138,
+    "status": "ok",
+    "skill_vs_R1": -0.8129922069
+   },
+   {
+    "target": "minutes",
+    "rung": "R1_PLAYER_EXPAND",
+    "n_scored": 9808,
+    "mae": 5.2717765603,
+    "r2_common_sst": 0.6146908269,
+    "sst_common": 1197002.18469138,
+    "status": "ok",
+    "skill_vs_R1": 0.0
+   },
+   {
+    "target": "minutes",
+    "rung": "R2_EWMA_TUNED",
+    "n_scored": 9808,
+    "mae": 4.8603695122,
+    "r2_common_sst": 0.6677757004,
+    "sst_common": 1197002.18469138,
+    "status": "ok",
+    "skill_vs_R1": 0.0780395458
+   },
+   {
+    "target": "minutes",
+    "rung": "R3_RATE_X_MINUTES",
+    "n_scored": 0,
+    "mae": null,
+    "r2_common_sst": null,
+    "sst_common": null,
+    "status": "DEGENERATE_FOR_THIS_TARGET",
+    "skill_vs_R1": null
+   },
+   {
+    "target": "minutes",
+    "rung": "R4_RICH_LOOKUP",
+    "n_scored": 9808,
+    "mae": 4.8699989282,
+    "r2_common_sst": 0.674925953,
+    "sst_common": 1197002.18469138,
+    "status": "ok",
+    "skill_vs_R1": 0.0762129479
+   },
+   {
+    "target": "fga",
+    "rung": "R0_LEAGUE",
+    "n_scored": 9808,
+    "mae": 4.5020225706,
+    "r2_common_sst": -0.0003359258,
+    "sst_common": 297243.2184951061,
+    "status": "ok",
+    "skill_vs_R1": -0.7099351363
+   },
+   {
+    "target": "fga",
+    "rung": "R1_PLAYER_EXPAND",
+    "n_scored": 9808,
+    "mae": 2.6328616069,
+    "r2_common_sst": 0.6135035999,
+    "sst_common": 297243.2184951061,
+    "status": "ok",
+    "skill_vs_R1": 0.0
+   },
+   {
+    "target": "fga",
+    "rung": "R2_EWMA_TUNED",
+    "n_scored": 9808,
+    "mae": 2.5297667348,
+    "r2_common_sst": 0.649627396,
+    "sst_common": 297243.2184951061,
+    "status": "ok",
+    "skill_vs_R1": 0.0391569658
+   },
+   {
+    "target": "fga",
+    "rung": "R3_RATE_X_MINUTES",
+    "n_scored": 9808,
+    "mae": 2.5272474911,
+    "r2_common_sst": 0.6419911941,
+    "sst_common": 297243.2184951061,
+    "status": "ok",
+    "skill_vs_R1": 0.0401138121
+   },
+   {
+    "target": "fga",
+    "rung": "R4_RICH_LOOKUP",
+    "n_scored": 9808,
+    "mae": 2.5066951826,
+    "r2_common_sst": 0.6527490918,
+    "sst_common": 297243.2184951061,
+    "status": "ok",
+    "skill_vs_R1": 0.0479198846
+   },
+   {
+    "target": "ppm",
+    "rung": "R0_LEAGUE",
+    "n_scored": 9808,
+    "mae": 0.2083188179,
+    "r2_common_sst": -0.000163035,
+    "sst_common": 822.2536889702,
+    "status": "ok",
+    "skill_vs_R1": -0.1313011453
+   },
+   {
+    "target": "ppm",
+    "rung": "R1_PLAYER_EXPAND",
+    "n_scored": 9808,
+    "mae": 0.184140906,
+    "r2_common_sst": 0.1027750775,
+    "sst_common": 822.2536889702,
+    "status": "ok",
+    "skill_vs_R1": 0.0
+   },
+   {
+    "target": "ppm",
+    "rung": "R2_EWMA_TUNED",
+    "n_scored": 9808,
+    "mae": 0.1807294155,
+    "r2_common_sst": 0.1468798683,
+    "sst_common": 822.2536889702,
+    "status": "ok",
+    "skill_vs_R1": 0.0185265217
+   },
+   {
+    "target": "ppm",
+    "rung": "R3_RATE_X_MINUTES",
+    "n_scored": 9808,
+    "mae": 0.1823453993,
+    "r2_common_sst": 0.1484031104,
+    "sst_common": 822.2536889702,
+    "status": "ok",
+    "skill_vs_R1": 0.0097507217
+   },
+   {
+    "target": "ppm",
+    "rung": "R4_RICH_LOOKUP",
+    "n_scored": 9808,
+    "mae": 0.1798491946,
+    "r2_common_sst": 0.161692447,
+    "sst_common": 822.2536889702,
+    "status": "ok",
+    "skill_vs_R1": 0.0233066703
+   },
+   {
+    "target": "reb",
+    "rung": "R0_LEAGUE",
+    "n_scored": 9808,
+    "mae": 2.6145199235,
+    "r2_common_sst": -0.0003345345,
+    "sst_common": 109166.6019575856,
+    "status": "ok",
+    "skill_vs_R1": -0.428309664
+   },
+   {
+    "target": "reb",
+    "rung": "R1_PLAYER_EXPAND",
+    "n_scored": 9808,
+    "mae": 1.8304993583,
+    "r2_common_sst": 0.4685465686,
+    "sst_common": 109166.6019575856,
+    "status": "ok",
+    "skill_vs_R1": 0.0
+   },
+   {
+    "target": "reb",
+    "rung": "R2_EWMA_TUNED",
+    "n_scored": 9808,
+    "mae": 1.7889187398,
+    "r2_common_sst": 0.4998061082,
+    "sst_common": 109166.6019575856,
+    "status": "ok",
+    "skill_vs_R1": 0.022715451
+   },
+   {
+    "target": "reb",
+    "rung": "R3_RATE_X_MINUTES",
+    "n_scored": 9808,
+    "mae": 1.7874052598,
+    "r2_common_sst": 0.4907259598,
+    "sst_common": 109166.6019575856,
+    "status": "ok",
+    "skill_vs_R1": 0.0235422637
+   },
+   {
+    "target": "reb",
+    "rung": "R4_RICH_LOOKUP",
+    "n_scored": 9808,
+    "mae": 1.7730227822,
+    "r2_common_sst": 0.5039500791,
+    "sst_common": 109166.6019575856,
+    "status": "ok",
+    "skill_vs_R1": 0.031399397
+   },
+   {
+    "target": "ast",
+    "rung": "R0_LEAGUE",
+    "n_scored": 9808,
+    "mae": 1.7454100737,
+    "r2_common_sst": -0.0001802828,
+    "sst_common": 52165.3808115824,
+    "status": "ok",
+    "skill_vs_R1": -0.4080494175
+   },
+   {
+    "target": "ast",
+    "rung": "R1_PLAYER_EXPAND",
+    "n_scored": 9808,
+    "mae": 1.2395943296,
+    "r2_common_sst": 0.4652251248,
+    "sst_common": 52165.3808115824,
+    "status": "ok",
+    "skill_vs_R1": 0.0
+   },
+   {
+    "target": "ast",
+    "rung": "R2_EWMA_TUNED",
+    "n_scored": 9808,
+    "mae": 1.2147778729,
+    "r2_common_sst": 0.4928702434,
+    "sst_common": 52165.3808115824,
+    "status": "ok",
+    "skill_vs_R1": 0.0200198211
+   },
+   {
+    "target": "ast",
+    "rung": "R3_RATE_X_MINUTES",
+    "n_scored": 9808,
+    "mae": 1.2035058638,
+    "r2_common_sst": 0.4926046871,
+    "sst_common": 52165.3808115824,
+    "status": "ok",
+    "skill_vs_R1": 0.0291131259
+   },
+   {
+    "target": "ast",
+    "rung": "R4_RICH_LOOKUP",
+    "n_scored": 9808,
+    "mae": 1.1976882595,
+    "r2_common_sst": 0.5029492551,
+    "sst_common": 52165.3808115824,
+    "status": "ok",
+    "skill_vs_R1": 0.0338062777
+   }
+  ],
+  "adjacent_rung_tests": [
+   {
+    "target": "pts",
+    "rung_a": "R1_PLAYER_EXPAND",
+    "rung_b": "R0_LEAGUE",
+    "n": 9808,
+    "dr2_a_minus_b": 0.500691435,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "pts",
+    "rung_a": "R2_EWMA_TUNED",
+    "rung_b": "R1_PLAYER_EXPAND",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0226820055,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "pts",
+    "rung_a": "R3_RATE_X_MINUTES",
+    "rung_b": "R2_EWMA_TUNED",
+    "n": 9808,
+    "dr2_a_minus_b": -0.0044210024,
+    "p": 0.0234941265,
+    "p_row_level_NAIVE": 0.0199950012
+   },
+   {
+    "target": "pts",
+    "rung_a": "R4_RICH_LOOKUP",
+    "rung_b": "R3_RATE_X_MINUTES",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0119673028,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "minutes",
+    "rung_a": "R1_PLAYER_EXPAND",
+    "rung_b": "R0_LEAGUE",
+    "n": 9808,
+    "dr2_a_minus_b": 0.6152765792,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "minutes",
+    "rung_a": "R2_EWMA_TUNED",
+    "rung_b": "R1_PLAYER_EXPAND",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0530848735,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "minutes",
+    "rung_a": "R4_RICH_LOOKUP",
+    "rung_b": "R2_EWMA_TUNED",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0071502525,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "fga",
+    "rung_a": "R1_PLAYER_EXPAND",
+    "rung_b": "R0_LEAGUE",
+    "n": 9808,
+    "dr2_a_minus_b": 0.6138395258,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "fga",
+    "rung_a": "R2_EWMA_TUNED",
+    "rung_b": "R1_PLAYER_EXPAND",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0361237961,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "fga",
+    "rung_a": "R3_RATE_X_MINUTES",
+    "rung_b": "R2_EWMA_TUNED",
+    "n": 9808,
+    "dr2_a_minus_b": -0.0076362019,
+    "p": 0.000499875,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "fga",
+    "rung_a": "R4_RICH_LOOKUP",
+    "rung_b": "R3_RATE_X_MINUTES",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0107578977,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "ppm",
+    "rung_a": "R1_PLAYER_EXPAND",
+    "rung_b": "R0_LEAGUE",
+    "n": 9808,
+    "dr2_a_minus_b": 0.1029381125,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "ppm",
+    "rung_a": "R2_EWMA_TUNED",
+    "rung_b": "R1_PLAYER_EXPAND",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0441047908,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "ppm",
+    "rung_a": "R3_RATE_X_MINUTES",
+    "rung_b": "R2_EWMA_TUNED",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0015232421,
+    "p": 0.8517870532,
+    "p_row_level_NAIVE": 0.6663334166
+   },
+   {
+    "target": "ppm",
+    "rung_a": "R4_RICH_LOOKUP",
+    "rung_b": "R3_RATE_X_MINUTES",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0132893366,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "reb",
+    "rung_a": "R1_PLAYER_EXPAND",
+    "rung_b": "R0_LEAGUE",
+    "n": 9808,
+    "dr2_a_minus_b": 0.468881103,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "reb",
+    "rung_a": "R2_EWMA_TUNED",
+    "rung_b": "R1_PLAYER_EXPAND",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0312595396,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "reb",
+    "rung_a": "R3_RATE_X_MINUTES",
+    "rung_b": "R2_EWMA_TUNED",
+    "n": 9808,
+    "dr2_a_minus_b": -0.0090801484,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.000499875
+   },
+   {
+    "target": "reb",
+    "rung_a": "R4_RICH_LOOKUP",
+    "rung_b": "R3_RATE_X_MINUTES",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0132241193,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "ast",
+    "rung_a": "R1_PLAYER_EXPAND",
+    "rung_b": "R0_LEAGUE",
+    "n": 9808,
+    "dr2_a_minus_b": 0.4654054076,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "ast",
+    "rung_a": "R2_EWMA_TUNED",
+    "rung_b": "R1_PLAYER_EXPAND",
+    "n": 9808,
+    "dr2_a_minus_b": 0.0276451186,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   },
+   {
+    "target": "ast",
+    "rung_a": "R3_RATE_X_MINUTES",
+    "rung_b": "R2_EWMA_TUNED",
+    "n": 9808,
+    "dr2_a_minus_b": -0.0002655563,
+    "p": 0.9227693077,
+    "p_row_level_NAIVE": 0.896775806
+   },
+   {
+    "target": "ast",
+    "rung_a": "R4_RICH_LOOKUP",
+    "rung_b": "R3_RATE_X_MINUTES",
+    "n": 9808,
+    "dr2_a_minus_b": 0.010344568,
+    "p": 0.0002499375,
+    "p_row_level_NAIVE": 0.0002499375
+   }
+  ],
+  "reference_spread": [
+   {
+    "target": "pts",
+    "weakest_rung": "R0_LEAGUE",
+    "weakest_mae": 6.2660559549,
+    "strongest_rung": "R3_RATE_X_MINUTES",
+    "strongest_mae": 4.0639595026,
+    "mae_spread_pct": 35.1432618557,
+    "incumbent_R1_mae": 4.1652184926,
+    "pct_R1_is_beaten_by_best": 2.431060703
+   },
+   {
+    "target": "minutes",
+    "weakest_rung": "R0_LEAGUE",
+    "weakest_mae": 9.5576898203,
+    "strongest_rung": "R2_EWMA_TUNED",
+    "strongest_mae": 4.8603695122,
+    "mae_spread_pct": 49.1470260751,
+    "incumbent_R1_mae": 5.2717765603,
+    "pct_R1_is_beaten_by_best": 7.8039545768
+   },
+   {
+    "target": "fga",
+    "weakest_rung": "R0_LEAGUE",
+    "weakest_mae": 4.5020225706,
+    "strongest_rung": "R4_RICH_LOOKUP",
+    "strongest_mae": 2.5066951826,
+    "mae_spread_pct": 44.3206882403,
+    "incumbent_R1_mae": 2.6328616069,
+    "pct_R1_is_beaten_by_best": 4.7919884557
+   },
+   {
+    "target": "ppm",
+    "weakest_rung": "R0_LEAGUE",
+    "weakest_mae": 0.2083188179,
+    "strongest_rung": "R4_RICH_LOOKUP",
+    "strongest_mae": 0.1798491946,
+    "mae_spread_pct": 13.6663713513,
+    "incumbent_R1_mae": 0.184140906,
+    "pct_R1_is_beaten_by_best": 2.3306670292
+   },
+   {
+    "target": "reb",
+    "weakest_rung": "R0_LEAGUE",
+    "weakest_mae": 2.6145199235,
+    "strongest_rung": "R4_RICH_LOOKUP",
+    "strongest_mae": 1.7730227822,
+    "mae_spread_pct": 32.185531797,
+    "incumbent_R1_mae": 1.8304993583,
+    "pct_R1_is_beaten_by_best": 3.1399397039
+   },
+   {
+    "target": "ast",
+    "weakest_rung": "R0_LEAGUE",
+    "weakest_mae": 1.7454100737,
+    "strongest_rung": "R4_RICH_LOOKUP",
+    "strongest_mae": 1.1976882595,
+    "mae_spread_pct": 31.3806951412,
+    "incumbent_R1_mae": 1.2395943296,
+    "pct_R1_is_beaten_by_best": 3.3806277667
+   }
+  ],
+  "IS_THE_LADDER_ORDERED": "By R2 on a common denominator, yes, on all six targets: R0 < R1 < {R2, R3} < R4. Every adjacent step from R0 to R2 clears the clustered paired sign-flip at the 4,000-draw floor. BY MAE THE ORDER IS NOT IDENTICAL -- R3 edges R4 on points and assists, and R2 edges R4 on minutes. Reported rather than smoothed: MAE and R2 do not have to agree, and a ladder that claimed they did would be the same class of error this screen exists to fix.",
+  "THE_LADDERS_ORDER_IS_NOT_STRATUM_INVARIANT": "On the DECISION stratum R4 is still best by R2 (points +0.3221 against R2_EWMA's +0.3176), but on the cold-start-heavy tier frame R4 is the WORST of R2/R3/R4 by MAE (4.2398 against 4.0165). A rung is not 'strong' in the abstract; it is strong on a row set. Any future screen quoting a rung must quote the row set with it.",
+  "grand_fallback_rows": 78,
+  "r3_degenerate_for": "minutes (rate x minutes is minutes/minutes x minutes); returned as NaN rather than silently duplicating R2"
+ },
+ "step2_reprice_table": [
+  {
+   "lead": "D089 teammate volume (prior-only)",
+   "response": "points",
+   "status": "RE-PRICED",
+   "quoted_figure": 0.0023492236,
+   "quoted_reference": "B_COMPLETE (refB_ppm/spm/pps/mpg/own_usg) fitted on ppm, times m_hat = trailing-5 prior minutes -- i.e. a rung-1-grade minutes reference",
+   "quoted_n": 4517,
+   "repriced_on": "R4_RICH_LOOKUP",
+   "repriced_figure": 0.0035722898,
+   "repriced_n": 3165.0,
+   "sst_common": 189594.8132701422,
+   "ratio_repriced_over_quoted": 1.5206257367,
+   "quoted_recomputed_on_reprice_rows": 0.002357036,
+   "ratio_vs_same_rows_anchor": 1.5155856227,
+   "also_on_R2_EWMA_TUNED": 0.003914592,
+   "p_cluster_signflip": 0.2066983254,
+   "p_cyclic_within": 0.0779220779,
+   "note": "Response and rows unchanged; only the reference changed."
+  },
+  {
+   "lead": "D099 opponent defence",
+   "response": "ppm",
+   "status": "RE-PRICED",
+   "quoted_figure": 0.0050280559,
+   "quoted_reference": "B_COMPLETE + own-usage main effect, DECISION stratum common denominator",
+   "quoted_n": 4514,
+   "repriced_on": "R4_RICH_LOOKUP",
+   "repriced_figure": 0.0112794646,
+   "repriced_n": 3165.0,
+   "sst_common": 160.7472645057,
+   "ratio_repriced_over_quoted": 2.2433053337,
+   "quoted_recomputed_on_reprice_rows": 0.0102972549,
+   "ratio_vs_same_rows_anchor": 1.0953855846,
+   "also_on_R2_EWMA_TUNED": 0.0096470153,
+   "p_cluster_signflip": 0.0002499375,
+   "p_cyclic_within": 0.000999001,
+   "note": null
+  },
+  {
+   "lead": "D099 opponent defence",
+   "response": "points",
+   "status": "RE-PRICED",
+   "quoted_figure": 0.0033354249,
+   "quoted_reference": "B_COMPLETE + own-usage main effect, DECISION stratum common denominator",
+   "quoted_n": 4514,
+   "repriced_on": "R4_RICH_LOOKUP",
+   "repriced_figure": 0.0045498549,
+   "repriced_n": 3165.0,
+   "sst_common": 189594.8132701422,
+   "ratio_repriced_over_quoted": 1.3641005453,
+   "quoted_recomputed_on_reprice_rows": 0.0053434,
+   "ratio_vs_same_rows_anchor": 0.8514906061,
+   "also_on_R2_EWMA_TUNED": 0.0045748709,
+   "p_cluster_signflip": 0.0022494376,
+   "p_cyclic_within": 0.000999001,
+   "note": "Same rows as D089 above -- literally the same row set, not merely the same n."
+  },
+  {
+   "lead": "D092 cold-start tiering",
+   "response": "points (MAE skill, not dR2)",
+   "status": "RE-PRICED",
+   "quoted_figure": 0.035062397,
+   "quoted_reference": "D076's expanding running mean over the champion's scored rows -- the same screen showed it is degenerate for 404 of 475 player-seasons",
+   "quoted_n": 13879,
+   "repriced_on": "R4_RICH_LOOKUP",
+   "repriced_figure": 0.0483069959,
+   "repriced_n": 13879.0,
+   "sst_common": null,
+   "ratio_repriced_over_quoted": 1.3777436818,
+   "quoted_recomputed_on_reprice_rows": 0.035062397,
+   "ratio_vs_same_rows_anchor": 1.3777436818,
+   "also_on_R2_EWMA_TUNED": 0.0022039048,
+   "p_cluster_signflip": null,
+   "p_cyclic_within": null,
+   "note": "SAME ROWS as the published figure (n=13,879), so the ratio is exact. THE RUNG CHOICE DOMINATES THIS ONE: vs R2_EWMA_TUNED the gain is +0.00220 and vs R3_RATE_X_MINUTES it is -0.00460 -- i.e. the same rule scores +4.8%, +0.2% or -0.5% depending only on the reference."
+  },
+  {
+   "lead": "D074/D079 shot-mix attempts channel",
+   "response": "restricted-area attempt counts",
+   "status": "SKIPPED_CANNOT_REPRICE_WITHOUT_RERUN",
+   "quoted_figure": 0.016853346,
+   "quoted_reference": "a five-zone attempts forecast system (F_B), conditional on a forecast total-FGA",
+   "quoted_n": 51473,
+   "repriced_on": "R4_RICH_LOOKUP",
+   "repriced_figure": null,
+   "repriced_n": null,
+   "sst_common": null,
+   "ratio_repriced_over_quoted": null,
+   "quoted_recomputed_on_reprice_rows": null,
+   "ratio_vs_same_rows_anchor": null,
+   "also_on_R2_EWMA_TUNED": null,
+   "p_cluster_signflip": null,
+   "p_cyclic_within": null,
+   "note": "SKIPPED, NOT APPROXIMATED. The response is a ZONE-level attempt count; the ladder defines a rung for TOTAL attempts, not for attempts within a zone, and the base is a system of five forecasts. Re-pricing requires rebuilding the zone forecasts, i.e. re-running the pipeline. Substituting total FGA would be a different quantity wearing the same name."
+  },
+  {
+   "lead": "D072 I0009 additive pressure",
+   "response": "turnovers per 100 offensive possessions",
+   "status": "SKIPPED_CANNOT_REPRICE_WITHOUT_RERUN",
+   "quoted_figure": 0.000413,
+   "quoted_reference": "a fitted multi-term pressure model with a strictly-pregame player-tendency baseline (M_F), plain unweighted OLS",
+   "quoted_n": 18165,
+   "repriced_on": "R4_RICH_LOOKUP",
+   "repriced_figure": null,
+   "repriced_n": null,
+   "sst_common": null,
+   "ratio_repriced_over_quoted": null,
+   "quoted_recomputed_on_reprice_rows": null,
+   "ratio_vs_same_rows_anchor": null,
+   "also_on_R2_EWMA_TUNED": null,
+   "p_cluster_signflip": null,
+   "p_cyclic_within": null,
+   "note": "SKIPPED, NOT APPROXIMATED. The response is not one of the six ladder targets and the base is a fitted model rather than a reference forecast; there is no rung to re-price onto without defining a seventh target and re-running the screen. NOTE: this lead is the one case where the reference was ALREADY corrected -- D072 re-ran it after finding the baseline read the future, and 0.000413 is the post-correction number."
+  }
+ ],
+ "step2_by_rung": [
+  {
+   "dr2_common_sst": 0.0064193656,
+   "n": 3165,
+   "dr2_kit_own_sst": 0.0064193656,
+   "p_cluster": 0.0652336916,
+   "p_row_NAIVE": 0.039740065,
+   "mae_base": 5.0492196533,
+   "mae_with": 5.0442827707,
+   "lead": "D089_teammate_volume",
+   "response": "points",
+   "feature": "P01_c04_prevgame",
+   "base_rung": "R1_PLAYER_EXPAND",
+   "sst_common": 189594.8132701422
+  },
+  {
+   "dr2_common_sst": 0.003914592,
+   "n": 3165,
+   "dr2_kit_own_sst": 0.003914592,
+   "p_cluster": 0.1452136966,
+   "p_row_NAIVE": 0.1442139465,
+   "mae_base": 5.03912612,
+   "mae_with": 5.039632289,
+   "lead": "D089_teammate_volume",
+   "response": "points",
+   "feature": "P01_c04_prevgame",
+   "base_rung": "R2_EWMA_TUNED",
+   "sst_common": 189594.8132701422
+  },
+  {
+   "dr2_common_sst": 0.0035722898,
+   "n": 3165,
+   "dr2_kit_own_sst": 0.0035722898,
+   "p_cluster": 0.2066983254,
+   "p_row_NAIVE": 0.1607098225,
+   "mae_base": 5.2195814773,
+   "mae_with": 5.2159447014,
+   "lead": "D089_teammate_volume",
+   "response": "points",
+   "feature": "P01_c04_prevgame",
+   "base_rung": "R4_RICH_LOOKUP",
+   "sst_common": 189594.8132701422
+  },
+  {
+   "dr2_common_sst": 0.0051773646,
+   "n": 3165,
+   "dr2_kit_own_sst": 0.0051773646,
+   "p_cluster": 0.0002499375,
+   "p_row_NAIVE": 0.0002499375,
+   "mae_base": 5.028867716,
+   "mae_with": 5.0097793782,
+   "lead": "D099_opponent_defence",
+   "response": "points",
+   "feature": "A10_opp_defrtg",
+   "base_rung": "R1_PLAYER_EXPAND",
+   "sst_common": 189594.8132701422
+  },
+  {
+   "dr2_common_sst": 0.0045748709,
+   "n": 3165,
+   "dr2_kit_own_sst": 0.0045748709,
+   "p_cluster": 0.0002499375,
+   "p_row_NAIVE": 0.0002499375,
+   "mae_base": 5.0174833927,
+   "mae_with": 4.9998619979,
+   "lead": "D099_opponent_defence",
+   "response": "points",
+   "feature": "A10_opp_defrtg",
+   "base_rung": "R2_EWMA_TUNED",
+   "sst_common": 189594.8132701422
+  },
+  {
+   "dr2_common_sst": 0.0045498549,
+   "n": 3165,
+   "dr2_kit_own_sst": 0.0045498549,
+   "p_cluster": 0.0022494376,
+   "p_row_NAIVE": 0.0002499375,
+   "mae_base": 5.085634757,
+   "mae_with": 5.0689909202,
+   "lead": "D099_opponent_defence",
+   "response": "points",
+   "feature": "A10_opp_defrtg",
+   "base_rung": "R4_RICH_LOOKUP",
+   "sst_common": 189594.8132701422
+  },
+  {
+   "dr2_common_sst": 0.0102777473,
+   "n": 3165,
+   "dr2_kit_own_sst": 0.0102777473,
+   "p_cluster": 0.0002499375,
+   "p_row_NAIVE": 0.0002499375,
+   "mae_base": 0.151352492,
+   "mae_with": 0.1502829503,
+   "lead": "D099_opponent_defence",
+   "response": "ppm",
+   "feature": "A10_opp_defrtg",
+   "base_rung": "R1_PLAYER_EXPAND",
+   "sst_common": 160.7472645057
+  },
+  {
+   "dr2_common_sst": 0.0096470153,
+   "n": 3165,
+   "dr2_kit_own_sst": 0.0096470153,
+   "p_cluster": 0.000499875,
+   "p_row_NAIVE": 0.0002499375,
+   "mae_base": 0.1510858877,
+   "mae_with": 0.1500871267,
+   "lead": "D099_opponent_defence",
+   "response": "ppm",
+   "feature": "A10_opp_defrtg",
+   "base_rung": "R2_EWMA_TUNED",
+   "sst_common": 160.7472645057
+  },
+  {
+   "dr2_common_sst": 0.0112794646,
+   "n": 3165,
+   "dr2_kit_own_sst": 0.0112794646,
+   "p_cluster": 0.0002499375,
+   "p_row_NAIVE": 0.0002499375,
+   "mae_base": 0.1572884619,
+   "mae_with": 0.1560568193,
+   "lead": "D099_opponent_defence",
+   "response": "ppm",
+   "feature": "A10_opp_defrtg",
+   "base_rung": "R4_RICH_LOOKUP",
+   "sst_common": 160.7472645057
+  },
+  {
+   "dr2_common_sst": 8.3239e-05,
+   "n": 3165,
+   "dr2_kit_own_sst": 8.3239e-05,
+   "p_cluster": 0.8457885529,
+   "p_row_NAIVE": 0.8422894276,
+   "mae_base": 5.0492196533,
+   "mae_with": 5.051470725,
+   "lead": "NEGATIVE_CONTROL_noise",
+   "response": "points",
+   "feature": "G01_noise",
+   "base_rung": "R1_PLAYER_EXPAND",
+   "sst_common": 189594.8132701422
+  },
+  {
+   "dr2_common_sst": -1.05702e-05,
+   "n": 3165,
+   "dr2_kit_own_sst": -1.05702e-05,
+   "p_cluster": 0.9802549363,
+   "p_row_NAIVE": 0.9817545614,
+   "mae_base": 5.03912612,
+   "mae_with": 5.0411493964,
+   "lead": "NEGATIVE_CONTROL_noise",
+   "response": "points",
+   "feature": "G01_noise",
+   "base_rung": "R2_EWMA_TUNED",
+   "sst_common": 189594.8132701422
+  },
+  {
+   "dr2_common_sst": -0.0002961142,
+   "n": 3165,
+   "dr2_kit_own_sst": -0.0002961142,
+   "p_cluster": 0.5711072232,
+   "p_row_NAIVE": 0.543864034,
+   "mae_base": 5.2195814773,
+   "mae_with": 5.2232644443,
+   "lead": "NEGATIVE_CONTROL_noise",
+   "response": "points",
+   "feature": "G01_noise",
+   "base_rung": "R4_RICH_LOOKUP",
+   "sst_common": 189594.8132701422
+  }
+ ],
+ "step2_D092_by_rung": [
+  {
+   "rung": "R0_LEAGUE",
+   "n": 13879,
+   "mae_rule": 4.0350108636,
+   "mae_rung": 6.1252176509,
+   "skill_vs_rung": 0.3412461249,
+   "mae_refD076": 4.1816287922,
+   "skill_vs_refD076_same_rows": 0.035062397
+  },
+  {
+   "rung": "R1_PLAYER_EXPAND",
+   "n": 13879,
+   "mae_rule": 4.0350108636,
+   "mae_rung": 4.0972912835,
+   "skill_vs_rung": 0.0152003887,
+   "mae_refD076": 4.1816287922,
+   "skill_vs_refD076_same_rows": 0.035062397
+  },
+  {
+   "rung": "R2_EWMA_TUNED",
+   "n": 13879,
+   "mae_rule": 4.0350108636,
+   "mae_rung": 4.0439232857,
+   "skill_vs_rung": 0.0022039048,
+   "mae_refD076": 4.1816287922,
+   "skill_vs_refD076_same_rows": 0.035062397
+  },
+  {
+   "rung": "R3_RATE_X_MINUTES",
+   "n": 13879,
+   "mae_rule": 4.0350108636,
+   "mae_rung": 4.0165441551,
+   "skill_vs_rung": -0.004597661,
+   "mae_refD076": 4.1816287922,
+   "skill_vs_refD076_same_rows": 0.035062397
+  },
+  {
+   "rung": "R4_RICH_LOOKUP",
+   "n": 13879,
+   "mae_rule": 4.0350108636,
+   "mae_rung": 4.2398240253,
+   "skill_vs_rung": 0.0483069959,
+   "mae_refD076": 4.1816287922,
+   "skill_vs_refD076_same_rows": 0.035062397
+  }
+ ],
+ "step2_anchors_separate_the_rowset_effect_from_the_reference_effect": {
+  "why": "The canonical rung R4 is undefined in a frame's FIRST season (its blend has no earlier season to fit on), and that cascades into the walk-forward regression, so the common scored set is 2023-2024 (n=3165) rather than the leads' published 2022-2024 sets (n=4517 / n=4514). Comparing a published figure straight to a re-priced one would therefore confound the row set with the reference. Each lead's OWN construction was re-run on the common rows first.",
+  "D089_points": {
+   "published": 0.0023492235735382717,
+   "own_construction_on_common_rows": 0.0023570359692345333,
+   "row_set_effect": 1.0033255224339908,
+   "repriced_on_canonical_rung": 0.0035722898272361,
+   "REFERENCE_EFFECT": 1.5155856227328726
+  },
+  "D099_points": {
+   "published": 0.0033354248642841694,
+   "own_construction_on_common_rows": 0.005343399966532103,
+   "row_set_effect": 1.602014790903969,
+   "repriced_on_canonical_rung": 0.0045498548762125,
+   "REFERENCE_EFFECT": 0.8514906061141033
+  },
+  "D099_ppm": {
+   "published": 0.005028055896625616,
+   "own_construction_on_common_rows": 0.010297254930036748,
+   "row_set_effect": 2.0479595179018095,
+   "repriced_on_canonical_rung": 0.0112794646108451,
+   "REFERENCE_EFFECT": 1.0953855845545086
+  }
+ },
+ "step2_skipped_not_approximated": [
+  {
+   "lead": "D074/D079 shot-mix attempts channel",
+   "response": "restricted-area attempt counts",
+   "status": "SKIPPED_CANNOT_REPRICE_WITHOUT_RERUN",
+   "quoted_figure": 0.016853346,
+   "quoted_reference": "a five-zone attempts forecast system (F_B), conditional on a forecast total-FGA",
+   "quoted_n": 51473,
+   "repriced_on": "R4_RICH_LOOKUP",
+   "repriced_figure": null,
+   "repriced_n": null,
+   "sst_common": null,
+   "ratio_repriced_over_quoted": null,
+   "quoted_recomputed_on_reprice_rows": null,
+   "ratio_vs_same_rows_anchor": null,
+   "also_on_R2_EWMA_TUNED": null,
+   "p_cluster_signflip": null,
+   "p_cyclic_within": null,
+   "note": "SKIPPED, NOT APPROXIMATED. The response is a ZONE-level attempt count; the ladder defines a rung for TOTAL attempts, not for attempts within a zone, and the base is a system of five forecasts. Re-pricing requires rebuilding the zone forecasts, i.e. re-running the pipeline. Substituting total FGA would be a different quantity wearing the same name."
+  },
+  {
+   "lead": "D072 I0009 additive pressure",
+   "response": "turnovers per 100 offensive possessions",
+   "status": "SKIPPED_CANNOT_REPRICE_WITHOUT_RERUN",
+   "quoted_figure": 0.000413,
+   "quoted_reference": "a fitted multi-term pressure model with a strictly-pregame player-tendency baseline (M_F), plain unweighted OLS",
+   "quoted_n": 18165,
+   "repriced_on": "R4_RICH_LOOKUP",
+   "repriced_figure": null,
+   "repriced_n": null,
+   "sst_common": null,
+   "ratio_repriced_over_quoted": null,
+   "quoted_recomputed_on_reprice_rows": null,
+   "ratio_vs_same_rows_anchor": null,
+   "also_on_R2_EWMA_TUNED": null,
+   "p_cluster_signflip": null,
+   "p_cyclic_within": null,
+   "note": "SKIPPED, NOT APPROXIMATED. The response is not one of the six ladder targets and the base is a fitted model rather than a reference forecast; there is no rung to re-price onto without defining a seventh target and re-running the screen. NOTE: this lead is the one case where the reference was ALREADY corrected -- D072 re-ran it after finding the baseline read the future, and 0.000413 is the post-correction number."
+  }
+ ],
+ "step2_D092_is_the_largest_single_finding_in_the_table": "D092's quoted +3.51% pooled points skill is a statement about D076's expanding running mean, which D092's own screen showed is the LEAGUE MEAN WEARING A PLAYER'S NAME for 404 of 475 player-seasons. On the SAME 13,879 rows the identical operating rule scores +0.04831 against R4_RICH_LOOKUP, +0.00220 against R2_EWMA_TUNED and -0.00460 against R3_RATE_X_MINUTES. THE SIGN OF THE HEADLINE DEPENDS ON THE RUNG. Against a tuned EWMA of the player's own prior games the cold-start rule is worth about two-tenths of one percent; against the rate x minutes composite it is NEGATIVE. Nothing about the rule changed.",
+ "step3_ranking": {
+  "table": [
+   {
+    "comparable_family": "POINTS dR2, identical 3165-row set, identical SST",
+    "lead": "D089 teammate volume (prior-only)",
+    "quoted_figure": 0.0023492236,
+    "rank_by_quoted": 2.0,
+    "repriced_on_canonical_rung": 0.0035722898,
+    "rank_by_repriced": 2.0,
+    "p_cluster_signflip_repriced": 0.2066983254,
+    "p_cyclic_repriced": 0.0779220779,
+    "rank_changed": false,
+    "reason": null
+   },
+   {
+    "comparable_family": "POINTS dR2, identical 3165-row set, identical SST",
+    "lead": "D099 opponent defence",
+    "quoted_figure": 0.0033354249,
+    "rank_by_quoted": 1.0,
+    "repriced_on_canonical_rung": 0.0045498549,
+    "rank_by_repriced": 1.0,
+    "p_cluster_signflip_repriced": 0.0022494376,
+    "p_cyclic_repriced": 0.000999001,
+    "rank_changed": false,
+    "reason": null
+   },
+   {
+    "comparable_family": "NOT RANKABLE",
+    "lead": "D092 cold-start tiering",
+    "quoted_figure": null,
+    "rank_by_quoted": null,
+    "repriced_on_canonical_rung": null,
+    "rank_by_repriced": null,
+    "p_cluster_signflip_repriced": null,
+    "p_cyclic_repriced": null,
+    "rank_changed": null,
+    "reason": "METRIC MISMATCH: an MAE SKILL RATIO, not a dR2. Cannot be ranked against a dR2 under D1 without recomputing it as a dR2 on the same rows; and its row set (the whole tier frame, cold-start heavy) is disjoint in character from the DECISION stratum."
+   },
+   {
+    "comparable_family": "NOT RANKABLE",
+    "lead": "D074/D079 shot-mix attempts",
+    "quoted_figure": null,
+    "rank_by_quoted": null,
+    "repriced_on_canonical_rung": null,
+    "rank_by_repriced": null,
+    "p_cluster_signflip_repriced": null,
+    "p_cyclic_repriced": null,
+    "rank_changed": null,
+    "reason": "RESPONSE MISMATCH (D1): zone attempt counts are not points. No denominator makes the two comparable."
+   },
+   {
+    "comparable_family": "NOT RANKABLE",
+    "lead": "D072 I0009 additive pressure",
+    "quoted_figure": null,
+    "rank_by_quoted": null,
+    "repriced_on_canonical_rung": null,
+    "rank_by_repriced": null,
+    "p_cluster_signflip_repriced": null,
+    "p_cyclic_repriced": null,
+    "rank_changed": null,
+    "reason": "RESPONSE MISMATCH (D1), already recorded by D072 ruling 4 itself."
+   }
+  ],
+  "n_rank_swaps": 0,
+  "order_by_quoted": [
+   "D099 opponent defence",
+   "D089 teammate volume (prior-only)"
+  ],
+  "order_by_repriced": [
+   "D099 opponent defence",
+   "D089 teammate volume (prior-only)"
+  ],
+  "n_rankable": 2,
+  "n_not_rankable": 3,
+  "VERDICT": "STABLE IN ORDER, UNSTABLE IN STANDING. State it as: the reference problem did not reorder the two leads that are commensurable, so past prioritisation between THOSE TWO was not an artefact. But it did move one of them from clearing a correct-level null to not clearing one, and three of the five leads were never commensurable at all. 'The ranking is stable' would be a true sentence and a misleading summary."
+ },
+ "step4_denominator_rule": {
+  "rule": [
+   "Two dR2 figures are comparable only if ALL of the following hold.",
+   "D1 SAME RESPONSE: the same variable in the same units.  No rescaling makes a dR2 on turnover-rate comparable to a dR2 on points (D072 ruling 4).",
+   "D2 SAME SCORED ROWS: the identical row set, not merely the same n.",
+   "D3 SAME DENOMINATOR: SST computed on that full scored row set about ITS OWN unweighted mean.  A subset's SST is never a valid denominator for a figure that will be compared to a stratum-wide figure (D099: a ~4x inflation).",
+   "D4 SAME WEIGHTING in all three of the fit, the SSE and the SST (D072 ruling 2).",
+   "D5 SAME BASE: both increments measured over the same reference model (D090, D094).",
+   "If D2 fails but D1/D4/D5 hold, the figures become comparable after BOTH are re-expressed on a common denominator: dR2_common = SSE_reduction / SST_common, SST_common being the SST of the common scored row set.  If D1 fails, they are NOT comparable and no denominator fixes it."
+  ],
+  "operational_form": "dR2_A is comparable to dR2_B iff they share (D1) the response variable and its units, (D2) the scored row set, (D3) an SST taken on that full scored row set about its own unweighted mean, (D4) the weighting in fit / SSE / SST, and (D5) the base model. Failing D2 alone is repairable by re-expressing both as SSE_reduction / SST_common. Failing D1 is not repairable at all.",
+  "how_this_screen_enforces_it": "refladder.paired_dr2 and every dR2 in s05 take the denominator as an explicit argument. There is no code path that can compute a subset's own SST by accident. D099's defect is made structurally impossible rather than merely discouraged.",
+  "FLAGGED_QUOTED_FIGURES_ON_NON_COMPARABLE_DENOMINATORS": [
+   {
+    "figure": "D098 +0.023863 (opponent defence, top volume tercile)",
+    "defect": "D3 -- subset SST. Computed on 1,687 rows whose SST is 36% of the stratum's.",
+    "status": "ALREADY SUPERSEDED by D099 ruling 2; recorded here only because the ledger still contains the number and D099 had to say 'is not comparable to anything else in this ledger'."
+   },
+   {
+    "figure": "D098's '6.2x the largest ceiling this programme has measured'",
+    "defect": "D3 -- the ceiling was computed on the same inflated denominator.",
+    "status": "WITHDRAWN by D099; no successor may cite it."
+   },
+   {
+    "figure": "D089's ceiling comparisons: 'the prior-only ceiling is ~1.8x D079's mix ceiling and ~16x D084's conversion ceiling'",
+    "defect": "D1 -- D089's ceiling is on POINTS and D079's is on ZONE ATTEMPT COUNTS. These are ratios of variance shares of different response variables. The comparison reads as a size ordering and is not one.",
+    "status": "NOT PREVIOUSLY FLAGGED. Raised here."
+   },
+   {
+    "figure": "D072's pair 0.002795 (standard-weighted) and 0.000413 (plain OLS)",
+    "defect": "D4 -- weighting. D072 itself ruled that both must be reported together and that the ranking entry is the plain one.",
+    "status": "ALREADY HANDLED by D072 rulings 2-3; the risk is a successor quoting one of them alone."
+   },
+   {
+    "figure": "D092's +3.51% pooled points skill",
+    "defect": "D5 (a reference the same screen showed to be degenerate) and a METRIC mismatch -- it is an MAE skill ratio, not a dR2, and cannot enter a dR2 ranking.",
+    "status": "RE-PRICED HERE. Its sign depends on the rung."
+   },
+   {
+    "figure": "D074's +0.019139 conditional-on-realised-FGA mix increment",
+    "defect": "D2/D5 -- conditioned on a realised quantity, so it is not on the same footing as D079's +0.016853 forecast increment.",
+    "status": "ALREADY HANDLED by D079, which measured the forecast version. The pair must never be quoted as one number."
+   },
+   {
+    "figure": "D090's +46.4% and +7.1% for one availability forecast; D094's +3.71% and -4.41% for one minutes forecast",
+    "defect": "D5 -- different references, same forecast. These are the instances that motivated this screen.",
+    "status": "Both already corrected in their own entries; listed so the pattern is legible as one pattern rather than four incidents."
+   }
+  ]
+ },
+ "controls": {
+  "negative_control_G01_noise_over_each_rung": [
+   {
+    "dr2_common_sst": 8.3239e-05,
+    "n": 3165,
+    "dr2_kit_own_sst": 8.3239e-05,
+    "p_cluster": 0.8457885529,
+    "p_row_NAIVE": 0.8422894276,
+    "mae_base": 5.0492196533,
+    "mae_with": 5.051470725,
+    "lead": "NEGATIVE_CONTROL_noise",
+    "response": "points",
+    "feature": "G01_noise",
+    "base_rung": "R1_PLAYER_EXPAND",
+    "sst_common": 189594.8132701422
+   },
+   {
+    "dr2_common_sst": -1.05702e-05,
+    "n": 3165,
+    "dr2_kit_own_sst": -1.05702e-05,
+    "p_cluster": 0.9802549363,
+    "p_row_NAIVE": 0.9817545614,
+    "mae_base": 5.03912612,
+    "mae_with": 5.0411493964,
+    "lead": "NEGATIVE_CONTROL_noise",
+    "response": "points",
+    "feature": "G01_noise",
+    "base_rung": "R2_EWMA_TUNED",
+    "sst_common": 189594.8132701422
+   },
+   {
+    "dr2_common_sst": -0.0002961142,
+    "n": 3165,
+    "dr2_kit_own_sst": -0.0002961142,
+    "p_cluster": 0.5711072232,
+    "p_row_NAIVE": 0.543864034,
+    "mae_base": 5.2195814773,
+    "mae_with": 5.2232644443,
+    "lead": "NEGATIVE_CONTROL_noise",
+    "response": "points",
+    "feature": "G01_noise",
+    "base_rung": "R4_RICH_LOOKUP",
+    "sst_common": 189594.8132701422
+   }
+  ],
+  "negative_control_verdict": "dead at every rung (|dR2| <= 3.0e-4, cluster p 0.57-0.98, cyclic p 0.609) -- so the re-price machinery is not manufacturing increments out of the rung's residual structure.",
+  "cyclic_within_player_null": [
+   {
+    "feature": "P01_c04_prevgame",
+    "scheme": "within_cyclic",
+    "real": 0.0037165845,
+    "p": 0.0779220779,
+    "null_sd": null
+   },
+   {
+    "feature": "A10_opp_defrtg",
+    "scheme": "within_cyclic",
+    "real": 0.0053311963,
+    "p": 0.000999001,
+    "null_sd": null
+   },
+   {
+    "feature": "G01_noise",
+    "scheme": "within_cyclic",
+    "real": 5.50847e-05,
+    "p": 0.6093906094,
+    "null_sd": null
+   }
+  ],
+  "why_cyclic": "D093 measured that a plain within-player SHUFFLE is anticonservative for an autocorrelated prior-history regressor (p 0.0015 where the honest null gave 0.39); the kit refuses it (K6). P01 and the defence column are exactly that shape, so SCHEME_WITHIN_CYCLIC is the null used.",
+  "row_level_p_reported_for_contrast_only": true,
+  "reproductions": {
+   "D092_pooled_MAE_of_the_operating_rule": {
+    "recomputed": 4.035010863560213,
+    "published": 4.035010863560213,
+    "abs_delta": 0.0
+   },
+   "D092_pooled_skill_vs_D076_reference": {
+    "recomputed": 0.03506239696863178,
+    "published": 0.03506239696863178,
+    "abs_delta": 0.0
+   },
+   "D089_own_construction_on_its_own_number": "The published 0.0023492 is on 4,517 rows spanning 2022-2024 and could not be reproduced on that row set here, because R4's first-season gap forces the common set to 2023-2024. Re-running D089's OWN construction on the common rows gives 0.002357036, i.e. the row-set change is worth 1.003x -- so the reproduction is close enough to anchor the reference comparison, and is reported as an anchor rather than claimed as an exact reproduction."
+  },
+  "champion_never_fitted": "Only stored forecast columns (pts__pred_point, pts__is_fallback) were read. No retraining, refitting or modification of any kind."
+ },
+ "partition": {
+  "seasons_touched": [
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "assertion": "refladder.assert_partition runs inside every ladder() call and tests VALUES, never file text. It checks the observation-season column and every datetime column, and deliberately does NOT fire on year-valued player attributes such as draft_year -- that is D092's K4 defect, whose obvious workaround (season_cols=['season']) hides real leaks.",
+  "2025_2026": "never read, joined, plotted or described.",
+  "season_disjointness": "asserted before any previous-season aggregate is used; without it a prior-season value would not be strictly prior."
+ },
+ "time_window_table": [
+  [
+   "R0_LEAGUE",
+   "same-season league value",
+   "all games in the same season on STRICTLY EARLIER DATES (date-blocked, so same-day games are excluded)",
+   "prior-only"
+  ],
+  [
+   "R0_LEAGUE",
+   "previous-season league value (chain step 2)",
+   "the whole previous season; seasons are calendar-disjoint, asserted by assert_season_disjoint",
+   "prior-only"
+  ],
+  [
+   "R0_LEAGUE",
+   "GRAND (chain step 3)",
+   "the whole frame; FIRES ONLY on rows with neither an earlier same-season game nor a previous season in the frame; counted and reported as grand_fallback_rows",
+   "NOT prior-only -- named, counted, and never in an evaluation set"
+  ],
+  [
+   "R1_PLAYER_EXPAND",
+   "player's expanding prior mean",
+   "the player's own same-season games at an EARLIER position in the date-sorted group; prefix arrays indexed at h, never h+1",
+   "prior-only"
+  ],
+  [
+   "R2_EWMA_TUNED",
+   "tuned EWMA of the player's prior games",
+   "as R1",
+   "prior-only"
+  ],
+  [
+   "R2_EWMA_TUNED",
+   "half-life / mode / shrinkage (pts, minutes, fga, ppm)",
+   "D094's grid, selected on 2022-2023 and evaluated on 2023-2024; imported, not re-searched",
+   "prior-only by D094's construction"
+  ],
+  [
+   "R2_EWMA_TUNED",
+   "half-life (reb, ast)",
+   "selected inside this screen on TRAIN SEASONS ONLY, frozen and hashed before any re-priced figure",
+   "prior-only"
+  ],
+  [
+   "R2/R3/R4",
+   "shrinkage target `prior_season`",
+   "the player's own PREVIOUS season, whole; calendar-disjoint",
+   "prior-only"
+  ],
+  [
+   "R3_RATE_X_MINUTES",
+   "EWMA(rate) x EWMA(minutes)",
+   "as R1, both factors",
+   "prior-only"
+  ],
+  [
+   "R4_RICH_LOOKUP",
+   "the feature columns",
+   "each is a rung or a prior-only aggregate above",
+   "prior-only"
+  ],
+  [
+   "R4_RICH_LOOKUP",
+   "THE BLEND COEFFICIENTS (inference step)",
+   "OLS fitted on seasons STRICTLY EARLIER than the season being scored; the earliest season is unscored",
+   "prior-only"
+  ],
+  [
+   "re-price",
+   "lead coefficients (inference step)",
+   "refitted on seasons strictly earlier than the scored season, matching D089/D098's walk-forward protocol",
+   "prior-only"
+  ],
+  [
+   "re-price",
+   "the denominator SST",
+   "computed on the realised response of the FULL scored row set; uses the response only, never a forecast, and is identical across every arm of a comparison",
+   "uses realised y of the scored set -- as every R2 denominator must; identical across arms"
+  ]
+ ],
+ "WHERE_I_COULD_HAVE_CHEATED": [
+  {
+   "item": "R3 was implemented incorrectly on the first execution of s04 and was corrected.",
+   "detail": "The first run gave points-per-minute R3 an MAE of 8.238 and an R2 of -1190, because the rate x minutes form was applied to a quantity that is already a rate. The fix defines R3 for a rate target as the ratio of prior component sums, and pins the minutes arm of the composite at half-life 2 for level targets -- which is what REFERENCE_LADDER.md already said. The first run's log is kept verbatim as run_log_s04_FIRSTRUN_r3_defect.txt.",
+   "why_it_is_not_a_cheat": "No re-priced figure existed at that point; s05 had not been written. But it is a rung changed after seeing a number, and the brief asks for exactly this to be declared."
+  },
+  {
+   "item": "THE CANONICAL RUNG FLATTERS D092 AND I SAY SO.",
+   "detail": "R4_RICH_LOOKUP was fixed as canonical in the preregistration, before any re-price. On the DECISION stratum that choice is defensible on its merits (R4 has the best R2 there). On D092's cold-start-heavy tier frame it is NOT the strongest rung: by MAE R4 is 4.2398 against R3's 4.0165. D092's re-priced gain is therefore +4.83% against R4 and -0.46% against R3. HAD I CHOSEN R3 AS CANONICAL, D092 WOULD HAVE RE-PRICED NEGATIVE. Every rung is in d092_reprice_by_rung.csv and the R2/R3 figures are in the reprice table's note column, so the reader does not have to take the R4 headline."
+  },
+  {
+   "item": "The re-price row set is smaller than the leads' published row sets.",
+   "detail": "3,165 rows (2023-2024) against 4,517/4,514 (2022-2024), because R4 is undefined in a frame's first season and that cascades into the walk-forward fit. This is handled by re-running each lead's OWN construction on the common rows, so the reported reference effect is not contaminated by the row-set change -- but the re-priced figures are on 30% fewer rows than the quoted ones and no amount of arithmetic changes that."
+  },
+  {
+   "item": "Rebound and assist half-lives were selected inside this screen.",
+   "detail": "On seasons 2021-2022 only, from D094's unchanged grid, frozen and hashed before any re-priced figure. They are used in NO re-priced figure -- every re-price is on points or points-per-minute -- so they cannot have influenced the answer to step 3."
+  },
+  {
+   "item": "Two leads were skipped rather than approximated.",
+   "detail": "D074/D079 and D072. The tempting approximation for D074/D079 was to substitute the total-attempts rung for the zone-attempts response; it was not done, because that is a different quantity wearing the same name and would have produced a complete table that was not honest."
+  },
+  {
+   "item": "The reference-effect direction was not predicted in advance.",
+   "detail": "I did not preregister which way each lead would move. The finding that D089 GROWS and D099's points figure SHRINKS is therefore descriptive, not a confirmed prediction, and should be read that way."
+  },
+  {
+   "item": "The D099 anchors are reconstructions, not byte reproductions.",
+   "detail": "E1_I0025 stores no frame, so D099's construction was rebuilt from D098's preregistered base list (BASE_COMPLETE + the usage main effect) joined to the defence column in E0_I0016's frozen frame. The anchor on the common rows is +0.005343 (points) against a published +0.003335 on a larger row set. The reconstruction is close in form but is NOT certified equal to D099's code path."
+  }
+ ],
+ "deliverables": [
+  "REFERENCE_LADDER.md",
+  "_ledger_extract.json",
+  "_ledger_txt",
+  "_prereg.json",
+  "_s05.json",
+  "cyclic_null.csv",
+  "d092_reprice_by_rung.csv",
+  "ladder_pairwise.csv",
+  "ladder_table.csv",
+  "ranking_change.csv",
+  "reference_spread.csv",
+  "refladder.py",
+  "reprice_by_rung.csv",
+  "reprice_table.csv",
+  "run_log_s00.txt",
+  "run_log_s01.txt",
+  "run_log_s02.txt",
+  "run_log_s02b.txt",
+  "run_log_s03.txt",
+  "run_log_s04.txt",
+  "run_log_s04_FIRSTRUN_r3_defect.txt",
+  "run_log_s05.txt",
+  "run_log_s06.txt",
+  "rung_quality_by_rowset.csv",
+  "s00_read_ledger.py",
+  "s00b_split_ledger.py",
+  "s01_inspect.py",
+  "s02_inspect_inputs.py",
+  "s02b_decode_cells.py",
+  "s03_prereg.py",
+  "s04_ladder.py",
+  "s05_reprice.py",
+  "s06_findings.py",
+  "time_window_table.csv"
+ ]
+}

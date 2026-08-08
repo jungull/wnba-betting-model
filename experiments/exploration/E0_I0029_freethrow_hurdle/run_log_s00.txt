@@ -1,0 +1,85 @@
+﻿
+====================================================================================================
+0. FORBIDDEN ARTIFACTS -- declared and NOT opened
+====================================================================================================
+  NOT OPENED: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\w1_truth\player_game_availability.csv
+  NOT OPENED: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\w1_truth\roster_asof.csv
+  NOT OPENED: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\zone_maps
+
+====================================================================================================
+1. MANIFEST CHECK -- read from bytes this session, never cited from NOTES
+====================================================================================================
+  master_player.parquet        USABLE_IF_FILTERED  granularity=row fit_through=2026
+  master_team.parquet          USABLE_IF_FILTERED  granularity=row fit_through=2026
+
+====================================================================================================
+2. LOAD + PARTITION ASSERT ON VALUES
+====================================================================================================
+  raw master_player (33712, 78)
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  after partition filter (21462, 78)
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  appeared player-games (minutes>0): 18212
+
+====================================================================================================
+3. RE-DERIVING THE FEASIBILITY NUMBERS ON THE EXPLORATION PARTITION
+====================================================================================================
+  FT share of points          = 0.173663   (ideation quoted 0.1737 over SIX seasons)
+ season    n  ft_share_of_points  frac_fta_zero  mean_fta  mean_ftm  corr_ftm_pts  corr_fd_pts  fouls_drawn_null_frac
+   2021 3885            0.171737       0.477735  1.847362  1.493694      0.643020     0.653473                    0.0
+   2022 4519            0.173286       0.452755  1.899978  1.506085      0.638832     0.656589                    0.0
+   2023 4897            0.177077       0.462732  1.945477  1.553808      0.671970     0.687341                    0.0
+   2024 4911            0.172102       0.464875  1.900224  1.499084      0.675518     0.693943                    0.0
+
+  frac fta==0                 = 0.464035   (ideation quoted 0.4640)
+  corr(ftm, pts)              = +0.659477  (ideation quoted +0.6595)  -> bound R2 0.434911
+  corr(fouls_drawn, pts)      = +0.674848  (ideation quoted +0.6749)  -> bound R2 0.455420
+  fouls_drawn NULL fraction   = 0.000000  <-- COVERAGE IS NOT 100% INSIDE THE PARTITION IF >0
+  ftm/fta NULL fraction       = 0.000000 / 0.000000
+
+====================================================================================================
+4. THE HURDLE, DESCRIBED
+====================================================================================================
+  This is the number the whole screen turns on.  If free-throw production were a rate,
+  the zero mass would follow from a low rate.  It does not: the zero mass is far larger
+  than a Poisson with the observed mean would produce.
+  mean fta = 1.9011  ->  Poisson P(0) = 0.1494   OBSERVED P(0) = 0.4640   EXCESS = +0.3146
+
+  GIVEN fta>0 (n=9761, 53.6% of rows):
+    fta   mean 3.5470  sd 2.3312  median 3.0  max 21
+    ftm   mean 2.8255  sd 2.0966
+    ft%   mean 0.7850  sd 0.2775
+
+  fta value counts (top 12):
+fta
+0.0     8451
+1.0      989
+2.0     3706
+3.0     1021
+4.0     1614
+5.0      669
+6.0      727
+7.0      335
+8.0      285
+9.0      148
+10.0     114
+11.0      66
+
+====================================================================================================
+5. VARIANCE DECOMPOSITION OF ftm ACROSS THE HURDLE -- LAW OF TOTAL VARIANCE
+====================================================================================================
+  Var(ftm) = E[Var(ftm|A)] + Var(E[ftm|A]) where A = 1{fta>0}.
+  The SECOND term is the share of free-throw-point variance that is EXPLAINED BY THE
+  HURDLE ALONE -- i.e. by knowing only whether the player got to the line.
+  Var(ftm) = 4.341381    within = 2.355803 (54.26%)   BETWEEN (hurdle) = 1.985578 (45.74%)
+
+====================================================================================================
+6. IS ftm A MEANINGFUL SHARE OF POINTS VARIANCE, NOT JUST OF POINTS LEVEL?
+====================================================================================================
+  17.37%% of the POINTS TOTAL is a level statement.  What matters for a forecast is the
+  VARIANCE share and the covariance, so both are computed here.
+  Var(pts) = 56.2544 = Var(ftm) 4.3414 + Var(non-ft pts) 39.9837 + 2*Cov 11.9300
+  ftm share of Var(pts)                = 0.0772
+  ftm TOTAL contribution (Var+Cov)/Var = 0.1832
+
+  WROTE _s00.json

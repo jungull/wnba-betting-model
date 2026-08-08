@@ -1,0 +1,131 @@
+﻿
+====================================================================================================
+STEP 01 -- LOAD, JOIN, BUILD PRIORS
+====================================================================================================
+  prereg sha256 verified : 895bac8bc2255c9d660ac956873884eefbc95ddab6128fd80cbf90b8cbc6dac0
+  amendment sha256       : f110da75d20249a8efd88a507644a31ca56962dc03a558cd4e6d2065563d207f  (added=6 dropped=0 corrected=1)
+
+====================================================================================================
+1a. the 2021 fold -- CONFIRM the known non-finding, then never use it
+====================================================================================================
+    cbs_v15_player_oof_v5    {'fold_id': 'season:2021', 'n_train_rows': 0, 'model_was_fitted': False, 'degenerate': True}
+    cbs_v14_player_oof       {'fold_id': 'season:2021', 'n_train_rows': 0, 'model_was_fitted': False, 'degenerate': True}
+  -> degenerate BY DESIGN. Excluded from every discovery claim (prereg C1).
+
+====================================================================================================
+1b. contract / truth frame -- cbs_v15_player_oof_v5
+====================================================================================================
+  contract[cbs_v15_player_oof_v5] <- player_game_enriched.parquet
+  44851 rows total -> 21617 rows in 2022-2024 (23234 dropped: 2021 + holdout)
+  seasons present: [np.int64(2022), np.int64(2023), np.int64(2024)]   date span: 2022-05-06 .. 2024-10-20
+  partition[contract]: season-valued=['season']  date=['game_date']  anchors=['season', 'game_date']
+
+  season calendar ranges (must be disjoint for prev-season aggregates to be prior):
+    season 2022: 2022-05-06 .. 2022-09-18
+    season 2023: 2023-05-19 .. 2023-10-18
+    season 2024: 2024-05-14 .. 2024-10-20
+  priors built: shift(1) BEFORE cumsum; league means shifted BY DATE
+  ref_ columns: ['ref_pts', 'ref_minutes', 'ref_fga', 'ref_appeared']
+  partition[cbs_v15_player_oof_v5/post-priors]: season-valued=['season']  date=['game_date']  anchors=['season', 'game_date']
+
+====================================================================================================
+1b. contract / truth frame -- cbs_v14_player_oof
+====================================================================================================
+  contract[cbs_v14_player_oof] <- player_game.parquet
+  35627 rows total -> 17809 rows in 2022-2024 (17818 dropped: 2021 + holdout)
+  seasons present: [np.int64(2022), np.int64(2023), np.int64(2024)]   date span: 2022-05-08 .. 2024-10-20
+  partition[contract]: season-valued=['season']  date=['game_date']  anchors=['season', 'game_date']
+
+  season calendar ranges (must be disjoint for prev-season aggregates to be prior):
+    season 2022: 2022-05-08 .. 2022-09-18
+    season 2023: 2023-05-21 .. 2023-10-18
+    season 2024: 2024-05-16 .. 2024-10-20
+  partition[cbs_v14_player_oof/post-priors]: season-valued=['season']  date=['game_date']  anchors=['season', 'game_date']
+
+====================================================================================================
+1c. champion output inventory
+====================================================================================================
+                  arm                      target  n_rows  contract_rows  pred_point_null  pred_sd_null  q50_null  n_components  fallback_share
+cbs_v15_player_oof_v5 player_scoring_distribution   21617          21617                0             0         0             2          0.2488
+cbs_v15_player_oof_v5      e_minutes_given_active   21617          21617                0             0         0             2          0.2488
+cbs_v15_player_oof_v5              attempts_usage   21617          21617                0             0         0             2          0.2488
+cbs_v15_player_oof_v5                    p_active   21617          21617                0         21617     21617             2          0.1049
+   cbs_v14_player_oof player_scoring_distribution   17809          17809                0             0         0             2          0.1381
+   cbs_v14_player_oof      e_minutes_given_active   17809          17809                0             0         0             2          0.1381
+   cbs_v14_player_oof              attempts_usage   17809          17809                0             0         0             2          0.1381
+   cbs_v14_player_oof                    p_active   17809          17809                0         17809     17809             2          0.0823
+
+  component_id inventory:
+    cbs_v15_player_oof_v5    player_scoring_distribution    player_scoring_distribution/prefix_mean | player_scoring_distribution/walk_forward_active_ewma
+    cbs_v15_player_oof_v5    e_minutes_given_active         e_minutes_given_active/prefix_mean | e_minutes_given_active/walk_forward_active_ewma
+    cbs_v15_player_oof_v5    attempts_usage                 attempts_usage/prefix_mean | attempts_usage/walk_forward_active_ewma
+    cbs_v15_player_oof_v5    p_active                       p_active/declared_constant | p_active/ridge_logistic_stage_a
+    cbs_v14_player_oof       player_scoring_distribution    player_scoring_distribution/prefix_mean | player_scoring_distribution/walk_forward_active_ewma
+    cbs_v14_player_oof       e_minutes_given_active         e_minutes_given_active/prefix_mean | e_minutes_given_active/walk_forward_active_ewma
+    cbs_v14_player_oof       attempts_usage                 attempts_usage/prefix_mean | attempts_usage/walk_forward_active_ewma
+    cbs_v14_player_oof       p_active                       p_active/declared_constant | p_active/ridge_logistic_stage_a
+
+====================================================================================================
+1d. assemble the long working frame  (one row per arm x target x row_uid)
+====================================================================================================
+    cbs_v15_player_oof_v5    player_scoring_distribution    pred= 21617 joined= 21617 unmatched=  0 required= 21617 scoreable= 14262
+    cbs_v15_player_oof_v5    e_minutes_given_active         pred= 21617 joined= 21617 unmatched=  0 required= 21617 scoreable= 14262
+    cbs_v15_player_oof_v5    attempts_usage                 pred= 21617 joined= 21617 unmatched=  0 required= 21617 scoreable= 14262
+    cbs_v15_player_oof_v5    p_active                       pred= 21617 joined= 21617 unmatched=  0 required= 21617 scoreable= 18192
+    cbs_v14_player_oof       player_scoring_distribution    pred= 17809 joined= 17809 unmatched=  0 required= 17809 scoreable= 13879
+    cbs_v14_player_oof       e_minutes_given_active         pred= 17809 joined= 17809 unmatched=  0 required= 17809 scoreable= 13879
+    cbs_v14_player_oof       attempts_usage                 pred= 17809 joined= 17809 unmatched=  0 required= 17809 scoreable= 13879
+    cbs_v14_player_oof       p_active                       pred= 17809 joined= 17809 unmatched=  0 required= 17809 scoreable= 17809
+
+  working frame: (157704, 79)   (zero unmatched rows on either arm)
+  partition[work_frame]: season-valued=['season']  date=['game_date']  anchors=['season', 'game_date']
+
+====================================================================================================
+1e. POSITIVE CONTROL -- rediscover D092 / D094
+====================================================================================================
+  D092: champion emits a CONSTANT for players with < 3 prior appearances --
+        8.704 pts at sd 0.013 and 21.62 minutes at sd 0.09, all three seasons,
+        against a truth sd of 7.2.
+  D094: on 698 fallback rows the champion prints EXACTLY TWO distinct point values.
+
+                  arm                      target               condition  n_rows  n_distinct_pred  mean_pred  sd_pred  sd_truth
+cbs_v15_player_oof_v5 player_scoring_distribution n_prior_appearances < 3    5378                3     8.7061   0.0138    7.1926
+cbs_v15_player_oof_v5 player_scoring_distribution             is_fallback    5378                3     8.7061   0.0138    7.1926
+cbs_v15_player_oof_v5 player_scoring_distribution           is_cold_start    3563                3     8.7063   0.0140    6.7732
+   cbs_v14_player_oof player_scoring_distribution n_prior_appearances < 3    2459                3     8.7039   0.0129    7.2391
+   cbs_v14_player_oof player_scoring_distribution             is_fallback    2459                3     8.7039   0.0129    7.2391
+   cbs_v14_player_oof player_scoring_distribution           is_cold_start    1050                3     8.7028   0.0130    7.1984
+cbs_v15_player_oof_v5      e_minutes_given_active n_prior_appearances < 3    5378                3    21.6056   0.0878   10.9092
+cbs_v15_player_oof_v5      e_minutes_given_active             is_fallback    5378                3    21.6056   0.0878   10.9092
+cbs_v15_player_oof_v5      e_minutes_given_active           is_cold_start    3563                3    21.6013   0.0858   10.4831
+   cbs_v14_player_oof      e_minutes_given_active n_prior_appearances < 3    2459                3    21.6250   0.0896   11.0926
+   cbs_v14_player_oof      e_minutes_given_active             is_fallback    2459                3    21.6250   0.0896   11.0926
+   cbs_v14_player_oof      e_minutes_given_active           is_cold_start    1050                3    21.6223   0.0852   10.8779
+cbs_v15_player_oof_v5              attempts_usage n_prior_appearances < 3    5378                3     7.3146   0.0360    5.3241
+cbs_v15_player_oof_v5              attempts_usage             is_fallback    5378                3     7.3146   0.0360    5.3241
+cbs_v15_player_oof_v5              attempts_usage           is_cold_start    3563                3     7.3128   0.0351    5.3368
+   cbs_v14_player_oof              attempts_usage n_prior_appearances < 3    2459                3     7.3225   0.0370    5.2253
+   cbs_v14_player_oof              attempts_usage             is_fallback    2459                3     7.3225   0.0370    5.2253
+   cbs_v14_player_oof              attempts_usage           is_cold_start    1050                3     7.3211   0.0352    5.2195
+
+  D092 CHECK pts      n_prior_appearances<3 : mean=   8.706 sd= 0.0138  n= 5378 n_distinct=3   (D092 published 8.704 / 0.013)
+  D092 CHECK minutes  n_prior_appearances<3 : mean=  21.606 sd= 0.0878  n= 5378 n_distinct=3   (D092 published 21.62 / 0.09)
+
+====================================================================================================
+1f. pooled skill of the champion against the strictly-prior reference (the anchor)
+====================================================================================================
+    cbs_v15_player_oof_v5    player_scoring_distribution    skill= -2.3264%  MAE  champ=4.2374 ref=4.1411  n=14262
+    cbs_v15_player_oof_v5    e_minutes_given_active         skill= +0.8788%  MAE  champ=5.1810 ref=5.2269  n=14262
+    cbs_v15_player_oof_v5    attempts_usage                 skill= -2.4517%  MAE  champ=2.6898 ref=2.6254  n=14262
+    cbs_v15_player_oof_v5    p_active                       skill=+42.0859%  Brier champ=0.0920 ref=0.1588  n=18192
+    cbs_v14_player_oof       player_scoring_distribution    skill= -2.0990%  MAE  champ=4.2580 ref=4.1705  n=13879
+    cbs_v14_player_oof       e_minutes_given_active         skill= +0.8279%  MAE  champ=5.2118 ref=5.2553  n=13879
+    cbs_v14_player_oof       attempts_usage                 skill= -2.1334%  MAE  champ=2.6864 ref=2.6303  n=13879
+    cbs_v14_player_oof       p_active                       skill=+22.0592%  Brier champ=0.0953 ref=0.1223  n=17809
+
+  D081 published pooled POINTS skill = -0.22%% for the champion vs its reference.
+  The reference here is INDEPENDENTLY REBUILT (D076's construction, not its stored
+  column), so an exact match is not expected -- SIGN and ORDER OF MAGNITUDE anchor it.
+
+  wrote work_frame.parquet (157704, 79)
+  wrote C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0028_degeneracy_sweep\_s01.json

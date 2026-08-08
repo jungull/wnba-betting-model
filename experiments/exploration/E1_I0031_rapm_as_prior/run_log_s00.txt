@@ -1,0 +1,114 @@
+﻿
+====================================================================================================
+STEP 1a -- rapm_v0.csv IS FORBIDDEN: assert it is never opened by this screen
+====================================================================================================
+  rapm_v0.csv manifest asof_granularity is 'artifact' (bound at 2026) -> UNUSABLE.
+  This screen NEVER opens data/rapm/rapm_v0.csv.  The only RAPM read is:
+    C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\rapm\rapm_walkforward.csv
+  and its per-season companion C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\rapm\rapm_walkforward_seasons.csv
+
+====================================================================================================
+STEP 1b -- MANIFEST, RE-CHECKED HERE (not inherited)
+====================================================================================================
+  guard ok  rapm_walkforward after filter                  n=598     {'season': [2022, 2023, 2024]}
+  rapm_walkforward  raw=1177  kept=598  emit_seasons_kept=[2022, 2023, 2024] (dropped 579 holdout rows)
+  strict-prior verified on VALUES: True   row-level clean: True
+  manifest status .............. UNVERIFIABLE
+  manifest asof_granularity .... season
+
+====================================================================================================
+STEP 1c -- STRICT-PRIOR VERIFICATION ON THE ARTIFACT'S OWN COLUMN VALUES
+====================================================================================================
+  per emit season (BEFORE the partition filter, so the check covers every row in the file):
+    emit=2022  train_seasons=[2021]  max_train=2021  fit_through_season=[2021]  strictly_prior=True  n=155  players=155
+    emit=2023  train_seasons=[2021, 2022]  max_train=2022  fit_through_season=[2022]  strictly_prior=True  n=206  players=206
+    emit=2024  train_seasons=[2021, 2022, 2023]  max_train=2023  fit_through_season=[2023]  strictly_prior=True  n=237  players=237
+    emit=2025  train_seasons=[2021, 2022, 2023, 2024]  max_train=2024  fit_through_season=[2024]  strictly_prior=True  n=265  players=265
+    emit=2026  train_seasons=[2021, 2022, 2023, 2024, 2025]  max_train=2025  fit_through_season=[2025]  strictly_prior=True  n=314  players=314
+
+  ROW-LEVEL checks (every row, not just group maxima):
+    rows with max(train_seasons) >= emit season .... 0
+    rows with fit_through_season >= emit season .... 0
+
+  VERDICT: every row's training seasons are STRICTLY PRIOR to its emit season.  PASS.
+  CORRECTION TO THE BRIEF: train_seasons is CUMULATIVE, not prior-season-only.
+    emit 2022 <- 2021 ; emit 2023 <- 2021-2022 ; emit 2024 <- 2021-2023 (expanding window).
+    `fit_through_season` is the LAST training season, which is what the manifest note names.
+    This is still strictly prior, and it is MORE data, but it is not 'the prior season only'.
+
+====================================================================================================
+STEP 1d -- CROSS-SEASON COMPARABILITY HAZARD (found here, not in the manifest)
+====================================================================================================
+  guard ok  rapm_walkforward_seasons after filter          n=3       {'season': [2022, 2023, 2024]}
+ season  fit_through_season train_seasons  n_train_possessions  n_players  lambda_chosen     lambda_source  sd_net_100  replacement_net_100_p25  unseen_slot_pct  thin_history_caveat
+   2022                2021          2021                33161        155         100000 fallback_max_grid       0.095                   -0.054            18.37                 True
+   2023                2022     2021-2022                71264        206          33000  inner_validation       0.373                   -0.194            11.21                False
+   2024                2023     2021-2023               112608        237           2000  inner_validation       2.372                   -1.490            11.71                False
+
+  READ THIS CAREFULLY.  `lambda_chosen` is 100000 (2022, 'fallback_max_grid'), 33000 (2023) and
+  2000 (2024).  The 2022 fit had ONE training season, no inner validation season was available, and
+  the selector fell back to the maximum of the grid -- i.e. maximal shrinkage.  The consequence is
+  visible in sd_net_100: 0.095 (2022), 0.373 (2023), 2.372 (2024) -- a 25x spread in the SCALE of
+  the same column.  net_100 for 2022 is very nearly a constant.
+
+  THEREFORE:
+    * `net_100`, `orapm_100`, `drapm_100` are used ONLY after WITHIN-EMIT-SEASON standardisation
+      (z_ prefix).  Pooling them raw across seasons would let 2024 dominate purely by scale.
+    * the PRIMARY continuous RAPM measure in this screen is a FIXED-lambda column
+      (net_100_lam2000), which IS on a common scale across emit seasons by construction.
+    * 2022 is additionally flagged thin_history_caveat=True by the artifact's own producer.
+
+  post-filter within-season SD of each RAPM column (2022-2024 only):
+        orapm_100  drapm_100   net_100  net_100_lam500  net_100_lam1000  net_100_lam2000  net_100_lam5000
+season                                                                                                   
+2022     0.060181   0.054785  0.094673        3.849267         2.677240         1.784608         1.013808
+2023     0.252323   0.199243  0.371746        4.028717         2.986721         2.110882         1.274986
+2024     1.649200   1.333295  2.366850        4.284240         3.255796         2.366864         1.469645
+
+====================================================================================================
+STEP 1e -- SEASON GRANULARITY: WHAT IT DOES AND DOES NOT DISCHARGE (D080)
+====================================================================================================
+
+  asof_granularity 'season' SATISFIES the partition guard: the value attached to a 2023 row is a
+  season-level object whose inputs all predate the 2023 season, so no 2023+ information crosses.
+  It DOES NOT discharge the retrospective check on its own -- a season-granular artifact could still
+  have been built retrospectively.  Here the artifact's OWN train_seasons / fit_through_season
+  columns were checked on values above and are strictly prior, which is stronger than season
+  boundedness and IS what discharges it.
+
+  THE LIMITATION THAT TRAVELS WITH EVERY RESULT BELOW: RAPM is a SLOW-MOVING PRIOR.  It takes ONE
+  value per player per season.  It cannot move when a player's role changes in June, when they come
+  back from injury, when a teammate is traded, or when they get hot.  Any within-season form signal
+  it appears to carry is an artefact of something else.  It is a level, not a trajectory.
+
+
+====================================================================================================
+STEP 1f -- COVERAGE AGAINST THE SCORED FRAME
+====================================================================================================
+  decomp_frame  shape=(13879, 122)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]  max_date=2024-10-20
+  RAPM join coverage by season (row level):
+            mean   sum  size
+season                      
+2022    0.763182  3329  4362
+2023    0.831508  3948  4748
+2024    0.861816  4110  4769
+  RAPM coverage at player-season level: 367 / 475 = 0.773
+has_rapm  no_rapm  has_rapm
+season                     
+2022         1033      3329
+2023          800      3948
+2024          659      4110
+
+  player-seasons in the scored frame WITHOUT a RAPM value, by season:
+season
+2022    50
+2023    30
+2024    28
+  guard ok  write:provenance_emit_seasons.csv              n=3       {'emit_season': [2022, 2023, 2024]}
+  wrote provenance_emit_seasons.csv (3 rows)
+
+  (the 2025/2026 emit rows are verified above and then DROPPED; they are not written to any
+   output table, and no 2025/2026 value is described anywhere in this screen.)
+  wrote _s00.json
+
+STEP 1 COMPLETE -- provenance VERIFIED independently.

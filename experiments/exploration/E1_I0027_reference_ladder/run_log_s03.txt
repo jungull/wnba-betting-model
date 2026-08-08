@@ -1,0 +1,166 @@
+﻿
+====================================================================================================
+E1_I0027 PREREGISTRATION
+====================================================================================================
+  ladder hash BEFORE reb/ast selection: dd6c6d65b35e0df11f78ec5c22ba781d1787c00f7d9daaa6a22140cc66ab7792
+
+====================================================================================================
+1. canonical frame (READ ONLY)
+====================================================================================================
+  C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0024_reb_ast_characterisation\screen_frame.parquet
+  shape=(18212, 78)  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  normalised: n=18212 seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] date=2021-05-14..2024-10-20
+  partition ok; columns checked on VALUES: ['season', 'game_date', '_date']
+  partition: {'ok': True, 'checked_columns': ['season', 'game_date', '_date'], 'allowed': [2021, 2024]}
+  season calendar ranges:
+    season 2021  2021-05-14 .. 2021-10-17
+    season 2022  2022-05-06 .. 2022-09-18
+    season 2023  2023-05-19 .. 2023-10-18
+    season 2024  2024-05-14 .. 2024-10-20
+    pts      available  n_finite=18212  mean=8.7202  sd=7.5005
+    minutes  available  n_finite=18212  mean=21.4504  sd=10.6701
+    fga      available  n_finite=18212  mean=7.2787  sd=5.3260
+    ppm      available  n_finite=18212  mean=0.3615  sd=0.2756
+    reb      available  n_finite=18212  mean=3.6705  sd=3.2790
+    ast      available  n_finite=18212  mean=2.1231  sd=2.2569
+
+====================================================================================================
+2. half-life selection for the two targets D094 never measured
+====================================================================================================
+  selection set: seasons [2021, 2022] ONLY.  Evaluation set: seasons [2023, 2024].
+  grid = D094's EWMA half-life grid, unchanged: [0.5, 1.0, 2.0, 3.0, 5.0, 8.0, 12.0, 20.0, 40.0]
+
+  target reb:
+    half_life 0.5    train MAE 1.979243  n=8404
+    half_life 1.0    train MAE 1.911736  n=8404
+    half_life 2.0    train MAE 1.869271  n=8404
+    half_life 3.0    train MAE 1.856754  n=8404
+    half_life 5.0    train MAE 1.852276  n=8404
+    half_life 8.0    train MAE 1.854039  n=8404
+    half_life 12.0   train MAE 1.857523  n=8404
+    half_life 20.0   train MAE 1.861835  n=8404
+    half_life 40.0   train MAE 1.865979  n=8404
+    CHOSEN half_life = 5.0
+
+  target ast:
+    half_life 0.5    train MAE 1.355932  n=8404
+    half_life 1.0    train MAE 1.300575  n=8404
+    half_life 2.0    train MAE 1.262662  n=8404
+    half_life 3.0    train MAE 1.249669  n=8404
+    half_life 5.0    train MAE 1.242010  n=8404
+    half_life 8.0    train MAE 1.240476  n=8404
+    half_life 12.0   train MAE 1.240609  n=8404
+    half_life 20.0   train MAE 1.241445  n=8404
+    half_life 40.0   train MAE 1.242640  n=8404
+    CHOSEN half_life = 8.0
+
+====================================================================================================
+3. the frozen ladder
+====================================================================================================
+E1_I0027 CANONICAL REFERENCE LADDER v1
+rungs=R0_LEAGUE|R1_PLAYER_EXPAND|R2_EWMA_TUNED|R3_RATE_X_MINUTES|R4_RICH_LOOKUP
+canonical_rung=R4_RICH_LOOKUP
+targets=pts|minutes|fga|ppm|reb|ast
+pts: mode=composite half_life=8.0 shrink=prior_season k=0.5 floor=0.0
+minutes: mode=equal half_life=2.0 shrink=none k=0.0 floor=0.0
+fga: mode=equal half_life=5.0 shrink=prior_season k=0.5 floor=0.0
+ppm: mode=mean_of_prior_ratios half_life=40.0 shrink=prior_season k=2.0 floor=0.0
+reb: mode=equal half_life=5.0 shrink=prior_season k=0.5 floor=0.0
+ast: mode=equal half_life=8.0 shrink=prior_season k=0.5 floor=0.0
+r4_features=intercept|R0|R1|R2|R3(if defined)|prior_minutes_ewma|prior_rate_ewma|prior_season_player|log1p_n_prior
+r4_fit=OLS on seasons strictly earlier than the scored season
+denominator=SST of the response on the FULL scored row set, unweighted mean
+
+  SHA-256 = 8079f632ea1bc159bdb993e1e1efdf49d6f73c11e5ade1b5398bdffb8dac24db
+
+====================================================================================================
+4. the re-price plan, fixed in advance
+====================================================================================================
+{
+ "canonical_rung": "R4_RICH_LOOKUP",
+ "also_reported_on": [
+  "R1_PLAYER_EXPAND",
+  "R2_EWMA_TUNED"
+ ],
+ "leads": [
+  {
+   "lead": "D089_teammate_volume_prior_only",
+   "quoted": 0.0023492235735382717,
+   "quoted_what": "walk-forward paired points dR2 of P01_c04_prevgame over B_COMPLETE (refB_ppm, refB_spm, refB_pps, refB_mpg, refB_own_usg_pg), DECISION stratum, n=4517",
+   "frame": "E1_I0018_teammate_volume_channel/screen_frame.parquet",
+   "feature": "P01_c04_prevgame",
+   "response": "pts",
+   "repriceable": true,
+   "why": "the feature column and the response are both frozen in the screen's own frame; only the REFERENCE changes"
+  },
+  {
+   "lead": "D099_opponent_defence",
+   "quoted_ppm": 0.005028055896625616,
+   "quoted_points": 0.0033354248642841694,
+   "quoted_what": "pooled defence main effect on the full DECISION stratum (n=4514) against B_COMPLETE, common denominator",
+   "frame": "E1_I0018 screen_frame joined to E0_I0016 screen_frame for A10_opp_defrtg",
+   "feature": "A10_opp_defrtg",
+   "response": [
+    "pts",
+    "ppm"
+   ],
+   "repriceable": true,
+   "why": "same construction as D089 with a different feature column"
+  },
+  {
+   "lead": "D092_coldstart_tiering",
+   "quoted": 0.0351,
+   "quoted_what": "pooled points SKILL (1 - MAE ratio) of the operating rule against D076's reference, which the same screen showed to be partly degenerate",
+   "frame": "E1_I0020_coldstart_tiering/tier_frame.parquet + placeholders_pts.csv",
+   "response": "pts",
+   "repriceable": true,
+   "why": "the quoted number IS a reference comparison; substituting the rung is the whole operation"
+  },
+  {
+   "lead": "D074_D079_shot_mix_attempts",
+   "quoted": 0.016853345987369095,
+   "quoted_what": "end-to-end walk-forward dR2 on RESTRICTED-AREA ATTEMPT COUNTS",
+   "repriceable": false,
+   "why_not": "the response is a ZONE-LEVEL attempt count.  The ladder defines a rung for TOTAL attempts (fga), not for attempts within a shot zone, and the lead's base is a five-zone system of forecasts.  Re-pricing it means rebuilding the zone forecasts, i.e. re-running the pipeline.  SKIPPED PER THE BRIEF rather than approximated by substituting total FGA, which would be a different quantity wearing the same name."
+  },
+  {
+   "lead": "D072_I0009_additive_pressure",
+   "quoted": 0.000413,
+   "quoted_what": "walk-forward plain-OLS dR2 on TURNOVERS PER 100 OFFENSIVE POSSESSIONS",
+   "repriceable": false,
+   "why_not": "the response is a team-pressure RATE that is not one of the six ladder targets, and its base is a fitted multi-term pressure model rather than a reference forecast.  There is no rung to re-price it onto without defining a seventh target and re-running the whole screen.  SKIPPED PER THE BRIEF."
+  }
+ ],
+ "denominator_rule": [
+  "Two dR2 figures are comparable only if ALL of the following hold.",
+  "D1 SAME RESPONSE: the same variable in the same units.  No rescaling makes a dR2 on turnover-rate comparable to a dR2 on points (D072 ruling 4).",
+  "D2 SAME SCORED ROWS: the identical row set, not merely the same n.",
+  "D3 SAME DENOMINATOR: SST computed on that full scored row set about ITS OWN unweighted mean.  A subset's SST is never a valid denominator for a figure that will be compared to a stratum-wide figure (D099: a ~4x inflation).",
+  "D4 SAME WEIGHTING in all three of the fit, the SSE and the SST (D072 ruling 2).",
+  "D5 SAME BASE: both increments measured over the same reference model (D090, D094).",
+  "If D2 fails but D1/D4/D5 hold, the figures become comparable after BOTH are re-expressed on a common denominator: dR2_common = SSE_reduction / SST_common, SST_common being the SST of the common scored row set.  If D1 fails, they are NOT comparable and no denominator fixes it."
+ ],
+ "what_would_count_as_the_ranking_changing": "The leads that share the POINTS response (D089, D099, D092) are ranked by their re-priced figure on the canonical rung and a common denominator.  THE RANKING CHANGES if any pair swaps order relative to the order impli
+
+====================================================================================================
+5. writing the frozen artefacts
+====================================================================================================
+  _prereg.json written, sha256 = 8079f632ea1bc159bdb993e1e1efdf49d6f73c11e5ade1b5398bdffb8dac24db
+  time_window_table.csv written (13 rows)
+                stage                                             ingredient                                                                                                                                               window_consumed                                                                                   verdict
+0           R0_LEAGUE                               same-season league value                                                         all games in the same season on STRICTLY EARLIER DATES (date-blocked, so same-day games are excluded)                                                                                prior-only
+1           R0_LEAGUE            previous-season league value (chain step 2)                                                                  the whole previous season; seasons are calendar-disjoint, asserted by assert_season_disjoint                                                                                prior-only
+2           R0_LEAGUE                                   GRAND (chain step 3)  the whole frame; FIRES ONLY on rows with neither an earlier same-season game nor a previous season in the frame; counted and reported as grand_fallback_rows                          NOT prior-only -- named, counted, and never in an evaluation set
+3    R1_PLAYER_EXPAND                          player's expanding prior mean                                     the player's own same-season games at an EARLIER position in the date-sorted group; prefix arrays indexed at h, never h+1                                                                                prior-only
+4       R2_EWMA_TUNED                 tuned EWMA of the player's prior games                                                                                                                                                         as R1                                                                                prior-only
+5       R2_EWMA_TUNED  half-life / mode / shrinkage (pts, minutes, fga, ppm)                                                                      D094's grid, selected on 2022-2023 and evaluated on 2023-2024; imported, not re-searched                                                         prior-only by D094's construction
+6       R2_EWMA_TUNED                                   half-life (reb, ast)                                                              selected inside this screen on TRAIN SEASONS ONLY, frozen and hashed before any re-priced figure                                                                                prior-only
+7            R2/R3/R4                        shrinkage target `prior_season`                                                                                                    the player's own PREVIOUS season, whole; calendar-disjoint                                                                                prior-only
+8   R3_RATE_X_MINUTES                             EWMA(rate) x EWMA(minutes)                                                                                                                                           as R1, both factors                                                                                prior-only
+9      R4_RICH_LOOKUP                                    the feature columns                                                                                                                each is a rung or a prior-only aggregate above                                                                                prior-only
+10     R4_RICH_LOOKUP                THE BLEND COEFFICIENTS (inference step)                                                          OLS fitted on seasons STRICTLY EARLIER than the season being scored; the earliest season is unscored                                                                                prior-only
+11           re-price                     lead coefficients (inference step)                                                       refitted on seasons strictly earlier than the scored season, matching D089/D098's walk-forward protocol                                                                                prior-only
+12           re-price                                    the denominator SST     computed on the realised response of the FULL scored row set; uses the response only, never a forecast, and is identical across every arm of a comparison  uses realised y of the scored set -- as every R2 denominator must; identical across arms
+  REFERENCE_LADDER.md written
+
+PREREGISTRATION COMPLETE.  No re-priced figure has been computed.

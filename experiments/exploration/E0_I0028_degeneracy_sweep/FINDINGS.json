@@ -1,0 +1,379 @@
+{
+  "ARTEFACTS": {
+    "_prereg.json": "the preregistered checklist, sha256 895bac8bc2255c9d660ac956873884eefbc95ddab6128fd80cbf90b8cbc6dac0",
+    "_prereg_amendment.json": "the declared amendment, sha256 f110da75d20249a8efd88a507644a31ca56962dc03a558cd4e6d2065563d207f",
+    "anchor_crosscheck.csv": "the D081 -0.22% reproduction",
+    "containment.csv": "every D1-flagged cell tested for containment in is_fallback",
+    "positive_control.csv": "the D092/D094 rediscovery",
+    "region_overlap.csv": "pairwise overlap of the candidate regions",
+    "region_table.csv": "all 1612 swept cells with every D1-D6 statistic",
+    "region_table_ranked.csv": "the regions ranked by recoverable value (the deliverable)",
+    "residual_sweep.csv": "the full checklist re-run on NON-fallback rows",
+    "routing_gains.csv": "routing gain per region with k-grid worst case and block sign-flip p",
+    "routing_gains_vs_D081_reference.csv": "the same gains against D081's own reference",
+    "run_log_s01_FAILED.txt": "retained deliberately: evidence of how far step 01 got before the amendment was written",
+    "saturation_check.csv": "the zero-floor / ceiling evidence",
+    "uncertainty_defect.csv": "the pred_sd / quantile evidence",
+    "work_frame.parquet": "the joined frame (predictions + provenance + contract + priors)"
+  },
+  "CLIPPING_AND_SATURATION": {
+    "is_it_a_defect": "for a non-negative quantity a zero floor is CORRECT, not a bug. The consequence worth stating is narrower: on those rows q05 carries no information, the [q05,q95] interval is effectively one-sided, and any downstream interval-width calculation inherits that.",
+    "no_ceiling": "no pile-up at any upper bound on any target; max predictions (31.5 points, 41.9 minutes, 25.4 attempts, 0.992 p_active) are isolated, not modal.",
+    "point_forecast_floor": {
+      "v14|attempts": {
+        "min_pred": 0.0,
+        "n_exactly_zero": 12,
+        "n_negative": 0
+      },
+      "v14|minutes": {
+        "min_pred": 0.857534,
+        "n_exactly_zero": 0,
+        "n_negative": 0
+      },
+      "v14|p_active": {
+        "min_pred": 0.016975,
+        "n_exactly_zero": 0,
+        "n_negative": 0
+      },
+      "v14|points": {
+        "min_pred": 0.0,
+        "n_exactly_zero": 140,
+        "n_negative": 0
+      },
+      "v15|attempts": {
+        "min_pred": 0.0,
+        "n_exactly_zero": 13,
+        "n_negative": 0
+      },
+      "v15|minutes": {
+        "min_pred": 0.940018,
+        "n_exactly_zero": 0,
+        "n_negative": 0
+      },
+      "v15|p_active": {
+        "min_pred": 0.027336,
+        "n_exactly_zero": 0,
+        "n_negative": 0
+      },
+      "v15|points": {
+        "min_pred": 0.0,
+        "n_exactly_zero": 135,
+        "n_negative": 0
+      }
+    },
+    "q05_floor": {
+      "v14|attempts": {
+        "n_q05_exactly_zero": 6200,
+        "n_q05_negative": 0,
+        "share": 0.3481
+      },
+      "v14|minutes": {
+        "n_q05_exactly_zero": 3122,
+        "n_q05_negative": 0,
+        "share": 0.1753
+      },
+      "v14|p_active": {
+        "n_q05_exactly_zero": 0,
+        "n_q05_negative": 0,
+        "share": 0.0
+      },
+      "v14|points": {
+        "n_q05_exactly_zero": 8626,
+        "n_q05_negative": 0,
+        "share": 0.4844
+      },
+      "v15|attempts": {
+        "n_q05_exactly_zero": 6634,
+        "n_q05_negative": 0,
+        "share": 0.3069
+      },
+      "v15|minutes": {
+        "n_q05_exactly_zero": 3328,
+        "n_q05_negative": 0,
+        "share": 0.154
+      },
+      "v15|p_active": {
+        "n_q05_exactly_zero": 0,
+        "n_q05_negative": 0,
+        "share": 0.0
+      },
+      "v15|points": {
+        "n_q05_exactly_zero": 9233,
+        "n_q05_negative": 0,
+        "share": 0.4271
+      }
+    },
+    "statement": "no prediction and no q05 is ever negative, and the minimum is exactly 0.0, so both are clipped at the zero floor. 135 v15 points predictions sit exactly at 0.0 (0.6% of rows). The LOWER QUANTILE saturates far more often: `pred_q05` is exactly 0.0 on 42.7% of v15 points rows, 30.7% of attempts rows and 15.4% of minutes rows.",
+    "verdict": "there IS a floor at exactly zero, and it is reported rather than waved through -- an earlier reading of the D2 flags wrongly dismissed it."
+  },
+  "CONTAINMENT": {
+    "R4_is_a_strict_subset": "on the three continuous targets, `tip_time_quality is null` is 100.0% inside `is_fallback` (1071 of 1071 rows). It is not a region, it is a slice.",
+    "R6_is_mostly_a_subset": "`fit_eligible == False` (3808 v15 rows) is 90.76% inside `is_fallback`. Its disjoint remainder R8 is 352 rows with only 14 scoreable, and routing it yields a NEGATIVE gain.",
+    "exception_detail": [
+      {
+        "arm": "cbs_v15_player_oof_v5",
+        "cell": NaN,
+        "n_distinct_pred": 3,
+        "n_outside_fallback": 19,
+        "n_rows": 1071,
+        "partition": "P13_tip_time_quality",
+        "share_inside_fallback": 0.98226,
+        "target": "p_active",
+        "verdict": "NOT_FULLY_CONTAINED"
+      }
+    ],
+    "exception_verdict": "the single exception is the v15 p_active cell `tip_time_quality is null`, which is 98.226% inside is_fallback (19 rows of 1071 outside). It is the known region, not a new one.",
+    "interpretation": "`is_fallback`, `component_id == */prefix_mean`, `fallback_level in {2,3}`, `is_cold_start`, `n_prior_games == 0`, `n_prior_appearances == 0`, the low bins of `player_season_game_index`, `tip_time_quality is null` and `fit_eligible == False` are NOT independent discoveries. They are one population seen through twenty windows.",
+    "n_D1_flagged_cells": 104,
+    "n_contained_at_99pct": 103,
+    "n_exceptions": 1
+  },
+  "DEFECT_A_pred_sd_is_a_per_season_constant": {
+    "evidence": {
+      "corr_pred_sd_with_champion_own_realised_abs_error": {
+        "v14|attempts": -0.003477,
+        "v14|minutes": -0.007958,
+        "v14|p_active": null,
+        "v14|points": -0.012232,
+        "v15|attempts": 0.000165,
+        "v15|minutes": -0.006414,
+        "v15|p_active": null,
+        "v15|points": -0.008851
+      },
+      "distinct_pred_sd_WITHIN_each_season": {
+        "v14|attempts": "{\"2022\": 1, \"2023\": 1, \"2024\": 1}",
+        "v14|minutes": "{\"2022\": 1, \"2023\": 1, \"2024\": 1}",
+        "v14|p_active": "{\"2022\": 0, \"2023\": 0, \"2024\": 0}",
+        "v14|points": "{\"2022\": 1, \"2023\": 1, \"2024\": 1}",
+        "v15|attempts": "{\"2022\": 1, \"2023\": 1, \"2024\": 1}",
+        "v15|minutes": "{\"2022\": 1, \"2023\": 1, \"2024\": 1}",
+        "v15|p_active": "{\"2022\": 0, \"2023\": 0, \"2024\": 0}",
+        "v15|points": "{\"2022\": 1, \"2023\": 1, \"2024\": 1}"
+      },
+      "n_distinct_interval_width_q95_minus_q05": {
+        "v14|attempts": 4396,
+        "v14|minutes": 1836,
+        "v14|p_active": 0,
+        "v14|points": 6316,
+        "v15|attempts": 4550,
+        "v15|minutes": 1912,
+        "v15|p_active": 0,
+        "v15|points": 6519
+      },
+      "n_distinct_pred_sd_across_2022_2024": {
+        "v14|attempts": 3,
+        "v14|minutes": 3,
+        "v14|p_active": 0,
+        "v14|points": 3,
+        "v15|attempts": 3,
+        "v15|minutes": 3,
+        "v15|p_active": 0,
+        "v15|points": 3
+      }
+    },
+    "family": "D4 degenerate uncertainty",
+    "p_active_is_worse": "p_active emits NO uncertainty at all: `pred_sd` and all five quantile columns are 100% NULL on all 21,617 (v15) and 17,809 (v14) rows.",
+    "recoverable_pooled_skill_pct": 0.0,
+    "scope": "all three continuous targets, BOTH arms, every season",
+    "severity": "affects 100% of rows; recoverable POOLED SKILL is zero",
+    "statement": "`pred_sd` takes EXACTLY ONE VALUE PER SEASON on each continuous target -- three values across 2022-2024, on 21,617 (v15) and 17,809 (v14) rows. Every player in a season is emitted with the same predicted dispersion, the leading scorer and the twelfth man alike. Its correlation with the champion's own realised absolute error runs from -0.0122 to +0.0002, i.e. indistinguishable from zero.",
+    "the_sharp_part": "the QUANTILES ARE NOT DEGENERATE. On the same rows, q95-q05 takes 6519 (v15 points), 1912 (minutes) and 4550 (attempts) distinct values, never crosses, and covers 86.5-87.7% against a nominal 90%. So the champion DOES carry per-row dispersion -- it simply does not put it in `pred_sd`. Any downstream consumer that sizes stakes or computes edge from `pred_sd` is reading a per-season constant while a per-row answer sits unused two columns away.",
+    "why_it_ranks_last_by_value_and_still_matters": "the point forecast is untouched, so the pooled-skill metric is blind to it. That is exactly why a skill-ranked sweep must report it separately instead of ranking it away."
+  },
+  "FINDING_B_substructure_the_money_is_in_fallback_level_2": {
+    "R2_is_cold_start": "fallback_level == 3, n_prior_appearances == 0 (no history at all)",
+    "R3_fallback_level_2": "fallback_level == 2, n_prior_appearances in {1,2} (the player HAS history; the champion emits the constant anyway)",
+    "actionability": "both are readable from the champion's own `fallback_level` column at forecast time. A rule that routes ONLY `fallback_level == 2` captures ~97% of the value at ~34% of the row cost, and leaves the genuinely-no-history rows alone.",
+    "claim": "D092 framed the region as 'fewer than 3 prior appearances'. That conflates two populations whose recoverable value differs by more than an order of magnitude, and the SMALLER one holds almost all of it.",
+    "read_it_like_this": "on v15 points against D081's own reference, routing the WHOLE region gains +2.8957%. Routing only the 0-prior-appearance rows gains +0.0767%. Routing only the 1-2-prior-appearance rows gains +2.8169% -- 97% of the total, from 34% of the rows.",
+    "the_number_against_D081_own_reference_v15": {
+      "attempts": {
+        "gain_pct": 4.0358,
+        "n_rows": 947,
+        "region": "R3_fallback_level_2"
+      },
+      "minutes": {
+        "gain_pct": 4.9885,
+        "n_rows": 947,
+        "region": "R3_fallback_level_2"
+      },
+      "points": {
+        "gain_pct": 2.8169,
+        "n_rows": 947,
+        "region": "R3_fallback_level_2"
+      }
+    },
+    "the_ratio": "R3 has HALF the rows of R2 (1815 vs 3563) and yields six to ten times the gain. The champion loses to the simple baseline by 9-10% on R2 and by 39-66% on R3.",
+    "why": "on a row with zero prior appearances a constant is defensible -- there is little to condition on and the baseline is near-blind too. On a row with one or two prior appearances the baseline uses them and the champion does not. The defect is not 'the champion emits a constant when it knows nothing'. It is 'the champion keeps emitting the constant after it has started to know something'."
+  },
+  "FINDING_C_p_active_is_degenerate_but_NOT_recoverable": {
+    "the_degeneracy": "the v15 p_active head emits EXACTLY ONE distinct value (0.8, sd 2.2e-16) on 2268 rows under `component_id == p_active/declared_constant`. By the preregistered D1 test this is the most degenerate cell in the entire sweep.",
+    "the_gain_is_negative": {
+      "v14_routing_gain_pct": 2.084620304676388,
+      "v15_routing_gain_pct": -4.962089980122153
+    },
+    "verdict": "DEGENERATE DOES NOT IMPLY RECOVERABLE. Routing the v15 p_active constant to the tuned simple baseline LOSES 4.96% pooled Brier skill; the flat 0.8 is better than a prior-appearance-rate estimator on those rows. The same region on the v14 arm GAINS 2.08%. A blanket 'route every fallback region' rule would destroy v15 p_active skill, and this is the counterexample that shows a per-(arm,target) decision is required."
+  },
+  "HEADLINE": {
+    "but_three_things_the_cold_start_story_does_not_cover": [
+      "a `pred_sd` field that is a PER-SEASON CONSTANT on 100% of rows (recoverable pooled skill: zero, which is exactly why no skill-based screen could have found it)",
+      "an actionable SUB-STRUCTURE inside the known region: essentially all of the recoverable value sits in `fallback_level == 2`, not in the pure cold start",
+      "a counterexample: the v15 p_active head's constant region is degenerate by the same test and must NOT be routed, because routing it LOSES 4.96% pooled skill"
+    ],
+    "number_of_degenerate_regions_beyond_the_known_cold_start_one": 0,
+    "one_sentence": "The cold-start / fallback region is the ONLY degenerate output region the champion has: 103 of 104 constant-flagged cells across 20 partitions are >=99% inside the champion's own `is_fallback` flag, the single exception is 98.2% inside it, and re-running the entire checklist on the NON-fallback rows flags ZERO near-constant cells on either arm on any of the four targets.",
+    "total_recoverable_pooled_skill_all_cells_rebuilt_reference": {
+      "v14|attempts": 4.5002,
+      "v14|minutes": 5.4344,
+      "v14|p_active": 2.0846,
+      "v14|points": 3.2817,
+      "v15|attempts": 4.5064,
+      "v15|minutes": 5.405,
+      "v15|p_active": -4.9621,
+      "v15|points": 3.1893
+    },
+    "total_recoverable_pooled_skill_v15_measured_against_D081_own_reference": {
+      "attempts": {
+        "after_pct": 4.2455,
+        "before_pct": 0.1152,
+        "gain_pct": 4.1303,
+        "n_rows_routed": 1061
+      },
+      "minutes": {
+        "after_pct": 8.65,
+        "before_pct": 3.5549,
+        "gain_pct": 5.0951,
+        "n_rows_routed": 1061
+      },
+      "points": {
+        "after_pct": 2.6735,
+        "before_pct": -0.2222,
+        "gain_pct": 2.8957,
+        "n_rows_routed": 1061
+      }
+    }
+  },
+  "NEGATIVE_CONTROLS": {
+    "R5_route_the_NON_fallback_rows": {
+      "purpose": "if routing helped everywhere, the baseline would simply be a better model and nothing about DEGENERACY would have been demonstrated.",
+      "result_pct": {},
+      "verdict": "strongly NEGATIVE on all 8 cells (-2.5% to -35.7%). The champion genuinely models the rows it does not fall back on. The gains reported above are about the REGION, not about the baseline being better in general."
+    },
+    "k_grid_robustness": "every R1 and R3 gain on the three continuous targets stays POSITIVE at the worst of 8 k values x 2 estimator forms (worst-case +0.48% to +0.74%). None is marked FRAGILE.",
+    "paired_inference": "block sign-flip, clusters = (season, player_id), 4000 draws. p = 0.00025 (the floor at 4000 draws) for every R1/R3 gain; p = 0.856 for the one null result (v14 p_active R2, gain +0.0096%), which is the test behaving correctly."
+  },
+  "NOT_A_FINDING_underpowered_coverage_cells": {
+    "honest_status": "CANDIDATE, UNDERPOWERED, NOT ESTABLISHED. Recorded so a future screen with more scoreable rows in that tier can pick it up.",
+    "n_scoreable": 14,
+    "routing_gain_of_the_disjoint_part_R8": {
+      "attempts": -0.0119,
+      "minutes": -0.002,
+      "p_active": -0.0223,
+      "points": -0.0202
+    },
+    "what_flagged": "D6 fired on `fit_eligible == False` / `universe_tier == B` (352 rows) and `evaluation_tier == B_transaction_sensitivity` (113 rows), showing a nominal-90% interval covering 71.4% of realised minutes.",
+    "why_it_is_NOT_reported_as_a_finding": "those cells contain only 14 SCOREABLE ROWS. A 90% coverage estimated on 14 outcomes has a standard error of roughly 8 percentage points; 0.714 is 10 of 14. This is noise, and the brief's own rule -- a 20-row curiosity ranks below a 700-row region -- applies to it."
+  },
+  "POSITIVE_CONTROL": {
+    "D081_skill_anchor": {
+      "note": "reproduced to four decimal places, which validates the whole join, truth mapping and scoring path before any new claim is made.",
+      "published": -0.22,
+      "reproduced_against_D081_own_reference_column": -0.2222
+    },
+    "attempts_usage_was_not_reported_by_D092": "mean 7.3146, sd 0.0360 -- the SAME region, extended to the third target, not a new one",
+    "is_fallback_IS_the_rule": "`is_fallback == True` and `n_prior_appearances < 3` select the SAME 5378 v15 rows with identical statistics. The region is directly implementable from the champion's own output column, as D092 found.",
+    "minutes": {
+      "D092_published": "mean 21.62, sd 0.09",
+      "reproduced": "mean 21.6056, sd 0.0878"
+    },
+    "points": {
+      "D092_published": "mean 8.704, sd 0.013",
+      "reproduced": "mean 8.7061, sd 0.0138  (n=5378, exactly 3 distinct values)"
+    },
+    "status": "PASSED -- the sweep rediscovers D092/D094 unaided"
+  },
+  "QUANTILE_HEALTH": {
+    "coverage_90_nominal": {
+      "v14|attempts": 0.8671,
+      "v14|minutes": 0.8654,
+      "v14|points": 0.8754,
+      "v15|attempts": 0.8655,
+      "v15|minutes": 0.8674,
+      "v15|points": 0.8767
+    },
+    "crossings_q05_le_q25_le_q50_le_q75_le_q95": 0,
+    "point_forecast_outside_its_own_q05_q95": 0,
+    "scope": "every row emitted, both arms, all four targets, 2022-2024",
+    "verdict": "the quantile machinery is SOUND. Not one crossing and not one point-outside-its-own-interval anywhere. Coverage runs 86.5-87.7% against a nominal 90% -- a mild, consistent UNDER-coverage that sits inside the preregistered 10-point tolerance and is reported, not flagged."
+  },
+  "RESIDUAL_SWEEP": {
+    "D1_near_constant_flags": 0,
+    "n_cells_swept": 286,
+    "verdict": "ZERO. Outside the known region the champion is not constant, not near-constant and not sd-collapsed anywhere, on either arm, on any of the four targets, in any of 2022, 2023 or 2024.",
+    "what_it_is": "the entire preregistered checklist, re-run with the known fallback rows REMOVED. This is the test that could have found a second region."
+  },
+  "WHERE_THIS_COULD_HAVE_CHEATED": [
+    {
+      "protection": "the trigger was a ROW COUNT ALONE. No defect statistic, no error and no skill number had been computed -- step 01 crashed on a column-name collision first, and `run_log_s01_FAILED.txt` is retained as evidence of exactly how far it got. The amendment only ADDS falsification surface: it restores 3808 rows that could have held defects and adds 6 partitions that could have flagged. Counts: added 6, dropped 0, corrected 1, relaxed 0, reworded 0.",
+      "residual": "an amendment is still an amendment. A reader who rejects it can read the v14 arm alone, which the amendment does not touch; every headline holds there too.",
+      "risk": "PREREG AMENDED AFTER LOOKING AT DATA",
+      "what": "the truth-source binding was corrected (each arm to its own contract) and 6 partitions added, AFTER step 01 printed a row-count inventory."
+    },
+    {
+      "protection": "selection is WALK-FORWARD on strictly earlier exploration seasons (2023 on 2022; 2024 on 2022+2023). 2022 has no earlier exploration season and uses the UNTUNED prereg default k=5, form B1, fixed before any data was read. Every gain is reported at ALL 8 k values and BOTH forms, and the WORST case is published beside the selected one.",
+      "residual": "the k=5 default for 2022 was judgement, not data. If it happened to be good, 2022's contribution is optimistic; the worst-over-grid column bounds how much that can matter, and it stays positive.",
+      "risk": "THE BASELINE IS TUNED, WHICH FLATTERS THE ROUTING GAIN",
+      "what": "k and the estimator form are chosen to minimise the baseline's own loss."
+    },
+    {
+      "protection": "the prereg enumerates the admissible columns and marks minutes, pts, fga, appeared and every residual INADMISSIBLE as a region definition. Every region reported here is readable at forecast time from the champion's own output (`is_fallback`, `fallback_level`, `component_id`) or the contract frame (`fit_eligible`, `tip_time_quality`).",
+      "residual": "`corr(pred_sd, |realised error|)` in DEFECT_A does use a realised quantity. It MEASURES a defect; it defines no region and no routing rule depends on it.",
+      "risk": "A REGION DEFINED BY A REALISED QUANTITY (the easiest way to fake a gain)",
+      "what": "defining the region as 'the rows where the champion did badly' would produce a large gain and mean nothing."
+    },
+    {
+      "protection": "every region reports champion loss, baseline loss AND reference loss on THE SAME rows, and the headline is a pooled SKILL gain whose denominator is identical before and after routing.",
+      "residual": "none identified. This is precisely why R2 (+0.08%) and R3 (+2.82%) separate so sharply despite R2 having twice the rows.",
+      "risk": "PREDICTING ERROR MISTAKEN FOR PREDICTING DIFFERENTIAL SKILL (D076)",
+      "what": "a high-MAE region is not automatically worth routing; the baseline may be just as bad there."
+    },
+    {
+      "protection": "the checklist, partitions and every threshold were fixed and hashed before any data was read. The headline is a NEGATIVE result, which multiplicity makes harder to obtain, not easier.",
+      "residual": "the D6 coverage cells are exactly where multiplicity bites, which is one reason they are demoted to NOT_A_FINDING above.",
+      "risk": "MULTIPLE COMPARISONS",
+      "what": "1612 cells tested across 6 defect families and 20 partitions."
+    },
+    {
+      "protection": "an assertion that a flagged cell must match at least one row caught it. Fixed at source: `_S()` in s02 makes every partition key a plain string with no NULL left, under an asserted invariant, so the label written to disk and the value used to rebuild the mask are the same object. This is the screen kit's K0 lesson -- A LABEL IS NOT A VALUE -- one layer down.",
+      "residual": "none; containment is recomputed from in-memory masks and never from a label that has been through a file.",
+      "risk": "A BUG NEARLY MANUFACTURED FOUR FALSE 'NEW REGIONS'",
+      "what": "cell labels were round-tripped through CSV, so a partition group whose key is a real NaN was compared against the four-character string 'nan', matched nothing, and was reported NOT_FULLY_CONTAINED with n_rows = 0."
+    },
+    {
+      "protection": "corrected before publication; they are recorded as underpowered and explicitly NOT a finding.",
+      "residual": "none, but it is retained here as a record that the error was made.",
+      "risk": "OVERSTATING A SMALL REGION",
+      "what": "an earlier draft of this document described the D6 coverage cells as a defect found. They have 352 and 113 ROWS but only 14 SCOREABLE ones."
+    }
+  ],
+  "date_utc": "2026-08-08T19:21:31.987842+00:00",
+  "partition_used": {
+    "2021": "degenerate by design; KNOWN NON-FINDING; excluded from every claim (receipts confirmed: n_train_rows=0, model_was_fitted=false, degenerate=true, both arms)",
+    "2025_2026": "HOLDOUT; never read",
+    "seasons": [
+      2022,
+      2023,
+      2024
+    ]
+  },
+  "prereg_amendment_counts": {
+    "added": 6,
+    "corrected": 1,
+    "dropped": 0,
+    "relaxed": 0,
+    "reworded": 0
+  },
+  "prereg_amendment_sha256": "f110da75d20249a8efd88a507644a31ca56962dc03a558cd4e6d2065563d207f",
+  "prereg_sha256": "895bac8bc2255c9d660ac956873884eefbc95ddab6128fd80cbf90b8cbc6dac0",
+  "screen_id": "E0_I0028_degeneracy_sweep"
+}

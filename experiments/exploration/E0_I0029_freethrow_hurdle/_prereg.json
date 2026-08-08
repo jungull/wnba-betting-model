@@ -1,0 +1,1695 @@
+{
+  "prereg": {
+    "screen_id": "E0_I0029_freethrow_hurdle",
+    "question": "Free-throw production is a HURDLE PROCESS -- P(any attempt), attempts given one, conversion given attempts.  Which stage carries the predictability, does the opponent's prior fouls-conceded rate add anything beyond the player's own prior rate once BOTH main effects are in the base (D085), and does any of it reach a points forecast with an arithmetic ceiling above the dead benchmarks?",
+    "targets": {
+      "y_any_fta": {
+        "rowset": "FULL",
+        "exposure": "minutes",
+        "stage": "A",
+        "desc": "1{fta>0} -- THE HURDLE"
+      },
+      "y_fta_given": {
+        "rowset": "CONDITIONAL",
+        "exposure": "minutes",
+        "stage": "B",
+        "desc": "fta | fta>0 -- attempts given at least one"
+      },
+      "y_ftm_given": {
+        "rowset": "CONDITIONAL",
+        "exposure": "fta",
+        "stage": "C",
+        "desc": "ftm | fta>0 -- conversion given attempts (exposure = REALISED fta)"
+      },
+      "y_fta": {
+        "rowset": "FULL",
+        "exposure": "minutes",
+        "stage": "AB",
+        "desc": "fta unconditional -- the composed A x B"
+      },
+      "y_ftm": {
+        "rowset": "FULL",
+        "exposure": "minutes",
+        "stage": "ABC",
+        "desc": "ftm unconditional -- FREE-THROW POINTS, the composed A x B x C"
+      },
+      "y_pts": {
+        "rowset": "FULL",
+        "exposure": "minutes",
+        "stage": "ANCHOR",
+        "desc": "points -- CALIBRATION ANCHOR ONLY (D081/D097), no new claim"
+      }
+    },
+    "candidates": [
+      {
+        "name": "F01_prior_ftr",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior FTA / strictly-prior FGA -- the free-throw RATE, a shooting style trait.  Ratio of two prior sums, NOT a mean of ratios."
+      },
+      {
+        "name": "F02_prior_fd_pm",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior fouls_drawn per prior minute.  THE OWN-SIDE MAIN EFFECT of the D085 matchup interaction; in B_MATCHUP from the start."
+      },
+      {
+        "name": "F03_prior_ft_pct",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior FTM / strictly-prior FTA -- conversion skill."
+      },
+      {
+        "name": "F04_prior_paint_share",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior points_paint / prior pts -- rim pressure draws fouls."
+      },
+      {
+        "name": "F05_prior_fga_pm",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior FGA per prior minute -- shot volume."
+      },
+      {
+        "name": "F06_prior_fg3a_share",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior FG3A / FGA -- a jump shooter draws fewer shooting fouls."
+      },
+      {
+        "name": "F07_prior_hurdle_rate",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior FRACTION OF GAMES WITH fta>0.  THE HURDLE'S OWN PRIOR MEASUREMENT.  For target y_any_fta this is identical to ref_mean and is therefore NOT screened on that target (it is already in the base); it is a candidate only on the other targets."
+      },
+      {
+        "name": "F08_prior_fta_given",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior mean FTA over the player's PRIOR GAMES WITH fta>0 -- the conditional-stage prior.  Undefined until the player has one such game."
+      },
+      {
+        "name": "F09_prior_starter_rate",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior fraction of games started.  starter_flag ITSELF IS A TIP-TIME OBSERVATION AND IS NEVER USED AS A CONTEMPORANEOUS FEATURE."
+      },
+      {
+        "name": "F10_prior_pf_pm",
+        "family": "F",
+        "level": "player_season",
+        "desc": "player's strictly-prior personal fouls COMMITTED per prior minute -- foul trouble truncates minutes and therefore trips to the line."
+      },
+      {
+        "name": "M01_opp_pf_pg",
+        "family": "M",
+        "level": "opp_team_season",
+        "desc": "opponent team's strictly-prior personal FOULS COMMITTED per game.  THE OPPONENT-SIDE MAIN EFFECT of the D085 interaction; in B_MATCHUP from the start."
+      },
+      {
+        "name": "M02_opp_allowed_fta_pg",
+        "family": "M",
+        "level": "opp_team_season",
+        "desc": "opponent team's strictly-prior FTA ALLOWED per game.  THE CLOSEST PRIOR OPPONENT MEASUREMENT OF THE TARGET.  Also used as an extra base column in the decomposition variant B_COMPLETE_PLUS_M02."
+      },
+      {
+        "name": "M03_opp_allowed_ftm_pg",
+        "family": "M",
+        "level": "opp_team_season",
+        "desc": "opponent team's strictly-prior FTM ALLOWED per game."
+      },
+      {
+        "name": "M04_opp_allowed_ft_rate",
+        "family": "M",
+        "level": "opp_team_season",
+        "desc": "opponent's strictly-prior FTA-allowed / FGA-allowed -- the rate form, free of the opponent's pace."
+      },
+      {
+        "name": "M05_opp_allowed_hurdle_rate",
+        "family": "M",
+        "level": "opp_team_season",
+        "desc": "fraction of OPPOSING PLAYER-GAMES with fta>0 that this opponent has allowed in its strictly-prior games.  THE CLOSEST PRIOR OPPONENT MEASUREMENT OF STAGE A'S TARGET."
+      },
+      {
+        "name": "M06_opp_pace",
+        "family": "M",
+        "level": "opp_team_season",
+        "desc": "opponent team's strictly-prior mean pace -- more possessions, more chances."
+      },
+      {
+        "name": "X01_fd_x_oppfoul",
+        "family": "X",
+        "level": "opp_team_season",
+        "desc": "(F02 own prior fouls-drawn per minute, centred) x (M01 opp prior fouls conceded per game, centred).  THE D085 CANDIDATE, rebuilt on free throws.  Verdict is taken ONLY over B_MATCHUP = B_COMPLETE + F02 + M01."
+      },
+      {
+        "name": "X02_ftr_x_oppftrate",
+        "family": "X",
+        "level": "opp_team_season",
+        "desc": "(F01 own prior FT rate, centred) x (M04 opp prior FT-rate allowed, centred).  The rate-form interaction.  Verdict ONLY over B_MATCHUP2 = B_COMPLETE + F01 + M04."
+      },
+      {
+        "name": "G01_noise",
+        "family": "G",
+        "level": "row",
+        "desc": "NEGATIVE CONTROL: iid gaussian, seed-fixed, independent of everything.  Its dR2 must be indistinguishable from its own null."
+      },
+      {
+        "name": "G02_placebo_noop",
+        "family": "G",
+        "level": "row",
+        "desc": "NO-OP PLACEBO: an exact affine copy of the base's FIRST column (2.5*ref_mean + 7).  Its dR2 must be ~0 BY CONSTRUCTION because it is collinear with the base.  Its OBSERVED SD across draws is published as this screen's FLOOR OF RESOLUTION.  A placebo that is a genuine no-op tests nothing about perturbation, so s04 ALSO runs a PERTURBING placebo (G03) and verifies it moves the statistic."
+      },
+      {
+        "name": "G03_placebo_perturbed",
+        "family": "G",
+        "level": "row",
+        "desc": "PERTURBATION CHECK: ref_mean with 30%% of rows' values swapped pairwise at random. This MUST move the statistic away from the real value; if it does not, the placebo machinery is inert and every 'no effect' verdict in this screen is uninformative."
+      }
+    ],
+    "bases": {
+      "B_SINGLE": {
+        "cols": [
+          "ref_mean"
+        ],
+        "desc": "ref_mean only.  Reported to EXHIBIT reference incompleteness (D087), never to carry a verdict."
+      },
+      "B_COMPLETE": {
+        "cols": [
+          "ref_mean",
+          "ref_ewma",
+          "ref_trail5",
+          "ref_rate_x_min",
+          "ref_mean_minutes",
+          "ref_trail5_minutes",
+          "ref_pct",
+          "ref_mean_pace",
+          "n_prior",
+          "is_home"
+        ],
+        "desc": "EVERY available strictly-prior measurement of the target.  A candidate is only ALIVE if it survives this."
+      },
+      "B_COMPLETE_PLUS_M02": {
+        "cols": [
+          "ref_mean",
+          "ref_ewma",
+          "ref_trail5",
+          "ref_rate_x_min",
+          "ref_mean_minutes",
+          "ref_trail5_minutes",
+          "ref_pct",
+          "ref_mean_pace",
+          "n_prior",
+          "is_home",
+          "M02_opp_allowed_fta_pg"
+        ],
+        "desc": "decomposition variant: the base already contains the closest prior OPPONENT measurement of the target.  An M candidate must survive this to be an opponent signal rather than a restatement of opponent FT-allowed volume."
+      },
+      "B_MATCHUP": {
+        "cols": [
+          "ref_mean",
+          "ref_ewma",
+          "ref_trail5",
+          "ref_rate_x_min",
+          "ref_mean_minutes",
+          "ref_trail5_minutes",
+          "ref_pct",
+          "ref_mean_pace",
+          "n_prior",
+          "is_home",
+          "F02_prior_fd_pm",
+          "M01_opp_pf_pg"
+        ],
+        "desc": "D085 GUARD.  BOTH main effects of X01 are in the base FROM THE START. X01's verdict is taken here and nowhere else."
+      },
+      "B_MATCHUP2": {
+        "cols": [
+          "ref_mean",
+          "ref_ewma",
+          "ref_trail5",
+          "ref_rate_x_min",
+          "ref_mean_minutes",
+          "ref_trail5_minutes",
+          "ref_pct",
+          "ref_mean_pace",
+          "n_prior",
+          "is_home",
+          "F01_prior_ftr",
+          "M04_opp_allowed_ft_rate"
+        ],
+        "desc": "D085 GUARD for X02.  BOTH main effects in the base from the start."
+      }
+    },
+    "cells": [
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F01_prior_ftr",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F02_prior_fd_pm",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F03_prior_ft_pct",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F04_prior_paint_share",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F05_prior_fga_pm",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F06_prior_fg3a_share",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F07_prior_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F08_prior_fta_given",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F09_prior_starter_rate",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "F10_prior_pf_pm",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M01_opp_pf_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M02_opp_allowed_fta_pg",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M03_opp_allowed_ftm_pg",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M04_opp_allowed_ft_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M05_opp_allowed_hurdle_rate",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "M06_opp_pace",
+        "base": "B_COMPLETE_PLUS_M02",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_MATCHUP",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_MATCHUP",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_MATCHUP",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_MATCHUP",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_MATCHUP",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "X01_fd_x_oppfoul",
+        "base": "B_MATCHUP",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_MATCHUP2",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_MATCHUP2",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_MATCHUP2",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_MATCHUP2",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_MATCHUP2",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "X02_ftr_x_oppftrate",
+        "base": "B_MATCHUP2",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "G01_noise",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "G02_placebo_noop",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_SINGLE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_SINGLE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_SINGLE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_SINGLE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_SINGLE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_SINGLE",
+        "target": "y_pts"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_COMPLETE",
+        "target": "y_any_fta"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_COMPLETE",
+        "target": "y_fta_given"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_COMPLETE",
+        "target": "y_ftm_given"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_COMPLETE",
+        "target": "y_fta"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_COMPLETE",
+        "target": "y_ftm"
+      },
+      {
+        "candidate": "G03_placebo_perturbed",
+        "base": "B_COMPLETE",
+        "target": "y_pts"
+      }
+    ],
+    "strata": {
+      "POOLED": "all appeared player-games (minutes>0) in the headline seasons",
+      "DECISION": "n_prior >= 8 AND trailing-5 mean minutes >= 24 -- D081 s06's decision-relevant stratum, so figures are comparable with D081/D085/D089/D097"
+    },
+    "fixed_analysis_choices": {
+      "partition": [
+        2021,
+        2022,
+        2023,
+        2024
+      ],
+      "headline_seasons": [
+        2022,
+        2023,
+        2024
+      ],
+      "holdout_never_read": [
+        2025,
+        2026
+      ],
+      "rows": "appeared player-games only (minutes > 0), data/masters/master_player.parquet",
+      "r2_convention": "plain unweighted OLS R2, SST about the UNWEIGHTED mean (D069)",
+      "history_minutes_floor_primary": 10.0,
+      "history_minutes_floor_sensitivity": [
+        0.0,
+        5.0,
+        10.0,
+        15.0,
+        20.0
+      ],
+      "floor_note": "THE FLOOR IS APPLIED TO THE HISTORY ONLY -- which prior games contribute to a per-minute rate estimate.  It is NEVER applied to the response, because filtering the response conditions on an outcome (D091 ruling 3).  The fta>0 restriction on the CONDITIONAL targets IS a response condition; that is the whole point of a hurdle decomposition, and it is why those stages are reported on a labelled subset denominator and are re-expressed on the COMMON denominator by the stage-substitution in s04 before any stage is compared to any other.",
+      "ewma_halflife": 5.0,
+      "n_draws": 600,
+      "seed": 20260808,
+      "nulls": "N_ROW (naive, reported for INFLATION ONLY, never a verdict); N_CYCLIC (within-player cyclic shift, D093 -- a plain shuffle is anticonservative for running-mean regressors) for player_season candidates; N_ENTITY_SWAP at opponent-team-season for opp_team_season candidates.  p_correct_level = MAX over the applicable entity-level nulls.  Cluster-robust SEs are NOT used as a substitute: they moved t the WRONG way in two screens in this programme.",
+      "family_wise": "max-t across all cells sharing a target family, standardised by each cell's own null mean/sd",
+      "ceiling_form": "D084/D089 form: CEILING_dr2 = (|beta| * sd_candidate / sd_y)^2, the variance share reachable if 1 sd of the signal moves the target by beta*sd.  Benchmarks: 0.002057 (D089, largest measured, ALIVE), 0.001127 (D079, dead), 0.000129 (D084, dead).  The base-residualised variant is reported alongside.",
+      "oracle_ladder": "D081/D097 shape, PER STAGE.  HONEST rungs REF / H1 EWMA / H2 trailing-5 / H3 prior rate(floored) x prior exposure / H4 walk-forward OLS on B_COMPLETE.  ORACLE rungs O1 season-mean target / O2 ACTUAL exposure x season-mean rate / O3 within-player-season OLS on ACTUAL exposure / O4 ACTUAL exposure x floored prior rate / O5 prior exposure x season-mean rate.  EXPOSURE is MINUTES for stages A, B and the composites, and REALISED FTA for stage C, because conversion is a per-attempt rate and minutes are not its exposure.  That substitution is the only deviation from D097's ladder and is declared here.",
+      "common_denominator": "D099.  Stages B and C live on the fta>0 subset.  A dR2 on that subset's SST is NOT comparable to one on the full stratum's.  The headline 'which stage carries the predictability' question is answered ONLY on SST(ftm) over the FULL stratum, by substituting one stage at a time into a composed ftm forecast (s04).  Per-stage dR2 on each stage's own SST is reported alongside and is never compared across stages.",
+      "champion": "NEVER loaded, never retrained, never refitted.  Whether the champion models free throws at all is answered by READING ITS CODE AND ARTIFACT SCHEMAS, not by running it.",
+      "forbidden": [
+        "data/w1_truth/player_game_availability.csv",
+        "data/w1_truth/roster_asof.csv",
+        "data/zone_maps/*"
+      ],
+      "tip_time_note": "starter_flag, minutes, fta, ftm, fouls_drawn and pf for the CURRENT game are POST-GAME observations.  They appear ONLY as responses, as declared ORACLE rungs, or inside F09's strictly-prior aggregation.  No contemporaneous value of any of them is ever a feature."
+    }
+  },
+  "sha256": "e1ef0849e5f79230e27a0baa8b63ce0e6a1f24cca0a3b261cbfa7ba67c69f757"
+}

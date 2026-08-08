@@ -1,0 +1,118 @@
+﻿
+====================================================================================================
+STEP 4 -- COLD START   (candidate sha256 79331a724bbde189)
+====================================================================================================
+  guard ok  D092 placeholder_frame                         n=13879   {'season': [2022, 2023, 2024]}
+
+--- Reproducing D092's recommended placeholder from its components ----------------------------------
+    pts      P5d_blend_k2 == lambda(n)*own_running_mean + (1-lambda)*(league+depth+draft):  True
+    minutes  P5d_blend_k2 == lambda(n)*own_running_mean + (1-lambda)*(league+depth+draft):  True
+    ppm      P5d_blend_k2 == lambda(n)*own_running_mean + (1-lambda)*(league+depth+draft):  True
+
+--- Splitting the data-poor tier: VETERAN-RETURNING vs TRUE ROOKIE ----------------------------------
+    data-poor tier (D092's tier_poor), seasons 2023-2024: n=698
+season             2023  2024
+pop                          
+true_rookie          66    60
+veteran_returning   282   290
+
+    marker agreement on the data-poor tier (has_rapm vs pl_prior_season_games>0):
+has_prior_season_games  False  True 
+has_rapm                            
+False                     126      0
+True                        0    572
+    AMBIGUOUS rows (the two markers disagree): 0 -- reported as their own population, never silently merged into either.
+
+--- Walk-forward RAPM->level map g_S, fitted on player-seasons of seasons < S -----------------------
+    pts      fold 2023: pool=164 player-seasons from [2022], in-pool R2=0.1454
+    pts      fold 2024: pool=318 player-seasons from [2022, 2023], in-pool R2=0.2412
+    minutes  fold 2023: pool=164 player-seasons from [2022], in-pool R2=0.1764
+    minutes  fold 2024: pool=318 player-seasons from [2022, 2023], in-pool R2=0.2485
+    ppm      fold 2023: pool=164 player-seasons from [2022], in-pool R2=0.0361
+    ppm      fold 2024: pool=318 player-seasons from [2022, 2023], in-pool R2=0.1083
+
+--- Building C0..C4 (C0 is D092's, untouched) -------------------------------------------------------
+    NOTE, stated rather than hidden: C1 and C4 as preregistered are the SAME construction
+    (both set the structural prior to g_S(rapm) alone).  Both are reported; they agree by
+    construction, and that identity is a property of the preregistered list, not a result.
+
+====================================================================================================
+STEP 4 EVALUATION -- on the data-poor tier, split by population
+====================================================================================================
+
+  --- all_data_poor  (n=698 rows per target) ---
+  skill vs D092's placeholder (positive = the RAPM variant is BETTER):
+target    minutes      ppm       pts
+variant                             
+C0       +0.0000% +0.0000%  +0.0000%
+C1      -19.2511% -3.1886% -10.8796%
+C2       -4.7540% -1.0771%  -2.8265%
+C3       +2.4199% +0.0998%  +2.3494%
+C4      -19.2511% -3.1886% -10.8796%
+  block sign-flip p:
+target   minutes    ppm    pts
+variant                       
+C0        1.0000 1.0000 1.0000
+C1        0.0005 0.0005 0.0005
+C2        0.0010 0.0250 0.0205
+C3        0.0195 0.7051 0.0005
+C4        0.0005 0.0005 0.0005
+
+  --- veteran_returning  (n=572 rows per target) ---
+  skill vs D092's placeholder (positive = the RAPM variant is BETTER):
+target    minutes      ppm      pts
+variant                            
+C0       +0.0000% +0.0000% +0.0000%
+C1      -11.6354% -1.1239% -3.9203%
+C2       -0.8733% -0.0481% +0.4056%
+C3       +1.0293% +0.5248% +2.2829%
+C4      -11.6354% -1.1239% -3.9203%
+  block sign-flip p:
+target   minutes    ppm    pts
+variant                       
+C0        1.0000 1.0000 1.0000
+C1        0.0005 0.2574 0.0950
+C2        0.5392 0.9280 0.7311
+C3        0.3743 0.0635 0.0015
+C4        0.0005 0.2574 0.0950
+
+  --- true_rookie  (n=126 rows per target) ---
+  skill vs D092's placeholder (positive = the RAPM variant is BETTER):
+target    minutes       ppm       pts
+variant                              
+C0       +0.0000%  +0.0000%  +0.0000%
+C1      -50.5876% -10.8848% -54.3119%
+C2      -20.7218%  -4.9129% -22.9975%
+C3       +8.1415%  -1.4844%  +2.7645%
+C4      -50.5876% -10.8848% -54.3119%
+  block sign-flip p:
+target   minutes    ppm    pts
+variant                       
+C0        1.0000 1.0000 1.0000
+C1        0.0005 0.0005 0.0005
+C2        0.0005 0.0005 0.0005
+C3        0.0010 0.0215 0.1484
+C4        0.0005 0.0005 0.0005
+
+--- Context: the champion on the same rows (D092's headline was against the champion) ---------------
+ target        population   n  mae_champion  mae_D092_C0  mae_C1_rapm_only  mae_C2_half_rapm  mae_C3_fitted
+    pts     all_data_poor 698        6.3099       3.9886            4.4225            4.1013         3.8949
+    pts veteran_returning 572        6.3118       4.1950            4.3594            4.1780         4.0992
+    pts       true_rookie 126        6.3015       3.0515            4.7088            3.7532         2.9671
+minutes     all_data_poor 698       10.2367       5.3586            6.3902            5.6134         5.2290
+minutes veteran_returning 572        9.7293       5.2606            5.8726            5.3065         5.2064
+minutes       true_rookie 126       12.5401       5.8039            8.7399            7.0066         5.3314
+    ppm     all_data_poor 698        0.2272       0.1953            0.2016            0.1974         0.1951
+    ppm veteran_returning 572        0.2122       0.1879            0.1901            0.1880         0.1870
+    ppm       true_rookie 126        0.2953       0.2289            0.2538            0.2401         0.2323
+
+====================================================================================================
+WRITE
+====================================================================================================
+  wrote coldstart_comparison.csv (45 rows)
+  wrote coldstart_context_vs_champion.csv (9 rows)
+  wrote coldstart_rapm_map.csv, permutation_draws_coldstart.csv (90000 draws)
+  guard ok  write:coldstart_populations.csv                n=4       {'season': [2023, 2024]}
+  wrote coldstart_populations.csv (4 rows)
+  wrote _s04.json
+DONE s04

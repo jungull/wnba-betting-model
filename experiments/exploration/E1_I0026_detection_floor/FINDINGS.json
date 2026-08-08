@@ -1,0 +1,859 @@
+{
+  "screen_id": "E1_I0026_detection_floor",
+  "character": "E1 DIAGNOSTIC -- a measurement of the programme's own machinery. No lead, no result, no promotion, no registry/ledger/graph-event entry.",
+  "question": "What is the smallest effect this programme's designs can detect, and how much of its ~1,000-cell negative record is a power failure rather than a finding?",
+  "preregistration": {
+    "file": "PREREGISTRATION.md",
+    "sha256": "9260f7dbcb2560daa7f141231d78954f52dad90fdb688710283f42406442ea7c",
+    "hashed_before_any_statistic": true,
+    "design_grid_declared": {
+      "strata": [
+        "POOLED (n=14,852)",
+        "DECISION (n_prior>=8 & prior5_minutes>=24, n=5,673)"
+      ],
+      "bases": [
+        "B_SINGLE [1, refB_ppm]",
+        "B_COMPLETE [1, refB_ppm, refB_spm, refB_pps, refB_mpg]"
+      ],
+      "nulls_declared": 4,
+      "row_level_contrast_only": true,
+      "effect_grid": "0 plus 25 log-spaced points 1e-5 .. 1e-2",
+      "replicates": 2000,
+      "family_sizes": [
+        1,
+        18,
+        39,
+        44,
+        132,
+        154,
+        250,
+        318,
+        348
+      ]
+    },
+    "added_after_hashing": {
+      "count": 1,
+      "items": [
+        "N_E entity swap at PLAYER-SEASON (s09). Added AFTER the s07 results showed the two declared player-level nulls sit at 48 and 343/600 clusters and disagree by 3-5x, which made 'is cluster count the binding constraint' answerable and unanswered. It is a NULL, not a candidate; it cannot manufacture an effect. Its result is NEGATIVE for the hypothesis that motivated it."
+      ]
+    },
+    "dropped_after_hashing": {
+      "count": 0,
+      "items": []
+    },
+    "declared_check_outcome": "FAILED -- see null_width_drift below. The preregistration committed to abandoning the reuse-the-null factorisation if drift exceeded 10%. It did (-76% to +506%), so every headline MDE was recomputed with the null measured ON THE PLANTED RESPONSE (s07). Both the corrected and the uncorrected numbers are on disk."
+  },
+  "partition": {
+    "seasons": [
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "enforced_by": "screenkit.assert_partition (value test) after every load and every filter",
+    "2025_2026_read": false
+  },
+  "inputs": {
+    "primary_frame": "E1_I0018_teammate_volume_channel/screen_frame.parquet (14,852 rows) -- the frame that produced D089, the programme's best-ever lead",
+    "joined_frame": "E0_I0016_efficiency_predictors/screen_frame.parquet (opponent columns)",
+    "join": "1:1 on (player_id, game_id), lossless, asserted",
+    "family_wise_null_matrix": "E1_I0018/permutation_draws.npz -- 154 cells x 600 draws, the programme's own between-cell correlation",
+    "kit": "_screen_kit/screenkit.py, imported not copied",
+    "structure": {
+      "players": 247,
+      "teams": 12,
+      "games": 827,
+      "dates": 313,
+      "team_seasons": 48,
+      "player_seasons": 600
+    }
+  },
+  "machinery_checks": {
+    "fast_dr2_vs_screenkit_delta_r2_plain_abs_diff": 7.551e-17,
+    "closed_form_vs_literal_refit_worst_abs_diff": 1.457e-16,
+    "type1_at_delta0_per_cell_range": [
+      0.0399800099950025,
+      0.0689655172413793
+    ],
+    "type1_at_delta0_per_cell_median": 0.0494752623688155,
+    "type1_nominal": 0.05,
+    "analytic_mde_vs_simulated_median_ratio_familywise": 0.989142551355554,
+    "analytic_mde_vs_simulated_median_ratio_percell": 0.9841549492423018
+  },
+  "null_width_drift": {
+    "what_it_is": "relative change in the permutation null's sd when an effect is planted",
+    "preregistered_threshold": 0.1,
+    "verdict": "EXCEEDED -- factorisation abandoned as preregistered",
+    "by_null": {
+      "within-player cyclic shift": {
+        "rel_drift_sd_at_delta_1e-3": -0.29453602400740886,
+        "rel_drift_sd_at_delta_1e-2": -0.7272729468687635,
+        "direction": "null NARROWS when an effect is planted -> the uncorrected floor was CONSERVATIVE"
+      },
+      "entity swap, team-season": {
+        "rel_drift_sd_at_delta_1e-3": -0.13288748636374545,
+        "rel_drift_sd_at_delta_1e-2": -0.00952009698384405,
+        "direction": "null NARROWS when an effect is planted -> the uncorrected floor was CONSERVATIVE"
+      },
+      "entity swap, opponent-team-season": {
+        "rel_drift_sd_at_delta_1e-3": 0.11421428333669228,
+        "rel_drift_sd_at_delta_1e-2": 1.145233621317896,
+        "direction": "null WIDENS when an effect is planted -> the uncorrected floor was ANTICONSERVATIVE"
+      },
+      "within-date opponent swap": {
+        "rel_drift_sd_at_delta_1e-3": 0.501662733210779,
+        "rel_drift_sd_at_delta_1e-2": 2.688190819183201,
+        "direction": "null WIDENS when an effect is planted -> the uncorrected floor was ANTICONSERVATIVE"
+      }
+    }
+  },
+  "MDE80_drift_corrected": {
+    "DECISION|B_SINGLE|N_A_within_player_cyclic|K1": 0.0033627815080422,
+    "DECISION|B_SINGLE|N_A_within_player_cyclic|K18": 0.0045459736252718,
+    "DECISION|B_SINGLE|N_A_within_player_cyclic|K44": 0.0047956778947221,
+    "DECISION|B_SINGLE|N_A_within_player_cyclic|K132": 0.00500809523752,
+    "DECISION|B_SINGLE|N_A_within_player_cyclic|K318": 0.00500809523752,
+    "DECISION|B_SINGLE|N_B_entity_swap_team_season|K1": 0.0010633109530699,
+    "DECISION|B_SINGLE|N_B_entity_swap_team_season|K18": 0.0019562905892895,
+    "DECISION|B_SINGLE|N_B_entity_swap_team_season|K44": 0.0021495238945245,
+    "DECISION|B_SINGLE|N_B_entity_swap_team_season|K132": 0.0024109178436998,
+    "DECISION|B_SINGLE|N_B_entity_swap_team_season|K318": 0.0024109178436998,
+    "DECISION|B_SINGLE|N_C_entity_swap_opp_team_season|K1": 0.003155302229912,
+    "DECISION|B_SINGLE|N_C_entity_swap_opp_team_season|K18": 0.0071308356809516,
+    "DECISION|B_SINGLE|N_C_entity_swap_opp_team_season|K44": 0.0081100743766726,
+    "DECISION|B_SINGLE|N_C_entity_swap_opp_team_season|K132": 0.0094936494625148,
+    "DECISION|B_SINGLE|N_C_entity_swap_opp_team_season|K318": 0.0094936494625148,
+    "DECISION|B_SINGLE|N_D_within_date_opp_swap|K1": 0.0009051939794685,
+    "DECISION|B_SINGLE|N_D_within_date_opp_swap|K18": 0.0019957496933908,
+    "DECISION|B_SINGLE|N_D_within_date_opp_swap|K44": 0.0022625300384231,
+    "DECISION|B_SINGLE|N_D_within_date_opp_swap|K132": 0.002637570915382,
+    "DECISION|B_SINGLE|N_D_within_date_opp_swap|K318": 0.002637570915382,
+    "DECISION|B_SINGLE|N_E_entity_swap_player_season|K1": 0.0011036087316883,
+    "DECISION|B_SINGLE|N_E_entity_swap_player_season|K18": 0.0021140119154075,
+    "DECISION|B_SINGLE|N_E_entity_swap_player_season|K44": 0.0023371340383075,
+    "DECISION|B_SINGLE|N_E_entity_swap_player_season|K132": 0.0026409754742489,
+    "DECISION|B_SINGLE|N_E_entity_swap_player_season|K318": 0.0026409754742489,
+    "DECISION|B_COMPLETE|N_A_within_player_cyclic|K1": 0.0026749592263629,
+    "DECISION|B_COMPLETE|N_A_within_player_cyclic|K18": 0.0038270002519939,
+    "DECISION|B_COMPLETE|N_A_within_player_cyclic|K44": 0.0040715792677209,
+    "DECISION|B_COMPLETE|N_A_within_player_cyclic|K132": 0.0042810202100193,
+    "DECISION|B_COMPLETE|N_A_within_player_cyclic|K318": 0.0042810202100193,
+    "DECISION|B_COMPLETE|N_B_entity_swap_team_season|K1": 0.0010188070214868,
+    "DECISION|B_COMPLETE|N_B_entity_swap_team_season|K18": 0.0018991878942885,
+    "DECISION|B_COMPLETE|N_B_entity_swap_team_season|K44": 0.0020910552210539,
+    "DECISION|B_COMPLETE|N_B_entity_swap_team_season|K132": 0.0023512156849328,
+    "DECISION|B_COMPLETE|N_B_entity_swap_team_season|K318": 0.0023512156849328,
+    "DECISION|B_COMPLETE|N_C_entity_swap_opp_team_season|K1": 0.0032462869868731,
+    "DECISION|B_COMPLETE|N_C_entity_swap_opp_team_season|K18": 0.0073185914567463,
+    "DECISION|B_COMPLETE|N_C_entity_swap_opp_team_season|K44": 0.0083214177331115,
+    "DECISION|B_COMPLETE|N_C_entity_swap_opp_team_season|K132": 0.0097381299527236,
+    "DECISION|B_COMPLETE|N_C_entity_swap_opp_team_season|K318": 0.0097381299527236,
+    "DECISION|B_COMPLETE|N_D_within_date_opp_swap|K1": 0.0009716283227986,
+    "DECISION|B_COMPLETE|N_D_within_date_opp_swap|K18": 0.0021494691441275,
+    "DECISION|B_COMPLETE|N_D_within_date_opp_swap|K44": 0.0024354705342649,
+    "DECISION|B_COMPLETE|N_D_within_date_opp_swap|K132": 0.0028372815299915,
+    "DECISION|B_COMPLETE|N_D_within_date_opp_swap|K318": 0.0028372815299915,
+    "DECISION|B_COMPLETE|N_E_entity_swap_player_season|K1": 0.0011083822139108,
+    "DECISION|B_COMPLETE|N_E_entity_swap_player_season|K18": 0.00212222492834,
+    "DECISION|B_COMPLETE|N_E_entity_swap_player_season|K44": 0.0023457715671636,
+    "DECISION|B_COMPLETE|N_E_entity_swap_player_season|K132": 0.002650054101106,
+    "DECISION|B_COMPLETE|N_E_entity_swap_player_season|K318": 0.002650054101106,
+    "POOLED|B_SINGLE|N_A_within_player_cyclic|K1": 0.0049027990020202,
+    "POOLED|B_SINGLE|N_A_within_player_cyclic|K18": 0.0063303034768091,
+    "POOLED|B_SINGLE|N_A_within_player_cyclic|K44": 0.0066465466018473,
+    "POOLED|B_SINGLE|N_A_within_player_cyclic|K132": 0.0069185454884776,
+    "POOLED|B_SINGLE|N_A_within_player_cyclic|K318": 0.0069185454884776,
+    "POOLED|B_SINGLE|N_B_entity_swap_team_season|K1": 0.0005867116872894,
+    "POOLED|B_SINGLE|N_B_entity_swap_team_season|K18": 0.0010485118019629,
+    "POOLED|B_SINGLE|N_B_entity_swap_team_season|K44": 0.0011479027053582,
+    "POOLED|B_SINGLE|N_B_entity_swap_team_season|K132": 0.0012820090752857,
+    "POOLED|B_SINGLE|N_B_entity_swap_team_season|K318": 0.0012820090752857,
+    "POOLED|B_SINGLE|N_C_entity_swap_opp_team_season|K1": 0.0008091455868224,
+    "POOLED|B_SINGLE|N_C_entity_swap_opp_team_season|K18": 0.0017584849663223,
+    "POOLED|B_SINGLE|N_C_entity_swap_opp_team_season|K44": 0.0019955158476152,
+    "POOLED|B_SINGLE|N_C_entity_swap_opp_team_season|K132": 0.0023299252387433,
+    "POOLED|B_SINGLE|N_C_entity_swap_opp_team_season|K318": 0.0023299252387433,
+    "POOLED|B_SINGLE|N_D_within_date_opp_swap|K1": 0.0002852717025869,
+    "POOLED|B_SINGLE|N_D_within_date_opp_swap|K18": 0.0006734342441366,
+    "POOLED|B_SINGLE|N_D_within_date_opp_swap|K44": 0.000772394516228,
+    "POOLED|B_SINGLE|N_D_within_date_opp_swap|K132": 0.0009135129445722,
+    "POOLED|B_SINGLE|N_D_within_date_opp_swap|K318": 0.0009135129445722,
+    "POOLED|B_SINGLE|N_E_entity_swap_player_season|K1": 0.0005314033666632,
+    "POOLED|B_SINGLE|N_E_entity_swap_player_season|K18": 0.0010111317246623,
+    "POOLED|B_SINGLE|N_E_entity_swap_player_season|K44": 0.0011150581508839,
+    "POOLED|B_SINGLE|N_E_entity_swap_player_season|K132": 0.001255956565232,
+    "POOLED|B_SINGLE|N_E_entity_swap_player_season|K318": 0.001255956565232,
+    "POOLED|B_COMPLETE|N_A_within_player_cyclic|K1": 0.0014827701220127,
+    "POOLED|B_COMPLETE|N_A_within_player_cyclic|K18": 0.0021233282769835,
+    "POOLED|B_COMPLETE|N_A_within_player_cyclic|K44": 0.0022623446913801,
+    "POOLED|B_COMPLETE|N_A_within_player_cyclic|K132": 0.0023816142399935,
+    "POOLED|B_COMPLETE|N_A_within_player_cyclic|K318": 0.0023816142399935,
+    "POOLED|B_COMPLETE|N_B_entity_swap_team_season|K1": 0.0004955118474822,
+    "POOLED|B_COMPLETE|N_B_entity_swap_team_season|K18": 0.000908930500741,
+    "POOLED|B_COMPLETE|N_B_entity_swap_team_season|K44": 0.0009985100052555,
+    "POOLED|B_COMPLETE|N_B_entity_swap_team_season|K132": 0.001122712220865,
+    "POOLED|B_COMPLETE|N_B_entity_swap_team_season|K318": 0.001122712220865,
+    "POOLED|B_COMPLETE|N_C_entity_swap_opp_team_season|K1": 0.0008435886967636,
+    "POOLED|B_COMPLETE|N_C_entity_swap_opp_team_season|K18": 0.0018601350721149,
+    "POOLED|B_COMPLETE|N_C_entity_swap_opp_team_season|K44": 0.0021152733516685,
+    "POOLED|B_COMPLETE|N_C_entity_swap_opp_team_season|K132": 0.0024762778636976,
+    "POOLED|B_COMPLETE|N_C_entity_swap_opp_team_season|K318": 0.0024762778636976,
+    "POOLED|B_COMPLETE|N_D_within_date_opp_swap|K1": 0.0003096417244705,
+    "POOLED|B_COMPLETE|N_D_within_date_opp_swap|K18": 0.0007464053667309,
+    "POOLED|B_COMPLETE|N_D_within_date_opp_swap|K44": 0.0008568742265039,
+    "POOLED|B_COMPLETE|N_D_within_date_opp_swap|K132": 0.0010170026442786,
+    "POOLED|B_COMPLETE|N_D_within_date_opp_swap|K318": 0.0010170026442786,
+    "POOLED|B_COMPLETE|N_E_entity_swap_player_season|K1": 0.0005611050414806,
+    "POOLED|B_COMPLETE|N_E_entity_swap_player_season|K18": 0.0010644643511482,
+    "POOLED|B_COMPLETE|N_E_entity_swap_player_season|K44": 0.0011739300067462,
+    "POOLED|B_COMPLETE|N_E_entity_swap_player_season|K132": 0.0013224015444261,
+    "POOLED|B_COMPLETE|N_E_entity_swap_player_season|K318": 0.0013224015444261
+  },
+  "family_wise_thresholds_q95_maxt": {
+    "N1_within|K1": {
+      "q95_maxt": 1.9992539964460991,
+      "extrapolated": false
+    },
+    "N1_within|K18": {
+      "q95_maxt": 4.974338012066289,
+      "extrapolated": false
+    },
+    "N1_within|K39": {
+      "q95_maxt": 5.695986850028299,
+      "extrapolated": false
+    },
+    "N1_within|K44": {
+      "q95_maxt": 5.833238170032072,
+      "extrapolated": false
+    },
+    "N1_within|K132": {
+      "q95_maxt": 6.606553602093543,
+      "extrapolated": false
+    },
+    "N1_within|K154": {
+      "q95_maxt": 6.726312674502062,
+      "extrapolated": false
+    },
+    "N1_within|K250": {
+      "q95_maxt": 6.535048638253136,
+      "extrapolated": true
+    },
+    "N1_within|K318": {
+      "q95_maxt": 6.606553602093543,
+      "extrapolated": true
+    },
+    "N1_within|K348": {
+      "q95_maxt": 6.686211887168178,
+      "extrapolated": true
+    },
+    "N2_entity_swap|K1": {
+      "q95_maxt": 2.00296895747484,
+      "extrapolated": false
+    },
+    "N2_entity_swap|K18": {
+      "q95_maxt": 5.065914990765384,
+      "extrapolated": false
+    },
+    "N2_entity_swap|K39": {
+      "q95_maxt": 5.748932232686749,
+      "extrapolated": false
+    },
+    "N2_entity_swap|K44": {
+      "q95_maxt": 5.866627662225086,
+      "extrapolated": false
+    },
+    "N2_entity_swap|K132": {
+      "q95_maxt": 6.97447469907285,
+      "extrapolated": false
+    },
+    "N2_entity_swap|K154": {
+      "q95_maxt": 7.0083281495438365,
+      "extrapolated": false
+    },
+    "N2_entity_swap|K250": {
+      "q95_maxt": 6.964093931192527,
+      "extrapolated": true
+    },
+    "N2_entity_swap|K318": {
+      "q95_maxt": 6.97447469907285,
+      "extrapolated": true
+    },
+    "N2_entity_swap|K348": {
+      "q95_maxt": 6.97447469907285,
+      "extrapolated": true
+    }
+  },
+  "benchmarks": {
+    "best_ever_lead_D089_walkforward_points_dr2": 0.0023,
+    "arithmetic_ceiling_D079_shot_mix_to_points": 0.001127,
+    "arithmetic_ceiling_D084_conversion_to_points": 0.000129,
+    "only_prior_resolution_figure_D097": [
+      0.00016,
+      0.00022
+    ]
+  },
+  "retrospective": {
+    "cells_with_a_published_null_width": 1349,
+    "screens_covered": 7,
+    "share_blind_to_best_lead_0.0023_familywise": 0.5633802816901409,
+    "share_blind_to_D079_ceiling_familywise": 0.8999258710155671,
+    "share_blind_to_D084_ceiling_familywise": 0.9866567828020756,
+    "uninformative_nulls_total": 628,
+    "by_screen": [
+      {
+        "screen": "E0_I0019_availability_forecast",
+        "decision": "D090",
+        "family_size_K": 318,
+        "cells": 318,
+        "n_med": 17809.0,
+        "mde80_fw_median": 0.0059190074933618,
+        "mde80_fw_p25": 0.0042084522764523,
+        "mde80_fw_p75": 0.0111302656822462,
+        "blind_best_lead": 0.9905660377358492,
+        "blind_D079": 1.0,
+        "blind_D084": 1.0,
+        "blind_best_lead_cells": 315
+      },
+      {
+        "screen": "E1_I0023_usage_defence_interaction",
+        "decision": "D098/D099",
+        "family_size_K": 120,
+        "cells": 30,
+        "n_med": 10240.0,
+        "mde80_fw_median": 0.0043717947519181,
+        "mde80_fw_p25": 0.0026548723001223,
+        "mde80_fw_p75": 0.0084484790290096,
+        "blind_best_lead": 0.8,
+        "blind_D079": 0.9666666666666668,
+        "blind_D084": 1.0,
+        "blind_best_lead_cells": 24
+      },
+      {
+        "screen": "E0_I0014_residual_heterogeneity",
+        "decision": "D078/D082 era",
+        "family_size_K": 348,
+        "cells": 348,
+        "n_med": 13879.0,
+        "mde80_fw_median": 0.0028382530805148,
+        "mde80_fw_p25": 0.0016133898494869,
+        "mde80_fw_p75": 0.0050232220124966,
+        "blind_best_lead": 0.5833333333333334,
+        "blind_D079": 0.9281609195402298,
+        "blind_D084": 0.9482758620689656,
+        "blind_best_lead_cells": 203
+      },
+      {
+        "screen": "E0_I0024_reb_ast_characterisation",
+        "decision": "D097",
+        "family_size_K": 250,
+        "cells": 250,
+        "n_med": 9447.5,
+        "mde80_fw_median": 0.0020533384611541,
+        "mde80_fw_p25": 0.0012496291421718,
+        "mde80_fw_p75": 0.0028368725747254,
+        "blind_best_lead": 0.412,
+        "blind_D079": 0.776,
+        "blind_D084": 1.0,
+        "blind_best_lead_cells": 103
+      },
+      {
+        "screen": "E0_I0016_efficiency_predictors",
+        "decision": "D085",
+        "family_size_K": 132,
+        "cells": 132,
+        "n_med": 14079.0,
+        "mde80_fw_median": 0.0018464150869774,
+        "mde80_fw_p25": 0.0013770888650828,
+        "mde80_fw_p75": 0.0053164471433962,
+        "blind_best_lead": 0.4015151515151515,
+        "blind_D079": 0.8939393939393939,
+        "blind_D084": 1.0,
+        "blind_best_lead_cells": 53
+      },
+      {
+        "screen": "E1_I0018_teammate_volume_channel",
+        "decision": "D089",
+        "family_size_K": 154,
+        "cells": 154,
+        "n_med": 9831.0,
+        "mde80_fw_median": 0.0016908915090831,
+        "mde80_fw_p25": 0.0011583412136609,
+        "mde80_fw_p75": 0.0032434927802473,
+        "blind_best_lead": 0.3831168831168831,
+        "blind_D079": 0.7597402597402597,
+        "blind_D084": 1.0,
+        "blind_best_lead_cells": 59
+      },
+      {
+        "screen": "E0_I0017_shot_quality_efficiency",
+        "decision": "D087",
+        "family_size_K": 117,
+        "cells": 117,
+        "n_med": 13984.0,
+        "mde80_fw_median": 0.0015343455097617,
+        "mde80_fw_p25": 0.0013266168614437,
+        "mde80_fw_p75": 0.0016999684630411,
+        "blind_best_lead": 0.0256410256410256,
+        "blind_D079": 0.9829059829059827,
+        "blind_D084": 1.0,
+        "blind_best_lead_cells": 3
+      }
+    ],
+    "uninformative_nulls_by_screen": [
+      {
+        "screen": "E0_I0019_availability_forecast",
+        "decision": "D090",
+        "uninformative_nulls": 232,
+        "mde80_fw_median": 0.0046694675762158,
+        "n_med": 17809.0,
+        "K": 318
+      },
+      {
+        "screen": "E0_I0014_residual_heterogeneity",
+        "decision": "D078/D082 era",
+        "uninformative_nulls": 181,
+        "mde80_fw_median": 0.0042496578908408,
+        "n_med": 13879.0,
+        "K": 348
+      },
+      {
+        "screen": "E0_I0024_reb_ast_characterisation",
+        "decision": "D097",
+        "uninformative_nulls": 99,
+        "mde80_fw_median": 0.0029570028275858,
+        "n_med": 5111.0,
+        "K": 250
+      },
+      {
+        "screen": "E0_I0016_efficiency_predictors",
+        "decision": "D085",
+        "uninformative_nulls": 53,
+        "mde80_fw_median": 0.0060832789333742,
+        "n_med": 14079.0,
+        "K": 132
+      },
+      {
+        "screen": "E1_I0018_teammate_volume_channel",
+        "decision": "D089",
+        "uninformative_nulls": 36,
+        "mde80_fw_median": 0.0034858162722593,
+        "n_med": 5673.0,
+        "K": 154
+      },
+      {
+        "screen": "E1_I0023_usage_defence_interaction",
+        "decision": "D098/D099",
+        "uninformative_nulls": 24,
+        "mde80_fw_median": 0.0050953079003491,
+        "n_med": 5671.5,
+        "K": 120
+      },
+      {
+        "screen": "E0_I0017_shot_quality_efficiency",
+        "decision": "D087",
+        "uninformative_nulls": 3,
+        "mde80_fw_median": 0.0025632618733897,
+        "n_med": 13989.0,
+        "K": 117
+      }
+    ]
+  },
+  "mde_vs_n": [
+    {
+      "n_target": 3549,
+      "n": 3554,
+      "n_player_seasons": 142,
+      "n_clusters": 142,
+      "null": "N_A_within_player_cyclic",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.000588131156506,
+      "null_sd": 0.0006484067203702,
+      "type1_at_delta0": 0.0549450549450549,
+      "mde80_per_cell": 0.0057671188841849,
+      "mde80_K44": 0.0096985531160853,
+      "mde80_K132": NaN,
+      "mde80_K318": NaN
+    },
+    {
+      "n_target": 3549,
+      "n": 3554,
+      "n_player_seasons": 142,
+      "n_clusters": 46,
+      "null": "N_B_entity_swap_team_season",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.000236229069053,
+      "null_sd": 0.0003691080041005,
+      "type1_at_delta0": 0.0639360639360639,
+      "mde80_per_cell": 0.0021721271595331,
+      "mde80_K44": 0.0042339349967383,
+      "mde80_K132": 0.0049419158817678,
+      "mde80_K318": 0.0049419158817678
+    },
+    {
+      "n_target": 3549,
+      "n": 3554,
+      "n_player_seasons": 142,
+      "n_clusters": 1467,
+      "null": "N_D_within_date_opp_swap",
+      "base": "B_COMPLETE",
+      "carrier": "A10_opp_defrtg",
+      "null_mean": 0.0001643677224119,
+      "null_sd": 0.0002046347093431,
+      "type1_at_delta0": 0.0679320679320679,
+      "mde80_per_cell": 0.0011451726512223,
+      "mde80_K44": 0.0021416840172671,
+      "mde80_K132": 0.0023756770463321,
+      "mde80_K318": 0.0023756770463321
+    },
+    {
+      "n_target": 4517,
+      "n": 4534,
+      "n_player_seasons": 180,
+      "n_clusters": 180,
+      "null": "N_A_within_player_cyclic",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0010407369787079,
+      "null_sd": 0.0007705667437379,
+      "type1_at_delta0": 0.0429570429570429,
+      "mde80_per_cell": 0.0083342738896209,
+      "mde80_K44": NaN,
+      "mde80_K132": NaN,
+      "mde80_K318": NaN
+    },
+    {
+      "n_target": 4517,
+      "n": 4534,
+      "n_player_seasons": 180,
+      "n_clusters": 48,
+      "null": "N_B_entity_swap_team_season",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0001984993308928,
+      "null_sd": 0.0002709428553825,
+      "type1_at_delta0": 0.0309690309690309,
+      "mde80_per_cell": 0.00154719642963,
+      "mde80_K44": 0.0028736871794919,
+      "mde80_K132": 0.0032271039107316,
+      "mde80_K318": 0.0032271039107316
+    },
+    {
+      "n_target": 4517,
+      "n": 4534,
+      "n_player_seasons": 180,
+      "n_clusters": 1570,
+      "null": "N_D_within_date_opp_swap",
+      "base": "B_COMPLETE",
+      "carrier": "A10_opp_defrtg",
+      "null_mean": 0.0001650359766576,
+      "null_sd": 0.0002753113835059,
+      "type1_at_delta0": 0.0409590409590409,
+      "mde80_per_cell": 0.0015871382347949,
+      "mde80_K44": 0.0032564314129502,
+      "mde80_K132": 0.0036846636457311,
+      "mde80_K318": 0.0036846636457311
+    },
+    {
+      "n_target": 5111,
+      "n": 5123,
+      "n_player_seasons": 208,
+      "n_clusters": 208,
+      "null": "N_A_within_player_cyclic",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0004789053403013,
+      "null_sd": 0.0005669007612743,
+      "type1_at_delta0": 0.0449550449550449,
+      "mde80_per_cell": 0.0049687212740115,
+      "mde80_K44": 0.008544357070312,
+      "mde80_K132": 0.0090918831640497,
+      "mde80_K318": 0.0090918831640497
+    },
+    {
+      "n_target": 5111,
+      "n": 5123,
+      "n_player_seasons": 208,
+      "n_clusters": 48,
+      "null": "N_B_entity_swap_team_season",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0001769918215492,
+      "null_sd": 0.0002387670393022,
+      "type1_at_delta0": 0.0359640359640359,
+      "mde80_per_cell": 0.0015879784139815,
+      "mde80_K44": 0.0028708131448525,
+      "mde80_K132": 0.0031927628880624,
+      "mde80_K318": 0.0031927628880624
+    },
+    {
+      "n_target": 5111,
+      "n": 5123,
+      "n_player_seasons": 208,
+      "n_clusters": 1615,
+      "null": "N_D_within_date_opp_swap",
+      "base": "B_COMPLETE",
+      "carrier": "A10_opp_defrtg",
+      "null_mean": 0.0001076213524537,
+      "null_sd": 0.0001573596138253,
+      "type1_at_delta0": 0.0509490509490509,
+      "mde80_per_cell": 0.0009584497381389,
+      "mde80_K44": 0.0019015770358507,
+      "mde80_K132": 0.0021296896806161,
+      "mde80_K318": 0.0021296896806161
+    },
+    {
+      "n_target": 5673,
+      "n": 5706,
+      "n_player_seasons": 227,
+      "n_clusters": 227,
+      "null": "N_A_within_player_cyclic",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0004106516592662,
+      "null_sd": 0.0003962305682251,
+      "type1_at_delta0": 0.0469530469530469,
+      "mde80_per_cell": 0.0037241323315938,
+      "mde80_K44": 0.0062948857794281,
+      "mde80_K132": 0.0066809734147199,
+      "mde80_K318": 0.0066809734147199
+    },
+    {
+      "n_target": 5673,
+      "n": 5706,
+      "n_player_seasons": 227,
+      "n_clusters": 48,
+      "null": "N_B_entity_swap_team_season",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0001560142037278,
+      "null_sd": 0.0002266208865987,
+      "type1_at_delta0": 0.0439560439560439,
+      "mde80_per_cell": 0.0016201818339085,
+      "mde80_K44": 0.0029286445646252,
+      "mde80_K132": 0.0032486944070996,
+      "mde80_K318": 0.0032486944070996
+    },
+    {
+      "n_target": 5673,
+      "n": 5706,
+      "n_player_seasons": 227,
+      "n_clusters": 1621,
+      "null": "N_D_within_date_opp_swap",
+      "base": "B_COMPLETE",
+      "carrier": "A10_opp_defrtg",
+      "null_mean": 0.0001394950797871,
+      "null_sd": 0.0001879147917798,
+      "type1_at_delta0": 0.0379620379620379,
+      "mde80_per_cell": 0.00079144557017,
+      "mde80_K44": 0.001540926609648,
+      "mde80_K132": 0.0017613903593154,
+      "mde80_K318": 0.0017613903593154
+    },
+    {
+      "n_target": 9517,
+      "n": 9541,
+      "n_player_seasons": 388,
+      "n_clusters": 388,
+      "null": "N_A_within_player_cyclic",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0004641315221326,
+      "null_sd": 0.0003167547085645,
+      "type1_at_delta0": 0.0549450549450549,
+      "mde80_per_cell": 0.0036566419498022,
+      "mde80_K44": 0.0056548809898717,
+      "mde80_K132": 0.0062350488103477,
+      "mde80_K318": 0.0062350488103477
+    },
+    {
+      "n_target": 9517,
+      "n": 9541,
+      "n_player_seasons": 388,
+      "n_clusters": 48,
+      "null": "N_B_entity_swap_team_season",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 9.170028164935489e-05,
+      "null_sd": 0.0001321344971826,
+      "type1_at_delta0": 0.0439560439560439,
+      "mde80_per_cell": 0.0008623503831919,
+      "mde80_K44": 0.0015871064645641,
+      "mde80_K132": 0.0017575208970387,
+      "mde80_K318": 0.0017575208970387
+    },
+    {
+      "n_target": 9517,
+      "n": 9541,
+      "n_player_seasons": 388,
+      "n_clusters": 1632,
+      "null": "N_D_within_date_opp_swap",
+      "base": "B_COMPLETE",
+      "carrier": "A10_opp_defrtg",
+      "null_mean": 6.562289094377965e-05,
+      "null_sd": 9.381080752702731e-05,
+      "type1_at_delta0": 0.0489510489510489,
+      "mde80_per_cell": 0.0006153368205912,
+      "mde80_K44": 0.0011212262362697,
+      "mde80_K132": 0.0012578278666778,
+      "mde80_K318": 0.0012578278666778
+    },
+    {
+      "n_target": 11738,
+      "n": 11753,
+      "n_player_seasons": 473,
+      "n_clusters": 473,
+      "null": "N_A_within_player_cyclic",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0008001261469467,
+      "null_sd": 0.0004721150611586,
+      "type1_at_delta0": 0.0469530469530469,
+      "mde80_per_cell": 0.005603598122868,
+      "mde80_K44": 0.0090859488636981,
+      "mde80_K132": 0.0094905136822229,
+      "mde80_K318": 0.0094905136822229
+    },
+    {
+      "n_target": 11738,
+      "n": 11753,
+      "n_player_seasons": 473,
+      "n_clusters": 48,
+      "null": "N_B_entity_swap_team_season",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0001185034441765,
+      "null_sd": 0.0001679955244919,
+      "type1_at_delta0": 0.0389610389610389,
+      "mde80_per_cell": 0.0012518173992646,
+      "mde80_K44": 0.0022212883469594,
+      "mde80_K132": 0.0025220129475342,
+      "mde80_K318": 0.0025220129475342
+    },
+    {
+      "n_target": 11738,
+      "n": 11753,
+      "n_player_seasons": 473,
+      "n_clusters": 1632,
+      "null": "N_D_within_date_opp_swap",
+      "base": "B_COMPLETE",
+      "carrier": "A10_opp_defrtg",
+      "null_mean": 4.005485319542032e-05,
+      "null_sd": 6.0594627148518464e-05,
+      "type1_at_delta0": 0.0509490509490509,
+      "mde80_per_cell": 0.0002895603750251,
+      "mde80_K44": 0.0006269345759934,
+      "mde80_K132": 0.0007046098628153,
+      "mde80_K318": 0.0007046098628153
+    },
+    {
+      "n_target": 14327,
+      "n": 14328,
+      "n_player_seasons": 574,
+      "n_clusters": 574,
+      "null": "N_A_within_player_cyclic",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0005037652698328,
+      "null_sd": 0.0003180387274989,
+      "type1_at_delta0": 0.0479520479520479,
+      "mde80_per_cell": 0.0037562039398624,
+      "mde80_K44": 0.005793969310148,
+      "mde80_K132": 0.0063772374507989,
+      "mde80_K318": 0.0063772374507989
+    },
+    {
+      "n_target": 14327,
+      "n": 14328,
+      "n_player_seasons": 574,
+      "n_clusters": 48,
+      "null": "N_B_entity_swap_team_season",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 6.540840143518698e-05,
+      "null_sd": 8.6842754846954e-05,
+      "type1_at_delta0": 0.0609390609390609,
+      "mde80_per_cell": 0.0006952089981939,
+      "mde80_K44": 0.0011808398780086,
+      "mde80_K132": 0.0013193559833315,
+      "mde80_K318": 0.0013193559833315
+    },
+    {
+      "n_target": 14327,
+      "n": 14328,
+      "n_player_seasons": 574,
+      "n_clusters": 1632,
+      "null": "N_D_within_date_opp_swap",
+      "base": "B_COMPLETE",
+      "carrier": "A10_opp_defrtg",
+      "null_mean": 3.838411941960928e-05,
+      "null_sd": 5.563448202229759e-05,
+      "type1_at_delta0": 0.0429570429570429,
+      "mde80_per_cell": 0.0002634288071421,
+      "mde80_K44": 0.0005186683003745,
+      "mde80_K132": 0.0005903212750398,
+      "mde80_K318": 0.0005903212750398
+    },
+    {
+      "n_target": 14852,
+      "n": 14852,
+      "n_player_seasons": 600,
+      "n_clusters": 600,
+      "null": "N_A_within_player_cyclic",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 0.0004862646400041,
+      "null_sd": 0.0003289619856696,
+      "type1_at_delta0": 0.0479520479520479,
+      "mde80_per_cell": 0.0037793257822603,
+      "mde80_K44": 0.0060092782536073,
+      "mde80_K132": 0.0065189248968374,
+      "mde80_K318": 0.0065189248968374
+    },
+    {
+      "n_target": 14852,
+      "n": 14852,
+      "n_player_seasons": 600,
+      "n_clusters": 48,
+      "null": "N_B_entity_swap_team_season",
+      "base": "B_COMPLETE",
+      "carrier": "P01_c04_prevgame",
+      "null_mean": 7.705302962933641e-05,
+      "null_sd": 0.0001014918770906,
+      "type1_at_delta0": 0.0659340659340659,
+      "mde80_per_cell": 0.000815883042931,
+      "mde80_K44": 0.0014255673170816,
+      "mde80_K132": 0.0016015248389016,
+      "mde80_K318": 0.0016015248389016
+    },
+    {
+      "n_target": 14852,
+      "n": 14852,
+      "n_player_seasons": 600,
+      "n_clusters": 1632,
+      "null": "N_D_within_date_opp_swap",
+      "base": "B_COMPLETE",
+      "carrier": "A10_opp_defrtg",
+      "null_mean": 3.332796724094131e-05,
+      "null_sd": 4.74523574077407e-05,
+      "type1_at_delta0": 0.0539460539460539,
+      "mde80_per_cell": 0.0002411699716463,
+      "mde80_K44": 0.0004858765890864,
+      "mde80_K132": 0.0005381335293373,
+      "mde80_K318": 0.0005381335293373
+    }
+  ],
+  "where_i_could_have_cheated": [
+    "CARRIER CHOICE. Two carriers were fixed in the preregistration before any statistic and neither was changed. A carrier with more between-entity variance would have flattered every entity-swap floor.",
+    "REUSING THE UNPLANTED NULL WIDTH. Declared with a test that could fail; it DID fail, and the headline numbers are the recomputed ones. The uncorrected numbers are kept on disk beside them (s04_mde_table.csv) rather than deleted.",
+    "REPORTING THE PER-CELL FLOOR ONLY. The per-cell floor is 1.9-2.3x better than the family-wise one. Both are reported everywhere and the verdict quotes the family-wise one.",
+    "EXTRAPOLATING K > 154. The real null matrix has 154 cells; K in {250, 318, 348} samples cells with replacement and is flagged in every row of the threshold table. The max-t threshold is flat from K=132 to K=348, so the extrapolation carries little weight.",
+    "STRATUM SHOPPING. Both strata are reported for every null and both are in the verdict.",
+    "GRID ENDPOINTS. Fixed at 1e-5..1e-2 in the preregistration, three orders of magnitude around every ceiling in the ledger.",
+    "HINDSIGHT FLAGGING. The retrospective uses only each screen's design -- its published null width, its n, its family size. No screen's RESULT enters the decision about whether it was powered.",
+    "A SINGLE FRAME. The power curves are measured on ONE frame (D089's). It is the programme's best-instrumented and most favourable one, so the floors here are if anything optimistic for the rest of the programme. The retrospective, which covers seven screens, is the check on that.",
+    "N_E WAS ADDED AFTER HASHING. It is a null, its result went AGAINST the hypothesis that motivated adding it, and it is counted in added_after_hashing."
+  ],
+  "incidental_not_a_lead": "A10_opp_defrtg (strictly-prior opponent defensive rating) carries an in-sample screening dR2 of 0.0082-0.0086 against y_ppm on the DECISION stratum, p=0.0017 on both opponent-level nulls. It was used here ONLY as a carrier for opponent-level power measurement. It is a single uncorrected in-sample cell on an outcome D085 did not screen it against (D085 screened the A-family against EFFICIENCY, not points-per-minute). It is recorded so it is not lost, and it is NOT raised as a lead."
+}
