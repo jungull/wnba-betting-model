@@ -1,0 +1,2696 @@
+{
+  "screen_id": "E0_I0015_points_skill_decomposition",
+  "tier": "E0 -- DISCOVERY. Everything here is a LEAD, never a result. No preregistration, no bootstrap, no promotion threshold, no registry entry. Nothing in this directory may be cited as evidence for anything.",
+  "question": "D076 measured the champion player model's skill vs a point-in-time expanding prior-appearance-mean reference as MINUTES +3.55%, FGA +0.12%, POINTS -0.22%. Where along POINTS = MINUTES x POINTS-PER-MINUTE is the skill lost, and is the loss fixable or intrinsic?",
+  "one_sentence_answer": "The skill is lost at the PER-MINUTE EFFICIENCY step for established players, and separately destroyed outright on cold-start rows: for a player with >=20 prior same-season appearances and >=24 trailing-5 minutes the model's MINUTES forecast carries +7.7% skill but its POINTS-PER-MINUTE forecast carries -0.5%, and because points error is dominated ~3:1 by efficiency error rather than minutes error the minutes skill buys nothing, leaving points skill at -0.5%; meanwhile the 999 rows with fewer than 3 prior appearances sit at -17.9% points skill and drag the pooled figure down, so the headline -0.22% is a near-cancellation of a real cold-start defect against real positive skill on low-minutes deep-history players, NOT a uniform absence of skill.",
+  "single_most_informative_table": "points_skill_depth_by_volume.csv -- points skill by (prior-appearance depth) x (trailing-5 mean minutes). Reading down the >=24-minute column: -0.11%, -0.53%. Reading across the >=20-appearance row: +7.64%, +3.69%, -0.53%. The model's points skill is strongly positive for LOW-minutes players with deep history and indistinguishable from zero for HIGH-minutes players at every depth -- i.e. exactly inverted from where a points market matters.",
+  "partition": {
+    "declared": "2021-2024 exploration partition; effectively 2022-2024 because D076 established the 2021 fold is degenerate (n_train_rows=0, model_was_fitted=false).",
+    "seasons_present": [
+      2022,
+      2023,
+      2024
+    ],
+    "max_game_date": "2024-10-20",
+    "holdout_2025_2026": "NEVER read, joined, plotted, described or summarised.",
+    "method": "screenkit.assert_partition -- a VALUE test on parsed dates and season-valued columns. No regex or byte scan of file contents was used as a partition check anywhere in this screen.",
+    "result": {
+      "ok": true,
+      "season_cols": {
+        "season": [
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "date_cols": {
+        "gdate": [
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "skipped_name_only": {
+        "pl_prior_season_games": "name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped",
+        "tm_season_progress": "name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped"
+      },
+      "violations": [],
+      "method": "screenkit.assert_partition -- parses COLUMN VALUES (season ints, date years); never scans text or names"
+    }
+  },
+  "manifest_checks": [
+    {
+      "artifact": "data\\masters\\master_player.parquet",
+      "role": "D076 input",
+      "asof_granularity": "row",
+      "status": "USABLE_IF_FILTERED",
+      "usable_at_e0_e1": true,
+      "fit_through_season": 2026,
+      "filtering_helps": true
+    },
+    {
+      "artifact": "experiments\\prediction_contract_v4\\player_game.parquet",
+      "role": "D076 input",
+      "asof_granularity": "row",
+      "status": "USABLE_IF_FILTERED",
+      "usable_at_e0_e1": true,
+      "fit_through_season": 2026,
+      "filtering_helps": true
+    },
+    {
+      "artifact": "experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__player_scoring_distribution__2022.parquet",
+      "role": "OOF pts 2022",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2022,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__player_scoring_distribution__2023.parquet",
+      "role": "OOF pts 2023",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2023,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__player_scoring_distribution__2024.parquet",
+      "role": "OOF pts 2024",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2024,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__e_minutes_given_active__2022.parquet",
+      "role": "OOF min 2022",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2022,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__e_minutes_given_active__2023.parquet",
+      "role": "OOF min 2023",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2023,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__e_minutes_given_active__2024.parquet",
+      "role": "OOF min 2024",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2024,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__attempts_usage__2022.parquet",
+      "role": "OOF fga 2022",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2022,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__attempts_usage__2023.parquet",
+      "role": "OOF fga 2023",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2023,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__attempts_usage__2024.parquet",
+      "role": "OOF fga 2024",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2024,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "data\\w1_truth\\player_game_availability.csv",
+      "role": "REFUSED by D076",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2026,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "data\\w1_truth\\roster_asof.csv",
+      "role": "REFUSED by D076",
+      "asof_granularity": "artifact",
+      "status": "UNUSABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": 2026,
+      "filtering_helps": false
+    },
+    {
+      "artifact": "experiments\\minutes_baselines\\test_predictions.csv",
+      "role": "no manifest, D076 refused",
+      "asof_granularity": null,
+      "status": "UNVERIFIABLE",
+      "usable_at_e0_e1": false,
+      "fit_through_season": null,
+      "filtering_helps": null
+    }
+  ],
+  "manifest_reading_inherited_from_D076": "The per-season OOF prediction files are asof_granularity='artifact', which is normally UNUSABLE because filtering cannot rescue a mixed-bound file. They are not mixed-bound: each file's own fit_through_season equals its own season, so the whole artifact sits inside the partition and no filtering is relied on. Verified file by file in s01. player_game_availability.csv and roster_asof.csv (artifact-granular, bound 2026) and minutes_baselines/test_predictions.csv (NO sibling manifest -> UNVERIFIABLE) were NOT OPENED, exactly as D076 refused them.",
+  "step1_reproduction": {
+    "verdict": "REPRODUCED",
+    "max_abs_delta_skill_vs_D076_published": 4.946041231754933e-05,
+    "note": "D076 published skill to 2 decimal places in percent, so an exact match is only possible to ~5e-5 on the fraction. All three land inside that.",
+    "table": [
+      {
+        "target": "pts",
+        "n": 13879,
+        "model_mae": 4.190919667572693,
+        "ref_mae": 4.181628792249526,
+        "skill": -0.0022218316796525084,
+        "published_skill": -0.0022,
+        "abs_delta_skill": 2.1831679652508252e-05,
+        "published_model_mae": 4.1909,
+        "abs_delta_model_mae": 1.9667572693116142e-05,
+        "published_ref_mae": 4.1816,
+        "abs_delta_ref_mae": 2.879224952589965e-05,
+        "r2_plain_unweighted": 0.4746730640697089,
+        "published_r2": 0.4694,
+        "abs_delta_r2": 0.005273064069708899,
+        "independent_rebuild_skill": -0.0022218316796525084,
+        "max_abs_ref_rebuild_diff": 0.0
+      },
+      {
+        "target": "minutes",
+        "n": 13879,
+        "model_mae": 5.079670829517938,
+        "ref_mae": 5.266906514137652,
+        "skill": 0.035549460412317546,
+        "published_skill": 0.0355,
+        "abs_delta_skill": 4.946041231754933e-05,
+        "published_model_mae": 5.0797,
+        "abs_delta_model_mae": 2.9170482061857683e-05,
+        "published_ref_mae": 5.2669,
+        "abs_delta_ref_mae": 6.514137652402496e-06,
+        "r2_plain_unweighted": 0.6217847927952345,
+        "published_r2": 0.6194,
+        "abs_delta_r2": 0.002384792795234514,
+        "independent_rebuild_skill": 0.035549460412317546,
+        "max_abs_ref_rebuild_diff": 0.0
+      },
+      {
+        "target": "fga",
+        "n": 13879,
+        "model_mae": 2.6375697656574264,
+        "ref_mae": 2.640610728352467,
+        "skill": 0.0011516133985177701,
+        "published_skill": 0.0012,
+        "abs_delta_skill": 4.838660148222978e-05,
+        "published_model_mae": 2.6376,
+        "abs_delta_model_mae": 3.023434257354296e-05,
+        "published_ref_mae": 2.6406,
+        "abs_delta_ref_mae": 1.072835246684889e-05,
+        "r2_plain_unweighted": 0.5914872780796772,
+        "published_r2": 0.5893,
+        "abs_delta_r2": 0.002187278079677113,
+        "independent_rebuild_skill": 0.0011516133985177701,
+        "max_abs_ref_rebuild_diff": 0.0
+      }
+    ],
+    "independent_rebuild": "This screen rebuilt the prior-mean reference from scratch in its own code path (psd_base.build_references) without reading D076's ref_ columns; max |refX - D076 ref| = 0.0 for all three targets.",
+    "cold_start_fallback_counts": {
+      "pts": 3,
+      "minutes": 3,
+      "fga": 3,
+      "ppm_A": 3,
+      "ppm_B": 3,
+      "fpm_A": 3,
+      "fpm_B": 3,
+      "ppf_A": 3,
+      "ppf_B": 3
+    },
+    "disclosed_minor_defect_in_D076_reference": "D076's reference chain ends in .fillna(f['y_t'].mean()) -- the WHOLE-SAMPLE mean, which is retrospective. It binds on exactly 3 of 13,879 rows (the first games of the earliest season, where the player has no prior appearance AND no earlier same-season game exists). Immaterial to every number here, but it is a retrospective element inside a baseline labelled 'prior mean' and is reported rather than left implicit."
+  },
+  "leak_probes": {
+    "retrospective_control__full_season_mean": {
+      "n_rows_with_future": 13404,
+      "baseline_col": "_loo_pts",
+      "clean_col": "ref_pts",
+      "corr_suspect_with_future": 0.9479810572796885,
+      "corr_clean_with_future": 0.845257416282032,
+      "dr2_suspect_over_clean_predicting_future": 0.19541639997257448,
+      "reads_future": true,
+      "verdict": "'_loo_pts' predicts the entity's UNPLAYED FUTURE better than 'ref_pts' (|0.9480| vs |0.8453|) and adds dR2=0.1954 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment."
+    },
+    "our_prior_mean_reference": {
+      "n_rows_with_future": 13404,
+      "baseline_col": "ref_pts",
+      "clean_col": "_loo_pts",
+      "corr_suspect_with_future": 0.845257416282032,
+      "corr_clean_with_future": 0.9479810572796885,
+      "dr2_suspect_over_clean_predicting_future": 0.011208414791234945,
+      "reads_future": false,
+      "verdict": "'ref_pts' does not out-predict '_loo_pts' on the unplayed future (|0.8453| vs |0.9480|, dR2=0.0112). This probe found no leakage; it is NOT a certificate -- also read the construction."
+    },
+    "rate_ppm_refA_vs_refB": {
+      "n_rows_with_future": 13404,
+      "baseline_col": "refA_ppm",
+      "clean_col": "refB_ppm",
+      "corr_suspect_with_future": 0.6230205551976249,
+      "corr_clean_with_future": 0.6285715192675888,
+      "dr2_suspect_over_clean_predicting_future": 0.0026784175813519885,
+      "reads_future": false,
+      "verdict": "'refA_ppm' does not out-predict 'refB_ppm' on the unplayed future (|0.6230| vs |0.6286|, dR2=0.0027). This probe found no leakage; it is NOT a certificate -- also read the construction."
+    },
+    "rate_fpm_refA_vs_refB": {
+      "n_rows_with_future": 13404,
+      "baseline_col": "refA_fpm",
+      "clean_col": "refB_fpm",
+      "corr_suspect_with_future": 0.6596783336149209,
+      "corr_clean_with_future": 0.6721205436977151,
+      "dr2_suspect_over_clean_predicting_future": 0.00023250939872957244,
+      "reads_future": false,
+      "verdict": "'refA_fpm' does not out-predict 'refB_fpm' on the unplayed future (|0.6597| vs |0.6721|, dR2=0.0002). This probe found no leakage; it is NOT a certificate -- also read the construction."
+    }
+  },
+  "noop_placebo": {
+    "statistic": "points skill vs D076 prior-mean reference",
+    "identity_transform": {
+      "real": -0.0022218316796525084,
+      "n_draws": 200.0,
+      "sd": 0.0,
+      "max_abs_dev_from_real": 0.0,
+      "n_distinct_draw_values": 1.0,
+      "tol": 1e-15,
+      "is_noop": 1.0,
+      "verdict": "CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)"
+    },
+    "defective_relabel_key_and_recompute": {
+      "real": -0.0022218316796525084,
+      "n_draws": 200.0,
+      "sd": 0.0,
+      "max_abs_dev_from_real": 0.0,
+      "n_distinct_draw_values": 1.0,
+      "tol": 1e-15,
+      "is_noop": 1.0,
+      "verdict": "CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)"
+    },
+    "genuine_shuffle_control": {
+      "real": -0.0022218316796525084,
+      "n_draws": 200.0,
+      "sd": 0.008866822601945146,
+      "max_abs_dev_from_real": 0.8103044760062168,
+      "n_distinct_draw_values": 200.0,
+      "tol": 1e-15,
+      "is_noop": 0.0,
+      "verdict": "NOT a no-op (sd=8.867e-03) -- the transform does move the statistic"
+    },
+    "observed_sd_identity": 0.0,
+    "observed_sd_defective_relabel": 0.0,
+    "observed_sd_genuine_shuffle": 0.008866822601945146
+  },
+  "step2_component_skill": {
+    "method": "skill = 1 - MAE_model/MAE_reference, both on THE SAME ROWS. The model's rate forecast is the RATIO OF ITS OWN already-emitted point forecasts; nothing was refitted and the champion was not retrained. Two reference variants are reported for every rate because choosing one after seeing the answer would be a place to cheat: REF-A = expanding mean of the player's own prior per-game rate values (the exact structural analogue of D076's level reference); REF-B = sum(prior numerator)/sum(prior denominator), a better estimator and hence a HARDER reference.",
+    "headline": "SKILL IS POSITIVE ON EVERY COMPONENT. There is no component where it goes to zero or negative. Explanations (a) 'rates are noise' and (b) 'the model forecasts rates worse than a prior mean' are both REJECTED.",
+    "table": [
+      {
+        "component": "minutes",
+        "kind": "LEVEL",
+        "reference": "ref_minutes",
+        "reference_kind": "D076 prior mean",
+        "n": 13879,
+        "model_mae": 5.079670829517938,
+        "ref_mae": 5.266906514137652,
+        "skill": 0.035549460412317546,
+        "r2_forecast_as_is": 0.6193570946106857,
+        "paired_mean_abs_err_diff_model_minus_ref": -0.187235684619714,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "null_sd": 0.04248276739537423,
+        "n_player_season_blocks": 475
+      },
+      {
+        "component": "fga",
+        "kind": "LEVEL",
+        "reference": "ref_fga",
+        "reference_kind": "D076 prior mean",
+        "n": 13879,
+        "model_mae": 2.6375697656574264,
+        "ref_mae": 2.640610728352467,
+        "skill": 0.0011516133985177701,
+        "r2_forecast_as_is": 0.5893473253051167,
+        "paired_mean_abs_err_diff_model_minus_ref": -0.0030409626950401903,
+        "p_two_sided_block_signflip": 0.8015992003998001,
+        "null_sd": 0.01194171837416713,
+        "n_player_season_blocks": 475
+      },
+      {
+        "component": "pts",
+        "kind": "LEVEL",
+        "reference": "ref_pts",
+        "reference_kind": "D076 prior mean",
+        "n": 13879,
+        "model_mae": 4.190919667572693,
+        "ref_mae": 4.181628792249526,
+        "skill": -0.0022218316796525084,
+        "r2_forecast_as_is": 0.4694094384707139,
+        "paired_mean_abs_err_diff_model_minus_ref": 0.009290875323166853,
+        "p_two_sided_block_signflip": 0.552223888055972,
+        "null_sd": 0.015441008702697009,
+        "n_player_season_blocks": 475
+      },
+      {
+        "component": "fga_per_min",
+        "kind": "RATE",
+        "reference": "refA_fpm",
+        "reference_kind": "A mean-of-prior-ratios",
+        "n": 13879,
+        "model_mae": 0.11033798411000435,
+        "ref_mae": 0.1118426915806147,
+        "skill": 0.013453784501652244,
+        "r2_forecast_as_is": 0.21136526058216953,
+        "paired_mean_abs_err_diff_model_minus_ref": -0.0015047074706103425,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "null_sd": 0.00035312327015004296,
+        "n_player_season_blocks": 475
+      },
+      {
+        "component": "fga_per_min",
+        "kind": "RATE",
+        "reference": "refB_fpm",
+        "reference_kind": "B ratio-of-prior-sums",
+        "n": 13879,
+        "model_mae": 0.11033798411000435,
+        "ref_mae": 0.11111056544847446,
+        "skill": 0.006953266193469032,
+        "r2_forecast_as_is": 0.21136526058216953,
+        "paired_mean_abs_err_diff_model_minus_ref": -0.0007725813384700824,
+        "p_two_sided_block_signflip": 0.0074962518740629685,
+        "null_sd": 0.00029608494670873377,
+        "n_player_season_blocks": 475
+      },
+      {
+        "component": "pts_per_fga",
+        "kind": "RATE",
+        "reference": "refA_ppf",
+        "reference_kind": "A mean-of-prior-ratios",
+        "n": 12976,
+        "model_mae": 0.5065778966660669,
+        "ref_mae": 0.5175857623294488,
+        "skill": 0.02126771341978151,
+        "r2_forecast_as_is": -0.052149132509627494,
+        "paired_mean_abs_err_diff_model_minus_ref": -0.011007865663381874,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "null_sd": 0.0017863378688100996,
+        "n_player_season_blocks": 472
+      },
+      {
+        "component": "pts_per_fga",
+        "kind": "RATE",
+        "reference": "refB_ppf",
+        "reference_kind": "B ratio-of-prior-sums",
+        "n": 12976,
+        "model_mae": 0.5065778966660669,
+        "ref_mae": 0.5118171255878924,
+        "skill": 0.010236525235077898,
+        "r2_forecast_as_is": -0.052149132509627494,
+        "paired_mean_abs_err_diff_model_minus_ref": -0.00523922892182544,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "null_sd": 0.0015492332522243418,
+        "n_player_season_blocks": 472
+      },
+      {
+        "component": "pts_per_min",
+        "kind": "RATE",
+        "reference": "refA_ppm",
+        "reference_kind": "A mean-of-prior-ratios",
+        "n": 13879,
+        "model_mae": 0.18174283099586136,
+        "ref_mae": 0.18276462664132767,
+        "skill": 0.005590773577162533,
+        "r2_forecast_as_is": 0.1435623302077924,
+        "paired_mean_abs_err_diff_model_minus_ref": -0.0010217956454662937,
+        "p_two_sided_block_signflip": 0.05897051474262868,
+        "null_sd": 0.0005347657515324306,
+        "n_player_season_blocks": 475
+      },
+      {
+        "component": "pts_per_min",
+        "kind": "RATE",
+        "reference": "refB_ppm",
+        "reference_kind": "B ratio-of-prior-sums",
+        "n": 13879,
+        "model_mae": 0.18174283099586136,
+        "ref_mae": 0.18350234471241633,
+        "skill": 0.009588508088615777,
+        "r2_forecast_as_is": 0.1435623302077924,
+        "paired_mean_abs_err_diff_model_minus_ref": -0.0017595137165549726,
+        "p_two_sided_block_signflip": 0.004997501249375313,
+        "null_sd": 0.0006268694956173291,
+        "n_player_season_blocks": 475
+      }
+    ],
+    "per_season": [
+      {
+        "component": "minutes",
+        "season": 2022,
+        "reference": "ref_minutes",
+        "n": 4362,
+        "skill": 0.03202249376329014
+      },
+      {
+        "component": "minutes",
+        "season": 2023,
+        "reference": "ref_minutes",
+        "n": 4748,
+        "skill": 0.033837599670867635
+      },
+      {
+        "component": "minutes",
+        "season": 2024,
+        "reference": "ref_minutes",
+        "n": 4769,
+        "skill": 0.04033422384046259
+      },
+      {
+        "component": "fga",
+        "season": 2022,
+        "reference": "ref_fga",
+        "n": 4362,
+        "skill": 0.003621694400942066
+      },
+      {
+        "component": "fga",
+        "season": 2023,
+        "reference": "ref_fga",
+        "n": 4748,
+        "skill": -0.0009007110048144806
+      },
+      {
+        "component": "fga",
+        "season": 2024,
+        "reference": "ref_fga",
+        "n": 4769,
+        "skill": 0.0009232893589065094
+      },
+      {
+        "component": "pts",
+        "season": 2022,
+        "reference": "ref_pts",
+        "n": 4362,
+        "skill": 0.00542626374426014
+      },
+      {
+        "component": "pts",
+        "season": 2023,
+        "reference": "ref_pts",
+        "n": 4748,
+        "skill": -0.0038602477111771005
+      },
+      {
+        "component": "pts",
+        "season": 2024,
+        "reference": "ref_pts",
+        "n": 4769,
+        "skill": -0.007474815776355781
+      },
+      {
+        "component": "fga_per_min",
+        "season": 2022,
+        "reference": "refA_fpm",
+        "n": 4362,
+        "skill": 0.015548284057646411
+      },
+      {
+        "component": "fga_per_min",
+        "season": 2023,
+        "reference": "refA_fpm",
+        "n": 4748,
+        "skill": 0.0173424636730507
+      },
+      {
+        "component": "fga_per_min",
+        "season": 2024,
+        "reference": "refA_fpm",
+        "n": 4769,
+        "skill": 0.0076197763086254255
+      },
+      {
+        "component": "pts_per_fga",
+        "season": 2022,
+        "reference": "refA_ppf",
+        "n": 4120,
+        "skill": 0.021489174911416664
+      },
+      {
+        "component": "pts_per_fga",
+        "season": 2023,
+        "reference": "refA_ppf",
+        "n": 4426,
+        "skill": 0.017803537453694895
+      },
+      {
+        "component": "pts_per_fga",
+        "season": 2024,
+        "reference": "refA_ppf",
+        "n": 4430,
+        "skill": 0.024514713077007144
+      },
+      {
+        "component": "pts_per_min",
+        "season": 2022,
+        "reference": "refA_ppm",
+        "n": 4362,
+        "skill": 0.009694655820021603
+      },
+      {
+        "component": "pts_per_min",
+        "season": 2023,
+        "reference": "refA_ppm",
+        "n": 4748,
+        "skill": 0.00744084420793123
+      },
+      {
+        "component": "pts_per_min",
+        "season": 2024,
+        "reference": "refA_ppm",
+        "n": 4769,
+        "skill": -6.633553679047388e-05
+      }
+    ],
+    "inference": "paired (season, player_id) BLOCK SIGN-FLIP permutation, 2000 draws, seed 20260807, two-sided. NOT a screen-kit function -- see kit feedback."
+  },
+  "step3_hybrid_2x2": {
+    "definition": "H1 = model minutes x model rate (identically equal to the champion's own points forecast: max|H1 - pts__pred_point| = 3.6e-15). H2 = model minutes x naive prior-mean rate. H3 = naive prior-mean minutes x model rate. H4 = naive prior-mean minutes x naive prior-mean rate. All four scored in POINTS, skill measured against D076's ref_pts on the same rows. Note H4 is NOT ref_pts: H4 is a product of two prior means, ref_pts is the prior mean of points directly.",
+    "table": [
+      {
+        "naive_rate_variant": "A",
+        "naive_rate_kind": "mean-of-prior-ratios",
+        "cell": "H1_model_min_x_model_rate",
+        "minutes_factor": "model",
+        "rate_factor": "model",
+        "n": 13879,
+        "points_mae": 4.190919667572693,
+        "ref_pts_mae": 4.181628792249526,
+        "skill_vs_ref_pts": -0.0022218316796525084,
+        "rmse": 5.52122155908056,
+        "r2_forecast_as_is": 0.4694094384707139
+      },
+      {
+        "naive_rate_variant": "A",
+        "naive_rate_kind": "mean-of-prior-ratios",
+        "cell": "H2_model_min_x_naive_rate",
+        "minutes_factor": "model",
+        "rate_factor": "naive",
+        "n": 13879,
+        "points_mae": 4.17393638268475,
+        "ref_pts_mae": 4.181628792249526,
+        "skill_vs_ref_pts": 0.0018395725558025822,
+        "rmse": 5.540370509357651,
+        "r2_forecast_as_is": 0.465722619785933
+      },
+      {
+        "naive_rate_variant": "A",
+        "naive_rate_kind": "mean-of-prior-ratios",
+        "cell": "H3_naive_min_x_model_rate",
+        "minutes_factor": "naive",
+        "rate_factor": "model",
+        "n": 13879,
+        "points_mae": 4.14791038710121,
+        "ref_pts_mae": 4.181628792249526,
+        "skill_vs_ref_pts": 0.008063462067893656,
+        "rmse": 5.475125867162971,
+        "r2_forecast_as_is": 0.47823206633204973
+      },
+      {
+        "naive_rate_variant": "A",
+        "naive_rate_kind": "mean-of-prior-ratios",
+        "cell": "H4_naive_min_x_naive_rate",
+        "minutes_factor": "naive",
+        "rate_factor": "naive",
+        "n": 13879,
+        "points_mae": 4.171012859767736,
+        "ref_pts_mae": 4.181628792249526,
+        "skill_vs_ref_pts": 0.0025387075250357105,
+        "rmse": 5.514609804260606,
+        "r2_forecast_as_is": 0.4706794596572268
+      },
+      {
+        "naive_rate_variant": "B",
+        "naive_rate_kind": "ratio-of-prior-sums",
+        "cell": "H1_model_min_x_model_rate",
+        "minutes_factor": "model",
+        "rate_factor": "model",
+        "n": 13879,
+        "points_mae": 4.190919667572693,
+        "ref_pts_mae": 4.181628792249526,
+        "skill_vs_ref_pts": -0.0022218316796525084,
+        "rmse": 5.52122155908056,
+        "r2_forecast_as_is": 0.4694094384707139
+      },
+      {
+        "naive_rate_variant": "B",
+        "naive_rate_kind": "ratio-of-prior-sums",
+        "cell": "H2_model_min_x_naive_rate",
+        "minutes_factor": "model",
+        "rate_factor": "naive",
+        "n": 13879,
+        "points_mae": 4.183184051278687,
+        "ref_pts_mae": 4.181628792249526,
+        "skill_vs_ref_pts": -0.00037192661195639687,
+        "rmse": 5.522281220206699,
+        "r2_forecast_as_is": 0.4692057516088425
+      },
+      {
+        "naive_rate_variant": "B",
+        "naive_rate_kind": "ratio-of-prior-sums",
+        "cell": "H3_naive_min_x_model_rate",
+        "minutes_factor": "naive",
+        "rate_factor": "model",
+        "n": 13879,
+        "points_mae": 4.14791038710121,
+        "ref_pts_mae": 4.181628792249526,
+        "skill_vs_ref_pts": 0.008063462067893656,
+        "rmse": 5.475125867162971,
+        "r2_forecast_as_is": 0.47823206633204973
+      },
+      {
+        "naive_rate_variant": "B",
+        "naive_rate_kind": "ratio-of-prior-sums",
+        "cell": "H4_naive_min_x_naive_rate",
+        "minutes_factor": "naive",
+        "rate_factor": "naive",
+        "n": 13879,
+        "points_mae": 4.173633209702064,
+        "ref_pts_mae": 4.181628792249526,
+        "skill_vs_ref_pts": 0.0019120737264582965,
+        "rmse": 5.490556471905178,
+        "r2_forecast_as_is": 0.47528691389881994
+      },
+      {
+        "naive_rate_variant": "-",
+        "naive_rate_kind": "D076 prior mean of POINTS",
+        "cell": "REF_pts",
+        "minutes_factor": "-",
+        "rate_factor": "-",
+        "n": 13879,
+        "points_mae": 4.181628792249526,
+        "ref_pts_mae": 4.181628792249526,
+        "skill_vs_ref_pts": 0.0,
+        "rmse": 5.497249079776072,
+        "r2_forecast_as_is": 0.47400695650040026
+      }
+    ],
+    "contrasts": [
+      {
+        "naive_rate_variant": "A",
+        "A": "H2_model_min_x_naive_rate",
+        "B": "H1_model_min_x_model_rate",
+        "question": "does a NAIVE rate beat the MODEL rate when both use MODEL minutes?",
+        "mae_A": 4.17393638268475,
+        "mae_B": 4.190919667572693,
+        "mean_paired_abs_err_diff_A_minus_B": -0.016983284887943678,
+        "p_two_sided_block_signflip": 0.12143928035982009,
+        "null_sd": 0.010789556511120395,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      },
+      {
+        "naive_rate_variant": "A",
+        "A": "H3_naive_min_x_model_rate",
+        "B": "H1_model_min_x_model_rate",
+        "question": "does the MODEL's minutes forecast add value on top of its own rate?",
+        "mae_A": 4.14791038710121,
+        "mae_B": 4.190919667572693,
+        "mean_paired_abs_err_diff_A_minus_B": -0.04300928047148265,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "null_sd": 0.011254135281679317,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      },
+      {
+        "naive_rate_variant": "A",
+        "A": "H4_naive_min_x_naive_rate",
+        "B": "H2_model_min_x_naive_rate",
+        "question": "does the MODEL's minutes forecast add value on top of a NAIVE rate?",
+        "mae_A": 4.171012859767736,
+        "mae_B": 4.17393638268475,
+        "mean_paired_abs_err_diff_A_minus_B": -0.0029235229170132522,
+        "p_two_sided_block_signflip": 0.7916041979010495,
+        "null_sd": 0.0114538638775539,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      },
+      {
+        "naive_rate_variant": "A",
+        "A": "H4_naive_min_x_naive_rate",
+        "B": "H3_naive_min_x_model_rate",
+        "question": "does the MODEL's rate add value on top of NAIVE minutes?",
+        "mae_A": 4.171012859767736,
+        "mae_B": 4.14791038710121,
+        "mean_paired_abs_err_diff_A_minus_B": 0.023102472666525715,
+        "p_two_sided_block_signflip": 0.009495252373813094,
+        "null_sd": 0.008881615257372223,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      },
+      {
+        "naive_rate_variant": "A",
+        "A": "CHAMPION_pts_pred",
+        "B": "REF_pts",
+        "question": "is the champion's -0.22% points skill distinguishable from 0?",
+        "mae_A": 4.190919667572693,
+        "mae_B": 4.181628792249526,
+        "mean_paired_abs_err_diff_A_minus_B": 0.009290875323166853,
+        "p_two_sided_block_signflip": 0.552223888055972,
+        "null_sd": 0.015441008702697009,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      },
+      {
+        "naive_rate_variant": "B",
+        "A": "H2_model_min_x_naive_rate",
+        "B": "H1_model_min_x_model_rate",
+        "question": "does a NAIVE rate beat the MODEL rate when both use MODEL minutes?",
+        "mae_A": 4.183184051278687,
+        "mae_B": 4.190919667572693,
+        "mean_paired_abs_err_diff_A_minus_B": -0.007735616294006543,
+        "p_two_sided_block_signflip": 0.49225387306346824,
+        "null_sd": 0.01106523707459925,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      },
+      {
+        "naive_rate_variant": "B",
+        "A": "H3_naive_min_x_model_rate",
+        "B": "H1_model_min_x_model_rate",
+        "question": "does the MODEL's minutes forecast add value on top of its own rate?",
+        "mae_A": 4.14791038710121,
+        "mae_B": 4.190919667572693,
+        "mean_paired_abs_err_diff_A_minus_B": -0.04300928047148265,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "null_sd": 0.011254135281679317,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      },
+      {
+        "naive_rate_variant": "B",
+        "A": "H4_naive_min_x_naive_rate",
+        "B": "H2_model_min_x_naive_rate",
+        "question": "does the MODEL's minutes forecast add value on top of a NAIVE rate?",
+        "mae_A": 4.173633209702064,
+        "mae_B": 4.183184051278687,
+        "mean_paired_abs_err_diff_A_minus_B": -0.009550841576622764,
+        "p_two_sided_block_signflip": 0.4062968515742129,
+        "null_sd": 0.011865811043815015,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      },
+      {
+        "naive_rate_variant": "B",
+        "A": "H4_naive_min_x_naive_rate",
+        "B": "H3_naive_min_x_model_rate",
+        "question": "does the MODEL's rate add value on top of NAIVE minutes?",
+        "mae_A": 4.173633209702064,
+        "mae_B": 4.14791038710121,
+        "mean_paired_abs_err_diff_A_minus_B": 0.025722822600853335,
+        "p_two_sided_block_signflip": 0.008995502248875561,
+        "null_sd": 0.009942673167610614,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      },
+      {
+        "naive_rate_variant": "B",
+        "A": "CHAMPION_pts_pred",
+        "B": "REF_pts",
+        "question": "is the champion's -0.22% points skill distinguishable from 0?",
+        "mae_A": 4.190919667572693,
+        "mae_B": 4.181628792249526,
+        "mean_paired_abs_err_diff_A_minus_B": 0.009290875323166853,
+        "p_two_sided_block_signflip": 0.552223888055972,
+        "null_sd": 0.015441008702697009,
+        "n_blocks": 475,
+        "n_rows": 13879,
+        "n_draws": 2000,
+        "seed": 20260807
+      }
+    ],
+    "fga_chain_2x2": [
+      {
+        "naive_rate_variant": "A",
+        "cell": "G1_model_fga_x_model_ppf",
+        "n": 13870,
+        "points_mae": 4.192368452690463,
+        "skill_vs_ref_pts": -0.0022318871087871894
+      },
+      {
+        "naive_rate_variant": "A",
+        "cell": "G2_model_fga_x_naive_ppf",
+        "n": 13870,
+        "points_mae": 4.250973162005163,
+        "skill_vs_ref_pts": -0.016241988814480468
+      },
+      {
+        "naive_rate_variant": "A",
+        "cell": "G3_naive_fga_x_model_ppf",
+        "n": 13870,
+        "points_mae": 4.160293865681762,
+        "skill_vs_ref_pts": 0.005435896443332533
+      },
+      {
+        "naive_rate_variant": "A",
+        "cell": "G4_naive_fga_x_naive_ppf",
+        "n": 13870,
+        "points_mae": 4.199066066179024,
+        "skill_vs_ref_pts": -0.0038330254346559123
+      },
+      {
+        "naive_rate_variant": "B",
+        "cell": "G1_model_fga_x_model_ppf",
+        "n": 13870,
+        "points_mae": 4.192368452690463,
+        "skill_vs_ref_pts": -0.0022318871087871894
+      },
+      {
+        "naive_rate_variant": "B",
+        "cell": "G2_model_fga_x_naive_ppf",
+        "n": 13870,
+        "points_mae": 4.231943819275889,
+        "skill_vs_ref_pts": -0.011692814692687792
+      },
+      {
+        "naive_rate_variant": "B",
+        "cell": "G3_naive_fga_x_model_ppf",
+        "n": 13870,
+        "points_mae": 4.160293865681762,
+        "skill_vs_ref_pts": 0.005435896443332533
+      },
+      {
+        "naive_rate_variant": "B",
+        "cell": "G4_naive_fga_x_naive_ppf",
+        "n": 13870,
+        "points_mae": 4.1810311099970034,
+        "skill_vs_ref_pts": 0.00047842962283817236
+      }
+    ],
+    "per_season": [
+      {
+        "naive_rate_variant": "A",
+        "season": 2022,
+        "n": 4362,
+        "H1_model_min_x_model_rate": 0.00542626374426014,
+        "H2_model_min_x_naive_rate": 0.0011582754356582736,
+        "H3_naive_min_x_model_rate": 0.009946022103996421,
+        "H4_naive_min_x_naive_rate": -0.0003173567874332761,
+        "H3_minus_H1": 0.004519758359736281
+      },
+      {
+        "naive_rate_variant": "A",
+        "season": 2023,
+        "n": 4748,
+        "H1_model_min_x_model_rate": -0.0038602477111771005,
+        "H2_model_min_x_naive_rate": 0.001812230674735904,
+        "H3_naive_min_x_model_rate": 0.008163386885774337,
+        "H4_naive_min_x_naive_rate": 0.002955212295126519,
+        "H3_minus_H1": 0.012023634596951438
+      },
+      {
+        "naive_rate_variant": "A",
+        "season": 2024,
+        "n": 4769,
+        "H1_model_min_x_model_rate": -0.007474815776355781,
+        "H2_model_min_x_naive_rate": 0.0024806008182312045,
+        "H3_naive_min_x_model_rate": 0.006267827862258546,
+        "H4_naive_min_x_naive_rate": 0.004695460998118572,
+        "H3_minus_H1": 0.013742643638614327
+      },
+      {
+        "naive_rate_variant": "A",
+        "season": "POOLED",
+        "n": 13879,
+        "H1_model_min_x_model_rate": -0.0022218316796525084,
+        "H2_model_min_x_naive_rate": 0.0018395725558025822,
+        "H3_naive_min_x_model_rate": 0.008063462067893656,
+        "H4_naive_min_x_naive_rate": 0.0025387075250357105,
+        "H3_minus_H1": 0.010285293747546165
+      },
+      {
+        "naive_rate_variant": "B",
+        "season": 2022,
+        "n": 4362,
+        "H1_model_min_x_model_rate": 0.00542626374426014,
+        "H2_model_min_x_naive_rate": 0.002777938861858731,
+        "H3_naive_min_x_model_rate": 0.009946022103996421,
+        "H4_naive_min_x_naive_rate": 0.000884287747228707,
+        "H3_minus_H1": 0.004519758359736281
+      },
+      {
+        "naive_rate_variant": "B",
+        "season": 2023,
+        "n": 4748,
+        "H1_model_min_x_model_rate": -0.0038602477111771005,
+        "H2_model_min_x_naive_rate": -0.0014633256601781497,
+        "H3_naive_min_x_model_rate": 0.008163386885774337,
+        "H4_naive_min_x_naive_rate": 0.002445445592979323,
+        "H3_minus_H1": 0.012023634596951438
+      },
+      {
+        "naive_rate_variant": "B",
+        "season": 2024,
+        "n": 4769,
+        "H1_model_min_x_model_rate": -0.007474815776355781,
+        "H2_model_min_x_naive_rate": -0.0021192384181205615,
+        "H3_naive_min_x_model_rate": 0.006267827862258546,
+        "H4_naive_min_x_naive_rate": 0.002305168088816978,
+        "H3_minus_H1": 0.013742643638614327
+      },
+      {
+        "naive_rate_variant": "B",
+        "season": "POOLED",
+        "n": 13879,
+        "H1_model_min_x_model_rate": -0.0022218316796525084,
+        "H2_model_min_x_naive_rate": -0.00037192661195639687,
+        "H3_naive_min_x_model_rate": 0.008063462067893656,
+        "H4_naive_min_x_naive_rate": 0.0019120737264582965,
+        "H3_minus_H1": 0.010285293747546165
+      }
+    ],
+    "sensitivity_by_subset": [
+      {
+        "subset": "all rows",
+        "n": 13879,
+        "skill_H1": -0.0022218316796525084,
+        "skill_H2": 0.0018395725558025822,
+        "skill_H3": 0.008063462067893656,
+        "skill_H4": 0.0025387075250357105,
+        "skill_blend50_champ_ref": 0.01140691519571202,
+        "H3_minus_H1": 0.010285293747546165
+      },
+      {
+        "subset": ">=8 prior appearances (D076's 75% rule)",
+        "n": 10666,
+        "skill_H1": 0.014429829827406149,
+        "skill_H2": 0.014702439932411493,
+        "skill_H3": 0.003291024642478768,
+        "skill_H4": 0.0012105343003477875,
+        "skill_blend50_champ_ref": 0.013505712891786592,
+        "H3_minus_H1": -0.01113880518492738
+      },
+      {
+        "subset": "non-fallback rows only",
+        "n": 12818,
+        "skill_H1": 0.016750167142897787,
+        "skill_H2": 0.013137578645928238,
+        "skill_H3": 0.006661187812892155,
+        "skill_H4": 0.0007794589274360275,
+        "skill_blend50_champ_ref": 0.014881109237464107,
+        "H3_minus_H1": -0.010088979330005632
+      },
+      {
+        "subset": "STABLE (>=15 prior, trailing-5 min >=24)",
+        "n": 3903,
+        "skill_H1": -0.002931494622997466,
+        "skill_H2": -0.0010685714307003824,
+        "skill_H3": -0.0022910007574448166,
+        "skill_H4": -0.002189196937400162,
+        "skill_blend50_champ_ref": 0.0036705799151480756,
+        "H3_minus_H1": 0.0006404938655526493
+      }
+    ],
+    "pooled_verdict_WITHDRAWN": "Pooled, H3 (naive minutes x model rate) is the best cell at +0.81% against the champion's -0.22%, p = 0.0005, in every season and both reference variants. I initially read that as 'the model's minutes forecast destroys points value'. THAT POOLED CLAIM IS WITHDRAWN. Stratifying by prior-appearance depth reverses it: on the 10,666 rows with >=8 prior appearances H1 (+1.44%) BEATS H3 (+0.33%) with p = 0.0005, and on the 12,818 non-fallback rows H1 (+1.68%) beats H3 (+0.67%) with p = 0.0005. The pooled ordering is produced entirely by the 1,061 fallback rows, where H1 is -18.6% and H3 is +2.2%. A pooled statement that flips sign on 77% of its own rows is an aggregation artifact, not a finding.",
+    "corrected_verdict": "The model's minutes forecast is NOT the problem wherever the model has a real fit; there it is what delivers what points skill exists. The 2x2's real content is that the champion's cold-start/fallback path produces a points forecast far worse than a running mean, and that on established players neither factor is adding much.",
+    "champion_vs_reference": "The champion's -0.22% points skill is NOT distinguishable from zero: mean paired |error| difference +0.0093 points, p = 0.55 at the (season, player) block level. The honest statement is 'no measurable points skill', not 'negative points skill'."
+  },
+  "step3d_mechanism": {
+    "corr_minutes_ppm_pooled": 0.3506443422555615,
+    "corr_minutes_ppm_within_player_season": 0.1498760117944284,
+    "dispersion": [
+      {
+        "forecast": "y_pts (outcome)",
+        "sd": 7.580032388669301,
+        "mean_bias": 0.0
+      },
+      {
+        "forecast": "REF_pts",
+        "sd": 5.7936569179800825,
+        "mean_bias": 0.03638791828599253
+      },
+      {
+        "forecast": "H1 model_min x model_rate",
+        "sd": 5.7717956686243355,
+        "mean_bias": -0.023925592364999915
+      },
+      {
+        "forecast": "H2 model_min x naive_rate",
+        "sd": 5.888088736850897,
+        "mean_bias": -0.1163412196617788
+      },
+      {
+        "forecast": "H3 naive_min x model_rate",
+        "sd": 5.755523549262646,
+        "mean_bias": -0.1109467102246704
+      },
+      {
+        "forecast": "H4 naive_min x naive_rate",
+        "sd": 5.867635060904938,
+        "mean_bias": -0.14940399968250873
+      }
+    ],
+    "sd_minutes_error_model": 6.636152556776263,
+    "sd_minutes_error_naive": 6.8408512732040405,
+    "sd_rate_error_model": 0.24420417929119126,
+    "sd_rate_error_naive": 0.24746793846627654,
+    "corr_factor_errors": {
+      "model_min_x_model_rate": 0.18677773798919786,
+      "naive_min_x_model_rate": 0.15288577028884254,
+      "model_min_x_naive_rate": 0.15831397121730123,
+      "naive_min_x_naive_rate": 0.15719388886913227
+    },
+    "note": "POINTS = MINUTES x RATE. E[M*R] = E[M]E[R] + Cov(M,R). A product of separately-good marginal forecasts omits Cov and compounds both factors' errors."
+  },
+  "shrinkage_sweep": [
+    {
+      "lambda_toward_reference": 0.0,
+      "points_mae": 4.190919667572693,
+      "skill_vs_ref": -0.0022218316796525084
+    },
+    {
+      "lambda_toward_reference": 0.1,
+      "points_mae": 4.171525213698703,
+      "skill_vs_ref": 0.002416182557751112
+    },
+    {
+      "lambda_toward_reference": 0.2,
+      "points_mae": 4.156387220658891,
+      "skill_vs_ref": 0.006036301365970109
+    },
+    {
+      "lambda_toward_reference": 0.25,
+      "points_mae": 4.150261854083747,
+      "skill_vs_ref": 0.007501129278599805
+    },
+    {
+      "lambda_toward_reference": 0.3,
+      "points_mae": 4.144814425526305,
+      "skill_vs_ref": 0.00880383423594533
+    },
+    {
+      "lambda_toward_reference": 0.4,
+      "points_mae": 4.137183445947038,
+      "skill_vs_ref": 0.010628716347291789
+    },
+    {
+      "lambda_toward_reference": 0.5,
+      "points_mae": 4.1339293072363885,
+      "skill_vs_ref": 0.01140691519571202
+    },
+    {
+      "lambda_toward_reference": 0.6,
+      "points_mae": 4.134738987856542,
+      "skill_vs_ref": 0.011213287147795792
+    },
+    {
+      "lambda_toward_reference": 0.75,
+      "points_mae": 4.144501428578562,
+      "skill_vs_ref": 0.008878684722034236
+    },
+    {
+      "lambda_toward_reference": 1.0,
+      "points_mae": 4.181628792249526,
+      "skill_vs_ref": 0.0
+    }
+  ],
+  "ensemble_diagnosis": {
+    "corr_champion_error_reference_error": 0.9407137309307279,
+    "corr_champion_forecast_reference_forecast": 0.9461853192118878,
+    "sd_champion_forecast": 5.7717956686243355,
+    "sd_reference": 5.7936569179800825,
+    "sd_outcome": 7.580032388669301,
+    "best_blends": [
+      {
+        "blend": "champion + reference",
+        "best_lambda": 0.55,
+        "points_mae": 4.133578938011217,
+        "skill_vs_ref": 0.01149070293550869
+      },
+      {
+        "blend": "champion + H3(naive_min x model_rate)",
+        "best_lambda": 0.7000000000000001,
+        "points_mae": 4.138183235610989,
+        "skill_vs_ref": 0.010389625382114631
+      },
+      {
+        "blend": "reference + H3(naive_min x model_rate)",
+        "best_lambda": 0.7000000000000001,
+        "points_mae": 4.139563154330012,
+        "skill_vs_ref": 0.010059629873766296
+      }
+    ],
+    "diagnosis": "NOT over-dispersion (champion sd < reference sd). The gain from blending is an ENSEMBLE gain from partly independent errors. Blend weights were swept AFTER seeing the skill numbers and are IN-SAMPLE -- see NOTES.md section 8."
+  },
+  "step4_intrinsic_ceiling": {
+    "method": "An ORACLE LADDER. The oracles DELIBERATELY READ THE FUTURE, are NEVER used as a skill reference, and exist only to bound how much of game-to-game points variation is forecastable at all. An oracle's MAE is a LOWER BOUND on any honest forecast's MAE.",
+    "assumptions": [
+      "(i) a player's true scoring rate is roughly constant within a season, so a season-mean rate stands in for perfect knowledge of the player;",
+      "(ii) the minutes-to-points relationship is roughly linear within a player-season;",
+      "(iii) the STABLE subset is selected from PRE-GAME observables only (>=15 prior same-season appearances AND trailing-5 mean minutes >=24), so the ceiling quoted on it is one a forecaster could actually target.",
+      "Violations of (i)/(ii) make the oracle WEAKER, so the estimated ceiling is conservative -- the true ceiling is at least this good. THIS IS AN ESTIMATE, NOT A THEOREM."
+    ],
+    "oracle_ladder": [
+      {
+        "subset": "ALL",
+        "n": 13879,
+        "forecast": "REF   prior-mean of points (D076 reference)",
+        "kind": "honest",
+        "mae": 4.181628792249526,
+        "rmse": 5.497249079776072,
+        "r2_forecast_as_is": 0.47400695650040026,
+        "mae_minus_oracle_O2": 1.0135324649510071
+      },
+      {
+        "subset": "ALL",
+        "n": 13879,
+        "forecast": "MODEL champion pts__pred_point",
+        "kind": "honest",
+        "mae": 4.190919667572693,
+        "rmse": 5.52122155908056,
+        "r2_forecast_as_is": 0.4694094384707139,
+        "mae_minus_oracle_O2": 1.022823340274174
+      },
+      {
+        "subset": "ALL",
+        "n": 13879,
+        "forecast": "H2    model minutes x naive prior rate",
+        "kind": "honest",
+        "mae": 4.17393638268475,
+        "rmse": 5.540370509357651,
+        "r2_forecast_as_is": 0.465722619785933,
+        "mae_minus_oracle_O2": 1.0058400553862308
+      },
+      {
+        "subset": "ALL",
+        "n": 13879,
+        "forecast": "O4    ACTUAL minutes x model rate",
+        "kind": "ORACLE",
+        "mae": 3.418040958195445,
+        "rmse": 4.658353253544865,
+        "r2_forecast_as_is": 0.6222938920580067,
+        "mae_minus_oracle_O2": 0.24994463089692598
+      },
+      {
+        "subset": "ALL",
+        "n": 13879,
+        "forecast": "O5    model minutes x SEASON-MEAN rate",
+        "kind": "ORACLE",
+        "mae": 3.960302338456097,
+        "rmse": 5.183745144943411,
+        "r2_forecast_as_is": 0.5322902179493139,
+        "mae_minus_oracle_O2": 0.7922060111575777
+      },
+      {
+        "subset": "ALL",
+        "n": 13879,
+        "forecast": "O1    SEASON-MEAN points (knows the season)",
+        "kind": "ORACLE",
+        "mae": 3.84775284499814,
+        "rmse": 5.050001065123032,
+        "r2_forecast_as_is": 0.5561133237557063,
+        "mae_minus_oracle_O2": 0.679656517699621
+      },
+      {
+        "subset": "ALL",
+        "n": 13879,
+        "forecast": "O2    ACTUAL minutes x SEASON-MEAN rate",
+        "kind": "ORACLE",
+        "mae": 3.168096327298519,
+        "rmse": 4.307668271106506,
+        "r2_forecast_as_is": 0.6770214557848513,
+        "mae_minus_oracle_O2": 0.0
+      },
+      {
+        "subset": "ALL",
+        "n": 13879,
+        "forecast": "O3    within-player-season OLS on ACTUAL min",
+        "kind": "ORACLE",
+        "mae": 3.096039473254113,
+        "rmse": 4.222361241991439,
+        "r2_forecast_as_is": 0.6896870194212861,
+        "mae_minus_oracle_O2": -0.0720568540444062
+      },
+      {
+        "subset": "STABLE (pre-game rule)",
+        "n": 3903,
+        "forecast": "REF   prior-mean of points (D076 reference)",
+        "kind": "honest",
+        "mae": 4.973961231179441,
+        "rmse": 6.340583349061472,
+        "r2_forecast_as_is": 0.302119934172982,
+        "mae_minus_oracle_O2": 0.6770014825656849
+      },
+      {
+        "subset": "STABLE (pre-game rule)",
+        "n": 3903,
+        "forecast": "MODEL champion pts__pred_point",
+        "kind": "honest",
+        "mae": 4.988542371783641,
+        "rmse": 6.311691441790585,
+        "r2_forecast_as_is": 0.3084654537686323,
+        "mae_minus_oracle_O2": 0.691582623169885
+      },
+      {
+        "subset": "STABLE (pre-game rule)",
+        "n": 3903,
+        "forecast": "H2    model minutes x naive prior rate",
+        "kind": "honest",
+        "mae": 4.979276264048491,
+        "rmse": 6.304338095894828,
+        "r2_forecast_as_is": 0.31007584001988775,
+        "mae_minus_oracle_O2": 0.682316515434735
+      },
+      {
+        "subset": "STABLE (pre-game rule)",
+        "n": 3903,
+        "forecast": "O4    ACTUAL minutes x model rate",
+        "kind": "ORACLE",
+        "mae": 4.4631339529247445,
+        "rmse": 5.73293307289729,
+        "r2_forecast_as_is": 0.42947312727099096,
+        "mae_minus_oracle_O2": 0.1661742043109884
+      },
+      {
+        "subset": "STABLE (pre-game rule)",
+        "n": 3903,
+        "forecast": "O5    model minutes x SEASON-MEAN rate",
+        "kind": "ORACLE",
+        "mae": 4.837591067315551,
+        "rmse": 6.114380760777289,
+        "r2_forecast_as_is": 0.3510259644063607,
+        "mae_minus_oracle_O2": 0.540631318701795
+      },
+      {
+        "subset": "STABLE (pre-game rule)",
+        "n": 3903,
+        "forecast": "O1    SEASON-MEAN points (knows the season)",
+        "kind": "ORACLE",
+        "mae": 4.768450181680068,
+        "rmse": 6.081470094395567,
+        "r2_forecast_as_is": 0.3579933707942812,
+        "mae_minus_oracle_O2": 0.4714904330663119
+      },
+      {
+        "subset": "STABLE (pre-game rule)",
+        "n": 3903,
+        "forecast": "O2    ACTUAL minutes x SEASON-MEAN rate",
+        "kind": "ORACLE",
+        "mae": 4.296959748613756,
+        "rmse": 5.514693928752013,
+        "r2_forecast_as_is": 0.4720835572959705,
+        "mae_minus_oracle_O2": 0.0
+      },
+      {
+        "subset": "STABLE (pre-game rule)",
+        "n": 3903,
+        "forecast": "O3    within-player-season OLS on ACTUAL min",
+        "kind": "ORACLE",
+        "mae": 4.224049490388356,
+        "rmse": 5.418255354287887,
+        "r2_forecast_as_is": 0.49038605989439243,
+        "mae_minus_oracle_O2": -0.07291025822540043
+      }
+    ],
+    "variance_accounting": {
+      "subset": "STABLE (pre-game rule: >=15 prior appearances AND trailing-5 mean minutes >=24)",
+      "n": 3903,
+      "r2_oracle_player_season_FE": 0.38438571269451194,
+      "r2_oracle_player_season_FE_plus_ACTUAL_minutes": 0.4867897976203248,
+      "r2_champion_forecast_as_is": 0.3084654537686323,
+      "r2_prior_mean_reference_as_is": 0.302119934172982,
+      "irreducible_share_of_variance": 0.5132102023796752,
+      "headroom_r2_champion_to_oracle": 0.1783243438516925,
+      "convention": "D069 plain unweighted; oracle rows use screenkit.r2_plain (an OLS fit, correct here because FE/minutes really are regressors); honest rows use r2_forecast (1-SSE/SST about the supplied forecast)."
+    },
+    "honest_reachable_ceiling": {
+      "subset": "STABLE pre-game rule (>=15 prior same-season appearances AND trailing-5 mean min >=24)",
+      "n": 3903,
+      "r2_oracle_player_FE": 0.38438571269451194,
+      "r2_reachable_oracle_player_plus_honest_minutes": 0.38439436116683223,
+      "r2_unreachable_oracle_player_plus_ACTUAL_minutes": 0.4867897976203248,
+      "r2_champion": 0.3084654537686323,
+      "r2_reference": 0.302119934172982,
+      "reachable_headroom_r2": 0.07592890739819991,
+      "unreachable_headroom_r2": 0.10239543645349258,
+      "irreducible_variance_share": 0.5132102023796752
+    },
+    "error_attribution": {
+      "champion_points_mae": 4.190919667572693,
+      "perfect_minutes_own_rate_mae": 3.418040958195445,
+      "perfect_rate_own_minutes_mae": 1.738023619322255,
+      "pct_cut_from_perfect_minutes": 18.441744788319593,
+      "pct_cut_from_perfect_rate": 58.52882524162322,
+      "note": "ORACLE decomposition; both read the outcome. Reported to show WHICH factor's error dominates, not as a forecast."
+    },
+    "verdict": "THE CEILING IS LOW BUT IT IS NOT THE EXPLANATION. On the STABLE subset, 51.3% of points variance is irreducible even to an oracle that knows the player's season-long identity AND the actual minutes played. But a PRE-GAME-REACHABLE oracle -- one knowing each player's true season scoring level while forecasting minutes exactly as well as the champion already does -- reaches R2 0.3844 where the champion sits at 0.3085 and the naive reference at 0.3021. So there IS about 0.076 R2 (5.5% of MAE pooled) of genuinely reachable points headroom, and the champion has captured none of it relative to a running mean. Points is mostly noise, AND the model is not near the reachable part of the floor. Both halves are true and neither alone is the answer.",
+    "error_attribution_headline": "Giving the champion PERFECT knowledge of the rate while keeping its own minutes forecast cuts points MAE by 58.5%; giving it PERFECT minutes while keeping its own rate cuts it by only 18.4%. Points error is dominated ~3:1 by efficiency error, not by minutes error -- which is why a +3.55% minutes forecast buys nothing on points."
+  },
+  "step5_abstention_on_rates": {
+    "coverage": 0.75,
+    "n_candidates": 55,
+    "n_cells": 550,
+    "n_draws": 400,
+    "seed": 20260807,
+    "inflation_median": 0.950665960595571,
+    "inflation_p05": 0.685837928729601,
+    "inflation_p95": 1.3209466876853477,
+    "inflation_min": 0.26201888675439494,
+    "inflation_max": 2.056053118661336,
+    "inflation_frac_gt_1": 0.3192307692307692,
+    "familywise_max_stat_null_max_correct": 0.02456933015090146,
+    "familywise_max_stat_null_max_row_NAIVE": 0.01126346638279141,
+    "observed_max_skill_gain": 0.05523926154367731,
+    "best_per_dependent": [
+      {
+        "dependent": "level_minutes",
+        "candidate": "pl_minutes_prior",
+        "direction": "abstain on LOW",
+        "skill_gain": 0.05523926154367731,
+        "p_correct_level": 0.0024937655860349127,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "dependent": "level_points",
+        "candidate": "pts__is_fallback",
+        "direction": "abstain on HIGH",
+        "skill_gain": 0.018561953651860752,
+        "p_correct_level": 0.0024937655860349127,
+        "familywise_p_correct": 0.49875311720698257
+      },
+      {
+        "dependent": "rate_ppf_refA",
+        "candidate": "pl_games_prior",
+        "direction": "abstain on HIGH",
+        "skill_gain": 0.008090302535572635,
+        "p_correct_level": 0.0024937655860349127,
+        "familywise_p_correct": 1.0
+      },
+      {
+        "dependent": "rate_ppm_refA",
+        "candidate": "pl_is_rookie_window",
+        "direction": "abstain on HIGH",
+        "skill_gain": 0.005085360090402613,
+        "p_correct_level": 0.00997506234413965,
+        "familywise_p_correct": 1.0
+      },
+      {
+        "dependent": "rate_ppm_refB",
+        "candidate": "pts__pred_width",
+        "direction": "abstain on HIGH",
+        "skill_gain": 0.005143364213855195,
+        "p_correct_level": 0.12718204488778054,
+        "familywise_p_correct": 1.0
+      }
+    ],
+    "n_cells_clearing_family_by_dependent": {
+      "level_minutes": 13,
+      "level_points": 0,
+      "rate_ppf_refA": 0,
+      "rate_ppm_refA": 0,
+      "rate_ppm_refB": 0
+    },
+    "top15": [
+      {
+        "candidate": "pl_minutes_prior",
+        "dependent": "level_minutes",
+        "direction": "abstain on LOW",
+        "coverage": 0.75,
+        "skill_gain": 0.05523926154367731,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.0022198185918063796,
+        "null_sd_row_NAIVE": 0.0026962235824582095,
+        "inflation_sd_correct_over_row": 0.8233065708083895,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "pts__n_prior_games",
+        "dependent": "level_minutes",
+        "direction": "abstain on LOW",
+        "coverage": 0.75,
+        "skill_gain": 0.0542762101556874,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.0025237322102899186,
+        "null_sd_row_NAIVE": 0.002830573729094297,
+        "inflation_sd_correct_over_row": 0.8915974116305535,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "pl_games_prior",
+        "dependent": "level_minutes",
+        "direction": "abstain on LOW",
+        "coverage": 0.75,
+        "skill_gain": 0.05415549563700783,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.00252849042878976,
+        "null_sd_row_NAIVE": 0.0028191889962431785,
+        "inflation_sd_correct_over_row": 0.8968857469858175,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "tm_season_progress",
+        "dependent": "level_minutes",
+        "direction": "abstain on LOW",
+        "coverage": 0.75,
+        "skill_gain": 0.04364812341156532,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.002517136765622438,
+        "null_sd_row_NAIVE": 0.002620380159481455,
+        "inflation_sd_correct_over_row": 0.9605998414064287,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "tm_game_idx",
+        "dependent": "level_minutes",
+        "direction": "abstain on LOW",
+        "coverage": 0.75,
+        "skill_gain": 0.04364812341156532,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.002517136765622438,
+        "null_sd_row_NAIVE": 0.002620380159481455,
+        "inflation_sd_correct_over_row": 0.9605998414064287,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "opp_game_idx",
+        "dependent": "level_minutes",
+        "direction": "abstain on LOW",
+        "coverage": 0.75,
+        "skill_gain": 0.04342524658142077,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.00260304903121655,
+        "null_sd_row_NAIVE": 0.0026429344711199547,
+        "inflation_sd_correct_over_row": 0.9849086534913205,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "pts__fallback_level",
+        "dependent": "level_minutes",
+        "direction": "abstain on HIGH",
+        "coverage": 0.75,
+        "skill_gain": 0.034872089544193186,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.001518186593685375,
+        "null_sd_row_NAIVE": 0.0014688520860240202,
+        "inflation_sd_correct_over_row": 1.0335871175394498,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "minutes__is_fallback",
+        "dependent": "level_minutes",
+        "direction": "abstain on HIGH",
+        "coverage": 0.75,
+        "skill_gain": 0.034872089544193186,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.001518186593685375,
+        "null_sd_row_NAIVE": 0.0014688520860240202,
+        "inflation_sd_correct_over_row": 1.0335871175394498,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "pts__is_fallback",
+        "dependent": "level_minutes",
+        "direction": "abstain on HIGH",
+        "coverage": 0.75,
+        "skill_gain": 0.034872089544193186,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.001518186593685375,
+        "null_sd_row_NAIVE": 0.0014688520860240202,
+        "inflation_sd_correct_over_row": 1.0335871175394498,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "fga__is_fallback",
+        "dependent": "level_minutes",
+        "direction": "abstain on HIGH",
+        "coverage": 0.75,
+        "skill_gain": 0.034872089544193186,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.001518186593685375,
+        "null_sd_row_NAIVE": 0.0014688520860240202,
+        "inflation_sd_correct_over_row": 1.0335871175394498,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "tm_first_meeting",
+        "dependent": "level_minutes",
+        "direction": "abstain on HIGH",
+        "coverage": 0.75,
+        "skill_gain": 0.029182579033793843,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.002583849925545041,
+        "null_sd_row_NAIVE": 0.002472520887391826,
+        "inflation_sd_correct_over_row": 1.0450265309065405,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "tm_prior_meetings",
+        "dependent": "level_minutes",
+        "direction": "abstain on LOW",
+        "coverage": 0.75,
+        "skill_gain": 0.02826066211634859,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.002627880290766293,
+        "null_sd_row_NAIVE": 0.002590667957437803,
+        "inflation_sd_correct_over_row": 1.0143639918120937,
+        "familywise_p_correct": 0.0024937655860349127
+      },
+      {
+        "candidate": "pts__pred_width",
+        "dependent": "level_minutes",
+        "direction": "abstain on HIGH",
+        "coverage": 0.75,
+        "skill_gain": 0.023222600414733674,
+        "scheme": "BETWEEN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.00322122133823241,
+        "null_sd_row_NAIVE": 0.0025849886987512347,
+        "inflation_sd_correct_over_row": 1.2461258882054413,
+        "familywise_p_correct": 0.012468827930174564
+      },
+      {
+        "candidate": "tm_poss_mean_prior",
+        "dependent": "level_minutes",
+        "direction": "abstain on HIGH",
+        "coverage": 0.75,
+        "skill_gain": 0.01924366248370446,
+        "scheme": "BETWEEN-block",
+        "p_correct_level": 0.09725685785536159,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.0035269686744634123,
+        "null_sd_row_NAIVE": 0.0026099649953469505,
+        "inflation_sd_correct_over_row": 1.351347117969512,
+        "familywise_p_correct": 0.35910224438902744
+      },
+      {
+        "candidate": "fga__is_fallback",
+        "dependent": "level_points",
+        "direction": "abstain on HIGH",
+        "coverage": 0.75,
+        "skill_gain": 0.018561953651860752,
+        "scheme": "WITHIN-block",
+        "p_correct_level": 0.0024937655860349127,
+        "p_row_level_NAIVE": 0.0024937655860349127,
+        "null_sd_correct": 0.0009741420593349538,
+        "null_sd_row_NAIVE": 0.0010453914151093866,
+        "inflation_sd_correct_over_row": 0.9318443266850651,
+        "familywise_p_correct": 0.49875311720698257
+      }
+    ]
+  },
+  "step5_verdict": "NO. Of 550 cells (55 pre-game candidates x 5 dependents x 2 directions) at 75% coverage, 13 clear the family-wise max-stat correction -- ALL 13 on the MINUTES level. ZERO of 110 points cells and ZERO of 330 rate cells clear it. The best rate cell reaches +0.81% skill gain against a correct-level max-stat null whose own maximum is +2.46%, i.e. family-wise p = 1.00. D076's asymmetry is confirmed and extended: abstention works on minutes because minutes is predictable, and fails on points AND on every rate component because nothing observable pre-game predicts differential skill on efficiency.",
+  "step5_abstention_curves_best": [
+    {
+      "coverage": 1.0,
+      "n_kept": 13879,
+      "model_mae": 0.1817428309958614,
+      "ref_mae": 0.18276462664132767,
+      "skill": 0.005590773577162422,
+      "dependent": "rate_ppm_refA",
+      "candidate": "pl_is_rookie_window",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.9,
+      "n_kept": 12491,
+      "model_mae": 0.18069192739698556,
+      "ref_mae": 0.18209095418527385,
+      "skill": 0.007683120748902317,
+      "dependent": "rate_ppm_refA",
+      "candidate": "pl_is_rookie_window",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.8,
+      "n_kept": 11103,
+      "model_mae": 0.1781596506390513,
+      "ref_mae": 0.180028314881757,
+      "skill": 0.010379835216105082,
+      "dependent": "rate_ppm_refA",
+      "candidate": "pl_is_rookie_window",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.75,
+      "n_kept": 10409,
+      "model_mae": 0.1754248228176184,
+      "ref_mae": 0.1773178923378684,
+      "skill": 0.010676133667565146,
+      "dependent": "rate_ppm_refA",
+      "candidate": "pl_is_rookie_window",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.6,
+      "n_kept": 8327,
+      "model_mae": 0.175849706939738,
+      "ref_mae": 0.17807011815935447,
+      "skill": 0.012469308396984569,
+      "dependent": "rate_ppm_refA",
+      "candidate": "pl_is_rookie_window",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.5,
+      "n_kept": 6940,
+      "model_mae": 0.1764537442989573,
+      "ref_mae": 0.17848711755753993,
+      "skill": 0.011392269013068224,
+      "dependent": "rate_ppm_refA",
+      "candidate": "pl_is_rookie_window",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.4,
+      "n_kept": 5552,
+      "model_mae": 0.17323454898345303,
+      "ref_mae": 0.17561209584722903,
+      "skill": 0.013538628146914866,
+      "dependent": "rate_ppm_refA",
+      "candidate": "pl_is_rookie_window",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.25,
+      "n_kept": 3470,
+      "model_mae": 0.17472074604360222,
+      "ref_mae": 0.1777268119814563,
+      "skill": 0.016913969841352516,
+      "dependent": "rate_ppm_refA",
+      "candidate": "pl_is_rookie_window",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.1,
+      "n_kept": 1388,
+      "model_mae": 0.1662620758906161,
+      "ref_mae": 0.1698329724780001,
+      "skill": 0.021025932333879283,
+      "dependent": "rate_ppm_refA",
+      "candidate": "pl_is_rookie_window",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 1.0,
+      "n_kept": 13879,
+      "model_mae": 0.1817428309958614,
+      "ref_mae": 0.18350234471241633,
+      "skill": 0.009588508088615666,
+      "dependent": "rate_ppm_refB",
+      "candidate": "pts__pred_width",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.9,
+      "n_kept": 12491,
+      "model_mae": 0.1837334133176616,
+      "ref_mae": 0.18606122958986585,
+      "skill": 0.012511022728031174,
+      "dependent": "rate_ppm_refB",
+      "candidate": "pts__pred_width",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.8,
+      "n_kept": 11103,
+      "model_mae": 0.1859883742808105,
+      "ref_mae": 0.1884203132973503,
+      "skill": 0.012906989559569926,
+      "dependent": "rate_ppm_refB",
+      "candidate": "pts__pred_width",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.75,
+      "n_kept": 10409,
+      "model_mae": 0.18630201613344918,
+      "ref_mae": 0.18908763096682926,
+      "skill": 0.014731872302470972,
+      "dependent": "rate_ppm_refB",
+      "candidate": "pts__pred_width",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.6,
+      "n_kept": 8327,
+      "model_mae": 0.19069910265493362,
+      "ref_mae": 0.1933218242130585,
+      "skill": 0.013566608782019318,
+      "dependent": "rate_ppm_refB",
+      "candidate": "pts__pred_width",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.5,
+      "n_kept": 6940,
+      "model_mae": 0.1955694119378405,
+      "ref_mae": 0.1983779900061495,
+      "skill": 0.014157710077725594,
+      "dependent": "rate_ppm_refB",
+      "candidate": "pts__pred_width",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.4,
+      "n_kept": 5552,
+      "model_mae": 0.20411149673662313,
+      "ref_mae": 0.20699465674757916,
+      "skill": 0.013928668769802699,
+      "dependent": "rate_ppm_refB",
+      "candidate": "pts__pred_width",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.25,
+      "n_kept": 3470,
+      "model_mae": 0.21743675112052102,
+      "ref_mae": 0.2218067019269809,
+      "skill": 0.019701617527762894,
+      "dependent": "rate_ppm_refB",
+      "candidate": "pts__pred_width",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.1,
+      "n_kept": 1388,
+      "model_mae": 0.2333443641524583,
+      "ref_mae": 0.24185899280221268,
+      "skill": 0.035204928917890066,
+      "dependent": "rate_ppm_refB",
+      "candidate": "pts__pred_width",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 1.0,
+      "n_kept": 12976,
+      "model_mae": 0.5065778966660669,
+      "ref_mae": 0.5175857623294488,
+      "skill": 0.02126771341978151,
+      "dependent": "rate_ppf_refA",
+      "candidate": "pl_games_prior",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.9,
+      "n_kept": 11678,
+      "model_mae": 0.5124573738337357,
+      "ref_mae": 0.5249750407265195,
+      "skill": 0.023844308627435695,
+      "dependent": "rate_ppf_refA",
+      "candidate": "pl_games_prior",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.8,
+      "n_kept": 10381,
+      "model_mae": 0.5154947535445263,
+      "ref_mae": 0.5302250018083566,
+      "skill": 0.02778112728293103,
+      "dependent": "rate_ppf_refA",
+      "candidate": "pl_games_prior",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.75,
+      "n_kept": 9732,
+      "model_mae": 0.5173876073020066,
+      "ref_mae": 0.5330365014153444,
+      "skill": 0.029358015955354144,
+      "dependent": "rate_ppf_refA",
+      "candidate": "pl_games_prior",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.6,
+      "n_kept": 7786,
+      "model_mae": 0.527603691889109,
+      "ref_mae": 0.546519914678524,
+      "skill": 0.03461213815152908,
+      "dependent": "rate_ppf_refA",
+      "candidate": "pl_games_prior",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.5,
+      "n_kept": 6488,
+      "model_mae": 0.5353326622549804,
+      "ref_mae": 0.5572710110781256,
+      "skill": 0.0393674682282541,
+      "dependent": "rate_ppf_refA",
+      "candidate": "pl_games_prior",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.4,
+      "n_kept": 5190,
+      "model_mae": 0.5422254985080198,
+      "ref_mae": 0.5703265411142585,
+      "skill": 0.049271847933531454,
+      "dependent": "rate_ppf_refA",
+      "candidate": "pl_games_prior",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.25,
+      "n_kept": 3244,
+      "model_mae": 0.5563999016318204,
+      "ref_mae": 0.5995174232547593,
+      "skill": 0.0719203812107001,
+      "dependent": "rate_ppf_refA",
+      "candidate": "pl_games_prior",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.1,
+      "n_kept": 1298,
+      "model_mae": 0.5526669634262493,
+      "ref_mae": 0.6189771688042043,
+      "skill": 0.10712867730817754,
+      "dependent": "rate_ppf_refA",
+      "candidate": "pl_games_prior",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 1.0,
+      "n_kept": 13879,
+      "model_mae": 4.190919667572693,
+      "ref_mae": 4.181628792249526,
+      "skill": -0.0022218316796525084,
+      "dependent": "level_points",
+      "candidate": "fga__is_fallback",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.9,
+      "n_kept": 12491,
+      "model_mae": 4.045093909039541,
+      "ref_mae": 4.111171547743942,
+      "skill": 0.016072702862682142,
+      "dependent": "level_points",
+      "candidate": "fga__is_fallback",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.8,
+      "n_kept": 11103,
+      "model_mae": 4.108587909241432,
+      "ref_mae": 4.171001560348039,
+      "skill": 0.014963708405181797,
+      "dependent": "level_points",
+      "candidate": "fga__is_fallback",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.75,
+      "n_kept": 10409,
+      "model_mae": 4.0893604965107935,
+      "ref_mae": 4.157291140825869,
+      "skill": 0.016340121972208244,
+      "dependent": "level_points",
+      "candidate": "fga__is_fallback",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.6,
+      "n_kept": 8327,
+      "model_mae": 4.04813981893863,
+      "ref_mae": 4.1117408746362045,
+      "skill": 0.015468157560683315,
+      "dependent": "level_points",
+      "candidate": "fga__is_fallback",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.5,
+      "n_kept": 6940,
+      "model_mae": 4.173710840232787,
+      "ref_mae": 4.229107312503194,
+      "skill": 0.013098857081878523,
+      "dependent": "level_points",
+      "candidate": "fga__is_fallback",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.4,
+      "n_kept": 5552,
+      "model_mae": 4.094670206690156,
+      "ref_mae": 4.152810155703149,
+      "skill": 0.014000146125906388,
+      "dependent": "level_points",
+      "candidate": "fga__is_fallback",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.25,
+      "n_kept": 3470,
+      "model_mae": 4.112017007412838,
+      "ref_mae": 4.181870646225167,
+      "skill": 0.016703921455672677,
+      "dependent": "level_points",
+      "candidate": "fga__is_fallback",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 0.1,
+      "n_kept": 1388,
+      "model_mae": 4.183815951755301,
+      "ref_mae": 4.266117099885838,
+      "skill": 0.019291816470002443,
+      "dependent": "level_points",
+      "candidate": "fga__is_fallback",
+      "direction": "abstain on HIGH"
+    },
+    {
+      "coverage": 1.0,
+      "n_kept": 13879,
+      "model_mae": 5.079670829517937,
+      "ref_mae": 5.266906514137651,
+      "skill": 0.035549460412317546,
+      "dependent": "level_minutes",
+      "candidate": "pl_minutes_prior",
+      "direction": "abstain on LOW"
+    },
+    {
+      "coverage": 0.9,
+      "n_kept": 12491,
+      "model_mae": 4.795557859331216,
+      "ref_mae": 5.146019044622001,
+      "skill": 0.06810335955850089,
+      "dependent": "level_minutes",
+      "candidate": "pl_minutes_prior",
+      "direction": "abstain on LOW"
+    },
+    {
+      "coverage": 0.8,
+      "n_kept": 11103,
+      "model_mae": 4.7013384147803725,
+      "ref_mae": 5.1491084403001945,
+      "skill": 0.08696069051785538,
+      "dependent": "level_minutes",
+      "candidate": "pl_minutes_prior",
+      "direction": "abstain on LOW"
+    },
+    {
+      "coverage": 0.75,
+      "n_kept": 10409,
+      "model_mae": 4.678578966150994,
+      "ref_mae": 5.145755534638841,
+      "skill": 0.09078872195599486,
+      "dependent": "level_minutes",
+      "candidate": "pl_minutes_prior",
+      "direction": "abstain on LOW"
+    },
+    {
+      "coverage": 0.6,
+      "n_kept": 8327,
+      "model_mae": 4.646708701016016,
+      "ref_mae": 5.143941712180232,
+      "skill": 0.09666381133107094,
+      "dependent": "level_minutes",
+      "candidate": "pl_minutes_prior",
+      "direction": "abstain on LOW"
+    },
+    {
+      "coverage": 0.5,
+      "n_kept": 6940,
+      "model_mae": 4.600423740894084,
+      "ref_mae": 5.095586236627256,
+      "skill": 0.09717478475271923,
+      "dependent": "level_minutes",
+      "candidate": "pl_minutes_prior",
+      "direction": "abstain on LOW"
+    },
+    {
+      "coverage": 0.4,
+      "n_kept": 5552,
+      "model_mae": 4.505521768678705,
+      "ref_mae": 5.009637566831734,
+      "skill": 0.1006291955112133,
+      "dependent": "level_minutes",
+      "candidate": "pl_minutes_prior",
+      "direction": "abstain on LOW"
+    },
+    {
+      "coverage": 0.25,
+      "n_kept": 3470,
+      "model_mae": 4.277623288165108,
+      "ref_mae": 4.638608744456465,
+      "skill": 0.0778219238091088,
+      "dependent": "level_minutes",
+      "candidate": "pl_minutes_prior",
+      "direction": "abstain on LOW"
+    },
+    {
+      "coverage": 0.1,
+      "n_kept": 1388,
+      "model_mae": 4.27367351389579,
+      "ref_mae": 4.526741571084407,
+      "skill": 0.055905125842647174,
+      "dependent": "level_minutes",
+      "candidate": "pl_minutes_prior",
+      "direction": "abstain on LOW"
+    }
+  ],
+  "grouping_levels_file": "grouping_levels.csv",
+  "r2_convention": {
+    "declared": "D069 plain unweighted OLS R2, SST about the UNWEIGHTED mean.",
+    "two_semantics_warning": "screenkit.r2_plain(y, X) FITS an OLS of y on X. Passing a forecast as X reports the R2 of its best linear rescaling, not the forecast's own R2. D076's rh_base.r2_plain(y, yhat) is 1-SSE/SST with SSE about the supplied yhat. SAME NAME, DIFFERENT SEMANTICS.",
+    "table": [
+      {
+        "target": "pts",
+        "r2_forecast_as_is": 0.4694094384707139,
+        "r2_screenkit_r2_plain_refit": 0.4746730640697089,
+        "d076_published": 0.4694
+      },
+      {
+        "target": "minutes",
+        "r2_forecast_as_is": 0.6193570946106857,
+        "r2_screenkit_r2_plain_refit": 0.6217847927952345,
+        "d076_published": 0.6194
+      },
+      {
+        "target": "fga",
+        "r2_forecast_as_is": 0.5893473253051167,
+        "r2_screenkit_r2_plain_refit": 0.5914872780796772,
+        "d076_published": 0.5893
+      }
+    ]
+  },
+  "nulls": {
+    "paired_contrasts": "(season, player_id) BLOCK SIGN-FLIP permutation, 2000 draws, seed 20260807, two-sided. Flipping per ROW would treat 13,879 correlated rows as independent -- the anticonservative row-level null this program has found wrong six times.",
+    "abstention_screen": "block permutation of ALREADY-COMPUTED candidate values, 400 draws, seed 20260807, shared across every cell so the max-stat family-wise correction is valid. Scheme chosen per candidate by where its variance lives (var_share_between_player_season > 0.5 -> BETWEEN-block reassignment, 18 candidates; else WITHIN-block shuffle, 37 candidates), mirroring D076. The NAIVE row-level null is run alongside for contrast only and never carries a verdict.",
+    "inflation_factor_per_cell": {
+      "median": 0.950665960595571,
+      "p05_p95": [
+        0.685837928729601,
+        1.3209466876853477
+      ],
+      "range": [
+        0.26201888675439494,
+        2.056053118661336
+      ],
+      "fraction_gt_1": 0.3192307692307692,
+      "honest_reading": "Per-cell median 0.95 with only 32% above 1 -- the naive row-level null is NOT uniformly narrower here. It is simply the WRONG null, in whichever direction, exactly as D076 found. The number that matters is the FAMILY-WISE one below."
+    },
+    "familywise_max_stat": {
+      "observed_max_skill_gain": 0.05523926154367731,
+      "correct_level_max_stat_null_maximum": 0.02456933015090146,
+      "naive_row_level_max_stat_null_maximum": 0.01126346638279141,
+      "reading": "The correct-level max-stat null reaches +0.0246 while the naive row-level one reaches only +0.0113 -- 2.2x too narrow at the family level. Judged against the naive null, 60+ additional cells would have 'passed', including every rate cell in the top 15. This is the sixth-plus confirmation in this program."
+    },
+    "cluster_robust_SEs": "NOT used. This program has found them unreliable in both directions three separate times; they are not a substitute for a correct-level permutation null."
+  },
+  "candidate_explanations_verdicts": {
+    "(a) per-minute rates are genuinely unpredictable (intrinsic ceiling)": "PARTLY REJECTED. Rates are hard but not unpredictable: the model beats a prior-mean rate reference on FGA-per-minute (+0.7 to +1.3%), points-per-FGA (+1.0 to +2.1%) and points-per-minute (+0.6 to +1.0%), all block-significant. But the absolute ceiling is genuinely low -- 51.3% of points variance is irreducible even to an actual-minutes oracle.",
+    "(b) the model forecasts rates WORSE than a naive prior mean": "REJECTED outright. It forecasts every rate BETTER.",
+    "(c) minutes skill is real but rate error swamps it in the product": "CONFIRMED, and this is the primary explanation for ESTABLISHED players. Rate error dominates points error ~3:1 (giving the champion perfect rate while keeping its own minutes cuts points MAE 58.5%; giving it perfect minutes while keeping its own rate cuts only 18.4%). On the >=20-appearance, >=24-minute stratum the model has +7.7% minutes skill and -0.5% rate skill, and points skill lands at -0.5% -- the minutes skill is real and buys nothing. Note the earlier, stronger reading ('the minutes forecast actively costs skill') was a pooled artifact and is withdrawn; see step3_hybrid_2x2.pooled_verdict_WITHDRAWN.",
+    "(d) systematic bias / mis-handled minutes-efficiency correlation": "REJECTED IN SIGN, and demoted. The realised within-player-season correlation between minutes and points-per-minute is POSITIVE (+0.150 within, +0.351 pooled), so the blowout/garbage-time story is NOT what is happening -- within a player-season the games she plays more are the games she scores at a higher rate. The champion's own two forecasts are the most error-correlated of the four pairings (+0.187 vs +0.153 for naive-minutes x model-rate), so the compounding is real, but it is not large enough to be the explanation once the cold-start stratum is separated out.",
+    "(f) NEW -- the cold-start/fallback path is worse than the trivial fallback it replaces": "CONFIRMED, and it is the single largest correctable defect found. Points skill is -17.9% on the 999 rows with fewer than 3 prior same-season appearances (p = 0.001) and -18.6% on the 1,061 fallback rows, where MINUTES skill is -34.1%. Splicing the prior-mean reference in wherever prior appearances < 3 -- touching 7.2% of rows and adding no information whatsoever -- moves POOLED points skill from -0.22% to +1.36% (p = 0.0010). This directly answers D076's own follow-up question 2 ('is the depth effect a data effect or a model effect?'): it is a MODEL effect.",
+    "(e) the reference is unusually STRONG for points specifically": "PARTLY CONFIRMED and worth stating plainly. ref_pts (prior mean of points directly) has MAE 4.1816, which BEATS H4 = prior-mean minutes x prior-mean rate (4.1710 variant A / 4.1736 variant B) only narrowly, and beats the champion. Points is a target where a running mean of the player's own prior games is close to optimal, which is why the same model shows +3.55% on minutes and 0% here."
+  },
+  "step6_stratified_by_depth": {
+    "why_this_exists": "The pooled 2x2 conclusion flipped sign on every subset with adequate history. Rather than publish the pooled number, the screen stratified. This section supersedes the pooled reading of Step 3.",
+    "hybrid_by_depth": [
+      {
+        "stratum": "THIN   < 8 prior same-season appearances",
+        "n": 3213,
+        "H1_model_min_x_model_rate": -0.05588529083287086,
+        "H2_model_min_x_naive_rate": -0.03961370571107192,
+        "H3_naive_min_x_model_rate": 0.023443639038911335,
+        "H4_naive_min_x_naive_rate": 0.00681902330981321,
+        "H3_minus_H1": 0.0793289298717822,
+        "champion_points_mae": 4.516671603660197,
+        "reference_points_mae": 4.2776158005738445,
+        "minutes_skill": -0.1287075674085547,
+        "rate_ppm_skill": 0.025834799656461405
+      },
+      {
+        "stratum": "ADEQUATE >= 8 prior appearances",
+        "n": 10666,
+        "H1_model_min_x_model_rate": 0.014429829827406149,
+        "H2_model_min_x_naive_rate": 0.014702439932411493,
+        "H3_naive_min_x_model_rate": 0.003291024642478768,
+        "H4_naive_min_x_naive_rate": 0.0012105343003477875,
+        "H3_minus_H1": -0.01113880518492738,
+        "champion_points_mae": 4.092790943529082,
+        "reference_points_mae": 4.15271389840497,
+        "minutes_skill": 0.08887961824311053,
+        "rate_ppm_skill": -0.001680838397175588
+      },
+      {
+        "stratum": "fallback rows only",
+        "n": 1061,
+        "H1_model_min_x_model_rate": -0.18626417611743906,
+        "H2_model_min_x_naive_rate": -0.10775939736546647,
+        "H3_naive_min_x_model_rate": 0.021666553858542437,
+        "H4_naive_min_x_naive_rate": 0.019604713030281995,
+        "H3_minus_H1": 0.2079307299759815,
+        "champion_points_mae": 6.0639561358648475,
+        "reference_points_mae": 5.111809205696288,
+        "minutes_skill": -0.34077561780952115,
+        "rate_ppm_skill": 0.020803520048815805
+      },
+      {
+        "stratum": "non-fallback rows only",
+        "n": 12818,
+        "H1_model_min_x_model_rate": 0.016750167142897787,
+        "H2_model_min_x_naive_rate": 0.013137578645928238,
+        "H3_naive_min_x_model_rate": 0.006661187812892155,
+        "H4_naive_min_x_naive_rate": 0.0007794589274360275,
+        "H3_minus_H1": -0.010088979330005632,
+        "champion_points_mae": 4.035880527858388,
+        "reference_points_mae": 4.104633830581013,
+        "minutes_skill": 0.07994682515976226,
+        "rate_ppm_skill": 0.003986329545644152
+      },
+      {
+        "stratum": "POOLED",
+        "n": 13879,
+        "H1_model_min_x_model_rate": -0.0022218316796525084,
+        "H2_model_min_x_naive_rate": 0.0018395725558025822,
+        "H3_naive_min_x_model_rate": 0.008063462067893656,
+        "H4_naive_min_x_naive_rate": 0.0025387075250357105,
+        "H3_minus_H1": 0.010285293747546165,
+        "champion_points_mae": 4.190919667572693,
+        "reference_points_mae": 4.181628792249526,
+        "minutes_skill": 0.035549460412317546,
+        "rate_ppm_skill": 0.005590773577162533
+      }
+    ],
+    "hybrid_by_depth_contrasts": [
+      {
+        "stratum": "THIN   < 8 prior same-season appearances",
+        "n": 3213,
+        "A": "H3_naive_min_x_model_rate",
+        "B": "H1_model_min_x_model_rate",
+        "mae_A": 4.177332919798047,
+        "mae_B": 4.516671603660197,
+        "mean_paired_abs_err_diff": -0.33933868386214944,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 475
+      },
+      {
+        "stratum": "THIN   < 8 prior same-season appearances",
+        "n": 3213,
+        "A": "H1_model_min_x_model_rate",
+        "B": "REF_pts",
+        "mae_A": 4.516671603660197,
+        "mae_B": 4.2776158005738445,
+        "mean_paired_abs_err_diff": 0.23905580308635282,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 475
+      },
+      {
+        "stratum": "THIN   < 8 prior same-season appearances",
+        "n": 3213,
+        "A": "H2_model_min_x_naive_rate",
+        "B": "H4_naive_min_x_naive_rate",
+        "mae_A": 4.4470680140428085,
+        "mae_B": 4.248446638719306,
+        "mean_paired_abs_err_diff": 0.1986213753235028,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 475
+      },
+      {
+        "stratum": "ADEQUATE >= 8 prior appearances",
+        "n": 10666,
+        "A": "H3_naive_min_x_model_rate",
+        "B": "H1_model_min_x_model_rate",
+        "mae_A": 4.139047214632155,
+        "mae_B": 4.092790943529082,
+        "mean_paired_abs_err_diff": 0.04625627110307316,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 431
+      },
+      {
+        "stratum": "ADEQUATE >= 8 prior appearances",
+        "n": 10666,
+        "A": "H1_model_min_x_model_rate",
+        "B": "REF_pts",
+        "mae_A": 4.092790943529082,
+        "mae_B": 4.15271389840497,
+        "mean_paired_abs_err_diff": -0.05992295487588775,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 431
+      },
+      {
+        "stratum": "ADEQUATE >= 8 prior appearances",
+        "n": 10666,
+        "A": "H2_model_min_x_naive_rate",
+        "B": "H4_naive_min_x_naive_rate",
+        "mae_A": 4.091658871757181,
+        "mae_B": 4.14768689579142,
+        "mean_paired_abs_err_diff": -0.056028024034238476,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 431
+      },
+      {
+        "stratum": "fallback rows only",
+        "n": 1061,
+        "A": "H3_naive_min_x_model_rate",
+        "B": "H1_model_min_x_model_rate",
+        "mae_A": 5.001053916226476,
+        "mae_B": 6.0639561358648475,
+        "mean_paired_abs_err_diff": -1.0629022196383715,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 475
+      },
+      {
+        "stratum": "fallback rows only",
+        "n": 1061,
+        "A": "H1_model_min_x_model_rate",
+        "B": "REF_pts",
+        "mae_A": 6.0639561358648475,
+        "mae_B": 5.111809205696288,
+        "mean_paired_abs_err_diff": 0.9521469301685596,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 475
+      },
+      {
+        "stratum": "fallback rows only",
+        "n": 1061,
+        "A": "H2_model_min_x_naive_rate",
+        "B": "H4_naive_min_x_naive_rate",
+        "mae_A": 5.662654685149364,
+        "mae_B": 5.011593653153058,
+        "mean_paired_abs_err_diff": 0.6510610319963062,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 475
+      },
+      {
+        "stratum": "non-fallback rows only",
+        "n": 12818,
+        "A": "H3_naive_min_x_model_rate",
+        "B": "H1_model_min_x_model_rate",
+        "mae_A": 4.077292093732361,
+        "mae_B": 4.035880527858388,
+        "mean_paired_abs_err_diff": 0.04141156587397447,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 451
+      },
+      {
+        "stratum": "non-fallback rows only",
+        "n": 12818,
+        "A": "H1_model_min_x_model_rate",
+        "B": "REF_pts",
+        "mae_A": 4.035880527858388,
+        "mae_B": 4.104633830581013,
+        "mean_paired_abs_err_diff": -0.06875330272262513,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 451
+      },
+      {
+        "stratum": "non-fallback rows only",
+        "n": 12818,
+        "A": "H2_model_min_x_naive_rate",
+        "B": "H4_naive_min_x_naive_rate",
+        "mae_A": 4.050708880819017,
+        "mae_B": 4.10143443709791,
+        "mean_paired_abs_err_diff": -0.050725556278893275,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 451
+      },
+      {
+        "stratum": "POOLED",
+        "n": 13879,
+        "A": "H3_naive_min_x_model_rate",
+        "B": "H1_model_min_x_model_rate",
+        "mae_A": 4.14791038710121,
+        "mae_B": 4.190919667572693,
+        "mean_paired_abs_err_diff": -0.04300928047148265,
+        "p_two_sided_block_signflip": 0.0004997501249375312,
+        "n_blocks": 475
+      },
+      {
+        "stratum": "POOLED",
+        "n": 13879,
+        "A": "H1_model_min_x_model_rate",
+        "B": "REF_pts",
+        "mae_A": 4.190919667572693,
+        "mae_B": 4.181628792249526,
+        "mean_paired_abs_err_diff": 0.009290875323166853,
+        "p_two_sided_block_signflip": 0.552223888055972,
+        "n_blocks": 475
+      },
+      {
+        "stratum": "POOLED",
+        "n": 13879,
+        "A": "H2_model_min_x_naive_rate",
+        "B": "H4_naive_min_x_naive_rate",
+        "mae_A": 4.17393638268475,
+        "mae_B": 4.171012859767736,
+        "mean_paired_abs_err_diff": 0.0029235229170132522,
+        "p_two_sided_block_signflip": 0.7916041979010495,
+        "n_blocks": 475
+      }
+    ],
+    "component_skill_by_depth": [
+      {
+        "component": "minutes",
+        "skill_thin": -0.1287075674085547,
+        "skill_adequate": 0.08887961824311053,
+        "skill_pooled": 0.035549460412317546
+      },
+      {
+        "component": "fga",
+        "skill_thin": -0.09842815567195085,
+        "skill_adequate": 0.033148100684668,
+        "skill_pooled": 0.0011516133985177701
+      },
+      {
+        "component": "points",
+        "skill_thin": -0.05588529083287086,
+        "skill_adequate": 0.014429829827406149,
+        "skill_pooled": -0.0022218316796525084
+      },
+      {
+        "component": "fga_per_min",
+        "skill_thin": 0.02875102115410677,
+        "skill_adequate": 0.007718933444771592,
+        "skill_pooled": 0.013453784501652244
+      },
+      {
+        "component": "pts_per_fga",
+        "skill_thin": 0.0763426851914657,
+        "skill_adequate": 0.0017436026048782693,
+        "skill_pooled": 0.02126771341978151
+      },
+      {
+        "component": "pts_per_min",
+        "skill_thin": 0.025834799656461405,
+        "skill_adequate": -0.001680838397175588,
+        "skill_pooled": 0.005590773577162533
+      }
+    ],
+    "coldstart_splice_discriminator": [
+      {
+        "splice_threshold_prior_games": 0,
+        "n_spliced": 0,
+        "pct_spliced": 0.0,
+        "pooled_points_mae": 4.190919667572693,
+        "pooled_skill_vs_ref": -0.0022218316796525084,
+        "skill_on_UNspliced_rows": -0.0022218316796525084,
+        "p_vs_champion_blockflip": 1.0
+      },
+      {
+        "splice_threshold_prior_games": 3,
+        "n_spliced": 999,
+        "pct_spliced": 7.197924922544852,
+        "pooled_points_mae": 4.124763578417677,
+        "pooled_skill_vs_ref": 0.013598819181952826,
+        "skill_on_UNspliced_rows": 0.014916215128442212,
+        "p_vs_champion_blockflip": 0.000999000999000999
+      },
+      {
+        "splice_threshold_prior_games": 5,
+        "n_spliced": 1899,
+        "pct_spliced": 13.682541969882555,
+        "pooled_points_mae": 4.129410995979053,
+        "pooled_skill_vs_ref": 0.012487429866385291,
+        "skill_on_UNspliced_rows": 0.014695668374000381,
+        "p_vs_champion_blockflip": 0.000999000999000999
+      },
+      {
+        "splice_threshold_prior_games": 8,
+        "n_spliced": 3213,
+        "pct_spliced": 23.150082858995606,
+        "pooled_points_mae": 4.135578051078965,
+        "pooled_skill_vs_ref": 0.011012632507197861,
+        "skill_on_UNspliced_rows": 0.014429829827406149,
+        "p_vs_champion_blockflip": 0.000999000999000999
+      },
+      {
+        "splice_threshold_prior_games": 10,
+        "n_spliced": 4063,
+        "pct_spliced": 29.274443403703437,
+        "pooled_points_mae": 4.136817370272708,
+        "pooled_skill_vs_ref": 0.010716260147212053,
+        "skill_on_UNspliced_rows": 0.015210208537871472,
+        "p_vs_champion_blockflip": 0.000999000999000999
+      },
+      {
+        "splice_threshold_prior_games": 15,
+        "n_spliced": 6060,
+        "pct_spliced": 43.663088118740546,
+        "pooled_points_mae": 4.137809419299778,
+        "pooled_skill_vs_ref": 0.010479020287732288,
+        "skill_on_UNspliced_rows": 0.018525056983146992,
+        "p_vs_champion_blockflip": 0.000999000999000999
+      },
+      {
+        "splice_threshold_prior_games": 20,
+        "n_spliced": 7922,
+        "pct_spliced": 57.079040276677,
+        "pooled_points_mae": 4.150086966237848,
+        "pooled_skill_vs_ref": 0.007542952179337314,
+        "skill_on_UNspliced_rows": 0.017213559264470435,
+        "p_vs_champion_blockflip": 0.001998001998001998
+      }
+    ],
+    "depth_by_volume": [
+      {
+        "depth": "D1 <3",
+        "volume": "V1 <14 min",
+        "n": 0,
+        "points_skill": NaN,
+        "minutes_skill": NaN,
+        "rate_skill": NaN,
+        "p_blockflip": NaN
+      },
+      {
+        "depth": "D1 <3",
+        "volume": "V2 14-24 min",
+        "n": 0,
+        "points_skill": NaN,
+        "minutes_skill": NaN,
+        "rate_skill": NaN,
+        "p_blockflip": NaN
+      },
+      {
+        "depth": "D1 <3",
+        "volume": "V3 >=24 min",
+        "n": 0,
+        "points_skill": NaN,
+        "minutes_skill": NaN,
+        "rate_skill": NaN,
+        "p_blockflip": NaN
+      },
+      {
+        "depth": "D1 <3",
+        "volume": "V? no trailing-5",
+        "n": 999,
+        "points_skill": -0.17912931366801388,
+        "minutes_skill": -0.32853713091953507,
+        "rate_skill": 0.019937266041804125,
+        "p_blockflip": 0.000999000999000999
+      },
+      {
+        "depth": "D2 3-7",
+        "volume": "V1 <14 min",
+        "n": 742,
+        "points_skill": -0.020166759544929747,
+        "minutes_skill": -0.02359986171014916,
+        "rate_skill": 0.023016308948180964,
+        "p_blockflip": 0.3916083916083916
+      },
+      {
+        "depth": "D2 3-7",
+        "volume": "V2 14-24 min",
+        "n": 590,
+        "points_skill": 0.04577750669897318,
+        "minutes_skill": 0.04738768786863923,
+        "rate_skill": 0.03706665886061944,
+        "p_blockflip": 0.002997002997002997
+      },
+      {
+        "depth": "D2 3-7",
+        "volume": "V3 >=24 min",
+        "n": 882,
+        "points_skill": 0.019082534629574432,
+        "minutes_skill": 0.00642700981161759,
+        "rate_skill": 0.030595304332718287,
+        "p_blockflip": 0.08491508491508491
+      },
+      {
+        "depth": "D2 3-7",
+        "volume": "V? no trailing-5",
+        "n": 0,
+        "points_skill": NaN,
+        "minutes_skill": NaN,
+        "rate_skill": NaN,
+        "p_blockflip": NaN
+      },
+      {
+        "depth": "D3 8-19",
+        "volume": "V1 <14 min",
+        "n": 1347,
+        "points_skill": 0.028022087185463618,
+        "minutes_skill": 0.06544722329735841,
+        "rate_skill": -0.0020631724283455277,
+        "p_blockflip": 0.002997002997002997
+      },
+      {
+        "depth": "D3 8-19",
+        "volume": "V2 14-24 min",
+        "n": 1342,
+        "points_skill": 0.02201737948179061,
+        "minutes_skill": 0.09789309459517681,
+        "rate_skill": 0.0022384692334748157,
+        "p_blockflip": 0.002997002997002997
+      },
+      {
+        "depth": "D3 8-19",
+        "volume": "V3 >=24 min",
+        "n": 2020,
+        "points_skill": -0.001073943425456525,
+        "minutes_skill": 0.038004459085789866,
+        "rate_skill": 0.0027807720343683284,
+        "p_blockflip": 0.7892107892107892
+      },
+      {
+        "depth": "D3 8-19",
+        "volume": "V? no trailing-5",
+        "n": 0,
+        "points_skill": NaN,
+        "minutes_skill": NaN,
+        "rate_skill": NaN,
+        "p_blockflip": NaN
+      },
+      {
+        "depth": "D4 >=20",
+        "volume": "V1 <14 min",
+        "n": 1225,
+        "points_skill": 0.07642498022228728,
+        "minutes_skill": 0.13870732580344913,
+        "rate_skill": -0.00011072470094131148,
+        "p_blockflip": 0.000999000999000999
+      },
+      {
+        "depth": "D4 >=20",
+        "volume": "V2 14-24 min",
+        "n": 1645,
+        "points_skill": 0.03690170775408641,
+        "minutes_skill": 0.12741772402833818,
+        "rate_skill": -0.005076444972892613,
+        "p_blockflip": 0.000999000999000999
+      },
+      {
+        "depth": "D4 >=20",
+        "volume": "V3 >=24 min",
+        "n": 3087,
+        "points_skill": -0.005266761678226928,
+        "minutes_skill": 0.07692854749841782,
+        "rate_skill": -0.005131096494199738,
+        "p_blockflip": 0.2957042957042957
+      },
+      {
+        "depth": "D4 >=20",
+        "volume": "V? no trailing-5",
+        "n": 0,
+        "points_skill": NaN,
+        "minutes_skill": NaN,
+        "rate_skill": NaN,
+        "p_blockflip": NaN
+      }
+    ],
+    "decision_relevant_stratum": {
+      "rule": ">=8 prior same-season appearances AND trailing-5 mean minutes >=24",
+      "n": 5107,
+      "pct_of_rows": 36.796599178615175,
+      "champion_points_mae": 5.0097913607053295,
+      "reference_points_mae": 4.991879180776316,
+      "points_skill": -0.0035882639143178796,
+      "p_two_sided_block_signflip": 0.26636681659170414,
+      "minutes_skill": 0.061432671098414104,
+      "rate_ppm_skill": -0.001972131916302633
+    },
+    "corrected_headline": "The pooled 2x2 conclusion ('the model's minutes forecast destroys points value') is an AGGREGATION ARTIFACT of the cold-start rows and is WITHDRAWN as a pooled claim. Stratified: on the 10,666 rows with >=8 prior same-season appearances the champion has REAL points skill (+1.44%) and its own minutes forecast is what delivers it (H1 +1.44% vs H3 +0.33%). On the 3,213 thin-history rows the champion is far worse than a running mean, and that stratum drags the pooled number to -0.22%. The skill is not lost along the MINUTES x RATE chain; it is lost on the COLD-START ROWS, through the minutes factor there.",
+    "answers_D076_followup_q2": "D076 asked verbatim: 'replace the cold-start path with the running mean and see whether Q1 skill goes to 0 or to +'. Answered: splicing the running mean in where prior appearances < 3 (7.2% of rows, no new information) moves POOLED points skill from -0.22% to +1.36%, p = 0.0010, and the un-spliced rows are left at +1.49%. It is a MODEL effect. Caveat stated in the run log: skill on the spliced rows is 0 BY CONSTRUCTION, so the evidence is the pooled movement and the untouched rows, not the spliced ones."
+  },
+  "most_actionable_outcome": "ONE change, free, no new data: stop using the champion's own points forecast where the player has fewer than ~3 prior same-season appearances (equivalently, where the model raises its own fallback flag) and emit the running prior mean instead. That touches 7.2% of rows and moves POOLED points skill from -0.22% to +1.36% (p = 0.0010). A 50/50 blend of the champion with the prior-mean reference does about as well pooled (+1.14%) but is a blunter instrument and its weight was tuned in-sample. NEITHER helps on the decision-relevant stratum: for established, high-minutes players the champion is at -0.36% skill (p = 0.27) and there is no cold-start row there to fix. On those rows the honest conclusion is a CEILING, not a defect -- see step4_intrinsic_ceiling.",
+  "files": {
+    "component_skill.csv": "Step 2 per-component skill table with block sign-flip p-values",
+    "component_skill_per_season.csv": "per-season component skill",
+    "hybrid_2x2.csv": "Step 3 H1-H4, both naive-rate variants",
+    "hybrid_contrasts.csv": "paired block sign-flip contrasts between hybrid cells",
+    "hybrid_fga_chain.csv": "the same 2x2 on POINTS = FGA x POINTS-PER-FGA",
+    "hybrid_per_season.csv": "per-season robustness of the 2x2",
+    "hybrid_sensitivity.csv": "2x2 by subset (thin-history, non-fallback, stable)",
+    "hybrid_by_depth.csv": "STEP 6 -- the 2x2 stratified by prior-history depth; supersedes the pooled reading",
+    "hybrid_by_depth_contrasts.csv": "block sign-flip contrasts within each stratum",
+    "component_skill_by_depth.csv": "per-component skill, THIN vs ADEQUATE vs POOLED",
+    "coldstart_splice.csv": "D076 follow-up q2 discriminator: splice the running mean into the cold-start rows",
+    "points_skill_depth_by_volume.csv": "THE SINGLE MOST INFORMATIVE TABLE -- points, minutes and rate skill by depth x trailing-5 minutes",
+    "ceiling_oracle_ladder.csv": "Step 4 oracle ladder, ALL rows and STABLE subset",
+    "shrinkage_sweep.csv": "shrinkage of the champion toward the reference",
+    "blend_sweep.csv": "best blends",
+    "abstention_rate_screen.csv": "Step 5, all 550 cells with both nulls and family-wise p",
+    "abstention_curves_best.csv": "full coverage curves for the best candidate per dependent",
+    "grouping_levels.csv": "screenkit.detect_grouping_level output + variance share per candidate + scheme actually used",
+    "maxt_null_draws.csv": "the 400 family-wise max-stat draws, correct level and naive row",
+    "blockflip_draws.csv": "the 2000 block sign-flip draws per paired contrast",
+    "noop_placebo_draws.csv": "no-op placebo draws (identity, defective relabel, real shuffle)",
+    "KIT_BUG_REPRO.py": "minimal reproduction of the screen-kit boolean defect",
+    "decomp_frame.parquet": "the working frame (D076's frame + rates + references)",
+    "psd_base.py / s01..s04": "code",
+    "run_log_*.txt": "full console output of every step"
+  }
+}

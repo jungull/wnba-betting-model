@@ -1,0 +1,142 @@
+﻿  frame (13879, 117)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+R2 CONVENTION -- BOTH SEMANTICS REPORTED (see NOTES.md section 7, kit feedback)
+====================================================================================================
+  pts      R2 of the forecast AS-IS (1-SSE/SST) = 0.4694   |   screenkit.r2_plain (OLS REFIT of y on the forecast) = 0.4747   | D076 published 0.4694
+  minutes  R2 of the forecast AS-IS (1-SSE/SST) = 0.6194   |   screenkit.r2_plain (OLS REFIT of y on the forecast) = 0.6218   | D076 published 0.6194
+  fga      R2 of the forecast AS-IS (1-SSE/SST) = 0.5893   |   screenkit.r2_plain (OLS REFIT of y on the forecast) = 0.5915   | D076 published 0.5893
+
+====================================================================================================
+STEP 2 -- PER-COMPONENT SKILL, EACH AGAINST ITS OWN MATCHED PRIOR-MEAN REFERENCE
+====================================================================================================
+
+  component      kind         n   model MAE     ref MAE       skill  p(block)   reference
+  minutes        LEVEL    13879     5.07967     5.26691    +0.03555    0.0005  D076 prior mean
+  fga            LEVEL    13879     2.63757     2.64061    +0.00115    0.8016  D076 prior mean
+  pts            LEVEL    13879     4.19092     4.18163    -0.00222    0.5522  D076 prior mean
+  fga_per_min    RATE     13879     0.11034     0.11184    +0.01345    0.0005  A mean-of-prior-ratios
+  fga_per_min    RATE     13879     0.11034     0.11111    +0.00695    0.0075  B ratio-of-prior-sums
+  pts_per_fga    RATE     12976     0.50658     0.51759    +0.02127    0.0005  A mean-of-prior-ratios
+  pts_per_fga    RATE     12976     0.50658     0.51182    +0.01024    0.0005  B ratio-of-prior-sums
+  pts_per_min    RATE     13879     0.18174     0.18276    +0.00559    0.0590  A mean-of-prior-ratios
+  pts_per_min    RATE     13879     0.18174     0.18350    +0.00959    0.0050  B ratio-of-prior-sums
+
+  per-season skill (primary reference only):
+season         2022    2023    2024
+component                          
+fga         +0.0036 -0.0009 +0.0009
+fga_per_min +0.0155 +0.0173 +0.0076
+minutes     +0.0320 +0.0338 +0.0403
+pts         +0.0054 -0.0039 -0.0075
+pts_per_fga +0.0215 +0.0178 +0.0245
+pts_per_min +0.0097 +0.0074 -0.0001
+
+====================================================================================================
+STEP 3 -- THE HYBRID 2x2, SCORED IN POINTS.  Skill denominator = D076's ref_pts.
+====================================================================================================
+
+  identity check: H1 == pts__pred_point exactly?  max|H1 - pred| = 3.553e-15
+
+  ---- naive rate variant A (mean-of-prior-ratios) ----
+  cell                              points MAE skill vs ref        RMSE  R2 as-is
+  H1_model_min_x_model_rate             4.1909    -0.00222      5.5212    0.4694
+  H2_model_min_x_naive_rate             4.1739    +0.00184      5.5404    0.4657
+  H3_naive_min_x_model_rate             4.1479    +0.00806      5.4751    0.4782
+  H4_naive_min_x_naive_rate             4.1710    +0.00254      5.5146    0.4707
+  REF_pts (D076 denominator)            4.1816    +0.00000      5.4972    0.4740  [D076 reference: prior mean of POINTS directly]
+
+  ---- naive rate variant B (ratio-of-prior-sums) ----
+  cell                              points MAE skill vs ref        RMSE  R2 as-is
+  H1_model_min_x_model_rate             4.1909    -0.00222      5.5212    0.4694
+  H2_model_min_x_naive_rate             4.1832    -0.00037      5.5223    0.4692
+  H3_naive_min_x_model_rate             4.1479    +0.00806      5.4751    0.4782
+  H4_naive_min_x_naive_rate             4.1736    +0.00191      5.4906    0.4753
+  REF_pts (D076 denominator)            4.1816    +0.00000      5.4972    0.4740  [D076 reference: prior mean of POINTS directly]
+
+====================================================================================================
+STEP 3b -- PAIRED CONTRASTS, (season,player) BLOCK SIGN-FLIP NULL, 2000 draws
+====================================================================================================
+
+  A                                      B                                            MAE A       MAE B         p
+  H2_model_min_x_naive_rate              H1_model_min_x_model_rate                   4.1739      4.1909    0.1214  [A]
+  H3_naive_min_x_model_rate              H1_model_min_x_model_rate                   4.1479      4.1909    0.0005  [A]
+  H4_naive_min_x_naive_rate              H2_model_min_x_naive_rate                   4.1710      4.1739    0.7916  [A]
+  H4_naive_min_x_naive_rate              H3_naive_min_x_model_rate                   4.1710      4.1479    0.0095  [A]
+  H2_model_min_x_naive_rate              H1_model_min_x_model_rate                   4.1832      4.1909    0.4923  [B]
+  H3_naive_min_x_model_rate              H1_model_min_x_model_rate                   4.1479      4.1909    0.0005  [B]
+  H4_naive_min_x_naive_rate              H2_model_min_x_naive_rate                   4.1736      4.1832    0.4063  [B]
+  H4_naive_min_x_naive_rate              H3_naive_min_x_model_rate                   4.1736      4.1479    0.0090  [B]
+  champion vs D076 ref_pts: mean paired |err| diff = +0.00929  p=0.5522
+
+====================================================================================================
+STEP 3c -- THE SAME 2x2 ON THE FGA CHAIN: POINTS = FGA x POINTS-PER-FGA
+====================================================================================================
+
+  cell                              points MAE       skill   (n=13870 rows where the model's FGA forecast is > 0)
+  G1_model_fga_x_model_ppf              4.1924    -0.00223   [A]
+  G2_model_fga_x_naive_ppf              4.2510    -0.01624   [A]
+  G3_naive_fga_x_model_ppf              4.1603    +0.00544   [A]
+  G4_naive_fga_x_naive_ppf              4.1991    -0.00383   [A]
+  G1_model_fga_x_model_ppf              4.1924    -0.00223   [B]
+  G2_model_fga_x_naive_ppf              4.2319    -0.01169   [B]
+  G3_naive_fga_x_model_ppf              4.1603    +0.00544   [B]
+  G4_naive_fga_x_naive_ppf              4.1810    +0.00048   [B]
+
+====================================================================================================
+STEP 4 -- IS THE CEILING INTRINSIC?  AN ORACLE LADDER.
+====================================================================================================
+
+  METHOD AND ITS ASSUMPTIONS, STATED PLAINLY.
+  The oracles below DELIBERATELY READ THE FUTURE.  They are NOT forecasts, are NEVER used as a
+  skill reference, and exist only to bound how much of game-to-game points variation is even
+  forecastable.  O1-O3 use the player's WHOLE-SEASON information and O2-O4 use the ACTUAL minutes
+  played, both unavailable pre-game.  An oracle's MAE is therefore a LOWER BOUND on any honest
+  forecast's MAE.  If the champion sits close to it, the remaining error is irreducible at the
+  player-game level given that information -- an ESTIMATE, not a theorem.
+
+  ASSUMPTIONS: (i) a player's true scoring rate is roughly constant within a season, so a
+  season-mean rate is a fair stand-in for "perfect knowledge of the player"; (ii) the relationship
+  between minutes and points is roughly linear within a player-season; (iii) the STABLE subset is
+  chosen from PRE-GAME observables only, so the ceiling quoted on it is one a forecaster could
+  actually target.  Violations of (i)/(ii) make the oracle WEAKER, so the estimated ceiling is
+  conservative -- the true ceiling is at least this good.
+
+  STABLE subset (PRE-GAME rule: >=15 prior same-season appearances AND trailing-5 mean minutes >=24): n=3903 of 13879 (28.1%)
+
+  ---- ALL  (n=13879) ----
+  forecast                                       kind           MAE       RMSE   R2 as-is    MAE vs O2
+  REF   prior-mean of points (D076 reference)    honest      4.1816     5.4972     0.4740      +1.0135
+  MODEL champion pts__pred_point                 honest      4.1909     5.5212     0.4694      +1.0228
+  H2    model minutes x naive prior rate         honest      4.1739     5.5404     0.4657      +1.0058
+  O4    ACTUAL minutes x model rate              ORACLE      3.4180     4.6584     0.6223      +0.2499
+  O5    model minutes x SEASON-MEAN rate         ORACLE      3.9603     5.1837     0.5323      +0.7922
+  O1    SEASON-MEAN points (knows the season)    ORACLE      3.8478     5.0500     0.5561      +0.6797
+  O2    ACTUAL minutes x SEASON-MEAN rate        ORACLE      3.1681     4.3077     0.6770      +0.0000
+  O3    within-player-season OLS on ACTUAL min   ORACLE      3.0960     4.2224     0.6897      -0.0721
+
+  ---- STABLE (pre-game rule)  (n=3903) ----
+  forecast                                       kind           MAE       RMSE   R2 as-is    MAE vs O2
+  REF   prior-mean of points (D076 reference)    honest      4.9740     6.3406     0.3021      +0.6770
+  MODEL champion pts__pred_point                 honest      4.9885     6.3117     0.3085      +0.6916
+  H2    model minutes x naive prior rate         honest      4.9793     6.3043     0.3101      +0.6823
+  O4    ACTUAL minutes x model rate              ORACLE      4.4631     5.7329     0.4295      +0.1662
+  O5    model minutes x SEASON-MEAN rate         ORACLE      4.8376     6.1144     0.3510      +0.5406
+  O1    SEASON-MEAN points (knows the season)    ORACLE      4.7685     6.0815     0.3580      +0.4715
+  O2    ACTUAL minutes x SEASON-MEAN rate        ORACLE      4.2970     5.5147     0.4721      +0.0000
+  O3    within-player-season OLS on ACTUAL min   ORACLE      4.2240     5.4183     0.4904      -0.0729
+
+  VARIANCE ACCOUNTING (plain unweighted R2, D069, on the STABLE subset):
+    R2 of player-season fixed effects alone (ORACLE)               = 0.3844
+    R2 of player-season FE + ACTUAL minutes played (ORACLE)        = 0.4868
+    R2 of the champion forecast as-is (honest)                     = 0.3085
+    R2 of the prior-mean reference as-is (honest)                  = 0.3021
+    -> IRREDUCIBLE share of points variance left even to the oracle = 51.3%
+    -> headroom between the champion and the FE+actual-minutes oracle = 0.1783 R2
+
+  ERROR ATTRIBUTION (points MAE, all rows):
+    champion                                          4.1909
+    give it PERFECT MINUTES, keep its own rate        3.4180   (cut 18.4%)
+    give it PERFECT RATE, keep its own minutes        1.7380   (cut 58.5%)
+
+DONE s02

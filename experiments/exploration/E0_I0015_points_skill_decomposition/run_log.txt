@@ -1,0 +1,626 @@
+﻿
+====================================================================================================
+STEP 1a -- MANIFEST CHECKS via screenkit.check_manifest (VALUES, not text)
+====================================================================================================
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest player_game.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest predictions__player_scoring_distribution__2022.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__player_scoring_distribution__2023.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__player_scoring_distribution__2024.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__e_minutes_given_active__2022.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__e_minutes_given_active__2023.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__e_minutes_given_active__2024.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__attempts_usage__2022.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__attempts_usage__2023.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__attempts_usage__2024.parquet granularity='artifact' -> UNUSABLE
+  check_manifest player_game_availability.csv             granularity='artifact' -> UNUSABLE
+  check_manifest roster_asof.csv                          granularity='artifact' -> UNUSABLE
+  check_manifest test_predictions.csv -> UNVERIFIABLE (no manifest)
+
+  READING OF THE OOF ARTIFACTS (inherited from D076, restated so it is not implicit):
+  each per-season prediction file is asof_granularity='artifact', which is normally UNUSABLE
+  because filtering cannot rescue a mixed-bound file.  These are NOT mixed-bound: each file's
+  own fit_through_season equals its own season (2022->2022, 2023->2023, 2024->2024), so the
+  WHOLE artifact sits inside the 2021-2024 exploration partition and NO filtering is relied
+  on.  D076 made this call; this screen inherits it and would collapse with it.
+  verified: every OOF artifact's own fit_through_season <= 2024.
+  NOT OPENED: data\w1_truth\player_game_availability.csv           status=UNUSABLE
+  NOT OPENED: data\w1_truth\roster_asof.csv                        status=UNUSABLE
+  NOT OPENED: experiments\minutes_baselines\test_predictions.csv   status=UNVERIFIABLE
+
+====================================================================================================
+STEP 1b -- LOAD D076's FROZEN FRAME + VALUE-BASED PARTITION CHECK
+====================================================================================================
+  loaded D076 analysis_frame.parquet  shape=(13879, 101)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]  max_date=2024-10-20
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+  partition PASS=True  season values={'season': [2022, 2023, 2024]}
+  columns skipped because the NAME looked season-like but the VALUES are not seasons: 2
+
+====================================================================================================
+STEP 1c -- REPRODUCE THE THREE HEADLINE SKILL NUMBERS
+====================================================================================================
+  reference construction: strictly-prior expanding, .shift(1) BEFORE .expanding()
+  rows still NaN after player-prior AND same-season league-prior fallback (these take the whole-sample-mean fallback D076 also used): {'pts': 3, 'minutes': 3, 'fga': 3, 'ppm_A': 3, 'ppm_B': 3, 'fpm_A': 3, 'fpm_B': 3, 'ppf_A': 3, 'ppf_B': 3}
+
+  target           n   model MAE     ref MAE       skill    d(skill)    R2 plain       d(R2)
+  pts          13879      4.1909      4.1816   -0.002222   -2.18e-05      0.4747   +5.27e-03
+  minutes      13879      5.0797      5.2669   +0.035549   +4.95e-05      0.6218   +2.38e-03
+  fga          13879      2.6376      2.6406   +0.001152   -4.84e-05      0.5915   +2.19e-03
+
+  INDEPENDENT REBUILD of the same prior-mean reference (this screen's own code path):
+    pts       skill=-0.002222  max|refX - D076 ref| = 0.000e+00
+    minutes   skill=+0.035549  max|refX - D076 ref| = 0.000e+00
+    fga       skill=+0.001152  max|refX - D076 ref| = 0.000e+00
+
+  MAX |delta skill| vs D076's published values = 4.946e-05  ->  REPRODUCED = True
+
+====================================================================================================
+STEP 1d -- LEAK PROBE ON THE REFERENCE (trap 2: READ THE CONSTRUCTION, NOT THE LABEL)
+====================================================================================================
+  future_leakage_probe: n=13404
+    corr(_loo_pts                , own strictly-after-date future) = +0.9480
+    corr(ref_pts                 , own strictly-after-date future) = +0.8453
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.195416
+    -> '_loo_pts' predicts the entity's UNPLAYED FUTURE better than 'ref_pts' (|0.9480| vs |0.8453|) and adds dR2=0.1954 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment.
+  future_leakage_probe: n=13404
+    corr(ref_pts                 , own strictly-after-date future) = +0.8453
+    corr(_loo_pts                , own strictly-after-date future) = +0.9480
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.011208
+    -> 'ref_pts' does not out-predict '_loo_pts' on the unplayed future (|0.8453| vs |0.9480|, dR2=0.0112). This probe found no leakage; it is NOT a certificate -- also read the construction.
+  future_leakage_probe: n=13404
+    corr(refA_ppm                , own strictly-after-date future) = +0.6230
+    corr(refB_ppm                , own strictly-after-date future) = +0.6286
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.002678
+    -> 'refA_ppm' does not out-predict 'refB_ppm' on the unplayed future (|0.6230| vs |0.6286|, dR2=0.0027). This probe found no leakage; it is NOT a certificate -- also read the construction.
+  future_leakage_probe: n=13404
+    corr(refA_fpm                , own strictly-after-date future) = +0.6597
+    corr(refB_fpm                , own strictly-after-date future) = +0.6721
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.000233
+    -> 'refA_fpm' does not out-predict 'refB_fpm' on the unplayed future (|0.6597| vs |0.6721|, dR2=0.0002). This probe found no leakage; it is NOT a certificate -- also read the construction.
+
+====================================================================================================
+STEP 1e -- NO-OP PLACEBO (screenkit.noop_placebo), OBSERVED sd REPORTED
+====================================================================================================
+  noop_placebo: real=-0.00222183168  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  noop_placebo: real=-0.00222183168  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  noop_placebo: real=-0.00222183168  sd=8.867e-03  max|draw-real|=8.103e-01  distinct=200 -> NOT a no-op (sd=8.867e-03) -- the transform does move the statistic
+
+  wrote decomp_frame.parquet  shape=(13879, 117)
+DONE s01
+  frame (13879, 117)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+R2 CONVENTION -- BOTH SEMANTICS REPORTED (see NOTES.md section 7, kit feedback)
+====================================================================================================
+  pts      R2 of the forecast AS-IS (1-SSE/SST) = 0.4694   |   screenkit.r2_plain (OLS REFIT of y on the forecast) = 0.4747   | D076 published 0.4694
+  minutes  R2 of the forecast AS-IS (1-SSE/SST) = 0.6194   |   screenkit.r2_plain (OLS REFIT of y on the forecast) = 0.6218   | D076 published 0.6194
+  fga      R2 of the forecast AS-IS (1-SSE/SST) = 0.5893   |   screenkit.r2_plain (OLS REFIT of y on the forecast) = 0.5915   | D076 published 0.5893
+
+====================================================================================================
+STEP 2 -- PER-COMPONENT SKILL, EACH AGAINST ITS OWN MATCHED PRIOR-MEAN REFERENCE
+====================================================================================================
+
+  component      kind         n   model MAE     ref MAE       skill  p(block)   reference
+  minutes        LEVEL    13879     5.07967     5.26691    +0.03555    0.0005  D076 prior mean
+  fga            LEVEL    13879     2.63757     2.64061    +0.00115    0.8016  D076 prior mean
+  pts            LEVEL    13879     4.19092     4.18163    -0.00222    0.5522  D076 prior mean
+  fga_per_min    RATE     13879     0.11034     0.11184    +0.01345    0.0005  A mean-of-prior-ratios
+  fga_per_min    RATE     13879     0.11034     0.11111    +0.00695    0.0075  B ratio-of-prior-sums
+  pts_per_fga    RATE     12976     0.50658     0.51759    +0.02127    0.0005  A mean-of-prior-ratios
+  pts_per_fga    RATE     12976     0.50658     0.51182    +0.01024    0.0005  B ratio-of-prior-sums
+  pts_per_min    RATE     13879     0.18174     0.18276    +0.00559    0.0590  A mean-of-prior-ratios
+  pts_per_min    RATE     13879     0.18174     0.18350    +0.00959    0.0050  B ratio-of-prior-sums
+
+  per-season skill (primary reference only):
+season         2022    2023    2024
+component                          
+fga         +0.0036 -0.0009 +0.0009
+fga_per_min +0.0155 +0.0173 +0.0076
+minutes     +0.0320 +0.0338 +0.0403
+pts         +0.0054 -0.0039 -0.0075
+pts_per_fga +0.0215 +0.0178 +0.0245
+pts_per_min +0.0097 +0.0074 -0.0001
+
+====================================================================================================
+STEP 3 -- THE HYBRID 2x2, SCORED IN POINTS.  Skill denominator = D076's ref_pts.
+====================================================================================================
+
+  identity check: H1 == pts__pred_point exactly?  max|H1 - pred| = 3.553e-15
+
+  ---- naive rate variant A (mean-of-prior-ratios) ----
+  cell                              points MAE skill vs ref        RMSE  R2 as-is
+  H1_model_min_x_model_rate             4.1909    -0.00222      5.5212    0.4694
+  H2_model_min_x_naive_rate             4.1739    +0.00184      5.5404    0.4657
+  H3_naive_min_x_model_rate             4.1479    +0.00806      5.4751    0.4782
+  H4_naive_min_x_naive_rate             4.1710    +0.00254      5.5146    0.4707
+  REF_pts (D076 denominator)            4.1816    +0.00000      5.4972    0.4740  [D076 reference: prior mean of POINTS directly]
+
+  ---- naive rate variant B (ratio-of-prior-sums) ----
+  cell                              points MAE skill vs ref        RMSE  R2 as-is
+  H1_model_min_x_model_rate             4.1909    -0.00222      5.5212    0.4694
+  H2_model_min_x_naive_rate             4.1832    -0.00037      5.5223    0.4692
+  H3_naive_min_x_model_rate             4.1479    +0.00806      5.4751    0.4782
+  H4_naive_min_x_naive_rate             4.1736    +0.00191      5.4906    0.4753
+  REF_pts (D076 denominator)            4.1816    +0.00000      5.4972    0.4740  [D076 reference: prior mean of POINTS directly]
+
+====================================================================================================
+STEP 3b -- PAIRED CONTRASTS, (season,player) BLOCK SIGN-FLIP NULL, 2000 draws
+====================================================================================================
+
+  A                                      B                                            MAE A       MAE B         p
+  H2_model_min_x_naive_rate              H1_model_min_x_model_rate                   4.1739      4.1909    0.1214  [A]
+  H3_naive_min_x_model_rate              H1_model_min_x_model_rate                   4.1479      4.1909    0.0005  [A]
+  H4_naive_min_x_naive_rate              H2_model_min_x_naive_rate                   4.1710      4.1739    0.7916  [A]
+  H4_naive_min_x_naive_rate              H3_naive_min_x_model_rate                   4.1710      4.1479    0.0095  [A]
+  H2_model_min_x_naive_rate              H1_model_min_x_model_rate                   4.1832      4.1909    0.4923  [B]
+  H3_naive_min_x_model_rate              H1_model_min_x_model_rate                   4.1479      4.1909    0.0005  [B]
+  H4_naive_min_x_naive_rate              H2_model_min_x_naive_rate                   4.1736      4.1832    0.4063  [B]
+  H4_naive_min_x_naive_rate              H3_naive_min_x_model_rate                   4.1736      4.1479    0.0090  [B]
+  champion vs D076 ref_pts: mean paired |err| diff = +0.00929  p=0.5522
+
+====================================================================================================
+STEP 3c -- THE SAME 2x2 ON THE FGA CHAIN: POINTS = FGA x POINTS-PER-FGA
+====================================================================================================
+
+  cell                              points MAE       skill   (n=13870 rows where the model's FGA forecast is > 0)
+  G1_model_fga_x_model_ppf              4.1924    -0.00223   [A]
+  G2_model_fga_x_naive_ppf              4.2510    -0.01624   [A]
+  G3_naive_fga_x_model_ppf              4.1603    +0.00544   [A]
+  G4_naive_fga_x_naive_ppf              4.1991    -0.00383   [A]
+  G1_model_fga_x_model_ppf              4.1924    -0.00223   [B]
+  G2_model_fga_x_naive_ppf              4.2319    -0.01169   [B]
+  G3_naive_fga_x_model_ppf              4.1603    +0.00544   [B]
+  G4_naive_fga_x_naive_ppf              4.1810    +0.00048   [B]
+
+====================================================================================================
+STEP 4 -- IS THE CEILING INTRINSIC?  AN ORACLE LADDER.
+====================================================================================================
+
+  METHOD AND ITS ASSUMPTIONS, STATED PLAINLY.
+  The oracles below DELIBERATELY READ THE FUTURE.  They are NOT forecasts, are NEVER used as a
+  skill reference, and exist only to bound how much of game-to-game points variation is even
+  forecastable.  O1-O3 use the player's WHOLE-SEASON information and O2-O4 use the ACTUAL minutes
+  played, both unavailable pre-game.  An oracle's MAE is therefore a LOWER BOUND on any honest
+  forecast's MAE.  If the champion sits close to it, the remaining error is irreducible at the
+  player-game level given that information -- an ESTIMATE, not a theorem.
+
+  ASSUMPTIONS: (i) a player's true scoring rate is roughly constant within a season, so a
+  season-mean rate is a fair stand-in for "perfect knowledge of the player"; (ii) the relationship
+  between minutes and points is roughly linear within a player-season; (iii) the STABLE subset is
+  chosen from PRE-GAME observables only, so the ceiling quoted on it is one a forecaster could
+  actually target.  Violations of (i)/(ii) make the oracle WEAKER, so the estimated ceiling is
+  conservative -- the true ceiling is at least this good.
+
+  STABLE subset (PRE-GAME rule: >=15 prior same-season appearances AND trailing-5 mean minutes >=24): n=3903 of 13879 (28.1%)
+
+  ---- ALL  (n=13879) ----
+  forecast                                       kind           MAE       RMSE   R2 as-is    MAE vs O2
+  REF   prior-mean of points (D076 reference)    honest      4.1816     5.4972     0.4740      +1.0135
+  MODEL champion pts__pred_point                 honest      4.1909     5.5212     0.4694      +1.0228
+  H2    model minutes x naive prior rate         honest      4.1739     5.5404     0.4657      +1.0058
+  O4    ACTUAL minutes x model rate              ORACLE      3.4180     4.6584     0.6223      +0.2499
+  O5    model minutes x SEASON-MEAN rate         ORACLE      3.9603     5.1837     0.5323      +0.7922
+  O1    SEASON-MEAN points (knows the season)    ORACLE      3.8478     5.0500     0.5561      +0.6797
+  O2    ACTUAL minutes x SEASON-MEAN rate        ORACLE      3.1681     4.3077     0.6770      +0.0000
+  O3    within-player-season OLS on ACTUAL min   ORACLE      3.0960     4.2224     0.6897      -0.0721
+
+  ---- STABLE (pre-game rule)  (n=3903) ----
+  forecast                                       kind           MAE       RMSE   R2 as-is    MAE vs O2
+  REF   prior-mean of points (D076 reference)    honest      4.9740     6.3406     0.3021      +0.6770
+  MODEL champion pts__pred_point                 honest      4.9885     6.3117     0.3085      +0.6916
+  H2    model minutes x naive prior rate         honest      4.9793     6.3043     0.3101      +0.6823
+  O4    ACTUAL minutes x model rate              ORACLE      4.4631     5.7329     0.4295      +0.1662
+  O5    model minutes x SEASON-MEAN rate         ORACLE      4.8376     6.1144     0.3510      +0.5406
+  O1    SEASON-MEAN points (knows the season)    ORACLE      4.7685     6.0815     0.3580      +0.4715
+  O2    ACTUAL minutes x SEASON-MEAN rate        ORACLE      4.2970     5.5147     0.4721      +0.0000
+  O3    within-player-season OLS on ACTUAL min   ORACLE      4.2240     5.4183     0.4904      -0.0729
+
+  VARIANCE ACCOUNTING (plain unweighted R2, D069, on the STABLE subset):
+    R2 of player-season fixed effects alone (ORACLE)               = 0.3844
+    R2 of player-season FE + ACTUAL minutes played (ORACLE)        = 0.4868
+    R2 of the champion forecast as-is (honest)                     = 0.3085
+    R2 of the prior-mean reference as-is (honest)                  = 0.3021
+    -> IRREDUCIBLE share of points variance left even to the oracle = 51.3%
+    -> headroom between the champion and the FE+actual-minutes oracle = 0.1783 R2
+
+  ERROR ATTRIBUTION (points MAE, all rows):
+    champion                                          4.1909
+    give it PERFECT MINUTES, keep its own rate        3.4180   (cut 18.4%)
+    give it PERFECT RATE, keep its own minutes        1.7380   (cut 58.5%)
+
+DONE s02
+
+====================================================================================================
+STEP 3d -- MECHANISM: WHY DO INDIVIDUALLY-BETTER FACTORS MULTIPLY INTO A WORSE PRODUCT?
+====================================================================================================
+
+  POINTS = MINUTES x RATE is a PRODUCT, and the conditional mean of a product is
+      E[M*R] = E[M]*E[R] + Cov(M, R).
+  Multiplying two separately-good marginal forecasts therefore omits the covariance term, and
+  amplifies each factor's variance into the other.  Two measurable consequences are checked below.
+
+  (i) realised corr(minutes, points-per-minute):  pooled +0.3506   WITHIN player-season +0.1499
+      OBSERVED SIGN IS POSITIVE, so the blowout/garbage-time story (more minutes at LOWER
+      efficiency) is NOT what is happening here -- within a player-season, the games where
+      a player plays more are also the games she scores at a HIGHER rate.  Cov(M,R) > 0,
+      so a product of marginal forecasts UNDERSTATES the mean and the two factors' errors
+      reinforce rather than cancel.  Candidate explanation (d) as originally worded is
+      REJECTED IN SIGN; the compounding is real but runs the other way.
+
+  (ii) forecast dispersion (sd) against the outcome's own sd:
+      y_pts (outcome)                sd= 7.5800  mean bias vs outcome=+0.0000
+      REF_pts                        sd= 5.7937  mean bias vs outcome=+0.0364
+      H1 model_min x model_rate      sd= 5.7718  mean bias vs outcome=-0.0239
+      H2 model_min x naive_rate      sd= 5.8881  mean bias vs outcome=-0.1163
+      H3 naive_min x model_rate      sd= 5.7555  mean bias vs outcome=-0.1109
+      H4 naive_min x naive_rate      sd= 5.8676  mean bias vs outcome=-0.1494
+      A forecast whose sd EXCEEDS what its information supports is over-dispersed and pays
+      for it in MAE on a noisy target.  Compare H1 with H3.
+
+  (iii) sd of each factor's own forecast error, and the error correlation that compounds:
+      minutes: model sd=6.6362  naive sd=6.8409   (model is the BETTER minutes forecast)
+      rate   : model sd=0.24420 naive sd=0.24747  (model is the BETTER rate forecast)
+      corr(minutes error, rate error) for model minutes x model rate   = +0.1868
+      corr(minutes error, rate error) for naive minutes x model rate   = +0.1529
+      corr(minutes error, rate error) for model minutes x naive rate   = +0.1583
+      corr(minutes error, rate error) for naive minutes x naive rate   = +0.1572
+
+  (iv) SHRINKAGE SWEEP.  If the loss is over-dispersion, shrinking the champion's points
+       forecast toward the player's prior mean should recover skill with NO new information.
+       lambda=0.00  MAE=4.1909  skill=-0.00222
+       lambda=0.10  MAE=4.1715  skill=+0.00242
+       lambda=0.20  MAE=4.1564  skill=+0.00604
+       lambda=0.25  MAE=4.1503  skill=+0.00750
+       lambda=0.30  MAE=4.1448  skill=+0.00880
+       lambda=0.40  MAE=4.1372  skill=+0.01063
+       lambda=0.50  MAE=4.1339  skill=+0.01141
+       lambda=0.60  MAE=4.1347  skill=+0.01121
+       lambda=0.75  MAE=4.1445  skill=+0.00888
+       lambda=1.00  MAE=4.1816  skill=+0.00000
+
+  (v) OVER-DISPERSION or ENSEMBLE GAIN?  These have different fixes.
+      corr(champion error, reference error) = +0.9407
+      sd(champion forecast)=5.7718  sd(reference)=5.7937  sd(outcome)=7.5800
+      corr(champion forecast, reference forecast) = +0.9462
+      The champion is NOT more dispersed than the reference, so 'over-confident spread' is
+      NOT the diagnosis.  The two forecasts make PARTLY INDEPENDENT errors, so a blend beats
+      either -- an ENSEMBLE gain.  The champion's information is real; it is simply not
+      incremental to the prior mean as a point forecast.
+      best blend champion + reference                       lambda=0.55  MAE=4.1336  skill=+0.01149
+      best blend champion + H3(naive_min x model_rate)      lambda=0.70  MAE=4.1382  skill=+0.01039
+      best blend reference + H3(naive_min x model_rate)     lambda=0.70  MAE=4.1396  skill=+0.01006
+
+====================================================================================================
+STEP 4b -- AN HONEST, PRE-GAME-REACHABLE CEILING (not just an oracle one)
+====================================================================================================
+  STABLE subset n=3903 (pre-game rule).  Plain unweighted R2 (D069):
+    oracle: player-season FE alone (perfect knowledge of WHO)  0.3844
+    oracle-on-player + HONEST model minutes forecast           0.3844
+    oracle-on-player + ACTUAL minutes played (UNREACHABLE)     0.4868
+    HONEST: champion forecast as-is                            0.3085
+    HONEST: prior-mean reference as-is                         0.3021
+
+  The largest R2 any PRE-GAME forecast could reach if it knew each player's true
+  season-long scoring level perfectly and forecast minutes exactly as well as the champion
+  already does is 0.3844.  The champion is at 0.3085 and the naive reference at 0.3021.
+  Reachable headroom = 0.0759 R2.  Unreachable (needs the actual minutes played) = 0.1024 R2.
+  Irreducible even to the ACTUAL-minutes oracle = 51.3% of points variance.
+
+====================================================================================================
+STEP 5 -- DOES ABSTENTION HELP THE RATE COMPONENT?
+====================================================================================================
+  candidate list fixed BEFORE any abstention curve was computed: 55 candidates
+  KIT DEFECT WORKAROUND: cast 4 boolean candidates to float (['pts__is_fallback', 'pts__is_cold_start', 'minutes__is_fallback', 'fga__is_fallback']) -- detect_grouping_level crashes on bool. See KIT_BUG_REPRO.py.
+
+  screenkit.detect_grouping_level recommendation, counted:
+kit_recommended_level
+row          34
+team_game    16
+season        3
+game          2
+  permutation scheme actually used (chosen by variance share between player-seasons):
+scheme_used
+WITHIN-block     37
+BETWEEN-block    18
+
+  *** KIT GAP, DECLARED. *** detect_grouping_level recommends 'row' for a feature that varies row
+  by row -- correct as to WHERE THE FEATURE VARIES, but 'row' is exactly the anticonservative null
+  this program has found wrong six times, because the OUTCOME is clustered by player-season even
+  when the feature is not.  The kit's own docstring admits it does not detect this.  The kit offers
+  no WITHIN-block scheme at all, so both block schemes below are implemented here, mirroring D076's
+  rh_base.  The kit's ROW_LEVEL null is run alongside purely to publish the inflation factor.
+
+  built 400 permutation indices for each of 3 schemes (seed 20260807), shared across all cells
+
+  550 cells = 55 candidates x 5 dependents x 2 directions
+  INFLATION FACTOR sd(correct-level null) / sd(NAIVE row-level null):
+    median 0.95   5th-95th pct 0.69-1.32   range 0.26-2.06   fraction > 1: 32%
+
+  FAMILY-WISE: observed max skill gain = +0.05524  against a correct-level max-stat null whose own max over 400 draws = +0.02457
+  (the NAIVE row-level max-stat null maxes at +0.01126 -- it would have passed far more)
+
+  TOP 15 CELLS BY SKILL GAIN AT 75%% COVERAGE:
+           candidate     dependent       direction  skill_gain        scheme  p_correct_level  familywise_p_correct  p_row_level_NAIVE
+    pl_minutes_prior level_minutes  abstain on LOW    +0.05524  WITHIN-block         +0.00249              +0.00249           +0.00249
+  pts__n_prior_games level_minutes  abstain on LOW    +0.05428  WITHIN-block         +0.00249              +0.00249           +0.00249
+      pl_games_prior level_minutes  abstain on LOW    +0.05416  WITHIN-block         +0.00249              +0.00249           +0.00249
+  tm_season_progress level_minutes  abstain on LOW    +0.04365  WITHIN-block         +0.00249              +0.00249           +0.00249
+         tm_game_idx level_minutes  abstain on LOW    +0.04365  WITHIN-block         +0.00249              +0.00249           +0.00249
+        opp_game_idx level_minutes  abstain on LOW    +0.04343  WITHIN-block         +0.00249              +0.00249           +0.00249
+ pts__fallback_level level_minutes abstain on HIGH    +0.03487  WITHIN-block         +0.00249              +0.00249           +0.00249
+minutes__is_fallback level_minutes abstain on HIGH    +0.03487  WITHIN-block         +0.00249              +0.00249           +0.00249
+    pts__is_fallback level_minutes abstain on HIGH    +0.03487  WITHIN-block         +0.00249              +0.00249           +0.00249
+    fga__is_fallback level_minutes abstain on HIGH    +0.03487  WITHIN-block         +0.00249              +0.00249           +0.00249
+    tm_first_meeting level_minutes abstain on HIGH    +0.02918  WITHIN-block         +0.00249              +0.00249           +0.00249
+   tm_prior_meetings level_minutes  abstain on LOW    +0.02826  WITHIN-block         +0.00249              +0.00249           +0.00249
+     pts__pred_width level_minutes abstain on HIGH    +0.02322 BETWEEN-block         +0.00249              +0.01247           +0.00249
+  tm_poss_mean_prior level_minutes abstain on HIGH    +0.01924 BETWEEN-block         +0.09726              +0.35910           +0.00249
+    fga__is_fallback  level_points abstain on HIGH    +0.01856  WITHIN-block         +0.00249              +0.49875           +0.00249
+
+  BEST CELL PER DEPENDENT:
+    dependent           candidate       direction  skill_gain  p_correct_level  familywise_p_correct
+level_minutes    pl_minutes_prior  abstain on LOW    +0.05524         +0.00249              +0.00249
+ level_points    pts__is_fallback abstain on HIGH    +0.01856         +0.00249              +0.49875
+rate_ppf_refA      pl_games_prior abstain on HIGH    +0.00809         +0.00249              +1.00000
+rate_ppm_refA pl_is_rookie_window abstain on HIGH    +0.00509         +0.00998              +1.00000
+rate_ppm_refB     pts__pred_width abstain on HIGH    +0.00514         +0.12718              +1.00000
+
+  HOW MANY CELLS CLEAR THE FAMILY on each dependent (familywise p < 0.05):
+               sum  size
+dependent               
+level_minutes   13   110
+level_points     0   110
+rate_ppf_refA    0   110
+rate_ppm_refA    0   110
+rate_ppm_refB    0   110
+
+  ABSTENTION CURVES for the best candidate on each dependent:
+    dependent           candidate       direction  coverage  n_kept  model_mae  ref_mae    skill
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   1.00000   13879    0.18174  0.18276  0.00559
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.90000   12491    0.18069  0.18209  0.00768
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.80000   11103    0.17816  0.18003  0.01038
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.75000   10409    0.17542  0.17732  0.01068
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.60000    8327    0.17585  0.17807  0.01247
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.50000    6940    0.17645  0.17849  0.01139
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.40000    5552    0.17323  0.17561  0.01354
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.25000    3470    0.17472  0.17773  0.01691
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.10000    1388    0.16626  0.16983  0.02103
+rate_ppm_refB     pts__pred_width abstain on HIGH   1.00000   13879    0.18174  0.18350  0.00959
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.90000   12491    0.18373  0.18606  0.01251
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.80000   11103    0.18599  0.18842  0.01291
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.75000   10409    0.18630  0.18909  0.01473
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.60000    8327    0.19070  0.19332  0.01357
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.50000    6940    0.19557  0.19838  0.01416
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.40000    5552    0.20411  0.20699  0.01393
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.25000    3470    0.21744  0.22181  0.01970
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.10000    1388    0.23334  0.24186  0.03520
+rate_ppf_refA      pl_games_prior abstain on HIGH   1.00000   12976    0.50658  0.51759  0.02127
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.90000   11678    0.51246  0.52498  0.02384
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.80000   10381    0.51549  0.53023  0.02778
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.75000    9732    0.51739  0.53304  0.02936
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.60000    7786    0.52760  0.54652  0.03461
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.50000    6488    0.53533  0.55727  0.03937
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.40000    5190    0.54223  0.57033  0.04927
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.25000    3244    0.55640  0.59952  0.07192
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.10000    1298    0.55267  0.61898  0.10713
+ level_points    fga__is_fallback abstain on HIGH   1.00000   13879    4.19092  4.18163 -0.00222
+ level_points    fga__is_fallback abstain on HIGH   0.90000   12491    4.04509  4.11117  0.01607
+ level_points    fga__is_fallback abstain on HIGH   0.80000   11103    4.10859  4.17100  0.01496
+ level_points    fga__is_fallback abstain on HIGH   0.75000   10409    4.08936  4.15729  0.01634
+ level_points    fga__is_fallback abstain on HIGH   0.60000    8327    4.04814  4.11174  0.01547
+ level_points    fga__is_fallback abstain on HIGH   0.50000    6940    4.17371  4.22911  0.01310
+ level_points    fga__is_fallback abstain on HIGH   0.40000    5552    4.09467  4.15281  0.01400
+ level_points    fga__is_fallback abstain on HIGH   0.25000    3470    4.11202  4.18187  0.01670
+ level_points    fga__is_fallback abstain on HIGH   0.10000    1388    4.18382  4.26612  0.01929
+level_minutes    pl_minutes_prior  abstain on LOW   1.00000   13879    5.07967  5.26691  0.03555
+level_minutes    pl_minutes_prior  abstain on LOW   0.90000   12491    4.79556  5.14602  0.06810
+level_minutes    pl_minutes_prior  abstain on LOW   0.80000   11103    4.70134  5.14911  0.08696
+level_minutes    pl_minutes_prior  abstain on LOW   0.75000   10409    4.67858  5.14576  0.09079
+level_minutes    pl_minutes_prior  abstain on LOW   0.60000    8327    4.64671  5.14394  0.09666
+level_minutes    pl_minutes_prior  abstain on LOW   0.50000    6940    4.60042  5.09559  0.09717
+level_minutes    pl_minutes_prior  abstain on LOW   0.40000    5552    4.50552  5.00964  0.10063
+level_minutes    pl_minutes_prior  abstain on LOW   0.25000    3470    4.27762  4.63861  0.07782
+level_minutes    pl_minutes_prior  abstain on LOW   0.10000    1388    4.27367  4.52674  0.05591
+
+DONE s03
+
+====================================================================================================
+PER-SEASON ROBUSTNESS OF THE 2x2 -- does H3 beat H1 in EVERY season separately?
+====================================================================================================
+naive_rate_variant season     n  H1_model_min_x_model_rate  H2_model_min_x_naive_rate  H3_naive_min_x_model_rate  H4_naive_min_x_naive_rate  H3_minus_H1
+                 A   2022  4362                   +0.00543                   +0.00116                   +0.00995                   -0.00032     +0.00452
+                 A   2023  4748                   -0.00386                   +0.00181                   +0.00816                   +0.00296     +0.01202
+                 A   2024  4769                   -0.00747                   +0.00248                   +0.00627                   +0.00470     +0.01374
+                 A POOLED 13879                   -0.00222                   +0.00184                   +0.00806                   +0.00254     +0.01029
+                 B   2022  4362                   +0.00543                   +0.00278                   +0.00995                   +0.00088     +0.00452
+                 B   2023  4748                   -0.00386                   -0.00146                   +0.00816                   +0.00245     +0.01202
+                 B   2024  4769                   -0.00747                   -0.00212                   +0.00627                   +0.00231     +0.01374
+                 B POOLED 13879                   -0.00222                   -0.00037                   +0.00806                   +0.00191     +0.01029
+
+  H3 beats H1 in every season and both rate variants: True
+
+====================================================================================================
+SENSITIVITY: does the conclusion survive dropping the thin-history rows D076 flagged?
+====================================================================================================
+                                  subset     n  skill_H1  skill_H2  skill_H3  skill_H4  skill_blend50_champ_ref  H3_minus_H1
+                                all rows 13879  -0.00222  +0.00184  +0.00806  +0.00254                 +0.01141     +0.01029
+ >=8 prior appearances (D076's 75% rule) 10666  +0.01443  +0.01470  +0.00329  +0.00121                 +0.01351     -0.01114
+                  non-fallback rows only 12818  +0.01675  +0.01314  +0.00666  +0.00078                 +0.01488     -0.01009
+STABLE (>=15 prior, trailing-5 min >=24)  3903  -0.00293  -0.00107  -0.00229  -0.00219                 +0.00367     +0.00064
+
+====================================================================================================
+ASSEMBLING FINDINGS.json
+====================================================================================================
+  wrote FINDINGS.json (27 top-level keys)
+DONE s04
+
+====================================================================================================
+STEP 6a -- THE 2x2 BY PRIOR-HISTORY DEPTH.  The pooled table hides a sign flip.
+====================================================================================================
+
+  stratum                                         n         H1         H2         H3         H4       H3-H1   champ MAE
+  THIN   < 8 prior same-season appearances     3213   -0.05589   -0.03961   +0.02344   +0.00682    +0.07933      4.5167
+  ADEQUATE >= 8 prior appearances             10666   +0.01443   +0.01470   +0.00329   +0.00121    -0.01114      4.0928
+  fallback rows only                           1061   -0.18626   -0.10776   +0.02167   +0.01960    +0.20793      6.0640
+  non-fallback rows only                      12818   +0.01675   +0.01314   +0.00666   +0.00078    -0.01009      4.0359
+  POOLED                                      13879   -0.00222   +0.00184   +0.00806   +0.00254    +0.01029      4.1909
+
+  component skill by the same strata:
+                                 stratum     n  minutes_skill  rate_ppm_skill  H1_model_min_x_model_rate
+THIN   < 8 prior same-season appearances  3213       -0.12871        +0.02583                   -0.05589
+         ADEQUATE >= 8 prior appearances 10666       +0.08888        -0.00168                   +0.01443
+                      fallback rows only  1061       -0.34078        +0.02080                   -0.18626
+                  non-fallback rows only 12818       +0.07995        +0.00399                   +0.01675
+                                  POOLED 13879       +0.03555        +0.00559                   -0.00222
+
+====================================================================================================
+STEP 6b -- PAIRED BLOCK SIGN-FLIP ON EACH STRATUM (is the sign flip real?)
+====================================================================================================
+
+  stratum                                    contrast                          MAE A      MAE B         p
+  THIN   < 8 prior same-season appearances   H3 vs H1                         4.1773     4.5167    0.0005
+  THIN   < 8 prior same-season appearances   H1 vs REF                        4.5167     4.2776    0.0005
+  THIN   < 8 prior same-season appearances   H2 vs H4                         4.4471     4.2484    0.0005
+  ADEQUATE >= 8 prior appearances            H3 vs H1                         4.1390     4.0928    0.0005
+  ADEQUATE >= 8 prior appearances            H1 vs REF                        4.0928     4.1527    0.0005
+  ADEQUATE >= 8 prior appearances            H2 vs H4                         4.0917     4.1477    0.0005
+  fallback rows only                         H3 vs H1                         5.0011     6.0640    0.0005
+  fallback rows only                         H1 vs REF                        6.0640     5.1118    0.0005
+  fallback rows only                         H2 vs H4                         5.6627     5.0116    0.0005
+  non-fallback rows only                     H3 vs H1                         4.0773     4.0359    0.0005
+  non-fallback rows only                     H1 vs REF                        4.0359     4.1046    0.0005
+  non-fallback rows only                     H2 vs H4                         4.0507     4.1014    0.0005
+  POOLED                                     H3 vs H1                         4.1479     4.1909    0.0005
+  POOLED                                     H1 vs REF                        4.1909     4.1816    0.5522
+  POOLED                                     H2 vs H4                         4.1739     4.1710    0.7916
+
+====================================================================================================
+STEP 6c -- D076's OWN DISCRIMINATOR: replace the cold-start path with the running mean
+====================================================================================================
+
+  D076 follow-up question 2 asked, verbatim: "Is the depth effect a data effect or a model effect?
+  The model has negative skill in the thinnest quintile. Either the estimator's cold-start path is
+  actively harmful, or ~8 prior appearances is simply the point where any estimator beats a running
+  mean. A cheap discriminator: replace the cold-start path with the running mean and see whether Q1
+  skill goes to 0 or to +."   It is cheap and it is answerable here, so it is answered here.
+
+  NOTE ON WHAT THIS CAN AND CANNOT SHOW.  Splicing the reference into the model on a set of rows
+  makes the spliced forecast EQUAL to the reference there, so skill on those rows is 0 BY
+  CONSTRUCTION -- that is not evidence.  The evidence is what happens to the POOLED number and to
+  the rows that were NOT spliced, and whether the pooled gain is bigger than simply abstaining.
+
+  splice where prior games < 0    n=0     ( 0.0%)  pooled MAE=4.1909  pooled skill=-0.00222   skill on UNspliced rows=-0.00222   p vs champion=1.0000
+  splice where prior games < 3    n=999   ( 7.2%)  pooled MAE=4.1248  pooled skill=+0.01360   skill on UNspliced rows=+0.01492   p vs champion=0.0010
+  splice where prior games < 5    n=1899  (13.7%)  pooled MAE=4.1294  pooled skill=+0.01249   skill on UNspliced rows=+0.01470   p vs champion=0.0010
+  splice where prior games < 8    n=3213  (23.2%)  pooled MAE=4.1356  pooled skill=+0.01101   skill on UNspliced rows=+0.01443   p vs champion=0.0010
+  splice where prior games < 10   n=4063  (29.3%)  pooled MAE=4.1368  pooled skill=+0.01072   skill on UNspliced rows=+0.01521   p vs champion=0.0010
+  splice where prior games < 15   n=6060  (43.7%)  pooled MAE=4.1378  pooled skill=+0.01048   skill on UNspliced rows=+0.01853   p vs champion=0.0010
+  splice where prior games < 20   n=7922  (57.1%)  pooled MAE=4.1501  pooled skill=+0.00754   skill on UNspliced rows=+0.01721   p vs champion=0.0020
+
+  ANSWER TO D076's QUESTION 2: it is a MODEL effect, not merely a data effect.  Simply refusing to
+  use the model's own forecast where the player has fewer than ~8 prior same-season appearances --
+  substituting the running mean the model is supposed to beat -- takes POOLED points skill from
+  -0.22%% to the value in the table above, without touching any of the other rows.  The model's
+  cold-start path is worse than the trivial fallback it is meant to improve on.
+
+
+====================================================================================================
+STEP 6d -- SO WHERE, PRECISELY, IS THE SKILL LOST?  The corrected statement.
+====================================================================================================
+
+  POOLED points skill              = -0.00222   (n=13879)
+    on ADEQUATE history (>=8)      = +0.01443   (n=10666, 77% of rows)
+    on THIN history     (<8)       = -0.05589   (n=3213, 23% of rows)
+
+  The pooled -0.22% is NOT "the model has no points skill".  It is a weighted average of real,
+  positive points skill on three quarters of the rows and a large negative on the cold-start
+  quarter.  Every component-level conclusion has to be read stratum by stratum:
+
+  component             THIN <8   ADEQ >=8     POOLED
+  minutes              -0.12871   +0.08888   +0.03555
+  fga                  -0.09843   +0.03315   +0.00115
+  points               -0.05589   +0.01443   -0.00222
+  fga_per_min          +0.02875   +0.00772   +0.01345
+  pts_per_fga          +0.07634   +0.00174   +0.02127
+  pts_per_min          +0.02583   -0.00168   +0.00559
+
+DONE s05
+
+====================================================================================================
+STEP 6e -- POINTS SKILL BY (prior-appearance depth) x (trailing-5 mean minutes)
+====================================================================================================
+
+  points skill (n in brackets).  Reference faces the same rows in every cell.
+             V1 <14 min             V2 14-24 min           V3 >=24 min            V? no trailing-5      
+  D1 <3              --                     --                     --              -0.1791 [  999] p0.001
+  D2 3-7      -0.0202 [  742] p0.392  +0.0458 [  590] p0.003  +0.0191 [  882] p0.085         --            
+  D3 8-19     +0.0280 [ 1347] p0.003  +0.0220 [ 1342] p0.003  -0.0011 [ 2020] p0.789         --            
+  D4 >=20     +0.0764 [ 1225] p0.001  +0.0369 [ 1645] p0.001  -0.0053 [ 3087] p0.296         --            
+
+  same table, MINUTES skill:
+volume   V1 <14 min  V2 14-24 min  V3 >=24 min  V? no trailing-5
+depth                                                           
+D1 <3           NaN           NaN          NaN           -0.3285
+D2 3-7      -0.0236       +0.0474      +0.0064               NaN
+D3 8-19     +0.0654       +0.0979      +0.0380               NaN
+D4 >=20     +0.1387       +0.1274      +0.0769               NaN
+
+  same table, POINTS-PER-MINUTE (rate) skill:
+volume   V1 <14 min  V2 14-24 min  V3 >=24 min  V? no trailing-5
+depth                                                           
+D1 <3           NaN           NaN          NaN           +0.0199
+D2 3-7      +0.0230       +0.0371      +0.0306               NaN
+D3 8-19     -0.0021       +0.0022      +0.0028               NaN
+D4 >=20     -0.0001       -0.0051      -0.0051               NaN
+
+====================================================================================================
+STEP 6f -- THE DECISION-RELEVANT STRATUM, STATED ALONE
+====================================================================================================
+
+  ESTABLISHED, HIGH-MINUTES PLAYERS -- the rows a points market would actually be bet:
+     rule: >=8 prior same-season appearances AND trailing-5 mean minutes >=24
+     n = 5107 (37% of appeared player-games)
+     champion points MAE  = 5.0098
+     prior-mean reference = 4.9919
+     POINTS SKILL         = -0.00359   (p = 0.2664, (season,player) block sign-flip, 2000 draws)
+
+  This is the honest headline number for deployment, and it is NOT distinguishable from zero.
+  The +1.44% on all '>=8 prior appearances' rows is carried by the LOW- and MID-minutes players
+  inside that group, where the running mean is a weaker reference because the player's own minutes
+  are volatile.  On the players whose points lines actually get bet, the champion is level with a
+  running mean of their own prior games.
+
+     minutes skill on the same rows = +0.06143   rate skill = -0.00197
+DONE s06
+frame dtypes:
+flag_bool        bool
+flag_float    float64
+  pd.api.types.is_numeric_dtype(flag_bool) = True   <-- bool counts as NUMERIC, so the numeric branch is taken
+
+1) IDENTICAL data as float -- works:
+  detect_grouping_level(flag_float): n_rows=8  distinct values overall=2
+    level            n_groups   distinct    constant? max within-group distinct
+    row                     8          2          YES 1
+    player_game             8          2          YES 1
+    team_game               8          2          YES 1
+    game                    4          2          YES 1
+    team_season             2          1           no 2
+    season                  1          1           no 2
+    -> COARSEST CONSTANT LEVEL = 'game'  == THE CORRECT PERMUTATION LEVEL
+   -> recommended level: game
+
+2) SAME data as bool -- raises:
+   TypeError: numpy boolean subtract, the `-` operator, is not supported, use the bitwise_xor, the `^` operator, or the logical_xor function instead.
+   -> DEFECT REPRODUCED
+
+3) permutation_null inherits it through the same helper:
+   TypeError: numpy boolean subtract, the `-` operator, is not supported, use the bitwise_xor, the `^` operator, or the logical_xor function instead.
+   -> DEFECT REPRODUCED in permutation_null as well
+
+4) The caller-side workaround this screen used (cast to float) -- works:
+   -> recommended level: game  (no crash)

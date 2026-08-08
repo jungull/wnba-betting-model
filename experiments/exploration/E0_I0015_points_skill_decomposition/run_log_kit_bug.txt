@@ -1,0 +1,27 @@
+﻿frame dtypes:
+flag_bool        bool
+flag_float    float64
+  pd.api.types.is_numeric_dtype(flag_bool) = True   <-- bool counts as NUMERIC, so the numeric branch is taken
+
+1) IDENTICAL data as float -- works:
+  detect_grouping_level(flag_float): n_rows=8  distinct values overall=2
+    level            n_groups   distinct    constant? max within-group distinct
+    row                     8          2          YES 1
+    player_game             8          2          YES 1
+    team_game               8          2          YES 1
+    game                    4          2          YES 1
+    team_season             2          1           no 2
+    season                  1          1           no 2
+    -> COARSEST CONSTANT LEVEL = 'game'  == THE CORRECT PERMUTATION LEVEL
+   -> recommended level: game
+
+2) SAME data as bool -- raises:
+   TypeError: numpy boolean subtract, the `-` operator, is not supported, use the bitwise_xor, the `^` operator, or the logical_xor function instead.
+   -> DEFECT REPRODUCED
+
+3) permutation_null inherits it through the same helper:
+   TypeError: numpy boolean subtract, the `-` operator, is not supported, use the bitwise_xor, the `^` operator, or the logical_xor function instead.
+   -> DEFECT REPRODUCED in permutation_null as well
+
+4) The caller-side workaround this screen used (cast to float) -- works:
+   -> recommended level: game  (no crash)

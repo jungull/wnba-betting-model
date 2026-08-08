@@ -1,0 +1,94 @@
+﻿
+====================================================================================================
+STEP 1a -- MANIFEST CHECKS via screenkit.check_manifest (VALUES, not text)
+====================================================================================================
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest player_game.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest predictions__player_scoring_distribution__2022.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__player_scoring_distribution__2023.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__player_scoring_distribution__2024.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__e_minutes_given_active__2022.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__e_minutes_given_active__2023.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__e_minutes_given_active__2024.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__attempts_usage__2022.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__attempts_usage__2023.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__attempts_usage__2024.parquet granularity='artifact' -> UNUSABLE
+  check_manifest player_game_availability.csv             granularity='artifact' -> UNUSABLE
+  check_manifest roster_asof.csv                          granularity='artifact' -> UNUSABLE
+  check_manifest test_predictions.csv -> UNVERIFIABLE (no manifest)
+
+  READING OF THE OOF ARTIFACTS (inherited from D076, restated so it is not implicit):
+  each per-season prediction file is asof_granularity='artifact', which is normally UNUSABLE
+  because filtering cannot rescue a mixed-bound file.  These are NOT mixed-bound: each file's
+  own fit_through_season equals its own season (2022->2022, 2023->2023, 2024->2024), so the
+  WHOLE artifact sits inside the 2021-2024 exploration partition and NO filtering is relied
+  on.  D076 made this call; this screen inherits it and would collapse with it.
+  verified: every OOF artifact's own fit_through_season <= 2024.
+  NOT OPENED: data\w1_truth\player_game_availability.csv           status=UNUSABLE
+  NOT OPENED: data\w1_truth\roster_asof.csv                        status=UNUSABLE
+  NOT OPENED: experiments\minutes_baselines\test_predictions.csv   status=UNVERIFIABLE
+
+====================================================================================================
+STEP 1b -- LOAD D076's FROZEN FRAME + VALUE-BASED PARTITION CHECK
+====================================================================================================
+  loaded D076 analysis_frame.parquet  shape=(13879, 101)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]  max_date=2024-10-20
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+  partition PASS=True  season values={'season': [2022, 2023, 2024]}
+  columns skipped because the NAME looked season-like but the VALUES are not seasons: 2
+
+====================================================================================================
+STEP 1c -- REPRODUCE THE THREE HEADLINE SKILL NUMBERS
+====================================================================================================
+  reference construction: strictly-prior expanding, .shift(1) BEFORE .expanding()
+  rows still NaN after player-prior AND same-season league-prior fallback (these take the whole-sample-mean fallback D076 also used): {'pts': 3, 'minutes': 3, 'fga': 3, 'ppm_A': 3, 'ppm_B': 3, 'fpm_A': 3, 'fpm_B': 3, 'ppf_A': 3, 'ppf_B': 3}
+
+  target           n   model MAE     ref MAE       skill    d(skill)    R2 plain       d(R2)
+  pts          13879      4.1909      4.1816   -0.002222   -2.18e-05      0.4747   +5.27e-03
+  minutes      13879      5.0797      5.2669   +0.035549   +4.95e-05      0.6218   +2.38e-03
+  fga          13879      2.6376      2.6406   +0.001152   -4.84e-05      0.5915   +2.19e-03
+
+  INDEPENDENT REBUILD of the same prior-mean reference (this screen's own code path):
+    pts       skill=-0.002222  max|refX - D076 ref| = 0.000e+00
+    minutes   skill=+0.035549  max|refX - D076 ref| = 0.000e+00
+    fga       skill=+0.001152  max|refX - D076 ref| = 0.000e+00
+
+  MAX |delta skill| vs D076's published values = 4.946e-05  ->  REPRODUCED = True
+
+====================================================================================================
+STEP 1d -- LEAK PROBE ON THE REFERENCE (trap 2: READ THE CONSTRUCTION, NOT THE LABEL)
+====================================================================================================
+  future_leakage_probe: n=13404
+    corr(_loo_pts                , own strictly-after-date future) = +0.9480
+    corr(ref_pts                 , own strictly-after-date future) = +0.8453
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.195416
+    -> '_loo_pts' predicts the entity's UNPLAYED FUTURE better than 'ref_pts' (|0.9480| vs |0.8453|) and adds dR2=0.1954 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment.
+  future_leakage_probe: n=13404
+    corr(ref_pts                 , own strictly-after-date future) = +0.8453
+    corr(_loo_pts                , own strictly-after-date future) = +0.9480
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.011208
+    -> 'ref_pts' does not out-predict '_loo_pts' on the unplayed future (|0.8453| vs |0.9480|, dR2=0.0112). This probe found no leakage; it is NOT a certificate -- also read the construction.
+  future_leakage_probe: n=13404
+    corr(refA_ppm                , own strictly-after-date future) = +0.6230
+    corr(refB_ppm                , own strictly-after-date future) = +0.6286
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.002678
+    -> 'refA_ppm' does not out-predict 'refB_ppm' on the unplayed future (|0.6230| vs |0.6286|, dR2=0.0027). This probe found no leakage; it is NOT a certificate -- also read the construction.
+  future_leakage_probe: n=13404
+    corr(refA_fpm                , own strictly-after-date future) = +0.6597
+    corr(refB_fpm                , own strictly-after-date future) = +0.6721
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.000233
+    -> 'refA_fpm' does not out-predict 'refB_fpm' on the unplayed future (|0.6597| vs |0.6721|, dR2=0.0002). This probe found no leakage; it is NOT a certificate -- also read the construction.
+
+====================================================================================================
+STEP 1e -- NO-OP PLACEBO (screenkit.noop_placebo), OBSERVED sd REPORTED
+====================================================================================================
+  noop_placebo: real=-0.00222183168  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  noop_placebo: real=-0.00222183168  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  noop_placebo: real=-0.00222183168  sd=8.867e-03  max|draw-real|=8.103e-01  distinct=200 -> NOT a no-op (sd=8.867e-03) -- the transform does move the statistic
+
+  wrote decomp_frame.parquet  shape=(13879, 117)
+DONE s01

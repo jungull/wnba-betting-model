@@ -1,0 +1,92 @@
+﻿
+====================================================================================================
+STEP 6a -- THE 2x2 BY PRIOR-HISTORY DEPTH.  The pooled table hides a sign flip.
+====================================================================================================
+
+  stratum                                         n         H1         H2         H3         H4       H3-H1   champ MAE
+  THIN   < 8 prior same-season appearances     3213   -0.05589   -0.03961   +0.02344   +0.00682    +0.07933      4.5167
+  ADEQUATE >= 8 prior appearances             10666   +0.01443   +0.01470   +0.00329   +0.00121    -0.01114      4.0928
+  fallback rows only                           1061   -0.18626   -0.10776   +0.02167   +0.01960    +0.20793      6.0640
+  non-fallback rows only                      12818   +0.01675   +0.01314   +0.00666   +0.00078    -0.01009      4.0359
+  POOLED                                      13879   -0.00222   +0.00184   +0.00806   +0.00254    +0.01029      4.1909
+
+  component skill by the same strata:
+                                 stratum     n  minutes_skill  rate_ppm_skill  H1_model_min_x_model_rate
+THIN   < 8 prior same-season appearances  3213       -0.12871        +0.02583                   -0.05589
+         ADEQUATE >= 8 prior appearances 10666       +0.08888        -0.00168                   +0.01443
+                      fallback rows only  1061       -0.34078        +0.02080                   -0.18626
+                  non-fallback rows only 12818       +0.07995        +0.00399                   +0.01675
+                                  POOLED 13879       +0.03555        +0.00559                   -0.00222
+
+====================================================================================================
+STEP 6b -- PAIRED BLOCK SIGN-FLIP ON EACH STRATUM (is the sign flip real?)
+====================================================================================================
+
+  stratum                                    contrast                          MAE A      MAE B         p
+  THIN   < 8 prior same-season appearances   H3 vs H1                         4.1773     4.5167    0.0005
+  THIN   < 8 prior same-season appearances   H1 vs REF                        4.5167     4.2776    0.0005
+  THIN   < 8 prior same-season appearances   H2 vs H4                         4.4471     4.2484    0.0005
+  ADEQUATE >= 8 prior appearances            H3 vs H1                         4.1390     4.0928    0.0005
+  ADEQUATE >= 8 prior appearances            H1 vs REF                        4.0928     4.1527    0.0005
+  ADEQUATE >= 8 prior appearances            H2 vs H4                         4.0917     4.1477    0.0005
+  fallback rows only                         H3 vs H1                         5.0011     6.0640    0.0005
+  fallback rows only                         H1 vs REF                        6.0640     5.1118    0.0005
+  fallback rows only                         H2 vs H4                         5.6627     5.0116    0.0005
+  non-fallback rows only                     H3 vs H1                         4.0773     4.0359    0.0005
+  non-fallback rows only                     H1 vs REF                        4.0359     4.1046    0.0005
+  non-fallback rows only                     H2 vs H4                         4.0507     4.1014    0.0005
+  POOLED                                     H3 vs H1                         4.1479     4.1909    0.0005
+  POOLED                                     H1 vs REF                        4.1909     4.1816    0.5522
+  POOLED                                     H2 vs H4                         4.1739     4.1710    0.7916
+
+====================================================================================================
+STEP 6c -- D076's OWN DISCRIMINATOR: replace the cold-start path with the running mean
+====================================================================================================
+
+  D076 follow-up question 2 asked, verbatim: "Is the depth effect a data effect or a model effect?
+  The model has negative skill in the thinnest quintile. Either the estimator's cold-start path is
+  actively harmful, or ~8 prior appearances is simply the point where any estimator beats a running
+  mean. A cheap discriminator: replace the cold-start path with the running mean and see whether Q1
+  skill goes to 0 or to +."   It is cheap and it is answerable here, so it is answered here.
+
+  NOTE ON WHAT THIS CAN AND CANNOT SHOW.  Splicing the reference into the model on a set of rows
+  makes the spliced forecast EQUAL to the reference there, so skill on those rows is 0 BY
+  CONSTRUCTION -- that is not evidence.  The evidence is what happens to the POOLED number and to
+  the rows that were NOT spliced, and whether the pooled gain is bigger than simply abstaining.
+
+  splice where prior games < 0    n=0     ( 0.0%)  pooled MAE=4.1909  pooled skill=-0.00222   skill on UNspliced rows=-0.00222   p vs champion=1.0000
+  splice where prior games < 3    n=999   ( 7.2%)  pooled MAE=4.1248  pooled skill=+0.01360   skill on UNspliced rows=+0.01492   p vs champion=0.0010
+  splice where prior games < 5    n=1899  (13.7%)  pooled MAE=4.1294  pooled skill=+0.01249   skill on UNspliced rows=+0.01470   p vs champion=0.0010
+  splice where prior games < 8    n=3213  (23.2%)  pooled MAE=4.1356  pooled skill=+0.01101   skill on UNspliced rows=+0.01443   p vs champion=0.0010
+  splice where prior games < 10   n=4063  (29.3%)  pooled MAE=4.1368  pooled skill=+0.01072   skill on UNspliced rows=+0.01521   p vs champion=0.0010
+  splice where prior games < 15   n=6060  (43.7%)  pooled MAE=4.1378  pooled skill=+0.01048   skill on UNspliced rows=+0.01853   p vs champion=0.0010
+  splice where prior games < 20   n=7922  (57.1%)  pooled MAE=4.1501  pooled skill=+0.00754   skill on UNspliced rows=+0.01721   p vs champion=0.0020
+
+  ANSWER TO D076's QUESTION 2: it is a MODEL effect, not merely a data effect.  Simply refusing to
+  use the model's own forecast where the player has fewer than ~8 prior same-season appearances --
+  substituting the running mean the model is supposed to beat -- takes POOLED points skill from
+  -0.22%% to the value in the table above, without touching any of the other rows.  The model's
+  cold-start path is worse than the trivial fallback it is meant to improve on.
+
+
+====================================================================================================
+STEP 6d -- SO WHERE, PRECISELY, IS THE SKILL LOST?  The corrected statement.
+====================================================================================================
+
+  POOLED points skill              = -0.00222   (n=13879)
+    on ADEQUATE history (>=8)      = +0.01443   (n=10666, 77% of rows)
+    on THIN history     (<8)       = -0.05589   (n=3213, 23% of rows)
+
+  The pooled -0.22% is NOT "the model has no points skill".  It is a weighted average of real,
+  positive points skill on three quarters of the rows and a large negative on the cold-start
+  quarter.  Every component-level conclusion has to be read stratum by stratum:
+
+  component             THIN <8   ADEQ >=8     POOLED
+  minutes              -0.12871   +0.08888   +0.03555
+  fga                  -0.09843   +0.03315   +0.00115
+  points               -0.05589   +0.01443   -0.00222
+  fga_per_min          +0.02875   +0.00772   +0.01345
+  pts_per_fga          +0.07634   +0.00174   +0.02127
+  pts_per_min          +0.02583   -0.00168   +0.00559
+
+DONE s05

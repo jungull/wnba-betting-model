@@ -1,0 +1,194 @@
+﻿
+====================================================================================================
+STEP 3d -- MECHANISM: WHY DO INDIVIDUALLY-BETTER FACTORS MULTIPLY INTO A WORSE PRODUCT?
+====================================================================================================
+
+  POINTS = MINUTES x RATE is a PRODUCT, and the conditional mean of a product is
+      E[M*R] = E[M]*E[R] + Cov(M, R).
+  Multiplying two separately-good marginal forecasts therefore omits the covariance term, and
+  amplifies each factor's variance into the other.  Two measurable consequences are checked below.
+
+  (i) realised corr(minutes, points-per-minute):  pooled +0.3506   WITHIN player-season +0.1499
+      OBSERVED SIGN IS POSITIVE, so the blowout/garbage-time story (more minutes at LOWER
+      efficiency) is NOT what is happening here -- within a player-season, the games where
+      a player plays more are also the games she scores at a HIGHER rate.  Cov(M,R) > 0,
+      so a product of marginal forecasts UNDERSTATES the mean and the two factors' errors
+      reinforce rather than cancel.  Candidate explanation (d) as originally worded is
+      REJECTED IN SIGN; the compounding is real but runs the other way.
+
+  (ii) forecast dispersion (sd) against the outcome's own sd:
+      y_pts (outcome)                sd= 7.5800  mean bias vs outcome=+0.0000
+      REF_pts                        sd= 5.7937  mean bias vs outcome=+0.0364
+      H1 model_min x model_rate      sd= 5.7718  mean bias vs outcome=-0.0239
+      H2 model_min x naive_rate      sd= 5.8881  mean bias vs outcome=-0.1163
+      H3 naive_min x model_rate      sd= 5.7555  mean bias vs outcome=-0.1109
+      H4 naive_min x naive_rate      sd= 5.8676  mean bias vs outcome=-0.1494
+      A forecast whose sd EXCEEDS what its information supports is over-dispersed and pays
+      for it in MAE on a noisy target.  Compare H1 with H3.
+
+  (iii) sd of each factor's own forecast error, and the error correlation that compounds:
+      minutes: model sd=6.6362  naive sd=6.8409   (model is the BETTER minutes forecast)
+      rate   : model sd=0.24420 naive sd=0.24747  (model is the BETTER rate forecast)
+      corr(minutes error, rate error) for model minutes x model rate   = +0.1868
+      corr(minutes error, rate error) for naive minutes x model rate   = +0.1529
+      corr(minutes error, rate error) for model minutes x naive rate   = +0.1583
+      corr(minutes error, rate error) for naive minutes x naive rate   = +0.1572
+
+  (iv) SHRINKAGE SWEEP.  If the loss is over-dispersion, shrinking the champion's points
+       forecast toward the player's prior mean should recover skill with NO new information.
+       lambda=0.00  MAE=4.1909  skill=-0.00222
+       lambda=0.10  MAE=4.1715  skill=+0.00242
+       lambda=0.20  MAE=4.1564  skill=+0.00604
+       lambda=0.25  MAE=4.1503  skill=+0.00750
+       lambda=0.30  MAE=4.1448  skill=+0.00880
+       lambda=0.40  MAE=4.1372  skill=+0.01063
+       lambda=0.50  MAE=4.1339  skill=+0.01141
+       lambda=0.60  MAE=4.1347  skill=+0.01121
+       lambda=0.75  MAE=4.1445  skill=+0.00888
+       lambda=1.00  MAE=4.1816  skill=+0.00000
+
+  (v) OVER-DISPERSION or ENSEMBLE GAIN?  These have different fixes.
+      corr(champion error, reference error) = +0.9407
+      sd(champion forecast)=5.7718  sd(reference)=5.7937  sd(outcome)=7.5800
+      corr(champion forecast, reference forecast) = +0.9462
+      The champion is NOT more dispersed than the reference, so 'over-confident spread' is
+      NOT the diagnosis.  The two forecasts make PARTLY INDEPENDENT errors, so a blend beats
+      either -- an ENSEMBLE gain.  The champion's information is real; it is simply not
+      incremental to the prior mean as a point forecast.
+      best blend champion + reference                       lambda=0.55  MAE=4.1336  skill=+0.01149
+      best blend champion + H3(naive_min x model_rate)      lambda=0.70  MAE=4.1382  skill=+0.01039
+      best blend reference + H3(naive_min x model_rate)     lambda=0.70  MAE=4.1396  skill=+0.01006
+
+====================================================================================================
+STEP 4b -- AN HONEST, PRE-GAME-REACHABLE CEILING (not just an oracle one)
+====================================================================================================
+  STABLE subset n=3903 (pre-game rule).  Plain unweighted R2 (D069):
+    oracle: player-season FE alone (perfect knowledge of WHO)  0.3844
+    oracle-on-player + HONEST model minutes forecast           0.3844
+    oracle-on-player + ACTUAL minutes played (UNREACHABLE)     0.4868
+    HONEST: champion forecast as-is                            0.3085
+    HONEST: prior-mean reference as-is                         0.3021
+
+  The largest R2 any PRE-GAME forecast could reach if it knew each player's true
+  season-long scoring level perfectly and forecast minutes exactly as well as the champion
+  already does is 0.3844.  The champion is at 0.3085 and the naive reference at 0.3021.
+  Reachable headroom = 0.0759 R2.  Unreachable (needs the actual minutes played) = 0.1024 R2.
+  Irreducible even to the ACTUAL-minutes oracle = 51.3% of points variance.
+
+====================================================================================================
+STEP 5 -- DOES ABSTENTION HELP THE RATE COMPONENT?
+====================================================================================================
+  candidate list fixed BEFORE any abstention curve was computed: 55 candidates
+  KIT DEFECT WORKAROUND: cast 4 boolean candidates to float (['pts__is_fallback', 'pts__is_cold_start', 'minutes__is_fallback', 'fga__is_fallback']) -- detect_grouping_level crashes on bool. See KIT_BUG_REPRO.py.
+
+  screenkit.detect_grouping_level recommendation, counted:
+kit_recommended_level
+row          34
+team_game    16
+season        3
+game          2
+  permutation scheme actually used (chosen by variance share between player-seasons):
+scheme_used
+WITHIN-block     37
+BETWEEN-block    18
+
+  *** KIT GAP, DECLARED. *** detect_grouping_level recommends 'row' for a feature that varies row
+  by row -- correct as to WHERE THE FEATURE VARIES, but 'row' is exactly the anticonservative null
+  this program has found wrong six times, because the OUTCOME is clustered by player-season even
+  when the feature is not.  The kit's own docstring admits it does not detect this.  The kit offers
+  no WITHIN-block scheme at all, so both block schemes below are implemented here, mirroring D076's
+  rh_base.  The kit's ROW_LEVEL null is run alongside purely to publish the inflation factor.
+
+  built 400 permutation indices for each of 3 schemes (seed 20260807), shared across all cells
+
+  550 cells = 55 candidates x 5 dependents x 2 directions
+  INFLATION FACTOR sd(correct-level null) / sd(NAIVE row-level null):
+    median 0.95   5th-95th pct 0.69-1.32   range 0.26-2.06   fraction > 1: 32%
+
+  FAMILY-WISE: observed max skill gain = +0.05524  against a correct-level max-stat null whose own max over 400 draws = +0.02457
+  (the NAIVE row-level max-stat null maxes at +0.01126 -- it would have passed far more)
+
+  TOP 15 CELLS BY SKILL GAIN AT 75%% COVERAGE:
+           candidate     dependent       direction  skill_gain        scheme  p_correct_level  familywise_p_correct  p_row_level_NAIVE
+    pl_minutes_prior level_minutes  abstain on LOW    +0.05524  WITHIN-block         +0.00249              +0.00249           +0.00249
+  pts__n_prior_games level_minutes  abstain on LOW    +0.05428  WITHIN-block         +0.00249              +0.00249           +0.00249
+      pl_games_prior level_minutes  abstain on LOW    +0.05416  WITHIN-block         +0.00249              +0.00249           +0.00249
+  tm_season_progress level_minutes  abstain on LOW    +0.04365  WITHIN-block         +0.00249              +0.00249           +0.00249
+         tm_game_idx level_minutes  abstain on LOW    +0.04365  WITHIN-block         +0.00249              +0.00249           +0.00249
+        opp_game_idx level_minutes  abstain on LOW    +0.04343  WITHIN-block         +0.00249              +0.00249           +0.00249
+ pts__fallback_level level_minutes abstain on HIGH    +0.03487  WITHIN-block         +0.00249              +0.00249           +0.00249
+minutes__is_fallback level_minutes abstain on HIGH    +0.03487  WITHIN-block         +0.00249              +0.00249           +0.00249
+    pts__is_fallback level_minutes abstain on HIGH    +0.03487  WITHIN-block         +0.00249              +0.00249           +0.00249
+    fga__is_fallback level_minutes abstain on HIGH    +0.03487  WITHIN-block         +0.00249              +0.00249           +0.00249
+    tm_first_meeting level_minutes abstain on HIGH    +0.02918  WITHIN-block         +0.00249              +0.00249           +0.00249
+   tm_prior_meetings level_minutes  abstain on LOW    +0.02826  WITHIN-block         +0.00249              +0.00249           +0.00249
+     pts__pred_width level_minutes abstain on HIGH    +0.02322 BETWEEN-block         +0.00249              +0.01247           +0.00249
+  tm_poss_mean_prior level_minutes abstain on HIGH    +0.01924 BETWEEN-block         +0.09726              +0.35910           +0.00249
+    fga__is_fallback  level_points abstain on HIGH    +0.01856  WITHIN-block         +0.00249              +0.49875           +0.00249
+
+  BEST CELL PER DEPENDENT:
+    dependent           candidate       direction  skill_gain  p_correct_level  familywise_p_correct
+level_minutes    pl_minutes_prior  abstain on LOW    +0.05524         +0.00249              +0.00249
+ level_points    pts__is_fallback abstain on HIGH    +0.01856         +0.00249              +0.49875
+rate_ppf_refA      pl_games_prior abstain on HIGH    +0.00809         +0.00249              +1.00000
+rate_ppm_refA pl_is_rookie_window abstain on HIGH    +0.00509         +0.00998              +1.00000
+rate_ppm_refB     pts__pred_width abstain on HIGH    +0.00514         +0.12718              +1.00000
+
+  HOW MANY CELLS CLEAR THE FAMILY on each dependent (familywise p < 0.05):
+               sum  size
+dependent               
+level_minutes   13   110
+level_points     0   110
+rate_ppf_refA    0   110
+rate_ppm_refA    0   110
+rate_ppm_refB    0   110
+
+  ABSTENTION CURVES for the best candidate on each dependent:
+    dependent           candidate       direction  coverage  n_kept  model_mae  ref_mae    skill
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   1.00000   13879    0.18174  0.18276  0.00559
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.90000   12491    0.18069  0.18209  0.00768
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.80000   11103    0.17816  0.18003  0.01038
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.75000   10409    0.17542  0.17732  0.01068
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.60000    8327    0.17585  0.17807  0.01247
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.50000    6940    0.17645  0.17849  0.01139
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.40000    5552    0.17323  0.17561  0.01354
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.25000    3470    0.17472  0.17773  0.01691
+rate_ppm_refA pl_is_rookie_window abstain on HIGH   0.10000    1388    0.16626  0.16983  0.02103
+rate_ppm_refB     pts__pred_width abstain on HIGH   1.00000   13879    0.18174  0.18350  0.00959
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.90000   12491    0.18373  0.18606  0.01251
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.80000   11103    0.18599  0.18842  0.01291
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.75000   10409    0.18630  0.18909  0.01473
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.60000    8327    0.19070  0.19332  0.01357
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.50000    6940    0.19557  0.19838  0.01416
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.40000    5552    0.20411  0.20699  0.01393
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.25000    3470    0.21744  0.22181  0.01970
+rate_ppm_refB     pts__pred_width abstain on HIGH   0.10000    1388    0.23334  0.24186  0.03520
+rate_ppf_refA      pl_games_prior abstain on HIGH   1.00000   12976    0.50658  0.51759  0.02127
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.90000   11678    0.51246  0.52498  0.02384
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.80000   10381    0.51549  0.53023  0.02778
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.75000    9732    0.51739  0.53304  0.02936
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.60000    7786    0.52760  0.54652  0.03461
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.50000    6488    0.53533  0.55727  0.03937
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.40000    5190    0.54223  0.57033  0.04927
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.25000    3244    0.55640  0.59952  0.07192
+rate_ppf_refA      pl_games_prior abstain on HIGH   0.10000    1298    0.55267  0.61898  0.10713
+ level_points    fga__is_fallback abstain on HIGH   1.00000   13879    4.19092  4.18163 -0.00222
+ level_points    fga__is_fallback abstain on HIGH   0.90000   12491    4.04509  4.11117  0.01607
+ level_points    fga__is_fallback abstain on HIGH   0.80000   11103    4.10859  4.17100  0.01496
+ level_points    fga__is_fallback abstain on HIGH   0.75000   10409    4.08936  4.15729  0.01634
+ level_points    fga__is_fallback abstain on HIGH   0.60000    8327    4.04814  4.11174  0.01547
+ level_points    fga__is_fallback abstain on HIGH   0.50000    6940    4.17371  4.22911  0.01310
+ level_points    fga__is_fallback abstain on HIGH   0.40000    5552    4.09467  4.15281  0.01400
+ level_points    fga__is_fallback abstain on HIGH   0.25000    3470    4.11202  4.18187  0.01670
+ level_points    fga__is_fallback abstain on HIGH   0.10000    1388    4.18382  4.26612  0.01929
+level_minutes    pl_minutes_prior  abstain on LOW   1.00000   13879    5.07967  5.26691  0.03555
+level_minutes    pl_minutes_prior  abstain on LOW   0.90000   12491    4.79556  5.14602  0.06810
+level_minutes    pl_minutes_prior  abstain on LOW   0.80000   11103    4.70134  5.14911  0.08696
+level_minutes    pl_minutes_prior  abstain on LOW   0.75000   10409    4.67858  5.14576  0.09079
+level_minutes    pl_minutes_prior  abstain on LOW   0.60000    8327    4.64671  5.14394  0.09666
+level_minutes    pl_minutes_prior  abstain on LOW   0.50000    6940    4.60042  5.09559  0.09717
+level_minutes    pl_minutes_prior  abstain on LOW   0.40000    5552    4.50552  5.00964  0.10063
+level_minutes    pl_minutes_prior  abstain on LOW   0.25000    3470    4.27762  4.63861  0.07782
+level_minutes    pl_minutes_prior  abstain on LOW   0.10000    1388    4.27367  4.52674  0.05591
+
+DONE s03
