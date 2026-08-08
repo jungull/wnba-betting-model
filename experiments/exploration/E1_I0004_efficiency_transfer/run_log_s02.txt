@@ -1,0 +1,129 @@
+﻿
+====================================================================================================
+S02 -- LOAD RAW SHOTS (2021-2024 only; 2025/2026 files exist and are never constructed)
+====================================================================================================
+  shots_2021_regular.parquet                           rows=  26269  seasons=[np.int64(2021)]
+  shots_2021_playoffs.parquet                          rows=   2385  seasons=[np.int64(2021)]
+  shots_2022_regular.parquet                           rows=  29374  seasons=[np.int64(2022)]
+  shots_2022_playoffs.parquet                          rows=   3139  seasons=[np.int64(2022)]
+  shots_2023_regular.parquet                           rows=  32809  seasons=[np.int64(2023)]
+  shots_2023_playoffs.parquet                          rows=   2813  seasons=[np.int64(2023)]
+  shots_2024_regular.parquet                           rows=  32759  seasons=[np.int64(2024)]
+  shots_2024_playoffs.parquet                          rows=   3010  seasons=[np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col GAME_DATE                YEARS  = [2021, 2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  shots with resolved opponent = 132558 over 970 games; seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+S02a -- OPPONENT ZONE-CONVERSION ALLOWANCE OC_z (strictly prior games of the opponent)
+====================================================================================================
+
+  zone                         rows   usable    mean OC      sd OC
+  Restricted Area              1940     1868   +0.18354    0.04021
+  In The Paint (Non-RA)        1940     1846   -0.04452    0.03525
+  Mid-Range                    1940     1839   -0.06891    0.03593
+  Corner 3                     1940     1510   -0.06805    0.06626
+  Above the Break 3            1940     1868   -0.09450    0.02925
+
+====================================================================================================
+S02a2 -- CENTRE OC_z ON THE STRICTLY-PRIOR LEAGUE ZONE GAP  (OCc = OC - lg_prior_gap)
+====================================================================================================
+  Mandatory, and NOT a free choice.  OC_RA above has a league-wide MEAN of about +0.18: an RA
+  shot simply converts better than the pooled average.  D074 measured its slope in a regression
+  WITH AN INTERCEPT, which absorbs that common level.  An additive forecast adjustment does not,
+  so the uncentred form would inject a systematic positive bias into every row and would be
+  testing a mis-calibrated level rather than the cross-sectional signal.  The centred form
+  OCc_z = OC_z - (league zone-minus-pooled gap over games STRICTLY BEFORE this date this season)
+  is the opponent's DEVIATION from the league, which is what the surviving slope describes.
+
+  DISCLOSURE: this centring was added after inspecting the MEAN and SD of OC_z printed above and
+  BEFORE any contrast, skill number or p-value in this screen was computed.  The uncentred variant
+  is carried through as a labelled sensitivity so the reader can see both.
+
+  zone                          mean OC  mean lg gap     mean OCc       sd OCc     usable
+  Restricted Area              +0.18354     +0.18188     +0.00203      0.03908       1868
+  In The Paint (Non-RA)        -0.04452     -0.04539     -0.00000      0.03444       1846
+  Mid-Range                    -0.06891     -0.06749     -0.00094      0.03536       1839
+  Corner 3                     -0.06805     -0.06397     -0.00084      0.06184       1510
+  Above the Break 3            -0.09450     -0.09448     -0.00037      0.02853       1868
+
+====================================================================================================
+S02b -- PLAYER PRIOR ZONE MIX w_z (strictly prior games of the player)
+====================================================================================================
+
+  zone                       usable     mean w       sd w
+  Restricted Area             14365    0.29537    0.16930
+  In The Paint (Non-RA)       14365    0.19963    0.09233
+  Mid-Range                   14365    0.17275    0.10392
+  Corner 3                    14365    0.04249    0.04677
+  Above the Break 3           14365    0.28976    0.18214
+
+  identity check  sum_z w_z == 1 on rows with a defined mix: max|sum-1| = 2.220e-16
+
+====================================================================================================
+S02c -- LEAKAGE PROBE: does the prior-only OC read the opponent's future?  (kit guard)
+====================================================================================================
+  screenkit.future_leakage_probe is run with the KNOWN OFFENDER as the suspect baseline:
+  D074's E0-form O1, a leave-one-GAME-out FULL-SEASON opponent zone rate, which reads the
+  opponent's LATER games.  The clean comparator is this screen's strictly-prior OC.  The probe
+  must FLAG the retrospective one; if it flagged the prior-only one instead, this screen stops.
+  future_leakage_probe: n=1818
+    corr(OC_LOO_RETRO            , own strictly-after-date future) = +0.5551
+    corr(OC                      , own strictly-after-date future) = +0.2982
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.247859
+    -> 'OC_LOO_RETRO' predicts the entity's UNPLAYED FUTURE better than 'OC' (|0.5551| vs |0.2982|) and adds dR2=0.2479 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment.
+  future_leakage_probe: n=1818
+    corr(OC                      , own strictly-after-date future) = +0.2982
+    corr(OC_LOO_RETRO            , own strictly-after-date future) = +0.5551
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.028621
+    -> 'OC' does not out-predict 'OC_LOO_RETRO' on the unplayed future (|0.2982| vs |0.5551|, dR2=0.0286). This probe found no leakage; it is NOT a certificate -- also read the construction.
+
+====================================================================================================
+S02d -- ATTACH TO THE CHAMPION FRAME (D081's frozen decomp_frame, 2022-2024)
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+  champion rows = 13879 ; rows whose opponent could not be resolved from the shot files = 0 (0.00%)
+
+  zone                     OC present  w present       both
+  Restricted Area               13693      11281      11267
+  In The Paint (Non-RA)         13571      11281      11253
+  Mid-Range                     13478      11281      11235
+  Corner 3                      11343      11281       9962
+  Above the Break 3             13722      11281      11271
+
+====================================================================================================
+S02e -- BUILD THE THREE PREREGISTERED ADJUSTMENTS (points per attempt)
+====================================================================================================
+
+  rows with a usable RA signal (OC and w both present) = 11267 / 13879 (81.2%)
+  rows where every adjustment is exactly 0 (no signal -> candidate == champion) = 2598
+
+  adjustment         mean           sd          min          max
+  adjA_ppf      +0.000429     0.008362    -0.062879    +0.093068
+  adjB_ppf      +0.000198     0.011745    -0.089603    +0.104308
+  adjC_ppf      +0.000469     0.009791    -0.069517    +0.099530
+  adjU_ppf      +0.033756     0.028063    +0.000000    +0.191353
+
+  *** DIAGNOSTIC, USES REALISED QUANTITIES, EXCLUDED FROM EVERY HEADLINE ***
+  Field-goal points are 82.6% of the total points in this frame; the remaining 17.4% are free
+  throws, which the conversion channel cannot touch.  The response y_pts is TOTAL points because
+  that is what the champion forecasts, so the channel is diluted by roughly that factor.  This is
+  reported so the ceiling in S04 is read against the right denominator.
+
+====================================================================================================
+S02f -- WRITE
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    -> PASS
+  wrote efficiency_frame.parquet  shape=(13879, 65)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+DONE s02

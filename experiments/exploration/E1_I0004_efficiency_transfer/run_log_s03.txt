@@ -1,0 +1,191 @@
+﻿  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    -> PASS
+
+  strata sizes: decision-relevant=5107 (36.8%)  off=8772  pooled=13879
+
+====================================================================================================
+S03.1 -- WHICH LEVEL IS THE NULL AT?  (detect_grouping_level, not an assumption)
+====================================================================================================
+  detect_grouping_level(OC__Restricted Area): n_rows=13879  dtype=float64  distinct values overall=1467
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                 13879       1467          YES    YES 1
+    player_game         13879       1467          YES    YES 1
+    game                  743        738           no     no 2
+    opp_team_season         36         36           no     no 51
+    team_season            36         36           no     no 51
+    player_season         475        154           no     no 51
+    season                  3          3           no     no 505
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'OC__Restricted Area': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+    status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE  recommended=None
+  detect_grouping_level(adjA_ppf): n_rows=13879  dtype=float64  distinct values overall=11210
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                 13879      11210          YES    YES 1
+    player_game         13879      11210          YES    YES 1
+    game                  743        663           no     no 22
+    opp_team_season         36         32           no     no 385
+    team_season            36          2           no     no 402
+    player_season         475          7           no     no 51
+    season                  3          1           no     no 3841
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'adjA_ppf': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+    status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE  recommended=None
+
+  var_share_between(adjA_ppf, .) : {'opp_team_season': 0.4395, 'game_id': 0.2747, 'player_season': 0.026}
+
+  READING.  The OPPONENT ALLOWANCE OC is constant within (opponent-team, game) and varies slowly
+  within an opponent-team-season.  The ADJUSTMENT adjA_ppf multiplies it by a PLAYER-specific
+  prior mix, so it varies row by row and no coarser level is exactly constant -- detect_grouping_
+  level therefore returns None for it, which is the kit refusing to endorse the row null (P2).
+  The correct clustering for the PAIRED test comes from the OUTCOME side, which detect_grouping_
+  level explicitly does not inspect: the candidate-minus-baseline loss difference is driven by one
+  opponent-team-season allowance series shared by every player who faced that team, so
+  OPPONENT-TEAM-SEASON is the coarsest defensible level and is the headline.  Game and
+  player-season are reported beside it, and the row-level null is reported ONLY as the
+  anticonservative contrast with its inflation factor.
+
+====================================================================================================
+S03.2 -- EFFICIENCY CONTRAST.  Candidate vs the champion's own implied efficiency.
+====================================================================================================
+
+  ================ TARGET: ppf  (points per field-goal attempt) ================
+  stratum                                        spec      n     R2 base     R2 cand         dR2     d skill    p clus     p row     infl
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) A      5088   -0.012544   -0.011944  +6.004e-04  -2.779e-04    0.3967    0.2280     1.37
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) B      5088   -0.012544   -0.012831  -2.874e-04  -4.111e-04    0.7590    0.6679     1.41
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) C      5088   -0.012544   -0.011816  +7.277e-04  -2.703e-04    0.3555    0.2164     1.31
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) U      5088   -0.012544   -0.020164  -7.620e-03  -9.844e-03    0.0928    0.0068     1.56
+  OFF-STRATUM (everything else)                  A      7888   -0.070464   -0.070714  -2.500e-04  -1.756e-04    0.3575    0.2741     1.17
+  OFF-STRATUM (everything else)                  B      7888   -0.070464   -0.071234  -7.700e-04  -5.449e-04    0.0518    0.0226     1.17
+  OFF-STRATUM (everything else)                  C      7888   -0.070464   -0.070695  -2.314e-04  -1.093e-04    0.4791    0.4031     1.19
+  OFF-STRATUM (everything else)                  U      7888   -0.070464   -0.068835  +1.629e-03  -1.797e-03    0.2336    0.1990     1.09
+  POOLED                                         A     12976   -0.052149   -0.052223  -7.412e-05  -2.043e-04    0.8084    0.7165     1.45
+  POOLED                                         B     12976   -0.052149   -0.052815  -6.664e-04  -5.075e-04    0.1222    0.0292     1.38
+  POOLED                                         C     12976   -0.052149   -0.052182  -3.330e-05  -1.543e-04    0.9320    0.8900     1.47
+  POOLED                                         U     12976   -0.052149   -0.052427  -2.780e-04  -4.050e-03    0.8636    0.8076     1.49
+
+  ================ TARGET: ppm  (points per minute) ================
+  stratum                                        spec      n     R2 base     R2 cand         dR2     d skill    p clus     p row     infl
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) A      5107    0.240782    0.240235  -5.476e-04  -3.635e-04    0.2535    0.0722     1.57
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) B      5107    0.240782    0.240726  -5.656e-05  -3.664e-04    0.9392    0.8940     1.43
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) C      5107    0.240782    0.240293  -4.893e-04  -2.634e-04    0.3727    0.1630     1.56
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) U      5107    0.240782    0.231688  -9.094e-03  -1.236e-02    0.0090    0.0002     1.96
+  OFF-STRATUM (everything else)                  A      8772    0.037233    0.036849  -3.840e-04  -2.356e-04    0.2501    0.0290     1.78
+  OFF-STRATUM (everything else)                  B      8772    0.037233    0.036577  -6.551e-04  -5.940e-04    0.1498    0.0138     1.64
+  OFF-STRATUM (everything else)                  C      8772    0.037233    0.036826  -4.067e-04  -1.451e-04    0.2699    0.0508     1.67
+  OFF-STRATUM (everything else)                  U      8772    0.037233    0.036890  -3.423e-04  -3.245e-03    0.7958    0.6991     1.40
+  POOLED                                         A     13879    0.143562    0.143157  -4.056e-04  -2.747e-04    0.1184    0.0046     1.80
+  POOLED                                         B     13879    0.143562    0.143100  -4.624e-04  -5.244e-04    0.2605    0.0398     1.79
+  POOLED                                         C     13879    0.143562    0.143156  -4.059e-04  -1.813e-04    0.1820    0.0170     1.73
+  POOLED                                         U     13879    0.143562    0.140949  -2.613e-03  -6.032e-03    0.0746    0.0008     1.93
+
+====================================================================================================
+S03.2b -- THE HEADLINE LINE, STATED ALONE
+====================================================================================================
+
+  DECISION-RELEVANT STRATUM (>=8 prior same-season appearances AND trailing-5 mean minutes >=24)
+  SPEC A -- the faithful transfer of the D074 slope that actually survived multiplicity.
+
+    POINTS PER FGA        n = 5088   clusters = 36 (opponent-team-season)
+      R2 champion baseline      = -0.012544
+      R2 candidate              = -0.011944
+      dR2 candidate - baseline  = +6.004e-04
+      skill vs prior-mean ref   : baseline +0.00129 -> candidate +0.00102   (delta -2.779e-04)
+      p (cluster sign-flip, 5000 draws) = 0.3967      p (row-level, ANTICONSERVATIVE) = 0.2280
+      null sd inflation cluster/row   = 1.37x
+
+    POINTS PER MINUTE     n = 5107
+      dR2 candidate - baseline  = -5.476e-04     p (cluster) = 0.2535
+
+
+====================================================================================================
+S03.2c -- ALTERNATIVE CLUSTERING LEVELS FOR THE HEADLINE (robustness of the null, not of the effect)
+====================================================================================================
+  cluster            clusters         dR2         p   null sd
+  opp_team_season          36  +6.004e-04    0.3967 6.826e-04
+  game_id                 625  +6.004e-04    0.2142 4.835e-04
+  player_season           257  +6.004e-04    0.2244 4.926e-04
+  player_game            5088  +6.004e-04    0.2280 4.987e-04
+  row                    5088  +6.004e-04    0.2280 4.987e-04
+
+====================================================================================================
+S03.2d -- SAME CONTRAST AGAINST REF-B (ratio of prior sums, a HARDER reference)
+====================================================================================================
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) n= 5088  skill base -0.00634 -> cand -0.00662  (d -2.801e-04)  p=0.3967
+  OFF-STRATUM (everything else)                  n= 7888  skill base +0.01671 -> cand +0.01654  (d -1.778e-04)  p=0.3575
+  POOLED                                         n=12976  skill base +0.01024 -> cand +0.01003  (d -2.066e-04)  p=0.8084
+
+====================================================================================================
+S03.3 -- RESTRICTED TO ROWS THAT ACTUALLY CARRY A SIGNAL (candidate != champion)
+====================================================================================================
+  2,598 of 13,879 rows have no usable RA signal, so the candidate IS the champion there and
+  those rows can only dilute.  The contrast is repeated on rows where the adjustment is nonzero.
+  DECISION-RELEVANT & has_signal     n= 5086  dR2=+6.007e-04  d skill=-2.781e-04  p=0.3967 (clusters 36)
+  OFF-STRATUM & has_signal           n= 6181  dR2=-3.446e-04  d skill=-2.389e-04  p=0.3701 (clusters 36)
+  POOLED & has_signal                n=11267  dR2=-9.473e-05  d skill=-2.525e-04  p=0.8130 (clusters 36)
+
+====================================================================================================
+S03.4 -- NOOP PLACEBO (kit guard: is the control secretly the identity?)
+====================================================================================================
+  noop_placebo: real=0.0006003512094  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  identity placebo   : observed sd = 0.000e+00   distinct draw values = 1   is_noop = True
+  relabel-key placebo: observed sd = 0.000e+00   is_noop = True  <- confirmed vacuous, as expected
+  genuine shuffle    : observed sd = 4.448e-04   is_noop = False  <- correctly NOT flagged
+
+====================================================================================================
+S03.5 -- PROPAGATE TO POINTS: efficiency x the champion's OWN minutes forecast
+====================================================================================================
+  points_candidate = (base_ppm + adj_ppf * mdl_fpm) * minutes_pred
+                   = pts_pred + adj_ppf * fga_pred        (exactly -- the champion's own minutes
+  and attempts forecasts are reused unchanged; nothing is refitted and the champion is not touched).
+
+  stratum                                        spec      n     R2 base     R2 cand         dR2   d skill    p clus
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) A      5107    0.300951    0.300667  -2.842e-04  -1.327e-04    0.4763
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) B      5107    0.300951    0.301092  +1.406e-04  -3.811e-04    0.8020
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) C      5107    0.300951    0.300730  -2.216e-04  +4.678e-05    0.6165
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24) U      5107    0.300951    0.292989  -7.963e-03  -1.049e-02    0.0042
+  OFF-STRATUM (everything else)                  A      8772    0.314051    0.313766  -2.844e-04  -2.620e-04    0.3145
+  OFF-STRATUM (everything else)                  B      8772    0.314051    0.313634  -4.164e-04  -4.565e-04    0.3759
+  OFF-STRATUM (everything else)                  C      8772    0.314051    0.313850  -2.006e-04  -1.695e-04    0.5449
+  OFF-STRATUM (everything else)                  U      8772    0.314051    0.314564  +5.135e-04  -3.478e-03    0.6841
+  POOLED                                         A     13879    0.469409    0.469192  -2.179e-04  -2.052e-04    0.2168
+  POOLED                                         B     13879    0.469409    0.469295  -1.141e-04  -4.234e-04    0.7249
+  POOLED                                         C     13879    0.469409    0.469248  -1.615e-04  -7.451e-05    0.4255
+  POOLED                                         U     13879    0.469409    0.466683  -2.727e-03  -6.560e-03    0.0336
+
+====================================================================================================
+S03.6 -- THE ARITHMETIC CEILING FOR THIS CHANNEL (D079's convention)
+====================================================================================================
+  D079 killed the SHOT-MIX channel by showing that even a PERFECT mix term could buy at most
+  dR2 = 0.00113, because reallocating attempts at constant volume cannot move enough points.  That
+  ceiling does NOT apply to conversion -- converting better is not reallocating -- so the ceiling
+  has to be recomputed from scratch for this channel.  Same convention as D079:
+      dR2 <= (sd of the points adjustment / sd of the points response)^2
+  i.e. the ceiling if the adjustment term were a PERFECT predictor of the residual and orthogonal
+  to the champion's own forecast.
+
+  DECISION-RELEVANT (>=8 prior, trail5 min >=24)  (n=5107, sd(points)=7.5822)
+    spec A : 1 sd of the signal moves the points forecast by 0.0857 points ; ceiling dR2 <= 1.278e-04
+    spec B : 1 sd of the signal moves the points forecast by 0.1244 points ; ceiling dR2 <= 2.693e-04
+    spec C : 1 sd of the signal moves the points forecast by 0.0994 points ; ceiling dR2 <= 1.719e-04
+
+  OFF-STRATUM (everything else)  (n=8772, sd(points)=6.0179)
+    spec A : 1 sd of the signal moves the points forecast by 0.0621 points ; ceiling dR2 <= 1.063e-04
+    spec B : 1 sd of the signal moves the points forecast by 0.0858 points ; ceiling dR2 <= 2.032e-04
+    spec C : 1 sd of the signal moves the points forecast by 0.0724 points ; ceiling dR2 <= 1.449e-04
+
+  POOLED  (n=13879, sd(points)=7.5800)
+    spec A : 1 sd of the signal moves the points forecast by 0.0717 points ; ceiling dR2 <= 8.943e-05
+    spec B : 1 sd of the signal moves the points forecast by 0.1017 points ; ceiling dR2 <= 1.801e-04
+    spec C : 1 sd of the signal moves the points forecast by 0.0834 points ; ceiling dR2 <= 1.210e-04
+
+====================================================================================================
+S03.7 -- WRITE PERMUTATION DRAWS
+====================================================================================================
+  wrote permutation_draws_paired_cluster.csv  (120000 rows, 24 contrasts x 5000 draws)
+DONE s03
