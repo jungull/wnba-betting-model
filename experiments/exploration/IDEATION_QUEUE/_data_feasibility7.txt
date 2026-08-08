@@ -1,0 +1,48 @@
+### A. `era` (measurement regime) vs season  -- is there a source discontinuity mid-panel?
+era     gamelog_new  gamelog_old    v3
+season                                
+2021            320         3565   690
+2022            423         4096   742
+2023            354         4544   851
+2024            399         4515   963
+2025           5853            0  1218
+2026           4259            0   920
+minutes_source vs era:
+minutes_source   misc  none
+era                        
+gamelog_new     11608     0
+gamelog_old     16720     0
+v3                  0  5384
+
+### B. OVERTIME exposure inflation (structural: minutes denominator is not constant)
+OT games: 66 of 1495 (0.0441). Player-rows in OT games: 1197 (0.0423 of played rows)
+mean minutes  non-OT 21.068  vs OT 25.147  (+19.4%)
+mean pts      non-OT 8.652  vs OT 10.224  (+18.2%)
+=> OT is UNFORECASTABLE at tip-off but inflates the target on 4.23% of rows.
+
+### C. POSITION availability: master_player.position vs player_bios.position_raw
+bios rows=1058 players=386 seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024), np.int64(2025), np.int64(2026)]
+bios position_raw values: {'Guard': 482, 'Forward': 305, 'Center': 122, 'Guard-Forward': 55, 'Forward-Center': 45, 'Forward-Guard': 26, 'Center-Forward': 21, nan: 2}
+master_player rows joinable to a bios (player_id,season) row: 1.0000
+master_player.position blank fraction: 0.5565 (blank exactly on non-starters, confirmed earlier)
+=> ANY position feature read from master_player.position is defined on STARTERS ONLY (44.3%% of rows).
+   player_bios.position_raw is the correct source: 99.81% coverage of player-seasons.
+
+### D. TEAMMATE-ABSENCE state constructible strictly-prior? (extends the D089 volume lead)
+team-games: 2990 ; mean roster rows 11.27 ; mean DNP 1.80 ; mean played 9.47
+team-games with >=1 DNP: 0.7853 ; >=2: 0.5605 ; >=3: 0.3080
+=> the DNP ROW EXISTS in the box score, so 'who was out' is observable AFTER the game.
+   Strictly-prior use: a player's OWN prior absence spell state, and a TEAMMATE's prior absence spell,
+   are both computable from games already played. Today's inactives are NOT (that is the 49.2% news gap).
+
+### E. ZERO-INFLATION of the ungenerated targets (scale/link question)
+  reb   mean= 3.670 var= 10.753 var/mean= 2.93 frac_zero=0.1464  (Poisson would give var/mean=1)
+  oreb  mean= 0.865 var=  1.506 var/mean= 1.74 frac_zero=0.5296  (Poisson would give var/mean=1)
+  dreb  mean= 2.805 var=  6.844 var/mean= 2.44 frac_zero=0.1940  (Poisson would give var/mean=1)
+  ast   mean= 2.123 var=  5.094 var/mean= 2.40 frac_zero=0.2776  (Poisson would give var/mean=1)
+  stl   mean= 0.770 var=  1.022 var/mean= 1.33 frac_zero=0.5184  (Poisson would give var/mean=1)
+  blk   mean= 0.427 var=  0.646 var/mean= 1.51 frac_zero=0.7094  (Poisson would give var/mean=1)
+  fg3m  mean= 0.813 var=  1.451 var/mean= 1.79 frac_zero=0.5662  (Poisson would give var/mean=1)
+  ftm   mean= 1.514 var=  4.341 var/mean= 2.87 frac_zero=0.4931  (Poisson would give var/mean=1)
+  tov   mean= 1.405 var=  1.959 var/mean= 1.39 frac_zero=0.3171  (Poisson would give var/mean=1)
+  pts   mean= 8.718 var= 56.262 var/mean= 6.45 frac_zero=0.1529  (Poisson would give var/mean=1)

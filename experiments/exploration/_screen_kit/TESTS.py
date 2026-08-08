@@ -46,6 +46,34 @@ def section(title):
     print("=" * 96)
 
 
+class block:
+    """Run a group of assertions; if the block RAISES, record each of its assertions as FAILED.
+
+    WHY THIS EXISTS.  The verification protocol for every repair in this kit is "run the new
+    TESTS.py against the PRE-FIX screenkit.py and report reached/passed/failed".  Without this, a
+    single `AttributeError: module has no attribute 'per_entity_control'` aborts a whole test
+    function and the pre-fix run reports ONE failure where twelve assertions should have been
+    reached -- which understates the coverage of the fix and makes the two runs uncomparable.
+    With it, the assertion COUNT is identical pre-fix and post-fix and every pre-fix failure names
+    its cause.  Only the tests added in this round use it; the older tests are untouched.
+    """
+
+    def __init__(self, *names):
+        self.names = list(names)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, et, ev, tb):
+        if et is None:
+            return False
+        done = {n for n, _, _ in RESULTS}
+        for n in self.names:
+            if n not in done:
+                check(n, False, "block raised %s: %s" % (et.__name__, str(ev).split("\n")[0][:90]))
+        return True                                     # swallow: later blocks must still run
+
+
 # ===========================================================================================
 def test_r2_plain_hand_computed():
     """R2 against arithmetic done on paper.
@@ -1561,6 +1589,691 @@ def test_candidate_keys_must_be_a_mapping_k3():
 
 
 # ===========================================================================================
+# REGRESSION TESTS FOR THE FOUR ITEMS FOUND BY THE KIT'S SEVENTH AND EIGHTH REAL USERS
+# (E1_I0020_coldstart_tiering: K4, K5.  E1_I0021_heterogeneity_diagnostic: K6, K7.)
+# plus K8, found by this round's own false-assurance audit.
+# ===========================================================================================
+
+_ACF_G, _ACF_T = 25, 40
+_ACF_CODES = np.repeat(np.arange(_ACF_G), _ACF_T)
+_ACF_CNT = np.bincount(_ACF_CODES)
+
+
+def _ar1(rng, n, rho):
+    """A stationary AR(1) path.  rho=0 gives iid -- the NEGATIVE CONTROL for the whole K6 story."""
+    e = rng.normal(0.0, 1.0, n)
+    x = np.empty(n)
+    x[0] = e[0] / np.sqrt(max(1e-12, 1.0 - rho ** 2))
+    for t in range(1, n):
+        x[t] = rho * x[t - 1] + e[t]
+    return x
+
+
+def _serial_frame(rng, rho_x, rho_y=0.9):
+    """G entities x T games in TIME ORDER.  x is AR(rho_x), y is AR(rho_y), and they are drawn
+    INDEPENDENTLY OF EACH OTHER, so THE TRUE EFFECT OF x ON y IS EXACTLY ZERO -- by construction,
+    at every value of rho_x.  Any rejection is a false positive."""
+    x = np.concatenate([_ar1(rng, _ACF_T, rho_x) for _ in range(_ACF_G)])
+    y = np.concatenate([_ar1(rng, _ACF_T, rho_y) for _ in range(_ACF_G)])
+    return pd.DataFrame({"player_id": _ACF_CODES, "game_no": np.tile(np.arange(_ACF_T), _ACF_G),
+                         "x": x, "y": y})
+
+
+def _within_slope_stat(y):
+    """|pooled WITHIN-entity OLS slope of y on x| (Frisch-Waugh: demean both inside the entity).
+
+    y is closed over deliberately: the schemes permute x, so y must be the same on every draw.
+    """
+    ym = y - (np.bincount(_ACF_CODES, weights=y) / _ACF_CNT)[_ACF_CODES]
+
+    def stat(d):
+        v = d["x"].to_numpy(float)
+        xm = v - (np.bincount(_ACF_CODES, weights=v) / _ACF_CNT)[_ACF_CODES]
+        sxx = float(xm @ xm)
+        return abs(float(xm @ ym) / sxx) if sxx > 1e-12 else 0.0
+    return stat
+
+
+def test_within_cyclic_and_acf_gate_k6():
+    """K6 REGRESSION -- THE PRIORITY, AND A FALSE-ASSURANCE DEFECT OF SHAPE 2 (a null too narrow).
+
+    Pre-fix, `sk.SCHEME_WITHIN_CYCLIC` does not exist, `permutation_null` has no `order_col`, no
+    `acf1_threshold` and no `accept_serial_structure_destroyed`, `sk.within_group_acf1` does not
+    exist, and `SCHEME_WITHIN` runs silently on an autocorrelated regressor and returns a p that is
+    too small.
+
+    THIS TEST DEMONSTRATES THE FAILURE, IT DOES NOT ASSERT IT -- the same shape as TEST 4's
+    0.733/0.033 row-level demonstration and TEST 13's 0.735/0.045, which are this suite's most
+    valuable assets.  The construction has TRUE EFFECT EXACTLY ZERO at every rho, so every
+    rejection below is a false positive that a real screen would have published.
+    """
+    section("TEST 18 -- K6: SCHEME_WITHIN over-rejects on an AUTOCORRELATED regressor; "
+            "SCHEME_WITHIN_CYCLIC is calibrated")
+
+    n_rep, n_draws, alpha = 80, 150, 0.05
+    rhos = (0.0, 0.4, 0.7, 0.95)
+    rows = []
+    print("      %d replicate datasets per rho, %d draws each, %d entities x %d games in TIME "
+          "ORDER" % (n_rep, n_draws, _ACF_G, _ACF_T))
+    print("      x ~ AR(rho_x), y ~ AR(0.9), DRAWN INDEPENDENTLY: TRUE EFFECT = 0 EVERYWHERE")
+    print("      %-7s %8s %12s %12s %10s %10s %12s"
+          % ("rho_x", "acf1", "rej SHUFFLE", "rej CYCLIC", "meanp_sh", "meanp_cy",
+             "sd_cyc/sd_sh"))
+
+    with block("SCHEME_WITHIN OVER-REJECTS on an autocorrelated regressor (rate >= 0.25, true "
+               "effect 0)",
+               "SCHEME_WITHIN_CYCLIC is CALIBRATED on the same data (rate <= 0.15)",
+               "the shuffle's rejection rate strictly exceeds the cyclic shift's",
+               "SCHEME_WITHIN_CYCLIC p-values are ~uniform (mean p in [0.30, 0.70])",
+               "ON AN IID REGRESSOR THE TWO SCHEMES AGREE (rejection rates within 0.10)",
+               "on an iid regressor the two null WIDTHS agree to within 5%",
+               "on an iid regressor the shuffle is NOT over-rejecting (rate <= 0.15)",
+               "the null-width GAP TRACKS the regressor's autocorrelation (corr >= 0.90)",
+               "the gap is monotone non-decreasing in rho_x",
+               "the gap VANISHES on the iid control and is LARGE at the top rho"):
+        p_sh_by_rho, p_cy_by_rho, acf_by_rho, ratio_by_rho = {}, {}, {}, {}
+        for rho in rhos:
+            ps, pc, acfs, ratios = [], [], [], []
+            for r in range(n_rep):
+                rng = np.random.default_rng(4000 + r)
+                df = _serial_frame(rng, rho)
+                st = _within_slope_stat(df["y"].to_numpy(float))
+                shuf = sk.permutation_null(
+                    st, df, "player_id", n_draws, 900 + r, feature_col="x",
+                    scheme=sk.SCHEME_WITHIN, order_col="game_no",
+                    accept_serial_structure_destroyed=True)
+                cyc = sk.permutation_null(
+                    st, df, "player_id", n_draws, 900 + r, feature_col="x",
+                    scheme=sk.SCHEME_WITHIN_CYCLIC, order_col="game_no")
+                ps.append(shuf["p"])
+                pc.append(cyc["p"])
+                acfs.append(shuf["acf1_within_group"])
+                ratios.append(cyc["sd"] / shuf["sd"] if shuf["sd"] > 0 else float("nan"))
+            ps, pc = np.array(ps), np.array(pc)
+            p_sh_by_rho[rho], p_cy_by_rho[rho] = ps, pc
+            acf_by_rho[rho] = float(np.mean(acfs))
+            ratio_by_rho[rho] = float(np.mean(ratios))
+            rows.append((rho, acf_by_rho[rho], float((ps <= alpha).mean()),
+                         float((pc <= alpha).mean()), float(ps.mean()), float(pc.mean()),
+                         ratio_by_rho[rho]))
+            print("      %-7.2f %+8.3f %12.3f %12.3f %10.3f %10.3f %12.3f" % rows[-1])
+
+        top = rhos[-1]
+        rej_sh = float((p_sh_by_rho[top] <= alpha).mean())
+        rej_cy = float((p_cy_by_rho[top] <= alpha).mean())
+        rej_sh0 = float((p_sh_by_rho[0.0] <= alpha).mean())
+        rej_cy0 = float((p_cy_by_rho[0.0] <= alpha).mean())
+
+        # ---- THE DEMONSTRATION -------------------------------------------------------------
+        check("SCHEME_WITHIN OVER-REJECTS on an autocorrelated regressor (rate >= 0.25, true "
+              "effect 0)", rej_sh >= 0.25,
+              "rho_x=%.2f: shuffle rejection rate = %.3f at alpha=%.2f" % (top, rej_sh, alpha))
+        check("SCHEME_WITHIN_CYCLIC is CALIBRATED on the same data (rate <= 0.15)", rej_cy <= 0.15,
+              "rho_x=%.2f: cyclic rejection rate = %.3f" % (top, rej_cy))
+        check("the shuffle's rejection rate strictly exceeds the cyclic shift's",
+              rej_sh > rej_cy, "%.3f > %.3f" % (rej_sh, rej_cy))
+        check("SCHEME_WITHIN_CYCLIC p-values are ~uniform (mean p in [0.30, 0.70])",
+              0.30 <= float(p_cy_by_rho[top].mean()) <= 0.70,
+              "mean p = %.3f (the shuffle's is %.3f)"
+              % (p_cy_by_rho[top].mean(), p_sh_by_rho[top].mean()))
+
+        # ---- THE IID NEGATIVE CONTROL: the gap must VANISH ---------------------------------
+        check("ON AN IID REGRESSOR THE TWO SCHEMES AGREE (rejection rates within 0.10)",
+              abs(rej_sh0 - rej_cy0) <= 0.10,
+              "rho_x=0: shuffle %.3f vs cyclic %.3f" % (rej_sh0, rej_cy0))
+        check("on an iid regressor the two null WIDTHS agree to within 5%",
+              abs(ratio_by_rho[0.0] - 1.0) <= 0.05,
+              "sd_cyclic/sd_shuffle = %.4f" % ratio_by_rho[0.0])
+        check("on an iid regressor the shuffle is NOT over-rejecting (rate <= 0.15)",
+              rej_sh0 <= 0.15, "rate = %.3f" % rej_sh0)
+
+        # ---- THE DIAGNOSTIC RELATIONSHIP THE REPORTER MEASURED (+0.832 over 48 cells) -------
+        acf_vec = np.array([acf_by_rho[r] for r in rhos])
+        gap_vec = np.array([ratio_by_rho[r] - 1.0 for r in rhos])
+        corr = float(np.corrcoef(acf_vec, gap_vec)[0, 1])
+        print("      corr( measured acf1 , shuffle-minus-cyclic null-width gap ) = %+.4f "
+              "(reporter measured +0.832 over 48 real cells)" % corr)
+        check("the null-width GAP TRACKS the regressor's autocorrelation (corr >= 0.90)",
+              corr >= 0.90, "corr(acf1, sd_cyc/sd_sh - 1) = %+.4f over rho = %s" % (corr, list(rhos)))
+        check("the gap is monotone non-decreasing in rho_x",
+              all(gap_vec[i] <= gap_vec[i + 1] + 1e-9 for i in range(len(gap_vec) - 1)),
+              "gaps = %s" % [round(float(g), 3) for g in gap_vec])
+        check("the gap VANISHES on the iid control and is LARGE at the top rho",
+              abs(gap_vec[0]) <= 0.05 and gap_vec[-1] >= 0.5,
+              "gap(iid) = %+.4f, gap(rho=%.2f) = %+.4f" % (gap_vec[0], top, gap_vec[-1]))
+
+    # ---- THE GATE: the hazard must be impossible to walk into ------------------------------
+    with block("SCHEME_WITHIN is REFUSED outright on a materially autocorrelated feature",
+               "the refusal NAMES the measured acf1, the threshold and SCHEME_WITHIN_CYCLIC",
+               "the refusal is a ValueError, not a warning that still returns a p",
+               "an EXPLICIT opt-in is the only way to the unsafe path (the D086 P2 precedent)",
+               "the opted-in result carries a warning and serial_structure_preserved=False",
+               "SCHEME_WITHIN is NOT refused on an iid feature (the gate is not a blanket ban)",
+               "SCHEME_WITHIN_CYCLIC reports serial_structure_preserved=True"):
+        rng = np.random.default_rng(77)
+        hot = _serial_frame(rng, 0.9)
+        cold = _serial_frame(np.random.default_rng(78), 0.0)
+        st_hot = _within_slope_stat(hot["y"].to_numpy(float))
+        st_cold = _within_slope_stat(cold["y"].to_numpy(float))
+
+        err = None
+        try:
+            sk.permutation_null(st_hot, hot, "player_id", 20, 1, feature_col="x",
+                                scheme=sk.SCHEME_WITHIN, order_col="game_no")
+        except Exception as exc:                        # noqa: BLE001
+            err = exc
+        msg = str(err) if err is not None else ""
+        check("SCHEME_WITHIN is REFUSED outright on a materially autocorrelated feature",
+              isinstance(err, ValueError) and "REFUSED" in msg,
+              "%s: %s" % (type(err).__name__ if err else "no error", msg[:70]))
+        check("the refusal NAMES the measured acf1, the threshold and SCHEME_WITHIN_CYCLIC",
+              "acf1" in msg and "SCHEME_WITHIN_CYCLIC" in msg and "threshold" in msg,
+              "message mentions acf1=%s cyclic=%s threshold=%s"
+              % ("acf1" in msg, "SCHEME_WITHIN_CYCLIC" in msg, "threshold" in msg))
+        check("the refusal is a ValueError, not a warning that still returns a p",
+              isinstance(err, ValueError))
+
+        opted = sk.permutation_null(st_hot, hot, "player_id", 20, 1, feature_col="x",
+                                    scheme=sk.SCHEME_WITHIN, order_col="game_no",
+                                    accept_serial_structure_destroyed=True)
+        check("an EXPLICIT opt-in is the only way to the unsafe path (the D086 P2 precedent)",
+              isinstance(opted, dict) and opted["p"] > 0.0)
+        check("the opted-in result carries a warning and serial_structure_preserved=False",
+              opted["warning"] is not None and "ANTICONSERVATIVE" in opted["warning"]
+              and opted["serial_structure_preserved"] is False,
+              "warning = %s" % str(opted["warning"])[:60])
+
+        cold_ok = sk.permutation_null(st_cold, cold, "player_id", 20, 1, feature_col="x",
+                                      scheme=sk.SCHEME_WITHIN, order_col="game_no")
+        check("SCHEME_WITHIN is NOT refused on an iid feature (the gate is not a blanket ban)",
+              isinstance(cold_ok, dict) and cold_ok["acf1_is_material"] is False,
+              "acf1 = %+.4f, threshold = %.4f"
+              % (cold_ok["acf1_within_group"], cold_ok["acf1_threshold"]))
+
+        cyc = sk.permutation_null(st_hot, hot, "player_id", 20, 1, feature_col="x",
+                                  scheme=sk.SCHEME_WITHIN_CYCLIC, order_col="game_no")
+        check("SCHEME_WITHIN_CYCLIC reports serial_structure_preserved=True",
+              cyc["serial_structure_preserved"] is True and cyc["scheme"] == sk.SCHEME_WITHIN_CYCLIC)
+
+    # ---- THE CYCLIC SHIFT'S STRUCTURAL GUARANTEES ------------------------------------------
+    with block("the CYCLIC shift preserves each group's MULTISET exactly (it is a permutation)",
+               "the CYCLIC shift preserves each group's lag-1 acf to within 0.05",
+               "the SHUFFLE destroys the lag-1 acf (drops to ~0), which is the defect itself",
+               "SCHEME_WITHIN_CYCLIC is refused at ROW_LEVEL and on a constant-within feature"):
+        rng = np.random.default_rng(101)
+        hot = _serial_frame(rng, 0.9)
+        base = sk.within_group_acf1(hot, "x", "player_id", order_col="game_no")["acf1"]
+
+        seen_sorted, seen_acf_cyc, seen_acf_shuf = [], [], []
+
+        def capture(kind):
+            def stat(d):
+                w = d.copy()
+                seen_sorted.append(float(np.abs(
+                    np.sort(w["x"].to_numpy(float)) - np.sort(hot["x"].to_numpy(float))).max()))
+                a = sk.within_group_acf1(w, "x", "player_id", order_col="game_no")["acf1"]
+                (seen_acf_cyc if kind == "c" else seen_acf_shuf).append(a)
+                return 0.0
+            return stat
+
+        sk.permutation_null(capture("c"), hot, "player_id", 12, 3, feature_col="x",
+                            scheme=sk.SCHEME_WITHIN_CYCLIC, order_col="game_no")
+        sk.permutation_null(capture("s"), hot, "player_id", 12, 3, feature_col="x",
+                            scheme=sk.SCHEME_WITHIN, order_col="game_no",
+                            accept_serial_structure_destroyed=True)
+        print("      real acf1 = %+.4f ; mean acf1 over CYCLIC draws = %+.4f ; over SHUFFLE "
+              "draws = %+.4f" % (base, np.mean(seen_acf_cyc), np.mean(seen_acf_shuf)))
+        check("the CYCLIC shift preserves each group's MULTISET exactly (it is a permutation)",
+              max(seen_sorted) < 1e-12, "max |sorted(draw) - sorted(real)| = %.3e" % max(seen_sorted))
+        check("the CYCLIC shift preserves each group's lag-1 acf to within 0.05",
+              abs(float(np.mean(seen_acf_cyc)) - base) <= 0.05,
+              "real %+.4f vs cyclic-draw mean %+.4f" % (base, np.mean(seen_acf_cyc)))
+        check("the SHUFFLE destroys the lag-1 acf (drops to ~0), which is the defect itself",
+              abs(float(np.mean(seen_acf_shuf))) <= 0.10 and base >= 0.5,
+              "real %+.4f -> shuffle-draw mean %+.4f" % (base, np.mean(seen_acf_shuf)))
+
+        r1 = r2 = False
+        try:
+            sk.permutation_null(lambda d: 0.0, hot, sk.ROW_LEVEL, 3, 1, feature_col="x",
+                                scheme=sk.SCHEME_WITHIN_CYCLIC)
+        except ValueError as exc:
+            r1 = "meaningless at ROW_LEVEL" in str(exc)
+        const = pd.DataFrame({"g": _ACF_CODES, "x": np.repeat(np.arange(_ACF_G, dtype=float),
+                                                              _ACF_T)})
+        try:
+            sk.permutation_null(lambda d: 0.0, const, "g", 3, 1, feature_col="x",
+                                scheme=sk.SCHEME_WITHIN_CYCLIC)
+        except ValueError as exc:
+            r2 = "IDENTITY" in str(exc)
+        check("SCHEME_WITHIN_CYCLIC is refused at ROW_LEVEL and on a constant-within feature",
+              r1 and r2, "row_level=%s constant=%s" % (r1, r2))
+
+    # ---- ROW ORDER IS AN INPUT, AND THE KIT SAYS SO ---------------------------------------
+    with block("a frame SCRAMBLED inside its groups reports acf1 ~ 0 without order_col",
+               "order_col RECOVERS the true acf1 from a scrambled frame",
+               "the cyclic scheme WARNS when the measured acf1 is not material (the row-order trap)"):
+        rng = np.random.default_rng(55)
+        hot = _serial_frame(rng, 0.9)
+        perm = rng.permutation(len(hot))
+        scrambled = hot.iloc[perm].reset_index(drop=True)
+        a_frame = sk.within_group_acf1(scrambled, "x", "player_id")["acf1"]
+        a_order = sk.within_group_acf1(scrambled, "x", "player_id", order_col="game_no")["acf1"]
+        print("      scrambled frame: acf1 in FRAME order = %+.4f ; with order_col='game_no' = "
+              "%+.4f" % (a_frame, a_order))
+        check("a frame SCRAMBLED inside its groups reports acf1 ~ 0 without order_col",
+              abs(a_frame) <= 0.15, "acf1 = %+.4f" % a_frame)
+        check("order_col RECOVERS the true acf1 from a scrambled frame", a_order >= 0.5,
+              "acf1 with order_col = %+.4f" % a_order)
+        res = sk.permutation_null(lambda d: 0.0, scrambled, "player_id", 3, 1, feature_col="x",
+                                  scheme=sk.SCHEME_WITHIN_CYCLIC)
+        check("the cyclic scheme WARNS when the measured acf1 is not material (the row-order trap)",
+              res["warning"] is not None and "TIME ORDER" in res["warning"].upper(),
+              "warning = %s" % str(res["warning"])[:70])
+
+    # ---- the reporter's suggestion 3: acf1 as a detect_grouping_level diagnostic ------------
+    with block("detect_grouping_level reports acf1_within_group per level (reporter suggestion 3)",
+               "the acf1 field is None (not nan) where it is undefined, so reports stay comparable"):
+        hot = _serial_frame(np.random.default_rng(9), 0.9)
+        rep = sk.detect_grouping_level(hot, "x", verbose=True,
+                                       candidate_keys={"row": None, "player": ["player_id"]})
+        a_player = rep["levels"]["player"]["acf1_within_group"]
+        check("detect_grouping_level reports acf1_within_group per level (reporter suggestion 3)",
+              all("acf1_within_group" in d for d in rep["levels"].values())
+              and a_player is not None and a_player >= 0.5,
+              "player-level acf1 = %s (row level = %s, undefined by construction)"
+              % (a_player, rep["levels"]["row"]["acf1_within_group"]))
+        check("the acf1 field is None (not nan) where it is undefined, so reports stay comparable",
+              rep["levels"]["row"]["acf1_within_group"] is None
+              and rep["levels"] == sk.detect_grouping_level(
+                  hot, "x", candidate_keys={"row": None, "player": ["player_id"]})["levels"],
+              "a nan here would break every equality check a caller makes on the report")
+
+
+# ===========================================================================================
+def _per_player_slope_spread(d, xcol="x", ycol="y", pcol="player_id"):
+    """SD of per-player OLS slopes -- the statistic the eighth user's screen actually used.
+
+    It is a function of the MULTISET of per-player fits, which is exactly why relabelling the
+    player key cannot move it.
+    """
+    betas = []
+    for _, g in d.groupby(pcol, sort=False):
+        x = g[xcol].to_numpy(float)
+        y = g[ycol].to_numpy(float)
+        xm = x - x.mean()
+        sxx = float(xm @ xm)
+        if sxx > 1e-12 and len(x) >= 3:
+            betas.append(float(xm @ (y - y.mean())) / sxx)
+    return float(np.std(np.array(betas), ddof=1)) if len(betas) >= 3 else float("nan")
+
+
+def test_per_entity_control_k7():
+    """K7 REGRESSION -- A FALSE-ASSURANCE DEFECT OF SHAPE 1 (a control that cannot fail).
+
+    Pre-fix, `sk.per_entity_control` does not exist.  The kit could DIAGNOSE the vacuous per-entity
+    control (via `noop_placebo`) but offered no alternative and no guidance, which leaves a caller
+    who has just been told "your control tests nothing" with nowhere to go.
+
+    NOTE THE POSITIVE CONTROL: the first two assertions -- that relabelling the player key is a
+    literal no-op at sd ~ 0 -- PASS AGAINST THE PRE-FIX MODULE TOO.  They are not evidence of the
+    fix; they are the measured fact the fix responds to, pinned so it cannot silently change.
+    """
+    section("TEST 19 -- K7: the natural per-player control is a NO-OP; per_entity_control is not")
+
+    rng = np.random.default_rng(2026)
+    n_p, n_g = 40, 30
+    pid = np.repeat(np.arange(n_p), n_g)
+    x = np.concatenate([_ar1(rng, n_g, 0.85) for _ in range(n_p)])
+    beta = rng.normal(0.0, 0.6, n_p)                    # genuine per-player heterogeneity
+    y = beta[pid] * x + rng.normal(0.0, 1.0, len(pid))
+    df = pd.DataFrame({"player_id": pid, "game_no": np.tile(np.arange(n_g), n_p),
+                       "x": x, "y": y})
+    real = _per_player_slope_spread(df)
+    print("      %d players x %d games; observed SD of per-player slopes = %.10g"
+          % (n_p, n_g, real))
+
+    # ---- POSITIVE CONTROL (passes pre-fix AND post-fix): the natural control is vacuous ------
+    def relabel(d, rgen):
+        w = d.copy()
+        uq = pd.unique(w["player_id"])
+        w["player_id"] = w["player_id"].map(dict(zip(uq, uq[rgen.permutation(len(uq))])))
+        return w
+
+    res_relabel = sk.noop_placebo(_per_player_slope_spread, df, 20, transform=relabel, verbose=True)
+    check("[positive control] relabelling the player key is a CONFIRMED NO-OP (sd < 1e-12)",
+          res_relabel["is_noop"] and res_relabel["sd"] < 1e-12,
+          "observed sd = %.3e over %d distinct draw values (reporter measured 5.207e-17)"
+          % (res_relabel["sd"], res_relabel["n_distinct_draw_values"]))
+    check("[positive control] the no-op reproduces the real statistic, so it tests NOTHING",
+          res_relabel["max_abs_dev_from_real"] < 1e-12,
+          "max |draw - real| = %.3e" % res_relabel["max_abs_dev_from_real"])
+
+    # ---- THE FIX: noop_placebo's verdict must NAME the alternative, not end at the diagnosis --
+    with block("the no-op verdict NAMES the non-vacuous alternative instead of stopping there"):
+        check("the no-op verdict NAMES the non-vacuous alternative instead of stopping there",
+              "per_entity_control" in res_relabel["verdict"]
+              and "SCHEME_WITHIN_CYCLIC" in res_relabel["verdict"],
+              "verdict tail: ...%s" % res_relabel["verdict"][-90:])
+
+    with block("per_entity_control runs both arms and returns them side by side",
+               "ARM 1 (relabel) is CONFIRMED VACUOUS on the caller's own statistic",
+               "ARM 2 (genuine) MOVES the statistic -- this control CAN fail",
+               "ARM 2 defaults to the CYCLIC shift, not the shuffle (the K6 lesson applied)",
+               "ARM 2 preserves each player's sample size and marginal exactly",
+               "controls_are_informative is True only when arm 1 is vacuous AND arm 2 moves",
+               "the verdict says which arm to report"):
+        res = sk.per_entity_control(_per_player_slope_spread, df, "player_id",
+                                    feature_col="x", n_draws=200, seed=11,
+                                    order_col="game_no", verbose=True)
+        check("per_entity_control runs both arms and returns them side by side",
+              res["relabel"] is not None and res["genuine"] is not None)
+        check("ARM 1 (relabel) is CONFIRMED VACUOUS on the caller's own statistic",
+              res["relabel_is_vacuous"] is True and res["relabel"]["sd"] < 1e-12,
+              "arm 1 sd = %.3e" % res["relabel"]["sd"])
+        check("ARM 2 (genuine) MOVES the statistic -- this control CAN fail",
+              res["genuine_control_moves"] is True and res["genuine"]["sd"] > 1e-6,
+              "arm 2 sd = %.6g  p = %.4f  (arm 1 sd = %.3e)"
+              % (res["genuine"]["sd"], res["genuine"]["p"], res["relabel"]["sd"]))
+        check("ARM 2 defaults to the CYCLIC shift, not the shuffle (the K6 lesson applied)",
+              res["scheme"] == sk.SCHEME_WITHIN_CYCLIC
+              and res["genuine"]["serial_structure_preserved"] is True,
+              "scheme = %r" % res["scheme"])
+        seen = []
+
+        def marginal_probe(d):
+            seen.append(float(np.abs(np.sort(d["x"].to_numpy(float)) - np.sort(x)).max()))
+            return _per_player_slope_spread(d)
+
+        sk.per_entity_control(marginal_probe, df, "player_id", feature_col="x", n_draws=8,
+                              n_relabel_draws=2, seed=3, order_col="game_no")
+        check("ARM 2 preserves each player's sample size and marginal exactly",
+              max(seen) < 1e-12, "max |sorted(draw) - sorted(real)| = %.3e" % max(seen))
+        check("controls_are_informative is True only when arm 1 is vacuous AND arm 2 moves",
+              res["controls_are_informative"] is True and res["warning"] is None)
+        check("the verdict says which arm to report",
+              "VACUOUS" in res["verdict"] and "GENUINE" in res["verdict"]
+              and "this is the one to report" in res["verdict"],
+              "verdict = %s" % res["verdict"][:80])
+
+    with block("a stat_fn that ignores the feature makes BOTH arms vacuous, and it SAYS SO",
+               "a stat_fn depending on entity IDENTITY breaks arm 1, and it SAYS SO"):
+        flat = sk.per_entity_control(lambda d: 1.0, df, "player_id", feature_col="x",
+                                     n_draws=10, n_relabel_draws=3, seed=5, order_col="game_no")
+        check("a stat_fn that ignores the feature makes BOTH arms vacuous, and it SAYS SO",
+              flat["controls_are_informative"] is False and flat["warning"] is not None
+              and "DID NOT MOVE" in flat["warning"],
+              "warning = %s" % str(flat["warning"])[:70])
+        ident = sk.per_entity_control(lambda d: float(d["player_id"].to_numpy()[0]), df,
+                                      "player_id", feature_col="x", n_draws=6, n_relabel_draws=6,
+                                      seed=7, order_col="game_no")
+        check("a stat_fn depending on entity IDENTITY breaks arm 1, and it SAYS SO",
+              ident["relabel_is_vacuous"] is False and ident["warning"] is not None
+              and "NOT A NO-OP" in ident["warning"],
+              "warning = %s" % str(ident["warning"])[:70])
+
+
+# ===========================================================================================
+def test_partition_direction_k4():
+    """K4 REGRESSION -- `assert_partition` RAISED ON CLEAN DATA carrying `draft_year`.
+
+    *** NOT A REPEAT OF K0, AND NOT FIXED THE SAME WAY. ***  K4 satisfies the K0 invariant: the
+    name token nominates, the value gate is asked "are these years?" and answers YES *correctly*.
+    The gate was answering the WRONG QUESTION.  DIRECTION is the lever, and the obvious workaround
+    (`season_cols=["season"]`) had to be closed at the same time, because it silences a real 2026
+    leak in a column the caller never named.
+
+    The four fixtures are the reporter's four reproductions, in the same order.
+    """
+    section("TEST 20 -- K4: a year-valued PLAYER ATTRIBUTE must not be read as an observation "
+            "season")
+
+    clean = pd.DataFrame({
+        "player_id":  [1, 2, 3, 4, 5, 6],
+        "season":     [2022, 2022, 2023, 2023, 2024, 2024],
+        "game_date":  pd.to_datetime(["2022-05-08", "2022-06-01", "2023-05-19",
+                                      "2023-07-02", "2024-05-14", "2024-08-30"]),
+        "draft_year": [2008, 2015, 2002, 2021, 2019, 2024],
+        "y_pts":      [10.0, 4.0, 22.0, 7.0, 13.0, 2.0],
+    })
+
+    # ---- POSITIVE CONTROL (true pre-fix and post-fix): the value gate is NOT the problem -----
+    ok_v, vals = sk._is_season_valued(clean["draft_year"])
+    check("[positive control] _is_season_valued says YES to draft_year, and it is RIGHT",
+          ok_v is True and vals == {2002, 2008, 2015, 2019, 2021, 2024},
+          "these ARE years -- they are simply not THIS ROW'S SEASON (so K4 is not K0)")
+    ok_k0, _ = sk._is_season_valued(pd.Series([0.31, 4.02, 1.77]))
+    check("[positive control] the K0 case still gets NO from the same gate", ok_k0 is False)
+
+    with block("REPRO 1: a frame entirely inside 2021-2024 carrying draft_year now PASSES",
+               "the attribute column is RECORDED in historical_year_cols, not hidden",
+               "the frame's in-partition anchor columns are reported"):
+        rep = sk.assert_partition(clean, verbose=True)
+        check("REPRO 1: a frame entirely inside 2021-2024 carrying draft_year now PASSES",
+              rep["ok"] is True, "violations = %s" % rep["violations"])
+        check("the attribute column is RECORDED in historical_year_cols, not hidden",
+              "draft_year" in rep["historical_year_cols"]
+              and rep["historical_year_cols"]["draft_year"]["values_before_partition"]
+              == [2002, 2008, 2015, 2019],
+              "historical = %s" % sorted(rep["historical_year_cols"]))
+        check("the frame's in-partition anchor columns are reported",
+              set(rep["in_partition_anchor_cols"]) == {"season", "game_date"},
+              "anchors = %s" % rep["in_partition_anchor_cols"])
+
+    with block("REPRO 3: a draft_year of 2026 STILL RAISES (the fix did not disable the check)",
+               "the two cases are now distinguishable WITHOUT parsing prose (violation_records)",
+               "the harmless-past case produces NO violation record marked fatal"):
+        future = clean.copy()
+        future["draft_year"] = [2008, 2015, 2002, 2021, 2019, 2026]
+        caught = False
+        try:
+            sk.assert_partition(future)
+        except sk.PartitionViolation as exc:
+            caught = "2026" in str(exc)
+        check("REPRO 3: a draft_year of 2026 STILL RAISES (the fix did not disable the check)",
+              caught)
+        r_past = sk.assert_partition(clean, raise_on_violation=False)
+        r_fut = sk.assert_partition(future, raise_on_violation=False)
+        dirs_fut = {v["col"]: v["direction"] for v in r_fut["violation_records"]}
+        check("the two cases are now distinguishable WITHOUT parsing prose (violation_records)",
+              dirs_fut.get("draft_year") == sk.DIRECTION_FUTURE
+              and all(v["direction"] == sk.DIRECTION_PAST
+                      for v in r_past["violation_records"]),
+              "future -> %s ; past -> %s"
+              % (dirs_fut, [v["direction"] for v in r_past["violation_records"]]))
+        check("the harmless-past case produces NO violation record marked fatal",
+              not any(v["fatal"] for v in r_past["violation_records"]) and r_past["ok"] is True)
+
+    with block("REPRO 4: season_cols=['season'] NO LONGER hides a 2026 leak in source_season (B4)",
+               "the leak is reported as FUTURE in a column the caller never named",
+               "the draft_year false alarm is still gone under the same call",
+               "naming a column in season_cols makes it STRICT IN BOTH DIRECTIONS",
+               "the opt-out removes the season CHECK but the numeric sweep backstop still fires"):
+        leaky = pd.DataFrame({
+            "season":        [2022, 2023, 2024],
+            "game_date":     pd.to_datetime(["2022-05-08", "2023-05-19", "2024-05-14"]),
+            "draft_year":    [2008, 2015, 2019],
+            "source_season": [2022, 2023, 2026],
+            "y_pts":         [10.0, 22.0, 13.0],
+        })
+        r = sk.assert_partition(leaky, season_cols=["season"], raise_on_violation=False,
+                                verbose=True)
+        recs = {v["col"]: v for v in r["violation_records"] if v["fatal"]}
+        check("REPRO 4: season_cols=['season'] NO LONGER hides a 2026 leak in source_season (B4)",
+              r["ok"] is False and "source_season" in recs,
+              "violations = %s" % r["violations"])
+        check("the leak is reported as FUTURE in a column the caller never named",
+              recs.get("source_season", {}).get("direction") == sk.DIRECTION_FUTURE
+              and recs["source_season"]["values"] == [2026])
+        check("the draft_year false alarm is still gone under the same call",
+              "draft_year" in r["historical_year_cols"] and "draft_year" not in recs)
+
+        # A column the caller NAMES is an assertion that it IS an observation season.
+        strict = sk.assert_partition(clean, season_cols=["draft_year"], raise_on_violation=False)
+        srecs = {v["col"]: v for v in strict["violation_records"] if v["fatal"]}
+        check("naming a column in season_cols makes it STRICT IN BOTH DIRECTIONS",
+              strict["ok"] is False and srecs.get("draft_year", {}).get("direction")
+              == sk.DIRECTION_PAST and "draft_year" in strict["strict_season_cols"],
+              "violations = %s" % strict["violations"])
+        # The opt-out is reachable, but it is DEFENCE IN DEPTH, not a switch: turning off season
+        # auto-detection stops `source_season` being value-tested as a SEASON, and the numeric
+        # catch-all sweep still catches the 2026.  That is the sweep doing exactly the job the
+        # module header says it is kept for.
+        off = sk.assert_partition(leaky, season_cols=["season"], raise_on_violation=False,
+                                  include_name_matched_season_cols=False)
+        swept = [v for v in off["violation_records"]
+                 if v["col"] == "source_season" and v["kind"] == "numeric_sweep"]
+        check("the opt-out removes the season CHECK but the numeric sweep backstop still fires",
+              "source_season" not in off["checked_season_cols"] and off["ok"] is False
+              and len(swept) == 1 and swept[0]["direction"] == sk.DIRECTION_FUTURE,
+              "checked=%s  swept=%s" % (sorted(off["checked_season_cols"]), swept))
+
+    with block("PAST is NOT waved through when NO column anchors the frame in-partition",
+               "a frame whose observation season really is 2019 is still REJECTED"):
+        # The false-pass door "PAST is never fatal" would have opened.  It is closed by the anchor
+        # rule: with nothing establishing an in-partition observation window, PAST stays fatal.
+        no_anchor = pd.DataFrame({"season": [2019, 2020], "y": [1.0, 2.0]})
+        rep_na = sk.assert_partition(no_anchor, raise_on_violation=False, verbose=True)
+        check("PAST is NOT waved through when NO column anchors the frame in-partition",
+              rep_na["ok"] is False and rep_na["in_partition_anchor_cols"] == []
+              and rep_na["historical_year_cols"] == {},
+              "violations = %s" % rep_na["violations"])
+        mixed = pd.DataFrame({"season": [2019, 2022], "game_date":
+                              pd.to_datetime(["2019-06-01", "2022-06-01"]), "y": [1.0, 2.0]})
+        caught_m = False
+        try:
+            sk.assert_partition(mixed)
+        except sk.PartitionViolation as exc:
+            caught_m = "2019" in str(exc)
+        check("a frame whose observation season really is 2019 is still REJECTED", caught_m,
+              "a partly-in-partition season column is not an anchor, so it cannot excuse itself")
+
+    with block("naming a non-season column in season_cols raises, it is never silently skipped",
+               "naming a missing column in season_cols raises KeyError"):
+        e1 = e2 = None
+        try:
+            sk.assert_partition(clean, season_cols=["y_pts"])
+        except Exception as exc:                        # noqa: BLE001
+            e1 = exc
+        try:
+            sk.assert_partition(clean, season_cols=["not_a_column"])
+        except Exception as exc:                        # noqa: BLE001
+            e2 = exc
+        check("naming a non-season column in season_cols raises, it is never silently skipped",
+              isinstance(e1, ValueError) and not isinstance(e1, sk.PartitionViolation),
+              "%s: %s" % (type(e1).__name__ if e1 else "none", str(e1)[:60]))
+        check("naming a missing column in season_cols raises KeyError",
+              isinstance(e2, KeyError), "%s" % type(e2).__name__ if e2 else "none")
+
+
+# ===========================================================================================
+def test_categorical_refusal_and_documentation_k5():
+    """K5 -- A NIT, NOT A DEFECT.  The behaviour and the message are both CORRECT and UNCHANGED.
+
+    `permutation_null` refuses a str/categorical feature because guessing an encoding would impose
+    an ordering the caller never declared.  The seventh user reported it only as friction: group
+    priors over categorical labels are among the most natural things to permute in this program, so
+    most users meet the refusal, and the fix is a worked example rather than a code change.
+
+    THE ASSERTIONS THAT ENCODE THE FIX ARE THE README ONES; the refusal-contract assertions are
+    POSITIVE CONTROLS that pass against the pre-fix module too.
+    """
+    section("TEST 21 -- K5: the categorical refusal is CORRECT; the fix is a worked README example")
+
+    df = pd.DataFrame({
+        "player_id": np.repeat(np.arange(12), 6),
+        "game_no": np.tile(np.arange(6), 12),
+        "position": np.tile(np.array(["G", "F", "C", "G", "F", "C"]), 12),
+        "y": np.random.default_rng(4).normal(size=72),
+    })
+    err = None
+    try:
+        sk.permutation_null(lambda d: 0.0, df, "player_id", 5, 1, feature_col="position",
+                            scheme=sk.SCHEME_BETWEEN, allow_nonconstant=True)
+    except Exception as exc:                            # noqa: BLE001
+        err = exc
+    check("[positive control] a str feature is REFUSED with TypeError, not silently coerced",
+          isinstance(err, TypeError), "%s" % type(err).__name__ if err else "no error")
+    check("[positive control] the refusal message names the column, the dtype and the remedy",
+          err is not None and "position" in str(err)
+          and "will not guess an encoding" in str(err),
+          "message = %s" % str(err)[:70])
+
+    # A bijective integer codebook, applied identically to the real frame and every draw, is the
+    # documented remedy.  Assert it actually works end to end.
+    with block("a bijective integer codebook makes the categorical permutable end to end",
+               "the README carries the worked categorical example (K5 fix)",
+               "the README documents SCHEME_WITHIN_CYCLIC and per_entity_control",
+               "the README carries the FALSE-ASSURANCE DEFECTS section"):
+        codebook = {"G": 0, "F": 1, "C": 2}
+        inv = {v: k for k, v in codebook.items()}
+        d2 = df.copy()
+        d2["position_code"] = d2["position"].map(codebook).astype(int)
+
+        def stat(d):
+            lab = d["position_code"].map(inv)            # map BACK: no arithmetic on the codes
+            return float(d.groupby(lab.to_numpy(), sort=True)["y"].mean().max())
+
+        res = sk.permutation_null(stat, d2, "player_id", 30, 2, feature_col="position_code",
+                                  scheme=sk.SCHEME_WITHIN)
+        check("a bijective integer codebook makes the categorical permutable end to end",
+              np.isfinite(res["sd"]) and res["sd"] > 0 and 0.0 < res["p"] <= 1.0,
+              "sd = %.6g  p = %.4f" % (res["sd"], res["p"]))
+
+        readme = open(os.path.join(HERE, "README.md"), encoding="utf-8").read()
+        check("the README carries the worked categorical example (K5 fix)",
+              "K5" in readme and "codebook" in readme.lower()
+              and "position_code" in readme,
+              "README mentions K5=%s codebook=%s position_code=%s"
+              % ("K5" in readme, "codebook" in readme.lower(), "position_code" in readme))
+        check("the README documents SCHEME_WITHIN_CYCLIC and per_entity_control",
+              "SCHEME_WITHIN_CYCLIC" in readme and "per_entity_control" in readme)
+        check("the README carries the FALSE-ASSURANCE DEFECTS section",
+              "FALSE-ASSURANCE" in readme.upper()
+              and "a control that cannot fail" in readme.lower()
+              and "a null that is too narrow" in readme.lower())
+
+
+# ===========================================================================================
+def test_group_codes_null_key_collision_k8():
+    """K8 REGRESSION -- FOUND BY THIS ROUND'S OWN FALSE-ASSURANCE AUDIT, NOT BY A USER.
+
+    `_group_codes` built a composite key as `codes * n_levels + next_code`, and `pd.factorize`
+    returns -1 for a NULL, which breaks the injectivity of that arithmetic.  Two DIFFERENT key
+    tuples could land on the SAME group code and two groups were SILENTLY MERGED -- no crash, no
+    warning, and a perfectly well-formed p computed at the wrong grouping.
+    """
+    section("TEST 22 -- K8: a NULL in a composite grouping key silently MERGED two groups")
+
+    df = pd.DataFrame({
+        "team_id": ["A", "A", "B", "B", "C", "C"],
+        "game_id": [1.0, np.nan, 3.0, 1.0, np.nan, 3.0],
+        "x": [10.0, 20.0, 30.0, 40.0, 50.0, 60.0],
+    })
+    n_tuples = int(len(df[["team_id", "game_id"]].drop_duplicates()))
+    with block("a NULL in a composite key no longer collides two distinct key tuples",
+               "('B',3.0) and ('C',NaN) are no longer the same group",
+               "detect_grouping_level reports the CORRECT n_groups for a key with NULLs",
+               "a key with no NULLs is unaffected"):
+        codes = sk._group_codes(df, ["team_id", "game_id"])
+        n_codes = int(len(np.unique(codes)))
+        print("      %d distinct key tuples -> %d distinct group codes (pre-fix: 5)"
+              % (n_tuples, n_codes))
+        print("      codes = %s" % list(codes))
+        check("a NULL in a composite key no longer collides two distinct key tuples",
+              n_codes == n_tuples == 6, "%d tuples -> %d codes" % (n_tuples, n_codes))
+        check("('B',3.0) and ('C',NaN) are no longer the same group",
+              codes[2] != codes[4], "code(B,3.0)=%d  code(C,NaN)=%d" % (codes[2], codes[4]))
+        rep = sk.detect_grouping_level(
+            df, "x", candidate_keys={"team_game": ["team_id", "game_id"]})
+        check("detect_grouping_level reports the CORRECT n_groups for a key with NULLs",
+              rep["levels"]["team_game"]["n_groups"] == 6,
+              "n_groups = %d" % rep["levels"]["team_game"]["n_groups"])
+        clean = df.assign(game_id=[1.0, 2.0, 3.0, 1.0, 2.0, 3.0])
+        check("a key with no NULLs is unaffected",
+              int(len(np.unique(sk._group_codes(clean, ["team_id", "game_id"])))) == 6)
+
+
+# ===========================================================================================
 def main():
     print("=" * 96)
     print("screenkit TESTS -- known-answer tests, SYNTHETIC DATA ONLY, no 2025/2026 real data")
@@ -1589,6 +2302,14 @@ def main():
         test_leakage_probe_states_only_what_it_licenses_k1,
         test_entity_swap_null_k2,
         test_candidate_keys_must_be_a_mapping_k3,
+        # regression tests for the two FALSE-ASSURANCE defects + one defect + one nit found by the
+        # kit's SEVENTH and EIGHTH users (E1_I0020_coldstart_tiering, E1_I0021_heterogeneity_
+        # diagnostic), plus K8 from this round's own audit.
+        test_within_cyclic_and_acf_gate_k6,
+        test_per_entity_control_k7,
+        test_partition_direction_k4,
+        test_categorical_refusal_and_documentation_k5,
+        test_group_codes_null_key_collision_k8,
     ]
 
     # Optional name filter, e.g. `python TESTS.py p1 p2` -- used to demonstrate that each new

@@ -1,0 +1,135 @@
+IDEATION AGENT — RUN LOG
+========================
+Date: 2026-08-08
+Working root: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program
+Write scope: experiments\exploration\IDEATION_QUEUE\  (nothing outside it was created or modified)
+Environment: Windows / PowerShell 5.1, Python 3.13, numpy + pandas. scipy NOT installed and NOT used.
+Shared kit: NOT imported (being edited by another agent).
+Off-limits directories honoured: _screen_kit, E1_I0022_optimal_simple_estimator,
+  E1_I0023_usage_defence_interaction, E0_I0024_reb_ast_characterisation — none read, none written.
+
+ROLE DISCIPLINE
+---------------
+No screens were run. No skill numbers were computed. No model was fitted or scored.
+Everything below is either (a) a schema/coverage fact, (b) a distributional summary used to bound an
+arithmetic ceiling, or (c) a join-viability check. All are permitted cheap feasibility checks.
+
+STEP 1 — CLOSED-SURFACE INVENTORY
+---------------------------------
+_scan_ledger.py
+  Parsed experiments/player_program/orchestration/DECISION_LEDGER.jsonl.
+  92 records, D001..D093 (note: D068 is absent from the file; the sequence skips it).
+  Emitted _ledger_index.txt (469 lines) with decision_id, ts, question, verdict, ruling per record.
+  Read in full: D001-D024 (governance), D057-D093 (the science lane).
+  -> CLOSED_SURFACES.md
+
+STEP 2 — TRAP CHECKLIST
+-----------------------
+  Assembled from the eight traps named in the brief, each cross-referenced to the ledger entry that
+  paid for it. Added the standing procedural requirements (hashed preselection, decomposition as a
+  required step, partition rule, manifest gate, forbidden artifacts, metric convention).
+  -> TRAP_CHECKLIST.md
+
+FEASIBILITY CHECKS RUN (all on bytes, all read-only)
+----------------------------------------------------
+_scan_data.py   -> _data_feasibility.txt
+  master_player.parquet: 33,712 x 78, 386 players, 1,495 games, seasons 2021-2026. HAS manifest.
+  master_team.parquet: 2,990 x 65. HAS manifest.
+  player_bios.csv: 1,058 x 17. NO manifest.
+  Directory inventory + manifest counts for 14 data directories.
+
+_scan_data2.py  -> _data_feasibility2.txt
+  DNP structure: 5,384 rows (15.97%) with null minutes; dnp_reason 100% populated on those and 0% on
+    played rows; 22 distinct values.
+  Minutes distribution and floor populations (>=10: 81.95%, >=20: 56.10%, >=30: 25.40%).
+  starter_flag 14,950 / 18,762.
+  Channel column coverage: 21 columns at 1.000 non-null in all six seasons.
+  pbp/officials coverage by season: 996 of 1,495 games each; 2026 = 0.
+  Schemas: pbp (34 cols), shotcharts (24 cols), stints (11 cols), lineups (62 cols),
+    possessions (28 cols), injury_history (7 cols).
+
+_scan_data3.py  -> _data_feasibility3.txt
+  CONFIRMED master_player.position is blank on exactly the non-starter rows (perfect separation).
+  possessions coverage by season (first attempt — see correction below).
+  injury_history category distribution and date range.
+  Shotchart zone/action vocabularies; clock fields present.
+  lineups provenance: retrieval_ts 2026-08-06, GROUP_SET='Lineups', season aggregates.
+  FT/2PT/3PT points shares: 17.37% / 54.66% / 27.97%.
+
+_scan_data4.py  -> _data_feasibility4.txt
+  DEFECT IN MY OWN SCRIPT, recorded rather than hidden: I filtered possessions with
+  `po.season == 2023` while possessions.season is a STRING dtype, so the filter returned 0 rows and
+  the shot<->possession join appeared to fail (reported "0 / 32809"). This was my arithmetic, not a
+  data gap. Corrected in _scan_data5.py. The erroneous line is left in the artifact deliberately.
+  Also produced: arithmetic-ceiling inputs (var/cov/corr of each component with points),
+  FT variance decomposition, zero-inflation summary, era/source columns, cold-start populations.
+
+_scan_data5.py  -> _data_feasibility5.txt
+  Re-ran the join with the correct dtype: 32,809 / 32,809 shot rows (100%) matched to a game present
+  in possessions; 240/240 games; 2026 shots also 100%.
+  First time-window attempt matched only 25% — again my arithmetic (I treated start_sec/end_sec as
+  per-period when they are cumulative). Recorded, then corrected.
+
+_scan_data6.py  -> _data_feasibility6.txt
+  Confirmed possessions.start_sec/end_sec ARE cumulative game seconds (period 1 spans 0-600,
+  period 2 600-1200, ... period 8 3300-3600).
+  Time-join on 40 games: 5,515 of 5,515 shots (100.00%) fall inside a possession window.
+  2,537 of 5,515 (46.00%) are boundary-ambiguous and need tie-breaking by offense_team_id.
+  => shot x on-court-defender-five is constructible on ALL seasons WITHOUT raw play-by-play.
+
+_scan_data7.py  -> _data_feasibility7.txt
+  era x season cross-tab (the finding that became Q1).
+  Overtime: 66 of 1,495 games; minutes +19.4%, points +18.2% in OT games; 4.23% of played rows.
+  player_bios.position_raw coverage 99.81%; master_player joins to bios at 100%.
+  Teammate-absence constructibility: 78.5% of team-games have >=1 DNP, 56.1% >=2, 30.8% >=3.
+  Zero-inflation / over-dispersion table for nine count targets.
+
+TRAP DISCIPLINE APPLIED TO MY OWN WORK
+--------------------------------------
+T5 (nominate by name, convict on value) — applied twice, deliberately:
+  * I did NOT conclude "master_player.position is starter-only" from the column name or from a
+    spot-check. I cross-tabbed it against starter_flag and got perfect separation (14,950/14,950).
+  * I did NOT conclude "rapm_walkforward.csv is walk-forward valid" from its filename. Q29 is queued
+    as a question to be settled on values, and says so.
+T1 — I flagged data/lineups/*.parquet as a retrospective-baseline hazard only after reading
+  GROUP_SET, SEASON_STR and retrieval_ts from the bytes.
+Self-correction — two arithmetic errors of my own (dtype filter, per-period vs cumulative seconds)
+  are recorded above rather than silently fixed, because a feasibility claim that was wrong once
+  should carry that history.
+
+STEP 3/4 — GENERATION, TRIAGE, RANKING
+--------------------------------------
+  Generated 101 candidate hypotheses.
+  Cut 57 before queueing (CUT_LIST.md), by code:
+     DEAD 28 | CEILING 8 | LIVE 5 | NO_DATA 7 | UNCONFIRMABLE 3 | TRAP 6
+  Queued 44, ranked by plausibility x ceiling x feasibility / cost.
+     STRUCTURAL/METHODOLOGICAL 33 (75.0%) | FEATURE 11 (25.0%)
+  Every entry carries: statement, mechanism, type, target, feasibility-on-bytes, provenance note,
+  trap check against all eight, rough arithmetic ceiling, cost, and an explicit
+  why-it-is-not-already-dead citing CLOSED_SURFACES.md.
+
+_build_queue_json.py -> QUEUE.json (58,463 bytes)
+  Written as a generator script so the JSON is machine-produced rather than hand-typed.
+  Self-validating: asserts 44 entries, ranks 1..44 contiguous, ids unique. Assertions passed.
+
+DELIVERABLES WRITTEN (all inside experiments/exploration/IDEATION_QUEUE/)
+------------------------------------------------------------------------
+  QUEUE.md               ranked queue, top 5 with full screening designs
+  QUEUE.json             machine-readable, 44 entries, validated
+  CLOSED_SURFACES.md     what is dead, the decision that killed it, and the KILL MECHANISM
+  TRAP_CHECKLIST.md      the eight traps as a pre-screen gate, plus ceiling reference table
+  CUT_LIST.md            57 cuts with reasons and reversal conditions
+  run_log.txt            this file
+  _scan_ledger.py, _scan_data.py, _scan_data2.py ... _scan_data7.py, _build_queue_json.py
+  _ledger_index.txt, _data_feasibility{,2,3,4,5,6,7}.txt
+
+OPEN ITEMS I COULD NOT SETTLE AND DID NOT ASSERT
+------------------------------------------------
+1. Which column D092 actually read for "listed position". Q10 collapses to a cut if it read
+   player_bios rather than master_player. I did not open E1_I0020's source to check because the
+   answer changes only the rank of one entry, and the check is cheap for whoever takes Q10.
+2. The provenance of possessions.parquet — it covers 1,495 games while raw pbp covers 996 and zero
+   in 2026. I recorded the discrepancy as a question (Q30) and did not guess at a cause.
+3. Whether anything in the repository consumes data/rapm/* (Q29).
+4. _data_feasibility4.txt is unusually large for its line count because two lines contain very long
+   value_counts dictionaries; it is readable by section rather than in full.

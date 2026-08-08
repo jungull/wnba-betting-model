@@ -1,0 +1,894 @@
+{
+  "schema": "IDEATION_QUEUE/1",
+  "built_at": "2026-08-08",
+  "built_by": "IDEATION agent",
+  "source_of_closure_claims": "experiments/player_program/orchestration/DECISION_LEDGER.jsonl (D001-D093)",
+  "companion_files": [
+    "QUEUE.md",
+    "CLOSED_SURFACES.md",
+    "TRAP_CHECKLIST.md",
+    "CUT_LIST.md"
+  ],
+  "counts": {
+    "generated": 101,
+    "cut": 57,
+    "queued": 44,
+    "structural_or_methodological": 33,
+    "feature": 11,
+    "structural_share": 0.75
+  },
+  "ranking_rule": "expected value = plausibility x ceiling x feasibility / cost",
+  "standing_constraints": {
+    "exploration_partition": "E0/E1 read seasons 2021-2024 only; 2025-2026 is the confirmation holdout (GRAPH_POLICY 13.2, D062)",
+    "forbidden_artifacts": [
+      "data/w1_truth/player_game_availability.csv",
+      "data/w1_truth/roster_asof.csv"
+    ],
+    "manifest_gap": "68 shared artifacts have no manifest, including data/shotcharts/, data/playbyplay/, data/possessions/, data/lineups/, data/injury_history/, data/reference/player_bios.csv",
+    "retrospective_artifact_in_tree": "data/lineups/lineups_*.parquet are season-aggregate totals retrieved 2026-08-06 and are a T1 violation for any exploration-season use",
+    "metric_convention": "plain unweighted OLS R2, unweighted in fit, SSE and SST (D069, D072 ruling 2)",
+    "do_not_propose_running_screens": [
+      "E1_I0022_optimal_simple_estimator",
+      "E1_I0023_usage_defence_interaction",
+      "E0_I0024_reb_ast_characterisation",
+      "_screen_kit repair"
+    ]
+  },
+  "dispatch_order_recommendation": {
+    "run_first_they_change_how_the_rest_reads": [
+      "Q4",
+      "Q1",
+      "Q30",
+      "Q3",
+      "Q9",
+      "Q19"
+    ],
+    "cheap_and_independent_good_for_unattended": [
+      "Q8",
+      "Q10",
+      "Q13",
+      "Q17",
+      "Q26",
+      "Q29",
+      "Q32",
+      "Q33",
+      "Q38",
+      "Q43"
+    ],
+    "highest_risk_of_rescreening_dead_ground": [
+      "Q22",
+      "Q31",
+      "Q40",
+      "Q41"
+    ]
+  },
+  "entries": [
+    {
+      "id": "Q1",
+      "rank": 1,
+      "type": "STRUCTURAL",
+      "statement": "Measurement regime (`era`) is confounded with the exploration/holdout partition",
+      "mechanism": "2021-2024 is ~92% gamelog_old; 2025-2026 is 100% gamelog_new with zero gamelog_old rows. Discovery and confirmation run on different measurement regimes and the boundary IS the partition boundary, so an E2 non-replication would be uninterpretable.",
+      "target": [
+        "all"
+      ],
+      "feasibility_on_bytes": "Verified on bytes: era x season cross-tab 2021 3565/320, 2022 4096/423, 2023 4544/354, 2024 4515/399, 2025 0/5853, 2026 0/4259. Third era value v3=5384 = exactly the DNP rows (minutes_source='none').",
+      "provenance_note": "master_player.parquet HAS a manifest.",
+      "trap_check": "T4 promoted to partition level. T5: decide per column on values, never on names. T2 applies only if a skill claim is made; this is a measurement claim.",
+      "arithmetic_ceiling": "Not a dR2. A validity ceiling on every E2 the program will ever run.",
+      "cost": "cheap",
+      "why_not_already_dead": "Nothing in D001-D093 mentions `era`. D062 defined the partition and D063 designed the E2 ladder; neither checked for a source boundary.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q2",
+      "rank": 2,
+      "type": "STRUCTURAL",
+      "statement": "Sweep every champion output for degeneracy, not just the cold-start region",
+      "mechanism": "A forecast that is constant, clipped, saturated or duplicated is a fallback, not a forecast, and pooled MAE/dR2 absorb it silently. The cold-start constant was invisible for the program's whole life until someone read the emitted values.",
+      "target": [
+        "points",
+        "minutes",
+        "attempts",
+        "availability"
+      ],
+      "feasibility_on_bytes": "Score-only, no fitting, coordinator-scoped. Forecast columns inventoried at D076/D088 (pts__pred_point, minutes, FGA, p_active).",
+      "provenance_note": "Scored frames exist in E0_I0015 and E0_I0019.",
+      "trap_check": "T8: report skill against a reference facing the same rows, never raw MAE. T6: a degeneracy check must be able to fire - validate on synthetic constant output.",
+      "arithmetic_ceiling": "The one known instance (constant 8.704 pts, sd 0.013) was worth +1.36% pooled points skill on 7.2% of rows, free.",
+      "cost": "cheap",
+      "why_not_already_dead": "D092 closed the cold-start region only. D076 screened where skill is LOW; this screens the emitted VALUE distribution, which has never been audited.",
+      "extends_live_lead": "D092 cold-start tiering",
+      "gated_by": null
+    },
+    {
+      "id": "Q3",
+      "rank": 3,
+      "type": "METHODOLOGICAL",
+      "statement": "Build one canonical reference ladder and re-price every recorded lead",
+      "mechanism": "dR2 and skill are relative statistics. With per-screen reference choice, ~1000 recorded cells are not on a common scale and a lead can be manufactured or destroyed by a defensible choice. D093 ranks reference dependence as the #1 explanation for the program's nulls.",
+      "target": [
+        "all"
+      ],
+      "feasibility_on_bytes": "Score-only on existing frames. D093 showed which reference is strongest CHANGES with the filter (mean-of-prior-ratios wins at floor 0; ratio-of-prior-sums from floor 10 up).",
+      "provenance_note": "Uses already-manifested masters plus frozen screen frames.",
+      "trap_check": "T4 is the subject. T7: report the spread not a point estimate. D072 r4: dR2 is not scale-free across screens, so the ladder must fix the target too.",
+      "arithmetic_ceiling": "Re-prices the whole ledger. Two known instances moved the same result by 6.5x (D090: +46.4% vs +7.1%) and 4.6x (D093: +0.22% vs +4.24%).",
+      "cost": "cheap-medium",
+      "why_not_already_dead": "D069 adopted a convention but ruled past numbers cannot be rescaled and must be RE-RUN. Nobody re-ran them. D072 identified the limit and stopped.",
+      "extends_live_lead": null,
+      "gated_by": "Must consume rather than duplicate E1_I0022_optimal_simple_estimator"
+    },
+    {
+      "id": "Q4",
+      "rank": 4,
+      "type": "METHODOLOGICAL",
+      "statement": "Measure the program's detection floor before screening anything else",
+      "mechanism": "Nobody has computed the minimum detectable effect at n=18,216 played rows / 265 players / 966 team-games under the program's own null machinery. If the floor exceeds the ceilings being chased, the nulls are uninformative.",
+      "target": [
+        "all"
+      ],
+      "feasibility_on_bytes": "Pure simulation on the real design matrix. Inject synthetic signal at known dR2 (1e-4..1e-2) built as .shift(1).expanding() so it carries realistic autocorrelation; run the real pipeline incl. cyclic null and family-wise correction; report power curves.",
+      "provenance_note": "No new data.",
+      "trap_check": "T3: the injected regressor must carry realistic serial structure or the power estimate is wrong in the same direction the program was already wrong. T2: null at the candidate's own level.",
+      "arithmetic_ceiling": "Determines whether ~1000 recorded nulls are findings or power failures. Program's best lead is dR2 +0.0023; killing ceilings were 0.001127 and 0.000129.",
+      "cost": "cheap",
+      "why_not_already_dead": "Never attempted. D093's single-player ceiling addresses per-player fitting, not the pooled screening design. D093 ranks sample size #3 among reasons the nulls may be artefacts.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q5",
+      "rank": 5,
+      "type": "FEATURE",
+      "statement": "The free-throw and foul-draw channel - the largest untested points surface",
+      "mechanism": "FT is a different process from field goals: volume from drawing fouls (unstable opportunity), conversion a stable player trait. That is exactly the opportunity x conversion decomposition T1/D060 calls for, and it is the one never tested. The two FG channels died on CEILINGS, not statistics, and this channel's ceiling is ~an order of magnitude larger, so their kill mechanism does not transfer.",
+      "target": [
+        "points",
+        "free throws",
+        "fouls drawn"
+      ],
+      "feasibility_on_bytes": "Verified on 18,216 exploration played rows: ftm corr with pts +0.6595, fouls_drawn +0.6749, fta +0.6548. fouls_drawn/fta/ftm 100% covered all six seasons. fta==0 on 46.4% of rows and fouls_drawn==0 on 30.5% - a HURDLE process, not a rate.",
+      "provenance_note": "master_player has a manifest. Shotchart-derived rim-share inputs do not - resolve on values per D087.",
+      "trap_check": "T7 ceiling computed and stated. T3: all regressors are shift-expanding, so cyclic null only. T4: score against the full Q3 ladder. T2: player-level null. Plus D093's cancellation check - component gains that cancel in the product must not be reported as points gains.",
+      "arithmetic_ceiling": "FT is 17.37% of points. Perfect-ftm bound R2 0.4350; fouls_drawn bound 0.4555. Realistic target ~0.002-0.005 dR2 - well clear of the 0.001 bar.",
+      "cost": "medium",
+      "why_not_already_dead": "D084 ruling 2 explicitly lists 'zone mix feeding foul-draw and free-throw rates' as UNTESTED. D085 killed foul-draw MATCHUP (opponent interaction, REDUNDANT as a repackaged main effect) - a different claim from the player's own foul-draw/FT process being unforecastable.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q6",
+      "rank": 6,
+      "type": "STRUCTURAL",
+      "statement": "Injury TYPE conditions the return hazard - why p_active mis-shapes long absences",
+      "mechanism": "Return timelines differ enormously by injury (ACL=season, concussion protocol=days, illness=a game). p_active uses a single duration curve, which is exactly the observed signature: 11.5pp too pessimistic and MIS-SHAPED rather than uniformly biased.",
+      "target": [
+        "availability"
+      ],
+      "feasibility_on_bytes": "injury_history.csv: 8340 rows 2021-01-07..2026-07-29; 2242 missed_game_injury with 184 distinct body-part notes (KNEE INJURY 179, RIGHT KNEE 152, CONCUSSION PROTOCOL 57, ACL 53, ACHILLES 36, ILLNESS 42); 3131 missed_game_other; 3262 missed-game rows in 2021-2024; 356 distinct players. Corroborated by master_player.dnp_reason (100% populated on all 5384 DNP rows, 22 values).",
+      "provenance_note": "NO MANIFEST on injury_history.csv - resolve on values (D087 method) and record it.",
+      "trap_check": "T1: use only spells that CLOSED before the forecast date - enforce, do not assert. T5: parse injury type from note VALUES; freeze and hash the taxonomy before screening. T4: Q3 ladder.",
+      "arithmetic_ceiling": "Bounded by the measured 11.5pp defect on the long-absence stratum; error is large and one-directional.",
+      "cost": "medium",
+      "why_not_already_dead": "D090 ruled p_active should not be rebuilt but named the long-absence curve as THE one actionable defect and recommended a targeted recalibration. Injury type is the obvious missing conditioner and was never joined.",
+      "extends_live_lead": "D090 p_active long-absence miscalibration",
+      "gated_by": null
+    },
+    {
+      "id": "Q7",
+      "rank": 7,
+      "type": "STRUCTURAL",
+      "statement": "Recover part of the same-day-news fraction of the volume channel from PRIOR absence spells",
+      "mechanism": "A teammate who has missed the last four games with an ACL is overwhelmingly likely to be out tonight, and that inference is STRICTLY PRIOR. The unavailable part is genuinely same-day (a shootaround scratch); the persistent part is not.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "injury_history.csv + master_player.dnp_reason. Verified: 78.5% of the 2990 team-games have >=1 DNP, 56.1% >=2, 30.8% >=3, mean 1.80 DNPs per team-game.",
+      "provenance_note": "No manifest on injury_history.csv; resolve on values.",
+      "trap_check": "T1: only spells closed strictly before game date. T2: null at team-game level. T4: measure as an increment over the PRIOR-ONLY variant, which is the honest incumbent.",
+      "arithmetic_ceiling": "Tip-time variant 0.0078 vs prior-only 0.0023; the gap is 0.0055 and this targets a fraction of it. Even a third would exceed every other lead in the program.",
+      "cost": "medium",
+      "why_not_already_dead": "D089 r3 frames the whole gap as an ACQUISITION question. It is partly acquisition and partly CONSTRUCTION, and the construction half has never been attempted.",
+      "extends_live_lead": "D089 teammate-volume channel",
+      "gated_by": null
+    },
+    {
+      "id": "Q8",
+      "rank": 8,
+      "type": "STRUCTURAL",
+      "statement": "Test whether the cold-start rule and the teammate-volume lead are additive",
+      "mechanism": "Both act on the same rows, so their gains may not be additive - promoting both to E2 on a summed expectation would overstate the package.",
+      "target": [
+        "points"
+      ],
+      "feasibility_on_bytes": "Score-only. Frames exist: E1_I0018/screen_frame.parquet and E1_I0020/tier_frame.parquet.",
+      "provenance_note": "Both are frozen screen outputs.",
+      "trap_check": "T4: one shared reference for both. T8: skill, not MAE.",
+      "arithmetic_ceiling": "Bounded by the smaller of the two gains; the question is whether 0.0023 + cold-start overstates the joint gain.",
+      "cost": "cheap",
+      "why_not_already_dead": "Directed explicitly by D089 ruling 4 and never dispatched.",
+      "extends_live_lead": "D089 volume channel + D092 cold-start tiering",
+      "gated_by": null
+    },
+    {
+      "id": "Q9",
+      "rank": 9,
+      "type": "METHODOLOGICAL",
+      "statement": "Re-audit every shift-expanding screen under the cyclic-shift null",
+      "mechanism": "SCHEME_WITHIN is anticonservative for autocorrelated regressors (p 0.0015 vs honest 0.39), and the program's most common construction is .shift(1).expanding(), which is autocorrelated by design.",
+      "target": [
+        "all"
+      ],
+      "feasibility_on_bytes": "All frozen screen dirs readable; permutation draws stored (permutation_draws.npz, maxt_null_draws.csv).",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T3 is the subject. T6: verify the cyclic null can fire, using D093's iid noise controls.",
+      "arithmetic_ceiling": "Creates no lead; protects every surviving one and could withdraw one.",
+      "cost": "cheap",
+      "why_not_already_dead": "D093 ruling 4 states this should be CHECKED RATHER THAN ASSUMED, specifically for surviving leads. Undone.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q10",
+      "rank": 10,
+      "type": "STRUCTURAL",
+      "statement": "master_player.position is blank on every non-starter - re-test position from player_bios",
+      "mechanism": "A feature keyed on a column that is missing for 55.65% of rows silently conditions on starter status, which is itself outcome-adjacent. A null measured that way is uninformative.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "Verified on VALUES: position non-blank on exactly 14,950 rows = exactly starter_flag==1; perfect separation. player_bios.position_raw is 99.81% covered across 1058 player-seasons (Guard 482, Forward 305, Center 122, +147 hyphenated). master_player joins to bios on (player_id, season) at 100%.",
+      "provenance_note": "player_bios.csv has NO manifest.",
+      "trap_check": "T5: nominated by name, CONVICTED ON VALUES via cross-tab - a re-test must do the same. T6: the blank-position case is a live example of a control that cannot fail.",
+      "arithmetic_ceiling": "Restores an axis D092 discarded; bounded by whatever the cold-start rule's position term would have been worth.",
+      "cost": "cheap",
+      "why_not_already_dead": "D092 dropped listed position on p 0.783 / permutation null 0.1996. FIRST STEP is a five-minute check of WHICH COLUMN D092 read; if it read bios, this entry collapses to a cut.",
+      "extends_live_lead": "D092 cold-start tiering",
+      "gated_by": null
+    },
+    {
+      "id": "Q11",
+      "rank": 11,
+      "type": "METHODOLOGICAL",
+      "statement": "Apply D073's level-vs-updating decomposition to every live lead",
+      "mechanism": "D073's technique: when a market comparison is blocked by missing prices, ask which COMPONENT of the feature a posted line must already contain and test whether the effect lives there. It killed the possession-volume family by showing ~99% sat in the team-season pace LEVEL and ~0% in within-season updating.",
+      "target": [
+        "points",
+        "minutes",
+        "attempts"
+      ],
+      "feasibility_on_bytes": "Score-only on existing frames; needs no market data - that is the point of the technique.",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T4: this IS a reference-completeness test in disguise.",
+      "arithmetic_ceiling": "Could kill the teammate-volume lead the same way it killed I0013 - worth knowing before it consumes holdout at E2.",
+      "cost": "cheap",
+      "why_not_already_dead": "D073 ruling 3 generalised the technique explicitly ('GENERALISE THIS') and nobody carried it forward to the live leads.",
+      "extends_live_lead": "all live leads",
+      "gated_by": null
+    },
+    {
+      "id": "Q12",
+      "rank": 12,
+      "type": "STRUCTURAL",
+      "statement": "Decompose the one forecast that works - where does MINUTES skill live?",
+      "mechanism": "The program spent ~1000 cells on the target where skill is absent (efficiency) and nothing on understanding the target where skill is present (+3.55%, roughly doubling under abstention).",
+      "target": [
+        "minutes"
+      ],
+      "feasibility_on_bytes": "minutes 100% on played rows; starter_flag 100%; derived/stints.parquet gives 121,629 per-player per-period stints with stint_sec and player_game_sec.",
+      "provenance_note": "stints.parquet has no manifest.",
+      "trap_check": "T4: decompose against the Q3 ladder. T2: player-level null.",
+      "arithmetic_ceiling": "Not a new lead - the map of the only thing that works, and it tells every future proposal what a working signal looks like here.",
+      "cost": "cheap-medium",
+      "why_not_already_dead": "Never attempted. D081 decomposed POINTS to find where skill is lost; the mirror question about minutes was never asked.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q13",
+      "rank": 13,
+      "type": "STRUCTURAL",
+      "statement": "Size the void-risk under-estimate as an expected-value quantity",
+      "mechanism": "D090 r3 calls it the most directly monetisable finding of the session and notes it needs no new signal and no new data - only using the observed rate rather than the predicted one in the 0.50-0.80 band.",
+      "target": [
+        "availability"
+      ],
+      "feasibility_on_bytes": "E0_I0019_availability_forecast/void_risk_bands.csv already exists.",
+      "provenance_note": "Frozen screen output.",
+      "trap_check": "T8: this is a CALIBRATION claim, not a skill claim, and must be labelled as such.",
+      "arithmetic_ceiling": "Already measured; this converts it into a decision quantity. 7.7pp under-estimate on 9.5% of rows in the costly direction.",
+      "cost": "cheap",
+      "why_not_already_dead": "Surfaced for the user at D090 and never quantified in decision terms. The model change is a user decision; the sizing is not.",
+      "extends_live_lead": "D090 void-risk under-estimate",
+      "gated_by": null
+    },
+    {
+      "id": "Q14",
+      "rank": 14,
+      "type": "STRUCTURAL",
+      "statement": "Overtime inflates the target on 4.2% of rows and is unforecastable at tip-off",
+      "mechanism": "No pre-game information predicts overtime, so the model is charged for structurally unforecastable variance.",
+      "target": [
+        "points",
+        "minutes",
+        "all counts"
+      ],
+      "feasibility_on_bytes": "Verified: 66 of 1495 games reach period>=5. Player-rows in OT games: mean minutes 21.068 vs 25.147 (+19.4%); mean points 8.652 vs 10.224 (+18.2%); 1197 rows = 4.23% of played rows.",
+      "provenance_note": "possessions.parquet has no manifest (see Q30).",
+      "trap_check": "T7: compute the variance removed BEFORE believing the idea. T1: OT status is post-game - may define an evaluation stratum, never a feature.",
+      "arithmetic_ceiling": "Small: removing 4.2% of rows carrying ~19% inflation. May fall below the Q4 detection floor - that is the honest risk.",
+      "cost": "cheap",
+      "why_not_already_dead": "D021 recorded an OT-handling divergence (A12/A16/A26) as a preserved disagreement at TEAM level; never examined at player level.",
+      "extends_live_lead": null,
+      "gated_by": "Q30"
+    },
+    {
+      "id": "Q15",
+      "rank": 15,
+      "type": "STRUCTURAL",
+      "statement": "Excise garbage-time POSSESSIONS from the response - not D093's minutes floor",
+      "mechanism": "A realised-minutes floor drops whole ROWS on total minutes. A garbage-time filter removes the POSSESSIONS played at a large margin while keeping the row. possessions.parquet carries home_pts_before/away_pts_before per possession, so margin-by-time is exact.",
+      "target": [
+        "points-per-minute",
+        "rates"
+      ],
+      "feasibility_on_bytes": "Verified: 7.02% of all possessions and 14.88% of period>=4 possessions run at |margin|>=20; 15.63% at >=15. Full 1495-game coverage.",
+      "provenance_note": "possessions.parquet has NO manifest and its coverage exceeds raw pbp - Q30 gates this.",
+      "trap_check": "T1: margin is a within-game retrospective fact - legitimate for defining an evaluation response, NEVER as a feature. T3: the resulting response is still autocorrelated.",
+      "arithmetic_ceiling": "D093 found the minutes floor removes 39.3% of ppm variance and 44.7% of the within-player component - the noise is real and large; the question is whether a sharper instrument reaches it.",
+      "cost": "medium",
+      "why_not_already_dead": "D093 closed the MINUTES-FLOOR construction on a strongest-reference comparison. It did not test possession-level excision, and its finding that the noise was already priced into the reference is a statement about that construction.",
+      "extends_live_lead": null,
+      "gated_by": "Q30"
+    },
+    {
+      "id": "Q16",
+      "rank": 16,
+      "type": "STRUCTURAL",
+      "statement": "Every count target is over-dispersed and zero-inflated - OLS is an unexamined choice",
+      "mechanism": "The whole program measures dR2 under a Gaussian/OLS convention nobody justified against the response's actual distribution.",
+      "target": [
+        "rebounds",
+        "assists",
+        "3PM",
+        "free throws",
+        "all counts"
+      ],
+      "feasibility_on_bytes": "Verified variance/mean on the exploration partition: reb 2.93, ast 2.40, oreb 1.74 (53.0% zeros), blk 1.51 (70.9% zeros), fg3m 1.79 (56.6% zeros), ftm 2.87 (49.3% zeros), tov 1.39, pts 6.45. Poisson would give 1.0.",
+      "provenance_note": "master_player has a manifest.",
+      "trap_check": "T7: the ceiling is a RE-RANKING, not new signal. T4: hold the reference fixed while varying only the link.",
+      "arithmetic_ceiling": "Creates no signal; may reveal that a kill was a link artefact. Bounded and honest about it.",
+      "cost": "medium",
+      "why_not_already_dead": "D069 adopted a metric convention; it never asked whether the response's scale suits it. This is squarely 'which target is measured on the wrong scale'.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q17",
+      "rank": 17,
+      "type": "STRUCTURAL",
+      "statement": "The champion cannot score 15.97% of its own universe - what happens to those rows?",
+      "mechanism": "master_player carries a row for every rostered player including DNPs. The response is observed CONDITIONALLY ON SELECTION. If those rows are silently dropped, every coverage and skill figure is computed on a survivor population.",
+      "target": [
+        "points",
+        "minutes",
+        "availability"
+      ],
+      "feasibility_on_bytes": "Verified: 5384 of 33712 rows (15.97%) have null minutes; dnp_reason populated on 100% of them and 0% of played rows.",
+      "provenance_note": "master_player has a manifest.",
+      "trap_check": "T1: dnp_reason is post-game - may define a stratum, never a feature. T6: 'we drop DNP rows' is exactly a step that cannot fail and is never reported.",
+      "arithmetic_ceiling": "This is D010's 'flattered by construction' finding one level down and 15.97% wide.",
+      "cost": "cheap",
+      "why_not_already_dead": "Never examined. D090 characterised p_active as a FORECAST; this asks how the EVALUATION UNIVERSE is constructed.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q18",
+      "rank": 18,
+      "type": "STRUCTURAL",
+      "statement": "Abstention has only ever been measured one variable at a time",
+      "mechanism": "The decision a bettor faces is joint - 'given everything observable pre-game, is my skill here positive?' - not 'is depth low?'.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "Score-only on existing scored frames (E0_I0015, E0_I0019).",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T8: response must be SKILL against a reference facing the same rows - the failure D076 demonstrated twice. T2: null at the level the rule operates. T6: include a random-abstention control that CAN fail (D092 built one: negative_control_random_tier.csv).",
+      "arithmetic_ceiling": "D076's best single rule roughly DOUBLES minutes skill at ~60% coverage. A joint surface can only match or beat it; the interesting number is by how much.",
+      "cost": "medium",
+      "why_not_already_dead": "D090 ruled against ONE SPECIFIC COMBINATION (p_active + depth) on evidence. That is not a ruling against joint conditioning generally.",
+      "extends_live_lead": "D076 abstention rule",
+      "gated_by": null
+    },
+    {
+      "id": "Q19",
+      "rank": 19,
+      "type": "METHODOLOGICAL",
+      "statement": "Audit every control in every screen for whether it CAN fail",
+      "mechanism": "The natural per-player control is a literal no-op (observed sd 5.207e-17) that returns a clean bill of health while testing nothing.",
+      "target": [
+        "all"
+      ],
+      "feasibility_on_bytes": "All frozen screens readable; several ship noop_placebo_draws.csv explicitly.",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T6 is the subject. Also check D093's failure mode where precision weights were the one player-attached quantity a covariate permutation does not permute (NC1 passed at p 0.0076 weighted, p 0.194 unweighted).",
+      "arithmetic_ceiling": "Protects the ledger; could withdraw an assurance rather than a result.",
+      "cost": "cheap",
+      "why_not_already_dead": "D093 found ONE instance and named the class. The sweep was never run.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q20",
+      "rank": 20,
+      "type": "METHODOLOGICAL",
+      "statement": "Nothing accounts for multiplicity ACROSS screens",
+      "mechanism": "Each screen corrects family-wise WITHIN itself. ~1000 cells have been fired program-wide with no program-level accounting.",
+      "target": [
+        "all"
+      ],
+      "feasibility_on_bytes": "Screen results stored as screen_results.csv in several directories.",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T4 interacts: cells scored against different references are not exchangeable, so a naive pooled FDR would itself be wrong. Must be handled, not ignored.",
+      "arithmetic_ceiling": "Changes the interpretation of every thin survivor (e.g. D074's conversion channel, which survived family-wise correction 'thinly').",
+      "cost": "cheap",
+      "why_not_already_dead": "Never attempted.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q21",
+      "rank": 21,
+      "type": "STRUCTURAL",
+      "statement": "Does the player model beat 'team total x prior usage share'?",
+      "mechanism": "A top-down reference: forecast team points, allocate by strictly-prior usage share. If the champion cannot beat that, the player layer is questionable; if it can, the margin IS the player layer's contribution.",
+      "target": [
+        "points"
+      ],
+      "feasibility_on_bytes": "master_team.parquet (2990 rows, full opp_* columns); usage_percentage and estimated_usage_percentage 100% covered on played rows.",
+      "provenance_note": "master_team.parquet HAS a manifest.",
+      "trap_check": "T4: this IS a reference-completeness probe and belongs on the Q3 ladder. T1: usage share must be strictly prior.",
+      "arithmetic_ceiling": "Adds no signal; bounds the player layer's value and may reveal the champion's skill is inherited from the team model.",
+      "cost": "cheap-medium",
+      "why_not_already_dead": "D061 records layer 4 (bottom-up aggregation) as VIABLE_BUT_UNVALIDATED with a guard against rebuilding it. This is the REFERENCE question, not the aggregation rebuild, so the P3 guard does not bind.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q22",
+      "rank": 22,
+      "type": "FEATURE",
+      "statement": "Possession-level DEFENDER IDENTITY, not team-aggregate defensive rating",
+      "mechanism": "D085's 12 constructions were all built from TEAM-LEVEL AGGREGATES. possessions.parquet carries def_p1..def_p5 on every one of 238,563 possessions, so actual defender identity is available.",
+      "target": [
+        "points-per-minute",
+        "efficiency",
+        "attempts"
+      ],
+      "feasibility_on_bytes": "Verified: shots join to possessions on 100% of shots_2023_regular GAME_IDs; 5515 of 5515 shots (100%) fall inside a possession window on a 40-game sample under the cumulative-game-seconds convention; 46% are boundary-ambiguous and need tie-breaking by offense_team_id. 2026 shots match 100%, so this IS confirmable at E2 unlike anything on raw pbp.",
+      "provenance_note": "Neither possessions.parquet nor data/shotcharts/* has a manifest. Q30 gates this.",
+      "trap_check": "T4: score against the Q3 ladder - D085's kill mechanism was aggregation, but reference weakness is the more likely reason a re-run would APPEAR to succeed. T7: state the ceiling BEFORE screening; the honest prior is small. T2: null at matchup level, not row.",
+      "arithmetic_ceiling": "The efficiency surface is closed at dR2 ~0. Must clear the Q4 detection floor to be worth anything, and a proposer should expect it not to.",
+      "cost": "expensive",
+      "why_not_already_dead": "MOST LIKELY ENTRY IN THE QUEUE TO BE A RE-PROPOSAL OF DEAD GROUND, and queued with that stated. Survives only because the kill mechanism was aggregation and the construction is genuinely different. DO NOT DISPATCH BEFORE Q4 AND Q30.",
+      "extends_live_lead": null,
+      "gated_by": "Q4, Q30"
+    },
+    {
+      "id": "Q23",
+      "rank": 23,
+      "type": "FEATURE",
+      "statement": "Rebound opportunity is downstream of shot location, and no rebound forecast exists",
+      "mechanism": "Where shots come from determines where misses land. D087 r3 names this as 'the honest next frontier'.",
+      "target": [
+        "rebounds"
+      ],
+      "feasibility_on_bytes": "data/shotcharts/ covers all six seasons (26k-38k shots/season) with SHOT_ZONE_BASIC (7 zones), SHOT_DISTANCE, LOC_X/LOC_Y; oreb/dreb 100% covered.",
+      "provenance_note": "shotcharts have NO manifest; D087 resolved this gate on values and that method should be reused.",
+      "trap_check": "T7 ceiling stated against the right target. T16/Q16: zero-inflation makes the link choice load-bearing.",
+      "arithmetic_ceiling": "Real but must be stated against the REBOUND target, not points: oreb perfect-forecast bound on POINTS is only 0.0763. reb var 10.75 (14.6% zeros); oreb var 1.51 (53.0% zeros).",
+      "cost": "medium",
+      "why_not_already_dead": "GATED: D088 r1 settled that generating a rebound forecast requires generating forecasts and no coordinator work can discharge it.",
+      "extends_live_lead": null,
+      "gated_by": "E0_I0024_reb_ast_characterisation (running); re-scope before dispatch"
+    },
+    {
+      "id": "Q24",
+      "rank": 24,
+      "type": "FEATURE",
+      "statement": "Points decompose into four channels at player level and none has been used",
+      "mechanism": "points_paint, points_fast_break, points_second_chance, points_off_turnovers are four distinct generating processes summed into one target.",
+      "target": [
+        "points"
+      ],
+      "feasibility_on_bytes": "Verified 100% coverage in all six seasons for all four channels plus their four opp_* mirrors.",
+      "provenance_note": "master_player has a manifest.",
+      "trap_check": "T7: ceiling is the sum of the channels' forecastable variance. T4: Q3 ladder. Report component-vs-product explicitly.",
+      "arithmetic_ceiling": "Unknown; must be computed per channel before screening. D093's cancellation finding is the specific risk (FGA/min +1.055% and pts/FGA +0.826% gave a product of only +0.443%).",
+      "cost": "medium",
+      "why_not_already_dead": "Never screened. Distinct from shot LOCATION (D079, killed on points) - points_fast_break is a transition-CONTEXT channel. Note pace/transition are closed (D085) as OPPONENT/context features; this is the player's own channel mix.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q25",
+      "rank": 25,
+      "type": "STRUCTURAL",
+      "statement": "Starter/bench is a regime switch and the champion may be averaging across it",
+      "mechanism": "A model emitting a conditional mean across a bimodal mixture produces a value wrong for both regimes.",
+      "target": [
+        "minutes",
+        "points"
+      ],
+      "feasibility_on_bytes": "starter_flag 100% populated, splits 14,950 / 18,762.",
+      "provenance_note": "master_player has a manifest.",
+      "trap_check": "T1: TONIGHT's starter flag is post-lineup and may not be a feature; PRIOR-GAME starter status may. This distinction is the whole proposal. T8: skill, not MAE.",
+      "arithmetic_ceiling": "Bounded by the size of the regime-transition population - players changing role - which must be counted first.",
+      "cost": "cheap",
+      "why_not_already_dead": "Related to but distinct from the killed 'starting-five stability' (D076), which was a TEAM churn variable. This is the player's own regime.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q26",
+      "rank": 26,
+      "type": "METHODOLOGICAL",
+      "statement": "Replace cross-screen dR2 with a common-currency metric",
+      "mechanism": "dR2 depends on the response's variance decomposition and the weighting, so a cross-screen ordering is fragile even after a convention is imposed.",
+      "target": [
+        "all"
+      ],
+      "feasibility_on_bytes": "Score-only.",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T4 and T7 both bear on it.",
+      "arithmetic_ceiling": "Changes which lead is 'best' and therefore what gets promoted to E2.",
+      "cost": "cheap",
+      "why_not_already_dead": "D072 ruling 4 identified this and recommended comparing on a common target; no common currency was ever defined, so the program still ranks by dR2.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q27",
+      "rank": 27,
+      "type": "STRUCTURAL",
+      "statement": "Establish the irreducible-noise floor of the minutes forecast from realised game margin",
+      "mechanism": "Minutes depend on game script (blowouts truncate starters, inflate bench), and game script is unforecastable at tip-off.",
+      "target": [
+        "minutes"
+      ],
+      "feasibility_on_bytes": "possessions.parquet margin-by-time on all 1495 games; minutes 100% on played rows. Verified 7.02% of possessions at |margin|>=20.",
+      "provenance_note": "possessions.parquet has no manifest (Q30).",
+      "trap_check": "T1: realised margin defines an evaluation stratum, NEVER a feature. T8: skill against a reference facing the same rows.",
+      "arithmetic_ceiling": "Bounds the only target with skill - tells the program how much of the remaining minutes error is even addressable.",
+      "cost": "cheap",
+      "why_not_already_dead": "Never attempted.",
+      "extends_live_lead": null,
+      "gated_by": "Q30"
+    },
+    {
+      "id": "Q28",
+      "rank": 28,
+      "type": "FEATURE",
+      "statement": "Age and career stage as a prior, especially where history is thin",
+      "mechanism": "Aging curves are among the most robust effects in team sports. Age is constant within a season so it cannot help within-player, but it is exactly the prior that helps where the model currently emits a constant.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "player_bios.csv: age 98.2%, birthdate 100%, draft_year/draft_number 86.1%. Joins to master_player at 100% on (player_id, season).",
+      "provenance_note": "player_bios.csv has NO manifest.",
+      "trap_check": "T1: age is fixed pre-season - a clean Tier-1 provenance case under D065. T2: null at player-SEASON level; a row-level null here is the classic wrong-null error.",
+      "arithmetic_ceiling": "Small on the pooled panel; potentially material on the 1115 rows with <=2 prior appearances (3.94%), which is D092's validated target population.",
+      "cost": "cheap",
+      "why_not_already_dead": "D092 validated draft slot and depth-chart rank and dropped listed position. Age was not in that candidate set.",
+      "extends_live_lead": "D092 cold-start tiering",
+      "gated_by": null
+    },
+    {
+      "id": "Q29",
+      "rank": 29,
+      "type": "STRUCTURAL",
+      "statement": "Walk-forward RAPM artifacts exist, carry manifests, and may be unused",
+      "mechanism": "A walk-forward RAPM is a per-player quality estimate built to be point-in-time valid - exactly the kind of prior the cold-start and reference work needs.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "data/rapm/ holds rapm_v0.csv, rapm_walkforward.csv, rapm_walkforward_seasons.csv - ALL THREE WITH SIBLING MANIFESTS, among the few gate-passing artifacts in the repository.",
+      "provenance_note": "3 of 6 files carry manifests - unusually good provenance for this repo.",
+      "trap_check": "T5: 'walkforward' in a filename is a NOMINATION, not a conviction - verify the construction on values. T1: verify no future rows enter the fit.",
+      "arithmetic_ceiling": "If valid and unused, a free player-quality prior; if used, this closes in an hour.",
+      "cost": "cheap",
+      "why_not_already_dead": "Never referenced anywhere in D001-D093. First step is determining whether anything consumes it.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q30",
+      "rank": 30,
+      "type": "METHODOLOGICAL",
+      "statement": "Resolve the provenance of possessions.parquet - it gates several entries",
+      "mechanism": "An artifact cannot straightforwardly have more coverage than its apparent source.",
+      "target": [
+        "n/a - a gate"
+      ],
+      "feasibility_on_bytes": "Verified: possessions.parquet covers all 1495 games including 215 in 2026, but data/playbyplay/ holds only 996 files and ZERO for 2026 (2021 192/209, 2022 216/239, 2023 240/260, 2024 240/262, 2025 108/310, 2026 0/215).",
+      "provenance_note": "possessions.parquet has NO manifest.",
+      "trap_check": "T1: if part was built retrospectively from a season-complete source it is a retrospective-baseline hazard exactly like data/lineups/. T5: resolve on values.",
+      "arithmetic_ceiling": "Gates Q15, Q22, Q23, Q27, Q41.",
+      "cost": "cheap",
+      "why_not_already_dead": "D080 verified two OTHER high-priority artifacts as ROW-granular and clean; possessions.parquet was not among them. D075/D080 rank the manifest backlog as the highest-value infrastructure work available, and D085/D090 record two occasions where the gap BLOCKED SCIENCE.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q31",
+      "rank": 31,
+      "type": "FEATURE",
+      "statement": "Cumulative season LOAD is a different mechanism from schedule STATE",
+      "mechanism": "Rest days, B2B and 3-in-4 are properties of the CALENDAR. Cumulative minutes played to date is accumulated EXPOSURE - a property of the player's season - and was in none of those screens.",
+      "target": [
+        "minutes",
+        "efficiency"
+      ],
+      "feasibility_on_bytes": "minutes 100% on played rows; trivially cumulative.",
+      "provenance_note": "master_player has a manifest.",
+      "trap_check": "T3: a cumulative sum is MAXIMALLY autocorrelated - only a cyclic-shift null is admissible. This is the single most T3-exposed candidate in the queue. T4: it correlates mechanically with games played, so the reference must already contain prior-appearance depth or the 'signal' is just depth.",
+      "arithmetic_ceiling": "Modest; and the honest prior after four schedule kills is low.",
+      "cost": "medium",
+      "why_not_already_dead": "QUEUED WITH AN EXPLICIT WARNING: it sits next to a family closed with a 'no fifth attempt without a new mechanism' requirement (D090 r5). The new-mechanism argument above is the whole justification and a coordinator may reasonably reject it.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q32",
+      "rank": 32,
+      "type": "STRUCTURAL",
+      "statement": "Is the minutes forecast E[minutes] or E[minutes | active]?",
+      "mechanism": "If the champion forecasts minutes conditional on playing, multiplying by a per-minute rate gives E[points | active], not E[points]. Combining with p_active requires knowing which quantity each component is.",
+      "target": [
+        "minutes",
+        "points",
+        "availability"
+      ],
+      "feasibility_on_bytes": "Score-only; p_active exists in both arms (D088).",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T6: 'we assume the model forecasts the conditional mean' is an assumption that cannot fail unless tested against emitted values.",
+      "arithmetic_ceiling": "Not a signal; a correctness question whose answer changes how every downstream product is formed.",
+      "cost": "cheap",
+      "why_not_already_dead": "D090 ruled p_active adds nothing TO ABSTENTION. Different question from whether the minutes and availability forecasts COMPOSE correctly.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q33",
+      "rank": 33,
+      "type": "METHODOLOGICAL",
+      "statement": "Gate every candidate on HOLDOUT CONSTRUCTIBILITY before screening it",
+      "mechanism": "A lead built on raw pbp can be discovered and can NEVER be confirmed.",
+      "target": [
+        "all"
+      ],
+      "feasibility_on_bytes": "Verified: raw pbp covers 888/970 exploration games (91.5%) but 108/525 holdout games (20.6%) and 0/215 in 2026. possessions.parquet (all 1495 games) and data/shotcharts/ (all six seasons) do NOT have this gap, so the constraint is source-specific and checkable.",
+      "provenance_note": "Applies across sources.",
+      "trap_check": "T4: reference-incompleteness in the TIME dimension.",
+      "arithmetic_ceiling": "Prevents spending an entire screen on something unconfirmable.",
+      "cost": "cheap",
+      "why_not_already_dead": "Not recorded anywhere. Should become a standing line in every screen's feasibility section alongside the manifest gate.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q34",
+      "rank": 34,
+      "type": "FEATURE",
+      "statement": "Model free throws as a HURDLE, not a rate",
+      "mechanism": "An EWMA of 'FT rate' over a series that is zero half the time estimates a quantity that does not exist for half the sample.",
+      "target": [
+        "free throws",
+        "points"
+      ],
+      "feasibility_on_bytes": "Verified: fta==0 on 46.4% of played rows; fouls_drawn==0 on 30.5%; ftm variance/mean 2.87 with 49.3% zeros. 100% covered all seasons.",
+      "provenance_note": "master_player has a manifest.",
+      "trap_check": "T7: carries Q5's ceiling. T2/T3: player-level cyclic null.",
+      "arithmetic_ceiling": "Sub-component of Q5's ceiling; queued separately because the hurdle framing is the part most likely to be skipped.",
+      "cost": "medium",
+      "why_not_already_dead": "Never screened (see Q5). Kept distinct from Q5 so a screener taking Q5 cannot quietly implement a continuous rate.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q35",
+      "rank": 35,
+      "type": "STRUCTURAL",
+      "statement": "The program has never looked at the error DISTRIBUTION, only its centre",
+      "mechanism": "A bettor is exposed to the tail, not the mean. For the continuous targets nobody has characterised the residual's tails, skew or heteroskedasticity.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "Scored frames exist (E0_I0015/decomp_frame.parquet, E0_I0019/scored_frame.parquet).",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T8: a distributional improvement is NOT a skill improvement and must not be reported as one - this is the entry's main risk.",
+      "arithmetic_ceiling": "Does not raise dR2; changes what the forecast can be used for.",
+      "cost": "cheap",
+      "why_not_already_dead": "D057 demoted global MAE in favour of conditional edge plus abstention and D090 decomposed p_active's error into discrimination vs calibration; the distributional half for continuous targets was never picked up.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q36",
+      "rank": 36,
+      "type": "FEATURE",
+      "statement": "Teammate absence TYPE should moderate usage redistribution",
+      "mechanism": "Usage vacated by a player out with a season-ending ACL redistributes differently from usage vacated by a one-game coach's decision - the first triggers a role change, the second does not.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "dnp_reason: 22 values, 100% populated on all 5384 DNP rows, separating Coach's Decision (2824) from Injury/Illness (1662+464) and Not With Team (152). injury_history.csv gives dated spells with type.",
+      "provenance_note": "injury_history.csv has no manifest.",
+      "trap_check": "T1: THIS IS THE TRAP THAT WOULD KILL THE ENTRY - tonight's dnp_reason is post-game. Strictly-prior use only: the teammate's PRIOR absence spells. T4: measure as an increment over the prior-only volume variant.",
+      "arithmetic_ceiling": "A moderator on a channel whose usable ceiling is 0.0021; realistically a fraction of that.",
+      "cost": "medium",
+      "why_not_already_dead": "I0006 ('usage redistribution conditional on teammate composition') was proposed and screened as COMPOSITION; absence TYPE was never a dimension of it.",
+      "extends_live_lead": "D089 teammate-volume channel",
+      "gated_by": null
+    },
+    {
+      "id": "Q37",
+      "rank": 37,
+      "type": "STRUCTURAL",
+      "statement": "What does the champion shrink toward, and is that target itself degenerate?",
+      "mechanism": "Every hierarchical estimator has a shrinkage target. If it is a pooled mean over a population that does not resemble the row being scored, the shrinkage does harm that GROWS as history thins - which is exactly the cold-start signature.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "Score-only, plus reading the champion's emitted values.",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T6: 'the model shrinks toward the league mean' is an assumption; recover it from emitted values.",
+      "arithmetic_ceiling": "Directly generalises the finding that produced the program's largest free gain.",
+      "cost": "cheap",
+      "why_not_already_dead": "D092 found the constant; it did not ask what MECHANISM produces it or where else that mechanism applies. Dispatch with Q2.",
+      "extends_live_lead": "D092 cold-start tiering",
+      "gated_by": null
+    },
+    {
+      "id": "Q38",
+      "rank": 38,
+      "type": "METHODOLOGICAL",
+      "statement": "Does a lead measured on 2021-2024 hold ACROSS SEASONS WITHIN the partition?",
+      "mechanism": "Per-season stability is the cheapest available robustness evidence and does not touch the holdout.",
+      "target": [
+        "all"
+      ],
+      "feasibility_on_bytes": "Score-only; 4 seasons of 209/239/260/262 games. Some screens computed it (E1_I0020/per_season_stability.csv, E0_I0019/per_season_metrics.csv); it is not standard.",
+      "provenance_note": "Frozen screen outputs.",
+      "trap_check": "T2: 4 seasons is a small number of clusters and a season-level null has almost no power - report as DESCRIPTIVE, not as a test.",
+      "arithmetic_ceiling": "Protects against a lead driven by one season.",
+      "cost": "cheap",
+      "why_not_already_dead": "Not standard practice; should be.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q39",
+      "rank": 39,
+      "type": "FEATURE",
+      "statement": "Foul trouble truncates exposure and is a distinct channel from minutes",
+      "mechanism": "A player in foul trouble is removed regardless of role or game script - a truncation mechanism separate from both blowout truncation (Q27) and rotation role (Q12).",
+      "target": [
+        "minutes"
+      ],
+      "feasibility_on_bytes": "pf and pf_misc 100% covered; possessions.parquet gives the timing to distinguish early from late fouls.",
+      "provenance_note": "master_player has a manifest; possessions.parquet does not.",
+      "trap_check": "T1: TONIGHT's fouls are post-game; only the player's prior foul rate and the opponent's prior foul-drawing rate are admissible. T4: prior foul rate correlates with minutes, so the reference must contain prior minutes.",
+      "arithmetic_ceiling": "Small; a moderator on the one target with skill.",
+      "cost": "medium",
+      "why_not_already_dead": "Not in D076's 348 cells (schedule, churn, unfamiliarity, role volatility) and not in D085's basketball-specific set, which targeted EFFICIENCY not minutes.",
+      "extends_live_lead": null,
+      "gated_by": null
+    },
+    {
+      "id": "Q40",
+      "rank": 40,
+      "type": "STRUCTURAL",
+      "statement": "Separate 'the coach removed them' from 'that is their role'",
+      "mechanism": "Two players averaging 20 minutes differ if one plays 20 nightly and the other alternates 32 and 8. The question is WHY the variance occurs: game script and foul trouble (exogenous) versus rotation change (persistent).",
+      "target": [
+        "minutes"
+      ],
+      "feasibility_on_bytes": "possessions.parquet margin and stints.parquet give the mechanism; master_player.minutes gives the outcome.",
+      "provenance_note": "Neither possessions.parquet nor stints.parquet has a manifest.",
+      "trap_check": "T1: mechanism attribution uses realised within-game facts, so it can define a PRIOR-GAME feature only after the prior game is complete - which is legitimate. T8: D076's failure here was exactly T8 and must not be repeated.",
+      "arithmetic_ceiling": "Bounded by the minutes target; the honest prior is low given D076's result.",
+      "cost": "medium",
+      "why_not_already_dead": "D076 screened pl_min_sd5 and pl_min_cv5 and found large |t| with NEGATIVE skill gain at every coverage, concluding they are volume proxies. That is a finding about those two CONSTRUCTIONS, not about the underlying distinction. Queued with D076's negative stated up front.",
+      "extends_live_lead": null,
+      "gated_by": "Q30"
+    },
+    {
+      "id": "Q41",
+      "rank": 41,
+      "type": "FEATURE",
+      "statement": "Opponent possession supply may matter for REBOUNDS though it is dead for points and assists",
+      "mechanism": "Rebound opportunity is more mechanically tied to possession count than any other box quantity: more possessions means more missed shots means more rebound chances.",
+      "target": [
+        "rebounds"
+      ],
+      "feasibility_on_bytes": "master_team.parquet and possessions.parquet; oreb/dreb 100% covered.",
+      "provenance_note": "possessions.parquet has no manifest.",
+      "trap_check": "T4: THE D073 DECOMPOSITION (Q11) MUST BE RUN FIRST - if the effect sits in the team-season pace level it is the same dead thing wearing a rebound label. T7: oreb perfect-forecast bound on points is 0.0763, but the target is rebounds.",
+      "arithmetic_ceiling": "Modest, and the D073 precedent is genuinely discouraging.",
+      "cost": "medium",
+      "why_not_already_dead": "QUEUED LOW DELIBERATELY. D073 closed the family with 'Do not re-screen it'; the only thing distinguishing this is the target.",
+      "extends_live_lead": null,
+      "gated_by": "E0_I0024 (running), Q11, Q30"
+    },
+    {
+      "id": "Q42",
+      "rank": 42,
+      "type": "METHODOLOGICAL",
+      "statement": "Price the acquisition: what would a real pre-game inactives feed be worth?",
+      "mechanism": "D089 r3 names a pre-game injury/inactives feed as the single highest-value data acquisition the program has identified, and D023 amendment (1) shows the user wants acquisition questions answered with verification rather than assumption.",
+      "target": [
+        "points",
+        "minutes",
+        "availability"
+      ],
+      "feasibility_on_bytes": "The bound already exists in E1_I0018_teammate_volume_channel/tiptime_loss_ladder.csv: tip-time variant 0.0078 vs prior-only 0.0023.",
+      "provenance_note": "Frozen screen output.",
+      "trap_check": "T1: the tip-time variant MAY NEVER BE QUOTED AS A RESULT (D089 r2) - it is an upper bound only, and this entry exists precisely to use it as one.",
+      "arithmetic_ceiling": "Not a screen; a decision packet. The bound already exists.",
+      "cost": "cheap",
+      "why_not_already_dead": "ACQUISITION FLAG: (a) a pre-game injury report / inactives feed for 2021-2024; (b) historical odds for 2021-2024, absent per D071/D073 (bookie_totals_per_game.csv has zero in-partition rows; totals_head/game_level_totals.csv has 229 rows dated 2024 with bookie_consensus_total 100% NULL). Run Q7 FIRST - it may recover part of the gap for free and would change what the acquisition is worth.",
+      "extends_live_lead": "D089 teammate-volume channel",
+      "gated_by": null
+    },
+    {
+      "id": "Q43",
+      "rank": 43,
+      "type": "STRUCTURAL",
+      "statement": "Does the 2021 opening-day exclusion still flatter every cold-start figure?",
+      "mechanism": "D010 confirmed the possession universe excludes the four games of 2021-05-14 - the single hardest cold-start day - and ruled every cold-start coverage figure on that universe FLATTERED BY CONSTRUCTION.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "master_player holds 1495 games and possessions.parquet also holds 1495; the 1491-game universe is a DERIVED frame. This entry checks which frame the cold-start screens actually used.",
+      "provenance_note": "Depends which frame; check on values.",
+      "trap_check": "T5: settle on values, not on a filename.",
+      "arithmetic_ceiling": "Small, but it touches the one rule headed for production.",
+      "cost": "cheap",
+      "why_not_already_dead": "D010 recorded the consequence and no screen has confirmed which universe it used. The cold-start work (D092) is now the program's most actionable finding.",
+      "extends_live_lead": "D092 cold-start tiering",
+      "gated_by": null
+    },
+    {
+      "id": "Q44",
+      "rank": 44,
+      "type": "FEATURE",
+      "statement": "College and country as a zero-history prior",
+      "mechanism": "For a player with no WNBA history, college programme and international background are the only signals beyond draft slot.",
+      "target": [
+        "points",
+        "minutes"
+      ],
+      "feasibility_on_bytes": "player_bios.csv: college 87.7%, country 99.2%. 100% joinable to master_player.",
+      "provenance_note": "player_bios.csv has NO manifest.",
+      "trap_check": "T2: null at player level. T7: THE POPULATION IS 384 ROWS (1.36%) - very close to unable to clear the bar.",
+      "arithmetic_ceiling": "Very small. D092 already ruled the debut population is 'small, already largely abstained on, and mostly veterans'.",
+      "cost": "cheap",
+      "why_not_already_dead": "RANKED LAST DELIBERATELY. D092 r3 directs cold-start effort at 1-2 prior appearances rather than debuts, which is precisely where this does NOT apply. Included only because it is cheap and completes the bios surface; a coordinator should feel free to move it to CUT_LIST.md.",
+      "extends_live_lead": null,
+      "gated_by": null
+    }
+  ]
+}

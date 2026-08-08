@@ -167,6 +167,141 @@ pre-fix code (git 56dc793).
       `ValueError` rather than being silently skipped: an explicit request that cannot be honoured
       must be loud, never silent.
 
+REVISION HISTORY -- FOUND BY THE KIT'S SEVENTH AND EIGHTH REAL USERS
+--------------------------------------------------------------------
+`E1_I0020_coldstart_tiering` (seventh) reported K4 and K5; `E1_I0021_heterogeneity_diagnostic`
+(eighth) reported K6 and K7.  Nine defects across seven users now.  Each is closed below with a
+regression test in TESTS.py that FAILS against the pre-fix code (git 6d6a17c).
+
+*** FALSE-ASSURANCE DEFECTS -- THE CLASS K6 AND K7 BELONG TO, AND THE POINT OF THIS ROUND ***
+  The early defects CRASHED or were obviously wrong (P1 TypeError, K0 raising on clean data).  The
+  last three are SILENT: a field NAME that endorsed the wrong choice (P2), a guard whose obvious
+  workaround HIDES real leaks (K4), and a null that is TOO NARROW (K6).  A defect class that has
+  recurred three times is a DESIGN PROPERTY, not bad luck, so name it:
+
+    A FALSE-ASSURANCE DEFECT IS ONE WHERE THE KIT RETURNS A CONFIDENT, WELL-FORMED, NON-CRASHING
+    ANSWER THAT IS WRONG IN THE REASSURING DIRECTION.
+
+  There are exactly TWO shapes of it here, and every function in this module is now audited against
+  both (see the FALSE-ASSURANCE AUDIT section below):
+    SHAPE 1 -- A CONTROL THAT CANNOT FAIL.  It reports "clean" because it tests nothing.  Examples:
+      the permute-the-key-and-recompute placebo (`noop_placebo` exists for it); `SCHEME_WITHIN` on
+      a feature constant within groups (refused); relabelling the entity key when the statistic is
+      a function of the per-entity fits (K7).
+    SHAPE 2 -- A NULL THAT IS TOO NARROW.  It reports a small p because the permuted draws destroy
+      MORE structure than the null hypothesis says is exchangeable.  Examples: the row-level null
+      on a clustered feature (trap 1); `SCHEME_WITHIN` on an AUTOCORRELATED feature (K6).
+  Both look identical to a working tool from the outside.  Neither is detectable from the output
+  alone.  That is why the kit must refuse or warn rather than leave it to the caller to notice.
+
+  K6  *** `SCHEME_WITHIN` IS ANTICONSERVATIVE FOR AN AUTOCORRELATED REGRESSOR.  PRIORITY. ***
+      The within-group shuffle destroys the regressor's SERIAL structure while the response keeps
+      its own slow drift, so the null comes out TOO NARROW by exactly the overlap between them.
+      MEASURED BY THE REPORTER: p = 0.0015 where an honest null gives 0.39, on a real screen whose
+      headline would have been "per-player heterogeneity is real and pooling has been destroying
+      it" -- the most consequential result the program could have produced, and a FALSE POSITIVE.
+      *** THIS IS THE MODAL CASE, NOT AN EDGE CASE: the program's most common construction is
+      `.shift(1).expanding()`, which is autocorrelated BY DESIGN. ***  The reporter measured
+      corr(lag-1 within-group acf of x, N1-minus-N4 null-ratio gap) = +0.832 across 48 cells, with
+      the gap at 0.004 on both iid negative controls and +0.121/+0.179 on the running-mean
+      regressors.  TWO CHANGES, both required:
+        (a) `SCHEME_WITHIN_CYCLIC` is added -- a within-group CYCLIC SHIFT that preserves each
+            group's marginal distribution AND its serial structure and destroys only the alignment
+            to the response.  Ported from `E1_I0021_heterogeneity_diagnostic/hd_base.py ::
+            cyclic_shift_within_groups` (read-only), which the reporter had to write itself.
+        (b) `permutation_null` now MEASURES the within-group lag-1 autocorrelation of the feature
+            and REFUSES `SCHEME_WITHIN` when it is material, naming `SCHEME_WITHIN_CYCLIC`.
+            *** BEHAVIOURAL BREAK B3, see below. ***  REFUSE, not warn, and the justification is
+            the D086 P2 precedent: the unsafe path must require an EXPLICIT OPT-IN, because a
+            warning on a path that still returns a well-formed p is exactly the "silent" failure
+            mode P2 was made to prevent -- and that precedent has since been vindicated twice in
+            the wild (the seventh user read `status` rather than the field and chose correctly;
+            the eighth user's `recommended_permutation_level = None` refusal is what stopped it
+            reaching for the row null).  A caller who genuinely wants the shuffle passes
+            `accept_serial_structure_destroyed=True` and must say so in FINDINGS.json.
+      Also added: `within_group_acf1` as a public helper, and `acf1_within_group` as a per-level
+      diagnostic field on `detect_grouping_level` (the reporter's suggestion 3).
+  K7  *** THE NATURAL PER-ENTITY CONTROL IS A LITERAL NO-OP -- SHAPE 1, ONE LEVEL DOWN. ***
+      "Relabel the player key and refit the per-player coefficients" is the control an analyst
+      reaches for FIRST when validating per-player work, and it TESTS NOTHING: relabelling ids is a
+      bijection on whole groups, so every player's row set travels intact to its new label and the
+      multiset of fitted coefficients -- and therefore its spread -- is EXACTLY unchanged.  The
+      reporter confirmed it at observed sd = 5.207e-17 over 3 distinct draw values.
+      *** THIS IS NOT A BUG IN `noop_placebo`. ***  It worked exactly as designed and correctly
+      reported a no-op.  THE DEFECT IS THAT THE KIT OFFERED NO ALTERNATIVE AND NO GUIDANCE: a tool
+      that says "your control is vacuous" and stops there leaves the caller stuck.  `per_entity_
+      control` is added: it runs the vacuous relabel arm AND a genuine arm that actually perturbs
+      the fitted per-entity structure (a within-entity CYCLIC shift of the feature, so the per-
+      entity fits really do change while each entity keeps its sample size, its marginal and its
+      serial structure), and it reports both side by side with a verdict.  `noop_placebo`'s no-op
+      verdict now NAMES that alternative instead of ending at the diagnosis.
+  K4  `assert_partition` RAISED ON CLEAN DATA when a YEAR-VALUED PLAYER ATTRIBUTE is present
+      (`draft_year` 2002-2020, `birth_year`, `grad_year`, `founded`).  *** IT IS NOT A REPEAT OF
+      K0, AND IT WAS NOT FIXED THE SAME WAY. ***  K4 SATISFIES the K0 invariant: the name token
+      "year" NOMINATES the column, the value gate `_is_season_valued` is asked "are these years?"
+      and answers YES, correctly, and the column is then checked against a partition it legitimately
+      PREDATES.  THE GATE WAS ANSWERING THE WRONG QUESTION:
+          it asks              "are these values plausible YEARS?"
+          the partition needs  "is this column the ROW'S OBSERVATION SEASON?"
+      Every year-valued attribute of a person or an organisation answers YES to the first and NO to
+      the second.  TWO CHANGES:
+        (a) DIRECTION IS NOW EXPLICIT.  An out-of-partition value is classified as `FUTURE` (>
+            max(allowed) -- the holdout direction, the whole reason the guard exists), `INTERIOR`
+            (inside the span but not in `allowed`) or `PAST` (< min(allowed) -- historical, and it
+            CANNOT be a holdout leak).  For an AUTO-DETECTED column a purely PAST verdict is
+            recorded in the new `historical_year_cols` field and is NOT fatal.  FUTURE and INTERIOR
+            stay fatal in every column.  A column the caller NAMES in `season_cols` stays STRICT IN
+            BOTH DIRECTIONS -- naming it asserts that it IS an observation season, and that
+            assertion is honoured loudly.  Violations are also returned as STRUCTURED RECORDS
+            (`violation_records`: col/kind/direction/values/fatal) so a caller can adjudicate
+            without parsing the guard's own prose, which is the textual check this module forbids.
+        (b) THE OBVIOUS WORKAROUND IS CLOSED, exactly as B2 closed `date_cols=[]`.  Pre-fix,
+            `season_cols=["season"]` silenced the false alarm AND SILENCED A GENUINE 2026 LEAK in
+            `source_season`, a column the caller never named.  `season_cols` is now ADDITIVE, not
+            exhaustive: name-matched columns are ALWAYS value-tested as well.  *** BEHAVIOURAL
+            BREAK B4, see below. ***
+      NOT DONE, and deliberately: the reporter's suggestion (3) of an `_ATTRIBUTE_YEAR_TOKENS`
+      nomination list.  Direction subsumes it -- every case the token list would route to the
+      historical branch is already routed there BY ITS VALUES -- and adding a third name-based
+      mechanism to a module whose standing audit says "a substring match may only ever nominate a
+      column for a value test" buys nothing and costs a maintenance surface.  A `draft_year` of
+      2026 must still surface, and under direction it does; under the token list it might not.
+  K5  USAGE NIT (behaviour correct, message correct).  `permutation_null` raises `TypeError` on a
+      str/categorical feature: "the kit will not guess an encoding for you."  That refusal IS the
+      right answer -- guessing an encoding would impose an ordering the caller never declared -- but
+      group priors over categorical labels (position, draft bucket, depth bucket) are among the most
+      natural things to permute in this program, so most users meet it.  NO CODE CHANGE.  A worked
+      bijective-codebook example is added to README.md so the round trip is not needed.
+  K8  FOUND BY THIS ROUND'S OWN FALSE-ASSURANCE AUDIT, not by a user.  `_group_codes` built a
+      composite key as `codes * n_levels + next_code`, and `pd.factorize` returns the sentinel -1
+      for a NULL key value, so a NaN in ANY key column could make two DIFFERENT key tuples collide
+      onto the SAME group code -- e.g. ('B', 3.0) and ('C', NaN) both mapped to 2 in a 6-row frame,
+      SILENTLY MERGING TWO GROUPS.  Every consumer of `_group_codes` inherited it: `n_groups` was
+      wrong, `constant_within` was wrong, and the permutation itself shuffled values across two
+      genuinely different groups while reporting a clean result.  That is SHAPE 1/SHAPE 2 with no
+      symptom at all.  Fixed by factorizing with `use_na_sentinel=False`, which gives NULL its own
+      real code and makes the composite injective.  *** BEHAVIOURAL CHANGE B5, see below. ***
+
+*** THREE MORE DECLARED BEHAVIOURAL BREAKS ***  (D082 declared one, D086 declared two)
+  B3  `permutation_null(scheme=SCHEME_WITHIN)` now RAISES when the feature's within-group lag-1
+      autocorrelation exceeds the materiality threshold.  Before: it ran and returned a p that was
+      too small, with no signal.  After: it names the measured acf1, the threshold and
+      `SCHEME_WITHIN_CYCLIC`.  Pass `accept_serial_structure_destroyed=True` for the old behaviour;
+      the result then carries a non-None `warning` and `serial_structure_preserved=False`, and you
+      must declare it in FINDINGS.json.  The threshold is `max(0.15, 2/sqrt(n_pairs))` -- a
+      materiality floor of 0.15, OR twice the sampling standard error of acf1 under the iid null on
+      a small frame, whichever is larger -- and is overridable per call via `acf1_threshold`.
+  B4  `season_cols` is ADDITIVE, not exhaustive (the season-branch twin of B2).  Before,
+      `season_cols=[...]` REPLACED auto-detection and was therefore a FALSE-PASS DOOR.  After,
+      name-matched columns are always value-tested too, and a column named in `season_cols` is
+      additionally treated as STRICT IN BOTH DIRECTIONS.  Pass
+      `include_name_matched_season_cols=False` for the old behaviour, and say in FINDINGS.json why
+      you turned auto-detection off.
+  B5  A NULL/NaN value in a composite grouping key now forms its OWN group instead of being folded
+      into the -1 sentinel (K8).  Before: silent group collisions.  After: `n_groups` counts the
+      NULL cell as a level.  If you were relying on NULL key rows being dropped or merged, they
+      never were -- they were being merged with an ARBITRARY other group.
+
 AUDIT: EVERY NAME-BASED DETECTION IN THIS MODULE  (prompted by K0)
 ------------------------------------------------------------------
 K0 is the FOURTH instance in this program of a name-based false hit, and the FIRST one inside the
@@ -198,6 +333,49 @@ TWO RESIDUAL NAME-SHAPED RISKS, REPORTED AND DELIBERATELY NOT CHANGED:
      catch a year-valued column with an innocuous name (the `fit_through` case in TESTS.py), and
      its failure direction is a false ALARM, never a false PASS.
 
+FALSE-ASSURANCE AUDIT: WHERE ELSE CAN THIS MODULE BE CONFIDENTLY WRONG?  (prompted by K6/K7)
+--------------------------------------------------------------------------------------------
+Every public function swept against SHAPE 1 (a control that cannot fail) and SHAPE 2 (a null that
+is too narrow).  Findings, including the ones NOT changed:
+
+  FIXED THIS ROUND
+    * `permutation_null(SCHEME_WITHIN)` on an autocorrelated feature -- SHAPE 2.  See K6.
+    * the relabel-the-entity-key control -- SHAPE 1.  See K7.
+    * `_group_codes` NULL-sentinel group collisions -- both shapes, no symptom.  See K8.
+
+  REPORTED AND DELIBERATELY NOT CHANGED -- each is a real way to get a confident wrong answer:
+    c. `SCHEME_WITHIN_CYCLIC` DEPENDS ON ROW ORDER AND CANNOT VERIFY IT.  A cyclic shift is only
+       serial-structure-preserving if the rows inside each group are in TIME order.  The kit cannot
+       know your time column unless you pass `order_col`, and a frame whose rows are scrambled
+       inside the group will get a cyclic shift of a scrambled sequence -- which preserves nothing
+       and is WORSE than a shuffle (it has only n_g distinct draws).  MITIGATION, not a fix: pass
+       `order_col`; and when you do not, the measured `acf1_within_group` is reported and a
+       non-material value on a feature you believe is autocorrelated is the signature of exactly
+       this mistake, so the result carries an explicit `warning` naming it.
+    d. `SCHEME_WITHIN_CYCLIC` HAS ONLY n_g DISTINCT DRAWS PER GROUP.  For small groups the null is
+       coarse and the p is granular; the joint null over G independent groups is far richer, but a
+       single 4-row group contributes only 4 states.  `cyclic_min_group_size` and
+       `cyclic_median_group_size` are returned so this is visible, with a `warning` under 5.
+    e. THE ACF GATE INSPECTS THE FEATURE ONLY.  The shuffle null is too narrow when the feature AND
+       the response both carry serial structure.  `permutation_null` never sees the response --
+       `stat_fn` is a black box -- so the gate fires on the feature's acf1 alone.  That is the
+       CONSERVATIVE direction (it can refuse a shuffle that would in fact have been fine when the
+       response is white), and it is stated rather than silently assumed.
+    f. `paired_forecast_comparison`'s cluster sign-flip null has only 2^n_groups states.  With few
+       clusters the attainable p is floored (8 clusters -> nothing below 1/257 in practice, and the
+       two-sided count saturates).  `n_groups` is returned; read it before believing a small p.
+    g. `var_share_between` is a RAW variance share, not an ICC: it is biased upward with many small
+       groups because each group mean carries sampling noise.  It is a scheme-choosing diagnostic,
+       not an estimate, and it is documented as one.
+    h. `future_leakage_probe` NOT firing is not a certificate, and `check_manifest` returning
+       UNVERIFIABLE is not a failure.  Both already say so in their own words; both are SHAPE 1 in
+       the sense that a caller can read "no flag" as "clean" -- which is why neither returns a
+       boolean named `is_clean`.
+    i. `permutation_null` drops non-finite draws and computes p over the survivors.  If `stat_fn`
+       returns NaN on the draws that would have been most extreme, p is computed on a biased
+       subset.  `n_finite_draws` is returned beside `n_draws` precisely so the caller can see it;
+       compare them before reading p.
+
 DEPENDENCIES: standard library + numpy + pandas only.  scipy is NOT installed in this environment.
 """
 
@@ -212,18 +390,21 @@ import pandas as pd
 
 __all__ = [
     "EXPLORATION_SEASONS", "HOLDOUT_SEASONS", "ROW_LEVEL", "DEFAULT_CANDIDATE_KEYS",
-    "SCHEME_BETWEEN", "SCHEME_WITHIN", "SCHEME_ENTITY_SWAP",
+    "SCHEME_BETWEEN", "SCHEME_WITHIN", "SCHEME_WITHIN_CYCLIC", "SCHEME_ENTITY_SWAP",
     "STATUS_COARSER_LEVEL_FOUND", "STATUS_NO_COARSER_LEVEL",
     "SCREEN_FLAG_AMBIGUOUS", "SCREEN_NOT_FLAGGED",
+    "ACF1_MATERIALITY_FLOOR",
+    "DIRECTION_FUTURE", "DIRECTION_INTERIOR", "DIRECTION_PAST",
     "PartitionViolation",
     "r2_plain", "delta_r2_plain",
     "r2_of_forecast",
     "r2_weighted_standard", "delta_r2_weighted",
     "wls_r2_DEFECTIVE",
     "detect_grouping_level", "permutation_null", "null_width_comparison",
+    "within_group_acf1",
     "EntitySwap", "entity_swap_null",
     "var_share_between", "paired_forecast_comparison",
-    "noop_placebo",
+    "noop_placebo", "per_entity_control",
     "assert_partition", "check_manifest", "future_leakage_probe",
 ]
 
@@ -237,6 +418,31 @@ ROW_LEVEL = "row"
 #: Permutation schemes for `permutation_null`.  See its docstring for when each is the right null.
 SCHEME_BETWEEN = "between"      #: reassign whole groups' values BETWEEN groups (group level dies)
 SCHEME_WITHIN = "within"        #: shuffle values INSIDE each group (group level SURVIVES)
+
+#: The fourth scheme (K6).  A within-group CYCLIC SHIFT.  It preserves each group's marginal
+#: distribution AND its SERIAL STRUCTURE, and destroys only the alignment to the response.
+#: *** THIS IS THE HONEST NULL FOR ANY `.shift(1).expanding()`-SHAPED REGRESSOR, WHICH IS THE
+#: PROGRAM'S MOST COMMON CONSTRUCTION. ***  `SCHEME_WITHIN` is anticonservative for such a feature:
+#: it destroys the regressor's autocorrelation while the response keeps its own drift, so the null
+#: comes out too narrow (measured by the reporter: p = 0.0015 where the honest null gives 0.39).
+#: Ported from E1_I0021_heterogeneity_diagnostic/hd_base.py :: cyclic_shift_within_groups.
+SCHEME_WITHIN_CYCLIC = "within_cyclic"
+
+#: Materiality floor for the within-group lag-1 autocorrelation gate on `SCHEME_WITHIN` (K6).  The
+#: gate threshold is `max(ACF1_MATERIALITY_FLOOR, 2/sqrt(n_pairs))`: the floor says "an acf1 below
+#: this is not worth refusing over", the second term says "and never fire on what is only sampling
+#: noise on a small frame", where 1/sqrt(n_pairs) is acf1's standard error under the iid null.
+#: The reporter's iid negative controls measured -0.029 and -0.025; the running-mean regressors
+#: measured +0.550 and +0.864.  Overridable per call via `permutation_null(acf1_threshold=...)`.
+ACF1_MATERIALITY_FLOOR = 0.15
+
+#: `assert_partition` violation DIRECTIONS (K4).  The guard exists to stop the HOLDOUT -- the
+#: FUTURE -- from entering exploration work.  A value that PREDATES the partition cannot be a
+#: holdout leak, and conflating the two is what made the guard fire on `draft_year`.
+DIRECTION_FUTURE = "FUTURE"      #: value > max(allowed).  The holdout direction.  ALWAYS FATAL.
+DIRECTION_INTERIOR = "INTERIOR"  #: inside the span but not in `allowed`.  ALWAYS FATAL.
+DIRECTION_PAST = "PAST"          #: value < min(allowed).  Historical.  Fatal only if the caller
+                                 #: NAMED the column in `season_cols`.
 
 #: The third scheme (K2).  NOT a `permutation_null` option -- it has its own entry point,
 #: `entity_swap_null`, because it swaps whole SERIES rather than individual values.  It is the only
@@ -521,17 +727,205 @@ def wls_r2_DEFECTIVE(y, X, w, add_intercept=True):
 # GROUPING LEVEL DETECTION  (trap 1 -- the anti-trap helper)
 # ===========================================================================================
 
+def _factorize_no_sentinel(s):
+    """`pd.factorize` with NULL given its OWN real code instead of the -1 sentinel.  *** K8 FIX. ***
+
+    THE BUG THIS CLOSES.  `_group_codes` builds a composite key as `codes * n_levels + next_code`.
+    That is injective ONLY while every code is in [0, n_levels).  `pd.factorize` returns -1 for a
+    NULL value, and -1 breaks the arithmetic: with n_levels = 3,
+
+        (group 0, next_code -1)  ->  0*3 + (-1)  = -1
+        (group -1, next_code  2) -> -1*3 +   2   = -1
+
+    so TWO DIFFERENT KEY TUPLES LAND ON THE SAME GROUP CODE and two genuinely different groups are
+    SILENTLY MERGED.  Verified on a 6-row frame: ('B', 3.0) and ('C', NaN) both received code 2, so
+    six distinct key tuples became five groups.  Every consumer inherited it -- `n_groups` was
+    wrong, `constant_within` was wrong, and `permutation_null` shuffled values across two different
+    groups while returning a perfectly well-formed p.  No crash, no warning, no symptom: a
+    FALSE-ASSURANCE defect of the purest kind, found by this round's own audit rather than by a
+    user.  Giving NULL its own code restores injectivity and makes the NULL cell a visible level.
+    """
+    try:
+        codes, uq = pd.factorize(s, sort=False, use_na_sentinel=False)
+    except TypeError:                                   # a pandas without use_na_sentinel
+        codes, uq = pd.factorize(s, sort=False)
+        codes = np.asarray(codes, dtype=np.int64)
+        if (codes < 0).any():                           # fold the sentinel into a real, unused code
+            codes = np.where(codes < 0, len(uq), codes)
+            return codes.astype(np.int64), len(uq) + 1
+        return codes.astype(np.int64), len(uq)
+    return np.asarray(codes, dtype=np.int64), int(len(uq))
+
+
 def _group_codes(df, cols):
-    """Contiguous integer group code per row for a key (list of columns), or 0..n-1 for rows."""
+    """Contiguous integer group code per row for a key (list of columns), or 0..n-1 for rows.
+
+    K8: NULL key values get their own code (see `_factorize_no_sentinel`), so the composite-key
+    arithmetic below is injective and two different key tuples can never collide onto one group.
+    """
     if cols is None:
         return np.arange(len(df), dtype=np.int64)
     cols = list(cols)
-    codes = pd.factorize(df[cols[0]], sort=False)[0].astype(np.int64)
+    codes, _ = _factorize_no_sentinel(df[cols[0]])
     for c in cols[1:]:
-        cc, uq = pd.factorize(df[c], sort=False)
-        codes = codes * np.int64(max(len(uq), 1)) + cc.astype(np.int64)
-        codes = pd.factorize(codes, sort=False)[0].astype(np.int64)
+        cc, n_lv = _factorize_no_sentinel(df[c])
+        codes = codes * np.int64(max(n_lv, 1)) + cc
+        codes, _ = _factorize_no_sentinel(pd.Series(codes))
     return codes
+
+
+# ===========================================================================================
+# WITHIN-GROUP SERIAL STRUCTURE  (K6)
+# ===========================================================================================
+
+def _group_slices(codes):
+    """(order, starts, ends) for a stable sort by group code.
+
+    The sort is STABLE, so the rows inside each group keep the order they had in the FRAME.  That
+    is what makes the frame's row order the time order for `SCHEME_WITHIN_CYCLIC` and for the
+    lag-1 autocorrelation below -- and it is why `order_col` exists.
+    """
+    codes = np.asarray(codes)
+    order = np.argsort(codes, kind="stable")
+    sc = codes[order]
+    if not len(sc):
+        return order, np.array([], dtype=int), np.array([], dtype=int)
+    starts = np.flatnonzero(np.r_[True, sc[1:] != sc[:-1]])
+    ends = np.r_[starts[1:], len(sc)]
+    return order, starts, ends
+
+
+def within_group_acf1(data, feature_col, group_col, order_col=None):
+    """POOLED LAG-1 AUTOCORRELATION OF A FEATURE *INSIDE* ITS GROUPS.  *** THE K6 DIAGNOSTIC. ***
+
+    WHY THIS NUMBER DECIDES A NULL.  `permutation_null(scheme=SCHEME_WITHIN)` shuffles the feature
+    inside each group.  That destroys the feature's SERIAL structure.  If the RESPONSE carries slow
+    within-group structure of its own -- and in this program it always does, because players and
+    teams drift -- then the shuffled draws are LESS like the real data than the null hypothesis
+    says they should be, the null comes out TOO NARROW, and the p is too small.  The reporter
+    measured the size of the effect directly: across 48 (floor x relationship) cells,
+    corr(this statistic, the shuffle-minus-cyclic null-ratio gap) = +0.832, with the gap at 0.004
+    on iid controls and +0.121/+0.179 on running-mean regressors.
+
+    THE ESTIMATOR.  Inside each group the values are DEMEANED ON THEIR OWN GROUP MEAN -- the
+    question is about structure INSIDE the group, not about the group level, which the within
+    schemes preserve exactly.  The consecutive pairs from every group are then pooled and a single
+    Pearson correlation is taken over the pooled pairs, so the result is bounded in [-1, 1] and a
+    group of length 1 simply contributes nothing.
+
+    ROW ORDER IS THE INPUT AND THE KIT CANNOT VERIFY IT.  "Consecutive" means consecutive in
+    `order_col` if you pass one, and consecutive IN THE FRAME'S ROW ORDER if you do not.  A frame
+    scrambled inside its groups will report acf1 ~ 0 for a strongly autocorrelated feature.  That
+    is not a wrong answer -- it is the honest answer to "is this column serially structured AS THE
+    ROWS ARE ORDERED", which is exactly the quantity the cyclic shift acts on.
+
+    Returns
+    -------
+    dict: acf1 (float, nan when there are fewer than 2 usable pairs), n_pairs, n_groups,
+          min_group_size, median_group_size, order_basis
+    """
+    if feature_col not in data.columns:
+        raise KeyError("feature_col %r not in frame" % feature_col)
+    key = [group_col] if isinstance(group_col, str) else list(group_col)
+    missing = [c for c in key if c not in data.columns]
+    if missing:
+        raise KeyError("group_col columns missing from frame: %s" % missing)
+    codes = _group_codes(data, key)
+    v, _ = _feature_to_float(data[feature_col], feature_col)
+    out = _acf1_from_codes(v, codes, _order_within_groups(data, codes, order_col))
+    out["acf1"] = _nan_to_none(out["acf1"])
+    return out
+
+
+def _order_within_groups(data, codes, order_col):
+    """Row permutation putting rows in (group, `order_col`) order; None means FRAME ORDER.
+
+    Returned as a plain index array so both the acf and the cyclic shift use ONE definition of
+    "consecutive".  A stable sort keeps ties in frame order.
+    """
+    if order_col is None:
+        return None
+    ocols = [order_col] if isinstance(order_col, str) else list(order_col)
+    missing = [c for c in ocols if c not in data.columns]
+    if missing:
+        raise KeyError("order_col columns missing from frame: %s" % missing)
+    tmp = pd.DataFrame({"_g": np.asarray(codes)})
+    for i, c in enumerate(ocols):
+        tmp["_o%d" % i] = data[c].to_numpy()
+    return tmp.sort_values(["_g"] + ["_o%d" % i for i in range(len(ocols))],
+                           kind="stable").index.to_numpy()
+
+
+def _acf1_from_codes(values, codes, seq_order=None):
+    """Pooled within-group lag-1 acf.  `seq_order` = row order defining "consecutive" (None=frame)."""
+    v = np.asarray(values, dtype=float)
+    codes = np.asarray(codes)
+    if seq_order is not None:
+        v = v[seq_order]
+        codes = codes[seq_order]
+    order, starts, ends = _group_slices(codes)
+    a_parts, b_parts, sizes = [], [], []
+    for s, e in zip(starts, ends):
+        idx = order[s:e]
+        sizes.append(e - s)
+        if e - s < 2:
+            continue
+        g = v[idx]
+        fin = np.isfinite(g)
+        if fin.sum() < 2:
+            continue
+        g = g - float(np.nanmean(g[fin]))               # demean ON ITS OWN GROUP
+        a_parts.append(g[:-1])
+        b_parts.append(g[1:])
+    out = {
+        "n_groups": int(len(starts)),
+        "min_group_size": int(min(sizes)) if sizes else 0,
+        "median_group_size": float(np.median(sizes)) if sizes else 0.0,
+        "order_basis": ("order_col" if seq_order is not None else "FRAME ROW ORDER"),
+    }
+    if not a_parts:
+        out["acf1"] = float("nan")
+        out["n_pairs"] = 0
+        return out
+    a = np.concatenate(a_parts)
+    b = np.concatenate(b_parts)
+    d_all = np.concatenate([np.concatenate([p, q[-1:]]) for p, q in zip(a_parts, b_parts)])
+    m = np.isfinite(a) & np.isfinite(b)
+    a, b = a[m], b[m]
+    out["n_pairs"] = int(len(a))
+    if len(a) < 2:
+        out["acf1"] = float("nan")
+        return out
+    # The TEXTBOOK lag-1 estimator on the group-demeaned series: sum of consecutive products over
+    # the total sum of squares.  NOT a Pearson correlation of the two shifted vectors -- re-centring
+    # those separately adds a second O(1/m) bias on top of the one demeaning already carries, and
+    # it made an IID feature in 15-row groups report acf1 = -0.157 instead of the -1/(m-1) = -0.071
+    # that demeaning alone explains.  Cauchy-Schwarz bounds this form inside [-1, 1].
+    den = float(d_all[np.isfinite(d_all)] @ d_all[np.isfinite(d_all)])
+    out["acf1"] = float((a @ b) / den) if den > 0 else float("nan")
+    return out
+
+
+def _nan_to_none(x):
+    """nan -> None, so every report field this module returns is JSON-serialisable AND comparable.
+
+    `float('nan') != float('nan')`, so a nan buried in a report dict silently breaks any equality
+    check a caller makes on it, and `json.dump` writes a bare `NaN` that is not valid JSON.  Both
+    are small false-assurance surfaces of their own.
+    """
+    try:
+        return None if x is None or not np.isfinite(x) else float(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def _acf1_gate_threshold(n_pairs, acf1_threshold=None):
+    """max(materiality floor, 2 sampling SEs).  See `ACF1_MATERIALITY_FLOOR` for the reasoning."""
+    if acf1_threshold is not None:
+        return float(acf1_threshold)
+    if not n_pairs:
+        return float("inf")
+    return float(max(ACF1_MATERIALITY_FLOOR, 2.0 / np.sqrt(float(n_pairs))))
 
 
 def _as_float_for_spread(s):
@@ -644,6 +1038,10 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
       * handle a feature that is constant within groups only up to floating-point noise unless you
         raise `tol` -- the default requires exact constancy (max - min <= 0).
       * inspect the OUTCOME at all.
+      * decide anything from `acf1_within_group` (K6).  That field is a DIAGNOSTIC: a material
+        value means a within-group SHUFFLE at that level would give a null that is too narrow, and
+        `SCHEME_WITHIN_CYCLIC` is the scheme that preserves the structure.  It is measured in the
+        FRAME'S ROW ORDER, which is the time order only if you sorted the frame that way.
 
     Parameters
     ----------
@@ -659,7 +1057,8 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
     dict with keys:
       n_rows, feature_col, n_distinct_values_global, feature_dtype, feature_is_boolean,
       levels : dict level -> {key_cols, n_groups, constant_within, max_distinct_within_group,
-                              max_within_group_spread, n_distinct_at_level, is_row_equivalent}
+                              max_within_group_spread, n_distinct_at_level, is_row_equivalent,
+                              acf1_within_group, acf1_n_pairs}   -- the last two are K6
       constant_levels : list[str]
       status : STATUS_COARSER_LEVEL_FOUND | STATUS_NO_COARSER_LEVEL
       recommended_permutation_level : str | None   -- NEVER the string "row"; None means REFUSE
@@ -708,6 +1107,15 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
         n_groups = int(len(np.unique(codes)))
         is_const, max_distinct, max_spread = _constant_within(values, codes, tol=tol)
         rep = values.groupby(codes, sort=False).first()
+        # K6 (the reporter's suggestion 3): report the within-group lag-1 autocorrelation at every
+        # level as a DIAGNOSTIC.  A material value here means `scheme=SCHEME_WITHIN` at that level
+        # would give a null that is TOO NARROW; see `within_group_acf1` and `permutation_null`.
+        # It is measured in the FRAME'S ROW ORDER, which is only the time order if you sorted.
+        try:
+            fv, _ = _feature_to_float(values, feature_col)
+            acf = _acf1_from_codes(fv, codes, None)
+        except TypeError:                               # non-numeric feature: no serial structure
+            acf = {"acf1": float("nan"), "n_pairs": 0}
         out["levels"][level] = {
             "key_cols": list(cols) if cols else None,
             "n_groups": n_groups,
@@ -717,6 +1125,8 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
             "n_distinct_at_level": int(pd.Series(rep).nunique(dropna=False)),
             # a key that identifies rows uniquely gives a ROW-LEVEL null wearing key columns
             "is_row_equivalent": bool(n_groups >= n_rows),
+            "acf1_within_group": _nan_to_none(acf["acf1"]),
+            "acf1_n_pairs": int(acf["n_pairs"]),
         }
 
     const = [(lv, d["n_groups"]) for lv, d in out["levels"].items() if d["constant_within"]]
@@ -759,13 +1169,16 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
         print("  detect_grouping_level(%s): n_rows=%d  dtype=%s  distinct values overall=%d"
               % (feature_col, out["n_rows"], out["feature_dtype"],
                  out["n_distinct_values_global"]))
-        print("    %-14s %10s %10s %12s %6s %s"
-              % ("level", "n_groups", "distinct", "constant?", "row==?", "max within-group distinct"))
+        print("    %-14s %10s %10s %12s %6s %8s %s"
+              % ("level", "n_groups", "distinct", "constant?", "row==?", "acf1",
+                 "max within-group distinct"))
         for lv, d in out["levels"].items():
-            print("    %-14s %10d %10d %12s %6s %d"
+            a = d.get("acf1_within_group")
+            print("    %-14s %10d %10d %12s %6s %8s %d"
                   % (lv, d["n_groups"], d["n_distinct_at_level"],
                      "YES" if d["constant_within"] else "no",
                      "YES" if d["is_row_equivalent"] else "no",
+                     ("%+.3f" % a) if a is not None else "  n/a",
                      d["max_distinct_within_group"]))
         for lv, miss in out["skipped"].items():
             print("    %-14s SKIPPED (missing columns: %s)" % (lv, miss))
@@ -833,6 +1246,48 @@ def _permute_within_groups(values, codes, rng):
     return out
 
 
+def _permute_within_groups_cyclic(values, codes, rng, seq_order=None):
+    """WITHIN-GROUP CYCLIC SHIFT: rotate each group's series by a random offset.  *** K6 FIX. ***
+
+    PORTED FROM `E1_I0021_heterogeneity_diagnostic/hd_base.py :: cyclic_shift_within_groups`
+    (frozen, read-only), which the kit's EIGHTH user had to write itself because the kit shipped no
+    serial-structure-preserving null.  Credit and the measured justification are that reporter's.
+
+    WHAT IT PRESERVES AND WHY THAT IS THE WHOLE POINT.  `_permute_within_groups` above preserves
+    each group's MARGINAL distribution and destroys everything else -- including the feature's
+    AUTOCORRELATION.  Several of this program's regressors are RUNNING MEANS of an entity's own
+    history (`.shift(1).expanding()`), so they are autocorrelated by construction and they trend
+    inside a season.  If the response also carries a within-season trend, a plain shuffle produces
+    draws that are LESS like the real data than exchangeability licenses: the null is too narrow
+    and a shared time trend masquerades as a real effect.  A CYCLIC SHIFT preserves the marginal
+    AND the serial correlation exactly and destroys only the alignment to the response.  An excess
+    that survives this null is not a trend artefact.
+
+    `seq_order` defines what "consecutive" means (None = the frame's row order).  A rotation by
+    k = 0 is a legitimate member of the rotation group and is deliberately not excluded: excluding
+    it would make the null non-exact.
+    """
+    v = np.asarray(values, dtype=float)
+    if seq_order is not None:
+        inv = np.empty(len(seq_order), dtype=np.int64)
+        inv[seq_order] = np.arange(len(seq_order), dtype=np.int64)
+        v_seq = v[seq_order]
+        codes_seq = np.asarray(codes)[seq_order]
+    else:
+        v_seq, codes_seq, inv = v, np.asarray(codes), None
+    out = np.empty(len(v_seq), dtype=float)
+    order, starts, ends = _group_slices(codes_seq)
+    for s, e in zip(starts, ends):
+        idx = order[s:e]
+        n = e - s
+        if n <= 1:
+            out[idx] = v_seq[idx]
+            continue
+        k = int(rng.integers(0, n))
+        out[idx] = np.roll(v_seq[idx], k)
+    return out if inv is None else out[inv]
+
+
 def _permute_rows(values, block_codes, rng):
     """THE NAIVE ROW-LEVEL PERMUTATION.  Adapted from e1_lib.py :: perm_rows.
 
@@ -884,7 +1339,9 @@ def _feature_to_float(s, feature_col):
 
 def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
                      feature_col, block_col=None, alternative="greater",
-                     allow_nonconstant=False, tol=0.0, scheme=SCHEME_BETWEEN):
+                     allow_nonconstant=False, tol=0.0, scheme=SCHEME_BETWEEN,
+                     order_col=None, acf1_threshold=None,
+                     accept_serial_structure_destroyed=False):
     """Permutation null AT A SPECIFIED GROUPING LEVEL.  REFUSES to guess.
 
     THE POINT: a team- or game-level aggregate permuted ROW BY ROW gets a null that is far too
@@ -911,7 +1368,7 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
       * p is the standard add-one estimator, (1 + #{draw at least as extreme}) / (n_draws + 1), so
         it is never 0.
 
-    TWO SCHEMES -- `scheme=SCHEME_BETWEEN` (default) or `SCHEME_WITHIN`  (P4)
+    THREE SCHEMES -- `SCHEME_BETWEEN` (default), `SCHEME_WITHIN` (P4), `SCHEME_WITHIN_CYCLIC` (K6)
       BETWEEN: reassign WHICH GROUP's already-computed value each group receives.  The group's
         LEVEL is destroyed; within-group structure is untouched (and for a constant feature there
         is none).  This is the right null for a feature whose signal lives BETWEEN groups.
@@ -919,16 +1376,48 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
         within-group (game-to-game) alignment is destroyed.  This is the right null for a candidate
         whose variance is mostly WITHIN its group -- for such a candidate the BETWEEN scheme leaves
         the effect almost intact and is not a null at all.
-      Adapted from E0_I0014_residual_heterogeneity/rh_base.py, which ran both and credited a
-      candidate ONLY IF IT BEAT BOTH.  Use `var_share_between` to see which regime you are in;
-      report both nulls when the share is not near 0 or 1.
-      The WITHIN scheme is REFUSED when the feature is constant within groups, because it is then
-      the literal identity -- the same vacuous control `noop_placebo` exists to catch.
-      NEITHER SCHEME ANSWERS THE BETWEEN-ENTITY QUESTION FOR A WITHIN-VARYING FEATURE (K2).  If
+        *** IT ALSO DESTROYS THE FEATURE'S SERIAL STRUCTURE, AND THAT MAKES IT ANTICONSERVATIVE
+        FOR AN AUTOCORRELATED FEATURE.  THIS PATH IS NOW GATED (K6, break B3). ***
+      WITHIN_CYCLIC: rotate each group's series by a random offset.  The group's LEVEL survives,
+        the group's MARGINAL survives, AND THE FEATURE'S SERIAL STRUCTURE SURVIVES; only the
+        alignment to the response is destroyed.  *** THIS IS THE HONEST NULL FOR ANY
+        `.shift(1).expanding()`-SHAPED REGRESSOR -- WHICH IS THIS PROGRAM'S MOST COMMON
+        CONSTRUCTION, SO IT IS THE MODAL CASE AND NOT AN EDGE CASE. ***
+
+      THE K6 GATE, AND WHY IT REFUSES RATHER THAN WARNS.  Before running `SCHEME_WITHIN` this
+      function measures the feature's within-group lag-1 autocorrelation (`within_group_acf1`).
+      When |acf1| exceeds `max(ACF1_MATERIALITY_FLOOR, 2/sqrt(n_pairs))` it RAISES, naming the
+      measured value and `SCHEME_WITHIN_CYCLIC`.  The reporter who found this measured p = 0.0015
+      under the shuffle where the honest null gives 0.39, on a screen whose headline would have
+      been the most consequential finding in the program's history -- and a false positive.  A
+      WARNING would not have been enough: the call would still have returned a well-formed p, and
+      the D086 P2 precedent (make the unsafe path require an EXPLICIT OPT-IN, because a field or a
+      value that reads as endorsed carries the kit's authority) has since been vindicated twice in
+      the wild.  Pass `accept_serial_structure_destroyed=True` to proceed anyway; the result then
+      carries `serial_structure_preserved=False` and a non-None `warning`, and you must declare it.
+      THE GATE INSPECTS THE FEATURE ONLY.  The shuffle is too narrow when the feature AND the
+      response both carry serial structure, and `stat_fn` is a black box, so the response is never
+      seen.  That errs toward refusing a shuffle that would have been fine, never toward allowing
+      one that is not.
+
+      ROW ORDER IS AN INPUT.  "Consecutive" means consecutive in `order_col` if you pass one, and
+      consecutive IN THE FRAME'S ROW ORDER if you do not.  A cyclic shift of rows that are NOT in
+      time order preserves nothing -- pass `order_col`, or sort the frame by (group, date) first.
+      When `SCHEME_WITHIN_CYCLIC` is used on a feature whose measured acf1 is NOT material, the
+      result carries a `warning` saying so, because that is the signature of exactly this mistake.
+
+      Adapted from E0_I0014_residual_heterogeneity/rh_base.py, which ran BETWEEN and WITHIN and
+      credited a candidate ONLY IF IT BEAT BOTH.  Use `var_share_between` to see which regime you
+      are in; report both nulls when the share is not near 0 or 1.
+      Both WITHIN schemes are REFUSED when the feature is constant within groups, because they are
+      then the literal identity -- the same vacuous control `noop_placebo` exists to catch.
+      NO SCHEME HERE ANSWERS THE BETWEEN-ENTITY QUESTION FOR A WITHIN-VARYING FEATURE (K2).  If
       `detect_grouping_level` finds NO constant level and your question is nonetheless "does WHICH
       ENTITY this row belongs to matter", use `entity_swap_null`, which swaps whole entity-season
       SERIES.  Do NOT reach for `allow_nonconstant=True` for that question -- it broadcasts one
       value per group and the resulting p is manufactured rather than measured.
+      If your question is "is the PER-ENTITY structure real", the control you reach for first --
+      relabel the entity key and refit -- is a LITERAL NO-OP.  Use `per_entity_control` (K7).
 
     DOES *NOT*
       * choose the level for you, verify that the level is right, or look at the outcome's
@@ -952,12 +1441,23 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
     alternative  : "greater" | "less" | "two_sided"
     allow_nonconstant : bool
     tol          : float -- constancy tolerance passed to the within-group spread check
-    scheme       : SCHEME_BETWEEN ("between", default) | SCHEME_WITHIN ("within")
+    scheme       : SCHEME_BETWEEN (default) | SCHEME_WITHIN | SCHEME_WITHIN_CYCLIC
+    order_col    : str | list[str] | None (K6) -- the column that puts rows in TIME order inside a
+                   group.  Defines "consecutive" for both the cyclic shift and the acf1 gate.
+                   None means the FRAME'S ROW ORDER is already the time order.
+    acf1_threshold : float | None (K6) -- override the gate threshold.  None uses
+                   max(ACF1_MATERIALITY_FLOOR, 2/sqrt(n_pairs)).
+    accept_serial_structure_destroyed : bool (K6) -- explicit opt-in to run `SCHEME_WITHIN` on an
+                   autocorrelated feature anyway.  The result then carries a `warning` and
+                   `serial_structure_preserved=False`.  Declare it in FINDINGS.json.
 
     Returns
     -------
     dict: real, draws (np.ndarray), n_draws, mean, sd, p, alternative, level, key_cols, n_groups,
-          block_col, constant_within, scheme, feature_is_boolean, seed, is_row_level_naive, warning
+          block_col, constant_within, scheme, feature_is_boolean, seed, is_row_level_naive, warning,
+          and (K6) acf1_within_group, acf1_n_pairs, acf1_threshold, acf1_is_material,
+          serial_structure_preserved, order_basis, cyclic_min_group_size,
+          cyclic_median_group_size
     """
     if group_col is None:
         raise ValueError(
@@ -969,9 +1469,10 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
         raise KeyError("feature_col %r not in frame" % feature_col)
     if alternative not in ("greater", "less", "two_sided"):
         raise ValueError("alternative must be greater|less|two_sided")
-    if scheme not in (SCHEME_BETWEEN, SCHEME_WITHIN):
-        raise ValueError("scheme must be %r or %r, got %r"
-                         % (SCHEME_BETWEEN, SCHEME_WITHIN, scheme))
+    if scheme not in (SCHEME_BETWEEN, SCHEME_WITHIN, SCHEME_WITHIN_CYCLIC):
+        raise ValueError("scheme must be %r, %r or %r, got %r"
+                         % (SCHEME_BETWEEN, SCHEME_WITHIN, SCHEME_WITHIN_CYCLIC, scheme))
+    is_within_family = scheme in (SCHEME_WITHIN, SCHEME_WITHIN_CYCLIC)
 
     rng = np.random.default_rng(seed)
     feature_series = data[feature_col]
@@ -988,11 +1489,11 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
 
     is_row_level = isinstance(group_col, str) and group_col == ROW_LEVEL
     if is_row_level:
-        if scheme == SCHEME_WITHIN:
+        if is_within_family:
             raise ValueError(
                 "scheme=%r is meaningless at ROW_LEVEL: each 'group' is a single row, so shuffling "
                 "inside it is the identity. Pass a real grouping level, or scheme=%r."
-                % (SCHEME_WITHIN, SCHEME_BETWEEN))
+                % (scheme, SCHEME_BETWEEN))
         key_cols, codes, n_groups, is_const = None, None, int(len(data)), True
         level = ROW_LEVEL
     else:
@@ -1010,19 +1511,79 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
                 "variation. Run screenkit.detect_grouping_level to find the right level, pass "
                 "scheme=screenkit.SCHEME_WITHIN if the signal lives INSIDE the groups, or pass "
                 "allow_nonconstant=True and declare it." % (feature_col, key_cols, max_distinct))
-        if scheme == SCHEME_WITHIN and is_const:
+        if is_within_family and is_const:
             raise ValueError(
                 "feature %r IS constant within groups %s, so scheme=%r is the LITERAL IDENTITY: "
                 "every row would receive its own value back and the 'null' would reproduce the "
                 "real statistic with sd ~ 0. That is the vacuous control screenkit.noop_placebo "
                 "exists to detect. Use scheme=%r at this level instead."
-                % (feature_col, key_cols, SCHEME_WITHIN, SCHEME_BETWEEN))
+                % (feature_col, key_cols, scheme, SCHEME_BETWEEN))
         # groups must nest inside blocks
         if block_col is not None:
             nest = pd.DataFrame({"g": codes, "b": block_codes}).groupby("g", sort=False)["b"].nunique()
             if int(nest.max()) > 1:
                 raise ValueError("groups %s do not nest inside block_col %s" % (key_cols, block_desc))
         level = "+".join(key_cols)
+
+    # ---- K6: MEASURE THE FEATURE'S SERIAL STRUCTURE BEFORE CHOOSING TO DESTROY IT -------------
+    seq_order = None
+    acf = {"acf1": float("nan"), "n_pairs": 0, "min_group_size": 0, "median_group_size": 0.0,
+           "order_basis": None}
+    acf_thresh = float("nan")
+    acf_material = False
+    scheme_warning = None
+    if is_within_family:
+        seq_order = _order_within_groups(data, codes, order_col)
+        acf = _acf1_from_codes(values, codes, seq_order)
+        acf_thresh = _acf1_gate_threshold(acf["n_pairs"], acf1_threshold)
+        # ONE-SIDED, and deliberately so.  POSITIVE serial correlation in the feature is what makes
+        # the shuffle null too narrow when the response also drifts -- that is the K6 hazard, and it
+        # is the shape of every running-mean regressor.  A NEGATIVE acf1 (an alternating or
+        # mean-reverting feature) makes the shuffle null WIDER, i.e. CONSERVATIVE, so refusing on it
+        # would block a safe call.  It also avoids firing on the O(1/m) NEGATIVE bias that demeaning
+        # inside small groups puts on this estimator.  The signed value is always reported.
+        acf_material = bool(np.isfinite(acf["acf1"]) and acf["acf1"] > acf_thresh)
+
+        if scheme == SCHEME_WITHIN and acf_material and not accept_serial_structure_destroyed:
+            raise ValueError(
+                "*** REFUSED (K6): scheme=%r WOULD GIVE YOU A NULL THAT IS TOO NARROW. *** "
+                "Feature %r has within-group lag-1 autocorrelation acf1 = %+.4f over %d "
+                "consecutive pairs in %d groups (threshold %.4f, measured in %s). A within-group "
+                "SHUFFLE destroys that serial structure while the RESPONSE keeps its own drift, so "
+                "the permuted draws are less like the real data than exchangeability licenses and "
+                "the p comes out too small. Measured on a real screen: p = 0.0015 under this "
+                "scheme where the honest null gives 0.39, on a result that would have been "
+                "published. THE FIX: pass scheme=screenkit.SCHEME_WITHIN_CYCLIC, which rotates "
+                "each group's series and preserves the marginal AND the serial structure while "
+                "destroying only the alignment to the response -- and make sure the rows inside "
+                "each group are in TIME order (pass order_col=...). If you genuinely want the "
+                "shuffle, pass accept_serial_structure_destroyed=True and record in FINDINGS.json "
+                "that the resulting p is anticonservative."
+                % (scheme, feature_col, acf["acf1"], acf["n_pairs"], acf["n_groups"],
+                   acf_thresh, acf["order_basis"]))
+
+        if scheme == SCHEME_WITHIN and acf_material:
+            scheme_warning = (
+                "SCHEME_WITHIN RUN UNDER accept_serial_structure_destroyed=True ON AN "
+                "AUTOCORRELATED FEATURE (acf1 = %+.4f > %.4f). THIS NULL IS TOO NARROW AND THIS p "
+                "IS ANTICONSERVATIVE. Report it beside a SCHEME_WITHIN_CYCLIC null, never alone."
+                % (acf["acf1"], acf_thresh))
+        elif scheme == SCHEME_WITHIN_CYCLIC and not acf_material:
+            scheme_warning = (
+                "SCHEME_WITHIN_CYCLIC on a feature whose measured within-group acf1 is only %+.4f "
+                "(threshold %.4f, measured in %s). The cyclic shift is then buying nothing over "
+                "SCHEME_WITHIN -- which is fine -- BUT IF YOU BELIEVE THIS FEATURE IS "
+                "AUTOCORRELATED, THE ROWS INSIDE EACH GROUP ARE PROBABLY NOT IN TIME ORDER, and a "
+                "cyclic shift of a scrambled series preserves nothing while offering only n_g "
+                "distinct draws per group. Pass order_col=<your date column>."
+                % (acf["acf1"], acf_thresh, acf["order_basis"]))
+        elif scheme == SCHEME_WITHIN_CYCLIC and acf["min_group_size"] < 5:
+            scheme_warning = (
+                "SCHEME_WITHIN_CYCLIC: the smallest group has only %d rows, so it contributes only "
+                "%d distinct rotations. The joint null over %d groups is still rich, but a p "
+                "computed on very small groups is granular. min/median group size = %d/%.1f."
+                % (acf["min_group_size"], max(acf["min_group_size"], 1), acf["n_groups"],
+                   acf["min_group_size"], acf["median_group_size"]))
 
     work = data.copy()
     draws = np.empty(n_draws, dtype=float)
@@ -1031,6 +1592,8 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
             v = _permute_rows(values, block_codes, rng)
         elif scheme == SCHEME_WITHIN:
             v = _permute_within_groups(values, codes, rng)
+        elif scheme == SCHEME_WITHIN_CYCLIC:
+            v = _permute_within_groups_cyclic(values, codes, rng, seq_order)
         else:
             v = _permute_group_values(values, codes, block_codes, rng)
         work[feature_col] = _restore_dtype(v)
@@ -1065,17 +1628,29 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
         "feature_is_boolean": feature_is_boolean,
         "seed": int(seed),
         "is_row_level_naive": bool(is_row_level),
+        # ---- K6 diagnostics.  Reported on EVERY within-family call, not only on the gated one. --
+        "acf1_within_group": _nan_to_none(acf["acf1"]),
+        "acf1_n_pairs": int(acf["n_pairs"]),
+        "acf1_threshold": _nan_to_none(acf_thresh),
+        "acf1_is_material": bool(acf_material),
+        "serial_structure_preserved": (None if not is_within_family
+                                       else scheme == SCHEME_WITHIN_CYCLIC),
+        "order_basis": acf["order_basis"],
+        "cyclic_min_group_size": int(acf["min_group_size"]),
+        "cyclic_median_group_size": float(acf["median_group_size"]),
         "warning": (
             "THIS IS THE NAIVE ROW-LEVEL NULL. It is anticonservative whenever the feature or the "
             "outcome is clustered, and it must not carry a verdict. It is here for CONTRAST -- "
             "report it beside a correct-level null and its inflation factor (see "
-            "null_width_comparison), never on its own." if is_row_level else None),
+            "null_width_comparison), never on its own." if is_row_level else scheme_warning),
     }
 
 
 def null_width_comparison(stat_fn, data, group_col, n_draws, seed, *,
                           feature_col, block_col=None, alternative="greater",
-                          allow_nonconstant=False, scheme=SCHEME_BETWEEN, verbose=False):
+                          allow_nonconstant=False, scheme=SCHEME_BETWEEN, verbose=False,
+                          order_col=None, acf1_threshold=None,
+                          accept_serial_structure_destroyed=False):
     """Run BOTH the correct-level null and the naive ROW-LEVEL null; report the INFLATION FACTOR.
 
     Every screen should surface this number rather than rediscovering it.  Measured precedents:
@@ -1101,7 +1676,10 @@ def null_width_comparison(stat_fn, data, group_col, n_draws, seed, *,
     correct = permutation_null(stat_fn, data, group_col, n_draws, seed,
                                feature_col=feature_col, block_col=block_col,
                                alternative=alternative, allow_nonconstant=allow_nonconstant,
-                               scheme=scheme)
+                               scheme=scheme, order_col=order_col,
+                               acf1_threshold=acf1_threshold,
+                               accept_serial_structure_destroyed=(
+                                   accept_serial_structure_destroyed))
     naive = permutation_null(stat_fn, data, ROW_LEVEL, n_draws, seed,
                              feature_col=feature_col, block_col=block_col,
                              alternative=alternative)
@@ -1664,9 +2242,19 @@ def noop_placebo(stat_fn, data, n_draws, transform=None, tol=1e-15, verbose=Fals
       * Never raises on a confirmed no-op.  A confirmed no-op is a DIAGNOSTIC RESULT, not an error;
         the finding is "this control was vacuous", which the screen must report.
 
+    THE SECOND, ONE LEVEL DOWN  (K7)
+      The same bijection argument kills the control an analyst reaches for FIRST when validating
+      PER-ENTITY work: "relabel the player key and refit the per-player coefficients".  Relabelling
+      ids is a bijection on whole GROUPS, so every player's row set travels intact to its new label
+      and the multiset of fitted coefficients -- and therefore its spread -- is EXACTLY unchanged.
+      The kit's eighth user confirmed it at observed sd = 5.207e-17.  This function will correctly
+      report that as a no-op; `per_entity_control` runs it BESIDE a control that can actually fail,
+      which is the thing a caller who has just been told "your control is vacuous" needs next.
+
     DOES *NOT*
       * fix the placebo.  If `is_noop` is True your control is worthless and you need a real one
-        (permute the ASSIGNMENT of already-computed values -- see `permutation_null`).
+        (permute the ASSIGNMENT of already-computed values -- see `permutation_null`; for a
+        PER-ENTITY statistic see `per_entity_control`).
       * prove a placebo is VALID when `is_noop` is False.  Nonzero sd only rules out the identity;
         the scheme can still be at the wrong grouping level.
 
@@ -1698,13 +2286,193 @@ def noop_placebo(stat_fn, data, n_draws, transform=None, tol=1e-15, verbose=Fals
         "n_distinct_draw_values": int(len(np.unique(draws))),
         "tol": float(tol),
         "is_noop": is_noop,
+        # K7: a diagnosis that stops at "your control is vacuous" leaves the caller stuck, so the
+        # verdict now NAMES the non-vacuous alternatives.
         "verdict": ("CONFIRMED NO-OP -- this control tests nothing (sd=%.3e < tol=%.0e, real "
-                    "reproduced)" % (sd, tol)) if is_noop else
+                    "reproduced). YOU STILL NEED A CONTROL THAT CAN FAIL: permute the ASSIGNMENT "
+                    "of already-computed values with screenkit.permutation_null (scheme="
+                    "SCHEME_WITHIN_CYCLIC if the feature is autocorrelated), or -- if the "
+                    "statistic is a function of PER-ENTITY fits, where relabelling the entity key "
+                    "is a bijection on whole groups and therefore always a no-op -- use "
+                    "screenkit.per_entity_control, which runs the vacuous arm and a genuine arm "
+                    "side by side." % (sd, tol)) if is_noop else
                    ("NOT a no-op (sd=%.3e) -- the transform does move the statistic" % sd),
     }
     if verbose:
         print("  noop_placebo: real=%.10g  sd=%.3e  max|draw-real|=%.3e  distinct=%d -> %s"
               % (real, sd, max_dev, res["n_distinct_draw_values"], res["verdict"]))
+    return res
+
+
+# ===========================================================================================
+# PER-ENTITY CONTROL -- THE CONTROL THAT CAN ACTUALLY FAIL  (K7)
+# ===========================================================================================
+
+def _relabel_entity_transform(entity_col):
+    """Build the classic VACUOUS per-entity control: relabel the entity key, change nothing else."""
+    ecols = [entity_col] if isinstance(entity_col, str) else list(entity_col)
+
+    def _transform(d, rgen):
+        w = d.copy()
+        for c in ecols:
+            uq = pd.unique(w[c])
+            perm = rgen.permutation(len(uq))
+            mapping = dict(zip(uq, [uq[i] for i in perm]))
+            w[c] = w[c].map(mapping)
+        return w
+    return _transform
+
+
+def per_entity_control(stat_fn, data, entity_col, *, feature_col, n_draws, seed,
+                       scheme=SCHEME_WITHIN_CYCLIC, order_col=None, n_relabel_draws=None,
+                       tol=1e-15, alternative="greater", acf1_threshold=None,
+                       accept_serial_structure_destroyed=False, verbose=False):
+    """TWO controls for a PER-ENTITY statistic: the vacuous one, and one that CAN FAIL.  *** K7. ***
+
+    *** THE CONTROL AN ANALYST REACHES FOR FIRST WHEN VALIDATING PER-ENTITY WORK TESTS NOTHING. ***
+    "Shuffle the player labels and see whether the coefficient spread shrinks" is the natural
+    control for a per-player claim, and it is a LITERAL NO-OP.  Relabelling entity ids is a
+    BIJECTION ON WHOLE GROUPS: every player's row set travels intact to the new label, every
+    per-player fit is refitted on exactly the same rows, and the MULTISET of coefficients -- hence
+    its spread, its max, its interquartile range, any function of the multiset -- is EXACTLY
+    unchanged.  The kit's eighth user measured it: observed sd 5.207e-17 over 3 distinct draw
+    values, reported as CONFIRMED NO-OP.  It returned a clean bill of health while testing nothing.
+    This is the same trap family this program has now caught nine times, one level down: not the
+    ROW-level no-op, the ENTITY-level one.
+
+    *** THIS FUNCTION EXISTS BECAUSE DIAGNOSING THE VACUITY IS NOT ENOUGH. ***  `noop_placebo`
+    already reports the relabel arm correctly.  What was missing was the alternative, so this runs
+    both and reports them side by side:
+
+      ARM 1  RELABEL (vacuous, and PROVEN vacuous on YOUR statistic rather than argued).  Permute
+             the entity key labels and recompute.  Expected result: sd ~ 0, is_noop True.  If it is
+             NOT a no-op for your `stat_fn`, that is itself worth knowing -- your statistic depends
+             on entity IDENTITY, not only on the per-entity fits, and you should say which.
+      ARM 2  GENUINE.  Permute the FEATURE INSIDE each entity, which really does change every
+             per-entity fit while leaving each entity's sample size, its marginal distribution and
+             (under the default `SCHEME_WITHIN_CYCLIC`) its SERIAL structure exactly as they were.
+             The reporter's own honest null has this shape.  Expected result: a null with real
+             width, against which the observed statistic can genuinely fail to be extreme.
+             The default is the CYCLIC shift, not the shuffle, for the K6 reason: a per-entity
+             regressor in this program is usually a running mean of the entity's own history, and
+             shuffling it gives a null that is too narrow.
+
+    GUARANTEES
+      * Arm 2 goes through `permutation_null`, so it inherits the K6 acf gate, the constancy
+        refusal, and the add-one p.
+      * `controls_are_informative` is True only if arm 1 is a confirmed no-op AND arm 2 moves the
+        statistic.  Anything else is reported with a `warning` rather than a verdict.
+      * Neither arm ever raises on a confirmed no-op.  A vacuous control is a RESULT.
+
+    DOES *NOT*
+      * prove the per-entity structure is real when arm 2's p is small.  Arm 2 is a null over
+        WITHIN-ENTITY alignment; a per-entity claim can still be confounded at a level this does
+        not touch, and `entity_swap_null` answers the different "does WHICH entity matter" question.
+      * choose `order_col` for you.  Under the cyclic scheme the rows inside each entity must be in
+        TIME order or the shift preserves nothing -- see `permutation_null`.
+
+    Parameters
+    ----------
+    stat_fn     : callable(DataFrame) -> float -- your per-entity statistic (e.g. sd of per-entity
+                  slopes).  Must recompute the per-entity fits from the frame it is handed.
+    data        : pandas.DataFrame
+    entity_col  : str | list[str] -- the entity key that gets relabelled in arm 1 and grouped on
+                  in arm 2.
+    feature_col : str (keyword-only) -- the column arm 2 permutes inside each entity.
+    n_draws     : int -- draws for arm 2.
+    n_relabel_draws : int | None -- draws for arm 1 (default min(n_draws, 25); the relabel arm
+                  needs only enough draws to establish sd ~ 0, and each one refits everything).
+    scheme      : SCHEME_WITHIN_CYCLIC (default) | SCHEME_WITHIN
+    order_col, acf1_threshold, accept_serial_structure_destroyed : passed to `permutation_null`.
+
+    Returns
+    -------
+    dict: relabel (noop_placebo result), genuine (permutation_null result or None),
+          relabel_is_vacuous, genuine_control_moves, controls_are_informative, real,
+          entity_col, feature_col, scheme, genuine_error, verdict, warning
+    """
+    if scheme not in (SCHEME_WITHIN, SCHEME_WITHIN_CYCLIC):
+        raise ValueError("per_entity_control: scheme must be %r or %r (the between-group schemes "
+                         "do not perturb a per-entity fit), got %r"
+                         % (SCHEME_WITHIN_CYCLIC, SCHEME_WITHIN, scheme))
+    ecols = [entity_col] if isinstance(entity_col, str) else list(entity_col)
+    missing = [c for c in ecols if c not in data.columns]
+    if missing:
+        raise KeyError("per_entity_control: entity_col columns missing from frame: %s" % missing)
+    if feature_col not in data.columns:
+        raise KeyError("feature_col %r not in frame" % feature_col)
+
+    n_rel = int(n_relabel_draws) if n_relabel_draws is not None else int(min(n_draws, 25))
+    relabel = noop_placebo(stat_fn, data, n_rel,
+                           transform=_relabel_entity_transform(ecols), tol=tol)
+
+    genuine, genuine_error = None, None
+    try:
+        genuine = permutation_null(stat_fn, data, ecols, n_draws, seed,
+                                   feature_col=feature_col, alternative=alternative,
+                                   scheme=scheme, order_col=order_col,
+                                   acf1_threshold=acf1_threshold,
+                                   accept_serial_structure_destroyed=(
+                                       accept_serial_structure_destroyed))
+    except (ValueError, TypeError, KeyError) as exc:                    # noqa: BLE001
+        genuine_error = "%s: %s" % (type(exc).__name__, exc)
+
+    moves = bool(genuine is not None and np.isfinite(genuine["sd"]) and genuine["sd"] > tol)
+    informative = bool(relabel["is_noop"] and moves)
+
+    warn = None
+    if not relabel["is_noop"]:
+        warn = ("THE RELABEL ARM IS NOT A NO-OP (sd = %.3e). For a statistic that is a function of "
+                "the per-entity FITS this arm must be exactly vacuous, so your stat_fn depends on "
+                "entity IDENTITY as well -- through a merge, a sort, a lookup or a fixed effect. "
+                "Say which in FINDINGS.json before reading arm 2." % relabel["sd"])
+    elif genuine is None:
+        warn = ("THE GENUINE ARM COULD NOT RUN (%s), so you currently have NO control that can "
+                "fail. Do not report the relabel arm on its own -- it is vacuous by construction."
+                % genuine_error)
+    elif not moves:
+        warn = ("THE GENUINE ARM DID NOT MOVE THE STATISTIC EITHER (sd = %.3e). Both controls are "
+                "vacuous, so nothing here tests anything. Check that stat_fn really refits from "
+                "the frame it is handed rather than closing over precomputed per-entity values."
+                % genuine["sd"])
+
+    res = {
+        "entity_col": ecols,
+        "feature_col": feature_col,
+        "scheme": scheme,
+        "real": relabel["real"],
+        "relabel": relabel,
+        "genuine": genuine,
+        "genuine_error": genuine_error,
+        "relabel_is_vacuous": bool(relabel["is_noop"]),
+        "genuine_control_moves": moves,
+        "controls_are_informative": informative,
+        "warning": warn,
+        "verdict": (
+            "RELABEL ARM: CONFIRMED VACUOUS (sd = %.3e over %d draws, %d distinct values) -- "
+            "relabelling %s is a bijection on whole groups and tests NOTHING. GENUINE ARM "
+            "(%s inside %s): sd = %.6g, p = %.4f over %d draws -- THIS control can fail, and this "
+            "is the one to report."
+            % (relabel["sd"], n_rel, relabel["n_distinct_draw_values"], ecols, feature_col, ecols,
+               genuine["sd"], genuine["p"], genuine["n_draws"]) if informative else
+            "CONTROLS ARE NOT BOTH INFORMATIVE -- read `warning` before reporting anything."),
+    }
+    if verbose:
+        print("  per_entity_control(%s, feature=%s, scheme=%s): real = %.10g"
+              % (ecols, feature_col, scheme, res["real"]))
+        print("    ARM 1 RELABEL  %-28s sd = %.3e  distinct = %d  -> %s"
+              % ("(the vacuous one)", relabel["sd"], relabel["n_distinct_draw_values"],
+                 "CONFIRMED NO-OP" if relabel["is_noop"] else "NOT a no-op"))
+        if genuine is not None:
+            _a = genuine["acf1_within_group"]
+            print("    ARM 2 GENUINE  %-28s sd = %.6g   p = %.4f  acf1 = %s"
+                  % ("(%s)" % scheme, genuine["sd"], genuine["p"],
+                     ("%+.4f" % _a) if _a is not None else "n/a"))
+        else:
+            print("    ARM 2 GENUINE  COULD NOT RUN: %s" % genuine_error)
+        print("    -> %s" % res["verdict"])
+        if warn:
+            print("    !! %s" % warn)
     return res
 
 
@@ -1831,9 +2599,36 @@ def _is_season_valued(s):
     return (min(vs) >= 1990 and max(vs) <= 2100), vs
 
 
+def _classify_direction(bad_values, allowed_set):
+    """Split out-of-partition VALUES by DIRECTION.  *** THE K4 FIX. ***
+
+    The guard exists to stop the HOLDOUT -- 2025 and 2026, the FUTURE -- from entering exploration
+    work.  `draft_year = 2008` is not a holdout leak and cannot become one: it is fourteen years in
+    the PAST.  Pre-fix the module treated "outside `allowed`" as one undifferentiated category, so
+    a harmless 2008 and a genuine 2026 produced violation strings of the SAME SHAPE and a caller
+    could not tell them apart without re-parsing the guard's own prose -- which is the textual
+    check this whole module exists to forbid.
+
+    Returns (direction, future, interior, past) with the three value lists.  `direction` is the
+    most serious present: FUTURE > INTERIOR > PAST.
+    """
+    lo, hi = min(allowed_set), max(allowed_set)
+    future = sorted(v for v in bad_values if v > hi)
+    past = sorted(v for v in bad_values if v < lo)
+    interior = sorted(v for v in bad_values if lo <= v <= hi)
+    if future:
+        direction = DIRECTION_FUTURE
+    elif interior:
+        direction = DIRECTION_INTERIOR
+    else:
+        direction = DIRECTION_PAST
+    return direction, future, interior, past
+
+
 def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_SEASONS,
                      raise_on_violation=True, verbose=False, *,
-                     include_datetime_dtype_cols=True):
+                     include_datetime_dtype_cols=True,
+                     include_name_matched_season_cols=True):
     """VALUE-BASED verification that a frame lies inside the exploration partition (2021-2024).
 
     *** A TEXTUAL / REGEX / BYTE SCAN IS THE WRONG CHECK. ***
@@ -1854,6 +2649,39 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
     branch had been hardened against exactly this and the date branch had not.  `_is_date_valued`
     is now the missing half of that symmetry.
 
+    *** IT RAISED ON CLEAN DATA AGAIN (K4), AND NOT FOR THE K0 REASON. ***
+    A frame whose every observation sits in 2021-2024 was REJECTED if it carried a year-valued
+    PLAYER ATTRIBUTE -- `draft_year` (2002-2020), `birth_year`, `grad_year`, `founded`.  K4
+    SATISFIES the K0 invariant and fails anyway: the token "year" NOMINATES the column, the value
+    gate is asked "are these values years?", answers YES *correctly*, and the column is checked
+    against a partition it legitimately PREDATES.
+
+        the gate asked          "are these values plausible YEARS?"
+        the partition needs     "is this column the ROW'S OBSERVATION SEASON?"
+
+    Every year-valued attribute of a person or an organisation answers YES to the first and NO to
+    the second, so no sharper value test can separate them -- but DIRECTION can, and direction is
+    what the guard is actually for.  See `_classify_direction`.  An AUTO-DETECTED column whose
+    out-of-partition values are ALL in the PAST is recorded in `historical_year_cols` and is NOT
+    fatal; FUTURE and INTERIOR values stay fatal everywhere; and a column the caller NAMES in
+    `season_cols` is STRICT IN BOTH DIRECTIONS, because naming it asserts that it IS an observation
+    season and that assertion is honoured loudly (the same asymmetry B2 established for date_cols).
+
+    AND THE OBVIOUS WORKAROUND WAS AGAIN WORSE THAN THE BUG (B4).  Pre-fix, `season_cols=["season"]`
+    silenced the `draft_year` false alarm AND SILENCED A GENUINE 2026 LEAK in `source_season`, a
+    column the caller never named.  `season_cols` is now ADDITIVE, exactly as `date_cols` is: it
+    adds columns and marks them strict; it never disables auto-detection.
+
+    THE ONE PLACE DIRECTION ALONE WOULD HAVE OPENED A NEW FALSE-PASS DOOR, AND WHAT CLOSES IT.
+    "PAST is not fatal" taken literally would wave through a frame whose `season` column genuinely
+    holds 2019 OBSERVATION rows -- a real out-of-partition frame, quietly passed.  A purely-PAST
+    verdict is therefore non-fatal ONLY WHEN THE FRAME CARRIES AN ANCHOR: some season or date
+    column every one of whose values is INSIDE the partition.  With an anchor, the frame's
+    observation window is demonstrably in-partition and an earlier column is an ATTRIBUTE.  Without
+    one, nothing establishes that the frame is in-partition at all, and every out-of-partition
+    value stays FATAL in every direction.  `in_partition_anchor_cols` reports which columns
+    anchored the frame, or is empty.
+
     GUARANTEES
       * Never inspects file text, source code, prose, or logs.  Only column values.
       * A column whose NAME looks season-like but whose VALUES are not season-valued (e.g. dR2
@@ -1864,13 +2692,22 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
         same wording, and can never cause a failure.  A NUMERIC column is never read as epoch time.
       * Every datetime64-dtype column is checked whether or not it is named in `date_cols`, so the
         date check CANNOT be switched off by accident.  (B2 -- see the module header.)
+      * SYMMETRICALLY (K4/B4): every name-matched SEASON column is value-tested whether or not
+        `season_cols` is given, so the season check cannot be switched off by accident either.
       * Additionally sweeps every numeric column for all-whole-number values inside [2020, 2030]
-        that intersect the holdout seasons -- catching a year-valued column with an innocuous name.
+        that fall outside the partition -- catching a year-valued column with an innocuous name.
+      * Every violation is ALSO returned as a STRUCTURED RECORD in `violation_records`
+        ({col, kind, direction, values, fatal, source}), so a caller can adjudicate by DIRECTION
+        without parsing the guard's prose.  `violations` (the strings) is unchanged in shape.
+      * A FUTURE value (> max(allowed)) is FATAL in every column, always, however it was detected.
       * Emits NO warnings.  Parsing goes through `_parse_datetimes`, which does not trip pandas'
         "Could not infer format" UserWarning.
-      * Raises `PartitionViolation` on any violation when `raise_on_violation=True`.
+      * Raises `PartitionViolation` on any FATAL violation when `raise_on_violation=True`.
 
     DOES *NOT*
+      * decide whether a `historical_year_cols` entry is legitimate.  It records that a column
+        holds years EARLIER than the partition, which cannot be a holdout leak but can still be an
+        upstream join you did not intend.  Read the field; that is what it is for.
       * verify PROVENANCE.  A 2021-2024 frame can still be contaminated by an upstream artifact
         that was FIT through 2026.  That is `check_manifest`'s job, and filtering does not fix it.
       * detect leakage from the future WITHIN the partition (a 2024 row reading later 2024 games).
@@ -1886,7 +2723,9 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
                   given, it is ADDITIVE, not exhaustive (B2): datetime64 columns are still checked
                   unless `include_datetime_dtype_cols=False`.  A column named here whose values are
                   NOT dates raises ValueError rather than being silently skipped.
-    season_cols : list[str] | None -- None auto-detects columns whose name contains "season"/"year"
+    season_cols : list[str] | None -- columns the caller ASSERTS are observation seasons.  ADDITIVE,
+                  not exhaustive (B4): name-matched columns are value-tested as well.  A column
+                  named here is STRICT IN BOTH DIRECTIONS -- a PAST value in it is fatal.
     allowed     : iterable[int]
     raise_on_violation : bool
     verbose     : bool
@@ -1894,10 +2733,16 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
                   column regardless of name and regardless of `date_cols`.  Setting this False
                   restores the pre-K0 behaviour in which `date_cols=[]` disabled the date check
                   entirely; that is a false-pass door, so declare it in FINDINGS.json if you use it.
+    include_name_matched_season_cols : bool (keyword-only, default True) -- value-test every
+                  name-matched season column regardless of `season_cols`.  Setting this False
+                  restores the pre-K4 behaviour in which `season_cols=[...]` disabled auto-
+                  detection; that is the false-pass door B4 closes, so declare it if you use it.
 
     Returns
     -------
-    dict: ok, allowed, checked_season_cols, checked_date_cols, skipped_name_only, violations
+    dict: ok, allowed, checked_season_cols, checked_date_cols, skipped_name_only,
+          historical_year_cols, strict_season_cols, in_partition_anchor_cols, violation_records,
+          violations
     """
     allowed_set = set(int(a) for a in allowed)
     rep = {
@@ -1906,14 +2751,36 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
         "checked_season_cols": {},
         "checked_date_cols": {},
         "skipped_name_only": {},
+        #: K4: auto-detected year-valued columns whose out-of-partition values are ALL EARLIER than
+        #: the partition.  Recorded and visible; NOT fatal.  A `draft_year` of 2008 lands here.
+        "historical_year_cols": {},
+        #: columns the caller NAMED in `season_cols`: strict in both directions.
+        "strict_season_cols": [],
+        #: K4: columns every one of whose values is INSIDE the partition.  Their existence is what
+        #: licenses reading a purely-earlier column as an attribute rather than as an out-of-
+        #: partition frame.  Empty => nothing is waved through in any direction.
+        "in_partition_anchor_cols": [],
+        #: K4: structured violations, so direction can be read without parsing prose.
+        "violation_records": [],
         "violations": [],
     }
 
-    if season_cols is None:
-        cand_season = [c for c in df.columns
-                       if any(t in str(c).lower() for t in _SEASONISH_TOKENS)]
+    def _record(col, kind, direction, values, fatal, source):
+        rep["violation_records"].append({
+            "col": str(col), "kind": kind, "direction": direction,
+            "values": sorted(values), "fatal": bool(fatal), "source": source,
+        })
+
+    # ---- season candidates (B4: `season_cols` is ADDITIVE, never a replacement) ---------------
+    explicit_season = [] if season_cols is None else [c for c in season_cols]
+    rep["strict_season_cols"] = [str(c) for c in explicit_season]
+    if include_name_matched_season_cols:
+        name_matched_season = [c for c in df.columns
+                               if any(t in str(c).lower() for t in _SEASONISH_TOKENS)]
     else:
-        cand_season = list(season_cols)
+        name_matched_season = []
+    cand_season = list(explicit_season) + [c for c in name_matched_season
+                                           if c not in explicit_season]
 
     # ---- date candidates -------------------------------------------------------------------
     # `explicit` are columns the CALLER named: a failure to honour those must be LOUD (B2).
@@ -1930,20 +2797,37 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
         cand_date += [c for c in df.columns
                       if c not in cand_date and pd.api.types.is_datetime64_any_dtype(df[c])]
 
+    # ---- PASS A: value-test every candidate; DEFER the fatality decision -----------------------
+    # Fatality needs one fact the per-column loop does not have: whether ANY column establishes an
+    # observation window INSIDE the partition.  See `_anchor` below.
+    pending = []                      # (col, kind, strict, values, bad)
     for c in cand_season:
         if c not in df.columns:
+            if c in explicit_season:
+                raise KeyError("assert_partition: season_cols names %r, which is not in the frame "
+                               "(columns: %s)" % (c, list(df.columns)))
             continue
+        if str(c) in rep["checked_season_cols"]:
+            continue
+        strict = c in explicit_season
         is_season, vs = _is_season_valued(df[c])
         if not is_season:
             num = pd.to_numeric(df[c], errors="coerce")
-            rep["skipped_name_only"][str(c)] = (
-                "name is season-like but VALUES are not seasons (range %s..%s) -> NOT a season "
-                "column, skipped" % (num.min(), num.max()))
+            why = ("name is season-like but VALUES are not seasons (range %s..%s) -> NOT a season "
+                   "column, skipped" % (num.min(), num.max()))
+            if strict:
+                # An explicit assertion that cannot be honoured must be LOUD, never a silent
+                # no-check -- the same rule B2 established for `date_cols` (K0).
+                raise ValueError(
+                    "assert_partition: season_cols explicitly names %r, but %s Convert the column "
+                    "yourself, or drop it from season_cols; the kit refuses to invent a season "
+                    "from values that are not seasons." % (c, why))
+            rep["skipped_name_only"][str(c)] = why
             continue
         rep["checked_season_cols"][str(c)] = sorted(vs)
         bad = sorted(vs - allowed_set)
         if bad:
-            rep["violations"].append("season column %r has out-of-partition VALUES %s" % (c, bad))
+            pending.append((c, "season_column", strict, vs, bad))
 
     for c in cand_date:
         if c not in df.columns:
@@ -1968,9 +2852,14 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
         rep["checked_date_cols"][str(c)] = sorted(yrs)
         bad = sorted(yrs - allowed_set)
         if bad:
-            rep["violations"].append("date column %r has out-of-partition YEAR VALUES %s" % (c, bad))
+            pending.append((c, "date_column", c in explicit_date, yrs, bad))
 
+    # ---- the numeric catch-all sweep (VALUE-based, deliberately kept -- see the module header) --
+    handled = (set(rep["checked_season_cols"]) | set(rep["checked_date_cols"])
+               | set(rep["skipped_name_only"]))
     for c in df.columns:
+        if str(c) in handled:
+            continue
         s = pd.to_numeric(df[c], errors="coerce").dropna()
         if not len(s):
             continue
@@ -1978,8 +2867,51 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
             vs = set(int(x) for x in s.unique())
             bad = sorted(vs - allowed_set)
             if bad:
-                rep["violations"].append(
-                    "column %r holds year-like VALUES outside the partition: %s" % (c, bad))
+                pending.append((c, "numeric_sweep", False, vs, bad))
+
+    # ---- PASS B: DIRECTION DECIDES.  *** THIS IS THE K4 FIX. *** -------------------------------
+    # An ANCHOR is a column that establishes an observation window INSIDE the partition: a season or
+    # date column every one of whose values is in `allowed`.  Its existence is what licenses reading
+    # a purely-EARLIER column as a year-valued ATTRIBUTE (draft_year, birth_year, founded) rather
+    # than as evidence that the frame itself sits before the partition.
+    #   * NO ANCHOR -> nothing here shows the frame is in-partition, so EVERY out-of-partition value
+    #     stays FATAL in every direction.  A frame whose `season` column really does hold 2019 rows
+    #     is therefore still rejected: 2019 is not waved through just for being in the past.
+    #   * ANCHOR + purely PAST + AUTO-DETECTED -> recorded in `historical_year_cols`, NOT fatal.
+    #   * FUTURE or INTERIOR -> FATAL, always, everywhere.  That is the holdout direction.
+    #   * NAMED in season_cols / date_cols -> STRICT IN BOTH DIRECTIONS.  Naming a column asserts it
+    #     is the row's observation season, and an explicit assertion is honoured loudly.
+    anchor_cols = ([c for c, v in rep["checked_season_cols"].items() if set(v) <= allowed_set]
+                   + [c for c, v in rep["checked_date_cols"].items() if set(v) <= allowed_set])
+    has_anchor = bool(anchor_cols)
+    rep["in_partition_anchor_cols"] = sorted(anchor_cols)
+
+    for c, kind, strict, _vs, bad in pending:
+        direction, future, interior, past = _classify_direction(bad, allowed_set)
+        if direction == DIRECTION_PAST and not strict and has_anchor:
+            rep["historical_year_cols"][str(c)] = {
+                "values_before_partition": past,
+                "kind": kind,
+                "why": ("auto-detected year-valued column whose out-of-partition VALUES are ALL "
+                        "EARLIER than the partition %d-%d, in a frame whose observation window IS "
+                        "inside the partition (anchor columns: %s). It CANNOT be a holdout leak. "
+                        "This is the `draft_year` / `birth_year` / `founded` shape (K4). Recorded, "
+                        "NOT fatal, and NOT a certificate that the join was intended. If this "
+                        "column really IS the row's observation season, name it in season_cols and "
+                        "it becomes strict in both directions."
+                        % (min(allowed_set), max(allowed_set), sorted(anchor_cols))),
+            }
+            _record(c, kind, direction, bad, False, "historical attribute (K4)")
+            continue
+        why_fatal = ("named by the caller, therefore strict in both directions" if strict else
+                     ("no column establishes an in-partition observation window, so a PAST value "
+                      "is not adjudicable as an attribute" if direction == DIRECTION_PAST
+                      else "%s values are the direction this guard exists to stop" % direction))
+        _record(c, kind, direction, bad, True, why_fatal)
+        label = {"season_column": "season column %r has out-of-partition VALUES %s",
+                 "date_column": "date column %r has out-of-partition YEAR VALUES %s",
+                 "numeric_sweep": "column %r holds year-like VALUES outside the partition: %s"}[kind]
+        rep["violations"].append((label % (c, bad)) + " [direction=%s; %s]" % (direction, why_fatal))
 
     rep["violations"] = sorted(set(rep["violations"]))
     rep["ok"] = not rep["violations"]
@@ -1992,6 +2924,10 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
             print("    date   col %-24s YEARS  = %s" % (c, v))
         for c, why in rep["skipped_name_only"].items():
             print("    skipped    %-24s %s" % (c, why))
+        for c, d in rep["historical_year_cols"].items():
+            print("    HISTORICAL %-24s values BEFORE the partition = %s  (recorded, not fatal)"
+                  % (c, d["values_before_partition"]))
+        print("    in-partition anchor columns: %s" % (rep["in_partition_anchor_cols"] or "NONE"))
         print("    -> %s" % ("PASS" if rep["ok"] else "VIOLATIONS: %s" % rep["violations"]))
 
     if rep["violations"] and raise_on_violation:
