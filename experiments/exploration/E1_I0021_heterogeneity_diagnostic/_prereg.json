@@ -1,0 +1,172 @@
+{
+  "screen": "E1_I0021_heterogeneity_diagnostic",
+  "partition": [
+    2022,
+    2023,
+    2024
+  ],
+  "minutes_floor_grid": [
+    0,
+    10,
+    15,
+    20,
+    25,
+    30
+  ],
+  "headline_floor": 20,
+  "min_games_per_player": 8,
+  "n_draws": 2000,
+  "seed": 20260808,
+  "relationships": [
+    {
+      "id": "R01_prior_efficiency_persistence",
+      "frame": "D085_eff",
+      "x": "refA_ppm_floor",
+      "y": "y_ppm_floor",
+      "source": "D081 (E0_I0015) -- points-per-minute vs the player's own strictly-prior expanding mean rate; the persistence term the whole program leans on",
+      "expected_sign": "positive"
+    },
+    {
+      "id": "R02_opp_efg_allowed",
+      "frame": "D085_eff",
+      "x": "A01_opp_efg_allowed",
+      "y": "y_ppm_floor",
+      "source": "D085 (E0_I0016) opponent-allowance family, cell A01",
+      "expected_sign": "positive"
+    },
+    {
+      "id": "R03_opp_ts_allowed",
+      "frame": "D085_eff",
+      "x": "A02_opp_ts_allowed",
+      "y": "y_ppm_floor",
+      "source": "D085 (E0_I0016) opponent-allowance family, cell A02",
+      "expected_sign": "positive"
+    },
+    {
+      "id": "R04_opp_defrtg",
+      "frame": "D085_eff",
+      "x": "A10_opp_defrtg",
+      "y": "y_ppm_floor",
+      "source": "D085 (E0_I0016) opponent-allowance family, cell A10",
+      "expected_sign": "positive"
+    },
+    {
+      "id": "R05_teammate_volume_pregame",
+      "frame": "D089_tv",
+      "x": "P01_c04_prevgame",
+      "y": "y_ppm_floor",
+      "source": "D089 (E1_I0018) teammate-volume channel, STRICTLY PRE-GAME variant. The tip-time variant T01 is deliberately EXCLUDED: D089 ruling 2 forbids quoting it as a result because it is computed from a post-game observation",
+      "expected_sign": "negative"
+    },
+    {
+      "id": "R06_own_usage",
+      "frame": "D089_tv",
+      "x": "O01_own_usg_pg",
+      "y": "y_ppm_floor",
+      "source": "D089 (E1_I0018) own-usage term, the player-side half of the volume channel",
+      "expected_sign": "positive"
+    }
+  ],
+  "negative_controls": [
+    {
+      "id": "NC1_noise_eff_frame",
+      "frame": "D085_eff",
+      "x": "G01_noise",
+      "y": "y_ppm_floor",
+      "source": "pure noise column frozen into D085's screen frame"
+    },
+    {
+      "id": "NC2_noise_tv_frame",
+      "frame": "D089_tv",
+      "x": "G01_noise",
+      "y": "y_ppm_floor",
+      "source": "pure noise column frozen into D089's screen frame"
+    }
+  ],
+  "step1_components": [
+    {
+      "component": "minutes",
+      "kind": "LEVEL",
+      "y": "y_minutes",
+      "model": "minutes__pred_point",
+      "ref_frozen": "ref_minutes",
+      "ref_refit": "refF_minutes"
+    },
+    {
+      "component": "fga",
+      "kind": "LEVEL",
+      "y": "y_fga",
+      "model": "fga__pred_point",
+      "ref_frozen": "ref_fga",
+      "ref_refit": "refF_fga"
+    },
+    {
+      "component": "pts",
+      "kind": "LEVEL",
+      "y": "y_pts",
+      "model": "pts__pred_point",
+      "ref_frozen": "ref_pts",
+      "ref_refit": "refF_pts"
+    },
+    {
+      "component": "pts_per_min",
+      "kind": "RATE",
+      "y": "r_ppm",
+      "model": "mdl_ppm",
+      "ref_frozen": "refA_ppm",
+      "ref_refit": "refFA_ppm"
+    },
+    {
+      "component": "pts_per_min",
+      "kind": "RATE",
+      "y": "r_ppm",
+      "model": "mdl_ppm",
+      "ref_frozen": "refB_ppm",
+      "ref_refit": "refFB_ppm"
+    },
+    {
+      "component": "fga_per_min",
+      "kind": "RATE",
+      "y": "r_fpm",
+      "model": "mdl_fpm",
+      "ref_frozen": "refA_fpm",
+      "ref_refit": "refFA_fpm"
+    },
+    {
+      "component": "fga_per_min",
+      "kind": "RATE",
+      "y": "r_fpm",
+      "model": "mdl_fpm",
+      "ref_frozen": "refB_fpm",
+      "ref_refit": "refFB_fpm"
+    },
+    {
+      "component": "pts_per_fga",
+      "kind": "RATE",
+      "y": "r_ppf",
+      "model": "mdl_ppf",
+      "ref_frozen": "refA_ppf",
+      "ref_refit": "refFA_ppf"
+    },
+    {
+      "component": "pts_per_fga",
+      "kind": "RATE",
+      "y": "r_ppf",
+      "model": "mdl_ppf",
+      "ref_frozen": "refB_ppf",
+      "ref_refit": "refFB_ppf"
+    }
+  ],
+  "structure_covariates": [
+    "usage_tier_prior",
+    "minutes_tier_prior",
+    "role_stability_prior",
+    "team_pace_prior",
+    "experience_prior",
+    "n_games_retained"
+  ],
+  "step2_null_scheme": "WITHIN-PLAYER permutation: each player's own games are shuffled, which preserves that player's sample size and their marginal distribution of x and destroys ONLY the within-player alignment of x to y. The statistic is the SD of per-player slopes, computed by the identical code path on the real frame and on every draw.",
+  "step2_statistic": "sd of per-player OLS slopes (both precision-weighted and unweighted), players with >= min_games rows after the floor",
+  "decision_rule": "A relationship is called HETEROGENEOUS only if the observed spread exceeds the within-player null at p < 0.05 AND survives the max-statistic family-wise null across the 6 preregistered relationships at the headline floor AND its negative control does not.",
+  "prereg_sha256": "8d7c8af4fce21746ce4e1ec3b58dc346a8ea696075b5149c05b9ad4817a96cbb"
+}
