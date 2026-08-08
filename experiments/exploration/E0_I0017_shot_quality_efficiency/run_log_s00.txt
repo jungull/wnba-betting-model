@@ -1,0 +1,100 @@
+﻿====================================================================================================
+S00.1  check_manifest -- record the kit's verdict verbatim, do not paper over it
+====================================================================================================
+  shots_2021_regular.parquet         status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2021_playoffs.parquet        status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2022_regular.parquet         status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2022_playoffs.parquet        status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2023_regular.parquet         status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2023_playoffs.parquet        status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2024_regular.parquet         status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2024_playoffs.parquet        status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+
+====================================================================================================
+S00.2  load partition files ONLY; per-file structural value tests
+====================================================================================================
+  shots_2021_regular.parquet         rows=  26269  cols=26
+  shots_2021_playoffs.parquet        rows=   2385  cols=26
+  shots_2022_regular.parquet         rows=  29374  cols=26
+  shots_2022_playoffs.parquet        rows=   3139  cols=26
+  shots_2023_regular.parquet         rows=  32809  cols=26
+  shots_2023_playoffs.parquet        rows=   2813  cols=26
+  shots_2024_regular.parquet         rows=  32759  cols=26
+  shots_2024_playoffs.parquet        rows=   3010  cols=26
+  TOTAL rows=132558
+
+  GAME_DATE parse: 132558 parsed, 0 unparseable
+  GAME_DATE min=2021-05-14 00:00:00  max=2024-10-20 00:00:00
+
+  CHECK A  rows whose GAME_DATE year != filename season: 0
+  CHECK B  rows dated outside 2021-2024: 0
+  CHECK C  duplicate (GAME_ID, GAME_EVENT_ID) rows: 0
+  CHECK D  games with >1 distinct GAME_DATE: 0
+
+  CHECK E  per-column within-entity constancy (the pooling test)
+  column                 dtype      ndistinct const/plyr-ssn const/team-ssn  const/game
+  GRID_TYPE              str                1         1.0000         1.0000      1.0000
+  GAME_ID                str              970         0.0884         0.0500      1.0000
+  GAME_EVENT_ID          int64            718         0.0256         0.0000      0.0000
+  PLAYER_ID              int64            262         1.0000         0.0000      0.0000
+  PLAYER_NAME            str              262         1.0000         0.0000      0.0000
+  TEAM_ID                int64             12         0.9542         1.0000      0.0000
+  TEAM_NAME              str               12         0.9542         1.0000      0.0000
+  PERIOD                 int64              6         0.0618         0.0000      0.0000
+  MINUTES_REMAINING      int64             11         0.0330         0.0000      0.0000
+  SECONDS_REMAINING      int64             60         0.0266         0.0000      0.0000
+  EVENT_TYPE             str                2         0.0543         0.0000      0.0000
+  ACTION_TYPE            str               42         0.0298         0.0000      0.0000
+  SHOT_TYPE              str                2         0.1299         0.0000      0.0000
+  SHOT_ZONE_BASIC        str                7         0.0383         0.0000      0.0000
+  SHOT_ZONE_AREA         str                6         0.0660         0.0000      0.0000
+  SHOT_ZONE_RANGE        str                5         0.0490         0.0000      0.0000
+  SHOT_DISTANCE          int64             77         0.0288         0.0000      0.0000
+  LOC_X                  int64            499         0.0256         0.0000      0.0000
+  LOC_Y                  int64            593         0.0256         0.0000      0.0000
+  SHOT_ATTEMPTED_FLAG    int64              1         1.0000         1.0000      1.0000
+  SHOT_MADE_FLAG         int64              2         0.0543         0.0000      0.0000
+  GAME_DATE              str              387         0.0884         0.0500      1.0000
+  HTM                    str               12         0.1789         0.1625      1.0000
+  VTM                    str               12         0.1693         0.1625      1.0000
+
+  CHECK F  columns NOMINATED by name for an aggregate value test: 1
+    PERIOD                 name_hits=['per']  numeric=True  noninteger=False const_within_player_season=0.0618  -> not an aggregate by value
+
+  CHECK G  SHOT_DISTANCE reproduced from LOC_X/LOC_Y within 1 ft: 1.000000 of rows
+  CHECK H  SHOT_ATTEMPTED_FLAG values={1: 132558}
+           SHOT_MADE_FLAG values={0: 74346, 1: 58212}
+           EVENT_TYPE values={'Missed Shot': 74346, 'Made Shot': 58212}
+           SHOT_MADE_FLAG agrees with EVENT_TYPE on 1.000000 of rows
+
+  CHECK I v2  cumulative-signature test = non-decreasing AND non-constant within player-season
+    GAME_EVENT_ID          non-degenerate player-seasons=  606  frac non-decreasing = 0.0050
+    PLAYER_ID              non-degenerate player-seasons=    0  frac non-decreasing = n/a (always constant within group)
+    TEAM_ID                non-degenerate player-seasons=   43  frac non-decreasing = 0.4651
+    PERIOD                 non-degenerate player-seasons=  602  frac non-decreasing = 0.0066
+    MINUTES_REMAINING      non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    SECONDS_REMAINING      non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    SHOT_DISTANCE          non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    LOC_X                  non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    LOC_Y                  non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    SHOT_ATTEMPTED_FLAG    non-degenerate player-seasons=    0  frac non-decreasing = n/a (always constant within group)
+    SHOT_MADE_FLAG         non-degenerate player-seasons=  606  frac non-decreasing = 0.0017
+
+  CHECK J  cross-season value-identity probe
+    SHOT_DISTANCE    per-season means: 2021=12.736, 2022=12.803, 2023=12.698, 2024=12.801
+    LOC_X            per-season means: 2021=-2.851, 2022=-2.639, 2023=-3.068, 2024=-2.919
+    LOC_Y            per-season means: 2021=92.082, 2022=90.685, 2023=89.439, 2024=89.645
+
+  screenkit.assert_partition on the shot frame (value test):
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  assert_partition -> PASS
+
+====================================================================================================
+ALL STRUCTURAL CHECKS PASS: True
+VERDICT: ROW
+====================================================================================================
+
+wrote C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_quality_efficiency\_s00.json

@@ -1,0 +1,55 @@
+﻿====================================================================================================
+master_player manifest + partition
+====================================================================================================
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+{'asof_granularity': 'row', 'status': 'USABLE_IF_FILTERED', 'usable_at_e0_e1': True, 'filtering_helps': True}
+raw shape (33712, 78)
+seasons: [2021, 2022, 2023, 2024, 2025, 2026]
+season_type: {'Regular Season': 31324, 'Playoffs': 2388}
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+filtered shape (21462, 78)
+by season_type after filter: {'Regular Season': 19642, 'Playoffs': 1820}
+games: 970 players: 268
+game_id dtype: str example: 1022100001
+player_id dtype: Int64 example: 203406
+rows with minutes>0 and fga>=1: 17063
+  regular only: n/a
+
+====================================================================================================
+shotchart <-> master_player key compatibility
+====================================================================================================
+shot GAME_ID example: '1022300001' dtype str
+mp 2023 game_id example: '1022300001'
+shot games: 240  mp2023 games: 260  intersect: 240
+shot players: 154  mp2023 players: 164  intersect: 154
+n_shots == fga on 0.9436 of 2023 master_player rows
+mismatch sample:
+        player_name  fga_n  n_shots    minutes
+5331   Alysha Clark      8      0.0  23.666667
+5332  Sydney Colson      1      0.0   7.383333
+5333   Chelsea Gray     15      0.0  31.900000
+5334   Cayla George      1      0.0   3.466667
+5335    Kiah Stokes      1      0.0  23.683333
+5336  Alaina Coates      1      0.0   3.466667
+5337    Kelsey Plum     17      0.0  33.316667
+5338    A'ja Wilson     12      0.0  27.700000
+
+====================================================================================================
+play-by-play: assist structure and coverage
+====================================================================================================
+file-prefix counts: [('10221', 192), ('10222', 216), ('10223', 240), ('10224', 240), ('10225', 108)]
+NOTE 10225* = 2025 season -> NEVER OPENED by this screen
+EVENTMSGTYPE==1 (made shot) rows: 68
+  of which PLAYER2_ID != 0 (assister present): 34
+          PLAYER1_NAME       PLAYER2_NAME                                       HOMEDESCRIPTION                             VISITORDESCRIPTION
+7   Michaela Onyenwere      Sami Whitcomb  Onyenwere 25' 3PT Jump Shot (3 PTS) (Whitcomb 1 AST)                                            NaN
+12       Sami Whitcomb        Kylee Shook      Whitcomb 27' 3PT Jump Shot (3 PTS) (Shook 1 AST)                                            NaN
+16     Kelsey Mitchell  Danielle Robinson                                                   NaN  K. Mitchell 3' Layup (2 PTS) (Robinson 1 AST)
+17         Kylee Shook    Sabrina Ionescu           Shook 17' Jump Shot (2 PTS) (Ionescu 1 AST)                                            NaN
+18     Kelsey Mitchell                NaN                                                   NaN       K. Mitchell 17' Pullup Jump Shot (4 PTS)
+24      Teaira McCowan                NaN                                                   NaN        McCowan 4' Turnaround Jump Shot (2 PTS)
+EVENTMSGTYPE value counts: {4: 92, 2: 86, 1: 68, 8: 43, 6: 41, 3: 31, 5: 26, 9: 11, 12: 4, 13: 4, 10: 2, 18: 2, 7: 1}

@@ -1,0 +1,1462 @@
+﻿E0_I0017_shot_quality_efficiency -- CONSOLIDATED RUN LOG
+Per-step logs concatenated in execution order.
+Candidate list SHA-256: 15314c2163cb9b65c761d8bc859505578d5f474a4044a8442f0cc5cf42c5851f
+
+====================================================================================================
+=== run_log_s00.txt
+====================================================================================================
+====================================================================================================
+S00.1  check_manifest -- record the kit's verdict verbatim, do not paper over it
+====================================================================================================
+  shots_2021_regular.parquet         status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2021_playoffs.parquet        status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2022_regular.parquet         status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2022_playoffs.parquet        status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2023_regular.parquet         status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2023_playoffs.parquet        status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2024_regular.parquet         status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+  shots_2024_playoffs.parquet        status=UNVERIFIABLE   usable_at_e0_e1=False manifest_present=False
+
+====================================================================================================
+S00.2  load partition files ONLY; per-file structural value tests
+====================================================================================================
+  shots_2021_regular.parquet         rows=  26269  cols=26
+  shots_2021_playoffs.parquet        rows=   2385  cols=26
+  shots_2022_regular.parquet         rows=  29374  cols=26
+  shots_2022_playoffs.parquet        rows=   3139  cols=26
+  shots_2023_regular.parquet         rows=  32809  cols=26
+  shots_2023_playoffs.parquet        rows=   2813  cols=26
+  shots_2024_regular.parquet         rows=  32759  cols=26
+  shots_2024_playoffs.parquet        rows=   3010  cols=26
+  TOTAL rows=132558
+
+  GAME_DATE parse: 132558 parsed, 0 unparseable
+  GAME_DATE min=2021-05-14 00:00:00  max=2024-10-20 00:00:00
+
+  CHECK A  rows whose GAME_DATE year != filename season: 0
+  CHECK B  rows dated outside 2021-2024: 0
+  CHECK C  duplicate (GAME_ID, GAME_EVENT_ID) rows: 0
+  CHECK D  games with >1 distinct GAME_DATE: 0
+
+  CHECK E  per-column within-entity constancy (the pooling test)
+  column                 dtype      ndistinct const/plyr-ssn const/team-ssn  const/game
+  GRID_TYPE              str                1         1.0000         1.0000      1.0000
+  GAME_ID                str              970         0.0884         0.0500      1.0000
+  GAME_EVENT_ID          int64            718         0.0256         0.0000      0.0000
+  PLAYER_ID              int64            262         1.0000         0.0000      0.0000
+  PLAYER_NAME            str              262         1.0000         0.0000      0.0000
+  TEAM_ID                int64             12         0.9542         1.0000      0.0000
+  TEAM_NAME              str               12         0.9542         1.0000      0.0000
+  PERIOD                 int64              6         0.0618         0.0000      0.0000
+  MINUTES_REMAINING      int64             11         0.0330         0.0000      0.0000
+  SECONDS_REMAINING      int64             60         0.0266         0.0000      0.0000
+  EVENT_TYPE             str                2         0.0543         0.0000      0.0000
+  ACTION_TYPE            str               42         0.0298         0.0000      0.0000
+  SHOT_TYPE              str                2         0.1299         0.0000      0.0000
+  SHOT_ZONE_BASIC        str                7         0.0383         0.0000      0.0000
+  SHOT_ZONE_AREA         str                6         0.0660         0.0000      0.0000
+  SHOT_ZONE_RANGE        str                5         0.0490         0.0000      0.0000
+  SHOT_DISTANCE          int64             77         0.0288         0.0000      0.0000
+  LOC_X                  int64            499         0.0256         0.0000      0.0000
+  LOC_Y                  int64            593         0.0256         0.0000      0.0000
+  SHOT_ATTEMPTED_FLAG    int64              1         1.0000         1.0000      1.0000
+  SHOT_MADE_FLAG         int64              2         0.0543         0.0000      0.0000
+  GAME_DATE              str              387         0.0884         0.0500      1.0000
+  HTM                    str               12         0.1789         0.1625      1.0000
+  VTM                    str               12         0.1693         0.1625      1.0000
+
+  CHECK F  columns NOMINATED by name for an aggregate value test: 1
+    PERIOD                 name_hits=['per']  numeric=True  noninteger=False const_within_player_season=0.0618  -> not an aggregate by value
+
+  CHECK G  SHOT_DISTANCE reproduced from LOC_X/LOC_Y within 1 ft: 1.000000 of rows
+  CHECK H  SHOT_ATTEMPTED_FLAG values={1: 132558}
+           SHOT_MADE_FLAG values={0: 74346, 1: 58212}
+           EVENT_TYPE values={'Missed Shot': 74346, 'Made Shot': 58212}
+           SHOT_MADE_FLAG agrees with EVENT_TYPE on 1.000000 of rows
+
+  CHECK I v2  cumulative-signature test = non-decreasing AND non-constant within player-season
+    GAME_EVENT_ID          non-degenerate player-seasons=  606  frac non-decreasing = 0.0050
+    PLAYER_ID              non-degenerate player-seasons=    0  frac non-decreasing = n/a (always constant within group)
+    TEAM_ID                non-degenerate player-seasons=   43  frac non-decreasing = 0.4651
+    PERIOD                 non-degenerate player-seasons=  602  frac non-decreasing = 0.0066
+    MINUTES_REMAINING      non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    SECONDS_REMAINING      non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    SHOT_DISTANCE          non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    LOC_X                  non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    LOC_Y                  non-degenerate player-seasons=  606  frac non-decreasing = 0.0000
+    SHOT_ATTEMPTED_FLAG    non-degenerate player-seasons=    0  frac non-decreasing = n/a (always constant within group)
+    SHOT_MADE_FLAG         non-degenerate player-seasons=  606  frac non-decreasing = 0.0017
+
+  CHECK J  cross-season value-identity probe
+    SHOT_DISTANCE    per-season means: 2021=12.736, 2022=12.803, 2023=12.698, 2024=12.801
+    LOC_X            per-season means: 2021=-2.851, 2022=-2.639, 2023=-3.068, 2024=-2.919
+    LOC_Y            per-season means: 2021=92.082, 2022=90.685, 2023=89.439, 2024=89.645
+
+  screenkit.assert_partition on the shot frame (value test):
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  assert_partition -> PASS
+
+====================================================================================================
+ALL STRUCTURAL CHECKS PASS: True
+VERDICT: ROW
+====================================================================================================
+
+wrote C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_quality_efficiency\_s00.json
+
+====================================================================================================
+=== run_log_s00b.txt
+====================================================================================================
+====================================================================================================
+master_player manifest + partition
+====================================================================================================
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+{'asof_granularity': 'row', 'status': 'USABLE_IF_FILTERED', 'usable_at_e0_e1': True, 'filtering_helps': True}
+raw shape (33712, 78)
+seasons: [2021, 2022, 2023, 2024, 2025, 2026]
+season_type: {'Regular Season': 31324, 'Playoffs': 2388}
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+filtered shape (21462, 78)
+by season_type after filter: {'Regular Season': 19642, 'Playoffs': 1820}
+games: 970 players: 268
+game_id dtype: str example: 1022100001
+player_id dtype: Int64 example: 203406
+rows with minutes>0 and fga>=1: 17063
+  regular only: n/a
+
+====================================================================================================
+shotchart <-> master_player key compatibility
+====================================================================================================
+shot GAME_ID example: '1022300001' dtype str
+mp 2023 game_id example: '1022300001'
+shot games: 240  mp2023 games: 260  intersect: 240
+shot players: 154  mp2023 players: 164  intersect: 154
+n_shots == fga on 0.9436 of 2023 master_player rows
+mismatch sample:
+        player_name  fga_n  n_shots    minutes
+5331   Alysha Clark      8      0.0  23.666667
+5332  Sydney Colson      1      0.0   7.383333
+5333   Chelsea Gray     15      0.0  31.900000
+5334   Cayla George      1      0.0   3.466667
+5335    Kiah Stokes      1      0.0  23.683333
+5336  Alaina Coates      1      0.0   3.466667
+5337    Kelsey Plum     17      0.0  33.316667
+5338    A'ja Wilson     12      0.0  27.700000
+
+====================================================================================================
+play-by-play: assist structure and coverage
+====================================================================================================
+file-prefix counts: [('10221', 192), ('10222', 216), ('10223', 240), ('10224', 240), ('10225', 108)]
+NOTE 10225* = 2025 season -> NEVER OPENED by this screen
+EVENTMSGTYPE==1 (made shot) rows: 68
+  of which PLAYER2_ID != 0 (assister present): 34
+          PLAYER1_NAME       PLAYER2_NAME                                       HOMEDESCRIPTION                             VISITORDESCRIPTION
+7   Michaela Onyenwere      Sami Whitcomb  Onyenwere 25' 3PT Jump Shot (3 PTS) (Whitcomb 1 AST)                                            NaN
+12       Sami Whitcomb        Kylee Shook      Whitcomb 27' 3PT Jump Shot (3 PTS) (Shook 1 AST)                                            NaN
+16     Kelsey Mitchell  Danielle Robinson                                                   NaN  K. Mitchell 3' Layup (2 PTS) (Robinson 1 AST)
+17         Kylee Shook    Sabrina Ionescu           Shook 17' Jump Shot (2 PTS) (Ionescu 1 AST)                                            NaN
+18     Kelsey Mitchell                NaN                                                   NaN       K. Mitchell 17' Pullup Jump Shot (4 PTS)
+24      Teaira McCowan                NaN                                                   NaN        McCowan 4' Turnaround Jump Shot (2 PTS)
+EVENTMSGTYPE value counts: {4: 92, 2: 86, 1: 68, 8: 43, 6: 41, 3: 31, 5: 26, 9: 11, 12: 4, 13: 4, 10: 2, 18: 2, 7: 1}
+
+====================================================================================================
+=== run_log_s01.txt
+====================================================================================================
+python : C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017
+_shot_quality_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually 
+the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once 
+using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+At line:1 char:445
++ ... shot_quality_efficiency"; python "$d\s01_build_frame.py" 2>&1 | Tee-O ...
++                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\jgalla...= frame.copy()`:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:284: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  tg[c] = tg[c + "_tot"] - tg[c + "_tk"]           # ALLOWED
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:311: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["y_ppm"] = safe_div(pl["pts"], pl["minutes"])
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:312: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["y_ts"] = safe_div(pl["pts"], 2.0 * (pl["fga"] + 0.44 * pl["fta"]))
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:313: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["y_efg"] = safe_div(pl["fgm"] + 0.5 * pl["fg3m"], pl["fga"])
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:327: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["refB_" + rt] = b.fillna(lg)
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:328: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["refA_" + rt] = a.fillna(lg)
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:327: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["refB_" + rt] = b.fillna(lg)
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:328: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["refA_" + rt] = a.fillna(lg)
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:327: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["refB_" + rt] = b.fillna(lg)
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:328: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["refA_" + rt] = a.fillna(lg)
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:336: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["D04_xefg_minus_own"] = pl["D01_xefg_zone"] - pl["refB_efg"]
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:337: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["F01_dist_x_oppdist"] = pl["A01_dist_mean"] * pl["E01_opp_dist_conceded"]
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:338: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["F02_lt5ft_x_opplt5ft"] = pl["A02_share_lt5ft"] * pl["E02_opp_lt5ft_conceded"]
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:339: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["F03_xefg_x_oppxefg"] = pl["D01_xefg_zone"] * pl["E04_opp_xefg_conceded"]
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:340: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["F04_3pa_x_opp3pa"] = pl["A08_share_3pa"] * pl["E05_opp_3pa_conceded"]
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:341: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["G01_noise"] = rng.standard_normal(len(pl))
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E0_I0017_shot_qua
+lity_efficiency\s01_build_frame.py:342: PerformanceWarning: DataFrame is highly fragmented.  This is usually the 
+result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using 
+pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  pl["G02_ref_echo"] = pl["refB_ppm"]           # per-outcome echo is re-pointed in s02
+
+====================================================================================================
+0. INPUT MANIFEST VERDICTS -- recorded verbatim, never papered over
+====================================================================================================
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest shots_2023_regular.parquet -> UNVERIFIABLE (no manifest)
+  check_manifest pbp_1022300001.parquet -> UNVERIFIABLE (no manifest)
+  data/shotcharts/* and data/playbyplay/* remain UNVERIFIABLE by manifest.
+  s00 established VERDICT=ROW on column VALUES; see NOTES.md Step 0.
+
+====================================================================================================
+1. LOAD master_player, FILTER TO PARTITION ON VALUES
+====================================================================================================
+  raw master_player: 33712 rows
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+  partition rows=21462 games=970 players=268
+  appearances (minutes>0): 18212
+
+====================================================================================================
+2. LOAD SHOT EVENTS (2021-2024 regular + playoffs ONLY)
+====================================================================================================
+  files opened: 8  (2025/2026 and league_avg_* NEVER opened)
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col GAME_DATE                YEARS  = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  shot events: 132558  games=970
+
+====================================================================================================
+3. LOAD PLAY-BY-PLAY ASSIST FLAGS (2021-2024 regular only; 2025 files NEVER opened)
+====================================================================================================
+  pbp files in partition: 888  (skipped 108 outside)
+  made-FG pbp events: 53211  assisted: 0.6649
+  made shots matched to a pbp assist record: 0.9140
+
+====================================================================================================
+4. REALISED per-shot indicators -> per-player-game COUNTS  (INTERMEDIATE ONLY)
+====================================================================================================
+  distinct ACTION_TYPE labels: 42
+  realised player-game shot rows: 17063
+
+====================================================================================================
+5. LEAGUE PRIOR ZONE / ACTION RATES  (strictly earlier dates in the SAME season)
+====================================================================================================
+  league prior zone table: 387 (season, date) rows
+  first-date NaN check (must be all-NaN on each season's first date):
+    {(2021, Timestamp('2021-05-14 00:00:00')): True, (2022, Timestamp('2022-05-06 00:00:00')): True, (2023, Timestamp('2023-05-19 00:00:00')): True, (2024, Timestamp('2024-05-14 00:00:00')): True}
+
+====================================================================================================
+6. ATTACH TO PLAYER-GAME ROWS AND CONVERT TO STRICTLY-PRIOR FORECASTS
+====================================================================================================
+  player-game rows with >=1 shot event: 17063 of 18212
+
+====================================================================================================
+7. OPPONENT SHOT QUALITY CONCEDED  (family E)
+====================================================================================================
+  rows with a finite opponent-conceded prior: 17746 of 18212
+
+====================================================================================================
+8. OUTCOMES + STRICTLY-PRIOR REFERENCES  (identical construction to D085)
+====================================================================================================
+  reference fallback accounting: {
+  "ppm": {
+    "n_from_player_prior": 17578,
+    "n_from_league_prior": 630,
+    "n_still_nan": 4
+  },
+  "ts": {
+    "n_from_player_prior": 17513,
+    "n_from_league_prior": 695,
+    "n_still_nan": 4
+  },
+  "efg": {
+    "n_from_player_prior": 17504,
+    "n_from_league_prior": 704,
+    "n_still_nan": 4
+  }
+}
+
+====================================================================================================
+9. SCREEN FRAME: Regular Season, >= 3 prior appearances
+====================================================================================================
+  screen frame: 13989 rows, 246 players, 827 games, seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+
+====================================================================================================
+10. FIRST-APPEARANCE NaN ASSERTION -- proof by construction that nothing reads its own game
+====================================================================================================
+  player-entity candidates finite on a player's first appearance (must be 0):
+    A01_dist_mean                    0
+    A02_share_lt5ft                  0
+    A03_share_restricted             0
+    A04_share_paint                  0
+    A05_share_midrange               0
+    A06_share_corner3                0
+    A07_share_abovebreak3            0
+    A08_share_3pa                    0
+    A09_share_catch_action           0
+    A10_share_selfcreate_action      0
+    A11_share_layup_action           0
+    A12_share_plain_jumpshot         0
+    B01_dist_t5                      0
+    B02_lt5ft_t5                     0
+    B03_restricted_t5                0
+    B04_dist_trend                   0
+    B05_lt5ft_trend                  0
+    B06_3pa_trend                    0
+    C01_assisted_share               0
+    C02_assisted_share_3pt           0
+    C03_assisted_share_2pt           0
+    C04_assisted_share_t5            0
+    C05_assisted_trend               0
+    D01_xefg_zone                    0
+    D02_xpps_zone                    0
+    D03_xefg_action                  0
+    D04_xefg_minus_own               0
+    F01_dist_x_oppdist               0
+    F02_lt5ft_x_opplt5ft             0
+    F03_xefg_x_oppxefg               0
+    F04_3pa_x_opp3pa                 0
+  (family E is an OPPONENT prior and is legitimately finite on a player's first game --
+   it is NaN on the OPPONENT's first game of the season, checked separately below)
+    E01_opp_dist_conceded            finite on opponent's FIRST game of season: 0 (must be 0)
+    E02_opp_lt5ft_conceded           finite on opponent's FIRST game of season: 0 (must be 0)
+    E03_opp_restricted_conceded      finite on opponent's FIRST game of season: 0 (must be 0)
+    E04_opp_xefg_conceded            finite on opponent's FIRST game of season: 0 (must be 0)
+    E05_opp_3pa_conceded             finite on opponent's FIRST game of season: 0 (must be 0)
+    E06_opp_assisted_conceded        finite on opponent's FIRST game of season: 0 (must be 0)
+  ALL PASS -- no candidate is finite before it has any prior data.
+
+====================================================================================================
+11. LEAKAGE PROBES (trap 2).  Names lie in BOTH directions -- probe, do not trust labels.
+====================================================================================================
+  future_leakage_probe: n=13393
+    corr(refB_ppm                , own strictly-after-date future) = +0.6532
+    corr(refA_ppm                , own strictly-after-date future) = +0.6356
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.023190
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): 'refB_ppm' tracks the entity's UNPLAYED FUTURE more closely than 'refA_ppm' does (|0.6532| vs |0.6356|) and adds dR2=0.0232 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) 'refB_ppm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) 'refB_ppm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refA_ppm' will correlate more with the entity's own future than 'refA_ppm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+  future_leakage_probe: n=13393
+    corr(_LEAKY_control_ppm      , own strictly-after-date future) = +0.8342
+    corr(refB_ppm                , own strictly-after-date future) = +0.6532
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.283271
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): '_LEAKY_control_ppm' tracks the entity's UNPLAYED FUTURE more closely than 'refB_ppm' does (|0.8342| vs |0.6532|) and adds dR2=0.2833 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) '_LEAKY_control_ppm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) '_LEAKY_control_ppm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refB_ppm' will correlate more with the entity's own future than 'refB_ppm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+
+  every candidate probed against the clean reference:
+                  candidate     n  corr_candidate_with_future  corr_ref_with_future  dr2_over_ref_predicting_future                                        status                                                                                                                                                                                                                                                                                     verdict
+              A01_dist_mean 13984                   -0.092679              0.652877                    7.525774e-04 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS              NOT FLAGGED: 'A01_dist_mean' does not out-predict 'refB_ppm' on the unplayed future (|-0.0927| vs |0.6529|, dR2=0.0008). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+            A02_share_lt5ft 13984                    0.023448              0.652877                    3.342719e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS             NOT FLAGGED: 'A02_share_lt5ft' does not out-predict 'refB_ppm' on the unplayed future (|0.0234| vs |0.6529|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+       A03_share_restricted 13984                    0.018800              0.652877                    1.036490e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS        NOT FLAGGED: 'A03_share_restricted' does not out-predict 'refB_ppm' on the unplayed future (|0.0188| vs |0.6529|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+            A04_share_paint 13984                    0.076786              0.652877                    3.723274e-04 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS             NOT FLAGGED: 'A04_share_paint' does not out-predict 'refB_ppm' on the unplayed future (|0.0768| vs |0.6529|, dR2=0.0004). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+         A05_share_midrange 13984                    0.130233              0.652877                    3.378260e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS          NOT FLAGGED: 'A05_share_midrange' does not out-predict 'refB_ppm' on the unplayed future (|0.1302| vs |0.6529|, dR2=0.0034). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+          A06_share_corner3 13984                   -0.223156              0.652877                    3.084611e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS          NOT FLAGGED: 'A06_share_corner3' does not out-predict 'refB_ppm' on the unplayed future (|-0.2232| vs |0.6529|, dR2=0.0031). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+      A07_share_abovebreak3 13984                   -0.100716              0.652877                    1.616595e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS      NOT FLAGGED: 'A07_share_abovebreak3' does not out-predict 'refB_ppm' on the unplayed future (|-0.1007| vs |0.6529|, dR2=0.0016). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+              A08_share_3pa 13984                   -0.146004              0.652877                    2.500080e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS              NOT FLAGGED: 'A08_share_3pa' does not out-predict 'refB_ppm' on the unplayed future (|-0.1460| vs |0.6529|, dR2=0.0025). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+     A09_share_catch_action 13984                   -0.205746              0.652877                    1.109190e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS     NOT FLAGGED: 'A09_share_catch_action' does not out-predict 'refB_ppm' on the unplayed future (|-0.2057| vs |0.6529|, dR2=0.0011). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+A10_share_selfcreate_action 13984                    0.187217              0.652877                    8.158039e-04 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS NOT FLAGGED: 'A10_share_selfcreate_action' does not out-predict 'refB_ppm' on the unplayed future (|0.1872| vs |0.6529|, dR2=0.0008). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+     A11_share_layup_action 13984                    0.007653              0.652877                    4.207508e-06 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS      NOT FLAGGED: 'A11_share_layup_action' does not out-predict 'refB_ppm' on the unplayed future (|0.0077| vs |0.6529|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+   A12_share_plain_jumpshot 13984                   -0.208006              0.652877                    3.158605e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS   NOT FLAGGED: 'A12_share_plain_jumpshot' does not out-predict 'refB_ppm' on the unplayed future (|-0.2080| vs |0.6529|, dR2=0.0032). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+                B01_dist_t5 13979                   -0.088061              0.653105                    8.777266e-04 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS                NOT FLAGGED: 'B01_dist_t5' does not out-predict 'refB_ppm' on the unplayed future (|-0.0881| vs |0.6531|, dR2=0.0009). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+               B02_lt5ft_t5 13979                    0.016809              0.653105                    1.471931e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS                NOT FLAGGED: 'B02_lt5ft_t5' does not out-predict 'refB_ppm' on the unplayed future (|0.0168| vs |0.6531|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+          B03_restricted_t5 13979                    0.008675              0.653105                    2.944699e-07 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS           NOT FLAGGED: 'B03_restricted_t5' does not out-predict 'refB_ppm' on the unplayed future (|0.0087| vs |0.6531|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+             B04_dist_trend 13979                    0.000101              0.653105                    1.419502e-04 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS              NOT FLAGGED: 'B04_dist_trend' does not out-predict 'refB_ppm' on the unplayed future (|0.0001| vs |0.6531|, dR2=0.0001). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+            B05_lt5ft_trend 13979                   -0.013204              0.653105                    1.578990e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS            NOT FLAGGED: 'B05_lt5ft_trend' does not out-predict 'refB_ppm' on the unplayed future (|-0.0132| vs |0.6531|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+              B06_3pa_trend 13979                   -0.024355              0.653105                    8.810667e-04 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS              NOT FLAGGED: 'B06_3pa_trend' does not out-predict 'refB_ppm' on the unplayed future (|-0.0244| vs |0.6531|, dR2=0.0009). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+         C01_assisted_share 13924                   -0.128651              0.657021                    1.436920e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS         NOT FLAGGED: 'C01_assisted_share' does not out-predict 'refB_ppm' on the unplayed future (|-0.1287| vs |0.6570|, dR2=0.0014). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+     C02_assisted_share_3pt 11931                   -0.123390              0.672744                    2.515663e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS     NOT FLAGGED: 'C02_assisted_share_3pt' does not out-predict 'refB_ppm' on the unplayed future (|-0.1234| vs |0.6727|, dR2=0.0025). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+     C03_assisted_share_2pt 13851                   -0.062244              0.657543                    6.586689e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS     NOT FLAGGED: 'C03_assisted_share_2pt' does not out-predict 'refB_ppm' on the unplayed future (|-0.0622| vs |0.6575|, dR2=0.0001). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+      C04_assisted_share_t5 13822                   -0.110604              0.657362                    1.249366e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS      NOT FLAGGED: 'C04_assisted_share_t5' does not out-predict 'refB_ppm' on the unplayed future (|-0.1106| vs |0.6574|, dR2=0.0012). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+         C05_assisted_trend 13822                   -0.009368              0.657362                    5.865610e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS         NOT FLAGGED: 'C05_assisted_trend' does not out-predict 'refB_ppm' on the unplayed future (|-0.0094| vs |0.6574|, dR2=0.0001). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+              D01_xefg_zone 13984                   -0.114367              0.652877                    1.960558e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS              NOT FLAGGED: 'D01_xefg_zone' does not out-predict 'refB_ppm' on the unplayed future (|-0.1144| vs |0.6529|, dR2=0.0020). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+              D02_xpps_zone 13984                   -0.114367              0.652877                    1.960558e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS              NOT FLAGGED: 'D02_xpps_zone' does not out-predict 'refB_ppm' on the unplayed future (|-0.1144| vs |0.6529|, dR2=0.0020). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+            D03_xefg_action 13984                   -0.107263              0.652877                    6.107400e-04 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS            NOT FLAGGED: 'D03_xefg_action' does not out-predict 'refB_ppm' on the unplayed future (|-0.1073| vs |0.6529|, dR2=0.0006). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+         D04_xefg_minus_own 13984                   -0.176626              0.652877                    1.818349e-02 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS         NOT FLAGGED: 'D04_xefg_minus_own' does not out-predict 'refB_ppm' on the unplayed future (|-0.1766| vs |0.6529|, dR2=0.0182). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+      E01_opp_dist_conceded 13989                   -0.002753              0.653242                    1.715811e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS      NOT FLAGGED: 'E01_opp_dist_conceded' does not out-predict 'refB_ppm' on the unplayed future (|-0.0028| vs |0.6532|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+     E02_opp_lt5ft_conceded 13989                    0.005836              0.653242                    9.478821e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS      NOT FLAGGED: 'E02_opp_lt5ft_conceded' does not out-predict 'refB_ppm' on the unplayed future (|0.0058| vs |0.6532|, dR2=0.0001). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+E03_opp_restricted_conceded 13989                    0.008162              0.653242                    9.102769e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS NOT FLAGGED: 'E03_opp_restricted_conceded' does not out-predict 'refB_ppm' on the unplayed future (|0.0082| vs |0.6532|, dR2=0.0001). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+      E04_opp_xefg_conceded 13989                    0.016646              0.653242                    1.846565e-04 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS       NOT FLAGGED: 'E04_opp_xefg_conceded' does not out-predict 'refB_ppm' on the unplayed future (|0.0166| vs |0.6532|, dR2=0.0002). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+       E05_opp_3pa_conceded 13989                    0.003143              0.653242                    3.301584e-06 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS        NOT FLAGGED: 'E05_opp_3pa_conceded' does not out-predict 'refB_ppm' on the unplayed future (|0.0031| vs |0.6532|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+  E06_opp_assisted_conceded 13989                   -0.004127              0.653242                    4.897073e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS  NOT FLAGGED: 'E06_opp_assisted_conceded' does not out-predict 'refB_ppm' on the unplayed future (|-0.0041| vs |0.6532|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+         F01_dist_x_oppdist 13984                   -0.092215              0.652877                    7.715250e-04 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS         NOT FLAGGED: 'F01_dist_x_oppdist' does not out-predict 'refB_ppm' on the unplayed future (|-0.0922| vs |0.6529|, dR2=0.0008). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+       F02_lt5ft_x_opplt5ft 13984                    0.024381              0.652877                    6.278874e-05 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS        NOT FLAGGED: 'F02_lt5ft_x_opplt5ft' does not out-predict 'refB_ppm' on the unplayed future (|0.0244| vs |0.6529|, dR2=0.0001). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+         F03_xefg_x_oppxefg 13984                   -0.098203              0.652877                    1.255214e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS         NOT FLAGGED: 'F03_xefg_x_oppxefg' does not out-predict 'refB_ppm' on the unplayed future (|-0.0982| vs |0.6529|, dR2=0.0013). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+           F04_3pa_x_opp3pa 13984                   -0.144552              0.652877                    2.415278e-03 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS           NOT FLAGGED: 'F04_3pa_x_opp3pa' does not out-predict 'refB_ppm' on the unplayed future (|-0.1446| vs |0.6529|, dR2=0.0024). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+                  G01_noise 13989                   -0.003960              0.653242                    2.881384e-06 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS                  NOT FLAGGED: 'G01_noise' does not out-predict 'refB_ppm' on the unplayed future (|-0.0040| vs |0.6532|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+               G02_ref_echo 13989                    0.653242              0.653242                    9.191873e-17 NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS                NOT FLAGGED: 'G02_ref_echo' does not out-predict 'refB_ppm' on the unplayed future (|0.6532| vs |0.6532|, dR2=0.0000). This probe found nothing; it is NOT a certificate -- a baseline can read the future without out-predicting a pregame one. Also read the construction.
+
+====================================================================================================
+12. VERIFY BaseFit AGAINST screenkit.delta_r2_plain BEFORE ANY RESULT IS PRODUCED
+====================================================================================================
+  BaseFit.dr2   = 1.640388041813e-04
+  kit delta_r2  = 1.640388041814e-04
+  abs diff      = 1.152e-16
+
+====================================================================================================
+13. COVERAGE PER CANDIDATE + SAVE
+====================================================================================================
+                  candidate  n_finite  frac_finite       mean        sd       p10        p90
+              A01_dist_mean     13984     0.999643  12.714741  4.663218  5.857143  18.437236
+            A02_share_lt5ft     13984     0.999643   0.340976  0.193608  0.121076   0.620000
+       A03_share_restricted     13984     0.999643   0.295664  0.177318  0.101291   0.550000
+            A04_share_paint     13984     0.999643   0.494520  0.219351  0.223881   0.812500
+         A05_share_midrange     13984     0.999643   0.172593  0.109191  0.048780   0.303030
+          A06_share_corner3     13984     0.999643   0.043077  0.051888  0.000000   0.104816
+      A07_share_abovebreak3     13984     0.999643   0.287797  0.188329  0.016084   0.541667
+              A08_share_3pa     13984     0.999643   0.332887  0.212758  0.017857   0.622604
+     A09_share_catch_action     13984     0.999643   0.526702  0.170304  0.305556   0.750000
+A10_share_selfcreate_action     13984     0.999643   0.453374  0.177212  0.214286   0.685606
+     A11_share_layup_action     13984     0.999643   0.354845  0.194237  0.128205   0.634146
+   A12_share_plain_jumpshot     13984     0.999643   0.355407  0.161130  0.166667   0.577337
+                B01_dist_t5     13979     0.999285  12.730174  4.896971  5.652174  18.852391
+               B02_lt5ft_t5     13979     0.999285   0.340895  0.207256  0.100000   0.636364
+          B03_restricted_t5     13979     0.999285   0.295191  0.192684  0.076923   0.568695
+             B04_dist_trend     13979     0.999285   0.015223  1.541384 -1.656283   1.692524
+            B05_lt5ft_trend     13979     0.999285  -0.000080  0.076540 -0.087091   0.087756
+              B06_3pa_trend     13979     0.999285   0.000228  0.073393 -0.075675   0.077994
+         C01_assisted_share     13924     0.995353   0.681083  0.174099  0.448718   0.888889
+     C02_assisted_share_3pt     11931     0.852884   0.905837  0.145599  0.714286   1.000000
+     C03_assisted_share_2pt     13851     0.990135   0.586138  0.218376  0.277778   0.843750
+      C04_assisted_share_t5     13822     0.988062   0.683124  0.210347  0.400000   1.000000
+         C05_assisted_trend     13822     0.988062   0.002516  0.117700 -0.115985   0.128192
+              D01_xefg_zone     13984     0.999643   0.492605  0.029906  0.457778   0.531139
+              D02_xpps_zone     13984     0.999643   0.985209  0.059813  0.915556   1.062279
+            D03_xefg_action     13984     0.999643   0.493342  0.033116  0.455998   0.535481
+         D04_xefg_minus_own     13984     0.999643   0.010418  0.091994 -0.085330   0.115189
+      E01_opp_dist_conceded     13989     1.000000  12.754428  0.704743 11.958506  13.720000
+     E02_opp_lt5ft_conceded     13989     1.000000   0.331261  0.036408  0.285397   0.375151
+E03_opp_restricted_conceded     13989     1.000000   0.286114  0.042898  0.229115   0.338596
+      E04_opp_xefg_conceded     13989     1.000000   0.489145  0.010938  0.474215   0.501335
+       E05_opp_3pa_conceded     13989     1.000000   0.325459  0.029869  0.285476   0.366152
+  E06_opp_assisted_conceded     13989     1.000000   0.664245  0.036230  0.616883   0.706573
+         F01_dist_x_oppdist     13984     0.999643 162.142725 60.165695 74.291364 236.056790
+       F02_lt5ft_x_opplt5ft     13984     0.999643   0.112921  0.065608  0.039209   0.206167
+         F03_xefg_x_oppxefg     13984     0.999643   0.240993  0.016139  0.221583   0.261524
+           F04_3pa_x_opp3pa     13984     0.999643   0.108354  0.070299  0.005635   0.202083
+                  G01_noise     13989     1.000000  -0.016652  0.996654 -1.284028   1.264858
+               G02_ref_echo     13989     1.000000   0.382235  0.132835  0.223278   0.562533
+
+wrote screen_frame.parquet (13989 rows, 63 cols) and _s01.json
+
+====================================================================================================
+=== run_log_s02.txt
+====================================================================================================
+frame: 13989 rows, 246 players, 827 games
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+
+====================================================================================================
+1. detect_grouping_level ON EVERY CANDIDATE -- READ THE STATUS, NOT JUST THE LEVEL
+====================================================================================================
+                  candidate          family                                                status recommended_permutation_level  row_null_is_anticonservative n_distinct_values
+              A01_dist_mean   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+            A02_share_lt5ft   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+       A03_share_restricted   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+            A04_share_paint   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+         A05_share_midrange   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+          A06_share_corner3   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+      A07_share_abovebreak3   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+              A08_share_3pa   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+     A09_share_catch_action   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+A10_share_selfcreate_action   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+     A11_share_layup_action   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+   A12_share_plain_jumpshot   A_own_profile NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+                B01_dist_t5    B_form_trend NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+               B02_lt5ft_t5    B_form_trend NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+          B03_restricted_t5    B_form_trend NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+             B04_dist_trend    B_form_trend NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+            B05_lt5ft_trend    B_form_trend NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+              B06_3pa_trend    B_form_trend NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+         C01_assisted_share      C_assisted NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+     C02_assisted_share_3pt      C_assisted NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+     C03_assisted_share_2pt      C_assisted NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+      C04_assisted_share_t5      C_assisted NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+         C05_assisted_trend      C_assisted NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+              D01_xefg_zone D_quality_index NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+              D02_xpps_zone D_quality_index NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+            D03_xefg_action D_quality_index NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+         D04_xefg_minus_own D_quality_index NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+      E01_opp_dist_conceded  E_opp_conceded                                   COARSER_LEVEL_FOUND                     team_game                         False              None
+     E02_opp_lt5ft_conceded  E_opp_conceded                                   COARSER_LEVEL_FOUND                     team_game                         False              None
+E03_opp_restricted_conceded  E_opp_conceded                                   COARSER_LEVEL_FOUND                     team_game                         False              None
+      E04_opp_xefg_conceded  E_opp_conceded                                   COARSER_LEVEL_FOUND                     team_game                         False              None
+       E05_opp_3pa_conceded  E_opp_conceded                                   COARSER_LEVEL_FOUND                     team_game                         False              None
+  E06_opp_assisted_conceded  E_opp_conceded                                   COARSER_LEVEL_FOUND                     team_game                         False              None
+         F01_dist_x_oppdist   F_interaction NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+       F02_lt5ft_x_opplt5ft   F_interaction NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+         F03_xefg_x_oppxefg   F_interaction NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+           F04_3pa_x_opp3pa   F_interaction NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+                  G01_noise       G_control NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+               G02_ref_echo       G_control NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE                           NaN                          True              None
+
+  candidates with NO constant coarser level (-> entity_swap is the only valid null): 33 of 39
+
+====================================================================================================
+2. var_share_between AT THE CANDIDATE'S OWN ENTITY-SEASON
+====================================================================================================
+                  candidate             entity  var_share_between
+              A01_dist_mean   player_id+season           0.964955
+            A02_share_lt5ft   player_id+season           0.945817
+       A03_share_restricted   player_id+season           0.935666
+            A04_share_paint   player_id+season           0.957787
+         A05_share_midrange   player_id+season           0.908577
+          A06_share_corner3   player_id+season           0.845639
+      A07_share_abovebreak3   player_id+season           0.954416
+              A08_share_3pa   player_id+season           0.962970
+     A09_share_catch_action   player_id+season           0.928840
+A10_share_selfcreate_action   player_id+season           0.934582
+     A11_share_layup_action   player_id+season           0.945976
+   A12_share_plain_jumpshot   player_id+season           0.919173
+                B01_dist_t5   player_id+season           0.858412
+               B02_lt5ft_t5   player_id+season           0.798901
+          B03_restricted_t5   player_id+season           0.764622
+             B04_dist_trend   player_id+season           0.189930
+            B05_lt5ft_trend   player_id+season           0.185693
+              B06_3pa_trend   player_id+season           0.181415
+         C01_assisted_share   player_id+season           0.862924
+     C02_assisted_share_3pt   player_id+season           0.829092
+     C03_assisted_share_2pt   player_id+season           0.850165
+      C04_assisted_share_t5   player_id+season           0.557550
+         C05_assisted_trend   player_id+season           0.160030
+              D01_xefg_zone   player_id+season           0.854739
+              D02_xpps_zone   player_id+season           0.854739
+            D03_xefg_action   player_id+season           0.878160
+         D04_xefg_minus_own   player_id+season           0.681564
+      E01_opp_dist_conceded opp_team_id+season           0.810924
+     E02_opp_lt5ft_conceded opp_team_id+season           0.828129
+E03_opp_restricted_conceded opp_team_id+season           0.859959
+      E04_opp_xefg_conceded opp_team_id+season           0.659930
+       E05_opp_3pa_conceded opp_team_id+season           0.765027
+  E06_opp_assisted_conceded opp_team_id+season           0.653616
+         F01_dist_x_oppdist   player_id+season           0.942271
+       F02_lt5ft_x_opplt5ft   player_id+season           0.904753
+         F03_xefg_x_oppxefg   player_id+season           0.737083
+           F04_3pa_x_opp3pa   player_id+season           0.938077
+                  G01_noise   player_id+season           0.042213
+               G02_ref_echo   player_id+season           0.914289
+
+====================================================================================================
+3. THE SCREEN: 117 cells
+====================================================================================================
+  [ 1/39] A01_dist_mean                    done
+  [ 2/39] A02_share_lt5ft                  done
+  [ 3/39] A03_share_restricted             done
+  [ 4/39] A04_share_paint                  done
+  [ 5/39] A05_share_midrange               done
+  [ 6/39] A06_share_corner3                done
+  [ 7/39] A07_share_abovebreak3            done
+  [ 8/39] A08_share_3pa                    done
+  [ 9/39] A09_share_catch_action           done
+  [10/39] A10_share_selfcreate_action      done
+  [11/39] A11_share_layup_action           done
+  [12/39] A12_share_plain_jumpshot         done
+  [13/39] B01_dist_t5                      done
+  [14/39] B02_lt5ft_t5                     done
+  [15/39] B03_restricted_t5                done
+  [16/39] B04_dist_trend                   done
+  [17/39] B05_lt5ft_trend                  done
+  [18/39] B06_3pa_trend                    done
+  [19/39] C01_assisted_share               done
+  [20/39] C02_assisted_share_3pt           done
+  [21/39] C03_assisted_share_2pt           done
+  [22/39] C04_assisted_share_t5            done
+  [23/39] C05_assisted_trend               done
+  [24/39] D01_xefg_zone                    done
+  [25/39] D02_xpps_zone                    done
+  [26/39] D03_xefg_action                  done
+  [27/39] D04_xefg_minus_own               done
+  [28/39] E01_opp_dist_conceded            done
+  [29/39] E02_opp_lt5ft_conceded           done
+  [30/39] E03_opp_restricted_conceded      done
+  [31/39] E04_opp_xefg_conceded            done
+  [32/39] E05_opp_3pa_conceded             done
+  [33/39] E06_opp_assisted_conceded        done
+  [34/39] F01_dist_x_oppdist               done
+  [35/39] F02_lt5ft_x_opplt5ft             done
+  [36/39] F03_xefg_x_oppxefg               done
+  [37/39] F04_3pa_x_opp3pa                 done
+  [38/39] G01_noise                        done
+  [39/39] G02_ref_echo                     done
+
+  cells computed: 117
+
+====================================================================================================
+4. FAMILY-WISE MAX-Z ACROSS ALL 117 CELLS (same draws)
+====================================================================================================
+  max-z null: mean=4.4990 sd=1.6031 p95=7.4595 max=11.1163
+  observed max z across cells: 82.1819
+
+====================================================================================================
+5. noop_placebo -- report the OBSERVED sd, do not round it to zero
+====================================================================================================
+  noop_placebo: real=0.0001640388042  sd=2.711e-20  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=2.711e-20 < tol=1e-15, real reproduced)
+  noop_placebo[ppm]: observed sd = 2.710505e-20  n_distinct = 1
+  noop_placebo: real=0.002027258488  sd=4.337e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=4.337e-19 < tol=1e-15, real reproduced)
+  noop_placebo[ts]: observed sd = 4.336809e-19  n_distinct = 1
+  noop_placebo: real=0.001520889804  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  noop_placebo[efg]: observed sd = 0.000000e+00  n_distinct = 1
+
+====================================================================================================
+6. INTERACTIONS RE-SCREENED WITH THEIR OWN MAIN EFFECTS IN THE BASE (D085's lesson)
+====================================================================================================
+  F01_dist_x_oppdist       ppm   dR2 1.098e-04 -> 4.647e-04   p 0.2013 -> 0.0166
+  F01_dist_x_oppdist       ts    dR2 1.856e-03 -> 4.171e-05   p 0.0017 -> 0.5058
+  F01_dist_x_oppdist       efg   dR2 1.360e-03 -> 3.411e-05   p 0.0017 -> 0.5308
+  F02_lt5ft_x_opplt5ft     ppm   dR2 1.002e-06 -> 3.484e-04   p 0.9118 -> 0.0333
+  F02_lt5ft_x_opplt5ft     ts    dR2 2.410e-03 -> 9.110e-05   p 0.0017 -> 0.3344
+  F02_lt5ft_x_opplt5ft     efg   dR2 2.137e-03 -> 7.586e-05   p 0.0017 -> 0.3644
+  F03_xefg_x_oppxefg       ppm   dR2 3.927e-04 -> 1.914e-05   p 0.0250 -> 0.6206
+  F03_xefg_x_oppxefg       ts    dR2 1.192e-03 -> 3.601e-05   p 0.0017 -> 0.5291
+  F03_xefg_x_oppxefg       efg   dR2 1.576e-03 -> 6.657e-05   p 0.0017 -> 0.3744
+  F04_3pa_x_opp3pa         ppm   dR2 3.662e-04 -> 1.893e-04   p 0.0283 -> 0.1314
+  F04_3pa_x_opp3pa         ts    dR2 1.021e-03 -> 3.623e-06   p 0.0017 -> 0.8569
+  F04_3pa_x_opp3pa         efg   dR2 5.217e-04 -> 2.029e-08   p 0.0266 -> 0.9800
+
+====================================================================================================
+7. ATTRITION
+====================================================================================================
+{
+  "n_cells": 117,
+  "clears_p_correct_lt_0.05": 61,
+  "clears_p_correct_lt_0.01": 47,
+  "clears_familywise_lt_0.05": 31,
+  "clears_familywise_lt_0.10": 35,
+  "would_have_cleared_on_NAIVE_row_null_lt_0.05": 65,
+  "median_inflation_correct_over_row": 1.3307485338452774,
+  "min_inflation": 0.8759559552455632,
+  "max_inflation": 2.599326519571031
+}
+
+         family  n_cells  max_dR2  n_clear_percand  n_clear_fw  min_p_correct  min_p_fw
+  A_own_profile       36 0.002337               27          12       0.001664  0.001664
+   B_form_trend       18 0.002196                9           6       0.001664  0.001664
+     C_assisted       15 0.000598                2           0       0.006656  0.534110
+D_quality_index       12 0.009597               12           7       0.001664  0.001664
+ E_opp_conceded       18 0.000369                1           0       0.046589  0.973378
+  F_interaction       12 0.002410               10           6       0.001664  0.001664
+      G_control        6 0.000058                0           0       0.324459  1.000000
+
+TOP 20 CELLS BY dR2
+               candidate          family outcome     n      dR2  beta_sign  practical_spread_p10_p90  p_correct_entityswap  p_row_naive  p_familywise_maxz  inflation_correct_over_row
+      D04_xefg_minus_own D_quality_index     ppm 13984 0.009597        1.0                  0.060338              0.001664     0.001664           0.001664                    1.521903
+    F02_lt5ft_x_opplt5ft   F_interaction      ts 13984 0.002410        1.0                  0.034331              0.001664     0.001664           0.001664                    1.489826
+         A02_share_lt5ft   A_own_profile      ts 13984 0.002337        1.0                  0.034280              0.001664     0.001664           0.001664                    1.095859
+    A03_share_restricted   A_own_profile      ts 13984 0.002281        1.0                  0.033304              0.001664     0.001664           0.001664                    1.728395
+             B01_dist_t5    B_form_trend      ts 13979 0.002196       -1.0                 -0.034404              0.001664     0.001664           0.001664                    1.616726
+         A04_share_paint   A_own_profile      ts 13984 0.002166        1.0                  0.034185              0.001664     0.001664           0.001664                    1.481305
+  A11_share_layup_action   A_own_profile      ts 13984 0.002151        1.0                  0.033152              0.001664     0.001664           0.001664                    1.382079
+    F02_lt5ft_x_opplt5ft   F_interaction     efg 13984 0.002137        1.0                  0.033525              0.001664     0.001664           0.001664                    1.480566
+         A02_share_lt5ft   A_own_profile     efg 13984 0.002124        1.0                  0.033885              0.001664     0.001664           0.001664                    1.168809
+            B02_lt5ft_t5    B_form_trend      ts 13979 0.002098        1.0                  0.032457              0.001664     0.001664           0.001664                    1.517291
+           A01_dist_mean   A_own_profile      ts 13984 0.002027       -1.0                 -0.033165              0.001664     0.001664           0.001664                    1.349895
+    A03_share_restricted   A_own_profile     efg 13984 0.001992        1.0                  0.032298              0.001664     0.001664           0.001664                    1.794333
+       B03_restricted_t5    B_form_trend      ts 13979 0.001958        1.0                  0.030937              0.001664     0.001664           0.001664                    1.330749
+  A11_share_layup_action   A_own_profile     efg 13984 0.001949        1.0                  0.032705              0.001664     0.001664           0.001664                    1.333747
+      D04_xefg_minus_own D_quality_index      ts 13984 0.001892        1.0                  0.059117              0.001664     0.001664           0.001664                    1.472318
+            B02_lt5ft_t5    B_form_trend     efg 13979 0.001866        1.0                  0.031755              0.001664     0.001664           0.001664                    1.532832
+      F01_dist_x_oppdist   F_interaction      ts 13984 0.001856       -1.0                 -0.031617              0.001664     0.001664           0.001664                    1.358656
+         D03_xefg_action D_quality_index     efg 13984 0.001758        1.0                  0.029245              0.001664     0.001664           0.001664                    1.231794
+             B01_dist_t5    B_form_trend     efg 13979 0.001680       -1.0                 -0.031173              0.001664     0.001664           0.001664                    1.663830
+A12_share_plain_jumpshot   A_own_profile      ts 13984 0.001674       -1.0                 -0.028346              0.001664     0.001664           0.001664                    1.219104
+
+NEGATIVE CONTROL AND VACUOUS CONTROL
+   candidate outcome      dR2  p_correct_entityswap  p_row_naive  p_familywise_maxz
+   G01_noise     ppm 0.000058              0.324459     0.342762                1.0
+   G01_noise     efg 0.000050              0.394343     0.399334                1.0
+   G01_noise      ts 0.000038              0.450915     0.470882                1.0
+G02_ref_echo     ppm 0.000000              1.000000     1.000000                1.0
+G02_ref_echo      ts 0.000000              1.000000     1.000000                1.0
+G02_ref_echo     efg 0.000000              1.000000     1.000000                1.0
+
+wrote screen_results.csv, family_attrition.csv, permutation_draws.npz, _s02.json
+
+====================================================================================================
+=== run_log_s03.txt
+====================================================================================================
+
+====================================================================================================
+0. THE s02 TABLE SPLIT BY OUTCOME -- ppm is the decision-relevant one (D081)
+====================================================================================================
+
+--- outcome ppm : family-wise clears at 0.05 = 1 of 39 ---
+               candidate          family      dR2  beta_sign  practical_spread_p10_p90  p_correct_entityswap  p_familywise_maxz
+      D04_xefg_minus_own D_quality_index 0.009597        1.0                  0.060338              0.001664           0.001664
+      A05_share_midrange   A_own_profile 0.000595        1.0                  0.014337              0.006656           0.389351
+           D01_xefg_zone D_quality_index 0.000591       -1.0                 -0.015056              0.008319           0.497504
+           D02_xpps_zone D_quality_index 0.000591       -1.0                 -0.015056              0.004992           0.274542
+       A06_share_corner3   A_own_profile 0.000590       -1.0                 -0.012748              0.006656           0.410982
+           A08_share_3pa   A_own_profile 0.000494       -1.0                 -0.016028              0.009983           0.465890
+A12_share_plain_jumpshot   A_own_profile 0.000482       -1.0                 -0.014446              0.024958           0.708819
+      F03_xefg_x_oppxefg   F_interaction 0.000393       -1.0                 -0.012367              0.024958           0.865225
+        F04_3pa_x_opp3pa   F_interaction 0.000366       -1.0                 -0.013566              0.028286           0.920133
+   A07_share_abovebreak3   A_own_profile 0.000327       -1.0                 -0.012711              0.041597           0.966722
+         D03_xefg_action D_quality_index 0.000307       -1.0                 -0.010633              0.046589           0.966722
+           B06_3pa_trend    B_form_trend 0.000287       -1.0                 -0.008897              0.043261           0.966722
+
+--- outcome ts : family-wise clears at 0.05 = 15 of 39 ---
+               candidate          family      dR2  beta_sign  practical_spread_p10_p90  p_correct_entityswap  p_familywise_maxz
+    F02_lt5ft_x_opplt5ft   F_interaction 0.002410        1.0                  0.034331              0.001664           0.001664
+         A02_share_lt5ft   A_own_profile 0.002337        1.0                  0.034280              0.001664           0.001664
+    A03_share_restricted   A_own_profile 0.002281        1.0                  0.033304              0.001664           0.001664
+             B01_dist_t5    B_form_trend 0.002196       -1.0                 -0.034404              0.001664           0.001664
+         A04_share_paint   A_own_profile 0.002166        1.0                  0.034185              0.001664           0.001664
+  A11_share_layup_action   A_own_profile 0.002151        1.0                  0.033152              0.001664           0.001664
+            B02_lt5ft_t5    B_form_trend 0.002098        1.0                  0.032457              0.001664           0.001664
+           A01_dist_mean   A_own_profile 0.002027       -1.0                 -0.033165              0.001664           0.001664
+       B03_restricted_t5    B_form_trend 0.001958        1.0                  0.030937              0.001664           0.001664
+      D04_xefg_minus_own D_quality_index 0.001892        1.0                  0.059117              0.001664           0.001664
+      F01_dist_x_oppdist   F_interaction 0.001856       -1.0                 -0.031617              0.001664           0.001664
+A12_share_plain_jumpshot   A_own_profile 0.001674       -1.0                 -0.028346              0.001664           0.001664
+
+--- outcome efg : family-wise clears at 0.05 = 15 of 39 ---
+             candidate          family      dR2  beta_sign  practical_spread_p10_p90  p_correct_entityswap  p_familywise_maxz
+  F02_lt5ft_x_opplt5ft   F_interaction 0.002137        1.0                  0.033525              0.001664           0.001664
+       A02_share_lt5ft   A_own_profile 0.002124        1.0                  0.033885              0.001664           0.001664
+  A03_share_restricted   A_own_profile 0.001992        1.0                  0.032298              0.001664           0.001664
+A11_share_layup_action   A_own_profile 0.001949        1.0                  0.032705              0.001664           0.001664
+          B02_lt5ft_t5    B_form_trend 0.001866        1.0                  0.031755              0.001664           0.001664
+       D03_xefg_action D_quality_index 0.001758        1.0                  0.029245              0.001664           0.001664
+           B01_dist_t5    B_form_trend 0.001680       -1.0                 -0.031173              0.001664           0.001664
+       A04_share_paint   A_own_profile 0.001670        1.0                  0.031056              0.001664           0.001664
+     B03_restricted_t5    B_form_trend 0.001669        1.0                  0.029658              0.001664           0.001664
+         D02_xpps_zone D_quality_index 0.001590        1.0                  0.028288              0.001664           0.001664
+         D01_xefg_zone D_quality_index 0.001590        1.0                  0.028288              0.001664           0.001664
+    D04_xefg_minus_own D_quality_index 0.001590        1.0                  0.077319              0.001664           0.006656
+
+====================================================================================================
+1. K1 -- THE D04 DECOMPOSITION: is its ppm signal shot quality, or just refB_efg?
+====================================================================================================
+                 added_to_base_[1,refB_ppm]      dR2 added_to_base_[1,refB_ppm,refB_efg]
+      D04_xefg_minus_own (= D01 - refB_efg) 0.009597                                 NaN
+                        D01_xefg_zone alone 0.000591                                 NaN
+refB_efg alone (NOT a shot-quality feature) 0.010168                                 NaN
+                                        NaN 0.000090                  D04_xefg_minus_own
+                                        NaN 0.000090                       D01_xefg_zone
+
+  READ THIS: if `refB_efg alone` reproduces most of D04's dR2, then D04's ppm result is
+  REFERENCE INCOMPLETENESS -- the player's own prior shooting efficiency, which the ppm
+  reference omits -- and NOT a shot-quality discovery.
+
+====================================================================================================
+2. K1 FULL -- re-screen all 117 cells against the FULL own-prior base
+====================================================================================================
+  [ 1/39] A01_dist_mean
+  [ 2/39] A02_share_lt5ft
+  [ 3/39] A03_share_restricted
+  [ 4/39] A04_share_paint
+  [ 5/39] A05_share_midrange
+  [ 6/39] A06_share_corner3
+  [ 7/39] A07_share_abovebreak3
+  [ 8/39] A08_share_3pa
+  [ 9/39] A09_share_catch_action
+  [10/39] A10_share_selfcreate_action
+  [11/39] A11_share_layup_action
+  [12/39] A12_share_plain_jumpshot
+  [13/39] B01_dist_t5
+  [14/39] B02_lt5ft_t5
+  [15/39] B03_restricted_t5
+  [16/39] B04_dist_trend
+  [17/39] B05_lt5ft_trend
+  [18/39] B06_3pa_trend
+  [19/39] C01_assisted_share
+  [20/39] C02_assisted_share_3pt
+  [21/39] C03_assisted_share_2pt
+  [22/39] C04_assisted_share_t5
+  [23/39] C05_assisted_trend
+  [24/39] D01_xefg_zone
+  [25/39] D02_xpps_zone
+  [26/39] D03_xefg_action
+  [27/39] D04_xefg_minus_own
+  [28/39] E01_opp_dist_conceded
+  [29/39] E02_opp_lt5ft_conceded
+  [30/39] E03_opp_restricted_conceded
+  [31/39] E04_opp_xefg_conceded
+  [32/39] E05_opp_3pa_conceded
+  [33/39] E06_opp_assisted_conceded
+  [34/39] F01_dist_x_oppdist
+  [35/39] F02_lt5ft_x_opplt5ft
+  [36/39] F03_xefg_x_oppxefg
+  [37/39] F04_3pa_x_opp3pa
+  [38/39] G01_noise
+  [39/39] G02_ref_echo
+
+{
+  "n_cells": 117,
+  "clears_percand_single_ref": 61,
+  "clears_fw_single_ref": 31,
+  "clears_percand_full_ref": 69,
+  "clears_fw_full_ref": 37
+}
+
+TOP 20 UNDER THE FULL OWN-PRIOR BASE
+             candidate          family outcome  dR2_base_single_ref  dR2_base_full_ref  survival_ratio  p_base_full_ref  p_familywise_full_ref
+  F02_lt5ft_x_opplt5ft   F_interaction      ts             0.002410           0.002757        1.144051         0.001664               0.001664
+  A03_share_restricted   A_own_profile      ts             0.002281           0.002686        1.177603         0.001664               0.001664
+       A02_share_lt5ft   A_own_profile      ts             0.002337           0.002684        1.148422         0.001664               0.001664
+       D03_xefg_action D_quality_index      ts             0.001192           0.002535        2.127250         0.001664               0.001664
+A11_share_layup_action   A_own_profile      ts             0.002151           0.002527        1.174802         0.001664               0.001664
+          B02_lt5ft_t5    B_form_trend      ts             0.002098           0.002405        1.146313         0.001664               0.001664
+       D03_xefg_action D_quality_index     efg             0.001758           0.002385        1.357029         0.001664               0.001664
+     B03_restricted_t5    B_form_trend      ts             0.001958           0.002325        1.187420         0.001664               0.001664
+    F03_xefg_x_oppxefg   F_interaction      ts             0.001192           0.002244        1.882373         0.001664               0.001664
+    D04_xefg_minus_own D_quality_index      ts             0.001892           0.002228        1.177645         0.001664               0.001664
+         D01_xefg_zone D_quality_index      ts             0.001107           0.002228        2.013603         0.001664               0.001664
+         D02_xpps_zone D_quality_index      ts             0.001107           0.002228        2.013603         0.001664               0.001664
+  F02_lt5ft_x_opplt5ft   F_interaction     efg             0.002137           0.002099        0.982282         0.001664               0.001664
+    D04_xefg_minus_own D_quality_index     efg             0.001590           0.002099        1.319976         0.001664               0.001664
+         D01_xefg_zone D_quality_index     efg             0.001590           0.002099        1.319976         0.001664               0.001664
+         D02_xpps_zone D_quality_index     efg             0.001590           0.002099        1.319976         0.001664               0.001664
+       A02_share_lt5ft   A_own_profile     efg             0.002124           0.002085        0.981279         0.001664               0.001664
+       A04_share_paint   A_own_profile      ts             0.002166           0.002071        0.956253         0.001664               0.001664
+           B01_dist_t5    B_form_trend      ts             0.002196           0.002048        0.932584         0.001664               0.001664
+    F03_xefg_x_oppxefg   F_interaction     efg             0.001576           0.002029        1.287531         0.001664               0.001664
+
+ppm ONLY, under the full base:
+               candidate          family  dR2_base_single_ref  dR2_base_full_ref  survival_ratio  p_base_full_ref  p_familywise_full_ref
+             B01_dist_t5    B_form_trend             0.000239           0.000792        3.314628         0.006656               0.222962
+           A01_dist_mean   A_own_profile             0.000164           0.000692        4.219079         0.004992               0.359401
+         A04_share_paint   A_own_profile             0.000086           0.000613        7.105572         0.011647               0.414309
+           A08_share_3pa   A_own_profile             0.000494           0.000610        1.235345         0.008319               0.301165
+A12_share_plain_jumpshot   A_own_profile             0.000482           0.000603        1.251138         0.008319               0.419301
+      F01_dist_x_oppdist   F_interaction             0.000110           0.000565        5.142637         0.006656               0.382696
+    F02_lt5ft_x_opplt5ft   F_interaction             0.000001           0.000539      537.242922         0.016639               0.650582
+   A07_share_abovebreak3   A_own_profile             0.000327           0.000522        1.597220         0.019967               0.628952
+    A03_share_restricted   A_own_profile             0.000005           0.000478       99.574508         0.013311               0.683860
+        F04_3pa_x_opp3pa   F_interaction             0.000366           0.000450        1.229971         0.014975               0.665557
+         A02_share_lt5ft   A_own_profile             0.000003           0.000441      148.555982         0.018303               0.725458
+         D03_xefg_action D_quality_index             0.000307           0.000438        1.427205         0.016639               0.775374
+
+====================================================================================================
+3. K3 -- THE DECISION STRATUM (>=8 prior appearances, >=24 trailing-5 minutes)
+====================================================================================================
+  decision stratum: 5683 rows (40.6% of frame), 149 players
+  candidates carried into the stratum test: 20 -> ['A01_dist_mean', 'A02_share_lt5ft', 'A03_share_restricted', 'A04_share_paint', 'A05_share_midrange', 'A08_share_3pa', 'A09_share_catch_action', 'A10_share_selfcreate_action', 'A11_share_layup_action', 'A12_share_plain_jumpshot', 'B01_dist_t5', 'B02_lt5ft_t5', 'B03_restricted_t5', 'D01_xefg_zone', 'D02_xpps_zone', 'D03_xefg_action', 'D04_xefg_minus_own', 'F01_dist_x_oppdist', 'F02_lt5ft_x_opplt5ft', 'F03_xefg_x_oppxefg']
+  [ 1/20] A01_dist_mean
+  [ 2/20] A02_share_lt5ft
+  [ 3/20] A03_share_restricted
+  [ 4/20] A04_share_paint
+  [ 5/20] A05_share_midrange
+  [ 6/20] A08_share_3pa
+  [ 7/20] A09_share_catch_action
+  [ 8/20] A10_share_selfcreate_action
+  [ 9/20] A11_share_layup_action
+  [10/20] A12_share_plain_jumpshot
+  [11/20] B01_dist_t5
+  [12/20] B02_lt5ft_t5
+  [13/20] B03_restricted_t5
+  [14/20] D01_xefg_zone
+  [15/20] D02_xpps_zone
+  [16/20] D03_xefg_action
+  [17/20] D04_xefg_minus_own
+  [18/20] F01_dist_x_oppdist
+  [19/20] F02_lt5ft_x_opplt5ft
+  [20/20] F03_xefg_x_oppxefg
+
+DECISION STRATUM, full_ref base, ppm:
+                  candidate outcome     base    n      dR2  p_correct
+            D03_xefg_action     ppm full_ref 5683 0.000367   0.149750
+                B01_dist_t5     ppm full_ref 5683 0.000324   0.169717
+A10_share_selfcreate_action     ppm full_ref 5683 0.000300   0.244592
+     A09_share_catch_action     ppm full_ref 5683 0.000284   0.296173
+         F03_xefg_x_oppxefg     ppm full_ref 5683 0.000194   0.329451
+          B03_restricted_t5     ppm full_ref 5683 0.000142   0.391015
+       F02_lt5ft_x_opplt5ft     ppm full_ref 5683 0.000124   0.384359
+               B02_lt5ft_t5     ppm full_ref 5683 0.000118   0.405990
+         F01_dist_x_oppdist     ppm full_ref 5683 0.000103   0.452579
+              A08_share_3pa     ppm full_ref 5683 0.000087   0.469218
+              A01_dist_mean     ppm full_ref 5683 0.000083   0.485857
+   A12_share_plain_jumpshot     ppm full_ref 5683 0.000059   0.617304
+         A05_share_midrange     ppm full_ref 5683 0.000056   0.585691
+       A03_share_restricted     ppm full_ref 5683 0.000044   0.618968
+            A02_share_lt5ft     ppm full_ref 5683 0.000031   0.667221
+            A04_share_paint     ppm full_ref 5683 0.000028   0.663894
+         D04_xefg_minus_own     ppm full_ref 5683 0.000008   0.818636
+              D02_xpps_zone     ppm full_ref 5683 0.000008   0.806988
+              D01_xefg_zone     ppm full_ref 5683 0.000008   0.800333
+     A11_share_layup_action     ppm full_ref 5683 0.000007   0.831947
+
+DECISION STRATUM, full_ref base, all outcomes, top 15:
+                  candidate outcome     base    n      dR2  p_correct
+            D03_xefg_action      ts full_ref 5683 0.004195   0.001664
+            D03_xefg_action     efg full_ref 5683 0.003876   0.001664
+A10_share_selfcreate_action     efg full_ref 5683 0.002553   0.001664
+         F03_xefg_x_oppxefg      ts full_ref 5683 0.002236   0.003328
+A10_share_selfcreate_action      ts full_ref 5683 0.002209   0.004992
+     A09_share_catch_action     efg full_ref 5683 0.002163   0.001664
+       F02_lt5ft_x_opplt5ft      ts full_ref 5683 0.002122   0.003328
+     A09_share_catch_action      ts full_ref 5683 0.001935   0.003328
+               B02_lt5ft_t5      ts full_ref 5683 0.001911   0.003328
+          B03_restricted_t5      ts full_ref 5683 0.001909   0.003328
+            A02_share_lt5ft      ts full_ref 5683 0.001862   0.004992
+         F03_xefg_x_oppxefg     efg full_ref 5683 0.001855   0.001664
+       A03_share_restricted      ts full_ref 5683 0.001708   0.006656
+              D01_xefg_zone      ts full_ref 5683 0.001705   0.006656
+              D02_xpps_zone      ts full_ref 5683 0.001705   0.006656
+
+====================================================================================================
+4. K4 -- PER-SEASON STABILITY of the survivors (full_ref base)
+====================================================================================================
+  sign-consistent across all four seasons: 55 of 60 candidate-outcome pairs
+season                               2021  2022  2023  2024  sign_consistent
+candidate                   outcome                                         
+A01_dist_mean               efg      -1.0  -1.0  -1.0  -1.0             True
+                            ppm      -1.0  -1.0  -1.0  -1.0             True
+                            ts       -1.0  -1.0  -1.0  -1.0             True
+A02_share_lt5ft             efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0   1.0   1.0             True
+                            ts        1.0   1.0   1.0   1.0             True
+A03_share_restricted        efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0   1.0   1.0             True
+                            ts        1.0   1.0   1.0   1.0             True
+A04_share_paint             efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0   1.0   1.0             True
+                            ts        1.0   1.0   1.0   1.0             True
+A05_share_midrange          efg      -1.0  -1.0  -1.0  -1.0             True
+                            ppm      -1.0  -1.0   1.0   1.0            False
+                            ts       -1.0  -1.0  -1.0  -1.0             True
+A08_share_3pa               efg      -1.0  -1.0  -1.0  -1.0             True
+                            ppm      -1.0  -1.0  -1.0  -1.0             True
+                            ts       -1.0  -1.0  -1.0  -1.0             True
+A09_share_catch_action      efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0   1.0   1.0             True
+                            ts        1.0   1.0   1.0   1.0             True
+A10_share_selfcreate_action efg      -1.0  -1.0  -1.0  -1.0             True
+                            ppm      -1.0  -1.0  -1.0  -1.0             True
+                            ts       -1.0  -1.0  -1.0  -1.0             True
+A11_share_layup_action      efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0   1.0   1.0             True
+                            ts        1.0   1.0   1.0   1.0             True
+A12_share_plain_jumpshot    efg      -1.0  -1.0  -1.0  -1.0             True
+                            ppm      -1.0  -1.0  -1.0  -1.0             True
+                            ts       -1.0  -1.0  -1.0  -1.0             True
+B01_dist_t5                 efg      -1.0  -1.0  -1.0  -1.0             True
+                            ppm      -1.0  -1.0  -1.0  -1.0             True
+                            ts       -1.0  -1.0  -1.0  -1.0             True
+B02_lt5ft_t5                efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0   1.0   1.0             True
+                            ts        1.0   1.0   1.0   1.0             True
+B03_restricted_t5           efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0   1.0   1.0             True
+                            ts        1.0   1.0   1.0   1.0             True
+D01_xefg_zone               efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0  -1.0   1.0            False
+                            ts        1.0   1.0   1.0   1.0             True
+D02_xpps_zone               efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0  -1.0   1.0            False
+                            ts        1.0   1.0   1.0   1.0             True
+D03_xefg_action             efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0   1.0   1.0             True
+                            ts        1.0   1.0   1.0   1.0             True
+D04_xefg_minus_own          efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0  -1.0   1.0            False
+                            ts        1.0   1.0   1.0   1.0             True
+F01_dist_x_oppdist          efg      -1.0  -1.0  -1.0  -1.0             True
+                            ppm      -1.0  -1.0  -1.0  -1.0             True
+                            ts       -1.0  -1.0  -1.0  -1.0             True
+F02_lt5ft_x_opplt5ft        efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0   1.0   1.0             True
+                            ts        1.0   1.0   1.0   1.0             True
+F03_xefg_x_oppxefg          efg       1.0   1.0   1.0   1.0             True
+                            ppm       1.0   1.0  -1.0   1.0            False
+                            ts        1.0   1.0   1.0   1.0             True
+
+wrote k1_full_reference_base.csv, k3_decision_stratum.csv, k4_per_season.csv, _s03.json
+
+====================================================================================================
+=== run_log_s04.txt
+====================================================================================================
+  y_fgapm mean=0.3380  refB_fgapm finite=13985 of 13989
+
+====================================================================================================
+1. THE SAME CANDIDATES AGAINST eFG, AGAINST SHOTS-PER-MINUTE, AND AGAINST ppm
+====================================================================================================
+  [ 1/12] A02_share_lt5ft
+  [ 2/12] A03_share_restricted
+  [ 3/12] A04_share_paint
+  [ 4/12] A11_share_layup_action
+  [ 5/12] A01_dist_mean
+  [ 6/12] B01_dist_t5
+  [ 7/12] B02_lt5ft_t5
+  [ 8/12] D01_xefg_zone
+  [ 9/12] D03_xefg_action
+  [10/12] A08_share_3pa
+  [11/12] A10_share_selfcreate_action
+  [12/12] A09_share_catch_action
+
+                  candidate     n  dR2_efg  sign_efg    p_efg  spread_efg  dR2_fga_per_min  sign_fga_per_min  p_fga_per_min  spread_fga_per_min  dR2_ppm  sign_ppm    p_ppm  signs_oppose
+            A02_share_lt5ft 13980 0.002087       1.0 0.001664    0.033950         0.001689              -1.0       0.001664           -0.016686 0.000441       1.0 0.028286          True
+       A03_share_restricted 13980 0.001987       1.0 0.001664    0.032568         0.001643              -1.0       0.001664           -0.016179 0.000477       1.0 0.018303          True
+            A04_share_paint 13980 0.001453       1.0 0.001664    0.029281         0.001082              -1.0       0.001664           -0.013821 0.000609       1.0 0.006656          True
+     A11_share_layup_action 13980 0.001927       1.0 0.001664    0.032956         0.001785              -1.0       0.001664           -0.017320 0.000378       1.0 0.026622          True
+              A01_dist_mean 13980 0.001296      -1.0 0.001664   -0.027724         0.000747               1.0       0.001664            0.011489 0.000687      -1.0 0.003328          True
+                B01_dist_t5 13975 0.001460      -1.0 0.001664   -0.029316         0.000664               1.0       0.011647            0.010778 0.000787      -1.0 0.001664          True
+               B02_lt5ft_t5 13975 0.001834       1.0 0.001664    0.031757         0.002063              -1.0       0.001664           -0.018374 0.000272       1.0 0.073211          True
+              D01_xefg_zone 13980 0.002103       1.0 0.001664    0.033613         0.002322              -1.0       0.001664           -0.019219 0.000111       1.0 0.261231          True
+            D03_xefg_action 13980 0.002386       1.0 0.001664    0.035527         0.001253              -1.0       0.001664           -0.014012 0.000441       1.0 0.021631          True
+              A08_share_3pa 13980 0.000450      -1.0 0.024958   -0.017173         0.000099               1.0       0.301165            0.004369 0.000602      -1.0 0.006656          True
+A10_share_selfcreate_action 13980 0.001822      -1.0 0.001664   -0.034120         0.000134               1.0       0.232945            0.005013 0.000214      -1.0 0.104825          True
+     A09_share_catch_action 13980 0.001686       1.0 0.001664    0.032372         0.000136              -1.0       0.211314           -0.004981 0.000161       1.0 0.173045          True
+
+  candidates whose eFG effect and shots-per-minute effect have OPPOSING signs: 12 of 12
+  candidates significant on eFG (p<0.05): 12
+  candidates significant on shots-per-minute (p<0.05): 9
+  candidates significant on ppm (p<0.05): 8
+
+====================================================================================================
+2. DOES THE eFG GAIN BUY ANY POINTS?  practical spreads side by side
+====================================================================================================
+  spread_efg          = change in eFG      over the candidate's p10 -> p90
+  spread_fga_per_min  = change in FGA/min  over the same range
+  spread_ppm          = change in pts/min  over the same range
+                  candidate  spread_efg  spread_fga_per_min  spread_ppm
+            A02_share_lt5ft    0.033950           -0.016686    0.014005
+       A03_share_restricted    0.032568           -0.016179    0.014324
+            A04_share_paint    0.029281           -0.013821    0.017016
+     A11_share_layup_action    0.032956           -0.017320    0.013103
+              A01_dist_mean   -0.027724            0.011489   -0.018111
+                B01_dist_t5   -0.029316            0.010778   -0.019321
+               B02_lt5ft_t5    0.031757           -0.018374    0.010970
+              D01_xefg_zone    0.033613           -0.019219    0.006919
+            D03_xefg_action    0.035527           -0.014012    0.013707
+              A08_share_3pa   -0.017173            0.004369   -0.017819
+A10_share_selfcreate_action   -0.034120            0.005013   -0.010487
+     A09_share_catch_action    0.032372           -0.004981    0.008985
+
+  mean |spread_ppm| = 0.01373 pts/min; at ~30 minutes that is 0.412 points per game.
+
+wrote s04_volume_offset.csv, _s04.json
+
+====================================================================================================
+=== run_log_s05.txt
+====================================================================================================
+wrote FINDINGS.json (98301 bytes)
+{
+  "does_shot_quality_predict_EFFICIENCY_SKILL": "NO on the decision-relevant outcome; YES on eFG/TS but it does not transfer",
+  "points_per_minute_ppm": {
+    "family_wise_clears_under_full_own_prior_base": 0,
+    "n_cells": 39,
+    "best_cell": {
+      "candidate": "B01_dist_t5",
+      "dR2_base_full_ref": 0.0007924730053538,
+      "p_base_full_ref": 0.0066555740432612,
+      "p_familywise_full_ref": 0.2229617304492512
+    },
+    "decision_stratum_min_p": 0.1497504159733777,
+    "verdict": "DEAD. 0 of 39 ppm cells clear family-wise against a base containing the player's own prior ppm, TS and eFG. On the D081 decision stratum (>=8 prior appearances, >=24 trailing-5 minutes, 5683 rows / 40.6%) not one candidate clears even PER-CANDIDATE (min p = 0.150)."
+  },
+  "efg_and_ts": {
+    "family_wise_clears_under_full_own_prior_base": 37,
+    "n_cells": 78,
+    "sign_consistent_across_all_four_seasons": {
+      "n_consistent": 55,
+      "n_pairs": 60
+    },
+    "verdict": "REAL BUT LARGELY ARITHMETIC AND NON-TRANSFERRING. Prior shot mix predicts eFG and TS strongly, stably and on the decision stratum. But eFG and TS are BY DEFINITION mix-weighted conversion rates, and the effect is cancelled by an opposing volume effect before it reaches points."
+  }
+}
