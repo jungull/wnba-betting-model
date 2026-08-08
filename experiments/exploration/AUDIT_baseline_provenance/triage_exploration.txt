@@ -1,0 +1,459 @@
+
+#### experiments\exploration\E0_I0004_shot_location_allowance  (10 lines)
+  -- experiments\exploration\E0_I0004_shot_location_allowance\robustness_loo.py
+        76 | shots["loo_att"] = shots["season_att"] - shots["game_att"]
+        77 | shots["loo_mk"] = shots["season_mk"] - shots["game_mk"]
+        78 | shots["loo_pool_att"] = shots["pool_att"] - shots["gpool_att"]
+        79 | shots["loo_pool_mk"] = shots["pool_mk"] - shots["gpool_mk"]
+        82 | ok = (shots["loo_att"] >= MIN_LOO) & (shots["loo_pool_att"] >= MIN_LOO)
+        83 | print(f"Shots with usable leave-one-game-out opponent sample (zone att>={MIN_LOO}): {ok.sum()} / {len(shots)}")
+        86 | shots["loo_zone_rate"] = shots["loo_mk"] / shots["loo_att"]
+        87 | shots["loo_pool_rate"] = shots["loo_pool_mk"] / shots["loo_pool_att"]
+        88 | shots["zone_conv_residual_loo"] = shots["loo_zone_rate"] - shots["loo_pool_rate"]
+       108 | print("\n=== LEAVE-ONE-GAME-OUT interaction test: corr(shooting_residual, opp zone_conv_residual_loo) ===")
+
+#### experiments\exploration\E0_I0005_turnover_interaction  (9 lines)
+  -- experiments\exploration\E0_I0005_turnover_interaction\analyze.py
+        19 | X1 = df["player_tendency_loo"].to_numpy(float)   # player's own LOO turnover-rate tendency
+        20 | X2 = df["opponent_pressure_loo"].to_numpy(float)  # opponent defense's LOO forced-TO rate
+  -- experiments\exploration\E0_I0005_turnover_interaction\build_data.py
+        60 | game_def["loo_def_poss"] = game_def["season_def_poss"] - game_def["def_poss"]
+        61 | game_def["loo_def_tov"] = game_def["season_def_tov"] - game_def["def_tov"]
+        62 | game_def["opp_pressure_loo"] = np.where(game_def["loo_def_poss"] > 0,
+        74 | tov["loo_poss"] = tov["season_poss"] - tov["realised_off_possessions"]
+        75 | tov["loo_tov"] = tov["season_tov"] - tov["turnovers"]
+        76 | tov["player_tendency_loo"] = np.where(tov["loo_poss"] > 0,
+       102 | print(f"dropped {before - len(frame)} rows with undefined LOO tendency/pressure (thin season support)")
+
+#### experiments\exploration\E0_I0006_usage_redistribution  (11 lines)
+  -- experiments\exploration\E0_I0006_usage_redistribution\analyze.py
+       136 | baseline_rate = (1.0 / pecking.n_playing).mean()  # chance rate if random teammate absorbed
+  -- experiments\exploration\E0_I0006_usage_redistribution\analyze_clean.py
+        20 | baseline = played.groupby(["player_id", "player_name", "team_id", "season"]).agg(
+        73 | def build_redistribution(event_rows, leave_one_out=False):
+        82 | control_games = [g for g in pres_games if not (leave_one_out and g == gid)]
+        87 | tm_baseline = control.groupby(["player_id", "player_name"]).agg(
+       101 | real_redis = build_redistribution(real_events, leave_one_out=False)
+       115 | placebo_redis = build_redistribution(placebo_events, leave_one_out=True)
+  -- experiments\exploration\E0_I0006_usage_redistribution\build_redistribution.py
+        74 | tm_baseline = control.groupby(["player_id", "player_name"]).agg(
+  -- experiments\exploration\E0_I0006_usage_redistribution\followup.py
+        24 | print("mean rank:", ranks.top_absorber_baseline_rank.mean(), " (rank 1 = highest-baseline-usage teammate present)")
+  -- experiments\exploration\E0_I0006_usage_redistribution\placebo_check.py
+        50 | tm_baseline = control.groupby(["player_id", "player_name"]).agg(
+        73 | print("placebo even-split baseline: mean=%.3f" % placebo.even_split_baseline.mean())
+
+#### experiments\exploration\E0_I0009_additive_pressure  (34 lines)
+  -- experiments\exploration\E0_I0009_additive_pressure\analyze.py
+         5 | Rung 2: pregame-observable (strictly-before-date expanding) opponent pressure -- the one that matters.
+        74 | r2b, r2f, d, beta = delta_r2([X1], P_LOO)
+        80 | r2b_s, r2f_s, d_s, b_s = delta_r2([X1], P_LOO, m)
+       115 | pp = PregamePressure(tg[["team_id", "season", "game_date", "def_poss", "def_tov", "def_pts_allowed"]])
+       127 | PMAT[i, j], _ = pp.lookup(t, r.season, r.game_date)
+       136 | assert np.allclose(recon, P_PRE, equal_nan=True), "placebo lookup does not reproduce real pressure"
+       178 | loo_map = tg.set_index(["team_id", "season", "game_date"])["pressure_loo"].to_dict()
+       185 | LMAT[i, j] = pp.season_rate.get((t, r.season), np.nan)
+       196 | "max": float(null_loo.max()), "real_dR2": d,
+       205 | season_rate = (tg.groupby(["team_id", "season"], as_index=False)
+       207 | season_rate["rate"] = 100.0 * season_rate["t"] / season_rate["p"]
+       208 | piv = season_rate.pivot(index="team_id", columns="season", values="rate")
+       259 | _, _, d1c, b1c = delta_r2([X1, D_LOO], P_LOO)
+  -- experiments\exploration\E0_I0009_additive_pressure\build_data.py
+         6 | * game_date carried through, so a PREGAME (strictly-before-date, expanding) opponent pressure
+        79 | loo_poss = team_game["s_poss"] - team_game["def_poss"]
+        80 | team_game["pressure_loo"] = np.where(loo_poss > 0,
+        83 | team_game["defrtg_loo"] = np.where(loo_poss > 0,
+        88 | pp = PregamePressure(team_game[["team_id", "season", "game_date",
+        93 | r, k = pp.lookup(t, s, d)
+        94 | dr, _ = pp.lookup_defrtg(t, s, d)
+        97 | team_game["pregame_games"] = pre_n
+       113 | tov["loo_poss"] = tov["season_poss"] - tov["realised_off_possessions"]
+       114 | tov["loo_tov"] = tov["season_tov"] - tov["turnovers"]
+       115 | tov["player_tendency_loo"] = np.where(tov["loo_poss"] > 0,
+       125 | "pregame_games", "defrtg_loo", "defrtg_pregame"]].rename(columns={
+       145 | print(f"dropped {before - len(frame)} rows with undefined LOO/pregame predictors (thin support)")
+       158 | print("\ncorr(LOO pressure, pregame pressure) =",
+  -- experiments\exploration\E0_I0009_additive_pressure\pressure_lib.py
+        25 | lookup(team_id, season, date) -> (shrunk_rate, n_games_observed_before_date)
+        46 | self.season_rate = (100.0 * ts["t"] / ts["p"]).to_dict()
+        50 | prior = self.season_rate.get((team, season - 1))
+        81 | def lookup(self, team_id, season, date):
+        90 | def lookup_defrtg(self, team_id, season, date):
+       100 | def lookup_many(self, teams, seasons, dates):
+       104 | rates[i], ngames[i] = self.lookup(t, s, d)
+
+#### experiments\exploration\E0_I0010_positional_matchup  (32 lines)
+  -- experiments\exploration\E0_I0010_positional_matchup\analyze.py
+        66 | def prior_expanding(df, keys, valcols, prefix):
+        68 | prior = daily.groupby(keys, sort=False)[valcols].cumsum().to_numpy() - daily[valcols].to_numpy()
+       102 | d = prior_expanding(d, cell, ["s", "u"], "cel_")
+       103 | d = prior_expanding(d, cell + ["player_id"], ["s", "u"], "cpl_")
+       104 | d = prior_expanding(d, ["season", "pos_group"], ["s", "u"], "lg_")
+       105 | d = prior_expanding(d, ["season", "player_id"], ["s", "u"], "own_")
+       106 | d = prior_expanding(d, ["season", "opp"], ["s", "u"], "def_")
+       107 | d = prior_expanding(d, ["season", "opp", "player_id"], ["s", "u"], "dpl_")
+       119 | la = prior_expanding(d[["season", "gdate", "s", "u"]].copy(), ["season"], ["s", "u"], "all_")
+       154 | print("  naive (no LOO):  r = %+.4f" % hdr_diag[["own_loo_c", "allow_naive_c"]].corr().iloc[0, 1])
+       155 | print("  strict LOO    :  r = %+.4f" % hdr_diag[["own_loo_c", "allow_loo_c"]].corr().iloc[0, 1])
+       156 | print("  RAW (not demeaned) naive r=%+.4f  LOO r=%+.4f   <- dominated by position level"
+       164 | ("PREGAME-OBSERVABLE (decides the verdict)", "own_pre", "allow_pre")]:
+       251 | def lookup_allow(rows, panel, team_col):
+       252 | """Allowance of `team_col` as of each row's date (cumulative STRICTLY before that date)."""
+       286 | base["allow_pre"] = lookup_allow(base, panel, "opp_team_id")
+       301 | b2["allow_pre"] = lookup_allow(b2, panel, "opp_fake")
+  -- experiments\exploration\E0_I0010_positional_matchup\build_features.py
+        28 | SHRINK_K = 5.0                # pseudo-units of 100-possessions for pregame shrinkage
+        29 | MIN_PRIOR_UNITS = 3.0         # require >=300 prior possessions faced/played
+        84 | prior_counts = g[["_G", "_F", "_C"]].cumsum() - mp[["_G", "_F", "_C"]].values
+        85 | pc = prior_counts.to_numpy()
+       119 | def prior_expanding(df, keys, valcols, prefix):
+       168 | d = prior_expanding(d, cell, ["s", "u"], "cel_")
+       169 | d = prior_expanding(d, cell + ["player_id"], ["s", "u"], "cpl_")
+       170 | d = prior_expanding(d, ["season", "pos_group"], ["s", "u"], "lg_")
+       171 | d = prior_expanding(d, ["season", "player_id"], ["s", "u"], "own_")
+       172 | d = prior_expanding(d, ["season", "opp_team_id"], ["s", "u"], "def_")           # overall D
+       173 | d = prior_expanding(d, ["season", "opp_team_id", "player_id"], ["s", "u"], "dpl_")
+       187 | d["prior_units_pos"] = pu
+       194 | lg_all = prior_expanding(d[["season", "game_date", "s", "u"]].copy(), ["season"], ["s", "u"], "all_")
+       236 | print("  allowance spread: LOO sd=%.3f mean=%.3f | PRE sd=%.3f mean=%.3f | naive sd=%.3f"
+       239 | print("  corr(own_loo, allow_loo)=%.4f   corr(own_loo, allow_naive)=%.4f  [LOO must shrink this]"
+
+#### experiments\exploration\E0_I0011_tendency_estimator  (13 lines)
+  -- experiments\exploration\E0_I0011_tendency_estimator\build_frame.py
+       152 | prior = (df.groupby(["player_id", "season"])[["pts", "reb", "ast", "minutes"]]
+       155 | prior = prior.rename(columns={c: "prior_" + c for c in ["pts", "reb", "ast", "minutes"]})
+       161 | df["prior_" + s] = df["prior_" + s].fillna(float(sel[s].mean()))
+  -- experiments\exploration\E0_I0011_tendency_estimator\score.py
+        42 | def prior_shift(col):
+        99 | sh_y = prior_shift(tgt)
+       100 | sh_min = prior_shift("minutes")
+       101 | sh_poss = prior_shift("possessions")
+       104 | sh_y_ctx = prior_shift("_tmp_ctx") if False else None
+       106 | sh_ynorm = prior_shift("_ynorm")
+       131 | P[f"SHRINK_a{a:.2f}_k{k}"] = (n * ewm_y[a] + k * df["prior_" + tgt]) / (n + k)
+       139 | sh_per36 = prior_shift("_per36")
+       140 | sh_per36ctx = prior_shift("_per36ctx")
+       141 | sh_per100 = prior_shift("_per100")
+
+#### experiments\exploration\E0_I0012_layer3_noncollinear  (28 lines)
+  -- experiments\exploration\E0_I0012_layer3_noncollinear\base.py
+       129 | def prior_expanding(df, keys, valcols, prefix, datecol="gdate"):
+       134 | prior = daily.groupby(keys, sort=False)[valcols].cumsum().to_numpy() - daily[valcols].to_numpy()
+       222 | d = prior_expanding(d, ["season", "player_id"], ["s", "u"], "own_")
+       223 | d = prior_expanding(d, ["season", "opp_team_id"], ["s", "u"], "def_")
+       224 | d = prior_expanding(d, ["season", "opp_team_id", "player_id"], ["s", "u"], "dpl_")
+       225 | la = prior_expanding(d[["season", "gdate", "s", "u"]].copy(), ["season"], ["s", "u"], "all_")
+       310 | """Pooled-only version of screen_increment, for placebo loops. Returns dR2_M / dR2_OxM.
+  -- experiments\exploration\E0_I0012_layer3_noncollinear\f1_pair_history.py
+        59 | pr = B.prior_expanding(d, ["player_id", "opp_team_id"], ["e", "_one"], "pair_")
+  -- experiments\exploration\E0_I0012_layer3_noncollinear\f2_availability.py
+        43 | MIN_PRIOR_POSS = 200.0   # prior possessions for a player to count as "on the roster pool"
+        50 | def prior_rate(d, col):
+        51 | """Player's prior-expanding per-100 rate of `col`, strictly before this date, within season,
+        56 | d = B.prior_expanding(d, ["season", "player_id"], ["_v", "_u"], "pv_")
+        57 | la = B.prior_expanding(d[["season", "gdate", "_v", "_u"]].copy(), ["season"], ["_v", "_u"], "la_")
+        85 | spec, prior_u = prior_rate(played, S)
+        88 | pl["prior_poss"] = prior_u.values * 100.0
+        89 | pl["elig"] = pl["prior_poss"] >= MIN_PRIOR_POSS
+        96 | appearances = pl[["season", "team_id", "player_id", "gdate", "spec", "prior_poss", "elig"]].copy()
+       139 | orient, _ = prior_rate(played, ORIENT[T])
+       215 | print("  (d3) CONTRAST mean pregame surprise per-100: specialist-degraded %+.4f (n=%d) "
+  -- experiments\exploration\E0_I0012_layer3_noncollinear\f34_style_rest.py
+         6 | RESIDUALIZED against the opponent's overall pregame defensive strength before it is
+        71 | p = B.prior_expanding(t, ["season", "team_id"], cols, "pr_")
+       138 | p = B.prior_expanding(d, ["season", "player_id"], cols, "pp_")
+  -- experiments\exploration\E0_I0012_layer3_noncollinear\make_findings.py
+        82 | "O = player's pregame expanding own rate, D = opponent's pregame expanding "
+        87 | "shift_discipline": "base.prior_expanding aggregates to date level first, then takes a "
+       142 | "construction": "Pregame surprise e = y - own_pre * (def_pre / lg_rate) -- an UNFITTED "
+       342 | "Cleared its own floor as a MAIN effect (pooled dR2 0.000455, frac>=real 0.020, "
+       360 | "pregame rebound rate: pooled dR2_OxM 0.001071 against a placebo mean 0.000064 "
+  -- experiments\exploration\E0_I0012_layer3_noncollinear\r_robustness.py
+       103 | w["P"] = B.zwithin(w, "own_dpace")          # the player's OWN team's pregame pace
+
+#### experiments\exploration\E0_I0013_possession_volume  (35 lines)
+  -- experiments\exploration\E0_I0013_possession_volume\make_findings.py
+        64 | pregame_observable=True,
+        65 | pregame_justification="Built only from base.prior_expanding, i.e. a strict "
+        74 | note="The base model already contains D (opponent OVERALL pregame allowance of the "
+       118 | note="ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two "
+       200 | O="player's pregame expanding per-100-possession rate of the target stat",
+       201 | D="opponent's pregame expanding OVERALL allowance of the target stat per 100 possessions, "
+       203 | Mexp="player's pregame expanding minutes per game",
+       224 | "base.prior_expanding: aggregate to date level, then strict "
+       229 | explicitly_absent=["leave-one-out over a full season",
+       260 | "player frame, and the pregame aggregate was then RECOMPUTED from the "
+       332 | "noise floor and are explicitly excluded from any verdict",
+  -- experiments\exploration\E0_I0013_possession_volume\pv_base.py
+        21 | O    = player's pregame expanding per-100-possession rate of the target stat
+        22 | D    = opponent's pregame expanding OVERALL allowance of the target stat per 100 poss,
+        25 | Mexp = player's pregame expanding minutes per game
+        34 | every constructed quantity on BOTH sides uses base.prior_expanding, which aggregates to date
+       156 | p = B.prior_expanding(t, ["season", "team_id"], nums, "pr_")
+       170 | out["prior_poss"] = p["pr_n_poss"]
+       171 | return guard(out, "team pregame table")
+       187 | All three come from base.prior_expanding -> strictly prior, same season, date-aggregated.
+       188 | League means are themselves strictly-prior expanding (with a previous-season fallback), so no
+       197 | d = B.prior_expanding(d, ["season", "player_id"], ["_min", "_poss", "_g", "_usgn"], "pp_")
+       198 | la = B.prior_expanding(d[["season", "gdate", "_min", "_poss", "_g", "_usgn"]].copy(),
+  -- experiments\exploration\E0_I0013_possession_volume\run_maxt_robust.py
+       224 | print("  R1 = + ACTUAL MINUTES (post-hoc control, mechanism diagnostic only, NOT pregame)")
+  -- experiments\exploration\E0_I0013_possession_volume\run_screen.py
+       173 | print("  team pregame coverage (non-null pace48): %.3f of team-games" % TEAM["pace48"].notna().mean())
+       340 | p_ = B.prior_expanding(t, ["season", "team_id"], ["n_poss", "n_min"], "pr_")
+  -- experiments\exploration\E0_I0013_possession_volume\run_screen_defs.py
+         9 | EVERY construction below is strictly-prior, same-season, date-aggregated (base.prior_expanding).
+        17 | construction="Opponent's pregame expanding possessions per 48 min, built from master_team "
+        22 | construction="Player's OWN team's pregame expanding possessions per 48 min, identical "
+        25 | construction="Expected game possessions = mean of the two teams' pregame expanding "
+        28 | construction="Player's pregame expanding POSSESSIONS PER MINUTE = prior possessions / "
+        33 | construction="OREB the opponent ALLOWS per 100 possessions, pregame expanding, strictly "
+        37 | construction="Player's OWN team's OREB per 100 possessions, pregame expanding, strictly "
+        40 | construction="FGA the opponent ALLOWS per 48 min, pregame expanding, strictly prior "
+        48 | construction="The opponent's OWN missed FG per 48 min, pregame expanding, strictly prior "
+  -- experiments\exploration\E0_I0013_possession_volume\run_survivor_checks.py
+       135 | pr = B.prior_expanding(t, ["season", "team_id"], ["n_pts", "n_opts", "n_u", "n_w", "n_g"], "pr_")
+
+#### experiments\exploration\E1_I0004_rim_finishing  (29 lines)
+  -- experiments\exploration\E1_I0004_rim_finishing\_validate_sandbox\baseline\corrected_baseline.py
+        27 | only games strictly before t. Gate: >= 3 prior played games in that season.
+  -- experiments\exploration\E1_I0004_rim_finishing\_validate_sandbox\baseline\validate_baseline.py
+       120 | f"vs naive {vn.mean():+.3f}% sd {vn.std(ddof=1):.3f} "
+  -- experiments\exploration\E1_I0004_rim_finishing\build_and_measure.py
+        41 | MIN_LOO = 20          # E0's opponent-sample gate; kept identical for comparability
+        42 | MIN_PRE = 20          # same gate for the pregame-observable opponent variant
+        43 | SHRINK_K = 50.0       # pseudo-attempts for the shrunk pregame own-rate (B2)
+        94 | hdr("1. REPRODUCE E0 I0004's HEADLINE (robustness_loo.py) EXACTLY")
+       110 | s["loo_att"] = s["season_att"] - s["game_att"]
+       111 | s["loo_mk"] = s["season_mk"] - s["game_mk"]
+       112 | s["loo_pool_att"] = s["pool_att"] - s["gpool_att"]
+       113 | s["loo_pool_mk"] = s["pool_mk"] - s["gpool_mk"]
+       114 | ok = (s["loo_att"] >= MIN_LOO) & (s["loo_pool_att"] >= MIN_LOO)
+       117 | s["opp_loo"] = s["loo_mk"] / s["loo_att"] - s["loo_pool_mk"] / s["loo_pool_att"]
+       118 | s["opp_pool_loo"] = s["loo_pool_mk"] / s["loo_pool_att"]   # carried for placebo control C1
+       174 | => B0 = LEAVE-ONE-SEASON-OUT, attempt-weighted, player x zone conversion rate.
+       189 | games and is likewise not pregame-observable. Both sides of E0's headline are
+  -- experiments\exploration\E1_I0004_rim_finishing\make_findings.py
+        73 | "before the dR2 statistics",
+       165 | "answer": "B0 = a LEAVE-ONE-SEASON-OUT, attempt-weighted, player x zone "
+       178 | "pregame-observable comparator before reporting any number.",
+       193 | "pregame-observable. BOTH sides of the E0 headline are retrospective. "
+       221 | "max|diff| = 7.8e-16. Fully pregame-observable.",
+       225 | "n_prior >= 3. Fully pregame-observable. K was chosen by judgement, not tuned.",
+       241 | "headline_meaning": "Fully pregame-observable on BOTH sides: corrected own-rate "
+       315 | "reading": "Pooled 2021-2024 with the pregame opponent measure, dR2 = +0.00092 on "
+       359 | } for cell in ("headline_fully_pregame", "e0_cell_retrospective")
+       381 | for cell in ("headline_fully_pregame", "e0_cell_retrospective")
+       394 | for cell in ("headline_fully_pregame", "e0_cell_retrospective")
+       404 | "Headline cell (fully pregame), scored against the genuine P1 null of 400 "
+  -- experiments\exploration\E1_I0004_rim_finishing\placebo.py
+        43 | "headline_fully_pregame": ("resid_B1_own_rate_v2_split_alpha", "O2"),
+  -- experiments\exploration\E1_I0004_rim_finishing\robustness.py
+        61 | print("    y = shooting residual;  x1 = opponent pooled FG% allowed (leave-one-game-out);")
+
+#### experiments\exploration\E1_I0008_height_mismatch  (4 lines)
+  -- experiments\exploration\E1_I0008_height_mismatch\make_findings.py
+       389 | "baseline -- worth knowing before someone assumes it is a drop-in swap."
+       420 | print("gate decision:", findings["stage1_noise_floor"]["GATE_DECISION"]["decision"])
+  -- experiments\exploration\E1_I0008_height_mismatch\stage1_noise_floor.py
+         2 | E1 I0008 -- STAGE 1 (THE GATE): permutation noise floor for the height/size-mismatch lead.
+        79 | print("E1 I0008 STAGE 1 -- NOISE FLOOR (THE GATE)")
+
+#### experiments\exploration\E1_I0009_additive_pressure  (56 lines)
+  -- experiments\exploration\E1_I0009_additive_pressure\analyze.py
+        47 | tg["prior_games"] = g.cumcount()
+        48 | tg["prior_home_games"] = g["def_is_home"].cumsum() - tg["def_is_home"]
+        49 | tg["prior_home_share"] = np.where(tg["prior_games"] > 0,
+        51 | f = f.merge(tg[["game_id", "team_id", "prior_home_share"]].rename(
+        52 | columns={"team_id": "opponent_team_id", "prior_home_share": "opp_prior_home_share"}),
+       163 | f"r(opp prior home share)={row['corr_with_opp_prior_home_share']:+.4f}  "
+       170 | hm = delta_r2(["player_tendency_loo"], "player_is_home")
+       194 | pooled = delta_r2(cols, "opponent_pressure_pregame")
+       197 | per[str(s)] = delta_r2(cols, "opponent_pressure_pregame", mask=(season == s))
+       230 | e0_pooled = delta_r2_e0convention(["player_tendency_loo"], "opponent_pressure_pregame")
+       231 | e0_per = {str(s): delta_r2_e0convention(["player_tendency_loo"], "opponent_pressure_pregame",
+       233 | e0_loo = delta_r2_e0convention(["player_tendency_loo"], "opponent_pressure_loo")
+       236 | print(f"    rung-1 pooled dR2 = {e0_loo:.6f}  (E0 published 0.008424)")
+       256 | r = delta_r2(["player_tendency_loo"], "opponent_pressure_pregame", mask=m)
+       257 | per = {str(s): delta_r2(["player_tendency_loo"], "opponent_pressure_pregame",
+       265 | vb = delta_r2(SPECS["M_B_plus_venue"], "opponent_pressure_pregame")
+       266 | vs = delta_r2(SPECS["M_B_plus_venue"], "opponent_pressure_pregame_venue")
+       267 | both = delta_r2(SPECS["M_B_plus_venue"] + ["opponent_pressure_pregame"],
+       347 | ins = delta_r2(SPECS[name], "opponent_pressure_pregame", mask=(season != 2021))
+       379 | pp = PregameTeamPressure(tg_in)
+       382 | lookup_cache, team_index = {}, {}
+       387 | lookup_cache[s] = (teams, {int(d): np.array([pp.lookup(t, s, int(d))[0] for t in teams])
+       394 | teams, dm = lookup_cache[s]
+       402 | print(f"  lookup matrix reproduces the real pregame pressure exactly: max abs err = {max_err:.3e}")
+       411 | n_t = len(lookup_cache[s][0])
+       445 | insample["M_F_pregame_full_control"]["pooled"]["dr2"]),
+       528 | print(f"  LOSO out-of-sample (full pregame ctrl):  mean={loso_F['mean']:+.6f} sd={loso_F['sd']:.6f} "
+  -- experiments\exploration\E1_I0009_additive_pressure\build_data.py
+       120 | loo_poss = team_game["s_poss"] - team_game["def_poss"]
+       121 | team_game["pressure_loo"] = np.where(loo_poss > 0,
+       124 | team_game["defrtg_loo"] = np.where(loo_poss > 0,
+       131 | pp = PregameTeamPressure(tg_in, num_col="def_tov", den_col="def_poss")
+       132 | pd_rtg = PregameTeamPressure(tg_in, num_col="def_pts_allowed", den_col="def_poss")
+       137 | r, k = pp.lookup(t, s, d)
+       138 | rv, kv = pp.lookup_venue(t, s, d, h)
+       139 | dr, _ = pd_rtg.lookup(t, s, d)
+       167 | tov["loo_poss"] = tov["season_poss"] - tov["realised_off_possessions"]
+       168 | tov["loo_tov"] = tov["season_tov"] - tov["turnovers"]
+       169 | tov["player_tendency_loo"] = np.where(tov["loo_poss"] > 0,
+       173 | ppt = PregamePlayerTendency(tov[["player_id", "season", "game_date",
+       176 | pt = [ppt.lookup(p, s, d) for p, s, d in zip(tov["player_id"], tov["season"], tov_ns)]
+       183 | opp = team_game[["game_id", "team_id", "pressure_loo", "pressure_pregame", "pregame_games",
+       234 | print("\ncorr(LOO pressure, pregame pressure)   =",
+       236 | print("corr(pregame pressure, venue-split)    =",
+       238 | print("corr(LOO tendency, pregame tendency)   =",
+  -- experiments\exploration\E1_I0009_additive_pressure\pressure_lib_e1.py
+         2 | E1 I0009 -- shared pregame (strictly-before-date, expanding, shrunk) rate lookups.
+        18 | SHRINK_K_VENUE = 200.0   # venue-split rate shrunk toward the team's own overall pregame rate
+        72 | self.season_rate = (100.0 * ts["n"] / ts["d"]).to_dict()
+        76 | prior = self.season_rate.get((team, season - 1))
+        88 | s: sorted(t for (t, ss) in self.season_rate if ss == s) for s in EXPLORATION_SEASONS
+        91 | def lookup(self, team_id, season, date_ns):
+        96 | def lookup_venue(self, team_id, season, date_ns, def_is_home):
+        98 | base, _ = self.lookup(team_id, season, date_ns)
+       120 | mat[i, j] = self.lookup(t, s, dd)[0]
+       144 | self.season_rate = (100.0 * ps["n"] / ps["d"]).to_dict()
+       148 | prior = self.season_rate.get((pid, season - 1))
+       156 | def lookup(self, player_id, season, date_ns):
+
+#### experiments\exploration\E1_I0009_r2_rerun  (104 lines)
+  -- experiments\exploration\E1_I0009_r2_rerun\pressure_lib.py
+        25 | lookup(team_id, season, date) -> (shrunk_rate, n_games_observed_before_date)
+        46 | self.season_rate = (100.0 * ts["t"] / ts["p"]).to_dict()
+        50 | prior = self.season_rate.get((team, season - 1))
+        81 | def lookup(self, team_id, season, date):
+        90 | def lookup_defrtg(self, team_id, season, date):
+       100 | def lookup_many(self, teams, seasons, dates):
+       104 | rates[i], ngames[i] = self.lookup(t, s, d)
+  -- experiments\exploration\E1_I0009_r2_rerun\pressure_lib_e1.py
+         2 | E1 I0009 -- shared pregame (strictly-before-date, expanding, shrunk) rate lookups.
+        18 | SHRINK_K_VENUE = 200.0   # venue-split rate shrunk toward the team's own overall pregame rate
+        72 | self.season_rate = (100.0 * ts["n"] / ts["d"]).to_dict()
+        76 | prior = self.season_rate.get((team, season - 1))
+        88 | s: sorted(t for (t, ss) in self.season_rate if ss == s) for s in EXPLORATION_SEASONS
+        91 | def lookup(self, team_id, season, date_ns):
+        96 | def lookup_venue(self, team_id, season, date_ns, def_is_home):
+        98 | base, _ = self.lookup(team_id, season, date_ns)
+       120 | mat[i, j] = self.lookup(t, s, dd)[0]
+       144 | self.season_rate = (100.0 * ps["n"] / ps["d"]).to_dict()
+       148 | prior = self.season_rate.get((pid, season - 1))
+       156 | def lookup(self, player_id, season, date_ns):
+  -- experiments\exploration\E1_I0009_r2_rerun\src\E0_analyze_original.py
+         5 | Rung 2: pregame-observable (strictly-before-date expanding) opponent pressure -- the one that matters.
+        74 | r2b, r2f, d, beta = delta_r2([X1], P_LOO)
+        80 | r2b_s, r2f_s, d_s, b_s = delta_r2([X1], P_LOO, m)
+       115 | pp = PregamePressure(tg[["team_id", "season", "game_date", "def_poss", "def_tov", "def_pts_allowed"]])
+       127 | PMAT[i, j], _ = pp.lookup(t, r.season, r.game_date)
+       136 | assert np.allclose(recon, P_PRE, equal_nan=True), "placebo lookup does not reproduce real pressure"
+       178 | loo_map = tg.set_index(["team_id", "season", "game_date"])["pressure_loo"].to_dict()
+       185 | LMAT[i, j] = pp.season_rate.get((t, r.season), np.nan)
+       196 | "max": float(null_loo.max()), "real_dR2": d,
+       205 | season_rate = (tg.groupby(["team_id", "season"], as_index=False)
+       207 | season_rate["rate"] = 100.0 * season_rate["t"] / season_rate["p"]
+       208 | piv = season_rate.pivot(index="team_id", columns="season", values="rate")
+       259 | _, _, d1c, b1c = delta_r2([X1, D_LOO], P_LOO)
+  -- experiments\exploration\E1_I0009_r2_rerun\src\E1_analyze_original.py
+        47 | tg["prior_games"] = g.cumcount()
+        48 | tg["prior_home_games"] = g["def_is_home"].cumsum() - tg["def_is_home"]
+        49 | tg["prior_home_share"] = np.where(tg["prior_games"] > 0,
+        51 | f = f.merge(tg[["game_id", "team_id", "prior_home_share"]].rename(
+        52 | columns={"team_id": "opponent_team_id", "prior_home_share": "opp_prior_home_share"}),
+       163 | f"r(opp prior home share)={row['corr_with_opp_prior_home_share']:+.4f}  "
+       170 | hm = delta_r2(["player_tendency_loo"], "player_is_home")
+       194 | pooled = delta_r2(cols, "opponent_pressure_pregame")
+       197 | per[str(s)] = delta_r2(cols, "opponent_pressure_pregame", mask=(season == s))
+       230 | e0_pooled = delta_r2_e0convention(["player_tendency_loo"], "opponent_pressure_pregame")
+       231 | e0_per = {str(s): delta_r2_e0convention(["player_tendency_loo"], "opponent_pressure_pregame",
+       233 | e0_loo = delta_r2_e0convention(["player_tendency_loo"], "opponent_pressure_loo")
+       236 | print(f"    rung-1 pooled dR2 = {e0_loo:.6f}  (E0 published 0.008424)")
+       256 | r = delta_r2(["player_tendency_loo"], "opponent_pressure_pregame", mask=m)
+       257 | per = {str(s): delta_r2(["player_tendency_loo"], "opponent_pressure_pregame",
+       265 | vb = delta_r2(SPECS["M_B_plus_venue"], "opponent_pressure_pregame")
+       266 | vs = delta_r2(SPECS["M_B_plus_venue"], "opponent_pressure_pregame_venue")
+       267 | both = delta_r2(SPECS["M_B_plus_venue"] + ["opponent_pressure_pregame"],
+       347 | ins = delta_r2(SPECS[name], "opponent_pressure_pregame", mask=(season != 2021))
+       379 | pp = PregameTeamPressure(tg_in)
+       382 | lookup_cache, team_index = {}, {}
+       387 | lookup_cache[s] = (teams, {int(d): np.array([pp.lookup(t, s, int(d))[0] for t in teams])
+       394 | teams, dm = lookup_cache[s]
+       402 | print(f"  lookup matrix reproduces the real pregame pressure exactly: max abs err = {max_err:.3e}")
+       411 | n_t = len(lookup_cache[s][0])
+       445 | insample["M_F_pregame_full_control"]["pooled"]["dr2"]),
+       528 | print(f"  LOSO out-of-sample (full pregame ctrl):  mean={loso_F['mean']:+.6f} sd={loso_F['sd']:.6f} "
+  -- experiments\exploration\E1_I0009_r2_rerun\step23_reproduce_and_rerun.py
+        73 | "E0_rung1_pooled_dR2":            (0.008424, [COL0["player_tendency_loo"]], COL0["opponent_pressure_loo"], ALL0),
+        74 | "E0_rung2_pooled_dR2":            (0.006505, [COL0["player_tendency_loo"]], COL0["opponent_pressure_pregame"], ALL0),
+        75 | "E0_rung2_2021_dR2":              (0.015038, [COL0["player_tendency_loo"]], COL0["opponent_pressure_pregame"], S0 == 2021),
+        76 | "E0_rung2_2022_dR2":              (0.005329, [COL0["player_tendency_loo"]], COL0["opponent_pressure_pregame"], S0 == 2022),
+        77 | "E0_rung2_2023_dR2":              (0.002279, [COL0["player_tendency_loo"]], COL0["opponent_pressure_pregame"], S0 == 2023),
+        78 | "E0_rung2_2024_dR2":              (0.006121, [COL0["player_tendency_loo"]], COL0["opponent_pressure_pregame"], S0 == 2024),
+       124 | tg["prior_games"] = g.cumcount()
+       125 | tg["prior_home_games"] = g["def_is_home"].cumsum() - tg["def_is_home"]
+       126 | tg["prior_home_share"] = np.where(tg["prior_games"] > 0,
+       128 | f = f.merge(tg[["game_id", "team_id", "prior_home_share"]].rename(
+       129 | columns={"team_id": "opponent_team_id", "prior_home_share": "opp_prior_home_share"}),
+  -- experiments\exploration\E1_I0009_r2_rerun\step4_verdict_and_nulls.py
+        33 | tg["prior_games"] = g.cumcount()
+        34 | tg["prior_home_games"] = g["def_is_home"].cumsum() - tg["def_is_home"]
+        35 | tg["prior_home_share"] = np.where(tg["prior_games"] > 0, tg["prior_home_games"] / tg["prior_games"], 0.5)
+        36 | f = f.merge(tg[["game_id", "team_id", "prior_home_share"]].rename(
+        37 | columns={"team_id": "opponent_team_id", "prior_home_share": "opp_prior_home_share"}),
+        95 | pp = PregameTeamPressure(tg_in)
+        98 | lookup_cache, team_index = {}, {}
+       103 | lookup_cache[s] = (teams, {int(d): np.array([pp.lookup(t, s, int(d))[0] for t in teams]) for d in dates})
+       110 | teams, dm = lookup_cache[s]
+       116 | print(f"lookup matrix reproduces real pregame pressure: max abs err = {max_err:.3e}")
+       118 | res["lookup_matrix_max_abs_err"] = max_err
+       139 | n_t = len(lookup_cache[s][0])
+  -- experiments\exploration\E1_I0009_r2_rerun\step5_baseline_audit_and_gate.py
+        27 | tg["prior_games"] = g.cumcount()
+        28 | tg["prior_home_games"] = g["def_is_home"].cumsum() - tg["def_is_home"]
+        29 | tg["prior_home_share"] = np.where(tg["prior_games"] > 0, tg["prior_home_games"] / tg["prior_games"], 0.5)
+        30 | f = f.merge(tg[["game_id", "team_id", "prior_home_share"]].rename(
+        31 | columns={"team_id": "opponent_team_id", "prior_home_share": "opp_prior_home_share"}),
+        78 | dr2_loo_on_future = r2p(Xl, yf) - r2p(Xp, yf)
+        83 | f"searchsorted(side='left') -> STRICTLY BEFORE date. PRIOR-GAMES-ONLY.")
+        84 | print(f"  corr(loo baseline, player's OWN FUTURE season rate)     = {corr_loo_future:+.4f}")
+        85 | print(f"  corr(pregame baseline, player's OWN FUTURE season rate) = {corr_pre_future:+.4f}")
+        86 | print(f"  dR2 of adding loo on top of pregame, TARGET = the FUTURE rate = {dr2_loo_on_future:.6f}")
+        93 | construction=("pressure_lib_e1.PregameTeamPressure.lookup -> _PrefixIndex.prefix with "
+       101 | opponent_defrtg_pregame=dict(construction="same PregameTeamPressure machinery on def_pts_allowed",
+       103 | player_is_home=dict(construction="schedule fact, known pregame", reads_future=False)),
+       113 | headline_note="the +0.004003 walk-forward figure is M_B, whose baseline is player_tendency_loo"),
+       115 | construction="pressure_lib_e1.PregamePlayerTendency: expanding strictly-before-date, "
+       124 | dr2_of_loo_over_pregame_predicting_the_future=float(dr2_loo_on_future),
+       128 | "headline is retrospective. E1 anticipated this and shipped a fully-pregame variant "
+       161 | pp = PregameTeamPressure(tg_in)
+       163 | lookup_cache, team_index = {}, {}
+       168 | lookup_cache[s] = (teams, {int(dd): np.array([pp.lookup(t, s, int(dd))[0] for t in teams]) for dd in dates})
+       173 | s = S[i]; teams, dm = lookup_cache[s]; v = dm[int(row_ns[i])]
+       180 | mm = S == s; n_t = len(lookup_cache[s][0])
+
+#### experiments\exploration\E1_I0011_split_alpha  (12 lines)
+  -- experiments\exploration\E1_I0011_split_alpha\baseline\corrected_baseline.py
+        27 | only games strictly before t. Gate: >= 3 prior played games in that season.
+  -- experiments\exploration\E1_I0011_split_alpha\baseline\validate_baseline.py
+       120 | f"vs naive {vn.mean():+.3f}% sd {vn.std(ddof=1):.3f} "
+  -- experiments\exploration\E1_I0011_split_alpha\build_frame.py
+        73 | mp["n_prior"] = g.cumcount()                            # prior PLAYED games this season
+  -- experiments\exploration\E1_I0011_split_alpha\folds.py
+         7 | P1 LOSO     leave-one-season-out. test = season s, train = the other three.
+  -- experiments\exploration\E1_I0011_split_alpha\grid.py
+         9 | game t is built only from played games strictly before t. Eval gate n_prior >= 3
+  -- experiments\exploration\E1_I0011_split_alpha\i0009_baseline_delta.py
+        58 | def loo(col):
+       119 | lo = d.loc["LOO_SEASON_TOTAL"]
+       126 | print(f"  vs LOO season total   R2 {lo.r2:.4f} -> dR2 "
+       135 | dr2_vs_loo_season_total=float(lo.corrected_minus_this_r2),
+  -- experiments\exploration\E1_I0011_split_alpha\make_findings.py
+       279 | "the headline: the corrected baseline is STRONGER than a pregame-observable expanding "
+       281 | "leave-one-out full-season rate (dR2 -0.0201 / -0.0137 / -0.0199), because a "
+       298 | "if_headline_is_vs_player_tendency_loo": (
+
+#### experiments\exploration\E1_I0012_survivor_2021drop  (1 lines)
+  -- experiments\exploration\E1_I0012_survivor_2021drop\run_recency.py
+        10 | D2  2024 alone  pooled dR2_OxM + placebo   (the season immediately before the holdout)

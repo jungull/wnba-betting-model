@@ -1,0 +1,587 @@
+{
+ "audit": "baseline provenance / retrospective-baseline trap",
+ "scope_root": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program",
+ "date": "2026-08-07",
+ "partition_rule_observed": "Every numerical probe executed here was restricted to seasons 2021-2024 and asserted on the input frame before use. Source code referencing other seasons was read but no 2025/2026 data was read, joined, described or summarised.",
+ "read_only_attestation": "No file outside experiments\\exploration\\AUDIT_baseline_provenance\\ was created or modified. Frozen screens were read, never repaired.",
+ "excluded_from_audit": [
+  {"path": "experiments\\exploration\\E1_I0013_tempo_redundancy", "reason": "concurrently-running agent, mid-write, contents inconsistent"},
+  {"path": "experiments\\exploration\\E1_I0004_shot_selection", "reason": "concurrently-running agent, mid-write, contents inconsistent"},
+  {"path": "experiments\\exploration\\E0_I0014_residual_heterogeneity", "reason": "concurrently-running agent, mid-write, contents inconsistent"}
+ ],
+ "classification_legend": {
+  "PREGAME_CLEAN": "reads strictly prior games only; a slicing operation is quoted as evidence",
+  "RETROSPECTIVE_SAME_SEASON": "reads other games in the same season",
+  "RETROSPECTIVE_CROSS_SEASON": "reads later seasons, all-season pooled rates, or an artifact-granular precomputed file",
+  "CONTEMPORANEOUS": "reads the game / market state being predicted",
+  "UNDETERMINED": "could not be established from the code"
+ },
+ "severity_legend": "Severity reflects BLAST RADIUS (how heavily quoted the dependent claim is), not effect size or elegance.",
+
+ "findings": [
+  {
+   "id": "F1",
+   "severity": "CRITICAL",
+   "title": "M13 translation distribution is fitted on a season pool that includes seasons LATER than the rows it scores; the entire M14 node inherits it",
+   "file": "experiments\\market_program\\M13_PLAYER_VALUE_TRANSLATION\\build_translation.py",
+   "lines": [60, 369, 375],
+   "construction_lines": [
+    "FIT_SEASONS = [2022, 2023, 2024, 2025, 2026]   # excludes 2021 -- degenerate, no-train, fallback-only fold",
+    "fit_pool = scored[(scored[\"evaluation_tier\"] == HEADLINE_TIER) & (scored[\"season\"].isin(FIT_SEASONS)) & (~scored[\"row_uid\"].isin(matched_row_uids))].copy()",
+    "fit_pool[\"residual\"] = fit_pool[\"pred_point\"] - fit_pool[\"pts\"]  # pred - actual"
+   ],
+   "classification": "RETROSPECTIVE_CROSS_SEASON",
+   "why": "The exclusion is row-level only (~row_uid.isin(matched)). There is no season<s walk-forward, no shift(1), no date filter anywhere in the fit-pool construction. A 2024 player-game's p_over_* is therefore computed from a location/scale/df/ECDF estimated on residuals that include later seasons. The code's own comment calls this 'an honest out-of-sample test, not circular' -- the disjointness it describes is real but is not a TIME disjointness.",
+   "dependent_claims": [
+    "build_translation.py:490 primary_vs_market_brier_diff_ci95",
+    "build_translation.py:496 primary_vs_market_logloss_diff_ci95",
+    "build_translation.py:514-521 calib_verdict -> M13\\FINDINGS.json calibration.headline_verdict",
+    "build_translation.py:536 translation_rows.parquet (p_over_* persisted)",
+    "M14_MODEL_MARKET_RESIDUAL\\build_residual.py:211,220 -> every resid_prob_* in M14",
+    "M14 build_residual.py:495 falsification_pooled slope -> :536-539 falsification.verdict -> M14\\FINDINGS.json",
+    "M14 residual_by_season / residual_by_book / residual_by_book_and_season / influence_leave_out_top_n"
+   ],
+   "clean_variant_exists": false,
+   "clean_variant_note": "Four distributional variants (normal / student_t / empirical / het_normal) all share the SAME leaky fit pool. season_level_parameter_stability (:426-435) is a diagnostic listing, not a walk-forward refit. There is no honest number in the M13/M14 chain to compare against.",
+   "probe": "not run -- the probe substrate is outside the 2021-2024 exploration partition, so running it would require reading holdout data. Deliberately not attempted.",
+   "direction": "The leak biases the model favourably. The published verdict is still TRANSLATION_WORSE_CALIBRATED_THAN_MARKET, so the conclusion survives, but the MAGNITUDE of the gap is contaminated and any future 'we closed the gap by X' claim built on it is invalid.",
+   "source": "delegated market sweep"
+  },
+  {
+   "id": "F2",
+   "severity": "HIGH",
+   "title": "E0 I0005 uses full-season leave-one-game-out on BOTH sides and its NOTES.md declares LOO to be the LEAKAGE GUARD, concluding 'there is nothing to rerun'",
+   "file": "experiments\\exploration\\E0_I0005_turnover_interaction\\build_data.py",
+   "lines": [60, 62, 74, 76],
+   "construction_lines": [
+    "game_def[\"loo_def_poss\"] = game_def[\"season_def_poss\"] - game_def[\"def_poss\"]",
+    "game_def[\"opp_pressure_loo\"] = np.where(game_def[\"loo_def_poss\"] > 0, 100.0 * game_def[\"loo_def_tov\"] / game_def[\"loo_def_poss\"], np.nan)",
+    "tov[\"loo_poss\"] = tov[\"season_poss\"] - tov[\"realised_off_possessions\"]",
+    "tov[\"player_tendency_loo\"] = np.where(tov[\"loo_poss\"] > 0, 100.0 * tov[\"loo_tov\"] / tov[\"loo_poss\"], np.nan)"
+   ],
+   "consumed_at": [
+    "experiments\\exploration\\E0_I0005_turnover_interaction\\analyze.py:19  X1 = df[\"player_tendency_loo\"].to_numpy(float)   # player's own LOO turnover-rate tendency",
+    "experiments\\exploration\\E0_I0005_turnover_interaction\\analyze.py:20  X2 = df[\"opponent_pressure_loo\"].to_numpy(float)  # opponent defense's LOO forced-TO rate"
+   ],
+   "classification": "RETROSPECTIVE_SAME_SEASON",
+   "why": "Season totals minus the row's own tallies. The remainder of the season is the entire content of the estimate.",
+   "dependent_claims": [
+    "summary.json r2_gain_pressure_over_pooled = 0.008424166509957809 -- the opponent-pressure MAIN EFFECT",
+    "summary.json r2_A_tendency_only 0.14193 / r2_B_additive 0.15035 / r2_C_interaction 0.15097",
+    "NOTES.md 'the opponent-pressure main effect ... is real and non-trivial (dR2 0.0084 standalone)' -- the sentence that SPAWNED idea I0009",
+    "The same 0.008424 is carried forward as E0_rung1_pooled_dR2 in E1_I0009_r2_rerun\\step23_reproduce_and_rerun.py:73"
+   ],
+   "clean_variant_exists": false,
+   "clean_variant_note": "No pregame variant exists in I0005. A clean variant only appears later, in E0/E1 I0009's pressure_lib. I0005 itself was never reran.",
+   "false_all_clear": "NOTES.md section 'Response to coordinator hazard notice' states: 'both player_tendency_loo and opponent_pressure_loo are built leave-one-game-out at construction time ... No correlation in this NOTES was computed against a non-LOO baseline; there is nothing to rerun.' This is the trap stated in reverse -- LOO is treated as the remedy. A reader relying on this paragraph would skip the screen.",
+   "probe": {
+    "suspect": "opponent_pressure_loo (pressure_loo)",
+    "clean": "opponent_pressure_pregame (pressure_pregame)",
+    "future_target": "team's own strictly-after-date forced-TO rate per 100 defensive possessions, same season",
+    "n": 1892,
+    "corr_suspect_with_own_future": 0.7417,
+    "corr_clean_with_own_future": 0.5148,
+    "dR2_suspect_over_clean_predicting_the_future": 0.342649,
+    "substrate": "experiments\\exploration\\E1_I0009_additive_pressure\\team_game_defense.csv (2021-2024, carries both variants over the same universe)"
+   },
+   "source": "this audit"
+  },
+  {
+   "id": "F3",
+   "severity": "HIGH",
+   "title": "P3-downstream's incumbent baseline A_incumbent is an asof_granularity='artifact' file fit through 2026",
+   "file": "experiments\\player_program\\run_p3_downstream.py",
+   "lines": [39, 188],
+   "construction_lines": [
+    "INCUMBENT = ROOT / \"experiments/channel_reval/predictions_v2.csv\"",
+    "inc = pd.read_csv(INCUMBENT)"
+   ],
+   "classification": "RETROSPECTIVE_CROSS_SEASON",
+   "why": "The sibling manifest experiments\\channel_reval\\predictions_v2.csv.manifest.json self-declares asof_granularity='artifact', fit_through_season=2026, backfilled=true. Under GRAPH_POLICY 13.2.2 the whole file is bounded by its latest input and filtering by season does not help.",
+   "dependent_claims": [
+    "run_p3_downstream.py:281-282 d_score = res[base][\"_score_abs_err\"] - res[arm][\"_score_abs_err\"]",
+    "run_p3_downstream.py:288 team_score_mae_improvement, :290 margin_mae_improvement, team_score_ci90, margin_ci90",
+    "run_p3_downstream.py:434,437 paired_vs_incumbent and concentration blocks -> p3_downstream_v1\\P3_DOWNSTREAM_RESULTS.json",
+    "derived artifact p3_downstream_rows.parquet inherits the defect",
+    "p3_concentration_addendum.py:46 base_err -> :64 total_margin_improvement_points_double_counted, :73 share_of_positive_total_from_top_club"
+   ],
+   "clean_variant_exists": false,
+   "clean_variant_note": "No alternative pregame incumbent series is wired into ARMS. Note the SIBLING baselines B_off/B_def/B_net at run_p3_downstream.py:148,155-156 ARE pregame-clean -- only A_incumbent is not.",
+   "already_known": "Partially. experiments\\player_program\\orchestration\\reports\\COORDINATOR_HANDOFF_2026-08-07.md:796 records I0007 as PARKED for exactly this reason. The p3_concentration_addendum inheritance (F3's second half) is not obviously covered there.",
+   "source": "delegated player_program sweep"
+  },
+  {
+   "id": "F4",
+   "severity": "MEDIUM-HIGH",
+   "title": "The intercept-only null in fit_rate_and_p3 uses the TEST fold's own mean while the model side is walk-forward",
+   "file": "experiments\\player_program\\fit_rate_and_p3.py",
+   "lines": [144, 145, 166, 173],
+   "construction_lines": [
+    "tr = d[d[\"season\"] < test_s]",
+    "te = d[d[\"season\"] == test_s]",
+    "yte = te[\"points_scored\"].to_numpy(float)",
+    "\"baseline_mse_intercept_only\": float(np.mean((yte - yte.mean()) ** 2)),"
+   ],
+   "classification": "RETROSPECTIVE_SAME_SEASON",
+   "why": "yte.mean() is the mean of the test season INCLUDING the row being scored. The challenger is walk-forward (season < test_s). The two sides of the comparison are on different clocks.",
+   "dependent_claims": [
+    "res[\"folds\"][str(test_s)] alongside test_mse (line 171)",
+    "fits_v1\\RATE_AND_P3_REPORT.json p3_full_game and p3_competitive (lines 458-459)",
+    "any 1 - test_mse/baseline_mse_intercept_only pseudo-R2 read off that pair"
+   ],
+   "clean_variant_exists": false,
+   "clean_variant_note": "No train-mean or prior-seasons-mean intercept baseline is computed anywhere in the file. One-line fix (swap yte.mean() for the train mean) -- but the fix is the coordinator's call, not this audit's.",
+   "source": "delegated player_program sweep"
+  },
+  {
+   "id": "F5",
+   "severity": "MEDIUM-HIGH",
+   "title": "displaced_involvement reads the team's roster from the WHOLE 2021-2026 span, and FEATURE_VALIDATION.json falsely attests otherwise",
+   "file": "experiments\\player_program\\run_turnover_p2.py",
+   "lines": [143, 155, 159, 162, 176],
+   "construction_lines": [
+    "recent_roster.setdefault(t, []).append(set(sub[\"player_id\"]))   # inside the day-loop, which COMPLETES before the consuming loop starts",
+    "hist = set().union(*recent_roster.get(tid, [set()])[-10:]) if tid in recent_roster else set()",
+    "hm = H[(H[\"team_id\"] == tid) & (H[\"player_id\"].isin(missing))]"
+   ],
+   "classification": "RETROSPECTIVE_CROSS_SEASON",
+   "why": "The chronological loop that fills recent_roster terminates at line 143; the consuming loop begins at line 153. [-10:] is therefore the team's last 10 games in the entire span, not the 10 before the row's date.",
+   "dependent_claims": [
+    "F[\"displaced_involvement\"] (line 162) -> turnover_p2_v1\\turnover_role_context_features_v1.parquet (line 165)",
+    "merged into both tracks (lines 185-186) -> fit_predict -> paired_vs_D / mean_mae_reduction / ci90 (lines 249-252)",
+    "turnover_p2_v1\\TURNOVER_P2_RESULTS.json"
+   ],
+   "clean_variant_exists": false,
+   "false_attestation": "run_turnover_p2.py:176-180 writes FEATURE_VALIDATION.json claiming 'groups 2-4 are built by a single forward pass that snapshots EWMA state BEFORE consuming the day's games, so no feature sees its own game' and 'no_target_game_quantities': True. That is true of groups 2-3 (the snapshot pattern at lines 126-142 is correct) but NOT of group 4.",
+   "direction": "This contaminates the CHALLENGER, not the control -- the mirror image of the trap. It inflates rather than deflates the reported gain.",
+   "already_known": "Partially -- discovery_wave_1\\RETROSPECTIVE_GATE_AUDIT.md:298 scores displaced_involvement with 7,596 violations, gate-pass 'no', +0.0214. The false attestation in FEATURE_VALIDATION.json appears not to have been reconciled with that.",
+   "source": "delegated player_program sweep"
+  },
+  {
+   "id": "F6",
+   "severity": "MEDIUM",
+   "title": "oracle_bracket.py consumes rapm_v0.csv (asof_granularity='artifact', fit through 2024) with NO disclosure, where joint_differential.py discloses the same input",
+   "file": "oracle_bracket.py",
+   "lines": [213],
+   "construction_lines": [
+    "val_map = dict(zip(rapm[\"player_id\"].astype(np.int64), rapm[\"net_100\"]))"
+   ],
+   "classification": "RETROSPECTIVE_CROSS_SEASON",
+   "why": "data\\rapm\\rapm_v0.csv's sibling manifest declares asof_granularity='artifact', fit_seasons=[2021,2022,2023,2024], and its own backfill_basis names it as the artifact whose misuse motivated asof_invariant_audit_v1 ('two registered experiments scored 2024 as a TEST season while consuming it').",
+   "dependent_claims": [
+    "oracle_bracket.py:301-302 res3.pooled_improvement, :382-383 res4.pooled_improvement",
+    "the gated v2_vs_v1 delta",
+    "registry entries oracle_availability_bracket_v1 / _v2 (registry.jsonl L11-L14)"
+   ],
+   "clean_variant_exists": false,
+   "contrast": "joint_differential.py:463 consumes the SAME artifact and DOES catch it -- :784 verdict 'CONTAMINATED - rapm_v0 net_100 is fit on ...' plus a clean-seasons block at :834-857 (rapm_clean_seasons, rapm_increment_delta, rapm_increment_ci90). Its headline pooled_improvement is still computed on all 673 games including contaminated 2024.",
+   "source": "delegated market sweep"
+  },
+  {
+   "id": "F7",
+   "severity": "MEDIUM",
+   "title": "Within-season centering (base.zwithin / I0010 demean) makes the POOLED interaction dR2 depend on full-season means",
+   "file": "experiments\\exploration\\E0_I0012_layer3_noncollinear\\base.py",
+   "lines": [162, 164, 255, 256, 257, 277, 279, 282, 285, 286],
+   "construction_lines": [
+    "def zwithin(df, col, keys=(\"season\",)):",
+    "    v = df[col] - df.groupby(list(keys))[col].transform(\"mean\")",
+    "w[\"O\"] = zwithin(w, \"own_pre\");  w[\"D\"] = zwithin(w, \"def_pre\");  w[\"OD\"] = w[\"O\"] * w[\"D\"]",
+    "w[\"M\"] = zwithin(w, mcol, keys=center_keys)",
+    "w[\"Mres\"] = resid_on(w[\"M\"].values, [w[\"D\"].values, w[\"OD\"].values])",
+    "w[\"OM\"] = w[\"O\"] * w[\"Mres\"]",
+    "g = w if seas == \"POOLED\" else w[w[\"season\"] == seas]"
+   ],
+   "classification": "RETROSPECTIVE_SAME_SEASON (centering) and RETROSPECTIVE_CROSS_SEASON (the pooled residualization and sd)",
+   "why": "The centering constant is the FULL-SEASON mean of the predictor -- a mid-season forecaster does not know it. For MAIN effects a constant shift is absorbed by the intercept and is R2-neutral, so this would be harmless; but the headline metric is dR2_OxM, a PRODUCT of centered terms. Subtracting a SEASON-SPECIFIC mean inside a POOLED regression whose base model has no season dummies is equivalent to adding season-dummy x O terms that are not in the base model, so it genuinely changes the pooled column space and hence the pooled R2. Mres is additionally residualized on D and OD over the whole pooled 2021-2024 sample, and rescaled by a pooled sd.",
+   "dependent_claims": [
+    "E0_I0012_layer3_noncollinear headline pooled dR2_M / dR2_OxM (make_findings.py:342 'pooled dR2 0.000455', :360 'pooled dR2_OxM 0.001071')",
+    "E0_I0013_possession_volume run_screen.py:203-206, pv_base.py:293-296 -- same machinery",
+    "E1_I0012_survivor_2021drop run_drop2021.py:106",
+    "E0_I0010_positional_matchup analyze.py:166 (its own demean(), keys=(season,pos_group)), which forms w[\"OA\"] = w[\"O\"] * w[\"A\"]"
+   ],
+   "clean_variant_exists": false,
+   "clean_variant_note": "The per-season rows in the same tables are much less affected (within one season the centering constant is a within-sample constant), so a per-season reading is the closer-to-honest one already published.",
+   "caveat": "This is an AGGREGATE-level preprocessing leak, not row-level hindsight. It is categorically milder than a leave-one-out and I have NOT quantified its magnitude -- doing so requires rebuilding each screen's frame, which is outside a read-only audit. Reported because the screens' own FINDINGS describe these arms as 'fully pregame-observable', which is not literally true.",
+   "probe": "not run -- would require re-executing frozen screens.",
+   "source": "this audit"
+  },
+  {
+   "id": "F8",
+   "severity": "MEDIUM (already disclosed and neutralised)",
+   "title": "E0/E1 I0008 roster-height aggregates use FULL-SEASON minutes weights and full-season top-8 rotation membership",
+   "file": "experiments\\exploration\\E1_I0008_height_mismatch\\build_frame.py",
+   "lines": [123, 127, 132, 133, 136],
+   "construction_lines": [
+    "roster = (h.groupby([\"team_id\", \"season\"], as_index=False).agg(_num=(\"_hm\", \"sum\"), _den=(\"minutes\", \"sum\")))",
+    "roster[\"team_roster_mean_height\"] = roster[\"_num\"] / roster[\"_den\"]",
+    "season_minutes = h.groupby([\"team_id\", \"season\", \"player_id\"], as_index=False)[\"minutes\"].sum()",
+    "season_minutes[\"rot_rank\"] = (season_minutes.groupby([\"team_id\", \"season\"])[\"minutes\"].rank(ascending=False, method=\"first\"))",
+    "rot = season_minutes[season_minutes[\"rot_rank\"] <= 8]"
+   ],
+   "original_at": "experiments\\exploration\\E0_I0008_height_differential\\build_rung1_rung2.py:46-49 (identical construction)",
+   "classification": "RETROSPECTIVE_SAME_SEASON",
+   "why": "Both the minutes weights and the top-8 rotation membership are full-season totals. A mid-season forecaster does not know who the season's top 8 will be.",
+   "dependent_claims": ["E0 I0008's +0.018-0.020 lead; E1 I0008's stage1 noise-floor gate"],
+   "clean_variant_exists": true,
+   "clean_variant_note": "The BASELINE side is clean -- build_rung1_rung2.py:82 'return s.shift(1).ewm(halflife=halflife, min_periods=3).mean()' for own_recent_oreb_pct / own_recent_dreb_pct. Here it is the SIGNAL that reads the future, not the baseline.",
+   "already_disclosed": "YES, fully. E1_I0008\\make_findings.py:134-147 records 'the WEIGHTS are FULL-SEASON minutes totals, computed over the whole season including games AFTER the row being scored ... NOT strictly pregame-observable at game t, contrary to how the lead is described. This inflates the feature if anything, so it does not rescue the kill.' Materiality assessed as small (across-team-season sd 0.554 inches). The verdict was a KILL and retrospective inflation makes a kill safer, not weaker. No correction needed.",
+   "source": "this audit"
+  },
+  {
+   "id": "F9",
+   "severity": "MEDIUM (disclosed, unneutralised)",
+   "title": "Market baselines are drawn at or near the close and compared against models decided earlier",
+   "items": [
+    {
+     "file": "experiments\\market_program\\SCORE_BASELINES\\build_score_baselines.py",
+     "line": 500,
+     "construction_line": "snap = rec[\"snaps\"].get(\"LATE\")",
+     "upstream": "experiments\\market_program\\BOOKIE_BASELINE\\build_baseline.py:217  picked[cls] = lst[-1][1]  # latest requested_ts <= commence",
+     "model_side": "build_score_baselines.py:286  prior_idx = [j for j in range(len(sub)) if dates[j] < dates[i]]  (strictly prior CALENDAR DATE only)",
+     "classification": "CONTEMPORANEOUS",
+     "dependent_claims": ["score_baselines.json market_comparison.paired_metrics", "SCOREBOARD\\build_metrics.py:457-474 advantage_ci95 / paired_delta_composite_minus_market", "build_metrics.py:464 published verdict string", "SCOREBOARD\\metrics.json -> build_scoreboard.py Market Advantage column"],
+     "clean_variant_exists": "PARTIAL -- an EARLY snapshot class exists in build_baseline.py and is measured in baseline_metrics.json, but build_score_baselines.py hard-selects LATE and no EARLY-based paired comparison is computed."
+    },
+    {
+     "file": "experiments\\market_program\\MODEL_VS_MARKET\\compute_model_vs_market.py",
+     "line": 332,
+     "construction_line": "inplay = raw[\"snap_ret\"] >= raw[\"commence\"]   # the ONLY timestamp filter -- there is no snap_ret <= forecast_cutoff filter",
+     "classification": "CONTEMPORANEOUS",
+     "self_measured": "compute_model_vs_market.py:561 gap_h = (snap - ev[\"forecast_cutoff\"]).dt.total_seconds() / 3600.0 -- the script measures that the quote post-dates the model cutoff on all but n_negative rows",
+     "dependent_claims": ["market_call_over (:449) -> market_ok (:451) -> d_acc (:452) -> paired_accuracy_diff_model_minus_market + ci95", ":606-611 verdict -> headline -> model_vs_market.json / MODEL_VS_MARKET.md", "SCOREBOARD\\build_metrics.py:347 advantage_ci95"],
+     "clean_variant_exists": false,
+     "note": "The asymmetry is routed to an advisory channel (timing_advisory, :562-589) and excluded from the headline by policy -- honest labelling, but the headline number is still built on the unmatched pair."
+    }
+   ],
+   "direction": "Both make the MARKET look stronger, so the model's loss is overstated rather than its win.",
+   "source": "delegated market sweep"
+  },
+  {
+   "id": "F10",
+   "severity": "LOW-MEDIUM",
+   "title": "fit_rate_and_p3 baselines_raw_on_off pools the entire 2021-2026 possession artifact",
+   "file": "experiments\\player_program\\fit_rate_and_p3.py",
+   "lines": [346, 350, 352, 441, 461],
+   "construction_lines": [
+    "def baselines(d: pd.DataFrame) -> dict:",
+    "    tot = v[\"points_scored\"].sum() / len(v)",
+    "    g = v.groupby(c)[\"points_scored\"].agg([\"sum\", \"size\"])",
+    "base = baselines(valid)"
+   ],
+   "classification": "RETROSPECTIVE_CROSS_SEASON",
+   "why": "`valid` is the entire possession artifact with no fold split and no date filter, in contrast to the primary at line 144 which IS season-walk-forward.",
+   "dependent_claims": ["report[\"baselines_raw_on_off\"] (line 461) -> fits_v1\\RATE_AND_P3_REPORT.json", "registered as a named comparator at line 428"],
+   "clean_variant_exists": false,
+   "mitigation": "line 371 self-labels it 'status': 'DIAGNOSTIC ONLY, never the primary adjusted estimate'. It is also STRONGER than a fair baseline would be, so a comparison against it understates rather than overstates the model.",
+   "source": "delegated player_program sweep"
+  },
+  {
+   "id": "F11",
+   "severity": "LOW",
+   "title": "E0 I0006 teammate baseline is the full-season mean over the absent player's presence games",
+   "file": "experiments\\exploration\\E0_I0006_usage_redistribution\\analyze_clean.py",
+   "lines": [85, 87, 95],
+   "construction_lines": [
+    "control = played[(played.team_id == tid) & (played.season == season) & (played.game_id.isin(control_games)) & (played.player_id != pid)]",
+    "tm_baseline = control.groupby([\"player_id\", \"player_name\"]).agg(tm_baseline_usage=(\"usage_percentage\", \"mean\"), n_control_games=(\"game_id\", \"count\")).reset_index()",
+    "merged[\"delta_usage\"] = merged.usage_percentage - merged.tm_baseline_usage"
+   ],
+   "classification": "RETROSPECTIVE_SAME_SEASON",
+   "why": "control_games is every presence game of the absent player across the whole season, before AND after the event game.",
+   "dependent_claims": ["clean_redistribution_rows.csv delta_usage, top-absorber shares, the I0006 redistribution headline"],
+   "clean_variant_exists": false,
+   "assessment": "This is a DESCRIPTIVE within-season contrast, not a forecasting increment -- the full-season presence-game mean is arguably the right estimand for 'when X sits, who absorbs usage'. The placebo arm is handled correctly and asymmetrically on purpose (build_redistribution(..., leave_one_out=True) at line 115 vs False at line 101), because for a real absence the event game is by definition not a presence game. Flagged so nobody re-uses redistribution share as a PREGAME feature.",
+   "source": "this audit"
+  },
+  {
+   "id": "F12",
+   "severity": "LOW",
+   "title": "E0 I0003 demeans by the full-season player mean and splits opponents by a full-season 3PA rate",
+   "file": "experiments\\exploration\\E0_I0003_rebound_interaction\\aggregate_and_test.py",
+   "lines": [107, 108, 131, 132],
+   "construction_lines": [
+    "team_season['fg3a_rate'] = team_season['fg3a'] / team_season['fga']",
+    "team_season['high3'] = team_season['fg3a_rate'] > team_season.groupby('season')['fg3a_rate'].transform('median')",
+    "own_avg = idf.groupby(['player_id', 'season'])['secured'].mean().rename('own_avg')",
+    "idf = idf.join(own_avg, on=['player_id', 'season'])"
+   ],
+   "classification": "RETROSPECTIVE_SAME_SEASON",
+   "why": "high3 is the opponent's whole-season 3PA rate vs the season median; own_avg is the player's whole-season secure rate and INCLUDES the row's own outcome.",
+   "dependent_claims": ["the player-demeaned residual contrast printed at aggregate_and_test.py:136-139"],
+   "clean_variant_exists": false,
+   "assessment": "Descriptive stability/interaction probe, no dR2 published, no gate. Low severity.",
+   "source": "this audit"
+  },
+  {
+   "id": "F13",
+   "severity": "LOW",
+   "title": "E0 I0011's prior-season fallback constant is a 2021-2022 pooled league mean applied to 2021 rows",
+   "file": "experiments\\exploration\\E0_I0011_tendency_estimator\\build_frame.py",
+   "lines": [106, 152, 154, 161],
+   "construction_lines": [
+    "sel = df[df[\"season\"].isin(SELECT_SEASONS)]",
+    "prior = (df.groupby([\"player_id\", \"season\"])[[\"pts\", \"reb\", \"ast\", \"minutes\"]].mean().reset_index())",
+    "prior[\"season\"] = prior[\"season\"] + 1",
+    "df[\"prior_\" + s] = df[\"prior_\" + s].fillna(float(sel[s].mean()))"
+   ],
+   "classification": "PREGAME_CLEAN for the prior_* column itself (the +1 season shift makes it a completed previous season); RETROSPECTIVE_CROSS_SEASON for the FALLBACK scalar only",
+   "why": "The prior-season mean is legitimately available pregame -- season s-1 is complete before season s starts. But the fallback for players with no prior season (which includes every 2021 row) is the mean over the pooled selection seasons, which for a 2021 row includes the rest of 2021 and all of 2022.",
+   "dependent_claims": ["score.py:131 P[f\"SHRINK_a{a:.2f}_k{k}\"] = (n * ewm_y[a] + k * df[\"prior_\" + tgt]) / (n + k) -- the SHRINK_* estimator family only"],
+   "clean_variant_exists": true,
+   "clean_variant_note": "The incumbent and the naive default do not use prior_*: score.py:110 P[NAIVE] = exp_of(sh_y) is a strictly-prior expanding mean of a shifted series, and INCUMBENT = PER36_a0.30_m0.30 is built from prior_shift()-ed series only. The contaminated fallback touches only the SHRINK_* arms.",
+   "assessment": "A single scalar affecting a minority of rows in one estimator family. Also note build_frame.py:141-143 explicitly labels c_g_* as using REALISED pace, and it is only ever consumed through prior_shift(), so that is correctly handled.",
+   "source": "this audit"
+  },
+  {
+   "id": "F14",
+   "severity": "LOW",
+   "title": "M16 coherence sigma is a median over the whole archive including the record it is applied to",
+   "file": "experiments\\market_program\\M16_RELATED_MARKET_COHERENCE\\coherence.py",
+   "lines": [240, 252],
+   "construction_lines": [
+    "sigma_hat = statistics.median(implied_sigmas) if implied_sigmas else None",
+    "p_model = NORMAL.cdf(mu / sigma_hat)"
+   ],
+   "classification": "RETROSPECTIVE_CROSS_SEASON",
+   "dependent_claims": ["incoherence_B diffs -> abs_diffs_B quantiles -> exceedance rates at multiple epsilon"],
+   "clean_variant_exists": false,
+   "assessment": "Cross-market internal-consistency diagnostic at a single snapshot. No realised outcome enters, no forecast is made, no improvement-over-baseline number is published. Flagged for completeness only.",
+   "source": "delegated market sweep"
+  },
+  {
+   "id": "F15",
+   "severity": "LOW (self-labelled)",
+   "title": "prob_edge_ablation's constant baseline is in-sample on the fit_2024 slice",
+   "file": "prob_edge_ablation.py",
+   "lines": [146, 160],
+   "construction_lines": [
+    "base = float(yf.mean())",
+    "p = np.full(len(s), base)          # training-fold base rate"
+   ],
+   "classification": "RETROSPECTIVE_SAME_SEASON for the fit_2024 slice; PREGAME_CLEAN for the later slices",
+   "dependent_claims": ["results[name][\"slices\"][\"fit_2024\"] log_loss / brier and any contrast delta on that slice"],
+   "clean_variant_exists": true,
+   "assessment": "Disclosed by the slice label itself. standardise(fit[feats]) mu/sd (:140) is likewise fit on the earlier season and applied forward -- clean direction.",
+   "source": "delegated market sweep"
+  },
+  {
+   "id": "F17",
+   "severity": "MEDIUM",
+   "title": "Four further consumers of the artifact-granular incumbent predictions_v2.csv, in experiments\\* directories outside the brief's named sweep",
+   "how_found": "The brief's minimum sweep named exploration / player_program / market_program / registry / root scripts / coherence_study. My first scan covered only the first three plus root scripts, leaving ~50 other experiments\\* directories silent. scan_remaining.py closed that gap. coherence_study DOES exist and my first pass wrongly reported it absent -- corrected here.",
+   "consumers": [
+    {"file": "experiments\\coherence_study\\coherence_analysis.py", "line": 89,
+     "construction_line": "P = pd.read_csv(CR / \"predictions_v2.csv\")",
+     "dependent_claims": [
+      "coherence_analysis.py:600  f\"lam 1.0 (full oracle) -> {got[2]:.4f}   (baseline {mae(M.str_margin_cal - M.margin_true):.4f})\"",
+      "coherence_analysis.py:704  \"pooled totals improvement (d3 - incumbent)\"",
+      ":707 90% date-clustered bootstrap CI, :714 D3CI pooled_delta / ci90 / per_season",
+      ":717 '3e. (d3) FULL GATE-4 COMPONENTS' -- a gate-4 dress rehearsal"],
+     "mitigation": "Self-declared at :1-4 as 'READ-ONLY reconnaissance. NOT a registered experiment. Fits no promoted models, makes no promotion claims, never touches the registry.' That framing is the only thing keeping this out of HIGH -- a gate-4 dress rehearsal number is exactly the kind of figure that gets quoted forward.",
+     "also_note": "Its ORACLE_pace_shock (:372) is correctly labelled CONTEMPORANEOUS and used only as an oracle ceiling; crew_factor (:365) carries an explicit disclosed caveat at :368 'ACTUAL crew as proxy for pregame announcement'."},
+    {"file": "experiments\\playoff_shift\\run_playoff_shift.py", "line": 46,
+     "construction_line": "PRED_V2 = os.path.join(ROOT, \"experiments\", \"channel_reval\", \"predictions_v2.csv\")",
+     "dependent_claims": ["playoff-shift increments (6 increment-bearing lines detected; not read in full)"]},
+    {"file": "experiments\\totals_groundwork\\run_totals_groundwork.py", "line": 38,
+     "construction_line": "PREDICTIONS = ROOT / \"experiments\" / \"channel_reval\" / \"predictions_v2.csv\"",
+     "dependent_claims": ["totals_groundwork outputs (10 increment-bearing lines)"],
+     "cross_reference": "This directory also PRODUCES bookie_totals_per_game.csv, which is listed under UNDETERMINED -- the same directory is both an unaudited consumer and the source of an unverifiable input."},
+    {"file": "experiments\\channel_reval\\run_reval.py", "line": 544,
+     "construction_line": "et[pred_cols].to_csv(HERE / \"predictions_v2.csv\", index=False)",
+     "role": "PRODUCER of the artifact, not a consumer. Listed so the chain is complete."}
+   ],
+   "classification": "RETROSPECTIVE_CROSS_SEASON (inherited from the artifact's own manifest: asof_granularity='artifact', fit_through_season=2026)",
+   "clean_variant_exists": false,
+   "source": "this audit (gap-closing pass)"
+  },
+  {
+   "id": "F16",
+   "severity": "LOW",
+   "title": "p3_concentration_addendum sets reporting bucket boundaries from the whole row set",
+   "file": "experiments\\player_program\\p3_concentration_addendum.py",
+   "lines": [98, 114],
+   "construction_lines": ["lab = pd.qcut(rows[\"_toppl\"], 3, labels=[\"low\", \"mid\", \"high\"])"],
+   "classification": "RETROSPECTIVE_CROSS_SEASON",
+   "dependent_claims": ["high_exposure_player_buckets reporting strata only -- does not enter a prediction"],
+   "clean_variant_exists": false,
+   "assessment": "Narrow. Noted for completeness.",
+   "source": "delegated player_program sweep"
+  }
+ ],
+
+ "known_four_instances_reconfirmed": [
+  {
+   "instance": 1,
+   "name": "player_tendency_loo as the E0 baseline in I0009",
+   "file": "experiments\\exploration\\E0_I0009_additive_pressure\\build_data.py",
+   "lines": [113, 115],
+   "construction_lines": [
+    "tov[\"loo_poss\"] = tov[\"season_poss\"] - tov[\"realised_off_possessions\"]",
+    "tov[\"player_tendency_loo\"] = np.where(tov[\"loo_poss\"] > 0, 100.0 * tov[\"loo_tov\"] / tov[\"loo_poss\"], np.nan)"
+   ],
+   "classification": "RETROSPECTIVE_SAME_SEASON",
+   "status": "CONFIRMED, matches the brief"
+  },
+  {
+   "instance": 2,
+   "name": "I0004 player-by-zone rate, leave-one-SEASON-out",
+   "file": "experiments\\exploration\\E0_I0004_shot_location_allowance\\build_and_test.py",
+   "lines": [180, 184, 186, 199],
+   "construction_lines": [
+    "# leave-one-season-out player-zone baseline (avg of OTHER seasons, attempt-weighted)",
+    "other = g[g[\"season\"] != row[\"season\"]]",
+    "base_rate = other[\"mk\"].sum() / other[\"att\"].sum()",
+    "shots_b[\"shooting_residual\"] = shots_b[\"made\"] - shots_b[\"player_zone_baseline\"]"
+   ],
+   "classification": "RETROSPECTIVE_CROSS_SEASON",
+   "status": "CONFIRMED, matches the brief",
+   "probe": {
+    "suspect": "player_zone_baseline", "clean": "player's strictly-prior expanding zone conversion",
+    "future_target": "player's own strictly-after-date zone conversion rate, same season",
+    "n": 81842, "corr_suspect_with_own_future": 0.8091, "corr_clean_with_own_future": 0.7120,
+    "dR2_suspect_over_clean_predicting_the_future": 0.161126
+   }
+  },
+  {
+   "instance": 3,
+   "name": "I0004 opponent allowance, leave-one-game-out over a full-season team rate",
+   "file": "experiments\\exploration\\E0_I0004_shot_location_allowance\\robustness_loo.py",
+   "lines": [76, 86, 88],
+   "construction_lines": [
+    "shots[\"loo_att\"] = shots[\"season_att\"] - shots[\"game_att\"]",
+    "shots[\"loo_zone_rate\"] = shots[\"loo_mk\"] / shots[\"loo_att\"]",
+    "shots[\"zone_conv_residual_loo\"] = shots[\"loo_zone_rate\"] - shots[\"loo_pool_rate\"]"
+   ],
+   "classification": "RETROSPECTIVE_SAME_SEASON",
+   "status": "CONFIRMED, matches the brief",
+   "probe": {
+    "suspect": "loo_zone_rate", "clean": "opponent's strictly-prior expanding zone conversion allowed",
+    "future_target": "opponent's own strictly-after-date zone conversion allowed, same season",
+    "n": 108756, "corr_suspect_with_own_future": 0.9601, "corr_clean_with_own_future": 0.8994,
+    "dR2_suspect_over_clean_predicting_the_future": 0.121747,
+    "caveat": "Both correlations are inflated by between-zone level differences (rim vs three). The DIFFERENCE and the dR2 are the informative quantities."
+   }
+  },
+  {
+   "instance": 4,
+   "name": "player_tendency_loo carrying I0009's E1 walk-forward headline +0.004003",
+   "file": "experiments\\exploration\\E1_I0009_additive_pressure\\build_data.py",
+   "lines": [163, 167, 169, 172, 177],
+   "construction_lines": [
+    "# 4a. E0-comparable LOO tendency (hindsight; NOT pregame-observable)",
+    "tov[\"loo_poss\"] = tov[\"season_poss\"] - tov[\"realised_off_possessions\"]",
+    "tov[\"player_tendency_loo\"] = np.where(tov[\"loo_poss\"] > 0, 100.0 * tov[\"loo_tov\"] / tov[\"loo_poss\"], np.nan)",
+    "# 4b. fully pregame-observable tendency (expanding, strictly before date, shrunk)",
+    "tov[\"player_tendency_pregame\"] = [x[0] for x in pt]"
+   ],
+   "classification": "RETROSPECTIVE_SAME_SEASON",
+   "status": "CONFIRMED, matches the brief",
+   "clean_variant_exists": true,
+   "clean_variant_note": "player_tendency_pregame is built alongside it at lines 172-177 via pressure_lib_e1.PregamePlayerTendency, and M_E/M_F use it. This is what downgrades the finding from a construction failure to a REPORTING failure.",
+   "probe": {
+    "suspect": "player_tendency_loo", "clean": "player_tendency_pregame",
+    "future_target": "player's own strictly-after-date turnover rate per 100 offensive possessions, same season",
+    "n": 17544, "corr_suspect_with_own_future": 0.6455, "corr_clean_with_own_future": 0.3647,
+    "dR2_suspect_over_clean_predicting_the_future": 0.331880,
+    "note": "Reproduces the brief's figures (+0.6455 / +0.3647 / 0.3319) exactly. Used as the method control that validates every other probe number in this file."
+   }
+  }
+ ],
+
+ "additional_probe": {
+  "id": "A3",
+  "name": "opponent_defrtg_loo, the E0 I0009 control variable D_LOO",
+  "file": "experiments\\exploration\\E1_I0009_additive_pressure\\build_data.py",
+  "lines": [124],
+  "construction_line": "team_game[\"defrtg_loo\"] = np.where(loo_poss > 0, ...)",
+  "classification": "RETROSPECTIVE_SAME_SEASON",
+  "consumed_at": "experiments\\exploration\\E0_I0009_additive_pressure\\analyze.py:259  _, _, d1c, b1c = delta_r2([X1, D_LOO], P_LOO)",
+  "clean_variant_exists": true,
+  "clean_variant_note": "opponent_defrtg_pregame is built alongside it.",
+  "probe": {"n": 1892, "corr_suspect_with_own_future": 0.6992, "corr_clean_with_own_future": 0.4958,
+            "dR2_suspect_over_clean_predicting_the_future": 0.270074}
+ },
+
+ "verified_pregame_clean": [
+  {"file": "experiments\\exploration\\E0_I0012_layer3_noncollinear\\base.py", "line": 134,
+   "construction_line": "prior = daily.groupby(keys, sort=False)[valcols].cumsum().to_numpy() - daily[valcols].to_numpy()",
+   "note": "base.prior_expanding -- aggregates to DATE level first (line 132) so same-day games cannot see each other, then cumsum-minus-own = strictly before the date. This is the foundation of E0_I0012, E0_I0013 and E1_I0012 and it is sound.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "experiments\\exploration\\E0_I0010_positional_matchup\\analyze.py", "line": 68,
+   "construction_line": "prior = daily.groupby(keys, sort=False)[valcols].cumsum().to_numpy() - daily[valcols].to_numpy()",
+   "note": "Same construction. I0010 additionally computes BOTH arms and labels them honestly at line 163-164: (\"WITHIN-SEASON LOO (uses future games)\", \"own_loo\", \"allow_loo\") and (\"PREGAME-OBSERVABLE (decides the verdict)\", \"own_pre\", \"allow_pre\"). The verdict rests on the clean arm. Exemplary.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "experiments\\exploration\\E1_I0011_split_alpha\\baseline\\corrected_baseline.py", "line": 81,
+   "construction_line": "return s.groupby(keys, sort=False).shift(1)",
+   "note": "_shift_state -- own_rate_v2_split_alpha is strictly prior. Separately relevant: this module exists because props_edge.py's frozen ALPHA=0.30 baseline is TOO WEAK, so increments stated against it are overstated. That is a distinct baseline pathology (weak baseline, not future-reading) already documented by E1_I0011.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "experiments\\exploration\\E0_I0011_tendency_estimator\\build_frame.py", "line": 49,
+   "construction_line": "sh = g[src].shift(1)   # then .expanding(min_periods=1).mean()",
+   "note": "strictly-prior season-to-date team pace and opponent-allowed rates; league means at lines 56-66 use .expanding().mean().shift(1).",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "experiments\\exploration\\E1_I0009_additive_pressure\\pressure_lib_e1.py", "line": 2,
+   "construction_line": "E1 I0009 -- shared pregame (strictly-before-date, expanding, shrunk) rate lookups.",
+   "note": "Verified by E1_I0009_r2_rerun\\step5_baseline_audit_and_gate.py:83 which quotes searchsorted(side='left') -> STRICTLY BEFORE date, PRIOR-GAMES-ONLY, and by the lookup-matrix reproduction assert at analyze.py:402.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "experiments\\player_program\\run_p3_downstream.py", "line": 155,
+   "construction_line": "same = [(o, d, n) for (dt, se, o, d, n) in h if dt < r.game_date and se == r.season]",
+   "note": "The B_off/B_def/B_net trailing baselines ARE clean; only A_incumbent (F3) is not.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "experiments\\player_program\\stage2b\\P36_IMPLEMENT_ARMS\\arms\\A26\\feature_construction.py", "line": 190,
+   "construction_line": "i = int(np.searchsorted(idx[\"dates\"], cutoff_date, side=\"left\"))",
+   "note": "The A26 leave-one-out strength-of-schedule is GENUINELY pregame -- the opponent mean is formed from _prior_count_and_sum(opp_st, cutoff_date) only (lines 225-232). This is the P35 'LEAKAGE L6 / one-clock LOO-as-of-target-date' repair and it held. A LOO that is not a trap.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "experiments\\player_program\\stage3_score\\S36_IMPLEMENT_ARMS\\runner\\features_common.py", "line": 177,
+   "construction_line": "agg[\"season\"] = agg[\"season\"] + 1  # carried INTO the following season",
+   "note": "prior_season_aggregates. The groupby('season')['env'].mean() at line 174 LOOKS like a whole-season mean; the +1 shift at 177 makes it strictly-prior-season. Same pattern in A13\\arm_a13.py:216-219 and A12. Flagged here because it is exactly the shape that has produced false positives.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "experiments\\player_program\\stage3_score\\S36_IMPLEMENT_ARMS\\runner\\features_common.py", "line": 181,
+   "construction_line": "zscore_train(...) using v[train_idx]  -- with the comment 'Using pooled moments would leak the test fold's distribution'",
+   "note": "This is the correct handling of the very issue F7 raises in the exploration screens.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "totals_head.py", "line": 266,
+   "construction_line": "k = np.searchsorted(dates, dates, side=\"left\")",
+   "note": "League scoring-environment tracker, PLUS a truncate-and-recompute proof at :388 hist = league[(league.season == season) & (league.date < date)] with raise SystemExit('ENV WALK-FORWARD AUDIT FAILED...') at :406. The strongest single piece of walk-forward evidence found anywhere in this repo.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "dist_margin_cover.py", "line": 537,
+   "construction_line": "sigma = float(np.std(pool, ddof=1))  -- with provenance print max_pool_date < test_era_start",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "clv_transfer.py", "line": 183,
+   "construction_line": "elig = g[g[\"snap\"] <= cutoff]",
+   "note": "decision-time-matched market comparator; the headline is bound to the matched extension/T-24h cell.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "props_edge.py", "line": 345,
+   "construction_line": "direction=\"backward\", allow_exact_matches=False",
+   "note": "The per36 EWMA at :316-319 INCLUDES the row's own game, but is only ever served through this asof join, so the served value is strictly prior. Correct by construction and documented at :303-308. A second shape that looks like a leak and is not.",
+   "classification": "PREGAME_CLEAN"},
+  {"file": "experiments\\market_program\\SCORE_BASELINES\\build_score_baselines.py", "line": 426,
+   "construction_line": "train = d[d[\"season\"] < s]",
+   "note": "walk-forward win-prob logistic, never pooled. The MODEL side of SCORE_BASELINES is clean; only the market side (F9) is not.",
+   "classification": "PREGAME_CLEAN"}
+ ],
+
+ "undetermined": [
+  {"item": "fit_rate_and_p3.py:445-447 replacement_level",
+   "construction_lines": ["latest = coef[coef[\"training_cutoff_season\"] == coef[\"training_cutoff_season\"].max()]",
+                          "repl_pool = latest[latest[\"total_possessions\"] < 500]"],
+   "why_undetermined": "It is a single scalar from the LATEST cutoff, published as replacement_level -> primary_mean_net_rapm_100 (line 465). Whether any published delta CONSUMES it as a reference level could not be established.",
+   "to_resolve": "grep for consumers of RATE_AND_P3_REPORT.json's replacement_level / primary_mean_net_rapm_100 fields across the program."},
+  {"item": "experiments\\totals_groundwork\\bookie_totals_per_game.csv snapshot vintage",
+   "why_undetermined": "It has NO manifest and its producing script is outside the audited scope. Whether consensus_total is an opening, matched, or closing total is unknown.",
+   "impact": "It is the 'bookie' reference in totals_head.py / totals_online.py challenger_minus_bookie, incumbent_minus_bookie and paired_delta_bookie_minus_challenger.",
+   "to_resolve": "read experiments\\totals_groundwork\\'s builder and record the snapshot selection rule, then backfill a manifest."},
+  {"item": "data\\drive_masters\\master_odds.csv and data\\odds_capture\\master_odds_extension.csv",
+   "why_undetermined": "Referenced by clv_transfer.py:79-80, conditional_edge.py:58-59, pocket_mining.py:91-93, dist_margin_cover.py:81-82, oracle_bracket.py:57-58 but ABSENT at those paths in this worktree. Contents and timestamp semantics unverifiable here.",
+   "to_resolve": "confirm whether these are gitignored data files present in the main checkout."},
+  {"item": "stage2b arms A02 and A25",
+   "why_undetermined": "Not opened. A02 (arm_a02.py:139-145 universe.groupby(GAME_COL)[OWN_EST_COL].transform(\"sum\")) is a within-game transform -- legitimate IF the estimate is itself pregame, unconfirmed.",
+   "to_resolve": "read arm_a02.py and arm_a25.py end to end."},
+  {"item": "F7 magnitude",
+   "why_undetermined": "The size of the within-season-centering effect on E0_I0012 / E0_I0013 pooled dR2_OxM was NOT measured, because measuring it requires re-executing a frozen screen with an altered centering rule.",
+   "to_resolve": "a coordinator-authorised rerun outside the frozen directories, comparing zwithin centering against a strictly-prior-expanding centering on the same frame."},
+  {"item": "evalharness\\frozen_baselines.json",
+   "why_undetermined": "It carries asof_granularity 'artifact'. run_turnover_p1.py:17, run_turnover_p2.py:14 and run_p3_downstream.py:31-32 all import from evalharness; only cluster_bootstrap_ci / mae / rmse imports were verified, not frozen_baselines.",
+   "to_resolve": "grep the three scripts for frozen_baselines usage."}
+ ]
+}
