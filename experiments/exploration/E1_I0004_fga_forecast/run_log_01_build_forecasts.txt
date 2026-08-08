@@ -1,0 +1,125 @@
+﻿
+====================================================================================================
+0. LOAD RAW SHOTS -- exploration partition only (2021-2024)
+====================================================================================================
+  data/shotcharts/shots_2021_regular.parquet       rows=  26269  seasons=[np.int64(2021)]
+  data/shotcharts/shots_2021_playoffs.parquet      rows=   2385  seasons=[np.int64(2021)]
+  data/shotcharts/shots_2022_regular.parquet       rows=  29374  seasons=[np.int64(2022)]
+  data/shotcharts/shots_2022_playoffs.parquet      rows=   3139  seasons=[np.int64(2022)]
+  data/shotcharts/shots_2023_regular.parquet       rows=  32809  seasons=[np.int64(2023)]
+  data/shotcharts/shots_2023_playoffs.parquet      rows=   2813  seasons=[np.int64(2023)]
+  data/shotcharts/shots_2024_regular.parquet       rows=  32759  seasons=[np.int64(2024)]
+  data/shotcharts/shots_2024_playoffs.parquet      rows=   3010  seasons=[np.int64(2024)]
+
+  concatenated rows = 132558
+  sorted(season.unique()) = [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  GAME_DATE range = 2021-05-14 .. 2024-10-20
+  PARTITION CHECK PASSED.
+  5-zone shots = 132304  games = 970
+
+====================================================================================================
+1. STEP 1 -- REBUILD THE PREDECESSOR'S SELECTION PANEL FROM RAW FILES
+====================================================================================================
+  Independent transcription of E1_I0004_shot_selection/build_frames.py section 3.
+  Checked column-by-column against the frozen selection_frame.parquet. Any later
+  difference is then attributable to introducing the FGA FORECAST, not to my harness.
+  panel rows = 85280   player-games = 17056
+  my rebuilt analysis rows = 51473   player-games = 10307
+
+  row-set match: {'both': 51473, 'left_only': 0, 'right_only': 0}
+    max|delta| fga                = 0.000e+00
+    max|delta| z_att              = 0.000e+00
+    max|delta| share              = 0.000e+00
+    max|delta| S1                 = 0.000e+00
+    max|delta| S2                 = 0.000e+00
+    max|delta| OS                 = 0.000e+00
+    max|delta| role_prior_fga     = 0.000e+00
+    max|delta| n_prior            = 0.000e+00
+  RAW-REBUILD OF THE FRAME: EXACT
+
+====================================================================================================
+1b. STEP 1 -- REPRODUCE THE CONDITIONAL dR2 (+0.019138861495123338)
+====================================================================================================
+  predecessor published : m0=0.5103262851681518  m1=0.5294651466632752  dR2=0.0191388614951233  n=10307
+  from THEIR frame      : m0=0.5103262851681518  m1=0.5294651466632752  dR2=0.0191388614951233  n=10307
+  from MY raw rebuild   : m0=0.5103262851681518  m1=0.5294651466632752  dR2=0.0191388614951233  n=10307
+
+  ABSOLUTE DIFFERENCE vs +0.019138861495123338
+    their frame -> 0.000e+00   (dn = 0)
+    raw rebuild -> 0.000e+00   (dn = 0)
+  REPRODUCTION: EXACT -- proceeding
+    conditional dR2  Restricted Area          = +0.019139  (base R2 0.510326, n=10307)
+    conditional dR2  In The Paint (Non-RA)    = +0.008744  (base R2 0.408235, n=10307)
+    conditional dR2  Mid-Range                = +0.004428  (base R2 0.531821, n=10307)
+    conditional dR2  Corner 3                 = +0.001434  (base R2 0.124767, n=10245)
+    conditional dR2  Above the Break 3        = +0.003234  (base R2 0.689925, n=10307)
+
+====================================================================================================
+2. GAMELOG -- structural audit, then MINUTES for strictly-prior games only
+====================================================================================================
+  gamelog rows = 16720  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  SEASON column values = ['2021', '2022', '2023', '2024']
+  within-row identity FG_PCT == FGM/FGA: max|diff| = 5.000e-04  OK
+  within-row identity FG3_PCT == FG3M/FG3A: max|diff| = 5.000e-04  OK
+  within-row identity FT_PCT == FTM/FTA: max|diff| = 5.000e-04  OK
+  every remaining column is a raw counting stat of that single game, an id, or a name. No aggregate, no shrunk value, no cross-row derivation -> structurally cannot embed another season. NO MANIFEST: formally UNVERIFIABLE, admitted on these grounds and used ONLY for prior-game minutes.
+  parsed minutes: non-null 16720 / 16720  range 0.00 .. 50.00
+
+====================================================================================================
+3. STEP 2 -- POINT-IN-TIME FGA FORECASTS (strictly prior games only)
+====================================================================================================
+  player-game rows = 17056   minutes joined for 92.0% (gamelog files contain REGULAR SEASON only -- playoff rows get NaN minutes, which means they do not UPDATE the minutes state; their own forecast is still built from prior regular-season games)
+  box FGA vs 5-zone shot count: corr=0.999719  mean|diff|=0.0147 (diff = Backcourt shots + any collection gap; DIAGNOSTIC ONLY)
+
+====================================================================================================
+3b. FGA FORECAST ACCURACY -- its own accuracy, before it is used for anything
+====================================================================================================
+  Target: the player's realised total field-goal attempts over the five zones.
+  R2 convention: plain unweighted, 1 - SSE/SST, SST about the UNWEIGHTED mean.
+
+  (i) ALL player-games with >= 3 prior games in season  n=15219
+  forecast            n      MAE     RMSE        R2     bias     corr
+  F_LG            15219   4.1742   5.1376  -0.00105  -0.1734   0.0107
+  F_A             15219   2.6810   3.3983   0.56201  +0.0276   0.7567
+  F_A2            15219   2.5734   3.3475   0.57500  +0.0075   0.7624
+  F_B_nopace      15219   2.5715   3.3203   0.58189  +0.0603   0.7642
+  F_B             15219   2.5670   3.3110   0.58422  +0.0636   0.7658
+
+  (ii) THE PREDECESSOR'S ANALYSIS SET (fga>=5, n_prior>=3, OS available)  n=10307
+  forecast            n      MAE     RMSE        R2     bias     corr
+  F_LG            10307   3.7239   5.0685  -0.35840  -2.6073   0.0376
+  F_A             10307   2.6535   3.4872   0.35699  -1.1884   0.6626
+  F_A2            10307   2.7900   3.5836   0.32093  -0.8161   0.6598
+  F_B_nopace      10307   2.7293   3.5149   0.34671  -0.8285   0.6639
+  F_B             10307   2.7226   3.5018   0.35158  -0.8165   0.6671
+
+  realised FGA on the analysis set: mean=10.3026  sd=4.3490  var=18.9136
+
+  by season (analysis set), MAE:
+    2021  n=2201   F_LG=3.567  F_A=2.681  F_A2=2.844  F_B_nopace=2.776  F_B=2.758
+    2022  n=2586   F_LG=3.486  F_A=2.578  F_A2=2.708  F_B_nopace=2.670  F_B=2.670
+    2023  n=2750   F_LG=3.889  F_A=2.697  F_A2=2.819  F_B_nopace=2.726  F_B=2.729
+    2024  n=2770   F_LG=3.906  F_A=2.659  F_A2=2.794  F_B_nopace=2.752  F_B=2.737
+
+====================================================================================================
+4. PRIOR-ONLY ZONE CONVERSION RATES (for the points target, step 4)
+====================================================================================================
+  q_prior built from the player's STRICTLY PRIOR games in season, shrunk (K_Q=20 attempts) toward the league zone rate over games played STRICTLY BEFORE this calendar date.
+                              q  realised
+zone                                     
+Above the Break 3      0.335176   12995.0
+Corner 3               0.370195    1808.0
+In The Paint (Non-RA)  0.384329   10908.0
+Mid-Range              0.362624    9001.0
+Restricted Area        0.613567   23496.0
+
+====================================================================================================
+5. WRITE forecast_frame.parquet
+====================================================================================================
+  wrote forecast_frame.parquet  rows=51473  player-games=10307
+  sorted(season.unique()) = [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  wrote forecast_frame_pregame_gate.parquet  rows=52461  player-games=10506  (gate: F_B >= 5, fully pregame)
+  wrote build_results.json
+
+FINAL PARTITION RE-ASSERT: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+Done.

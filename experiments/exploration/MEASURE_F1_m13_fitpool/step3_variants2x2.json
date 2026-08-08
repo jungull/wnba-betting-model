@@ -1,0 +1,591 @@
+{
+ "spec": {
+  "min_pool_n": 500,
+  "min_pool_rule": "A scored row is UNSCORABLE under variant C if its strictly-prior expanding fit pool holds fewer than 500 residuals. Unscorable rows are COUNTED AND DROPPED from variant C. There is NO fallback to the pooled fit -- a fallback would silently reintroduce the defect being measured. 500 chosen so the bootstrap-free s.e. on the fitted scale is ~3% relative (scale/sqrt(2n)); fixed before any variant was executed.",
+  "common_subset_rule": "All three variants are ALSO scored on the identical COMMON SUBSET (rows scorable under C) so that any A-vs-C delta cannot be an artifact of a changing evaluation universe.",
+  "family_selection": "Same AIC rule as published (k=2 normal vs k=3 student_t). For A and B it is applied once to the single pool. For C it is applied per distinct eval date to that date's expanding pool -- the faithful analogue. The per-date winner is recorded.",
+  "noise_benchmark": "Every A-vs-variant delta in Brier/log-loss is additionally tested with a paired game-date cluster bootstrap on the per-row DIFFERENCE OF DIFFERENCES (same seed/n_boot/method as the node), so a delta can be compared against the artifact's own sampling noise rather than eyeballed.",
+  "seasons_C": "{2022..2026} -- C holds the season set FIXED at A's, so A->C isolates time ordering alone.",
+  "authored": "before any variant result was observed"
+ },
+ "variants": {
+  "A_POOLED_PUBLISHED": {
+   "seasons": [
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+   ],
+   "time_ordered": false
+  },
+  "B_POOLED_2022_2024": {
+   "seasons": [
+    2022,
+    2023,
+    2024
+   ],
+   "time_ordered": false
+  },
+  "C_TIME_ORDERED": {
+   "seasons": [
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+   ],
+   "time_ordered": true
+  },
+  "D_TIME_ORDERED_2022_2024": {
+   "seasons": [
+    2022,
+    2023,
+    2024
+   ],
+   "time_ordered": true
+  }
+ },
+ "fit_info": {
+  "A_POOLED_PUBLISHED": {
+   "mode": "pooled",
+   "pool_n": 16162,
+   "family": "student_t",
+   "normal_loc": -0.015164734794126378,
+   "normal_scale": 5.159310464823577,
+   "t_df": 8,
+   "t_scale": 4.468093928548117,
+   "n_unscorable_thin_pool_rows": 0,
+   "parquet_sha256": "9935e1dd63dcb2ede90e14efd2874e7801fff6e404c1c5bd005661e237ba01cd",
+   "n_rows": 5889
+  },
+  "B_POOLED_2022_2024": {
+   "mode": "pooled",
+   "pool_n": 10981,
+   "family": "student_t",
+   "normal_loc": -0.062287981113290924,
+   "normal_scale": 5.326198450011215,
+   "t_df": 7,
+   "t_scale": 4.501459281555408,
+   "n_unscorable_thin_pool_rows": 0,
+   "parquet_sha256": "2ddb422a9f348d920d5c9558318a299313a461239f52aedd19284f0744357c82",
+   "n_rows": 5889
+  },
+  "C_TIME_ORDERED": {
+   "mode": "time_ordered_expanding",
+   "n_refits": 260,
+   "family_counts": {
+    "student_t": 260
+   },
+   "family": "student_t",
+   "pool_n_min": 8333,
+   "pool_n_max": 16075,
+   "n_unscorable_thin_pool_rows": 0,
+   "parquet_sha256": "84dfed96bdd14e18e73f937f45d400b95d980fe8d63212c22000e9ca38719cc1",
+   "n_rows": 5889
+  },
+  "D_TIME_ORDERED_2022_2024": {
+   "mode": "time_ordered_expanding",
+   "n_refits": 260,
+   "family_counts": {
+    "student_t": 260
+   },
+   "family": "student_t",
+   "pool_n_min": 8333,
+   "pool_n_max": 10981,
+   "n_unscorable_thin_pool_rows": 0,
+   "parquet_sha256": "65af07a9e0897e40fb6418bf69ef95646a16b54cd01b76f798b2e2ce83bd3bf0",
+   "n_rows": 5889
+  }
+ },
+ "cells": {
+  "A_POOLED_PUBLISHED": {
+   "A_primary": {
+    "n_player_games": 5737,
+    "n_games": 719,
+    "n_date_clusters": 254,
+    "over_base_rate": 0.47394108419034336,
+    "primary_family": "student_t",
+    "market": {
+     "brier": 0.24884099760943712,
+     "log_loss": 0.6908139936327337
+    },
+    "normal": {
+     "brier": 0.2718700399980593,
+     "log_loss": 0.7567584114376876,
+     "mean_p_over": 0.4977745868263728,
+     "call_over_rate": 0.5497646853756318
+    },
+    "student_t": {
+     "brier": 0.27482439619740084,
+     "log_loss": 0.7632200742418483,
+     "mean_p_over": 0.49889904885832237,
+     "call_over_rate": 0.5497646853756318
+    },
+    "empirical": {
+     "brier": 0.2743376971397115,
+     "log_loss": 0.7594090599238038,
+     "mean_p_over": 0.4609254149047845,
+     "call_over_rate": 0.38783336238452154
+    },
+    "het_normal": {
+     "brier": 0.26594896736514423,
+     "log_loss": 0.7407836496483652,
+     "mean_p_over": 0.4895245695451776,
+     "call_over_rate": 0.5497646853756318
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.021128869339680625,
+     "hi": 0.03118823773883664,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.05670980434033991,
+     "hi": 0.09007039318966199,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "calib_verdict": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "brier_ci95_width": 0.010059368399156013,
+    "logloss_ci95_width": 0.03336058884932208
+   },
+   "all_tiers": {
+    "n_player_games": 5889,
+    "n_games": 738,
+    "n_date_clusters": 260,
+    "over_base_rate": 0.4747834946510443,
+    "primary_family": "student_t",
+    "market": {
+     "brier": 0.24879538873264093,
+     "log_loss": 0.6907229076359114
+    },
+    "normal": {
+     "brier": 0.27426843759531055,
+     "log_loss": 0.7676551797704115,
+     "mean_p_over": 0.4910018221570778,
+     "call_over_rate": 0.5386313465783664
+    },
+    "student_t": {
+     "brier": 0.2772921936918319,
+     "log_loss": 0.773844054685091,
+     "mean_p_over": 0.49186602562637016,
+     "call_over_rate": 0.5386313465783664
+    },
+    "empirical": {
+     "brier": 0.27672484933707153,
+     "log_loss": 0.7687187217327397,
+     "mean_p_over": 0.454582149420258,
+     "call_over_rate": 0.3790117167600611
+    },
+    "het_normal": {
+     "brier": 0.2683818149332686,
+     "log_loss": 0.7510658939839634,
+     "mean_p_over": 0.4831289305909815,
+     "call_over_rate": 0.5386313465783664
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.023436666171285307,
+     "hi": 0.034347831109170196,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.06529921305499063,
+     "hi": 0.1037197369262059,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "calib_verdict": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "brier_ci95_width": 0.010911164937884889,
+    "logloss_ci95_width": 0.038420523871215265
+   }
+  },
+  "B_POOLED_2022_2024": {
+   "A_primary": {
+    "n_player_games": 5737,
+    "n_games": 719,
+    "n_date_clusters": 254,
+    "over_base_rate": 0.47394108419034336,
+    "primary_family": "student_t",
+    "market": {
+     "brier": 0.24884099760943712,
+     "log_loss": 0.6908139936327337
+    },
+    "normal": {
+     "brier": 0.27114829859747447,
+     "log_loss": 0.7533516858198935,
+     "mean_p_over": 0.5009007408380205,
+     "call_over_rate": 0.5612689559002964
+    },
+    "student_t": {
+     "brier": 0.2746073300093128,
+     "log_loss": 0.7613614222222242,
+     "mean_p_over": 0.5025421896937929,
+     "call_over_rate": 0.5612689559002964
+    },
+    "empirical": {
+     "brier": 0.2735801658060934,
+     "log_loss": 0.7565522755171376,
+     "mean_p_over": 0.46513580423834744,
+     "call_over_rate": 0.3981174830050549
+    },
+    "het_normal": {
+     "brier": 0.2665607356042007,
+     "log_loss": 0.7425905868901724,
+     "mean_p_over": 0.49253495787671764,
+     "call_over_rate": 0.5612689559002964
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.020982783850849517,
+     "hi": 0.030841688049035636,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.05542412843195599,
+     "hi": 0.08750165148528656,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "calib_verdict": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "brier_ci95_width": 0.009858904198186118,
+    "logloss_ci95_width": 0.03207752305333057
+   },
+   "all_tiers": {
+    "n_player_games": 5889,
+    "n_games": 738,
+    "n_date_clusters": 260,
+    "over_base_rate": 0.4747834946510443,
+    "primary_family": "student_t",
+    "market": {
+     "brier": 0.24879538873264093,
+     "log_loss": 0.6907229076359114
+    },
+    "normal": {
+     "brier": 0.27346162900100085,
+     "log_loss": 0.7634853007409432,
+     "mean_p_over": 0.49422110028109884,
+     "call_over_rate": 0.5498386822890134
+    },
+    "student_t": {
+     "brier": 0.27701073245420915,
+     "log_loss": 0.7714030101532422,
+     "mean_p_over": 0.4955390632781617,
+     "call_over_rate": 0.5498386822890134
+    },
+    "empirical": {
+     "brier": 0.27590277292012366,
+     "log_loss": 0.7653989290901881,
+     "mean_p_over": 0.45883162953828666,
+     "call_over_rate": 0.3890303956529122
+    },
+    "het_normal": {
+     "brier": 0.26900153353780526,
+     "log_loss": 0.753068408054705,
+     "mean_p_over": 0.4860590393301649,
+     "call_over_rate": 0.5498386822890134
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.023209788151050424,
+     "hi": 0.034006545402026654,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.06367132706095441,
+     "hi": 0.10034121344558064,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "calib_verdict": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "brier_ci95_width": 0.01079675725097623,
+    "logloss_ci95_width": 0.03666988638462623
+   }
+  },
+  "C_TIME_ORDERED": {
+   "A_primary": {
+    "n_player_games": 5737,
+    "n_games": 719,
+    "n_date_clusters": 254,
+    "over_base_rate": 0.47394108419034336,
+    "primary_family": "student_t",
+    "market": {
+     "brier": 0.24884099760943712,
+     "log_loss": 0.6908139936327337
+    },
+    "normal": {
+     "brier": 0.2710761654411747,
+     "log_loss": 0.7530870666230632,
+     "mean_p_over": 0.49860181111838614,
+     "call_over_rate": 0.5515077566672477
+    },
+    "student_t": {
+     "brier": 0.2740508105252199,
+     "log_loss": 0.7598976254631683,
+     "mean_p_over": 0.49978112140843356,
+     "call_over_rate": 0.5515077566672477
+    },
+    "empirical": {
+     "brier": 0.27345920270211443,
+     "log_loss": 0.7561427516897476,
+     "mean_p_over": 0.46292228254636175,
+     "call_over_rate": 0.3921910406135611
+    },
+    "het_normal": {
+     "brier": 0.26627197477608533,
+     "log_loss": 0.741923477993364,
+     "mean_p_over": 0.4902656522805602,
+     "call_over_rate": 0.5515077566672477
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.020431391529290358,
+     "hi": 0.030280657435882145,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.05399101998068557,
+     "hi": 0.08595657422280441,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "calib_verdict": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "brier_ci95_width": 0.009849265906591787,
+    "logloss_ci95_width": 0.03196555424211884
+   },
+   "all_tiers": {
+    "n_player_games": 5889,
+    "n_games": 738,
+    "n_date_clusters": 260,
+    "over_base_rate": 0.4747834946510443,
+    "primary_family": "student_t",
+    "market": {
+     "brier": 0.24879538873264093,
+     "log_loss": 0.6907229076359114
+    },
+    "normal": {
+     "brier": 0.2733800216315739,
+     "log_loss": 0.7631594734101715,
+     "mean_p_over": 0.4919983287300323,
+     "call_over_rate": 0.5403294277466463
+    },
+    "student_t": {
+     "brier": 0.27643567208070774,
+     "log_loss": 0.7698534206075618,
+     "mean_p_over": 0.49289966481851494,
+     "call_over_rate": 0.5403294277466463
+    },
+    "empirical": {
+     "brier": 0.2757678343176292,
+     "log_loss": 0.7649255431838883,
+     "mean_p_over": 0.4566968412265042,
+     "call_over_rate": 0.38325691968076075
+    },
+    "het_normal": {
+     "brier": 0.2687088523947533,
+     "log_loss": 0.7523518473619268,
+     "mean_p_over": 0.4838674394738044,
+     "call_over_rate": 0.5403294277466463
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.02264295443447626,
+     "hi": 0.033372253320747364,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.0620241209022461,
+     "hi": 0.09871557632308565,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "calib_verdict": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "brier_ci95_width": 0.010729298886271103,
+    "logloss_ci95_width": 0.036691455420839555
+   }
+  },
+  "D_TIME_ORDERED_2022_2024": {
+   "A_primary": {
+    "n_player_games": 5737,
+    "n_games": 719,
+    "n_date_clusters": 254,
+    "over_base_rate": 0.47394108419034336,
+    "primary_family": "student_t",
+    "market": {
+     "brier": 0.24884099760943712,
+     "log_loss": 0.6908139936327337
+    },
+    "normal": {
+     "brier": 0.27089769532671526,
+     "log_loss": 0.7523163137888058,
+     "mean_p_over": 0.500341627342222,
+     "call_over_rate": 0.5579571204462263
+    },
+    "student_t": {
+     "brier": 0.27423997151254587,
+     "log_loss": 0.7601245347929959,
+     "mean_p_over": 0.5019214610226195,
+     "call_over_rate": 0.5579571204462263
+    },
+    "empirical": {
+     "brier": 0.2733210016225086,
+     "log_loss": 0.7556256137932178,
+     "mean_p_over": 0.4649141849895621,
+     "call_over_rate": 0.39776886874673173
+    },
+    "het_normal": {
+     "brier": 0.2665684426411557,
+     "log_loss": 0.7427238250963409,
+     "mean_p_over": 0.4920315106018036,
+     "call_over_rate": 0.5579571204462263
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.02064337497249394,
+     "hi": 0.030467087596465905,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.0543487008064535,
+     "hi": 0.08618308679930672,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "calib_verdict": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "brier_ci95_width": 0.009823712623971966,
+    "logloss_ci95_width": 0.03183438599285322
+   },
+   "all_tiers": {
+    "n_player_games": 5889,
+    "n_games": 738,
+    "n_date_clusters": 260,
+    "over_base_rate": 0.4747834946510443,
+    "primary_family": "student_t",
+    "market": {
+     "brier": 0.24879538873264093,
+     "log_loss": 0.6907229076359114
+    },
+    "normal": {
+     "brier": 0.27318499030772764,
+     "log_loss": 0.7622435814211422,
+     "mean_p_over": 0.49372368369307484,
+     "call_over_rate": 0.5466123280692817
+    },
+    "student_t": {
+     "brier": 0.27661074646334216,
+     "log_loss": 0.7699771983853608,
+     "mean_p_over": 0.4949929417089492,
+     "call_over_rate": 0.5466123280692817
+    },
+    "empirical": {
+     "brier": 0.2756205454889288,
+     "log_loss": 0.7643312775415336,
+     "mean_p_over": 0.4586574969842553,
+     "call_over_rate": 0.3886907794192562
+    },
+    "het_normal": {
+     "brier": 0.2690106235394345,
+     "log_loss": 0.7532294290050251,
+     "mean_p_over": 0.48556771369004215,
+     "call_over_rate": 0.5466123280692817
+    },
+    "primary_vs_market_brier_diff_ci95": {
+     "lo": 0.022791018868838383,
+     "hi": 0.03352374147803655,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "primary_vs_market_logloss_diff_ci95": {
+     "lo": 0.062385698966318015,
+     "hi": 0.09883617830207184,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "calib_verdict": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "brier_ci95_width": 0.010732722609198168,
+    "logloss_ci95_width": 0.03645047933575382
+   }
+  }
+ },
+ "decomposition_2x2": {
+  "A_primary": {
+   "brier_gap_vs_market": {
+    "A_POOLED_PUBLISHED": 0.025983398587963724,
+    "B_POOLED_2022_2024": 0.02576633239987569,
+    "C_TIME_ORDERED": 0.02520981291578278,
+    "D_TIME_ORDERED_2022_2024": 0.025398973903108746
+   },
+   "logloss_gap_vs_market": {
+    "A_POOLED_PUBLISHED": 0.07240608060911469,
+    "B_POOLED_2022_2024": 0.07054742858949059,
+    "C_TIME_ORDERED": 0.06908363183043464,
+    "D_TIME_ORDERED_2022_2024": 0.06931054116026225
+   },
+   "effect_of_HOLDOUT_INCLUSION_pooled__B_minus_A": -0.00021706618808803313,
+   "effect_of_HOLDOUT_INCLUSION_timeordered__D_minus_C": 0.00018916098732596476,
+   "effect_of_TIME_ORDERING_full_seasons__C_minus_A": -0.0007735856721809431,
+   "effect_of_TIME_ORDERING_restricted__D_minus_B": -0.0003673584967669452,
+   "total_A_to_D": -0.0005844246848549783,
+   "published_brier_diff_ci95_width": 0.010059368399156013,
+   "share_time_ordering": 0.7808854989389546,
+   "share_holdout_inclusion": 0.21911450106104532,
+   "total_move_as_fraction_of_published_CI_width": 0.05809755261612766
+  },
+  "all_tiers": {
+   "brier_gap_vs_market": {
+    "A_POOLED_PUBLISHED": 0.028496804959190963,
+    "B_POOLED_2022_2024": 0.028215343721568226,
+    "C_TIME_ORDERED": 0.027640283348066813,
+    "D_TIME_ORDERED_2022_2024": 0.027815357730701235
+   },
+   "logloss_gap_vs_market": {
+    "A_POOLED_PUBLISHED": 0.08312114704917961,
+    "B_POOLED_2022_2024": 0.08068010251733082,
+    "C_TIME_ORDERED": 0.07913051297165041,
+    "D_TIME_ORDERED_2022_2024": 0.07925429074944945
+   },
+   "effect_of_HOLDOUT_INCLUSION_pooled__B_minus_A": -0.00028146123762273767,
+   "effect_of_HOLDOUT_INCLUSION_timeordered__D_minus_C": 0.00017507438263442143,
+   "effect_of_TIME_ORDERING_full_seasons__C_minus_A": -0.0008565216111241503,
+   "effect_of_TIME_ORDERING_restricted__D_minus_B": -0.00039998599086699116,
+   "total_A_to_D": -0.0006814472284897288,
+   "published_brier_diff_ci95_width": 0.010911164937884889,
+   "share_time_ordering": 0.75266653804785,
+   "share_holdout_inclusion": 0.24733346195215,
+   "total_move_as_fraction_of_published_CI_width": 0.062454122210513136
+  }
+ }
+}

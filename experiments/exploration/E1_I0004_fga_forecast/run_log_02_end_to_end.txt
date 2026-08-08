@@ -1,0 +1,159 @@
+﻿loaded forecast_frame: 51473 rows  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]  date range 2021-05-21 .. 2024-10-20
+
+========================================================================================================
+STEP 3 -- FORECAST ZONE ATTEMPT COUNTS END TO END (no realised FGA anywhere)
+========================================================================================================
+  BASELINE : z_att ~ 1 + S1*FGAhat        CANDIDATE : + FGAhat*OS
+  Walk-forward: refit at every distinct game date on all strictly earlier rows; MIN_TRAIN=1000 rows.
+  `fga` rows are a DIAGNOSTIC using REALISED FGA and are excluded from every headline.
+
+  zone                  FGAhat       n  nOOS  poolR2b  poolR2c   pool dR2    wfR2b    wfR2c     wf dR2   wf dMAE
+  Restricted Area       fga*     10307  9290   0.5103   0.5295  +0.019139   0.5110   0.5299  +0.018905  -0.02436
+  Restricted Area       F_A      10307  9290   0.3220   0.3383  +0.016311   0.3220   0.3386  +0.016611  -0.02234
+  Restricted Area       F_B      10307  9290   0.3144   0.3309  +0.016480   0.3135   0.3304  +0.016853  -0.02298
+  In The Paint (Non-RA) fga*     10307  9290   0.4082   0.4170  +0.008744   0.4082   0.4173  +0.009060  -0.00698
+  In The Paint (Non-RA) F_A      10307  9290   0.2898   0.2989  +0.009161   0.2920   0.3012  +0.009186  -0.00798
+  In The Paint (Non-RA) F_B      10307  9290   0.2871   0.2947  +0.007670   0.2882   0.2960  +0.007740  -0.00706
+  Mid-Range             fga*     10307  9290   0.5318   0.5362  +0.004428   0.5293   0.5339  +0.004562  -0.00437
+  Mid-Range             F_A      10307  9290   0.4176   0.4226  +0.005008   0.4169   0.4217  +0.004858  -0.00386
+  Mid-Range             F_B      10307  9290   0.4201   0.4235  +0.003464   0.4186   0.4221  +0.003524  -0.00252
+  Corner 3              fga*     10245  9238   0.1248   0.1262  +0.001434   0.1281   0.1286  +0.000532  -0.00134
+  Corner 3              F_A      10245  9238   0.1069   0.1079  +0.001047   0.1091   0.1096  +0.000481  -0.00126
+  Corner 3              F_B      10245  9238   0.1064   0.1077  +0.001276   0.1083   0.1089  +0.000610  -0.00129
+  Above the Break 3     fga*     10307  9290   0.6899   0.6932  +0.003234   0.6935   0.6968  +0.003234  -0.00654
+  Above the Break 3     F_A      10307  9290   0.5384   0.5417  +0.003332   0.5438   0.5472  +0.003451  -0.00486
+  Above the Break 3     F_B      10307  9290   0.5270   0.5307  +0.003744   0.5338   0.5375  +0.003760  -0.00576
+  * DIAGNOSTIC: uses REALISED FGA. Not a forecast. Excluded from all headlines.
+
+  RESTRICTED AREA -- the degradation, explicitly:
+    predecessor pooled, REALISED fga  : +0.019139
+    my pooled,          REALISED fga  : +0.019139
+    walk-forward,       REALISED fga  : +0.018905   (cost of out-of-sample fitting alone)
+    walk-forward,       FORECAST F_A  : +0.016611
+    walk-forward,       FORECAST F_B  : +0.016853   <-- THE DECISIVE NUMBER
+
+========================================================================================================
+STEP 3 NULLS -- opponent-team-season level, with the naive row-level null beside
+========================================================================================================
+  [F_A] Restricted Area        wf dR2 row=+0.016611 cl=+0.021899 | cluster null sd=0.001144 z=+19.06 p=0.0002 | row null sd=0.000167 p=0.0002 | inflation 6.85x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0218987317 mean=0.0218987317 sd=0.000e+00 max|dev|=0.000e+00
+  [F_A] In The Paint (Non-RA)  wf dR2 row=+0.009186 cl=+0.014676 | cluster null sd=0.000952 z=+15.35 p=0.0002 | row null sd=0.000184 p=0.0002 | inflation 5.18x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0146763410 mean=0.0146763410 sd=0.000e+00 max|dev|=0.000e+00
+  [F_A] Mid-Range              wf dR2 row=+0.004858 cl=+0.006492 | cluster null sd=0.000619 z=+10.62 p=0.0002 | row null sd=0.000188 p=0.0002 | inflation 3.29x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0064920889 mean=0.0064920889 sd=0.000e+00 max|dev|=0.000e+00
+  [F_A] Corner 3               wf dR2 row=+0.000481 cl=+0.002534 | cluster null sd=0.000305 z=+8.83 p=0.0002 | row null sd=0.000182 p=0.0054 | inflation 1.68x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0025341206 mean=0.0025341206 sd=0.000e+00 max|dev|=0.000e+00
+  [F_A] Above the Break 3      wf dR2 row=+0.003451 cl=+0.005061 | cluster null sd=0.000416 z=+11.98 p=0.0002 | row null sd=0.000113 p=0.0002 | inflation 3.67x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0050607016 mean=0.0050607016 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] Restricted Area        wf dR2 row=+0.016853 cl=+0.023012 | cluster null sd=0.001150 z=+19.87 p=0.0002 | row null sd=0.000164 p=0.0002 | inflation 7.00x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0230121054 mean=0.0230121054 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] In The Paint (Non-RA)  wf dR2 row=+0.007740 cl=+0.012767 | cluster null sd=0.000877 z=+14.51 p=0.0002 | row null sd=0.000190 p=0.0002 | inflation 4.62x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0127671857 mean=0.0127671857 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] Mid-Range              wf dR2 row=+0.003524 cl=+0.005390 | cluster null sd=0.000504 z=+10.76 p=0.0002 | row null sd=0.000196 p=0.0002 | inflation 2.57x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0053896814 mean=0.0053896814 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] Corner 3               wf dR2 row=+0.000610 cl=+0.003049 | cluster null sd=0.000320 z=+9.99 p=0.0002 | row null sd=0.000179 p=0.0018 | inflation 1.79x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0030488732 mean=0.0030488732 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] Above the Break 3      wf dR2 row=+0.003760 cl=+0.005334 | cluster null sd=0.000368 z=+14.42 p=0.0002 | row null sd=0.000116 p=0.0002 | inflation 3.17x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0053339160 mean=0.0053339160 sd=0.000e+00 max|dev|=0.000e+00
+
+========================================================================================================
+STEP 3 -- FIVE-ZONE FAMILY-WISE CORRECTION (max-z within draw, cluster null)
+========================================================================================================
+  [F_A] Restricted Area        z=+19.06  p unadj=0.0002  p FWE=0.0002
+  [F_A] In The Paint (Non-RA)  z=+15.35  p unadj=0.0002  p FWE=0.0002
+  [F_A] Mid-Range              z=+10.62  p unadj=0.0002  p FWE=0.0004
+  [F_A] Corner 3               z=+8.83  p unadj=0.0002  p FWE=0.0006
+  [F_A] Above the Break 3      z=+11.98  p unadj=0.0002  p FWE=0.0002
+  [F_B] Restricted Area        z=+19.87  p unadj=0.0002  p FWE=0.0002
+  [F_B] In The Paint (Non-RA)  z=+14.51  p unadj=0.0002  p FWE=0.0002
+  [F_B] Mid-Range              z=+10.76  p unadj=0.0002  p FWE=0.0002
+  [F_B] Corner 3               z=+9.99  p unadj=0.0002  p FWE=0.0004
+  [F_B] Above the Break 3      z=+14.42  p unadj=0.0002  p FWE=0.0002
+
+========================================================================================================
+STEP 4 -- DOES IT MOVE POINTS? point-in-time forecast of PLAYER POINTS
+========================================================================================================
+  player-games with all five zones present: 10245
+  sum_z OS_z : mean=-1.221e-18  max|.|=1.110e-16  (compositional -> the candidate term is a PURE MIX SHIFT at constant volume)
+  prior-only expected points per attempt (base): mean=0.9957 sd=0.0897
+  mix-shift in expected points per attempt     : mean=-0.00018 sd=0.01898
+  mix term in POINTS with F_A: sd=0.1816 pts  (1 sd of the opponent mix signal moves the points forecast this much)
+  mix term in POINTS with F_B: sd=0.1955 pts  (1 sd of the opponent mix signal moves the points forecast this much)
+
+  target fg_pts: n=10245  mean=10.4093  sd=5.8236  (FG points from the shot files (headline))
+    ceiling if the mix term were a PERFECT predictor and orthogonal to the base: dR2 <= (sd_mixterm/sd_y)^2 = 0.000972  [F_A]
+    ceiling if the mix term were a PERFECT predictor and orthogonal to the base: dR2 <= (sd_mixterm/sd_y)^2 = 0.001127  [F_B]
+  fg_pts         F_A      pooled dR2=+0.000047  wf R2 base=0.23331 cand=0.23316  wf dR2=-0.000153  wf dMAE=+0.00028  coef=+0.2205
+  fg_pts         F_B      pooled dR2=+0.000323  wf R2 base=0.23858 cand=0.23860  wf dR2=+0.000021  wf dMAE=+0.00043  coef=+0.5354
+  fg_pts         fga*     pooled dR2=+0.000111  wf R2 base=0.60085 cand=0.60042  wf dR2=-0.000430  wf dMAE=+0.00068  coef=+0.2900
+
+  target pts_total_box: n=9327  mean=12.4273  sd=6.8878  (total box PTS incl. free throws (secondary; box source))
+    ceiling if the mix term were a PERFECT predictor and orthogonal to the base: dR2 <= (sd_mixterm/sd_y)^2 = 0.000671  [F_A]
+    ceiling if the mix term were a PERFECT predictor and orthogonal to the base: dR2 <= (sd_mixterm/sd_y)^2 = 0.000793  [F_B]
+  pts_total_box  F_A      pooled dR2=+0.000474  wf R2 base=0.29031 cand=0.29060  wf dR2=+0.000289  wf dMAE=-0.00167  coef=+0.8402
+  pts_total_box  F_B      pooled dR2=+0.001298  wf R2 base=0.29902 cand=0.29994  wf dR2=+0.000920  wf dMAE=-0.00536  coef=+1.2801
+  pts_total_box  fga*     pooled dR2=+0.000461  wf R2 base=0.61061 cand=0.61042  wf dR2=-0.000191  wf dMAE=-0.00288  coef=+0.7093
+
+========================================================================================================
+STEP 4 NULLS -- opponent-team-season level
+========================================================================================================
+  fg_pts         F_A    wf dR2 row=-0.000153 cl=-0.000142  cluster null sd=0.000349 z=-0.34 p=0.5215 | row null sd=0.000184 p=0.2378 | inflation 1.90x
+       DEFECTIVE NO-OP PLACEBO: ref=-0.0001424652 mean=-0.0001424652 sd=0.000e+00 max|dev|=0.000e+00
+  fg_pts         F_B    wf dR2 row=+0.000021 cl=+0.000077  cluster null sd=0.000286 z=+0.45 p=0.2150 | row null sd=0.000190 p=0.0710 | inflation 1.50x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0000773203 mean=0.0000773203 sd=0.000e+00 max|dev|=0.000e+00
+  pts_total_box  F_A    wf dR2 row=+0.000289 cl=+0.000142  cluster null sd=0.000468 z=+0.13 p=0.3029 | row null sd=0.000197 p=0.0160 | inflation 2.38x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0001418630 mean=0.0001418630 sd=0.000e+00 max|dev|=0.000e+00
+  pts_total_box  F_B    wf dR2 row=+0.000920 cl=+0.000812  cluster null sd=0.000519 z=+1.47 p=0.0844 | row null sd=0.000203 p=0.0012 | inflation 2.56x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0008122274 mean=0.0008122274 sd=0.000e+00 max|dev|=0.000e+00
+
+========================================================================================================
+STEP 5 -- WHERE THE SIGNAL SURVIVES, BY PRE-GAME OBSERVABLES ONLY
+========================================================================================================
+  Splits preselected together: role_prior_fga at the inherited cuts (6, 11);
+  prior-minutes volatility terciles; |OS_rim| terciles. All strictly pregame.
+  role_prior_fga (6,11)      1_low       n=2091   F_A: dR2=+0.014553 dMAE=-0.01340  F_B: dR2=+0.012903 dMAE=-0.01191
+  role_prior_fga (6,11)      2_mid       n=3946   F_A: dR2=+0.017948 dMAE=-0.02333  F_B: dR2=+0.018926 dMAE=-0.02470
+  role_prior_fga (6,11)      3_high      n=3253   F_A: dR2=+0.017360 dMAE=-0.02688  F_B: dR2=+0.017429 dMAE=-0.02800
+  prior minutes sd terciles  1_stable    n=3132   F_A: dR2=+0.009235 dMAE=-0.01379  F_B: dR2=+0.010143 dMAE=-0.01734
+  prior minutes sd terciles  2_mid       n=3118   F_A: dR2=+0.021129 dMAE=-0.02814  F_B: dR2=+0.022148 dMAE=-0.02732
+  prior minutes sd terciles  3_volatile  n=3037   F_A: dR2=+0.020317 dMAE=-0.02476  F_B: dR2=+0.018578 dMAE=-0.02401
+  |OS_rim| terciles          1_near-avg  n=3025   F_A: dR2=-0.000439 dMAE=+0.00302  F_B: dR2=+0.000050 dMAE=+0.00185
+  |OS_rim| terciles          2_mid       n=3110   F_A: dR2=+0.003662 dMAE=-0.00704  F_B: dR2=+0.002765 dMAE=-0.00718
+  |OS_rim| terciles          3_extreme   n=3155   F_A: dR2=+0.046300 dMAE=-0.06173  F_B: dR2=+0.047428 dMAE=-0.06235
+  OS_rim signed terciles     1_stingy    n=3153   F_A: dR2=+0.032921 dMAE=-0.07927  F_B: dR2=+0.038389 dMAE=-0.08534
+  OS_rim signed terciles     2_mid       n=3035   F_A: dR2=-0.000389 dMAE=+0.00440  F_B: dR2=+0.000026 dMAE=+0.00349
+  OS_rim signed terciles     3_permissiven=3102   F_A: dR2=+0.019293 dMAE=+0.00937  F_B: dR2=+0.015007 dMAE=+0.01452
+  season                     2021        n=1184   F_A: dR2=+0.017679 dMAE=-0.02976  F_B: dR2=+0.020180 dMAE=-0.03341
+  season                     2022        n=2586   F_A: dR2=+0.022769 dMAE=-0.02479  F_B: dR2=+0.022231 dMAE=-0.02320
+  season                     2023        n=2750   F_A: dR2=+0.014516 dMAE=-0.02530  F_B: dR2=+0.014589 dMAE=-0.02792
+  season                     2024        n=2770   F_A: dR2=+0.012708 dMAE=-0.01393  F_B: dR2=+0.012758 dMAE=-0.01340
+
+========================================================================================================
+NATURAL UNITS -- end-to-end, walk-forward
+========================================================================================================
+  F_A: coef=+0.77502  sd(OS)=0.04234  mean(FGAhat)=9.114  ->  +0.2990 rim attempts per 1 sd  (+10.24% of the 2.922 mean)
+  F_B: coef=+0.72437  sd(OS)=0.04234  mean(FGAhat)=9.486  ->  +0.2909 rim attempts per 1 sd  (+9.96% of the 2.922 mean)
+
+========================================================================================================
+ROBUSTNESS -- sample gate defined on FORECAST FGA, not realised FGA
+========================================================================================================
+  The headline row set inherits the predecessor's gate `realised FGA >= 5`, which
+  is a SAMPLE DEFINITION that reads a realised quantity (disclosed, not a feature).
+  Here the whole thing is rebuilt on a gate that is itself pregame: F_B >= 5.
+  Restricted Area       F_A    n=10506  nOOS=9476   wf R2 base=0.32034 cand=0.33566  dR2=+0.015323  dMAE=-0.01995
+  Restricted Area       F_B    n=10506  nOOS=9476   wf R2 base=0.32267 cand=0.33843  dR2=+0.015764  dMAE=-0.02053
+  In The Paint (Non-RA) F_A    n=10506  nOOS=9476   wf R2 base=0.30206 cand=0.31062  dR2=+0.008559  dMAE=-0.00788
+  In The Paint (Non-RA) F_B    n=10506  nOOS=9476   wf R2 base=0.30244 cand=0.30981  dR2=+0.007371  dMAE=-0.00622
+  Mid-Range             F_A    n=10506  nOOS=9476   wf R2 base=0.42555 cand=0.42991  dR2=+0.004361  dMAE=-0.00359
+  Mid-Range             F_B    n=10506  nOOS=9476   wf R2 base=0.43067 cand=0.43394  dR2=+0.003263  dMAE=-0.00231
+  Corner 3              F_A    n=10437  nOOS=9418   wf R2 base=0.10436 cand=0.10478  dR2=+0.000416  dMAE=-0.00131
+  Corner 3              F_B    n=10437  nOOS=9418   wf R2 base=0.10656 cand=0.10707  dR2=+0.000514  dMAE=-0.00129
+  Above the Break 3     F_A    n=10506  nOOS=9476   wf R2 base=0.52738 cand=0.53068  dR2=+0.003293  dMAE=-0.00284
+  Above the Break 3     F_B    n=10506  nOOS=9476   wf R2 base=0.53070 cand=0.53431  dR2=+0.003604  dMAE=-0.00507
+
+========================================================================================================
+WRITE
+========================================================================================================
+  wrote end_to_end_results.json, permutation_draws_step3_cluster.csv, permutation_draws_step4_fgpts_*.csv
+FINAL PARTITION RE-ASSERT: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+Done.

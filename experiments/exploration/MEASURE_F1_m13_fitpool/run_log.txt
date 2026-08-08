@@ -1,0 +1,192 @@
+﻿ROW_BOUNDED_FILTERABLE                        data/masters/master_player.parquet
+UNVERIFIABLE_NO_MANIFEST                      data/wnba_gamelog_2021.parquet
+UNVERIFIABLE_NO_MANIFEST                      data/wnba_gamelog_2022.parquet
+UNVERIFIABLE_NO_MANIFEST                      data/wnba_gamelog_2023.parquet
+UNVERIFIABLE_NO_MANIFEST                      data/wnba_gamelog_2024.parquet
+UNVERIFIABLE_NO_MANIFEST                      data/refresh_2026/gamelog_player_2025_regular_season.parquet
+UNVERIFIABLE_NO_MANIFEST                      data/refresh_2026/gamelog_player_2026_regular_season.parquet
+UNVERIFIABLE_NO_MANIFEST                      experiments/prediction_contract_v5/player_game_enriched.parquet
+UNVERIFIABLE_NO_MANIFEST                      data/props_capture/historical/master_props_historical.csv
+ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP      experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2021.parquet
+ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP      experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2022.parquet
+ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP      experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2023.parquet
+ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP      experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2024.parquet
+ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP      experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2025.parquet
+ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP      experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2026.parquet
+
+{
+ "n_inputs": 15,
+ "n_with_manifest": 7,
+ "n_unverifiable_no_manifest": 8,
+ "n_artifact_granular": 6,
+ "n_row_granular": 1
+}
+==============================================================================
+STEP 1: reproducing M13 by executing the copied pipeline
+==============================================================================
+loading outcomes + scored model rows (REUSED from compute_model_vs_market)...
+integrity cross-check vs MODEL_VS_MARKET.md: {'n_matched_player_games_this_run': 5966, 'n_evaluable_matched_player_games_this_run': 5889, 'n_matched_player_games_model_vs_market_json': 5966, 'n_evaluable_matched_player_games_model_vs_market_json': 5889, 'matches_model_vs_market_json': True}
+fit_pool residual diagnostics: {'n': 16162, 'mean': -0.015164734794126378, 'std_ddof1': 5.159310464823577, 'median': 0.5570526617838982, 'skewness_fisher_pearson': -0.6145306268501058, 'excess_kurtosis': 1.29606131513256, 'min': -36.30909090909091, 'max': 21.094931868172548, 'p05': -9.416958351797824, 'p95': 8.066864343161495}
+primary_family: student_t
+headline calibration verdict: TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+A_primary Brier -- primary: 0.27482439619740084 market: 0.24884099760943712
+wrote FINDINGS.json and translation_rows.parquet
+
+max abs numeric delta : 0.0   (field: fit_pool.n )
+string fields identical: True
+    primary_family_selected -> {'published': 'student_t', 'reproduced': 'student_t', 'identical': True}
+    headline_verdict -> {'published': 'TRANSLATION_WORSE_CALIBRATED_THAN_MARKET', 'reproduced': 'TRANSLATION_WORSE_CALIBRATED_THAN_MARKET', 'identical': True}
+    translation_rows.sha256 -> {'published': '9935e1dd63dcb2ede90e14efd2874e7801fff6e404c1c5bd005661e237ba01cd', 'reproduced': '9935e1dd63dcb2ede90e14efd2874e7801fff6e404c1c5bd005661e237ba01cd', 'identical': True}
+    FINDINGS.result_hash -> {'published': '17cfe53beb3cec98912520c212474c1f67bf86777b2670a7392ab84a79bf6391', 'reproduced': '17cfe53beb3cec98912520c212474c1f67bf86777b2670a7392ab84a79bf6391', 'identical': True}
+REPRODUCED EXACTLY   : True
+loading (same machinery M13 uses)...
+partition: {"eval_universe_seasons_observed_from_column_values": [2024, 2025, 2026], "eval_universe_min_game_date": "2024-05-14", "eval_universe_max_game_date": "2026-07-30", "eval_rows_per_season": {"2024": 1726, "2025": 2158, "2026": 2005}}
+pool A n = 16162  pool B n = 10981
+A_POOLED_PUBLISHED n_pool 16162 family student_t normal loc/scale -0.015165 5.15931 t df/scale 8 4.468094
+B_POOLED_2022_2024 n_pool 10981 family student_t normal loc/scale -0.062288 5.326198 t df/scale 7 4.501459
+C_TIME_ORDERED refits: 260  thin/unscorable rows: 0
+time-ordering violations (pool_max_date >= eval_date): 0
+full_eval_universe A_POOLED_PUBLISHED A_primary brier 0.274824 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+full_eval_universe B_POOLED_2022_2024 A_primary brier 0.274607 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+full_eval_universe C_TIME_ORDERED A_primary brier 0.274051 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+common_subset A_POOLED_PUBLISHED A_primary brier 0.274824 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+common_subset B_POOLED_2022_2024 A_primary brier 0.274607 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+common_subset C_TIME_ORDERED A_primary brier 0.274051 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+wrote step2_variants.json + time_ordered_per_date_fits.csv
+A_POOLED_PUBLISHED n 5889 fam student_t A_primary brier 0.2748244 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+B_POOLED_2022_2024 n 5889 fam student_t A_primary brier 0.27460733 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+C_TIME_ORDERED n 5889 fam student_t A_primary brier 0.27405081 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+D_TIME_ORDERED_2022_2024 n 5889 fam student_t A_primary brier 0.27423997 TRANSLATION_WORSE_CALIBRATED_THAN_MARKET
+
+{
+ "brier_gap_vs_market": {
+  "A_POOLED_PUBLISHED": 0.025983398587963724,
+  "B_POOLED_2022_2024": 0.02576633239987569,
+  "C_TIME_ORDERED": 0.02520981291578278,
+  "D_TIME_ORDERED_2022_2024": 0.025398973903108746
+ },
+ "logloss_gap_vs_market": {
+  "A_POOLED_PUBLISHED": 0.07240608060911469,
+  "B_POOLED_2022_2024": 0.07054742858949059,
+  "C_TIME_ORDERED": 0.06908363183043464,
+  "D_TIME_ORDERED_2022_2024": 0.06931054116026225
+ },
+ "effect_of_HOLDOUT_INCLUSION_pooled__B_minus_A": -0.00021706618808803313,
+ "effect_of_HOLDOUT_INCLUSION_timeordered__D_minus_C": 0.00018916098732596476,
+ "effect_of_TIME_ORDERING_full_seasons__C_minus_A": -0.0007735856721809431,
+ "effect_of_TIME_ORDERING_restricted__D_minus_B": -0.0003673584967669452,
+ "total_A_to_D": -0.0005844246848549783,
+ "published_brier_diff_ci95_width": 0.010059368399156013,
+ "share_time_ordering": 0.7808854989389546,
+ "share_holdout_inclusion": 0.21911450106104532,
+ "total_move_as_fraction_of_published_CI_width": 0.05809755261612766
+}
+wrote step3_variants2x2.json and cf_*/translation_rows.parquet
+A_POOLED_PUBLISHED student_t rmse 0.0 max_abs 0.0 call_flip 0.0
+B_POOLED_2022_2024 student_t rmse 0.003983 max_abs 0.006102 call_flip 0.011207
+C_TIME_ORDERED student_t rmse 0.004027 max_abs 0.019233 call_flip 0.003057
+D_TIME_ORDERED_2022_2024 student_t rmse 0.004684 max_abs 0.019233 call_flip 0.007981
+
+{
+ "leak_rmse_student_t_pooled_vs_time_ordered": 0.004027036828282338,
+ "m13_own_rmse_normal_vs_student_t": 0.011106650619655116,
+ "m13_own_rmse_normal_vs_empirical": 0.04348690098694966,
+ "leak_rmse_as_multiple_of_normal_vs_student_t": 0.36257886974096476,
+ "leak_rmse_as_multiple_of_normal_vs_empirical": 0.09260344464395943,
+ "leak_call_flip_rate": 0.003056546102903719,
+ "m13_own_call_flip_normal_vs_empirical": 0.16193132299111035
+}
+wrote step5_rowlevel_drift.json
+wrote MEASUREMENT.json
+verdicts: {
+ "A_POOLED_PUBLISHED": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+ "B_POOLED_2022_2024": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+ "C_TIME_ORDERED": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+ "D_TIME_ORDERED_2022_2024": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET"
+}
+any flip: False
+======================================================================
+M14 run: CONTROL_PUBLISHED_M13 <- C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\market_program\M13_PLAYER_VALUE_TRANSLATION
+loading outcomes/name-rows for entity resolution (REUSED from compute_model_vs_market)...
+wrote FINDINGS.json
+headline pooled falsification slope: -0.09824766977643187 CI -0.18127993344376267 -0.009670011784933772
+verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+  slope: -0.09824766977643187  verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+======================================================================
+M14 run: A_POOLED_PUBLISHED <- C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\MEASURE_F1_m13_fitpool\cf_A_POOLED_PUBLISHED
+loading outcomes/name-rows for entity resolution (REUSED from compute_model_vs_market)...
+wrote FINDINGS.json
+headline pooled falsification slope: -0.09824766977643187 CI -0.18127993344376267 -0.009670011784933772
+verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+  slope: -0.09824766977643187  verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+======================================================================
+M14 run: B_POOLED_2022_2024 <- C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\MEASURE_F1_m13_fitpool\cf_B_POOLED_2022_2024
+loading outcomes/name-rows for entity resolution (REUSED from compute_model_vs_market)...
+wrote FINDINGS.json
+headline pooled falsification slope: -0.0989611902841084 CI -0.1828182954277377 -0.00931673857745843
+verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+  slope: -0.0989611902841084  verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+======================================================================
+M14 run: C_TIME_ORDERED <- C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\MEASURE_F1_m13_fitpool\cf_C_TIME_ORDERED
+loading outcomes/name-rows for entity resolution (REUSED from compute_model_vs_market)...
+wrote FINDINGS.json
+headline pooled falsification slope: -0.09960834358935136 CI -0.18351920230671845 -0.010272193354510385
+verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+  slope: -0.09960834358935136  verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+======================================================================
+M14 run: D_TIME_ORDERED_2022_2024 <- C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\MEASURE_F1_m13_fitpool\cf_D_TIME_ORDERED_2022_2024
+loading outcomes/name-rows for entity resolution (REUSED from compute_model_vs_market)...
+wrote FINDINGS.json
+headline pooled falsification slope: -0.09841971902421501 CI -0.18290617714651294 -0.008780916838377197
+verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+  slope: -0.09841971902421501  verdict: FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N
+
+{
+ "result_hash_identical": true,
+ "verdict_identical": true,
+ "pooled_slope_abs_delta": 0.0,
+ "slope_ci_lo_abs_delta": 0.0,
+ "slope_ci_hi_abs_delta": 0.0,
+ "M14_HARNESS_REPRODUCES_PUBLISHED": false
+}
+{
+ "B_POOLED_2022_2024_vs_A": {
+  "slope_published_A": -0.09824766977643187,
+  "slope_variant": -0.0989611902841084,
+  "slope_abs_delta": 0.0007135205076765211,
+  "slope_delta_as_fraction_of_A_CI_width": 0.004157804518406831,
+  "ci_width_A": 0.1716099216588289,
+  "ci_width_variant": 0.17350155685027926,
+  "ci_width_ratio_variant_over_A": 1.0110228777751618,
+  "verdict_A": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+  "verdict_variant": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+  "verdict_flips": false,
+  "still_sig_at_zero": true
+ },
+ "C_TIME_ORDERED_vs_A": {
+  "slope_published_A": -0.09824766977643187,
+  "slope_variant": -0.09960834358935136,
+  "slope_abs_delta": 0.0013606738129194884,
+  "slope_delta_as_fraction_of_A_CI_width": 0.007928876138202498,
+  "ci_width_A": 0.1716099216588289,
+  "ci_width_variant": 0.17324700895220807,
+  "ci_width_ratio_variant_over_A": 1.00953958417762,
+  "verdict_A": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+  "verdict_variant": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+  "verdict_flips": false,
+  "still_sig_at_zero": true
+ },
+ "D_TIME_ORDERED_2022_2024_vs_A": {
+  "slope_published_A": -0.09824766977643187,
+  "slope_variant": -0.09841971902421501,
+  "slope_abs_delta": 0.0001720492477831348,
+  "slope_delta_as_fraction_of_A_CI_width": 0.001002560027532553,
+  "ci_width_A": 0.1716099216588289,
+  "ci_width_variant": 0.17412526030813574,
+  "ci_width_ratio_variant_over_A": 1.0146573031733415,
+  "verdict_A": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+  "verdict_variant": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+  "verdict_flips": false,
+  "still_sig_at_zero": true
+ }
+}

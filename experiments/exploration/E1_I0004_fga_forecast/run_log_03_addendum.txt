@@ -1,0 +1,64 @@
+﻿RA rows = 10307  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+========================================================================================================
+(a) VOLUME PLACEBO -- the same term applied to realised TOTAL attempts
+========================================================================================================
+  If FGAhat*OS_rim were a PACE proxy it would also predict total FGA. It must not.
+  (The response here is realised TOTAL FGA. That is a placebo RESPONSE, which is
+   legitimate -- responses are always realised. No input is realised.)
+  F_A: RIM attempts   dR2=+0.016611  (base R2 0.3220)
+      TOTAL attempts dR2=-0.000287  (base R2 0.0671)   <- placebo, should be ~0;  ratio = -0.0173
+  F_B: RIM attempts   dR2=+0.016853  (base R2 0.3135)
+      TOTAL attempts dR2=-0.000309  (base R2 0.0909)   <- placebo, should be ~0;  ratio = -0.0183
+
+========================================================================================================
+(b) DEGRADATION CURVE -- end-to-end dR2 as the FGA forecast is deliberately ruined
+========================================================================================================
+  FGAhat(lam) = lam * F_B + (1 - lam) * F_LG, where F_LG is the league prior mean
+  and carries NO player information (its own R2 is ~0). lam = 1 is the headline.
+     lam   FGAhat R2  FGAhat MAE  rim R2 base  rim R2 cand    rim dR2   rim dMAE
+    0.00    -0.36359      3.7416      0.24787      0.26401  +0.016140   -0.01811
+    0.25     0.00315      3.1766      0.29996      0.31701  +0.017051   -0.01954
+    0.50     0.24538      2.7834      0.32516      0.34259  +0.017429   -0.02147
+    0.75     0.36310      2.6292      0.32647      0.34378  +0.017314   -0.02286
+    0.90     0.37396      2.6563      0.31980      0.33687  +0.017069   -0.02299
+    1.00     0.35630      2.7221      0.31351      0.33037  +0.016853   -0.02298
+   REAL*     1.00000      0.0000      0.51103      0.52994  +0.018905   -0.02436   * DIAGNOSTIC: realised FGA
+
+========================================================================================================
+(c) EVERY FGA-forecast variant on the headline statistic (RA, walk-forward)
+========================================================================================================
+  forecast        FGAhat R2  FGAhat MAE   R2 base   R2 cand        dR2      dMAE
+  F_LG             -0.36359      3.7416   0.24787   0.26401  +0.016140  -0.01811
+  F_A               0.36190      2.6565   0.32199   0.33860  +0.016611  -0.02234
+  F_A2              0.32713      2.7866   0.30526   0.32096  +0.015702  -0.02163
+  F_B_nopace        0.35283      2.7268   0.31444   0.33042  +0.015982  -0.02155
+  F_B               0.35630      2.7221   0.31351   0.33037  +0.016853  -0.02298
+  realised*         1.00000      0.0000   0.51103   0.52994  +0.018905  -0.02436   * DIAGNOSTIC
+
+========================================================================================================
+(d) MIN_TRAIN sensitivity of the walk-forward
+========================================================================================================
+  MIN_TRAIN=500    n_scored=9806   base=0.31352 cand=0.32986 dR2=+0.016342
+  MIN_TRAIN=1000   n_scored=9290   base=0.31351 cand=0.33037 dR2=+0.016853
+  MIN_TRAIN=2000   n_scored=8307   base=0.31450 cand=0.33141 dR2=+0.016906
+  MIN_TRAIN=4000   n_scored=6296   base=0.32462 cand=0.33987 dR2=+0.015252
+
+========================================================================================================
+(e) CORRECT-LEVEL NULL FOR THE STEP-5 POCKET (|OS_rim| terciles)
+========================================================================================================
+  Model fitted walk-forward on the FULL set; dR2 evaluated INSIDE each tercile.
+  Null: opponent-team-season allowance values reshuffled across teams within
+  season, model refitted, dR2 re-evaluated in the SAME tercile (the tercile
+  boundaries are held fixed at the real ones, so only the signal is permuted).
+  1_near-avg   n=3025   dR2(cluster x)=+0.003722  null sd=0.001812  z=+2.69  p=0.0012
+  2_mid        n=3110   dR2(cluster x)=+0.013981  null sd=0.001800  z=+8.34  p=0.0002
+  3_extreme    n=3155   dR2(cluster x)=+0.051049  null sd=0.003785  z=+12.80  p=0.0002
+
+  CAVEAT, stated plainly: a higher dR2 in the extreme-|OS| tercile is PARTLY
+  MECHANICAL -- the regressor has more variance there, so it must move the
+  forecast more. It is evidence about WHERE THE MODEL ACTS, which is what an
+  abstention rule needs, NOT evidence that the underlying slope is heterogeneous.
+
+wrote addendum_results.json
+PARTITION RE-ASSERT: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]

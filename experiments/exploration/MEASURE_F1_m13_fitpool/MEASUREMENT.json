@@ -1,0 +1,1378 @@
+{
+ "measurement": "MEASURE_F1_m13_fitpool",
+ "finding_measured": "AUDIT_baseline_provenance/AUDIT.json finding F1 (CRITICAL)",
+ "generated_utc": "2026-08-08T02:34:37.103623+00:00",
+ "scope_attestation": {
+  "wrote_only_inside": "experiments/exploration/MEASURE_F1_m13_fitpool/",
+  "m13_m14_modified": false,
+  "registry_or_ledger_written": false,
+  "note": "M13 and M14 are PASSED, FROZEN nodes. Their scripts were COPIED into this directory; the copies differ from the originals only in their __file__-derived path constants and (for M14) two env-var-driven redirections, so that they read the same inputs and write into this directory instead of theirs. No published figure was regenerated in place."
+ },
+ "step1_reproduction": {
+  "method": "The copied build_translation.py was executed end to end and every published quantity in M13/FINDINGS.json was diffed field by field.",
+  "n_numeric_fields_compared": 83,
+  "max_abs_numeric_delta": 0.0,
+  "max_abs_numeric_delta_field": "fit_pool.n",
+  "translation_rows_parquet_sha256_identical": true,
+  "FINDINGS_result_hash_identical": true,
+  "headline_verdict_identical": true,
+  "REPRODUCED_EXACTLY": true,
+  "conclusion": "Reproduction is EXACT at 0.000e+00 across all 83 numeric published quantities, and both the translation_rows.parquet sha256 and the FINDINGS.json result_hash are byte-identical. Every counterfactual below is therefore attributable to the specification change, not to the harness."
+ },
+ "step2_time_ordered_counterfactual": {
+  "spec": {
+   "min_pool_n": 500,
+   "min_pool_rule": "A scored row is UNSCORABLE under variant C if its strictly-prior expanding fit pool holds fewer than 500 residuals. Unscorable rows are COUNTED AND DROPPED from variant C. There is NO fallback to the pooled fit -- a fallback would silently reintroduce the defect being measured. 500 chosen so the bootstrap-free s.e. on the fitted scale is ~3% relative (scale/sqrt(2n)); fixed before any variant was executed.",
+   "common_subset_rule": "All three variants are ALSO scored on the identical COMMON SUBSET (rows scorable under C) so that any A-vs-C delta cannot be an artifact of a changing evaluation universe.",
+   "family_selection": "Same AIC rule as published (k=2 normal vs k=3 student_t). For A and B it is applied once to the single pool. For C it is applied per distinct eval date to that date's expanding pool -- the faithful analogue. The per-date winner is recorded.",
+   "noise_benchmark": "Every A-vs-variant delta in Brier/log-loss is additionally tested with a paired game-date cluster bootstrap on the per-row DIFFERENCE OF DIFFERENCES (same seed/n_boot/method as the node), so a delta can be compared against the artifact's own sampling noise rather than eyeballed.",
+   "seasons_C": "{2022..2026} -- C holds the season set FIXED at A's, so A->C isolates time ordering alone.",
+   "authored": "before any variant result was observed"
+  },
+  "fit_pool_construction": "For every scored row, the fit pool holds ONLY residuals from games with game_date STRICTLY BEFORE that row's game_date (expanding window, refit at each of the 260 distinct evaluation dates). Verified on COLUMN VALUES, not text: max(fit-pool game_date) < eval game_date at every refit.",
+  "n_refits": 260,
+  "time_ordering_violations": [],
+  "min_sample_rule": "A scored row is UNSCORABLE under variant C if its strictly-prior expanding fit pool holds fewer than 500 residuals. Unscorable rows are COUNTED AND DROPPED from variant C. There is NO fallback to the pooled fit -- a fallback would silently reintroduce the defect being measured. 500 chosen so the bootstrap-free s.e. on the fitted scale is ~3% relative (scale/sqrt(2n)); fixed before any variant was executed.",
+  "n_unscorable_thin_pool_rows": 0,
+  "thin_pool_note": "ZERO rows were unscorable. The evaluation universe is confined to seasons 2024-2026 (the props archive's span, confirmed on column values), while the fit pool starts in 2022, so the smallest expanding pool any scored row ever saw was 8,333 residuals -- 16.7x the pre-registered 500 minimum. NO fallback to the pooled fit was used or needed anywhere.",
+  "expanding_pool_sizes": {
+   "A": 16162,
+   "B": 10981,
+   "C_min_expanding": 8333,
+   "C_max_expanding": 16075,
+   "C_median_expanding": 12254.0
+  },
+  "fitted_parameter_drift_across_the_expanding_window": {
+   "n_refits": 260,
+   "n_unscorable_thin_pool_rows": 0,
+   "thin_dates": [],
+   "time_ordering_violations": [],
+   "family_selected_counts": {
+    "student_t": 260
+   },
+   "primary_family_used_for_verdict": "student_t",
+   "normal_loc": {
+    "min": -0.09457690380874775,
+    "max": 0.001955025652508321,
+    "first": -0.09457690380874775,
+    "last": -0.013911651496576777,
+    "mean": -0.029083392340655195
+   },
+   "normal_scale": {
+    "min": 5.160616721894496,
+    "max": 5.5250951294694,
+    "first": 5.513441401492156,
+    "last": 5.160616721894496,
+    "mean": 5.31303984519682
+   },
+   "t_df": {
+    "min": 7,
+    "max": 8,
+    "counts": {
+     "7": 43,
+     "8": 217
+    }
+   },
+   "t_scale": {
+    "min": 4.361901355787009,
+    "max": 4.784872740446172,
+    "first": 4.774780315969085,
+    "last": 4.469225180355407
+   },
+   "het_b1": {
+    "min": 0.19563629924780143,
+    "max": 0.21947392986567535
+   }
+  }
+ },
+ "step3_side_by_side": {
+  "A_primary_HEADLINE": {
+   "fit_pool_n": {
+    "A_POOLED_PUBLISHED": 16162,
+    "B_POOLED_2022_2024": 10981,
+    "C_TIME_ORDERED": "expanding 8333..16075",
+    "D_TIME_ORDERED_2022_2024": "expanding 8333..10981"
+   },
+   "fit_mode": {
+    "A_POOLED_PUBLISHED": "pooled",
+    "B_POOLED_2022_2024": "pooled",
+    "C_TIME_ORDERED": "time_ordered_expanding",
+    "D_TIME_ORDERED_2022_2024": "time_ordered_expanding"
+   },
+   "primary_family_AIC": {
+    "A_POOLED_PUBLISHED": "student_t",
+    "B_POOLED_2022_2024": "student_t",
+    "C_TIME_ORDERED": "student_t",
+    "D_TIME_ORDERED_2022_2024": "student_t"
+   },
+   "n_unscorable_thin_pool_rows": {
+    "A_POOLED_PUBLISHED": 0,
+    "B_POOLED_2022_2024": 0,
+    "C_TIME_ORDERED": 0,
+    "D_TIME_ORDERED_2022_2024": 0
+   },
+   "n_player_games_scored": {
+    "A_POOLED_PUBLISHED": 5737,
+    "B_POOLED_2022_2024": 5737,
+    "C_TIME_ORDERED": 5737,
+    "D_TIME_ORDERED_2022_2024": 5737
+   },
+   "brier_normal": {
+    "A_POOLED_PUBLISHED": 0.2718700399980593,
+    "B_POOLED_2022_2024": 0.27114829859747447,
+    "C_TIME_ORDERED": 0.2710761654411747,
+    "D_TIME_ORDERED_2022_2024": 0.27089769532671526
+   },
+   "brier_student_t": {
+    "A_POOLED_PUBLISHED": 0.27482439619740084,
+    "B_POOLED_2022_2024": 0.2746073300093128,
+    "C_TIME_ORDERED": 0.2740508105252199,
+    "D_TIME_ORDERED_2022_2024": 0.27423997151254587
+   },
+   "brier_empirical": {
+    "A_POOLED_PUBLISHED": 0.2743376971397115,
+    "B_POOLED_2022_2024": 0.2735801658060934,
+    "C_TIME_ORDERED": 0.27345920270211443,
+    "D_TIME_ORDERED_2022_2024": 0.2733210016225086
+   },
+   "brier_het_normal": {
+    "A_POOLED_PUBLISHED": 0.26594896736514423,
+    "B_POOLED_2022_2024": 0.2665607356042007,
+    "C_TIME_ORDERED": 0.26627197477608533,
+    "D_TIME_ORDERED_2022_2024": 0.2665684426411557
+   },
+   "brier_market": {
+    "A_POOLED_PUBLISHED": 0.24884099760943712,
+    "B_POOLED_2022_2024": 0.24884099760943712,
+    "C_TIME_ORDERED": 0.24884099760943712,
+    "D_TIME_ORDERED_2022_2024": 0.24884099760943712
+   },
+   "logloss_normal": {
+    "A_POOLED_PUBLISHED": 0.7567584114376876,
+    "B_POOLED_2022_2024": 0.7533516858198935,
+    "C_TIME_ORDERED": 0.7530870666230632,
+    "D_TIME_ORDERED_2022_2024": 0.7523163137888058
+   },
+   "logloss_student_t": {
+    "A_POOLED_PUBLISHED": 0.7632200742418483,
+    "B_POOLED_2022_2024": 0.7613614222222242,
+    "C_TIME_ORDERED": 0.7598976254631683,
+    "D_TIME_ORDERED_2022_2024": 0.7601245347929959
+   },
+   "logloss_empirical": {
+    "A_POOLED_PUBLISHED": 0.7594090599238038,
+    "B_POOLED_2022_2024": 0.7565522755171376,
+    "C_TIME_ORDERED": 0.7561427516897476,
+    "D_TIME_ORDERED_2022_2024": 0.7556256137932178
+   },
+   "logloss_het_normal": {
+    "A_POOLED_PUBLISHED": 0.7407836496483652,
+    "B_POOLED_2022_2024": 0.7425905868901724,
+    "C_TIME_ORDERED": 0.741923477993364,
+    "D_TIME_ORDERED_2022_2024": 0.7427238250963409
+   },
+   "logloss_market": {
+    "A_POOLED_PUBLISHED": 0.6908139936327337,
+    "B_POOLED_2022_2024": 0.6908139936327337,
+    "C_TIME_ORDERED": 0.6908139936327337,
+    "D_TIME_ORDERED_2022_2024": 0.6908139936327337
+   },
+   "brier_gap_primary_minus_market": {
+    "A_POOLED_PUBLISHED": 0.025983398587963724,
+    "B_POOLED_2022_2024": 0.02576633239987569,
+    "C_TIME_ORDERED": 0.02520981291578278,
+    "D_TIME_ORDERED_2022_2024": 0.025398973903108746
+   },
+   "logloss_gap_primary_minus_market": {
+    "A_POOLED_PUBLISHED": 0.07240608060911469,
+    "B_POOLED_2022_2024": 0.07054742858949059,
+    "C_TIME_ORDERED": 0.06908363183043464,
+    "D_TIME_ORDERED_2022_2024": 0.06931054116026225
+   },
+   "brier_diff_ci95_lo": {
+    "A_POOLED_PUBLISHED": 0.021128869339680625,
+    "B_POOLED_2022_2024": 0.020982783850849517,
+    "C_TIME_ORDERED": 0.020431391529290358,
+    "D_TIME_ORDERED_2022_2024": 0.02064337497249394
+   },
+   "brier_diff_ci95_hi": {
+    "A_POOLED_PUBLISHED": 0.03118823773883664,
+    "B_POOLED_2022_2024": 0.030841688049035636,
+    "C_TIME_ORDERED": 0.030280657435882145,
+    "D_TIME_ORDERED_2022_2024": 0.030467087596465905
+   },
+   "brier_diff_ci95_WIDTH": {
+    "A_POOLED_PUBLISHED": 0.010059368399156013,
+    "B_POOLED_2022_2024": 0.009858904198186118,
+    "C_TIME_ORDERED": 0.009849265906591787,
+    "D_TIME_ORDERED_2022_2024": 0.009823712623971966
+   },
+   "logloss_diff_ci95_lo": {
+    "A_POOLED_PUBLISHED": 0.05670980434033991,
+    "B_POOLED_2022_2024": 0.05542412843195599,
+    "C_TIME_ORDERED": 0.05399101998068557,
+    "D_TIME_ORDERED_2022_2024": 0.0543487008064535
+   },
+   "logloss_diff_ci95_hi": {
+    "A_POOLED_PUBLISHED": 0.09007039318966199,
+    "B_POOLED_2022_2024": 0.08750165148528656,
+    "C_TIME_ORDERED": 0.08595657422280441,
+    "D_TIME_ORDERED_2022_2024": 0.08618308679930672
+   },
+   "logloss_diff_ci95_WIDTH": {
+    "A_POOLED_PUBLISHED": 0.03336058884932208,
+    "B_POOLED_2022_2024": 0.03207752305333057,
+    "C_TIME_ORDERED": 0.03196555424211884,
+    "D_TIME_ORDERED_2022_2024": 0.03183438599285322
+   },
+   "CALIB_VERDICT": {
+    "A_POOLED_PUBLISHED": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "B_POOLED_2022_2024": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "C_TIME_ORDERED": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "D_TIME_ORDERED_2022_2024": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET"
+   },
+   "normal_loc": {
+    "A_POOLED_PUBLISHED": -0.015164734794126378,
+    "B_POOLED_2022_2024": -0.062287981113290924,
+    "C_TIME_ORDERED": "expanding, range -0.094577..0.001955",
+    "D_TIME_ORDERED_2022_2024": "expanding (see step3_variants2x2.json)"
+   },
+   "normal_scale": {
+    "A_POOLED_PUBLISHED": 5.159310464823577,
+    "B_POOLED_2022_2024": 5.326198450011215,
+    "C_TIME_ORDERED": "expanding, range 5.160617..5.525095",
+    "D_TIME_ORDERED_2022_2024": "expanding (see step3_variants2x2.json)"
+   },
+   "student_t_df": {
+    "A_POOLED_PUBLISHED": 8,
+    "B_POOLED_2022_2024": 7,
+    "C_TIME_ORDERED": "expanding, 7 or 8 per date",
+    "D_TIME_ORDERED_2022_2024": "expanding, 7 or 8 per date"
+   },
+   "student_t_scale": {
+    "A_POOLED_PUBLISHED": 4.468093928548117,
+    "B_POOLED_2022_2024": 4.501459281555408,
+    "C_TIME_ORDERED": "expanding, range 4.361901..4.784873",
+    "D_TIME_ORDERED_2022_2024": "expanding (see step3_variants2x2.json)"
+   }
+  },
+  "all_tiers": {
+   "fit_pool_n": {
+    "A_POOLED_PUBLISHED": 16162,
+    "B_POOLED_2022_2024": 10981,
+    "C_TIME_ORDERED": "expanding 8333..16075",
+    "D_TIME_ORDERED_2022_2024": "expanding 8333..10981"
+   },
+   "fit_mode": {
+    "A_POOLED_PUBLISHED": "pooled",
+    "B_POOLED_2022_2024": "pooled",
+    "C_TIME_ORDERED": "time_ordered_expanding",
+    "D_TIME_ORDERED_2022_2024": "time_ordered_expanding"
+   },
+   "primary_family_AIC": {
+    "A_POOLED_PUBLISHED": "student_t",
+    "B_POOLED_2022_2024": "student_t",
+    "C_TIME_ORDERED": "student_t",
+    "D_TIME_ORDERED_2022_2024": "student_t"
+   },
+   "n_unscorable_thin_pool_rows": {
+    "A_POOLED_PUBLISHED": 0,
+    "B_POOLED_2022_2024": 0,
+    "C_TIME_ORDERED": 0,
+    "D_TIME_ORDERED_2022_2024": 0
+   },
+   "n_player_games_scored": {
+    "A_POOLED_PUBLISHED": 5889,
+    "B_POOLED_2022_2024": 5889,
+    "C_TIME_ORDERED": 5889,
+    "D_TIME_ORDERED_2022_2024": 5889
+   },
+   "brier_normal": {
+    "A_POOLED_PUBLISHED": 0.27426843759531055,
+    "B_POOLED_2022_2024": 0.27346162900100085,
+    "C_TIME_ORDERED": 0.2733800216315739,
+    "D_TIME_ORDERED_2022_2024": 0.27318499030772764
+   },
+   "brier_student_t": {
+    "A_POOLED_PUBLISHED": 0.2772921936918319,
+    "B_POOLED_2022_2024": 0.27701073245420915,
+    "C_TIME_ORDERED": 0.27643567208070774,
+    "D_TIME_ORDERED_2022_2024": 0.27661074646334216
+   },
+   "brier_empirical": {
+    "A_POOLED_PUBLISHED": 0.27672484933707153,
+    "B_POOLED_2022_2024": 0.27590277292012366,
+    "C_TIME_ORDERED": 0.2757678343176292,
+    "D_TIME_ORDERED_2022_2024": 0.2756205454889288
+   },
+   "brier_het_normal": {
+    "A_POOLED_PUBLISHED": 0.2683818149332686,
+    "B_POOLED_2022_2024": 0.26900153353780526,
+    "C_TIME_ORDERED": 0.2687088523947533,
+    "D_TIME_ORDERED_2022_2024": 0.2690106235394345
+   },
+   "brier_market": {
+    "A_POOLED_PUBLISHED": 0.24879538873264093,
+    "B_POOLED_2022_2024": 0.24879538873264093,
+    "C_TIME_ORDERED": 0.24879538873264093,
+    "D_TIME_ORDERED_2022_2024": 0.24879538873264093
+   },
+   "logloss_normal": {
+    "A_POOLED_PUBLISHED": 0.7676551797704115,
+    "B_POOLED_2022_2024": 0.7634853007409432,
+    "C_TIME_ORDERED": 0.7631594734101715,
+    "D_TIME_ORDERED_2022_2024": 0.7622435814211422
+   },
+   "logloss_student_t": {
+    "A_POOLED_PUBLISHED": 0.773844054685091,
+    "B_POOLED_2022_2024": 0.7714030101532422,
+    "C_TIME_ORDERED": 0.7698534206075618,
+    "D_TIME_ORDERED_2022_2024": 0.7699771983853608
+   },
+   "logloss_empirical": {
+    "A_POOLED_PUBLISHED": 0.7687187217327397,
+    "B_POOLED_2022_2024": 0.7653989290901881,
+    "C_TIME_ORDERED": 0.7649255431838883,
+    "D_TIME_ORDERED_2022_2024": 0.7643312775415336
+   },
+   "logloss_het_normal": {
+    "A_POOLED_PUBLISHED": 0.7510658939839634,
+    "B_POOLED_2022_2024": 0.753068408054705,
+    "C_TIME_ORDERED": 0.7523518473619268,
+    "D_TIME_ORDERED_2022_2024": 0.7532294290050251
+   },
+   "logloss_market": {
+    "A_POOLED_PUBLISHED": 0.6907229076359114,
+    "B_POOLED_2022_2024": 0.6907229076359114,
+    "C_TIME_ORDERED": 0.6907229076359114,
+    "D_TIME_ORDERED_2022_2024": 0.6907229076359114
+   },
+   "brier_gap_primary_minus_market": {
+    "A_POOLED_PUBLISHED": 0.028496804959190963,
+    "B_POOLED_2022_2024": 0.028215343721568226,
+    "C_TIME_ORDERED": 0.027640283348066813,
+    "D_TIME_ORDERED_2022_2024": 0.027815357730701235
+   },
+   "logloss_gap_primary_minus_market": {
+    "A_POOLED_PUBLISHED": 0.08312114704917961,
+    "B_POOLED_2022_2024": 0.08068010251733082,
+    "C_TIME_ORDERED": 0.07913051297165041,
+    "D_TIME_ORDERED_2022_2024": 0.07925429074944945
+   },
+   "brier_diff_ci95_lo": {
+    "A_POOLED_PUBLISHED": 0.023436666171285307,
+    "B_POOLED_2022_2024": 0.023209788151050424,
+    "C_TIME_ORDERED": 0.02264295443447626,
+    "D_TIME_ORDERED_2022_2024": 0.022791018868838383
+   },
+   "brier_diff_ci95_hi": {
+    "A_POOLED_PUBLISHED": 0.034347831109170196,
+    "B_POOLED_2022_2024": 0.034006545402026654,
+    "C_TIME_ORDERED": 0.033372253320747364,
+    "D_TIME_ORDERED_2022_2024": 0.03352374147803655
+   },
+   "brier_diff_ci95_WIDTH": {
+    "A_POOLED_PUBLISHED": 0.010911164937884889,
+    "B_POOLED_2022_2024": 0.01079675725097623,
+    "C_TIME_ORDERED": 0.010729298886271103,
+    "D_TIME_ORDERED_2022_2024": 0.010732722609198168
+   },
+   "logloss_diff_ci95_lo": {
+    "A_POOLED_PUBLISHED": 0.06529921305499063,
+    "B_POOLED_2022_2024": 0.06367132706095441,
+    "C_TIME_ORDERED": 0.0620241209022461,
+    "D_TIME_ORDERED_2022_2024": 0.062385698966318015
+   },
+   "logloss_diff_ci95_hi": {
+    "A_POOLED_PUBLISHED": 0.1037197369262059,
+    "B_POOLED_2022_2024": 0.10034121344558064,
+    "C_TIME_ORDERED": 0.09871557632308565,
+    "D_TIME_ORDERED_2022_2024": 0.09883617830207184
+   },
+   "logloss_diff_ci95_WIDTH": {
+    "A_POOLED_PUBLISHED": 0.038420523871215265,
+    "B_POOLED_2022_2024": 0.03666988638462623,
+    "C_TIME_ORDERED": 0.036691455420839555,
+    "D_TIME_ORDERED_2022_2024": 0.03645047933575382
+   },
+   "CALIB_VERDICT": {
+    "A_POOLED_PUBLISHED": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "B_POOLED_2022_2024": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "C_TIME_ORDERED": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+    "D_TIME_ORDERED_2022_2024": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET"
+   },
+   "normal_loc": {
+    "A_POOLED_PUBLISHED": -0.015164734794126378,
+    "B_POOLED_2022_2024": -0.062287981113290924,
+    "C_TIME_ORDERED": "expanding, range -0.094577..0.001955",
+    "D_TIME_ORDERED_2022_2024": "expanding (see step3_variants2x2.json)"
+   },
+   "normal_scale": {
+    "A_POOLED_PUBLISHED": 5.159310464823577,
+    "B_POOLED_2022_2024": 5.326198450011215,
+    "C_TIME_ORDERED": "expanding, range 5.160617..5.525095",
+    "D_TIME_ORDERED_2022_2024": "expanding (see step3_variants2x2.json)"
+   },
+   "student_t_df": {
+    "A_POOLED_PUBLISHED": 8,
+    "B_POOLED_2022_2024": 7,
+    "C_TIME_ORDERED": "expanding, 7 or 8 per date",
+    "D_TIME_ORDERED_2022_2024": "expanding, 7 or 8 per date"
+   },
+   "student_t_scale": {
+    "A_POOLED_PUBLISHED": 4.468093928548117,
+    "B_POOLED_2022_2024": 4.501459281555408,
+    "C_TIME_ORDERED": "expanding, range 4.361901..4.784873",
+    "D_TIME_ORDERED_2022_2024": "expanding (see step3_variants2x2.json)"
+   }
+  },
+  "variant_definitions": {
+   "A_POOLED_PUBLISHED": {
+    "seasons": [
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "time_ordered": false
+   },
+   "B_POOLED_2022_2024": {
+    "seasons": [
+     2022,
+     2023,
+     2024
+    ],
+    "time_ordered": false
+   },
+   "C_TIME_ORDERED": {
+    "seasons": [
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "time_ordered": true
+   },
+   "D_TIME_ORDERED_2022_2024": {
+    "seasons": [
+     2022,
+     2023,
+     2024
+    ],
+    "time_ordered": true
+   }
+  },
+  "delta_of_delta_paired_cluster_bootstrap_vs_A": {
+   "A_primary::B_POOLED_2022_2024_minus_A": {
+    "brier_delta_ci95": {
+     "lo": -0.0003476622905339364,
+     "hi": -8.814578996697969e-05,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "logloss_delta_ci95": {
+     "lo": -0.002673612851873357,
+     "hi": -0.0010891160445412097,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "brier_delta_point": -0.00021706618808803313,
+    "logloss_delta_point": -0.0018586520196240963,
+    "brier_delta_excludes_zero": true,
+    "logloss_delta_excludes_zero": true
+   },
+   "A_primary::C_TIME_ORDERED_minus_A": {
+    "brier_delta_ci95": {
+     "lo": -0.0009405423198518712,
+     "hi": -0.0006158109787946477,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "logloss_delta_ci95": {
+     "lo": -0.004363993953450881,
+     "hi": -0.0024486826382407426,
+     "n_boot": 1000,
+     "n_clusters": 254,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "brier_delta_point": -0.0007735856721809431,
+    "logloss_delta_point": -0.0033224487786800427,
+    "brier_delta_excludes_zero": true,
+    "logloss_delta_excludes_zero": true
+   },
+   "all_tiers::B_POOLED_2022_2024_minus_A": {
+    "brier_delta_ci95": {
+     "lo": -0.00042102951874545996,
+     "hi": -0.00014550568748536024,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "logloss_delta_ci95": {
+     "lo": -0.003405794752648157,
+     "hi": -0.0015715278241536768,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "brier_delta_point": -0.00028146123762273767,
+    "logloss_delta_point": -0.0024410445318487906,
+    "brier_delta_excludes_zero": true,
+    "logloss_delta_excludes_zero": true
+   },
+   "all_tiers::C_TIME_ORDERED_minus_A": {
+    "brier_delta_ci95": {
+     "lo": -0.0010450641293766794,
+     "hi": -0.0006676982493176081,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "logloss_delta_ci95": {
+     "lo": -0.005196017333772253,
+     "hi": -0.0028825040932776926,
+     "n_boot": 1000,
+     "n_clusters": 260,
+     "seed": 20260806,
+     "method": "cluster_bootstrap_over_game_dates_percentile"
+    },
+    "brier_delta_point": -0.0008565216111241503,
+    "logloss_delta_point": -0.003990634077529198,
+    "brier_delta_excludes_zero": true,
+    "logloss_delta_excludes_zero": true
+   }
+  },
+  "row_level_probability_drift": {
+   "m13_published_cross_variant_sensitivity_A_primary": {
+    "rmse_normal_vs_student_t": 0.011106650619655116,
+    "rmse_normal_vs_empirical": 0.04348690098694966,
+    "rmse_normal_vs_het_normal": 0.029961711583566975,
+    "max_abs_normal_vs_student_t": 0.02082774851101049,
+    "call_flip_rate_normal_vs_student_t": 0.0,
+    "call_flip_rate_normal_vs_empirical": 0.16193132299111035,
+    "call_flip_rate_normal_vs_het_normal": 0.0
+   },
+   "drift_vs_published": {
+    "A_POOLED_PUBLISHED": {
+     "n_rows_compared": 5889,
+     "n_rows_published": 5889,
+     "n_rows_variant": 5889,
+     "normal": {
+      "rmse": 0.0,
+      "mean_signed": 0.0,
+      "max_abs": 0.0,
+      "p95_abs": 0.0,
+      "call_flip_rate_vs_0p5": 0.0
+     },
+     "student_t": {
+      "rmse": 0.0,
+      "mean_signed": 0.0,
+      "max_abs": 0.0,
+      "p95_abs": 0.0,
+      "call_flip_rate_vs_0p5": 0.0
+     },
+     "empirical": {
+      "rmse": 0.0,
+      "mean_signed": 0.0,
+      "max_abs": 0.0,
+      "p95_abs": 0.0,
+      "call_flip_rate_vs_0p5": 0.0
+     },
+     "het_normal": {
+      "rmse": 0.0,
+      "mean_signed": 0.0,
+      "max_abs": 0.0,
+      "p95_abs": 0.0,
+      "call_flip_rate_vs_0p5": 0.0
+     }
+    },
+    "B_POOLED_2022_2024": {
+     "n_rows_compared": 5889,
+     "n_rows_published": 5889,
+     "n_rows_variant": 5889,
+     "normal": {
+      "rmse": 0.004679995414009134,
+      "mean_signed": 0.0032192781240209974,
+      "max_abs": 0.010021093611941145,
+      "p95_abs": 0.009088763103758179,
+      "call_flip_rate_vs_0p5": 0.011207335710646969
+     },
+     "student_t": {
+      "rmse": 0.003983371617224027,
+      "mean_signed": 0.0036730376517915943,
+      "max_abs": 0.006101660983832913,
+      "p95_abs": 0.005884673530231588,
+      "call_flip_rate_vs_0p5": 0.011207335710646969
+     },
+     "empirical": {
+      "rmse": 0.004931872089002224,
+      "mean_signed": 0.004249480118028669,
+      "max_abs": 0.010124179685510742,
+      "p95_abs": 0.00793841396927053,
+      "call_flip_rate_vs_0p5": 0.01001867889285108
+     },
+     "het_normal": {
+      "rmse": 0.0036405692012208713,
+      "mean_signed": 0.00293010873918344,
+      "max_abs": 0.01006222246190469,
+      "p95_abs": 0.005981588271279658,
+      "call_flip_rate_vs_0p5": 0.011207335710646969
+     }
+    },
+    "C_TIME_ORDERED": {
+     "n_rows_compared": 5889,
+     "n_rows_published": 5889,
+     "n_rows_variant": 5889,
+     "normal": {
+      "rmse": 0.004127485332988532,
+      "mean_signed": 0.0009965065729545914,
+      "max_abs": 0.019850314705327277,
+      "p95_abs": 0.008570913985153122,
+      "call_flip_rate_vs_0p5": 0.003056546102903719
+     },
+     "student_t": {
+      "rmse": 0.004027036828282338,
+      "mean_signed": 0.0010336391921448103,
+      "max_abs": 0.019232947169222747,
+      "p95_abs": 0.007959009646658676,
+      "call_flip_rate_vs_0p5": 0.003056546102903719
+     },
+     "empirical": {
+      "rmse": 0.004509849130739974,
+      "mean_signed": 0.0021146918062462023,
+      "max_abs": 0.022948528334847396,
+      "p95_abs": 0.009334898073462869,
+      "call_flip_rate_vs_0p5": 0.005264051621667516
+     },
+     "het_normal": {
+      "rmse": 0.002071873412034453,
+      "mean_signed": 0.0007385088828229153,
+      "max_abs": 0.01389620623239407,
+      "p95_abs": 0.00399047686825331,
+      "call_flip_rate_vs_0p5": 0.003056546102903719
+     }
+    },
+    "D_TIME_ORDERED_2022_2024": {
+     "n_rows_compared": 5889,
+     "n_rows_published": 5889,
+     "n_rows_variant": 5889,
+     "normal": {
+      "rmse": 0.005193516549742882,
+      "mean_signed": 0.00272186153599708,
+      "max_abs": 0.019850314705327277,
+      "p95_abs": 0.009777777781618535,
+      "call_flip_rate_vs_0p5": 0.007980981490915267
+     },
+     "student_t": {
+      "rmse": 0.004684048165177338,
+      "mean_signed": 0.0031269160825791206,
+      "max_abs": 0.019232947169222747,
+      "p95_abs": 0.007870148960958842,
+      "call_flip_rate_vs_0p5": 0.007980981490915267
+     },
+     "empirical": {
+      "rmse": 0.00555894168597928,
+      "mean_signed": 0.004075347563997295,
+      "max_abs": 0.022948528334847396,
+      "p95_abs": 0.009421632935704081,
+      "call_flip_rate_vs_0p5": 0.00967906265919511
+     },
+     "het_normal": {
+      "rmse": 0.003527415770990231,
+      "mean_signed": 0.0024387830990606324,
+      "max_abs": 0.01389620623239407,
+      "p95_abs": 0.006030784351641416,
+      "call_flip_rate_vs_0p5": 0.007980981490915267
+     }
+    }
+   },
+   "scale_comparison": {
+    "leak_rmse_student_t_pooled_vs_time_ordered": 0.004027036828282338,
+    "m13_own_rmse_normal_vs_student_t": 0.011106650619655116,
+    "m13_own_rmse_normal_vs_empirical": 0.04348690098694966,
+    "leak_rmse_as_multiple_of_normal_vs_student_t": 0.36257886974096476,
+    "leak_rmse_as_multiple_of_normal_vs_empirical": 0.09260344464395943,
+    "leak_call_flip_rate": 0.003056546102903719,
+    "m13_own_call_flip_normal_vs_empirical": 0.16193132299111035
+   }
+  },
+  "direction_check": {
+   "expectation_stated_in_the_task": "a pooled fit that reads the future should look BETTER CALIBRATED and TIGHTER than an honest one, so the counterfactual should be WORSE and WIDER",
+   "observed_point_estimate": "EXPECTATION NOT MET. The honest time-ordered fit is slightly BETTER, not worse: A_primary Brier 0.27405 vs 0.27482 published, log-loss 0.75990 vs 0.76322. The gap to the market NARROWS by 0.00077 Brier (2.98% of the published gap).",
+   "observed_ci_width": "EXPECTATION NOT MET. The honest fit's CI is slightly TIGHTER, not wider: Brier-diff CI95 width 0.009849 vs 0.010059 published (-2.1%); log-loss-diff width 0.031966 vs 0.033361 (-4.2%).",
+   "why_this_is_not_a_contradiction": "The usual leakage intuition assumes the leak lets a model fit the very rows it scores. Here it cannot: the fit pool is already row-disjoint from the evaluation universe, and the fitted object is a THREE-PARAMETER unconditional error distribution (loc, scale, df) estimated on >8,000 residuals -- there is almost no capacity for the future to be memorised. What the future actually contributes is a slightly TIGHTER dispersion (pooled scale 5.1593 vs expanding-window mean 5.3130), which makes the translated probabilities MORE confident. Since the model's discrimination is poor, extra confidence is PUNISHED by both Brier and log-loss. The leak therefore flatters the fit's likelihood while HURTING its calibration score. M13's published number is, if anything, marginally harsh on itself.",
+   "is_the_delta_larger_than_sampling_noise": "Two different answers, and both matter. On the LEVEL: no -- the whole A-to-C move in the Brier gap (0.00077) is 7.7% of the published CI95 width (0.01006), i.e. an order of magnitude inside the artifact's own uncertainty. On the PAIRED difference: yes -- the per-row difference-of-differences, cluster-bootstrapped by game date with the node's own seed and method, gives Brier CI95 [-0.000941, -0.000616], excluding zero. The shift is systematic and real, and it is also negligible in size."
+  }
+ },
+ "step4_does_the_verdict_flip": {
+  "ANSWER": "NO",
+  "calib_verdict_by_variant": {
+   "A_POOLED_PUBLISHED": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+   "B_POOLED_2022_2024": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+   "C_TIME_ORDERED": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET",
+   "D_TIME_ORDERED_2022_2024": "TRANSLATION_WORSE_CALIBRATED_THAN_MARKET"
+  },
+  "any_flip": false,
+  "statement": "M13's calibration conclusion -- TRANSLATION_WORSE_CALIBRATED_THAN_MARKET -- SURVIVES unchanged under all three remediations, and survives with room to spare: the lower bound of the honest Brier-difference CI is +0.02043, i.e. the translation is still worse than the market by a margin ~26x the size of the entire correction.",
+  "m14_trace": {
+   "m14_published": {
+    "result_hash": "bc12f24da50beb47db7e8cbcb1ac4051ed185234b40c66172935edcad400288c",
+    "verdict": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+    "pooled_n": 5737,
+    "pooled_slope": -0.09824766977643187,
+    "pooled_intercept": -0.023181663535433095,
+    "slope_ci95_lo": -0.18127993344376267,
+    "slope_ci95_hi": -0.009670011784933772,
+    "slope_ci95_width": 0.1716099216588289,
+    "slope_distinguishable_from_zero": true,
+    "slope_by_variant": {
+     "normal": -0.10508589970614843,
+     "student_t": -0.09824766977643187,
+     "empirical": -0.09901176799674895,
+     "het_normal": -0.11108656636502147
+    },
+    "slope_by_season": {
+     "2024": -0.14470106880860262,
+     "2025": -0.1353016001759744,
+     "2026": -0.03268421971529441
+    },
+    "slope_by_season_sig": {
+     "2024": false,
+     "2025": false,
+     "2026": false
+    },
+    "influence": {
+     "drop_top_1pct_by_abs_resid": -0.11018941696480625,
+     "drop_top_5pct_by_abs_resid": -0.11984450697572202,
+     "drop_top_10pct_by_abs_resid": -0.10586298502505644
+    }
+   },
+   "runs": {
+    "CONTROL_PUBLISHED_M13": {
+     "result_hash": "bc12f24da50beb47db7e8cbcb1ac4051ed185234b40c66172935edcad400288c",
+     "verdict": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "pooled_n": 5737,
+     "pooled_slope": -0.09824766977643187,
+     "pooled_intercept": -0.023181663535433095,
+     "slope_ci95_lo": -0.18127993344376267,
+     "slope_ci95_hi": -0.009670011784933772,
+     "slope_ci95_width": 0.1716099216588289,
+     "slope_distinguishable_from_zero": true,
+     "slope_by_variant": {
+      "normal": -0.10508589970614843,
+      "student_t": -0.09824766977643187,
+      "empirical": -0.09901176799674895,
+      "het_normal": -0.11108656636502147
+     },
+     "slope_by_season": {
+      "2024": -0.14470106880860262,
+      "2025": -0.1353016001759744,
+      "2026": -0.03268421971529441
+     },
+     "slope_by_season_sig": {
+      "2024": false,
+      "2025": false,
+      "2026": false
+     },
+     "influence": {
+      "drop_top_1pct_by_abs_resid": -0.11018941696480625,
+      "drop_top_5pct_by_abs_resid": -0.11984450697572202,
+      "drop_top_10pct_by_abs_resid": -0.10586298502505644
+     }
+    },
+    "A_POOLED_PUBLISHED": {
+     "result_hash": "ffb653cb4dd8bdac40ca205e9d5dd7fc5d24c69af8b29e8eaf033cbcf86ea752",
+     "verdict": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "pooled_n": 5737,
+     "pooled_slope": -0.09824766977643187,
+     "pooled_intercept": -0.023181663535433095,
+     "slope_ci95_lo": -0.18127993344376267,
+     "slope_ci95_hi": -0.009670011784933772,
+     "slope_ci95_width": 0.1716099216588289,
+     "slope_distinguishable_from_zero": true,
+     "slope_by_variant": {
+      "normal": -0.10508589970614843,
+      "student_t": -0.09824766977643187,
+      "empirical": -0.09901176799674895,
+      "het_normal": -0.11108656636502147
+     },
+     "slope_by_season": {
+      "2024": -0.14470106880860262,
+      "2025": -0.1353016001759744,
+      "2026": -0.03268421971529441
+     },
+     "slope_by_season_sig": {
+      "2024": false,
+      "2025": false,
+      "2026": false
+     },
+     "influence": {
+      "drop_top_1pct_by_abs_resid": -0.11018941696480625,
+      "drop_top_5pct_by_abs_resid": -0.11984450697572202,
+      "drop_top_10pct_by_abs_resid": -0.10586298502505644
+     }
+    },
+    "B_POOLED_2022_2024": {
+     "result_hash": "947f2dd66d209a5a5fd60d96d5aee20d7012e9c6b28ab2810e1ae98f5ef80036",
+     "verdict": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "pooled_n": 5737,
+     "pooled_slope": -0.0989611902841084,
+     "pooled_intercept": -0.02281997993693329,
+     "slope_ci95_lo": -0.1828182954277377,
+     "slope_ci95_hi": -0.00931673857745843,
+     "slope_ci95_width": 0.17350155685027926,
+     "slope_distinguishable_from_zero": true,
+     "slope_by_variant": {
+      "normal": -0.10719994075644411,
+      "student_t": -0.0989611902841084,
+      "empirical": -0.09980153855163582,
+      "het_normal": -0.10979268408456128
+     },
+     "slope_by_season": {
+      "2024": -0.14558411011164246,
+      "2025": -0.1367108931354846,
+      "2026": -0.03252810890539801
+     },
+     "slope_by_season_sig": {
+      "2024": false,
+      "2025": false,
+      "2026": false
+     },
+     "influence": {
+      "drop_top_1pct_by_abs_resid": -0.1111829369681304,
+      "drop_top_5pct_by_abs_resid": -0.11355175252261429,
+      "drop_top_10pct_by_abs_resid": -0.1073369269762514
+     }
+    },
+    "C_TIME_ORDERED": {
+     "result_hash": "5be23f92cdd26838b40e6607919d367d55e2956e294c752059ba5bf1b3d4de25",
+     "verdict": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "pooled_n": 5737,
+     "pooled_slope": -0.09960834358935136,
+     "pooled_intercept": -0.023091601001725186,
+     "slope_ci95_lo": -0.18351920230671845,
+     "slope_ci95_hi": -0.010272193354510385,
+     "slope_ci95_width": 0.17324700895220807,
+     "slope_distinguishable_from_zero": true,
+     "slope_by_variant": {
+      "normal": -0.10677538049306179,
+      "student_t": -0.09960834358935136,
+      "empirical": -0.10097780721817463,
+      "het_normal": -0.11142044702836809
+     },
+     "slope_by_season": {
+      "2024": -0.14692799647177618,
+      "2025": -0.13926913137555105,
+      "2026": -0.03255017552867018
+     },
+     "slope_by_season_sig": {
+      "2024": false,
+      "2025": false,
+      "2026": false
+     },
+     "influence": {
+      "drop_top_1pct_by_abs_resid": -0.11628424526878761,
+      "drop_top_5pct_by_abs_resid": -0.11837050015327412,
+      "drop_top_10pct_by_abs_resid": -0.10319078193391003
+     }
+    },
+    "D_TIME_ORDERED_2022_2024": {
+     "result_hash": "c4c435e784d42c888139e19dd177286cf719ca7bd3f7c0bf0e03d2f9d10375f5",
+     "verdict": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "pooled_n": 5737,
+     "pooled_slope": -0.09841971902421501,
+     "pooled_intercept": -0.022883920307722475,
+     "slope_ci95_lo": -0.18290617714651294,
+     "slope_ci95_hi": -0.008780916838377197,
+     "slope_ci95_width": 0.17412526030813574,
+     "slope_distinguishable_from_zero": true,
+     "slope_by_variant": {
+      "normal": -0.10665637622524163,
+      "student_t": -0.09841971902421501,
+      "empirical": -0.09980113365058448,
+      "het_normal": -0.1094934239409944
+     },
+     "slope_by_season": {
+      "2024": -0.14692799647177618,
+      "2025": -0.1367108931354846,
+      "2026": -0.03252810890539801
+     },
+     "slope_by_season_sig": {
+      "2024": false,
+      "2025": false,
+      "2026": false
+     },
+     "influence": {
+      "drop_top_1pct_by_abs_resid": -0.11495723231800263,
+      "drop_top_5pct_by_abs_resid": -0.11337083328348174,
+      "drop_top_10pct_by_abs_resid": -0.11103199507166686
+     }
+    }
+   },
+   "control_check_vs_published_M14": {
+    "result_hash_identical": true,
+    "verdict_identical": true,
+    "pooled_slope_abs_delta": 0.0,
+    "slope_ci_lo_abs_delta": 0.0,
+    "slope_ci_hi_abs_delta": 0.0,
+    "max_abs_numeric_delta": 0.0,
+    "M14_HARNESS_REPRODUCES_PUBLISHED": true
+   },
+   "m14_deltas_vs_published_pooled_fit": {
+    "B_POOLED_2022_2024_vs_A": {
+     "slope_published_A": -0.09824766977643187,
+     "slope_variant": -0.0989611902841084,
+     "slope_abs_delta": 0.0007135205076765211,
+     "slope_delta_as_fraction_of_A_CI_width": 0.004157804518406831,
+     "ci_width_A": 0.1716099216588289,
+     "ci_width_variant": 0.17350155685027926,
+     "ci_width_ratio_variant_over_A": 1.0110228777751618,
+     "verdict_A": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "verdict_variant": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "verdict_flips": false,
+     "still_sig_at_zero": true
+    },
+    "C_TIME_ORDERED_vs_A": {
+     "slope_published_A": -0.09824766977643187,
+     "slope_variant": -0.09960834358935136,
+     "slope_abs_delta": 0.0013606738129194884,
+     "slope_delta_as_fraction_of_A_CI_width": 0.007928876138202498,
+     "ci_width_A": 0.1716099216588289,
+     "ci_width_variant": 0.17324700895220807,
+     "ci_width_ratio_variant_over_A": 1.00953958417762,
+     "verdict_A": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "verdict_variant": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "verdict_flips": false,
+     "still_sig_at_zero": true
+    },
+    "D_TIME_ORDERED_2022_2024_vs_A": {
+     "slope_published_A": -0.09824766977643187,
+     "slope_variant": -0.09841971902421501,
+     "slope_abs_delta": 0.0001720492477831348,
+     "slope_delta_as_fraction_of_A_CI_width": 0.001002560027532553,
+     "ci_width_A": 0.1716099216588289,
+     "ci_width_variant": 0.17412526030813574,
+     "ci_width_ratio_variant_over_A": 1.0146573031733415,
+     "verdict_A": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "verdict_variant": "FALSIFIED_NO_PREDICTIVE_CONTENT_DETECTED_AT_THIS_N",
+     "verdict_flips": false,
+     "still_sig_at_zero": true
+    }
+   }
+  }
+ },
+ "step5_decomposition_time_ordering_vs_holdout_inclusion": {
+  "design": "Full 2x2. Rows: pooled vs time-ordered. Columns: seasons {2022..2026} vs {2022..2024}. A = published. B isolates holdout inclusion. C isolates time ordering. D is both remediations at once.",
+  "A_primary": {
+   "brier_gap_vs_market": {
+    "A_POOLED_PUBLISHED": 0.025983398587963724,
+    "B_POOLED_2022_2024": 0.02576633239987569,
+    "C_TIME_ORDERED": 0.02520981291578278,
+    "D_TIME_ORDERED_2022_2024": 0.025398973903108746
+   },
+   "logloss_gap_vs_market": {
+    "A_POOLED_PUBLISHED": 0.07240608060911469,
+    "B_POOLED_2022_2024": 0.07054742858949059,
+    "C_TIME_ORDERED": 0.06908363183043464,
+    "D_TIME_ORDERED_2022_2024": 0.06931054116026225
+   },
+   "effect_of_HOLDOUT_INCLUSION_pooled__B_minus_A": -0.00021706618808803313,
+   "effect_of_HOLDOUT_INCLUSION_timeordered__D_minus_C": 0.00018916098732596476,
+   "effect_of_TIME_ORDERING_full_seasons__C_minus_A": -0.0007735856721809431,
+   "effect_of_TIME_ORDERING_restricted__D_minus_B": -0.0003673584967669452,
+   "total_A_to_D": -0.0005844246848549783,
+   "published_brier_diff_ci95_width": 0.010059368399156013,
+   "share_time_ordering": 0.7808854989389546,
+   "share_holdout_inclusion": 0.21911450106104532,
+   "total_move_as_fraction_of_published_CI_width": 0.05809755261612766
+  },
+  "all_tiers": {
+   "brier_gap_vs_market": {
+    "A_POOLED_PUBLISHED": 0.028496804959190963,
+    "B_POOLED_2022_2024": 0.028215343721568226,
+    "C_TIME_ORDERED": 0.027640283348066813,
+    "D_TIME_ORDERED_2022_2024": 0.027815357730701235
+   },
+   "logloss_gap_vs_market": {
+    "A_POOLED_PUBLISHED": 0.08312114704917961,
+    "B_POOLED_2022_2024": 0.08068010251733082,
+    "C_TIME_ORDERED": 0.07913051297165041,
+    "D_TIME_ORDERED_2022_2024": 0.07925429074944945
+   },
+   "effect_of_HOLDOUT_INCLUSION_pooled__B_minus_A": -0.00028146123762273767,
+   "effect_of_HOLDOUT_INCLUSION_timeordered__D_minus_C": 0.00017507438263442143,
+   "effect_of_TIME_ORDERING_full_seasons__C_minus_A": -0.0008565216111241503,
+   "effect_of_TIME_ORDERING_restricted__D_minus_B": -0.00039998599086699116,
+   "total_A_to_D": -0.0006814472284897288,
+   "published_brier_diff_ci95_width": 0.010911164937884889,
+   "share_time_ordering": 0.75266653804785,
+   "share_holdout_inclusion": 0.24733346195215,
+   "total_move_as_fraction_of_published_CI_width": 0.062454122210513136
+  },
+  "reading": "Of the total movement in the Brier gap, TIME ORDERING accounts for ~78% and HOLDOUT INCLUSION for ~22%, and the two are NOT additive: applying both (D) moves the gap LESS than time ordering alone (C), because dropping 2025/2026 from an already-time-ordered pool shrinks the pool available to 2025/2026 rows and partly cancels the effect. Both effects point the same way (the honest gap is smaller) and both are tiny."
+ },
+ "manifest_check_on_m13_inputs": {
+  "summary": {
+   "n_inputs": 15,
+   "n_with_manifest": 7,
+   "n_unverifiable_no_manifest": 8,
+   "n_artifact_granular": 6,
+   "n_row_granular": 1
+  },
+  "inputs": [
+   {
+    "role": "game_date lookup",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/masters/master_player.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/masters/master_player.parquet.manifest.json",
+    "manifest_exists": true,
+    "asof_granularity": "row",
+    "asof_max": null,
+    "status": "ROW_BOUNDED_FILTERABLE",
+    "manifest_keys": [
+     "artifact",
+     "asof_granularity",
+     "attested_by",
+     "bound_source",
+     "content_bytes",
+     "content_sha256",
+     "created_at",
+     "fit_seasons",
+     "fit_through_date",
+     "fit_through_season",
+     "notes",
+     "producer",
+     "schema"
+    ],
+    "listed_in_audit_MISSING_MANIFESTS": true
+   },
+   {
+    "role": "outcomes 2021",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/wnba_gamelog_2021.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/wnba_gamelog_2021.parquet.manifest.json",
+    "manifest_exists": false,
+    "asof_granularity": null,
+    "status": "UNVERIFIABLE_NO_MANIFEST",
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "outcomes 2022",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/wnba_gamelog_2022.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/wnba_gamelog_2022.parquet.manifest.json",
+    "manifest_exists": false,
+    "asof_granularity": null,
+    "status": "UNVERIFIABLE_NO_MANIFEST",
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "outcomes 2023",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/wnba_gamelog_2023.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/wnba_gamelog_2023.parquet.manifest.json",
+    "manifest_exists": false,
+    "asof_granularity": null,
+    "status": "UNVERIFIABLE_NO_MANIFEST",
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "outcomes 2024",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/wnba_gamelog_2024.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/wnba_gamelog_2024.parquet.manifest.json",
+    "manifest_exists": false,
+    "asof_granularity": null,
+    "status": "UNVERIFIABLE_NO_MANIFEST",
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "outcomes 2025",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/refresh_2026/gamelog_player_2025_regular_season.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/refresh_2026/gamelog_player_2025_regular_season.parquet.manifest.json",
+    "manifest_exists": false,
+    "asof_granularity": null,
+    "status": "UNVERIFIABLE_NO_MANIFEST",
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "outcomes 2026",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/refresh_2026/gamelog_player_2026_regular_season.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/data/refresh_2026/gamelog_player_2026_regular_season.parquet.manifest.json",
+    "manifest_exists": false,
+    "asof_granularity": null,
+    "status": "UNVERIFIABLE_NO_MANIFEST",
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "row contract / tiers / cutoffs",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/prediction_contract_v5/player_game_enriched.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/prediction_contract_v5/player_game_enriched.parquet.manifest.json",
+    "manifest_exists": false,
+    "asof_granularity": null,
+    "status": "UNVERIFIABLE_NO_MANIFEST",
+    "listed_in_audit_MISSING_MANIFESTS": true
+   },
+   {
+    "role": "props archive (T1)",
+    "path": "C:/Users/jgallagher/wnba-betting-model/data/props_capture/historical/master_props_historical.csv",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/data/props_capture/historical/master_props_historical.csv.manifest.json",
+    "manifest_exists": false,
+    "asof_granularity": null,
+    "status": "UNVERIFIABLE_NO_MANIFEST",
+    "listed_in_audit_MISSING_MANIFESTS": true
+   },
+   {
+    "role": "legacy predictions 2021",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2021.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2021.parquet.manifest.json",
+    "manifest_exists": true,
+    "asof_granularity": "artifact",
+    "asof_max": null,
+    "status": "ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP",
+    "manifest_keys": [
+     "arm_id",
+     "artifact",
+     "asof_granularity",
+     "content_bytes",
+     "content_sha256",
+     "created_at",
+     "fit_seasons",
+     "fit_through_date",
+     "fit_through_season",
+     "generation_only",
+     "notes",
+     "producer",
+     "producer_source_set_digest",
+     "run_id",
+     "schema",
+     "scores_computed"
+    ],
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "legacy predictions 2022",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2022.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2022.parquet.manifest.json",
+    "manifest_exists": true,
+    "asof_granularity": "artifact",
+    "asof_max": null,
+    "status": "ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP",
+    "manifest_keys": [
+     "arm_id",
+     "artifact",
+     "asof_granularity",
+     "content_bytes",
+     "content_sha256",
+     "created_at",
+     "fit_seasons",
+     "fit_through_date",
+     "fit_through_season",
+     "generation_only",
+     "notes",
+     "producer",
+     "producer_source_set_digest",
+     "run_id",
+     "schema",
+     "scores_computed"
+    ],
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "legacy predictions 2023",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2023.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2023.parquet.manifest.json",
+    "manifest_exists": true,
+    "asof_granularity": "artifact",
+    "asof_max": null,
+    "status": "ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP",
+    "manifest_keys": [
+     "arm_id",
+     "artifact",
+     "asof_granularity",
+     "content_bytes",
+     "content_sha256",
+     "created_at",
+     "fit_seasons",
+     "fit_through_date",
+     "fit_through_season",
+     "generation_only",
+     "notes",
+     "producer",
+     "producer_source_set_digest",
+     "run_id",
+     "schema",
+     "scores_computed"
+    ],
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "legacy predictions 2024",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2024.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2024.parquet.manifest.json",
+    "manifest_exists": true,
+    "asof_granularity": "artifact",
+    "asof_max": null,
+    "status": "ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP",
+    "manifest_keys": [
+     "arm_id",
+     "artifact",
+     "asof_granularity",
+     "content_bytes",
+     "content_sha256",
+     "created_at",
+     "fit_seasons",
+     "fit_through_date",
+     "fit_through_season",
+     "generation_only",
+     "notes",
+     "producer",
+     "producer_source_set_digest",
+     "run_id",
+     "schema",
+     "scores_computed"
+    ],
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "legacy predictions 2025",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2025.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2025.parquet.manifest.json",
+    "manifest_exists": true,
+    "asof_granularity": "artifact",
+    "asof_max": null,
+    "status": "ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP",
+    "manifest_keys": [
+     "arm_id",
+     "artifact",
+     "asof_granularity",
+     "content_bytes",
+     "content_sha256",
+     "created_at",
+     "fit_seasons",
+     "fit_through_date",
+     "fit_through_season",
+     "generation_only",
+     "notes",
+     "producer",
+     "producer_source_set_digest",
+     "run_id",
+     "schema",
+     "scores_computed"
+    ],
+    "listed_in_audit_MISSING_MANIFESTS": false
+   },
+   {
+    "role": "legacy predictions 2026",
+    "path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2026.parquet",
+    "exists": true,
+    "manifest_path": "C:/Users/jgallagher/wnba-betting-model/.claude/worktrees/player-model-program/experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2026.parquet.manifest.json",
+    "manifest_exists": true,
+    "asof_granularity": "artifact",
+    "asof_max": null,
+    "status": "ARTIFACT_BOUNDED_FILTERING_DOES_NOT_HELP",
+    "manifest_keys": [
+     "arm_id",
+     "artifact",
+     "asof_granularity",
+     "content_bytes",
+     "content_sha256",
+     "created_at",
+     "fit_seasons",
+     "fit_through_date",
+     "fit_through_season",
+     "generation_only",
+     "notes",
+     "producer",
+     "producer_source_set_digest",
+     "run_id",
+     "schema",
+     "scores_computed"
+    ],
+    "listed_in_audit_MISSING_MANIFESTS": false
+   }
+  ],
+  "finding": "8 of M13's 15 consumed artifacts have NO sibling manifest at all and are UNVERIFIABLE, not passing -- including every outcome gamelog, the row contract player_game_enriched.parquet, and the props archive itself. The 6 legacy prediction artifacts DO carry manifests but declare asof_granularity='artifact', so per-row date filtering does NOT bound them. Only master_player.parquet (a game_id->game_date lookup) is row-bounded. CONSEQUENCE: the F1 defect sits on top of a foundation that cannot be independently as-of verified. The time-ordered counterfactual above orders rows by their recorded game_date, which is the best available bound; it cannot rule out contamination inside the artifact-granular prediction files themselves, and does not claim to."
+ },
+ "where_i_could_have_cheated": [
+  "SPEC CHOSEN BEFORE RESULTS. The minimum-sample rule (500), the no-fallback rule, the common-subset rule, the AIC family-selection rule, and the delta-of-delta noise test were all written into step2_variants.py's SPEC block and committed to file BEFORE any variant was executed. The only thing added after seeing results was variant D, and it was added to COMPLETE the 2x2 the task asked for, not to change any headline; D is reported whatever it says (and it moves the gap LESS than C, which is the less tidy answer).",
+  "I could have chosen a time-ordering scheme that maximised the damage -- e.g. a single-season rolling window, or refitting per game rather than per date, or a much higher minimum-sample threshold that would have forced dropped rows. I used the mildest, most standard form (expanding window, all prior residuals) because it is the natural honest analogue of what the node claims to do. A shorter window would show a LARGER delta; I did not run one, and I flag that this measurement is a LOWER BOUND on how much an aggressive re-specification could move the numbers.",
+  "I could have reported only the level comparison (delta << CI width => 'immaterial') or only the paired test (CI excludes zero => 'real'). Both are reported, because they answer different questions and the user needs both.",
+  "I could have quietly let thin early pools fall back to the pooled fit. No fallback exists in the code, and the count of unscorable rows (0) is reported rather than assumed.",
+  "The evaluation universe spans 2024-2026, so the counterfactual necessarily READS the 2025/2026 confirmation holdout. That is licensed here only because M13's published numbers already rest on those seasons and this is an audit of an existing artifact. Nothing new was discovered or tuned on 2025/2026: variant B and variant D give the 2022-2024-fit versions of every headline, and no specification was selected by looking at holdout performance."
+ ],
+ "could_not_establish": [
+  "Whether the artifact-granular legacy prediction files (asof_granularity='artifact') are themselves free of look-ahead. They carry manifests but are whole-file bounded, so no row-level filter -- including mine -- can bound them. If those predictions were produced with any cross-season information, the time-ordered counterfactual here does not remove it and does not claim to.",
+  "M14's downstream numbers OTHER than the falsification block and the residual summaries recomputed in step4 -- specifically anything depending on the book-level reconstruction that is independent of M13's p_over_* columns -- are unchanged by construction and were not separately re-derived.",
+  "Whether a shorter (rolling, rather than expanding) honest window would move the numbers more. Not run; the reported delta is a lower bound."
+ ],
+ "artifacts_written": [
+  "DECISION_PACKET.md",
+  "MEASUREMENT.json",
+  "__pycache__/m13_lib.cpython-313.pyc",
+  "__pycache__/m14_lib.cpython-313.pyc",
+  "__pycache__/step2_variants.cpython-313.pyc",
+  "_m14_runner.py",
+  "cf_A_POOLED_PUBLISHED/FINDINGS.json",
+  "cf_A_POOLED_PUBLISHED/translation_rows.parquet",
+  "cf_B_POOLED_2022_2024/FINDINGS.json",
+  "cf_B_POOLED_2022_2024/translation_rows.parquet",
+  "cf_C_TIME_ORDERED/FINDINGS.json",
+  "cf_C_TIME_ORDERED/translation_rows.parquet",
+  "cf_D_TIME_ORDERED_2022_2024/FINDINGS.json",
+  "cf_D_TIME_ORDERED_2022_2024/translation_rows.parquet",
+  "m13_lib.py",
+  "m14_lib.py",
+  "m14_out/A_POOLED_PUBLISHED/FINDINGS.json",
+  "m14_out/B_POOLED_2022_2024/FINDINGS.json",
+  "m14_out/CONTROL_PUBLISHED_M13/FINDINGS.json",
+  "m14_out/C_TIME_ORDERED/FINDINGS.json",
+  "m14_out/D_TIME_ORDERED_2022_2024/FINDINGS.json",
+  "repro_out/FINDINGS.json",
+  "repro_out/translation_rows.parquet",
+  "run_log.txt",
+  "run_log_step0.txt",
+  "run_log_step1.txt",
+  "run_log_step2.txt",
+  "run_log_step3.txt",
+  "run_log_step4.txt",
+  "run_log_step4b.txt",
+  "run_log_step5.txt",
+  "run_log_step6.txt",
+  "step0_manifests.json",
+  "step0_manifests.py",
+  "step1_reproduce.py",
+  "step1_reproduction.json",
+  "step2_variants.json",
+  "step2_variants.py",
+  "step3_variantD_and_parquets.py",
+  "step3_variants2x2.json",
+  "step4_m14_trace.json",
+  "step4_m14_trace.py",
+  "step5_rowlevel_drift.json",
+  "step5_rowlevel_drift.py",
+  "step6_assemble.py",
+  "time_ordered_per_date_fits.csv"
+ ]
+}

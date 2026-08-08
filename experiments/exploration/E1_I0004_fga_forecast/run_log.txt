@@ -1,0 +1,588 @@
+﻿E1_I0004_fga_forecast -- CONSOLIDATED RUN LOG
+=============================================
+E1 EXPLORATION, NON-CLAIMING. Seasons 2021-2024 only; 2025/2026 never opened.
+Environment: Windows 11 / PowerShell 5.1 / Python 3.13.14 / numpy 2.5.1 / pandas 3.0.5 / pyarrow 25.0.0
+Working root: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program
+
+EXECUTION ORDER (each script run from the repo root):
+  1. probe_sources.py        -> run_log_00_probe.txt            manifest inventory + source audit
+  2. build_forecasts.py      -> run_log_01_build_forecasts.txt  STEP 1 reproduction + STEP 2 FGA forecasts
+  3. end_to_end.py           -> run_log_02_end_to_end.txt       STEPS 3, 4, 5 + nulls (5000 draws)
+  4. addendum.py             -> run_log_03_addendum.txt         volume placebo, degradation curve, pocket nulls
+  5. check_pooled_vs_wf.py   -> run_log_05_pooled_vs_wf.txt     like-for-like pooled vs walk-forward
+  6. make_findings.py        -> run_log_04_make_findings.txt    assembles FINDINGS.json
+  7. verify_partition.py     -> run_log_06_verify_partition.txt final partition + write-scope check
+
+HEADLINE
+  reproduction of the parent's conditional dR2 +0.019138861495123338 : ABSOLUTE DIFFERENCE 0.000e+00
+    (from the frozen selection_frame.parquet AND from an independent raw-file rebuild)
+  DECISIVE end-to-end walk-forward dR2, Restricted Area, NO realised FGA anywhere (F_B) : +0.016853
+  points (FG points, walk-forward, F_B) : +0.000021, cluster-level p 0.2150
+  VERDICT : SPLIT -- attempts KEEP-AS-LEAD, points KILL
+
+
+####################################################################################################
+### run_log_00_probe.txt
+####################################################################################################
+
+====================================================================================================
+A. MANIFEST INVENTORY over data/ (recursive) -- asof_granularity COLUMN VALUE
+====================================================================================================
+  13 manifest files found
+  data\masters\master_player.parquet.manifest.json               asof_granularity='row'
+  data\masters\master_team.parquet.manifest.json                 asof_granularity='row'
+  data\rapm\rapm_v0.csv.manifest.json                            asof_granularity='artifact'
+  data\rapm\rapm_walkforward.csv.manifest.json                   asof_granularity='season'
+  data\rapm\rapm_walkforward_seasons.csv.manifest.json           asof_granularity='season'
+  data\w1_truth\extraction_resolution.csv.manifest.json          asof_granularity='artifact'
+  data\w1_truth\player_game_availability.csv.manifest.json       asof_granularity='artifact'
+  data\w1_truth\roster_asof.csv.manifest.json                    asof_granularity='artifact'
+  data\zone_maps\league_zone_averages.csv.manifest.json          asof_granularity='artifact'
+  data\zone_maps\player_zone_offense.csv.manifest.json           asof_granularity='artifact'
+  data\zone_maps\shrinkage_priors.csv.manifest.json              asof_granularity='artifact'
+  data\zone_maps\team_zone_defense.csv.manifest.json             asof_granularity='artifact'
+  data\zone_maps\team_zone_offense.csv.manifest.json             asof_granularity='artifact'
+
+====================================================================================================
+B. CANDIDATE SOURCES -- manifest presence
+====================================================================================================
+  data/shotcharts/shots_2021_regular.parquet           NO MANIFEST -> UNVERIFIABLE (not a pass)
+  data/shotcharts/shots_2021_playoffs.parquet          NO MANIFEST -> UNVERIFIABLE (not a pass)
+  data/wnba_gamelog_2021.parquet                       NO MANIFEST -> UNVERIFIABLE (not a pass)
+  data/wnba_gamelog_2022.parquet                       NO MANIFEST -> UNVERIFIABLE (not a pass)
+  data/wnba_gamelog_2023.parquet                       NO MANIFEST -> UNVERIFIABLE (not a pass)
+  data/wnba_gamelog_2024.parquet                       NO MANIFEST -> UNVERIFIABLE (not a pass)
+  data/masters/master_player.parquet                   MANIFEST asof_granularity='row'
+
+====================================================================================================
+C. GAMELOG SCHEMA + COLUMN-VALUE PARTITION TEST (2021-2024 files only)
+====================================================================================================
+
+  --- wnba_gamelog_2021.parquet  rows=3565  cols=30
+      columns: ['GAME_ID', 'TEAM_ID', 'TEAM_ABBREVIATION', 'TEAM_CITY', 'PLAYER_ID', 'PLAYER_NAME', 'NICKNAME', 'START_POSITION', 'COMMENT', 'MIN', 'FGM', 'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT', 'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'PTS', 'PLUS_MINUS', 'SEASON']
+      dtypes:
+        GAME_ID                      str          e.g. '1022100002'
+        TEAM_ID                      int64        e.g. np.int64(1611661323)
+        TEAM_ABBREVIATION            str          e.g. 'CON'
+        TEAM_CITY                    str          e.g. 'Connecticut'
+        PLAYER_ID                    int64        e.g. np.int64(201886)
+        PLAYER_NAME                  str          e.g. 'DeWanna Bonner'
+        NICKNAME                     str          e.g. 'DeWanna'
+        START_POSITION               str          e.g. 'F'
+        COMMENT                      str          e.g. ''
+        MIN                          str          e.g. '35.000000:36'
+        FGM                          float64      e.g. np.float64(6.0)
+        FGA                          float64      e.g. np.float64(12.0)
+        FG_PCT                       float64      e.g. np.float64(0.5)
+        FG3M                         float64      e.g. np.float64(4.0)
+        FG3A                         float64      e.g. np.float64(7.0)
+        FG3_PCT                      float64      e.g. np.float64(0.571)
+        FTM                          float64      e.g. np.float64(5.0)
+        FTA                          float64      e.g. np.float64(6.0)
+        FT_PCT                       float64      e.g. np.float64(0.833)
+        OREB                         float64      e.g. np.float64(0.0)
+        DREB                         float64      e.g. np.float64(7.0)
+        REB                          float64      e.g. np.float64(7.0)
+        AST                          float64      e.g. np.float64(5.0)
+        STL                          float64      e.g. np.float64(1.0)
+        BLK                          float64      e.g. np.float64(3.0)
+        TO                           float64      e.g. np.float64(4.0)
+        PF                           float64      e.g. np.float64(2.0)
+        PTS                          float64      e.g. np.float64(21.0)
+        PLUS_MINUS                   float64      e.g. np.float64(11.0)
+        SEASON                       str          e.g. '2021'
+      column-VALUE hits on 2025/2026: NONE
+
+  --- wnba_gamelog_2022.parquet  rows=4096  cols=30
+      columns: ['GAME_ID', 'TEAM_ID', 'TEAM_ABBREVIATION', 'TEAM_CITY', 'PLAYER_ID', 'PLAYER_NAME', 'NICKNAME', 'START_POSITION', 'COMMENT', 'MIN', 'FGM', 'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT', 'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'PTS', 'PLUS_MINUS', 'SEASON']
+      column-VALUE hits on 2025/2026: NONE
+
+  --- wnba_gamelog_2023.parquet  rows=4544  cols=30
+      columns: ['GAME_ID', 'TEAM_ID', 'TEAM_ABBREVIATION', 'TEAM_CITY', 'PLAYER_ID', 'PLAYER_NAME', 'NICKNAME', 'START_POSITION', 'COMMENT', 'MIN', 'FGM', 'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT', 'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'PTS', 'PLUS_MINUS', 'SEASON']
+      column-VALUE hits on 2025/2026: NONE
+
+  --- wnba_gamelog_2024.parquet  rows=4515  cols=30
+      columns: ['GAME_ID', 'TEAM_ID', 'TEAM_ABBREVIATION', 'TEAM_CITY', 'PLAYER_ID', 'PLAYER_NAME', 'NICKNAME', 'START_POSITION', 'COMMENT', 'MIN', 'FGM', 'FGA', 'FG_PCT', 'FG3M', 'FG3A', 'FG3_PCT', 'FTM', 'FTA', 'FT_PCT', 'OREB', 'DREB', 'REB', 'AST', 'STL', 'BLK', 'TO', 'PF', 'PTS', 'PLUS_MINUS', 'SEASON']
+      column-VALUE hits on 2025/2026: NONE
+
+====================================================================================================
+D. SHOTCHART SCHEMA (2021 regular) -- confirm attempt/zone/points fields
+====================================================================================================
+  rows=26269  columns: ['GRID_TYPE', 'GAME_ID', 'GAME_EVENT_ID', 'PLAYER_ID', 'PLAYER_NAME', 'TEAM_ID', 'TEAM_NAME', 'PERIOD', 'MINUTES_REMAINING', 'SECONDS_REMAINING', 'EVENT_TYPE', 'ACTION_TYPE', 'SHOT_TYPE', 'SHOT_ZONE_BASIC', 'SHOT_ZONE_AREA', 'SHOT_ZONE_RANGE', 'SHOT_DISTANCE', 'LOC_X', 'LOC_Y', 'SHOT_ATTEMPTED_FLAG', 'SHOT_MADE_FLAG', 'GAME_DATE', 'HTM', 'VTM']
+  SHOT_ZONE_BASIC values: ['Above the Break 3', 'Backcourt', 'In The Paint (Non-RA)', 'Left Corner 3', 'Mid-Range', 'Restricted Area', 'Right Corner 3']
+  SHOT_TYPE values: ['2PT Field Goal', '3PT Field Goal']
+  GAME_DATE range: 20210514 .. 20210919
+
+====================================================================================================
+E. PREDECESSOR FRAME -- selection_frame.parquet
+====================================================================================================
+  rows=51473  columns: ['zone', 'player_id', 'season', 'game_id', 'TEAM_ID', 'OPP_TEAM_ID', 'game_date', 'fga', 'z_att', 'share', 'S1', 'S2', 'resid_S1', 'resid_S2', 'OS', 'opp_share_prior', 'lg_share_prior', 'role_prior_fga', 'n_prior']
+  seasons (column value) = [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  game_date range = 2021-05-21 00:00:00 .. 2024-10-20 00:00:00
+  player-games = 10307
+                zone  player_id  season     game_id     TEAM_ID  OPP_TEAM_ID  game_date  fga  z_att     share        S1        S2  resid_S1  resid_S2        OS  opp_share_prior  lg_share_prior  role_prior_fga  n_prior
+0  Above the Break 3     100720    2021  1022100026  1611661328   1611661323 2021-05-25   15    9.0  0.600000  0.760713  0.408147 -0.160713  0.191853 -0.018974         0.253247        0.272221        6.230162      4.0
+1  Above the Break 3     100720    2021  1022100031  1611661328   1611661324 2021-05-28    8    3.0  0.375000  0.726583  0.438576 -0.351583 -0.063576  0.028124         0.297561        0.269437        9.392629      5.0
+2  Above the Break 3     100720    2021  1022100041  1611661328   1611661325 2021-06-01    7    5.0  0.714286  0.663435  0.434984  0.050850  0.279301  0.024134         0.296703        0.272569        8.919134      6.0
+
+Done (probe).
+
+
+####################################################################################################
+### run_log_01_build_forecasts.txt
+####################################################################################################
+
+====================================================================================================
+0. LOAD RAW SHOTS -- exploration partition only (2021-2024)
+====================================================================================================
+  data/shotcharts/shots_2021_regular.parquet       rows=  26269  seasons=[np.int64(2021)]
+  data/shotcharts/shots_2021_playoffs.parquet      rows=   2385  seasons=[np.int64(2021)]
+  data/shotcharts/shots_2022_regular.parquet       rows=  29374  seasons=[np.int64(2022)]
+  data/shotcharts/shots_2022_playoffs.parquet      rows=   3139  seasons=[np.int64(2022)]
+  data/shotcharts/shots_2023_regular.parquet       rows=  32809  seasons=[np.int64(2023)]
+  data/shotcharts/shots_2023_playoffs.parquet      rows=   2813  seasons=[np.int64(2023)]
+  data/shotcharts/shots_2024_regular.parquet       rows=  32759  seasons=[np.int64(2024)]
+  data/shotcharts/shots_2024_playoffs.parquet      rows=   3010  seasons=[np.int64(2024)]
+
+  concatenated rows = 132558
+  sorted(season.unique()) = [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  GAME_DATE range = 2021-05-14 .. 2024-10-20
+  PARTITION CHECK PASSED.
+  5-zone shots = 132304  games = 970
+
+====================================================================================================
+1. STEP 1 -- REBUILD THE PREDECESSOR'S SELECTION PANEL FROM RAW FILES
+====================================================================================================
+  Independent transcription of E1_I0004_shot_selection/build_frames.py section 3.
+  Checked column-by-column against the frozen selection_frame.parquet. Any later
+  difference is then attributable to introducing the FGA FORECAST, not to my harness.
+  panel rows = 85280   player-games = 17056
+  my rebuilt analysis rows = 51473   player-games = 10307
+
+  row-set match: {'both': 51473, 'left_only': 0, 'right_only': 0}
+    max|delta| fga                = 0.000e+00
+    max|delta| z_att              = 0.000e+00
+    max|delta| share              = 0.000e+00
+    max|delta| S1                 = 0.000e+00
+    max|delta| S2                 = 0.000e+00
+    max|delta| OS                 = 0.000e+00
+    max|delta| role_prior_fga     = 0.000e+00
+    max|delta| n_prior            = 0.000e+00
+  RAW-REBUILD OF THE FRAME: EXACT
+
+====================================================================================================
+1b. STEP 1 -- REPRODUCE THE CONDITIONAL dR2 (+0.019138861495123338)
+====================================================================================================
+  predecessor published : m0=0.5103262851681518  m1=0.5294651466632752  dR2=0.0191388614951233  n=10307
+  from THEIR frame      : m0=0.5103262851681518  m1=0.5294651466632752  dR2=0.0191388614951233  n=10307
+  from MY raw rebuild   : m0=0.5103262851681518  m1=0.5294651466632752  dR2=0.0191388614951233  n=10307
+
+  ABSOLUTE DIFFERENCE vs +0.019138861495123338
+    their frame -> 0.000e+00   (dn = 0)
+    raw rebuild -> 0.000e+00   (dn = 0)
+  REPRODUCTION: EXACT -- proceeding
+    conditional dR2  Restricted Area          = +0.019139  (base R2 0.510326, n=10307)
+    conditional dR2  In The Paint (Non-RA)    = +0.008744  (base R2 0.408235, n=10307)
+    conditional dR2  Mid-Range                = +0.004428  (base R2 0.531821, n=10307)
+    conditional dR2  Corner 3                 = +0.001434  (base R2 0.124767, n=10245)
+    conditional dR2  Above the Break 3        = +0.003234  (base R2 0.689925, n=10307)
+
+====================================================================================================
+2. GAMELOG -- structural audit, then MINUTES for strictly-prior games only
+====================================================================================================
+  gamelog rows = 16720  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  SEASON column values = ['2021', '2022', '2023', '2024']
+  within-row identity FG_PCT == FGM/FGA: max|diff| = 5.000e-04  OK
+  within-row identity FG3_PCT == FG3M/FG3A: max|diff| = 5.000e-04  OK
+  within-row identity FT_PCT == FTM/FTA: max|diff| = 5.000e-04  OK
+  every remaining column is a raw counting stat of that single game, an id, or a name. No aggregate, no shrunk value, no cross-row derivation -> structurally cannot embed another season. NO MANIFEST: formally UNVERIFIABLE, admitted on these grounds and used ONLY for prior-game minutes.
+  parsed minutes: non-null 16720 / 16720  range 0.00 .. 50.00
+
+====================================================================================================
+3. STEP 2 -- POINT-IN-TIME FGA FORECASTS (strictly prior games only)
+====================================================================================================
+  player-game rows = 17056   minutes joined for 92.0% (gamelog files contain REGULAR SEASON only -- playoff rows get NaN minutes, which means they do not UPDATE the minutes state; their own forecast is still built from prior regular-season games)
+  box FGA vs 5-zone shot count: corr=0.999719  mean|diff|=0.0147 (diff = Backcourt shots + any collection gap; DIAGNOSTIC ONLY)
+
+====================================================================================================
+3b. FGA FORECAST ACCURACY -- its own accuracy, before it is used for anything
+====================================================================================================
+  Target: the player's realised total field-goal attempts over the five zones.
+  R2 convention: plain unweighted, 1 - SSE/SST, SST about the UNWEIGHTED mean.
+
+  (i) ALL player-games with >= 3 prior games in season  n=15219
+  forecast            n      MAE     RMSE        R2     bias     corr
+  F_LG            15219   4.1742   5.1376  -0.00105  -0.1734   0.0107
+  F_A             15219   2.6810   3.3983   0.56201  +0.0276   0.7567
+  F_A2            15219   2.5734   3.3475   0.57500  +0.0075   0.7624
+  F_B_nopace      15219   2.5715   3.3203   0.58189  +0.0603   0.7642
+  F_B             15219   2.5670   3.3110   0.58422  +0.0636   0.7658
+
+  (ii) THE PREDECESSOR'S ANALYSIS SET (fga>=5, n_prior>=3, OS available)  n=10307
+  forecast            n      MAE     RMSE        R2     bias     corr
+  F_LG            10307   3.7239   5.0685  -0.35840  -2.6073   0.0376
+  F_A             10307   2.6535   3.4872   0.35699  -1.1884   0.6626
+  F_A2            10307   2.7900   3.5836   0.32093  -0.8161   0.6598
+  F_B_nopace      10307   2.7293   3.5149   0.34671  -0.8285   0.6639
+  F_B             10307   2.7226   3.5018   0.35158  -0.8165   0.6671
+
+  realised FGA on the analysis set: mean=10.3026  sd=4.3490  var=18.9136
+
+  by season (analysis set), MAE:
+    2021  n=2201   F_LG=3.567  F_A=2.681  F_A2=2.844  F_B_nopace=2.776  F_B=2.758
+    2022  n=2586   F_LG=3.486  F_A=2.578  F_A2=2.708  F_B_nopace=2.670  F_B=2.670
+    2023  n=2750   F_LG=3.889  F_A=2.697  F_A2=2.819  F_B_nopace=2.726  F_B=2.729
+    2024  n=2770   F_LG=3.906  F_A=2.659  F_A2=2.794  F_B_nopace=2.752  F_B=2.737
+
+====================================================================================================
+4. PRIOR-ONLY ZONE CONVERSION RATES (for the points target, step 4)
+====================================================================================================
+  q_prior built from the player's STRICTLY PRIOR games in season, shrunk (K_Q=20 attempts) toward the league zone rate over games played STRICTLY BEFORE this calendar date.
+                              q  realised
+zone                                     
+Above the Break 3      0.335176   12995.0
+Corner 3               0.370195    1808.0
+In The Paint (Non-RA)  0.384329   10908.0
+Mid-Range              0.362624    9001.0
+Restricted Area        0.613567   23496.0
+
+====================================================================================================
+5. WRITE forecast_frame.parquet
+====================================================================================================
+  wrote forecast_frame.parquet  rows=51473  player-games=10307
+  sorted(season.unique()) = [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  wrote forecast_frame_pregame_gate.parquet  rows=52461  player-games=10506  (gate: F_B >= 5, fully pregame)
+  wrote build_results.json
+
+FINAL PARTITION RE-ASSERT: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+Done.
+
+
+####################################################################################################
+### run_log_02_end_to_end.txt
+####################################################################################################
+loaded forecast_frame: 51473 rows  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]  date range 2021-05-21 .. 2024-10-20
+
+========================================================================================================
+STEP 3 -- FORECAST ZONE ATTEMPT COUNTS END TO END (no realised FGA anywhere)
+========================================================================================================
+  BASELINE : z_att ~ 1 + S1*FGAhat        CANDIDATE : + FGAhat*OS
+  Walk-forward: refit at every distinct game date on all strictly earlier rows; MIN_TRAIN=1000 rows.
+  `fga` rows are a DIAGNOSTIC using REALISED FGA and are excluded from every headline.
+
+  zone                  FGAhat       n  nOOS  poolR2b  poolR2c   pool dR2    wfR2b    wfR2c     wf dR2   wf dMAE
+  Restricted Area       fga*     10307  9290   0.5103   0.5295  +0.019139   0.5110   0.5299  +0.018905  -0.02436
+  Restricted Area       F_A      10307  9290   0.3220   0.3383  +0.016311   0.3220   0.3386  +0.016611  -0.02234
+  Restricted Area       F_B      10307  9290   0.3144   0.3309  +0.016480   0.3135   0.3304  +0.016853  -0.02298
+  In The Paint (Non-RA) fga*     10307  9290   0.4082   0.4170  +0.008744   0.4082   0.4173  +0.009060  -0.00698
+  In The Paint (Non-RA) F_A      10307  9290   0.2898   0.2989  +0.009161   0.2920   0.3012  +0.009186  -0.00798
+  In The Paint (Non-RA) F_B      10307  9290   0.2871   0.2947  +0.007670   0.2882   0.2960  +0.007740  -0.00706
+  Mid-Range             fga*     10307  9290   0.5318   0.5362  +0.004428   0.5293   0.5339  +0.004562  -0.00437
+  Mid-Range             F_A      10307  9290   0.4176   0.4226  +0.005008   0.4169   0.4217  +0.004858  -0.00386
+  Mid-Range             F_B      10307  9290   0.4201   0.4235  +0.003464   0.4186   0.4221  +0.003524  -0.00252
+  Corner 3              fga*     10245  9238   0.1248   0.1262  +0.001434   0.1281   0.1286  +0.000532  -0.00134
+  Corner 3              F_A      10245  9238   0.1069   0.1079  +0.001047   0.1091   0.1096  +0.000481  -0.00126
+  Corner 3              F_B      10245  9238   0.1064   0.1077  +0.001276   0.1083   0.1089  +0.000610  -0.00129
+  Above the Break 3     fga*     10307  9290   0.6899   0.6932  +0.003234   0.6935   0.6968  +0.003234  -0.00654
+  Above the Break 3     F_A      10307  9290   0.5384   0.5417  +0.003332   0.5438   0.5472  +0.003451  -0.00486
+  Above the Break 3     F_B      10307  9290   0.5270   0.5307  +0.003744   0.5338   0.5375  +0.003760  -0.00576
+  * DIAGNOSTIC: uses REALISED FGA. Not a forecast. Excluded from all headlines.
+
+  RESTRICTED AREA -- the degradation, explicitly:
+    predecessor pooled, REALISED fga  : +0.019139
+    my pooled,          REALISED fga  : +0.019139
+    walk-forward,       REALISED fga  : +0.018905   (cost of out-of-sample fitting alone)
+    walk-forward,       FORECAST F_A  : +0.016611
+    walk-forward,       FORECAST F_B  : +0.016853   <-- THE DECISIVE NUMBER
+
+========================================================================================================
+STEP 3 NULLS -- opponent-team-season level, with the naive row-level null beside
+========================================================================================================
+  [F_A] Restricted Area        wf dR2 row=+0.016611 cl=+0.021899 | cluster null sd=0.001144 z=+19.06 p=0.0002 | row null sd=0.000167 p=0.0002 | inflation 6.85x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0218987317 mean=0.0218987317 sd=0.000e+00 max|dev|=0.000e+00
+  [F_A] In The Paint (Non-RA)  wf dR2 row=+0.009186 cl=+0.014676 | cluster null sd=0.000952 z=+15.35 p=0.0002 | row null sd=0.000184 p=0.0002 | inflation 5.18x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0146763410 mean=0.0146763410 sd=0.000e+00 max|dev|=0.000e+00
+  [F_A] Mid-Range              wf dR2 row=+0.004858 cl=+0.006492 | cluster null sd=0.000619 z=+10.62 p=0.0002 | row null sd=0.000188 p=0.0002 | inflation 3.29x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0064920889 mean=0.0064920889 sd=0.000e+00 max|dev|=0.000e+00
+  [F_A] Corner 3               wf dR2 row=+0.000481 cl=+0.002534 | cluster null sd=0.000305 z=+8.83 p=0.0002 | row null sd=0.000182 p=0.0054 | inflation 1.68x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0025341206 mean=0.0025341206 sd=0.000e+00 max|dev|=0.000e+00
+  [F_A] Above the Break 3      wf dR2 row=+0.003451 cl=+0.005061 | cluster null sd=0.000416 z=+11.98 p=0.0002 | row null sd=0.000113 p=0.0002 | inflation 3.67x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0050607016 mean=0.0050607016 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] Restricted Area        wf dR2 row=+0.016853 cl=+0.023012 | cluster null sd=0.001150 z=+19.87 p=0.0002 | row null sd=0.000164 p=0.0002 | inflation 7.00x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0230121054 mean=0.0230121054 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] In The Paint (Non-RA)  wf dR2 row=+0.007740 cl=+0.012767 | cluster null sd=0.000877 z=+14.51 p=0.0002 | row null sd=0.000190 p=0.0002 | inflation 4.62x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0127671857 mean=0.0127671857 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] Mid-Range              wf dR2 row=+0.003524 cl=+0.005390 | cluster null sd=0.000504 z=+10.76 p=0.0002 | row null sd=0.000196 p=0.0002 | inflation 2.57x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0053896814 mean=0.0053896814 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] Corner 3               wf dR2 row=+0.000610 cl=+0.003049 | cluster null sd=0.000320 z=+9.99 p=0.0002 | row null sd=0.000179 p=0.0018 | inflation 1.79x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0030488732 mean=0.0030488732 sd=0.000e+00 max|dev|=0.000e+00
+  [F_B] Above the Break 3      wf dR2 row=+0.003760 cl=+0.005334 | cluster null sd=0.000368 z=+14.42 p=0.0002 | row null sd=0.000116 p=0.0002 | inflation 3.17x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0053339160 mean=0.0053339160 sd=0.000e+00 max|dev|=0.000e+00
+
+========================================================================================================
+STEP 3 -- FIVE-ZONE FAMILY-WISE CORRECTION (max-z within draw, cluster null)
+========================================================================================================
+  [F_A] Restricted Area        z=+19.06  p unadj=0.0002  p FWE=0.0002
+  [F_A] In The Paint (Non-RA)  z=+15.35  p unadj=0.0002  p FWE=0.0002
+  [F_A] Mid-Range              z=+10.62  p unadj=0.0002  p FWE=0.0004
+  [F_A] Corner 3               z=+8.83  p unadj=0.0002  p FWE=0.0006
+  [F_A] Above the Break 3      z=+11.98  p unadj=0.0002  p FWE=0.0002
+  [F_B] Restricted Area        z=+19.87  p unadj=0.0002  p FWE=0.0002
+  [F_B] In The Paint (Non-RA)  z=+14.51  p unadj=0.0002  p FWE=0.0002
+  [F_B] Mid-Range              z=+10.76  p unadj=0.0002  p FWE=0.0002
+  [F_B] Corner 3               z=+9.99  p unadj=0.0002  p FWE=0.0004
+  [F_B] Above the Break 3      z=+14.42  p unadj=0.0002  p FWE=0.0002
+
+========================================================================================================
+STEP 4 -- DOES IT MOVE POINTS? point-in-time forecast of PLAYER POINTS
+========================================================================================================
+  player-games with all five zones present: 10245
+  sum_z OS_z : mean=-1.221e-18  max|.|=1.110e-16  (compositional -> the candidate term is a PURE MIX SHIFT at constant volume)
+  prior-only expected points per attempt (base): mean=0.9957 sd=0.0897
+  mix-shift in expected points per attempt     : mean=-0.00018 sd=0.01898
+  mix term in POINTS with F_A: sd=0.1816 pts  (1 sd of the opponent mix signal moves the points forecast this much)
+  mix term in POINTS with F_B: sd=0.1955 pts  (1 sd of the opponent mix signal moves the points forecast this much)
+
+  target fg_pts: n=10245  mean=10.4093  sd=5.8236  (FG points from the shot files (headline))
+    ceiling if the mix term were a PERFECT predictor and orthogonal to the base: dR2 <= (sd_mixterm/sd_y)^2 = 0.000972  [F_A]
+    ceiling if the mix term were a PERFECT predictor and orthogonal to the base: dR2 <= (sd_mixterm/sd_y)^2 = 0.001127  [F_B]
+  fg_pts         F_A      pooled dR2=+0.000047  wf R2 base=0.23331 cand=0.23316  wf dR2=-0.000153  wf dMAE=+0.00028  coef=+0.2205
+  fg_pts         F_B      pooled dR2=+0.000323  wf R2 base=0.23858 cand=0.23860  wf dR2=+0.000021  wf dMAE=+0.00043  coef=+0.5354
+  fg_pts         fga*     pooled dR2=+0.000111  wf R2 base=0.60085 cand=0.60042  wf dR2=-0.000430  wf dMAE=+0.00068  coef=+0.2900
+
+  target pts_total_box: n=9327  mean=12.4273  sd=6.8878  (total box PTS incl. free throws (secondary; box source))
+    ceiling if the mix term were a PERFECT predictor and orthogonal to the base: dR2 <= (sd_mixterm/sd_y)^2 = 0.000671  [F_A]
+    ceiling if the mix term were a PERFECT predictor and orthogonal to the base: dR2 <= (sd_mixterm/sd_y)^2 = 0.000793  [F_B]
+  pts_total_box  F_A      pooled dR2=+0.000474  wf R2 base=0.29031 cand=0.29060  wf dR2=+0.000289  wf dMAE=-0.00167  coef=+0.8402
+  pts_total_box  F_B      pooled dR2=+0.001298  wf R2 base=0.29902 cand=0.29994  wf dR2=+0.000920  wf dMAE=-0.00536  coef=+1.2801
+  pts_total_box  fga*     pooled dR2=+0.000461  wf R2 base=0.61061 cand=0.61042  wf dR2=-0.000191  wf dMAE=-0.00288  coef=+0.7093
+
+========================================================================================================
+STEP 4 NULLS -- opponent-team-season level
+========================================================================================================
+  fg_pts         F_A    wf dR2 row=-0.000153 cl=-0.000142  cluster null sd=0.000349 z=-0.34 p=0.5215 | row null sd=0.000184 p=0.2378 | inflation 1.90x
+       DEFECTIVE NO-OP PLACEBO: ref=-0.0001424652 mean=-0.0001424652 sd=0.000e+00 max|dev|=0.000e+00
+  fg_pts         F_B    wf dR2 row=+0.000021 cl=+0.000077  cluster null sd=0.000286 z=+0.45 p=0.2150 | row null sd=0.000190 p=0.0710 | inflation 1.50x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0000773203 mean=0.0000773203 sd=0.000e+00 max|dev|=0.000e+00
+  pts_total_box  F_A    wf dR2 row=+0.000289 cl=+0.000142  cluster null sd=0.000468 z=+0.13 p=0.3029 | row null sd=0.000197 p=0.0160 | inflation 2.38x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0001418630 mean=0.0001418630 sd=0.000e+00 max|dev|=0.000e+00
+  pts_total_box  F_B    wf dR2 row=+0.000920 cl=+0.000812  cluster null sd=0.000519 z=+1.47 p=0.0844 | row null sd=0.000203 p=0.0012 | inflation 2.56x
+       DEFECTIVE NO-OP PLACEBO: ref=0.0008122274 mean=0.0008122274 sd=0.000e+00 max|dev|=0.000e+00
+
+========================================================================================================
+STEP 5 -- WHERE THE SIGNAL SURVIVES, BY PRE-GAME OBSERVABLES ONLY
+========================================================================================================
+  Splits preselected together: role_prior_fga at the inherited cuts (6, 11);
+  prior-minutes volatility terciles; |OS_rim| terciles. All strictly pregame.
+  role_prior_fga (6,11)      1_low       n=2091   F_A: dR2=+0.014553 dMAE=-0.01340  F_B: dR2=+0.012903 dMAE=-0.01191
+  role_prior_fga (6,11)      2_mid       n=3946   F_A: dR2=+0.017948 dMAE=-0.02333  F_B: dR2=+0.018926 dMAE=-0.02470
+  role_prior_fga (6,11)      3_high      n=3253   F_A: dR2=+0.017360 dMAE=-0.02688  F_B: dR2=+0.017429 dMAE=-0.02800
+  prior minutes sd terciles  1_stable    n=3132   F_A: dR2=+0.009235 dMAE=-0.01379  F_B: dR2=+0.010143 dMAE=-0.01734
+  prior minutes sd terciles  2_mid       n=3118   F_A: dR2=+0.021129 dMAE=-0.02814  F_B: dR2=+0.022148 dMAE=-0.02732
+  prior minutes sd terciles  3_volatile  n=3037   F_A: dR2=+0.020317 dMAE=-0.02476  F_B: dR2=+0.018578 dMAE=-0.02401
+  |OS_rim| terciles          1_near-avg  n=3025   F_A: dR2=-0.000439 dMAE=+0.00302  F_B: dR2=+0.000050 dMAE=+0.00185
+  |OS_rim| terciles          2_mid       n=3110   F_A: dR2=+0.003662 dMAE=-0.00704  F_B: dR2=+0.002765 dMAE=-0.00718
+  |OS_rim| terciles          3_extreme   n=3155   F_A: dR2=+0.046300 dMAE=-0.06173  F_B: dR2=+0.047428 dMAE=-0.06235
+  OS_rim signed terciles     1_stingy    n=3153   F_A: dR2=+0.032921 dMAE=-0.07927  F_B: dR2=+0.038389 dMAE=-0.08534
+  OS_rim signed terciles     2_mid       n=3035   F_A: dR2=-0.000389 dMAE=+0.00440  F_B: dR2=+0.000026 dMAE=+0.00349
+  OS_rim signed terciles     3_permissiven=3102   F_A: dR2=+0.019293 dMAE=+0.00937  F_B: dR2=+0.015007 dMAE=+0.01452
+  season                     2021        n=1184   F_A: dR2=+0.017679 dMAE=-0.02976  F_B: dR2=+0.020180 dMAE=-0.03341
+  season                     2022        n=2586   F_A: dR2=+0.022769 dMAE=-0.02479  F_B: dR2=+0.022231 dMAE=-0.02320
+  season                     2023        n=2750   F_A: dR2=+0.014516 dMAE=-0.02530  F_B: dR2=+0.014589 dMAE=-0.02792
+  season                     2024        n=2770   F_A: dR2=+0.012708 dMAE=-0.01393  F_B: dR2=+0.012758 dMAE=-0.01340
+
+========================================================================================================
+NATURAL UNITS -- end-to-end, walk-forward
+========================================================================================================
+  F_A: coef=+0.77502  sd(OS)=0.04234  mean(FGAhat)=9.114  ->  +0.2990 rim attempts per 1 sd  (+10.24% of the 2.922 mean)
+  F_B: coef=+0.72437  sd(OS)=0.04234  mean(FGAhat)=9.486  ->  +0.2909 rim attempts per 1 sd  (+9.96% of the 2.922 mean)
+
+========================================================================================================
+ROBUSTNESS -- sample gate defined on FORECAST FGA, not realised FGA
+========================================================================================================
+  The headline row set inherits the predecessor's gate `realised FGA >= 5`, which
+  is a SAMPLE DEFINITION that reads a realised quantity (disclosed, not a feature).
+  Here the whole thing is rebuilt on a gate that is itself pregame: F_B >= 5.
+  Restricted Area       F_A    n=10506  nOOS=9476   wf R2 base=0.32034 cand=0.33566  dR2=+0.015323  dMAE=-0.01995
+  Restricted Area       F_B    n=10506  nOOS=9476   wf R2 base=0.32267 cand=0.33843  dR2=+0.015764  dMAE=-0.02053
+  In The Paint (Non-RA) F_A    n=10506  nOOS=9476   wf R2 base=0.30206 cand=0.31062  dR2=+0.008559  dMAE=-0.00788
+  In The Paint (Non-RA) F_B    n=10506  nOOS=9476   wf R2 base=0.30244 cand=0.30981  dR2=+0.007371  dMAE=-0.00622
+  Mid-Range             F_A    n=10506  nOOS=9476   wf R2 base=0.42555 cand=0.42991  dR2=+0.004361  dMAE=-0.00359
+  Mid-Range             F_B    n=10506  nOOS=9476   wf R2 base=0.43067 cand=0.43394  dR2=+0.003263  dMAE=-0.00231
+  Corner 3              F_A    n=10437  nOOS=9418   wf R2 base=0.10436 cand=0.10478  dR2=+0.000416  dMAE=-0.00131
+  Corner 3              F_B    n=10437  nOOS=9418   wf R2 base=0.10656 cand=0.10707  dR2=+0.000514  dMAE=-0.00129
+  Above the Break 3     F_A    n=10506  nOOS=9476   wf R2 base=0.52738 cand=0.53068  dR2=+0.003293  dMAE=-0.00284
+  Above the Break 3     F_B    n=10506  nOOS=9476   wf R2 base=0.53070 cand=0.53431  dR2=+0.003604  dMAE=-0.00507
+
+========================================================================================================
+WRITE
+========================================================================================================
+  wrote end_to_end_results.json, permutation_draws_step3_cluster.csv, permutation_draws_step4_fgpts_*.csv
+FINAL PARTITION RE-ASSERT: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+Done.
+
+
+####################################################################################################
+### run_log_03_addendum.txt
+####################################################################################################
+RA rows = 10307  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+========================================================================================================
+(a) VOLUME PLACEBO -- the same term applied to realised TOTAL attempts
+========================================================================================================
+  If FGAhat*OS_rim were a PACE proxy it would also predict total FGA. It must not.
+  (The response here is realised TOTAL FGA. That is a placebo RESPONSE, which is
+   legitimate -- responses are always realised. No input is realised.)
+  F_A: RIM attempts   dR2=+0.016611  (base R2 0.3220)
+      TOTAL attempts dR2=-0.000287  (base R2 0.0671)   <- placebo, should be ~0;  ratio = -0.0173
+  F_B: RIM attempts   dR2=+0.016853  (base R2 0.3135)
+      TOTAL attempts dR2=-0.000309  (base R2 0.0909)   <- placebo, should be ~0;  ratio = -0.0183
+
+========================================================================================================
+(b) DEGRADATION CURVE -- end-to-end dR2 as the FGA forecast is deliberately ruined
+========================================================================================================
+  FGAhat(lam) = lam * F_B + (1 - lam) * F_LG, where F_LG is the league prior mean
+  and carries NO player information (its own R2 is ~0). lam = 1 is the headline.
+     lam   FGAhat R2  FGAhat MAE  rim R2 base  rim R2 cand    rim dR2   rim dMAE
+    0.00    -0.36359      3.7416      0.24787      0.26401  +0.016140   -0.01811
+    0.25     0.00315      3.1766      0.29996      0.31701  +0.017051   -0.01954
+    0.50     0.24538      2.7834      0.32516      0.34259  +0.017429   -0.02147
+    0.75     0.36310      2.6292      0.32647      0.34378  +0.017314   -0.02286
+    0.90     0.37396      2.6563      0.31980      0.33687  +0.017069   -0.02299
+    1.00     0.35630      2.7221      0.31351      0.33037  +0.016853   -0.02298
+   REAL*     1.00000      0.0000      0.51103      0.52994  +0.018905   -0.02436   * DIAGNOSTIC: realised FGA
+
+========================================================================================================
+(c) EVERY FGA-forecast variant on the headline statistic (RA, walk-forward)
+========================================================================================================
+  forecast        FGAhat R2  FGAhat MAE   R2 base   R2 cand        dR2      dMAE
+  F_LG             -0.36359      3.7416   0.24787   0.26401  +0.016140  -0.01811
+  F_A               0.36190      2.6565   0.32199   0.33860  +0.016611  -0.02234
+  F_A2              0.32713      2.7866   0.30526   0.32096  +0.015702  -0.02163
+  F_B_nopace        0.35283      2.7268   0.31444   0.33042  +0.015982  -0.02155
+  F_B               0.35630      2.7221   0.31351   0.33037  +0.016853  -0.02298
+  realised*         1.00000      0.0000   0.51103   0.52994  +0.018905  -0.02436   * DIAGNOSTIC
+
+========================================================================================================
+(d) MIN_TRAIN sensitivity of the walk-forward
+========================================================================================================
+  MIN_TRAIN=500    n_scored=9806   base=0.31352 cand=0.32986 dR2=+0.016342
+  MIN_TRAIN=1000   n_scored=9290   base=0.31351 cand=0.33037 dR2=+0.016853
+  MIN_TRAIN=2000   n_scored=8307   base=0.31450 cand=0.33141 dR2=+0.016906
+  MIN_TRAIN=4000   n_scored=6296   base=0.32462 cand=0.33987 dR2=+0.015252
+
+========================================================================================================
+(e) CORRECT-LEVEL NULL FOR THE STEP-5 POCKET (|OS_rim| terciles)
+========================================================================================================
+  Model fitted walk-forward on the FULL set; dR2 evaluated INSIDE each tercile.
+  Null: opponent-team-season allowance values reshuffled across teams within
+  season, model refitted, dR2 re-evaluated in the SAME tercile (the tercile
+  boundaries are held fixed at the real ones, so only the signal is permuted).
+  1_near-avg   n=3025   dR2(cluster x)=+0.003722  null sd=0.001812  z=+2.69  p=0.0012
+  2_mid        n=3110   dR2(cluster x)=+0.013981  null sd=0.001800  z=+8.34  p=0.0002
+  3_extreme    n=3155   dR2(cluster x)=+0.051049  null sd=0.003785  z=+12.80  p=0.0002
+
+  CAVEAT, stated plainly: a higher dR2 in the extreme-|OS| tercile is PARTLY
+  MECHANICAL -- the regressor has more variance there, so it must move the
+  forecast more. It is evidence about WHERE THE MODEL ACTS, which is what an
+  abstention rule needs, NOT evidence that the underlying slope is heterogeneous.
+
+wrote addendum_results.json
+PARTITION RE-ASSERT: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+
+####################################################################################################
+### run_log_05_pooled_vs_wf.txt
+####################################################################################################
+  zone                  FGAhat    pooled ALL  pooled OOSrows  walk-forward  wf - pooled(OOS)
+  Restricted Area       fga        +0.019139       +0.019183     +0.018905         -0.000278
+  Restricted Area       F_A        +0.016311       +0.017148     +0.016611         -0.000538
+  Restricted Area       F_B        +0.016480       +0.017465     +0.016853         -0.000611
+  In The Paint (Non-RA) fga        +0.008744       +0.009908     +0.009060         -0.000847
+  In The Paint (Non-RA) F_A        +0.009161       +0.009774     +0.009186         -0.000588
+  In The Paint (Non-RA) F_B        +0.007670       +0.008365     +0.007740         -0.000626
+  Mid-Range             fga        +0.004428       +0.004793     +0.004562         -0.000231
+  Mid-Range             F_A        +0.005008       +0.005033     +0.004858         -0.000175
+  Mid-Range             F_B        +0.003464       +0.003743     +0.003524         -0.000219
+  Corner 3              fga        +0.001434       +0.001006     +0.000532         -0.000475
+  Corner 3              F_A        +0.001047       +0.000850     +0.000481         -0.000369
+  Corner 3              F_B        +0.001276       +0.000919     +0.000610         -0.000309
+  Above the Break 3     fga        +0.003234       +0.003376     +0.003234         -0.000142
+  Above the Break 3     F_A        +0.003332       +0.003734     +0.003451         -0.000283
+  Above the Break 3     F_B        +0.003744       +0.003928     +0.003760         -0.000168
+
+  Reading: the last column is the TRUE cost of out-of-sample fitting, holding the
+  row set fixed. It is negative everywhere, as it must be. The apparent 'walk-
+  forward beats pooled' in the headline table is entirely a row-set effect: the
+  first MIN_TRAIN rows, which walk-forward cannot score, are early-season rows
+  where the opponent allowance is noisiest and the increment is smallest.
+wrote pooled_vs_wf.json
+
+
+####################################################################################################
+### run_log_04_make_findings.txt
+####################################################################################################
+wrote FINDINGS.json
+  verdict            : SPLIT
+  decisive number    : wf dR2 (F_B, no realised FGA) = +0.016853
+  conditional parent : +0.019139
+  retained           : 88.1%
+  points (fg_pts)    : +0.000021 p=0.2150
+  reproduction delta : 0.000e+00
+
+
+####################################################################################################
+### run_log_06_verify_partition.txt
+####################################################################################################
+====================================================================================================
+A. PARQUET OUTPUTS -- season COLUMN VALUES and date COLUMN VALUES
+====================================================================================================
+  forecast_frame.parquet                       rows= 51473  seasons=[2021, 2022, 2023, 2024]  max(game_date)=2024-10-20  OK
+  forecast_frame_pregame_gate.parquet          rows= 52461  seasons=[2021, 2022, 2023, 2024]  max(game_date)=2024-10-20  OK
+
+====================================================================================================
+B. CSV OUTPUTS -- shape only (permutation draws carry no season field)
+====================================================================================================
+  permutation_draws_step3_cluster.csv          shape=(5000, 10)
+  permutation_draws_step4_fgpts_F_A.csv        shape=(5000, 2)
+  permutation_draws_step4_fgpts_F_B.csv        shape=(5000, 2)
+
+====================================================================================================
+C. JSON OUTPUTS -- any numeric 2025/2026 season value anywhere?
+====================================================================================================
+  FINDINGS.json                                numeric/key 2025-2026 hits: NONE
+  addendum_results.json                        numeric/key 2025-2026 hits: NONE
+  build_results.json                           numeric/key 2025-2026 hits: NONE
+  end_to_end_results.json                      numeric/key 2025-2026 hits: NONE
+  pooled_vs_wf.json                            numeric/key 2025-2026 hits: NONE
+
+====================================================================================================
+D. WRITE SCOPE -- every file this screen produced
+====================================================================================================
+  experiments\exploration\E1_I0004_fga_forecast\FINDINGS.json
+  experiments\exploration\E1_I0004_fga_forecast\NOTES.md
+  experiments\exploration\E1_I0004_fga_forecast\addendum.py
+  experiments\exploration\E1_I0004_fga_forecast\addendum_results.json
+  experiments\exploration\E1_I0004_fga_forecast\build_forecasts.py
+  experiments\exploration\E1_I0004_fga_forecast\build_results.json
+  experiments\exploration\E1_I0004_fga_forecast\check_pooled_vs_wf.py
+  experiments\exploration\E1_I0004_fga_forecast\end_to_end.py
+  experiments\exploration\E1_I0004_fga_forecast\end_to_end_results.json
+  experiments\exploration\E1_I0004_fga_forecast\forecast_frame.parquet
+  experiments\exploration\E1_I0004_fga_forecast\forecast_frame_pregame_gate.parquet
+  experiments\exploration\E1_I0004_fga_forecast\make_findings.py
+  experiments\exploration\E1_I0004_fga_forecast\permutation_draws_step3_cluster.csv
+  experiments\exploration\E1_I0004_fga_forecast\permutation_draws_step4_fgpts_F_A.csv
+  experiments\exploration\E1_I0004_fga_forecast\permutation_draws_step4_fgpts_F_B.csv
+  experiments\exploration\E1_I0004_fga_forecast\pooled_vs_wf.json
+  experiments\exploration\E1_I0004_fga_forecast\probe_sources.py
+  experiments\exploration\E1_I0004_fga_forecast\run_log_00_probe.txt
+  experiments\exploration\E1_I0004_fga_forecast\run_log_01_build_forecasts.txt
+  experiments\exploration\E1_I0004_fga_forecast\run_log_02_end_to_end.txt
+  experiments\exploration\E1_I0004_fga_forecast\run_log_03_addendum.txt
+  experiments\exploration\E1_I0004_fga_forecast\run_log_04_make_findings.txt
+  experiments\exploration\E1_I0004_fga_forecast\run_log_05_pooled_vs_wf.txt
+  experiments\exploration\E1_I0004_fga_forecast\verify_partition.py
+
+OVERALL: PASS -- 0 structural violations
+
