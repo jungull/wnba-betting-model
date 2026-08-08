@@ -1,0 +1,91 @@
+﻿
+====================================================================================================
+S03 STRUCTURAL PROBE
+====================================================================================================
+
+====================================================================================================
+1. MANIFEST CHECK before any load
+====================================================================================================
+  check_manifest master_team.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest player_game.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest team_game.parquet                        granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest predictions__team_game_distribution__2023.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__player_scoring_distribution__2023.parquet granularity='artifact' -> UNUSABLE
+
+====================================================================================================
+2. TEAM ARM PROVENANCE (established, not assumed -- D076 pattern)
+====================================================================================================
+  team 2021: fitted=False degenerate=True train=[] n_test=418 fold_boundary_ok=True
+  team 2022: fitted=True degenerate=False train=[2021] n_test=478 fold_boundary_ok=True
+  team 2023: fitted=True degenerate=False train=[2021, 2022] n_test=520 fold_boundary_ok=True
+  team 2024: fitted=True degenerate=False train=[2021, 2022, 2023] n_test=524 fold_boundary_ok=True
+  player 2021: fitted=False degenerate=True train=[]
+  player 2022: fitted=True degenerate=False train=[2021]
+  player 2023: fitted=True degenerate=False train=[2021, 2022]
+  player 2024: fitted=True degenerate=False train=[2021, 2022, 2023]
+
+====================================================================================================
+3. LOAD + PARTITION ASSERT ON VALUES
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  contract team rows 1940, contract player rows 22659
+  team arm rows 1940
+  team arm pred_point by season (mean, sd, nunique):
+             mean       std  nunique  size
+season                                    
+2021    82.000000  0.000000        1   418
+2022    79.738940  2.890458      410   478
+2023    82.280450  2.850493      456   520
+2024    81.735757  2.244292      453   524
+  team arm component_id counts:
+season  component_id                                             
+2021    team_game_distribution/declared_constant                     418
+2022    team_game_distribution/declared_constant                      60
+        team_game_distribution/walk_forward_channel_ewma_side_map    418
+2023    team_game_distribution/declared_constant                      61
+        team_game_distribution/walk_forward_channel_ewma_side_map    459
+2024    team_game_distribution/declared_constant                      60
+        team_game_distribution/walk_forward_channel_ewma_side_map    464
+
+====================================================================================================
+4. WHAT DOES player_scoring_distribution MEAN?
+====================================================================================================
+  joined 22659 of 26614 player forecast rows to the contract
+  scored seasons [2022, 2023, 2024]: n=17809, candidate=17809, appeared=13879
+    ALL rows     n=17809  mean pred= 8.0940  mean realised pts= 6.8342  mean p_active=0.7626
+    appeared==1  n=13879  mean pred= 8.7454  mean realised pts= 8.7694  mean p_active=0.8648
+    appeared==0  n= 3930  mean pred= 5.7933  mean realised pts= 0.0000  mean p_active=0.4020
+  mean(pred * p_active) = 6.7043   vs mean realised incl DNP-as-zero = 6.8342
+
+====================================================================================================
+5. ROSTER COVERAGE -- can the candidate set reconstruct a team-game?
+====================================================================================================
+  team-games matched: 1486
+  n candidate rows per team-game: mean 11.98 min 9 max 16
+  n appeared per team-game: mean 9.34 min 6 max 12
+  SUM of contract-row realised points vs master team points: max|gap| = 24, n nonzero = 64
+  season_type counts: {'Regular Season': 1356, 'Playoffs': 130}
+  appeared-but-NOT-candidate rows: 0, total realised points 0
+  candidate-but-DID-NOT-appear rows: 3930 (22.1% of candidate rows)
+
+  wrote _s03.json

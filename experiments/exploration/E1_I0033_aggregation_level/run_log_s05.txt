@@ -1,0 +1,89 @@
+﻿
+====================================================================================================
+S05 BUILD
+====================================================================================================
+  prereg hash verified: 0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e
+
+====================================================================================================
+2. MANIFEST CHECK -- every input, before it is loaded
+====================================================================================================
+  check_manifest master_team.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest player_game.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest team_game.parquet                        granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest player_game.parquet -> UNVERIFIABLE (no manifest)
+  check_manifest predictions__team_game_distribution__2023.parquet granularity='artifact' -> UNUSABLE
+  check_manifest predictions__player_scoring_distribution__2023.parquet granularity='artifact' -> UNUSABLE
+
+====================================================================================================
+3. LOAD AND PARTITION ASSERT ON VALUES
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+
+====================================================================================================
+4. REPRODUCTION OF PUBLISHED ANCHORS -- nothing new is computed until these pass
+====================================================================================================
+  A1  D104 team home advantage, regular season 2021-2024:
+        n games = 888   (published 888)
+        home - away mean = 0.965090   (published +0.965090)
+        home mean 82.367117  away mean 81.402027   (published 82.367 / 81.402)
+        REPRODUCED: True
+
+====================================================================================================
+5. IDENTITY MAP RECONSTRUCTED FROM THE CANONICAL KEY
+====================================================================================================
+  OBLIGATION_KEY_ID = cbs_obligation_key/1
+  CANONICAL_KEY_FIELDS = ('player_id', 'game_id', 'team_id')
+  distinct players in the partition: 268
+  candidate triples enumerated: 519920
+  cross-check vs manifest-verified contract v4: 22659 of 22659 v4 row_uids reconstructed, 22659 agree on ALL THREE fields
+  -> the reconstruction is EXACT on every row the manifest-verified contract carries.
+
+====================================================================================================
+6. ARM FRAMES
+====================================================================================================
+  team arm rows mapped: 1940
+  champion player rows: 26614, identity resolved for 26574 (99.8497%)
+  UNRESOLVED rows by season: {2021: 4, 2022: 4, 2023: 4, 2024: 28}
+  [DIAGNOSIS, v5 opened for description only] unresolved rows are: tier={'B': 40} cold_start={True: 40} fallback={True: 40}
+  unresolved rows: mean pts_hat 8.6646, mean p_active_hat 0.6800
+  champion rows with a realised box row: 18061 of 26574
+
+  A2  D076 appeared player-games 2022-2024 = 14262   (published 13,879)
+      restricted to the contract-v4 (tier A) obligation set = 13879
+      REPRODUCED on the tier-A set: True
+
+====================================================================================================
+7. ROW SETS
+====================================================================================================
+  RS1 (regular season 2022-2024): 1392 team-games
+  RS2 (playoffs 2022-2024)      : 130 team-games
+season
+2022    432
+2023    480
+2024    480
+  RS1 response: mean 82.2220  sd 11.0130  SST 168710.4073
+
+====================================================================================================
+8. PARTITION ASSERT AFTER CONSTRUCTION
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['season']
+    -> PASS
+
+  wrote _team_frame.parquet (1940, 30), _player_frame.parquet (26574, 23), _s05.json

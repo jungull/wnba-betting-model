@@ -1,0 +1,202 @@
+﻿
+====================================================================================================
+1. WHICH CONTRACT DOES THE CHAMPION PLAYER ARM BIND?
+====================================================================================================
+{
+ "run_id": "cbs_v15_player_oof_v5/1",
+ "arm_id": "cbs_v15_player_oof_v5",
+ "obligation_key_id": "cbs_obligation_key/1",
+ "artifacts": {
+  "data/masters/master_player.parquet": "52e084efaad5c08444b407c64c18d55b57ff5a1e13491cc908dfd960b8641dce",
+  "data/masters/master_team.parquet": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528",
+  "experiments/prediction_contract_v4/contract.json": "a46589fbaa03d54cc786a479d64e79ee329f86585fa81b79b016a1f7684e8808",
+  "experiments/prediction_contract_v4/player_game.parquet": "855c77902458c1a8a46dfaaf8a7a4fc86588c48855930bda110338d88234831a",
+  "experiments/prediction_contract_v4/team_game.parquet": "2b5604ec1499ece5b874545e93d0570fa308e62d4a9bade0dda344264a5b1d18"
+ },
+ "components": null,
+ "n_train_rows": 10413,
+ "n_test_rows": 7418,
+ "n_emitted_by_target": {
+  "p_active": 7418,
+  "e_minutes_given_active": 7418,
+  "attempts_usage": 7418,
+  "player_scoring_distribution": 7418
+ }
+}
+
+  obligation_completeness:
+{
+ "p_active": {
+  "n_required": 7418,
+  "n_covered": 7418,
+  "n_emitted": 7418,
+  "n_excluded": 0,
+  "n_fallback": 747,
+  "n_cold_start": 307,
+  "fallback_levels": {
+   "0": 6671,
+   "2": 440,
+   "3": 307
+  },
+  "coverage": 1.0
+ },
+ "e_minutes_given_active": {
+  "n_required": 7418,
+  "n_covered": 7418,
+  "n_emitted": 7418,
+  "n_excluded": 0,
+  "n_fallback": 1814,
+  "n_cold_start": 1242,
+  "fallback_levels": {
+   "0": 5604,
+   "2": 572,
+   "3": 1242
+  },
+  "coverage": 1.0
+ },
+ "attempts_usage": {
+  "n_required": 7418,
+  "n_covered": 7418,
+  "n_emitted": 7418,
+  "n_excluded": 0,
+  "n_fallback": 1814,
+  "n_cold_start": 1242,
+  "fallback_levels": {
+   "0": 5604,
+   "2": 572,
+   "3": 1242
+  },
+  "coverage": 1.0
+ },
+ "player_scoring_distribution": {
+  "n_required": 7418,
+  "n_covered": 7418,
+  "n_emitted": 7418,
+  "n_excluded": 0,
+  "n_fallback": 1814,
+  "n_cold_start": 1242,
+  "fallback_levels": {
+   "0": 5604,
+   "2": 572,
+   "3": 1242
+  },
+  "coverage": 1.0
+ }
+}
+
+====================================================================================================
+2. ROW COUNTS BY SEASON, arm vs contract v4
+====================================================================================================
+season
+2021    4997
+2022    6333
+2023    7418
+2024    7866
+
+contract v4 player_game by season:
+season
+2021    4850
+2022    5563
+2023    6150
+2024    6096
+2025    7439
+2026    5529
+
+contract v4 prediction_required__player_scoring_distribution by season:
+season
+2021    4850
+2022    5563
+2023    6150
+2024    6096
+2025    7439
+2026    5529
+
+prediction_contract_v5 files:
+    candidacy_exclusions.parquet
+    contract.json
+    enrichment_receipt.json
+    player_game.parquet
+    player_game_enriched.parquet
+    universe_diagnostics.json
+
+====================================================================================================
+3. UNJOINED ROWS -- do they join to contract v5?
+====================================================================================================
+  v5 player_game (44851, 29)
+  v5 cols: ['game_id', 'team_id', 'player_id', 'game_date', 'season', 'team_game_index', 'forecast_cutoff', 'candidate_source', 'team_assignment_source', 'team_assignment_confidence', 'universe_tier', 'is_fallback', 'candidate_evidence_time', 'candidate_published_time', 'candidate_observed_time', 'cutoff_source', 'n_sources', 'exclusion_reason', 'row_uid', 'obligation_uid', 'player_game_uid', 'obligation_key_id', 'contract_version', 'era', 'n_prior_candidate_obligations', 'n_prior_appearances', 'n_prior_team_games', 'is_cold_start', 'appearances_exceed_obligations']
+  arm rows joining v5: 26614 of 26614
+season
+2021    4997
+2022    6333
+2023    7418
+2024    7866
+2025    9729
+2026    8508
+
+====================================================================================================
+4. THE POINTS GAP -- who is missing from the contract candidate set?
+====================================================================================================
+  master_player rows in scored seasons: 16887
+  APPEARED but NOT in contract candidate set: 448 rows, 3313 points
+  distinct players: 218 ; distinct team-games affected: 125
+          n     pts
+season             
+2022    157  1217.0
+2023    149  1000.0
+2024    142  1096.0
+
+  worst 10 team-games by missing points:
+season  game_id     team_id   
+2022    1022200003  1611661319    106.0
+2023    1022300005  1611661319    105.0
+2022    1022200002  1611661320     98.0
+        1022200004  1611661328     97.0
+2023    1022300004  1611661320     94.0
+2024    1022400006  1611661330     92.0
+        1022400002  1611661323     92.0
+2022    1022200002  1611661329     91.0
+2024    1022400003  1611661319     89.0
+2022    1022200003  1611661317     88.0
+
+  missing points as share of all points in scored seasons: 2.6499%
+
+====================================================================================================
+5. TEAM-GAMES WITH NO CONTRACT PLAYER ROWS
+====================================================================================================
+  team-games in master (scored seasons): 1522 ; with contract rows: 1486
+season  season_type   
+2022    Regular Season    12
+2023    Regular Season    12
+2024    Regular Season    12
+
+  earliest dates of the no-contract-row team-games:
+        game_id     team_id  season     season_type  game_date   n
+39   1022200003  1611661317    2022  Regular Season 2022-05-06 NaN
+77   1022200003  1611661319    2022  Regular Season 2022-05-06 NaN
+123  1022200002  1611661320    2022  Regular Season 2022-05-06 NaN
+198  1022200001  1611661322    2022  Regular Season 2022-05-06 NaN
+284  1022200004  1611661324    2022  Regular Season 2022-05-06 NaN
+320  1022200001  1611661325    2022  Regular Season 2022-05-06 NaN
+356  1022200004  1611661328    2022  Regular Season 2022-05-06 NaN
+398  1022200002  1611661329    2022  Regular Season 2022-05-06 NaN
+0    1022200005  1611661313    2022  Regular Season 2022-05-07 NaN
+159  1022200006  1611661321    2022  Regular Season 2022-05-07 NaN
+236  1022200005  1611661323    2022  Regular Season 2022-05-07 NaN
+442  1022200006  1611661330    2022  Regular Season 2022-05-07 NaN
+
+====================================================================================================
+6. TEAM ARM COVERAGE OF THE SAME TEAM-GAMES
+====================================================================================================
+  team arm rows joined to contract: 1940 of 1940
+season
+2022    478
+2023    520
+2024    524
+  team arm rows matched to master (scored seasons): 1522
+season_x  season_type   
+2022      Playoffs           46
+          Regular Season    432
+2023      Playoffs           40
+          Regular Season    480
+2024      Playoffs           44
+          Regular Season    480

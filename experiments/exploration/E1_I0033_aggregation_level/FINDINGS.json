@@ -1,0 +1,2433 @@
+{
+ "screen_id": "E1_I0033_aggregation_level",
+ "title": "Does the aggregation level determine what is knowable?  Top-down versus bottom-up on team points, walk-forward, 2022-2024 regular season.",
+ "prereg_sha256": "0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e",
+ "prereg_cells_hashed": 14,
+ "prereg_cells_added_after_hash": 5,
+ "prereg_cells_dropped": 0,
+ "cells_added_after_hash": [
+  "B1A_TIER_A_ONLY (arm)",
+  "B1N_ROSTER_NORMALISED (arm)",
+  "P07b_EXPLORATORY (FT_COMPOSED_OVER_FLAT vs FT_FLAT)",
+  "X1_EXPLORATORY (B4N vs A_TEAM)",
+  "X2_EXPLORATORY (R2 vs B4N)"
+ ],
+ "additions_direction": "EVERY ONE of the five additions makes the BOTTOM-UP / PLAYER side look BETTER than the preregistered construction did, i.e. all five push AGAINST this screen's headline. none was added to rescue a result.",
+ "partition": [
+  2021,
+  2022,
+  2023,
+  2024
+ ],
+ "holdout_never_touched": [
+  2025,
+  2026
+ ],
+ "scored_seasons": [
+  2022,
+  2023,
+  2024
+ ],
+ "seed": 20260809,
+ "no_champion_fitting": "NO champion arm was refitted, retrained or modified. both arms' stored forecasts were read and scored as-is. every reference, recalibration and composition fitted here is my own and is authorised by D091.",
+ "extra_cells": {
+  "X1_EXPLORATORY": {
+   "cell": "X1_EXPLORATORY",
+   "arm_A": "B4N_NORMALISED_CAL",
+   "arm_B": "A_TEAM",
+   "MAE_A": 8.654625109281886,
+   "MAE_B": 8.685506242216618,
+   "MAE_advantage_A_over_B": 0.030881132934732523,
+   "p": 0.7294635268236588,
+   "null_mean": 0.0013244429929470606,
+   "null_sd": 0.08731381576732083,
+   "MDE80": 0.24447868414849833,
+   "observed_in_null_sds": 0.35367980042272396,
+   "exploratory": true,
+   "why_added": "both make the FULLY REPAIRED bottom-up arm look as good as possible and therefore work AGAINST this screen's headline; adding them is the conservative direction."
+  },
+  "X2_EXPLORATORY": {
+   "cell": "X2_EXPLORATORY",
+   "arm_A": "R2_TEAM_EWMA",
+   "arm_B": "B4N_NORMALISED_CAL",
+   "MAE_A": 8.48020742289359,
+   "MAE_B": 8.654625109281886,
+   "MAE_advantage_A_over_B": 0.17441768638829483,
+   "p": 0.1951402429878506,
+   "null_mean": -0.0011731361791166705,
+   "null_sd": 0.12735531642448528,
+   "MDE80": 0.35659488598855876,
+   "observed_in_null_sds": 1.3695359666568372,
+   "exploratory": true,
+   "why_added": "both make the FULLY REPAIRED bottom-up arm look as good as possible and therefore work AGAINST this screen's headline; adding them is the conservative direction."
+  }
+ },
+ "s05_build": {
+  "screen_id": "E1_I0033_aggregation_level",
+  "prereg_sha256": "0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e",
+  "partition": [
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "holdout_never_touched": [
+   2025,
+   2026
+  ],
+  "scored_seasons": [
+   2022,
+   2023,
+   2024
+  ],
+  "seed": 20260809,
+  "time_window_table": [
+   {
+    "column": "pts (response)",
+    "construction": "master_team.pts for the team-game",
+    "window": "THIS GAME (the outcome)",
+    "reads_future": false,
+    "evidence": "the response. never a regressor anywhere in this screen."
+   },
+   {
+    "column": "A_TEAM",
+    "construction": "stored pred_point, cbs_v12_team_oof_v2/attempt_001",
+    "window": "(-inf, forecast_cutoff]; season S fitted on seasons < S",
+    "reads_future": false,
+    "evidence": "fold receipt carries fold_boundary ok:true, own_outcome_never_informed_its_forecast:true, forecast_scored_against_outcome:false, and train_seasons strictly < season. NOTHING IS REFIT HERE; the stored forecast is scored as-is."
+   },
+   {
+    "column": "pts_hat / p_active_hat",
+    "construction": "stored pred_point, cbs_v15_player_oof_v5",
+    "window": "(-inf, forecast_cutoff]; season S fitted on seasons < S",
+    "reads_future": false,
+    "evidence": "same receipts on the champion arm; D076 established this walk-forward."
+   },
+   {
+    "column": "B1 / B2 (bottom-up sums)",
+    "construction": "sum over the team-game's champion rows of (p_active_hat *) pts_hat",
+    "window": "strictly pre-game: the candidate roster is the contract's pre-cutoff candidate set and both factors are stored pre-cutoff forecasts",
+    "reads_future": false,
+    "evidence": "no realised minutes, no realised appearance and no realised roster enters. the ONLY realised-roster construction is B3, which is labelled ORACLE."
+   },
+   {
+    "column": "B3_ORACLE_ROSTER",
+    "construction": "sum of pts_hat over rows with appeared==1",
+    "window": "***THIS GAME*** -- the realised roster",
+    "reads_future": true,
+    "evidence": "ORACLE BY CONSTRUCTION. diagnostic only. excluded from every headline."
+   },
+   {
+    "column": "R0/R1/R2 references",
+    "construction": "expanding or EWMA mean over STRICTLY EARLIER same-season games",
+    "window": "(-inf, game_date)",
+    "reads_future": false,
+    "evidence": "prefix accumulation writes the statistic BEFORE folding row i in, so row i is never in its own reference; asserted by requiring the first row of every entity block to be NaN."
+   },
+   {
+    "column": "half_life, shrinkage k, blend weight w, calibration a/b, beta",
+    "construction": "chosen by grid or OLS on STRICTLY EARLIER SEASONS ONLY",
+    "window": "whole seasons < the season being scored",
+    "reads_future": false,
+    "evidence": "walk-forward loop; season S uses only seasons < S. the 2022 fold sees 2021 only."
+   },
+   {
+    "column": "ft_pct_prior",
+    "construction": "team FTM/FTA over STRICTLY EARLIER same-season games, shrunk to the strictly-prior league rate",
+    "window": "(-inf, game_date)",
+    "reads_future": false,
+    "evidence": "same prefix machinery; ratio-of-sums, not mean-of-ratios."
+   },
+   {
+    "column": "is_home",
+    "construction": "venue of the game from the box score",
+    "window": "SCHEDULE FACT, known before tipoff",
+    "reads_future": false,
+    "evidence": "a fixture attribute, not an outcome (same treatment as D104)."
+   }
+  ],
+  "r2_convention": "plain unweighted R2 of a GIVEN forecast, 1 - SSE/SST, with SST passed as an EXPLICIT argument computed once on RS1 about its own unweighted mean (D101 rule D3). nothing is refit at scoring time.",
+  "manifest_checks": {
+   "master_team.parquet": {
+    "artifact": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\data\\masters\\master_team.parquet",
+    "manifest_path": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\data\\masters\\master_team.parquet.manifest.json",
+    "manifest_present": true,
+    "asof_granularity": "row",
+    "status": "USABLE_IF_FILTERED",
+    "usable_at_e0_e1": true,
+    "filtering_helps": true,
+    "fit_seasons": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "fit_through_season": 2026,
+    "content_sha256": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528",
+    "note": "row-granular: each row's value is as-of that row's own date. Filter to 2021-2024 on COLUMN VALUES and re-assert with assert_partition."
+   },
+   "master_player.parquet": {
+    "artifact": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\data\\masters\\master_player.parquet",
+    "manifest_path": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\data\\masters\\master_player.parquet.manifest.json",
+    "manifest_present": true,
+    "asof_granularity": "row",
+    "status": "USABLE_IF_FILTERED",
+    "usable_at_e0_e1": true,
+    "filtering_helps": true,
+    "fit_seasons": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "fit_through_season": 2026,
+    "content_sha256": "52e084efaad5c08444b407c64c18d55b57ff5a1e13491cc908dfd960b8641dce",
+    "note": "row-granular: each row's value is as-of that row's own date. Filter to 2021-2024 on COLUMN VALUES and re-assert with assert_partition."
+   },
+   "player_game.parquet": {
+    "artifact": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\prediction_contract_v4\\player_game.parquet",
+    "manifest_path": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\prediction_contract_v4\\player_game.parquet.manifest.json",
+    "manifest_present": true,
+    "asof_granularity": "row",
+    "status": "USABLE_IF_FILTERED",
+    "usable_at_e0_e1": true,
+    "filtering_helps": true,
+    "fit_seasons": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "fit_through_season": 2026,
+    "content_sha256": "855c77902458c1a8a46dfaaf8a7a4fc86588c48855930bda110338d88234831a",
+    "note": "row-granular: each row's value is as-of that row's own date. Filter to 2021-2024 on COLUMN VALUES and re-assert with assert_partition."
+   },
+   "team_game.parquet": {
+    "artifact": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\prediction_contract_v4\\team_game.parquet",
+    "manifest_path": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\prediction_contract_v4\\team_game.parquet.manifest.json",
+    "manifest_present": true,
+    "asof_granularity": "row",
+    "status": "USABLE_IF_FILTERED",
+    "usable_at_e0_e1": true,
+    "filtering_helps": true,
+    "fit_seasons": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "fit_through_season": 2026,
+    "content_sha256": "2b5604ec1499ece5b874545e93d0570fa308e62d4a9bade0dda344264a5b1d18",
+    "note": "row-granular: each row's value is as-of that row's own date. Filter to 2021-2024 on COLUMN VALUES and re-assert with assert_partition."
+   },
+   "prediction_contract_v5/player_game.parquet__NOT_USED_FOR_NUMBERS": {
+    "artifact": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\prediction_contract_v5\\player_game.parquet",
+    "manifest_path": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\prediction_contract_v5\\player_game.parquet.manifest.json",
+    "manifest_present": false,
+    "asof_granularity": null,
+    "status": "UNVERIFIABLE",
+    "usable_at_e0_e1": false,
+    "filtering_helps": null,
+    "fit_seasons": null,
+    "fit_through_season": null,
+    "content_sha256": null,
+    "note": "NO SIBLING MANIFEST. Status is UNVERIFIABLE, which is NOT a pass. Two input parquets and 45 market-named files in this repo carry none. Record this status in FINDINGS.json; do not treat the artifact as clean.",
+    "screen_decision": "NOT USED FOR ANY NUMBER. UNVERIFIABLE is not a pass. The identity map is reconstructed from cbs_obligation_key instead. v5 is opened only to REPORT agreement with that reconstruction, and that agreement enters no statistic."
+   },
+   "predictions__team_game_distribution__2023.parquet": {
+    "artifact": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\cbs_v12_team_oof_v2\\attempt_001\\predictions__team_game_distribution__2023.parquet",
+    "manifest_path": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\cbs_v12_team_oof_v2\\attempt_001\\predictions__team_game_distribution__2023.parquet.manifest.json",
+    "manifest_present": true,
+    "asof_granularity": "artifact",
+    "status": "UNUSABLE",
+    "usable_at_e0_e1": false,
+    "filtering_helps": false,
+    "fit_seasons": [
+     2021,
+     2022
+    ],
+    "fit_through_season": 2023,
+    "content_sha256": "0adb15500ef096a188d182a39dcc84650e82fa577787802cdfdd3776d9d2423a",
+    "note": "artifact-granular: the WHOLE FILE is bounded by its latest input, so a 2021 row's value may embed 2026 data. FILTERING DOES NOT HELP. Do not use at E0/E1.",
+    "screen_decision": "ARTIFACT-GRANULAR and therefore UNUSABLE AS A FEATURE SOURCE. It is not used as one. These are the STORED FORECASTS being scored, one file PER FOLD, and each fold file's own receipt carries fold_boundary ok:true and train_seasons strictly earlier than the fold. The per-fold receipt is the as-of evidence, not the file-level manifest. Season 2021's file is excluded outright because its receipt says degenerate:true."
+   },
+   "predictions__player_scoring_distribution__2023.parquet": {
+    "artifact": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__player_scoring_distribution__2023.parquet",
+    "manifest_path": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\cbs_v15_player_oof_v5\\attempt_001\\predictions__player_scoring_distribution__2023.parquet.manifest.json",
+    "manifest_present": true,
+    "asof_granularity": "artifact",
+    "status": "UNUSABLE",
+    "usable_at_e0_e1": false,
+    "filtering_helps": false,
+    "fit_seasons": [
+     2021,
+     2022
+    ],
+    "fit_through_season": 2023,
+    "content_sha256": "de1b4fa406cb6dd9e15d018681d0863d7d68954feaa40db3e0c31072902edc55",
+    "note": "artifact-granular: the WHOLE FILE is bounded by its latest input, so a 2021 row's value may embed 2026 data. FILTERING DOES NOT HELP. Do not use at E0/E1.",
+    "screen_decision": "ARTIFACT-GRANULAR and therefore UNUSABLE AS A FEATURE SOURCE. It is not used as one. These are the STORED FORECASTS being scored, one file PER FOLD, and each fold file's own receipt carries fold_boundary ok:true and train_seasons strictly earlier than the fold. The per-fold receipt is the as-of evidence, not the file-level manifest. Season 2021's file is excluded outright because its receipt says degenerate:true."
+   }
+  },
+  "partition_team_master": {
+   "ok": true,
+   "allowed": [
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "checked_season_cols": {
+    "season": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "checked_date_cols": {
+    "game_date": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "skipped_name_only": {},
+   "historical_year_cols": {},
+   "strict_season_cols": [],
+   "in_partition_anchor_cols": [
+    "game_date",
+    "season"
+   ],
+   "violation_records": [],
+   "violations": []
+  },
+  "partition_player_master": {
+   "ok": true,
+   "allowed": [
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "checked_season_cols": {
+    "season": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "checked_date_cols": {
+    "game_date": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "skipped_name_only": {},
+   "historical_year_cols": {},
+   "strict_season_cols": [],
+   "in_partition_anchor_cols": [
+    "game_date",
+    "season"
+   ],
+   "violation_records": [],
+   "violations": []
+  },
+  "anchor_A1_d104_home_advantage": {
+   "n_games": 888,
+   "n_games_published": 888,
+   "home_minus_away": 0.9650900900900901,
+   "published": 0.96509,
+   "abs_error": 9.009009005467306e-08,
+   "home_mean": 82.36711711711712,
+   "away_mean": 81.40202702702703,
+   "reproduced": true
+  },
+  "identity_map": {
+   "obligation_key_id": "cbs_obligation_key/1",
+   "canonical_key_fields": [
+    "player_id",
+    "game_id",
+    "team_id"
+   ],
+   "n_triples_enumerated": 519920,
+   "v4_crosscheck": {
+    "n_v4_rows": 22659,
+    "n_reconstructed": 22659,
+    "n_agree_all_fields": 22659,
+    "exact": true
+   }
+  },
+  "player_arm_identity_resolution": {
+   "n_rows": 26614,
+   "n_resolved": 26574,
+   "frac_resolved": 0.998497031637484,
+   "unresolved_by_season": {
+    "2021": 4,
+    "2022": 4,
+    "2023": 4,
+    "2024": 28
+   },
+   "unresolved_diagnosis_v5_DESCRIPTIVE_ONLY": {
+    "universe_tier": {
+     "B": 40
+    },
+    "is_cold_start": {
+     "True": 40
+    },
+    "note": "these rows are DROPPED. they are players with no box-score row anywhere in 2021-2024, so no manifest-verified artifact can name them. the champion still emitted a forecast for them, and the bottom-up sum is therefore missing that forecast. the resulting shortfall is measured in s06 as `unresolved_pred_shortfall` and reported, not hidden."
+   },
+   "unresolved_mean_pts_hat": 8.664619229196159,
+   "unresolved_mean_p_active_hat": 0.6800255367929914
+  },
+  "anchor_A2_d076_appeared": {
+   "all_champion_rows": 14262,
+   "tier_A_only": 13879,
+   "published": 13879,
+   "reproduced": true
+  },
+  "row_sets": {
+   "RS1_n": 1392,
+   "RS2_n": 130,
+   "RS1_by_season": {
+    "2022": 432,
+    "2023": 480,
+    "2024": 480
+   },
+   "RS1_definition": "season in 2022-2024, season_type Regular Season, team arm forecast present, at least one champion player forecast present"
+  },
+  "SST_RS1": 168710.4073275862,
+  "RS1_response_mean": 82.22198275862068,
+  "RS1_response_sd": 11.013043940159491,
+  "partition_built_team": {
+   "ok": true,
+   "allowed": [
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "checked_season_cols": {
+    "season": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "checked_date_cols": {
+    "game_date": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "skipped_name_only": {},
+   "historical_year_cols": {},
+   "strict_season_cols": [],
+   "in_partition_anchor_cols": [
+    "game_date",
+    "season"
+   ],
+   "violation_records": [],
+   "violations": []
+  },
+  "partition_built_player": {
+   "ok": true,
+   "allowed": [
+    2021,
+    2022,
+    2023,
+    2024
+   ],
+   "checked_season_cols": {
+    "season": [
+     2021,
+     2022,
+     2023,
+     2024
+    ]
+   },
+   "checked_date_cols": {},
+   "skipped_name_only": {},
+   "historical_year_cols": {},
+   "strict_season_cols": [],
+   "in_partition_anchor_cols": [
+    "season"
+   ],
+   "violation_records": [],
+   "violations": []
+  }
+ },
+ "s06_topdown_vs_bottomup": {
+  "prereg_sha256": "0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e",
+  "SST_RS1": 168710.4073275862,
+  "row_sets": {
+   "RS1_n": 1392,
+   "RS2_n": 130,
+   "RS1_by_season": {
+    "2022": 432,
+    "2023": 480,
+    "2024": 480
+   },
+   "RS1_definition": "season in 2022-2024, season_type Regular Season, team arm forecast present, at least one champion player forecast present"
+  },
+  "strictly_prior_assert_team": true,
+  "R1_k_by_season": {
+   "2022": 8.0,
+   "2023": 16.0,
+   "2024": 8.0
+  },
+  "R2_halflife_k_by_season": {
+   "2022": [
+    8.0,
+    4.0
+   ],
+   "2023": [
+    8.0,
+    8.0
+   ],
+   "2024": [
+    12.0,
+    8.0
+   ]
+  },
+  "roster_arithmetic": {
+   "mean_champion_rows_per_team_game": 14.42816091954023,
+   "max_champion_rows_per_team_game": 43,
+   "mean_sum_p_active_hat": 10.33807896885556,
+   "mean_realised_n_appeared": 9.401580459770114,
+   "availability_forecast_roster_size_bias": 0.9364985090854461,
+   "mean_B1": 90.36088625571415,
+   "mean_B2": 117.9706233421033,
+   "mean_B3_ORACLE": 81.57358172695994,
+   "mean_response": 82.22198275862068,
+   "mean_A_TEAM": 81.19253409121488,
+   "B1_level_bias": 8.138903497093466,
+   "A_TEAM_level_bias": -1.029448667405802
+  },
+  "B4_calibration_by_season": {
+   "2022": {
+    "a": 82.13866421159325,
+    "b": -0.016607446780553193,
+    "n_train": 418
+   },
+   "2023": {
+    "a": 81.5361675137222,
+    "b": 0.00012974769010565485,
+    "n_train": 896
+   },
+   "2024": {
+    "a": 82.8116306989326,
+    "b": -0.010170815544786615,
+    "n_train": 1416
+   }
+  },
+  "C1_blend_weight_by_season": {
+   "2022": {
+    "w": 0.9711926253120796,
+    "n_train": 418
+   },
+   "2023": {
+    "w": 1.0,
+    "n_train": 896
+   },
+   "2024": {
+    "w": 1.0,
+    "n_train": 1416
+   }
+  },
+  "C2_note": "proportionally reconciling the player forecasts to the direct team forecast reproduces the direct team forecast EXACTLY for the team total. the reconciled arm and the top-down arm are the same object at this response; reconciliation only does work at the PLAYER level, where it redistributes.",
+  "primary_cells": {
+   "P01": {
+    "cell": "P01",
+    "arm_A": "A_TEAM",
+    "arm_B": "B1_BOTTOMUP_AVAIL",
+    "MAE_A": 8.685506242216618,
+    "MAE_B": 18.263036606875854,
+    "mean_MAE_advantage_A_over_B": 9.57753036465924,
+    "N1_teamseason_p": 4.999750012499375e-05,
+    "N1_null_mean": 0.013874616443921874,
+    "N1_null_sd": 1.7721727034941526,
+    "N1_n_blocks": 36,
+    "N1b_game_p": 4.999750012499375e-05,
+    "N1b_null_mean": -0.004525287360252271,
+    "N1b_null_sd": 1.0978435488922846,
+    "N1b_n_blocks": 696,
+    "N2_rowlevel_NAIVE_p": 4.999750012499375e-05,
+    "N2_null_sd": 0.8077646934428174,
+    "null_inflation_N1_over_N2": 2.1939219649980983,
+    "is_ORACLE": false
+   },
+   "P02": {
+    "cell": "P02",
+    "arm_A": "A_TEAM",
+    "arm_B": "R2_TEAM_EWMA",
+    "MAE_A": 8.685506242216618,
+    "MAE_B": 8.48020742289359,
+    "mean_MAE_advantage_A_over_B": -0.20529881932302735,
+    "N1_teamseason_p": 0.015949202539873007,
+    "N1_null_mean": 0.0006062852337854764,
+    "N1_null_sd": 0.08979888732677016,
+    "N1_n_blocks": 36,
+    "N1b_game_p": 0.002849857507124644,
+    "N1b_null_mean": 0.0004495750651779168,
+    "N1b_null_sd": 0.06786247958768858,
+    "N1b_n_blocks": 696,
+    "N2_rowlevel_NAIVE_p": 0.0022998850057497125,
+    "N2_null_sd": 0.06691978277453994,
+    "null_inflation_N1_over_N2": 1.3418885059641097,
+    "is_ORACLE": false
+   },
+   "P03": {
+    "cell": "P03",
+    "arm_A": "B1_BOTTOMUP_AVAIL",
+    "arm_B": "R2_TEAM_EWMA",
+    "MAE_A": 18.263036606875854,
+    "MAE_B": 8.48020742289359,
+    "mean_MAE_advantage_A_over_B": -9.782829183982267,
+    "N1_teamseason_p": 4.999750012499375e-05,
+    "N1_null_mean": -0.013268331210136387,
+    "N1_null_sd": 1.7849029312492033,
+    "N1_n_blocks": 36,
+    "N1b_game_p": 4.999750012499375e-05,
+    "N1b_null_mean": 0.004974862425430187,
+    "N1b_null_sd": 1.100644422024589,
+    "N1b_n_blocks": 696,
+    "N2_rowlevel_NAIVE_p": 4.999750012499375e-05,
+    "N2_null_sd": 0.808439839265959,
+    "null_inflation_N1_over_N2": 2.2078364332834535,
+    "is_ORACLE": false
+   },
+   "P04": {
+    "cell": "P04",
+    "arm_A": "C1_BLEND",
+    "arm_B": "A_TEAM",
+    "MAE_A": 8.695863176287085,
+    "MAE_B": 8.685506242216618,
+    "mean_MAE_advantage_A_over_B": -0.010356934070467954,
+    "N1_teamseason_p": 0.2823358832058397,
+    "N1_null_mean": 4.496021562398994e-05,
+    "N1_null_sd": 0.009217712654596286,
+    "N1_n_blocks": 36,
+    "N1b_game_p": 0.20198990050497476,
+    "N1b_null_mean": 1.4559476683570687e-05,
+    "N1b_null_sd": 0.00802366092764316,
+    "N1b_n_blocks": 696,
+    "N2_rowlevel_NAIVE_p": 0.19854007299635018,
+    "N2_null_sd": 0.007988903035788567,
+    "null_inflation_N1_over_N2": 1.1538145616867443,
+    "is_ORACLE": false
+   },
+   "P05": {
+    "cell": "P05",
+    "arm_A": "B3_ORACLE_ROSTER",
+    "arm_B": "B1_BOTTOMUP_AVAIL",
+    "MAE_A": 10.650052436884797,
+    "MAE_B": 18.263036606875854,
+    "mean_MAE_advantage_A_over_B": 7.6129841699910585,
+    "N1_teamseason_p": 4.999750012499375e-05,
+    "N1_null_mean": 0.01476814169049801,
+    "N1_null_sd": 1.4496964282436782,
+    "N1_n_blocks": 36,
+    "N1b_game_p": 4.999750012499375e-05,
+    "N1b_null_mean": -0.007472094897304806,
+    "N1b_null_sd": 1.0762834432575312,
+    "N1b_n_blocks": 696,
+    "N2_rowlevel_NAIVE_p": 4.999750012499375e-05,
+    "N2_null_sd": 0.7967805028821849,
+    "null_inflation_N1_over_N2": 1.819442648257215,
+    "is_ORACLE": true
+   },
+   "P06": {
+    "cell": "P06",
+    "arm_A": "B4_BOTTOMUP_CAL",
+    "arm_B": "B1_BOTTOMUP_AVAIL",
+    "MAE_A": 8.819619382566204,
+    "MAE_B": 18.263036606875854,
+    "mean_MAE_advantage_A_over_B": 9.443417224309652,
+    "N1_teamseason_p": 4.999750012499375e-05,
+    "N1_null_mean": 0.012251586409835398,
+    "N1_null_sd": 1.7656226783916937,
+    "N1_n_blocks": 36,
+    "N1b_game_p": 4.999750012499375e-05,
+    "N1b_null_mean": -0.004960669138886567,
+    "N1b_null_sd": 1.1004133025041412,
+    "N1b_n_blocks": 696,
+    "N2_rowlevel_NAIVE_p": 4.999750012499375e-05,
+    "N2_null_sd": 0.8125164709440388,
+    "null_inflation_N1_over_N2": 2.173030014198074,
+    "is_ORACLE": false
+   }
+  },
+  "injection_power": [
+   {
+    "planted_MAE_gap": 0.0,
+    "observed_gap": 1.0617305246990004e-15,
+    "N1_teamseason_p": 1.0,
+    "N1_null_sd": 0.718365183555369,
+    "N1b_game_p": 1.0,
+    "N1b_null_sd": 1.0291193036828497,
+    "N2_rowlevel_p": 1.0,
+    "N2_null_sd": 0.7872585815469119,
+    "N1_detects": false,
+    "N1b_detects": false
+   },
+   {
+    "planted_MAE_gap": 0.05,
+    "observed_gap": 0.05000000000000255,
+    "N1_teamseason_p": 0.9415146213446638,
+    "N1_null_sd": 0.7186028975677768,
+    "N1b_game_p": 0.9682579355161209,
+    "N1b_null_sd": 1.0291470204304336,
+    "N2_rowlevel_p": 0.9537615596100975,
+    "N2_null_sd": 0.7872846771241042,
+    "N1_detects": false,
+    "N1b_detects": false
+   },
+   {
+    "planted_MAE_gap": 0.1,
+    "observed_gap": 0.10000000000000224,
+    "N1_teamseason_p": 0.8877780554861284,
+    "N1_null_sd": 0.71893531046779,
+    "N1b_game_p": 0.9307673081729567,
+    "N1b_null_sd": 1.029178311156326,
+    "N2_rowlevel_p": 0.9097725568607848,
+    "N2_null_sd": 0.7873131308665254,
+    "N1_detects": false,
+    "N1b_detects": false
+   },
+   {
+    "planted_MAE_gap": 0.25,
+    "observed_gap": 0.25000000000000105,
+    "N1_teamseason_p": 0.7375656085978506,
+    "N1_null_sd": 0.7204992450720128,
+    "N1b_game_p": 0.8150462384403899,
+    "N1b_null_sd": 1.0292936237582184,
+    "N2_rowlevel_p": 0.7680579855036241,
+    "N2_null_sd": 0.7874126384228055,
+    "N1_detects": false,
+    "N1b_detects": false
+   },
+   {
+    "planted_MAE_gap": 0.5,
+    "observed_gap": 0.5000000000000011,
+    "N1_teamseason_p": 0.49987503124218946,
+    "N1_null_sd": 0.7249803495701249,
+    "N1b_game_p": 0.6315921019745063,
+    "N1b_null_sd": 1.0295572532625523,
+    "N2_rowlevel_p": 0.538365408647838,
+    "N2_null_sd": 0.7876256196373222,
+    "N1_detects": false,
+    "N1b_detects": false
+   },
+   {
+    "planted_MAE_gap": 1.0,
+    "observed_gap": 1.0000000000000013,
+    "N1_teamseason_p": 0.1757060734816296,
+    "N1_null_sd": 0.7407910347836424,
+    "N1b_game_p": 0.332416895776056,
+    "N1b_null_sd": 1.0303521431222482,
+    "N2_rowlevel_p": 0.20944763809047737,
+    "N2_null_sd": 0.7882281508094671,
+    "N1_detects": false,
+    "N1b_detects": false
+   }
+  ],
+  "N1_min_detected_planted_gap": null,
+  "N1_type_I_at_zero_effect": 1.0,
+  "controls": {
+   "NEG1_date_swapped_A_TEAM": {
+    "frac_rows_perturbed": 0.8800287356321839,
+    "MAE_swapped": 9.178233185102151,
+    "MAE_real_A_TEAM": 8.685506242216618,
+    "dMAE_vs_B1": 9.084803421773707,
+    "p": 4.999750012499375e-05,
+    "null_mean": 0.004259357880730042,
+    "null_sd": 1.7131917667880359,
+    "vacuous": true
+   },
+   "NEG2_date_swapped_B1": {
+    "frac_rows_perturbed": 0.9992816091954023,
+    "MAE_swapped": 19.29035702058106,
+    "MAE_real_B1": 18.263036606875854,
+    "dMAE_A_over_swappedB1": 10.604850778364442,
+    "p": 4.999750012499375e-05,
+    "null_mean": 0.012290003778974443,
+    "null_sd": 1.9373826774339316,
+    "vacuous": false
+   },
+   "PLACEBO_noop_max_deviation": 0.0,
+   "PLACEBO_passes": true
+  },
+  "decision_rules": {
+   "DR1_team_level_wins": true,
+   "DR3_bottom_up_wins": false,
+   "DR2_levels_agree": false,
+   "MAE_A_TEAM": 8.685506242216618,
+   "MAE_B1": 18.263036606875854,
+   "MAE_R2_ref": 8.48020742289359,
+   "P01_p": 4.999750012499375e-05,
+   "gap_points_per_team_game": 9.577530364659236,
+   "gap_as_pct_of_reference_MAE": 112.93981251924637,
+   "DR4_gap_attribution": {
+    "G_total_gap_MAE": 9.577530364659236,
+    "roster_share_ORACLE_BASED": 0.7948796694065009,
+    "level_bias_share": 0.9859971062222409,
+    "residual_share": -0.7808767756287418,
+    "note": "roster share uses the ORACLE arm B3 and is therefore an upper bound on what a perfect availability forecast could buy. shares are NOT clipped; they may exceed 1 or go negative and that is reported as measured."
+   }
+  }
+ },
+ "s07_gap_decomposition": {
+  "prereg_sha256": "0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e",
+  "universe_tier_composition": [
+   {
+    "tier_A": false,
+    "n": 3772,
+    "mean_p_active": 0.5248920321764364,
+    "mean_pts_hat": 8.560576814527627,
+    "appear_rate": 0.10153764581124072,
+    "mean_realised_pts": 0.8144220572640509
+   },
+   {
+    "tier_A": true,
+    "n": 16312,
+    "mean_p_active": 0.7608333238890033,
+    "mean_pts_hat": 8.0875804283846,
+    "appear_rate": 0.7788131436978911,
+    "mean_realised_pts": 6.81338891613536
+   }
+  ],
+  "walk_forward_affine_slopes": {
+   "B1_BOTTOMUP_AVAIL": {
+    "2022": {
+     "a": 82.13866421159325,
+     "b": -0.016607446780553193
+    },
+    "2023": {
+     "a": 81.5361675137222,
+     "b": 0.00012974769010565485
+    },
+    "2024": {
+     "a": 82.8116306989326,
+     "b": -0.010170815544786615
+    }
+   },
+   "B1A_TIER_A_ONLY": {
+    "2022": {
+     "a": 0.0,
+     "b": 1.0
+    },
+    "2023": {
+     "a": 71.91462095166555,
+     "b": 0.12936096928471336
+    },
+    "2024": {
+     "a": 64.06176913807704,
+     "b": 0.23168547641225568
+    }
+   },
+   "B1N_ROSTER_NORMALISED": {
+    "2022": {
+     "a": 75.73589725736592,
+     "b": 0.07131949871790845
+    },
+    "2023": {
+     "a": 72.55411065054416,
+     "b": 0.11720575867497049
+    },
+    "2024": {
+     "a": 69.79880350097353,
+     "b": 0.15335943709927713
+    }
+   },
+   "B3_ORACLE_ROSTER": {
+    "2022": {
+     "a": 79.71320779803548,
+     "b": 0.0150835309812324
+    },
+    "2023": {
+     "a": 75.00548649937338,
+     "b": 0.08318940027592484
+    },
+    "2024": {
+     "a": 72.36138706395592,
+     "b": 0.12014157392645906
+    }
+   },
+   "A_TEAM": {
+    "2022": {
+     "a": 0.01202041941623233,
+     "b": 0.9856743921310529
+    },
+    "2023": {
+     "a": 55.21584454423751,
+     "b": 0.3259042396049706
+    },
+    "2024": {
+     "a": 25.112802983606276,
+     "b": 0.6987179564572062
+    }
+   }
+  },
+  "slope_note": "the slope b in y = a + b*x is the amount of TEAM-POINTS INFORMATION the summed player forecast carries. b near 0 means the recalibration has discarded the forecast and is emitting a near-constant.",
+  "bottomup_repairs": [
+   {
+    "arm": "A_TEAM",
+    "n": 1392,
+    "MAE": 8.685506242216618,
+    "R2_common_SST": 0.0217228200202757,
+    "bias": -1.0294486674058079,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.0242091742672228,
+    "ORACLE": false,
+    "added_after_hash": false
+   },
+   {
+    "arm": "A_TEAM_CAL",
+    "n": 1392,
+    "MAE": 8.84640647251135,
+    "R2_common_SST": -0.011751148744385764,
+    "bias": -1.2552218730611007,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.04318279392897262,
+    "ORACLE": false,
+    "added_after_hash": false
+   },
+   {
+    "arm": "B1_BOTTOMUP_AVAIL",
+    "n": 1392,
+    "MAE": 18.263036606875854,
+    "R2_common_SST": -8.662696572062861,
+    "bias": 8.138903497093473,
+    "skill_MAE_vs_R2_TEAM_EWMA": -1.1536072994596864,
+    "ORACLE": false,
+    "added_after_hash": false
+   },
+   {
+    "arm": "B1A_TIER_A_ONLY",
+    "n": 1356,
+    "MAE": 9.78507388803231,
+    "R2_common_SST": -0.2187997590366717,
+    "bias": -2.1797465778214846,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.1550034173653405,
+    "ORACLE": false,
+    "added_after_hash": true
+   },
+   {
+    "arm": "B1N_ROSTER_NORMALISED",
+    "n": 1392,
+    "MAE": 10.442556389250436,
+    "R2_common_SST": -0.4459485100444869,
+    "bias": 0.2151440559411236,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.2314034160366396,
+    "ORACLE": false,
+    "added_after_hash": true
+   },
+   {
+    "arm": "B4_BOTTOMUP_CAL",
+    "n": 1392,
+    "MAE": 8.819619382566204,
+    "R2_common_SST": -0.010721346293425249,
+    "bias": -0.8318519440580342,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.040024016247093286,
+    "ORACLE": false,
+    "added_after_hash": false
+   },
+   {
+    "arm": "B4A_TIER_A_CAL",
+    "n": 1356,
+    "MAE": 9.134038300759276,
+    "R2_common_SST": -0.05803141515923249,
+    "bias": -0.5884627262548634,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.07815695338038475,
+    "ORACLE": false,
+    "added_after_hash": false
+   },
+   {
+    "arm": "B4N_NORMALISED_CAL",
+    "n": 1392,
+    "MAE": 8.654625109281886,
+    "R2_common_SST": 0.020566118061926764,
+    "bias": -0.0803822930426647,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.020567620305775636,
+    "ORACLE": false,
+    "added_after_hash": false
+   },
+   {
+    "arm": "B3_ORACLE_ROSTER",
+    "n": 1392,
+    "MAE": 10.650052436884797,
+    "R2_common_SST": -0.5446080280639538,
+    "bias": -0.6484010316607395,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.25587169107837915,
+    "ORACLE": true,
+    "added_after_hash": false
+   },
+   {
+    "arm": "B4O_ORACLE_CAL",
+    "n": 1392,
+    "MAE": 8.73400883722181,
+    "R2_common_SST": 0.008540376448472942,
+    "bias": -0.5719562130637815,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.0299286800041052,
+    "ORACLE": false,
+    "added_after_hash": false
+   },
+   {
+    "arm": "R2_TEAM_EWMA",
+    "n": 1392,
+    "MAE": 8.48020742289359,
+    "R2_common_SST": 0.05702624234271014,
+    "bias": -0.5594109208463486,
+    "skill_MAE_vs_R2_TEAM_EWMA": 0.0,
+    "ORACLE": false,
+    "added_after_hash": false
+   },
+   {
+    "arm": "R0_LEAGUE",
+    "n": 1392,
+    "MAE": 8.790931624564443,
+    "R2_common_SST": -0.005094838813192171,
+    "bias": -0.6359310689244015,
+    "skill_MAE_vs_R2_TEAM_EWMA": -0.036641108663451494,
+    "ORACLE": false,
+    "added_after_hash": false
+   }
+  ],
+  "decomposition_n_rows": 1392,
+  "sequential_gap_decomposition": [
+   {
+    "step": "start   B1_BOTTOMUP_AVAIL  (literal bottom-up)",
+    "arm": "B1_BOTTOMUP_AVAIL",
+    "MAE": 18.263036606875854,
+    "MAE_improvement": null,
+    "share_of_total_gap": null
+   },
+   {
+    "step": "+ normalise the roster size to prior games (fixes the availability miscalibration)",
+    "arm": "B1N_ROSTER_NORMALISED",
+    "MAE": 10.442556389250436,
+    "MAE_improvement": 7.820480217625418,
+    "share_of_total_gap": 0.8165445495722704
+   },
+   {
+    "step": "+ remove residual level and scale bias (walk-forward affine)",
+    "arm": "B4N_NORMALISED_CAL",
+    "MAE": 8.654625109281886,
+    "MAE_improvement": 1.78793127996855,
+    "share_of_total_gap": 0.18667978193689225
+   },
+   {
+    "step": "target  A_TEAM (top-down)",
+    "arm": "A_TEAM",
+    "MAE": 8.685506242216618,
+    "MAE_improvement": -0.03088113293473249,
+    "share_of_total_gap": -0.0032243315091626157
+   }
+  ],
+  "total_gap_MAE": 9.577530364659236,
+  "error_compounding": {
+   "raw_B1": {
+    "mean_players_summed": 14.42816091954023,
+    "observed_sd_of_summed_error": 33.435706503178295,
+    "independence_predicted_sd": 20.144477268372267,
+    "ratio_observed_over_independent": 1.6597951913934175,
+    "mean_sum_abs_player_error": 56.37633548214372,
+    "mean_abs_summed_error": 18.3558828687807,
+    "cancellation_ratio": 0.3255955306742955,
+    "within_team_game_error_variance_share": 0.9067907733778708
+   },
+   "roster_normalised": {
+    "mean_players_summed": 14.42816091954023,
+    "observed_sd_of_summed_error": 13.263406121913984,
+    "independence_predicted_sd": 19.676644902197843,
+    "ratio_observed_over_independent": 0.6740684800604644,
+    "mean_sum_abs_player_error": 51.99861992792469,
+    "mean_abs_summed_error": 10.453852426803147,
+    "cancellation_ratio": 0.20104095918878684,
+    "within_team_game_error_variance_share": 0.9645885408788146
+   },
+   "interpretation": "ratio observed/independent BELOW 1 means player errors CANCEL when summed; ABOVE 1 means they are positively correlated inside a team-game and COMPOUND. the roster-normalised row is the one that isolates compounding, because the raw row still carries B1's roster-size level bias, which is not a compounding effect at all."
+  },
+  "skill_at_each_level": {
+   "player_level": {
+    "n": 13021,
+    "champion_MAE": 4.2491275888683635,
+    "matched_reference_MAE": 4.13240874621177,
+    "skill_MAE": -0.028244747754827326,
+    "response": "player points in an appeared player-game"
+   },
+   "team_level": {
+    "n": 1392,
+    "arm_MAE": 8.685506242216618,
+    "matched_reference_MAE": 8.48020742289359,
+    "skill_MAE": -0.0242091742672228,
+    "response": "team points in a team-game"
+   },
+   "comparability_statement": "DIFFERENT RESPONSES. no dR2 is compared. only skill-vs-matched-reference, and the two references are built by the same construction at their own levels."
+  },
+  "per_cell_power": [
+   {
+    "cell": "P01",
+    "arm_A": "A_TEAM",
+    "arm_B": "B1_BOTTOMUP_AVAIL",
+    "observed_gap": 9.57753036465924,
+    "N1_null_sd": 1.7662546098339589,
+    "observed_gap_in_null_sds": 5.422508346947555,
+    "p_at_0.50sd": 0.23194201449637591,
+    "detects_0.50sd": false,
+    "p_at_1.00sd": 0.023744063984004,
+    "detects_1.00sd": true,
+    "p_at_1.96sd": 0.00024993751562109475,
+    "detects_1.96sd": true,
+    "p_at_3.00sd": 0.00024993751562109475,
+    "detects_3.00sd": true,
+    "MDE80_MAE_points": 4.945512907535084
+   },
+   {
+    "cell": "P02",
+    "arm_A": "A_TEAM",
+    "arm_B": "R2_TEAM_EWMA",
+    "observed_gap": -0.20529881932302735,
+    "N1_null_sd": 0.08970797812500649,
+    "observed_gap_in_null_sds": -2.288523536189246,
+    "p_at_0.50sd": 0.6045988502874281,
+    "detects_0.50sd": false,
+    "p_at_1.00sd": 0.30867283179205196,
+    "detects_1.00sd": false,
+    "p_at_1.96sd": 0.0424893776555861,
+    "detects_1.96sd": true,
+    "p_at_3.00sd": 0.0034991252186953262,
+    "detects_3.00sd": true,
+    "MDE80_MAE_points": 0.25118233875001816
+   },
+   {
+    "cell": "P03",
+    "arm_A": "B1_BOTTOMUP_AVAIL",
+    "arm_B": "R2_TEAM_EWMA",
+    "observed_gap": -9.782829183982267,
+    "N1_null_sd": 1.7788468408246485,
+    "observed_gap_in_null_sds": -5.4995342822471915,
+    "p_at_0.50sd": 0.19795051237190703,
+    "detects_0.50sd": false,
+    "p_at_1.00sd": 0.013496625843539115,
+    "detects_1.00sd": true,
+    "p_at_1.96sd": 0.00024993751562109475,
+    "detects_1.96sd": true,
+    "p_at_3.00sd": 0.00024993751562109475,
+    "detects_3.00sd": true,
+    "MDE80_MAE_points": 4.980771154309015
+   },
+   {
+    "cell": "P04",
+    "arm_A": "C1_BLEND",
+    "arm_B": "A_TEAM",
+    "observed_gap": -0.010356934070467954,
+    "N1_null_sd": 0.009195673037481597,
+    "observed_gap_in_null_sds": -1.1262834191965125,
+    "p_at_0.50sd": 0.6303424143964009,
+    "detects_0.50sd": false,
+    "p_at_1.00sd": 0.33791552111972006,
+    "detects_1.00sd": false,
+    "p_at_1.96sd": 0.056735816045988506,
+    "detects_1.96sd": false,
+    "p_at_3.00sd": 0.003749062734316421,
+    "detects_3.00sd": true,
+    "MDE80_MAE_points": 0.02574788450494847
+   },
+   {
+    "cell": "P05",
+    "arm_A": "B3_ORACLE_ROSTER",
+    "arm_B": "B1_BOTTOMUP_AVAIL",
+    "observed_gap": 7.6129841699910585,
+    "N1_null_sd": 1.4456961932637429,
+    "observed_gap_in_null_sds": 5.265964042420493,
+    "p_at_0.50sd": 0.28742814296425895,
+    "detects_0.50sd": false,
+    "p_at_1.00sd": 0.03974006498375406,
+    "detects_1.00sd": true,
+    "p_at_1.96sd": 0.00024993751562109475,
+    "detects_1.96sd": true,
+    "p_at_3.00sd": 0.00024993751562109475,
+    "detects_3.00sd": true,
+    "MDE80_MAE_points": 4.04794934113848
+   },
+   {
+    "cell": "P06",
+    "arm_A": "B4_BOTTOMUP_CAL",
+    "arm_B": "B1_BOTTOMUP_AVAIL",
+    "observed_gap": 9.443417224309652,
+    "N1_null_sd": 1.7594294900192713,
+    "observed_gap_in_null_sds": 5.367317802662394,
+    "p_at_0.50sd": 0.2556860784803799,
+    "detects_0.50sd": false,
+    "p_at_1.00sd": 0.030492376905773555,
+    "detects_1.00sd": true,
+    "p_at_1.96sd": 0.00024993751562109475,
+    "detects_1.96sd": true,
+    "p_at_3.00sd": 0.00024993751562109475,
+    "detects_3.00sd": true,
+    "MDE80_MAE_points": 4.926402572053959
+   }
+  ],
+  "type_I_check": {
+   "n_synthetic_datasets": 400,
+   "rejection_rate_at_0.05": 0.0425,
+   "p_quartiles": [
+    0.2545757071547421,
+    0.48835274542429286,
+    0.7354409317803661
+   ],
+   "calibrated": true
+  }
+ },
+ "s08_which_level": {
+  "prereg_sha256": "0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e",
+  "team_level_params": {
+   "pts": {
+    "2022": [
+     8.0,
+     4.0
+    ],
+    "2023": [
+     8.0,
+     8.0
+    ],
+    "2024": [
+     12.0,
+     8.0
+    ]
+   },
+   "fga": {
+    "2022": [
+     8.0,
+     8.0
+    ],
+    "2023": [
+     8.0,
+     8.0
+    ],
+    "2024": [
+     12.0,
+     8.0
+    ]
+   },
+   "fta": {
+    "2022": [
+     5.0,
+     8.0
+    ],
+    "2023": [
+     5.0,
+     4.0
+    ],
+    "2024": [
+     8.0,
+     8.0
+    ]
+   },
+   "ftm": {
+    "2022": [
+     5.0,
+     4.0
+    ],
+    "2023": [
+     5.0,
+     8.0
+    ],
+    "2024": [
+     8.0,
+     8.0
+    ]
+   },
+   "reb": {
+    "2022": [
+     40.0,
+     8.0
+    ],
+    "2023": [
+     40.0,
+     8.0
+    ],
+    "2024": [
+     40.0,
+     8.0
+    ]
+   },
+   "ast": {
+    "2022": [
+     40.0,
+     4.0
+    ],
+    "2023": [
+     40.0,
+     4.0
+    ],
+    "2024": [
+     40.0,
+     4.0
+    ]
+   }
+  },
+  "player_level_params": {
+   "pts": {
+    "2022": [
+     8.0,
+     1.0
+    ],
+    "2023": [
+     8.0,
+     1.0
+    ],
+    "2024": [
+     8.0,
+     1.0
+    ]
+   },
+   "fga": {
+    "2022": [
+     5.0,
+     0.5
+    ],
+    "2023": [
+     5.0,
+     0.5
+    ],
+    "2024": [
+     5.0,
+     0.5
+    ]
+   },
+   "fta": {
+    "2022": [
+     12.0,
+     2.0
+    ],
+    "2023": [
+     8.0,
+     2.0
+    ],
+    "2024": [
+     12.0,
+     2.0
+    ]
+   },
+   "ftm": {
+    "2022": [
+     12.0,
+     2.0
+    ],
+    "2023": [
+     12.0,
+     2.0
+    ],
+    "2024": [
+     20.0,
+     4.0
+    ]
+   },
+   "reb": {
+    "2022": [
+     8.0,
+     1.0
+    ],
+    "2023": [
+     8.0,
+     1.0
+    ],
+    "2024": [
+     8.0,
+     1.0
+    ]
+   },
+   "ast": {
+    "2022": [
+     20.0,
+     0.5
+    ],
+    "2023": [
+     20.0,
+     1.0
+    ],
+    "2024": [
+     12.0,
+     1.0
+    ]
+   }
+  },
+  "which_level": [
+   {
+    "cell": "P09",
+    "quantity": "pts",
+    "n": 1392,
+    "SST": 168710.4073275862,
+    "response_mean": 82.22198275862068,
+    "response_sd": 11.013043940159491,
+    "MAE_LEVEL_TEAM_pts": 8.48020742289359,
+    "R2_LEVEL_TEAM_pts": 0.05702624234271014,
+    "bias_LEVEL_TEAM_pts": -0.5594109208463486,
+    "corr_LEVEL_TEAM_pts": 0.25258528802494706,
+    "MAE_LEVEL_PLAYER_pts": 14.759281724426721,
+    "R2_LEVEL_PLAYER_pts": -3.7821341699469713,
+    "bias_LEVEL_PLAYER_pts": 6.277409237425066,
+    "corr_LEVEL_PLAYER_pts": 0.025721418226558178,
+    "MAE_LEVEL_PLAYER_NORM_pts": 10.791474274744987,
+    "R2_LEVEL_PLAYER_NORM_pts": -0.520121143349977,
+    "bias_LEVEL_PLAYER_NORM_pts": 0.10193850332801332,
+    "corr_LEVEL_PLAYER_NORM_pts": 0.18234937456448702,
+    "dMAE_team_minus_player": -6.279074301533129,
+    "MAE_advantage_TEAM_over_PLAYER": 6.279074301533129,
+    "N1_p": 4.999750012499375e-05,
+    "N1_null_mean": 0.009286023883592951,
+    "N1_null_sd": 1.154747782346143,
+    "N1_n_blocks": 36,
+    "MDE80_MAE": 3.2332937905692,
+    "winner": "TEAM",
+    "verdict": "DECIDED",
+    "preregistered": true,
+    "NORM_MAE_advantage_TEAM_over_PLAYER": 2.311266851851397,
+    "NORM_N1_p": 4.999750012499375e-05,
+    "NORM_N1_null_mean": -0.008456358978363155,
+    "NORM_N1_null_sd": 0.46641468199614944,
+    "NORM_MDE80_MAE": 1.3059611095892183,
+    "NORM_winner": "TEAM",
+    "NORM_verdict": "DECIDED",
+    "MAE_LEVEL_TEAM_fga": null,
+    "R2_LEVEL_TEAM_fga": null,
+    "bias_LEVEL_TEAM_fga": null,
+    "corr_LEVEL_TEAM_fga": null,
+    "MAE_LEVEL_PLAYER_fga": null,
+    "R2_LEVEL_PLAYER_fga": null,
+    "bias_LEVEL_PLAYER_fga": null,
+    "corr_LEVEL_PLAYER_fga": null,
+    "MAE_LEVEL_PLAYER_NORM_fga": null,
+    "R2_LEVEL_PLAYER_NORM_fga": null,
+    "bias_LEVEL_PLAYER_NORM_fga": null,
+    "corr_LEVEL_PLAYER_NORM_fga": null,
+    "MAE_LEVEL_TEAM_fta": null,
+    "R2_LEVEL_TEAM_fta": null,
+    "bias_LEVEL_TEAM_fta": null,
+    "corr_LEVEL_TEAM_fta": null,
+    "MAE_LEVEL_PLAYER_fta": null,
+    "R2_LEVEL_PLAYER_fta": null,
+    "bias_LEVEL_PLAYER_fta": null,
+    "corr_LEVEL_PLAYER_fta": null,
+    "MAE_LEVEL_PLAYER_NORM_fta": null,
+    "R2_LEVEL_PLAYER_NORM_fta": null,
+    "bias_LEVEL_PLAYER_NORM_fta": null,
+    "corr_LEVEL_PLAYER_NORM_fta": null,
+    "MAE_LEVEL_TEAM_ftm": null,
+    "R2_LEVEL_TEAM_ftm": null,
+    "bias_LEVEL_TEAM_ftm": null,
+    "corr_LEVEL_TEAM_ftm": null,
+    "MAE_LEVEL_PLAYER_ftm": null,
+    "R2_LEVEL_PLAYER_ftm": null,
+    "bias_LEVEL_PLAYER_ftm": null,
+    "corr_LEVEL_PLAYER_ftm": null,
+    "MAE_LEVEL_PLAYER_NORM_ftm": null,
+    "R2_LEVEL_PLAYER_NORM_ftm": null,
+    "bias_LEVEL_PLAYER_NORM_ftm": null,
+    "corr_LEVEL_PLAYER_NORM_ftm": null,
+    "MAE_LEVEL_TEAM_reb": null,
+    "R2_LEVEL_TEAM_reb": null,
+    "bias_LEVEL_TEAM_reb": null,
+    "corr_LEVEL_TEAM_reb": null,
+    "MAE_LEVEL_PLAYER_reb": null,
+    "R2_LEVEL_PLAYER_reb": null,
+    "bias_LEVEL_PLAYER_reb": null,
+    "corr_LEVEL_PLAYER_reb": null,
+    "MAE_LEVEL_PLAYER_NORM_reb": null,
+    "R2_LEVEL_PLAYER_NORM_reb": null,
+    "bias_LEVEL_PLAYER_NORM_reb": null,
+    "corr_LEVEL_PLAYER_NORM_reb": null,
+    "MAE_LEVEL_TEAM_ast": null,
+    "R2_LEVEL_TEAM_ast": null,
+    "bias_LEVEL_TEAM_ast": null,
+    "corr_LEVEL_TEAM_ast": null,
+    "MAE_LEVEL_PLAYER_ast": null,
+    "R2_LEVEL_PLAYER_ast": null,
+    "bias_LEVEL_PLAYER_ast": null,
+    "corr_LEVEL_PLAYER_ast": null,
+    "MAE_LEVEL_PLAYER_NORM_ast": null,
+    "R2_LEVEL_PLAYER_NORM_ast": null,
+    "bias_LEVEL_PLAYER_NORM_ast": null,
+    "corr_LEVEL_PLAYER_NORM_ast": null
+   },
+   {
+    "cell": "P10",
+    "quantity": "fga",
+    "n": 1392,
+    "SST": 51225.82686781609,
+    "response_mean": 68.20617816091954,
+    "response_sd": 6.068493955185563,
+    "MAE_LEVEL_TEAM_pts": null,
+    "R2_LEVEL_TEAM_pts": null,
+    "bias_LEVEL_TEAM_pts": null,
+    "corr_LEVEL_TEAM_pts": null,
+    "MAE_LEVEL_PLAYER_pts": null,
+    "R2_LEVEL_PLAYER_pts": null,
+    "bias_LEVEL_PLAYER_pts": null,
+    "corr_LEVEL_PLAYER_pts": null,
+    "MAE_LEVEL_PLAYER_NORM_pts": null,
+    "R2_LEVEL_PLAYER_NORM_pts": null,
+    "bias_LEVEL_PLAYER_NORM_pts": null,
+    "corr_LEVEL_PLAYER_NORM_pts": null,
+    "dMAE_team_minus_player": -5.884107006786672,
+    "MAE_advantage_TEAM_over_PLAYER": 5.884107006786672,
+    "N1_p": 4.999750012499375e-05,
+    "N1_null_mean": 0.00835764325025668,
+    "N1_null_sd": 1.0611319880300691,
+    "N1_n_blocks": 36,
+    "MDE80_MAE": 2.9711695664841935,
+    "winner": "TEAM",
+    "verdict": "DECIDED",
+    "preregistered": true,
+    "NORM_MAE_advantage_TEAM_over_PLAYER": 2.327457668389231,
+    "NORM_N1_p": 4.999750012499375e-05,
+    "NORM_N1_null_mean": -0.007698147883928323,
+    "NORM_N1_null_sd": 0.44169437324383065,
+    "NORM_MDE80_MAE": 1.2367442450827257,
+    "NORM_winner": "TEAM",
+    "NORM_verdict": "DECIDED",
+    "MAE_LEVEL_TEAM_fga": 4.697728525077772,
+    "R2_LEVEL_TEAM_fga": 0.025001575588346037,
+    "bias_LEVEL_TEAM_fga": 0.10577341650239729,
+    "corr_LEVEL_TEAM_fga": 0.181998929441852,
+    "MAE_LEVEL_PLAYER_fga": 10.581835531864442,
+    "R2_LEVEL_PLAYER_fga": -9.245259124107843,
+    "bias_LEVEL_PLAYER_fga": 5.422125788209201,
+    "corr_LEVEL_PLAYER_fga": 0.08614794196018719,
+    "MAE_LEVEL_PLAYER_NORM_fga": 7.025186193467002,
+    "R2_LEVEL_PLAYER_NORM_fga": -1.209549539773704,
+    "bias_LEVEL_PLAYER_NORM_fga": 0.055708240010945695,
+    "corr_LEVEL_PLAYER_NORM_fga": 0.0822574866272567,
+    "MAE_LEVEL_TEAM_fta": null,
+    "R2_LEVEL_TEAM_fta": null,
+    "bias_LEVEL_TEAM_fta": null,
+    "corr_LEVEL_TEAM_fta": null,
+    "MAE_LEVEL_PLAYER_fta": null,
+    "R2_LEVEL_PLAYER_fta": null,
+    "bias_LEVEL_PLAYER_fta": null,
+    "corr_LEVEL_PLAYER_fta": null,
+    "MAE_LEVEL_PLAYER_NORM_fta": null,
+    "R2_LEVEL_PLAYER_NORM_fta": null,
+    "bias_LEVEL_PLAYER_NORM_fta": null,
+    "corr_LEVEL_PLAYER_NORM_fta": null,
+    "MAE_LEVEL_TEAM_ftm": null,
+    "R2_LEVEL_TEAM_ftm": null,
+    "bias_LEVEL_TEAM_ftm": null,
+    "corr_LEVEL_TEAM_ftm": null,
+    "MAE_LEVEL_PLAYER_ftm": null,
+    "R2_LEVEL_PLAYER_ftm": null,
+    "bias_LEVEL_PLAYER_ftm": null,
+    "corr_LEVEL_PLAYER_ftm": null,
+    "MAE_LEVEL_PLAYER_NORM_ftm": null,
+    "R2_LEVEL_PLAYER_NORM_ftm": null,
+    "bias_LEVEL_PLAYER_NORM_ftm": null,
+    "corr_LEVEL_PLAYER_NORM_ftm": null,
+    "MAE_LEVEL_TEAM_reb": null,
+    "R2_LEVEL_TEAM_reb": null,
+    "bias_LEVEL_TEAM_reb": null,
+    "corr_LEVEL_TEAM_reb": null,
+    "MAE_LEVEL_PLAYER_reb": null,
+    "R2_LEVEL_PLAYER_reb": null,
+    "bias_LEVEL_PLAYER_reb": null,
+    "corr_LEVEL_PLAYER_reb": null,
+    "MAE_LEVEL_PLAYER_NORM_reb": null,
+    "R2_LEVEL_PLAYER_NORM_reb": null,
+    "bias_LEVEL_PLAYER_NORM_reb": null,
+    "corr_LEVEL_PLAYER_NORM_reb": null,
+    "MAE_LEVEL_TEAM_ast": null,
+    "R2_LEVEL_TEAM_ast": null,
+    "bias_LEVEL_TEAM_ast": null,
+    "corr_LEVEL_TEAM_ast": null,
+    "MAE_LEVEL_PLAYER_ast": null,
+    "R2_LEVEL_PLAYER_ast": null,
+    "bias_LEVEL_PLAYER_ast": null,
+    "corr_LEVEL_PLAYER_ast": null,
+    "MAE_LEVEL_PLAYER_NORM_ast": null,
+    "R2_LEVEL_PLAYER_NORM_ast": null,
+    "bias_LEVEL_PLAYER_NORM_ast": null,
+    "corr_LEVEL_PLAYER_NORM_ast": null
+   },
+   {
+    "cell": "P11",
+    "quantity": "fta",
+    "n": 1392,
+    "SST": 53729.49353448276,
+    "response_mean": 18.247844827586206,
+    "response_sd": 6.2150239766088,
+    "MAE_LEVEL_TEAM_pts": null,
+    "R2_LEVEL_TEAM_pts": null,
+    "bias_LEVEL_TEAM_pts": null,
+    "corr_LEVEL_TEAM_pts": null,
+    "MAE_LEVEL_PLAYER_pts": null,
+    "R2_LEVEL_PLAYER_pts": null,
+    "bias_LEVEL_PLAYER_pts": null,
+    "corr_LEVEL_PLAYER_pts": null,
+    "MAE_LEVEL_PLAYER_NORM_pts": null,
+    "R2_LEVEL_PLAYER_NORM_pts": null,
+    "bias_LEVEL_PLAYER_NORM_pts": null,
+    "corr_LEVEL_PLAYER_NORM_pts": null,
+    "dMAE_team_minus_player": -0.9312866440154414,
+    "MAE_advantage_TEAM_over_PLAYER": 0.9312866440154414,
+    "N1_p": 4.999750012499375e-05,
+    "N1_null_mean": 0.0009048473935158139,
+    "N1_null_sd": 0.18344695396878388,
+    "N1_n_blocks": 36,
+    "MDE80_MAE": 0.5136514711125948,
+    "winner": "TEAM",
+    "verdict": "DECIDED",
+    "preregistered": true,
+    "NORM_MAE_advantage_TEAM_over_PLAYER": 0.3542822503158509,
+    "NORM_N1_p": 4.999750012499375e-05,
+    "NORM_N1_null_mean": -0.0017834435269051352,
+    "NORM_N1_null_sd": 0.07614034535958555,
+    "NORM_MDE80_MAE": 0.21319296700683954,
+    "NORM_winner": "TEAM",
+    "NORM_verdict": "DECIDED",
+    "MAE_LEVEL_TEAM_fga": null,
+    "R2_LEVEL_TEAM_fga": null,
+    "bias_LEVEL_TEAM_fga": null,
+    "corr_LEVEL_TEAM_fga": null,
+    "MAE_LEVEL_PLAYER_fga": null,
+    "R2_LEVEL_PLAYER_fga": null,
+    "bias_LEVEL_PLAYER_fga": null,
+    "corr_LEVEL_PLAYER_fga": null,
+    "MAE_LEVEL_PLAYER_NORM_fga": null,
+    "R2_LEVEL_PLAYER_NORM_fga": null,
+    "bias_LEVEL_PLAYER_NORM_fga": null,
+    "corr_LEVEL_PLAYER_NORM_fga": null,
+    "MAE_LEVEL_TEAM_fta": 4.867416090380144,
+    "R2_LEVEL_TEAM_fta": 0.013987483380701882,
+    "bias_LEVEL_TEAM_fta": -0.26244295667582246,
+    "corr_LEVEL_TEAM_fta": 0.160145118149948,
+    "MAE_LEVEL_PLAYER_fta": 5.798702734395584,
+    "R2_LEVEL_PLAYER_fta": -0.5062731503903373,
+    "bias_LEVEL_PLAYER_fta": 1.6260688224338264,
+    "corr_LEVEL_PLAYER_fta": 0.08710132008917987,
+    "MAE_LEVEL_PLAYER_NORM_fta": 5.221698340695994,
+    "R2_LEVEL_PLAYER_NORM_fta": -0.11371106838745693,
+    "bias_LEVEL_PLAYER_NORM_fta": 0.2706731220222481,
+    "corr_LEVEL_PLAYER_NORM_fta": 0.09356698290219066,
+    "MAE_LEVEL_TEAM_ftm": null,
+    "R2_LEVEL_TEAM_ftm": null,
+    "bias_LEVEL_TEAM_ftm": null,
+    "corr_LEVEL_TEAM_ftm": null,
+    "MAE_LEVEL_PLAYER_ftm": null,
+    "R2_LEVEL_PLAYER_ftm": null,
+    "bias_LEVEL_PLAYER_ftm": null,
+    "corr_LEVEL_PLAYER_ftm": null,
+    "MAE_LEVEL_PLAYER_NORM_ftm": null,
+    "R2_LEVEL_PLAYER_NORM_ftm": null,
+    "bias_LEVEL_PLAYER_NORM_ftm": null,
+    "corr_LEVEL_PLAYER_NORM_ftm": null,
+    "MAE_LEVEL_TEAM_reb": null,
+    "R2_LEVEL_TEAM_reb": null,
+    "bias_LEVEL_TEAM_reb": null,
+    "corr_LEVEL_TEAM_reb": null,
+    "MAE_LEVEL_PLAYER_reb": null,
+    "R2_LEVEL_PLAYER_reb": null,
+    "bias_LEVEL_PLAYER_reb": null,
+    "corr_LEVEL_PLAYER_reb": null,
+    "MAE_LEVEL_PLAYER_NORM_reb": null,
+    "R2_LEVEL_PLAYER_NORM_reb": null,
+    "bias_LEVEL_PLAYER_NORM_reb": null,
+    "corr_LEVEL_PLAYER_NORM_reb": null,
+    "MAE_LEVEL_TEAM_ast": null,
+    "R2_LEVEL_TEAM_ast": null,
+    "bias_LEVEL_TEAM_ast": null,
+    "corr_LEVEL_TEAM_ast": null,
+    "MAE_LEVEL_PLAYER_ast": null,
+    "R2_LEVEL_PLAYER_ast": null,
+    "bias_LEVEL_PLAYER_ast": null,
+    "corr_LEVEL_PLAYER_ast": null,
+    "MAE_LEVEL_PLAYER_NORM_ast": null,
+    "R2_LEVEL_PLAYER_NORM_ast": null,
+    "bias_LEVEL_PLAYER_NORM_ast": null,
+    "corr_LEVEL_PLAYER_NORM_ast": null
+   },
+   {
+    "cell": "P12",
+    "quantity": "ftm",
+    "n": 1392,
+    "SST": 39234.73275862069,
+    "response_mean": 14.469827586206897,
+    "response_sd": 5.310944761728224,
+    "MAE_LEVEL_TEAM_pts": null,
+    "R2_LEVEL_TEAM_pts": null,
+    "bias_LEVEL_TEAM_pts": null,
+    "corr_LEVEL_TEAM_pts": null,
+    "MAE_LEVEL_PLAYER_pts": null,
+    "R2_LEVEL_PLAYER_pts": null,
+    "bias_LEVEL_PLAYER_pts": null,
+    "corr_LEVEL_PLAYER_pts": null,
+    "MAE_LEVEL_PLAYER_NORM_pts": null,
+    "R2_LEVEL_PLAYER_NORM_pts": null,
+    "bias_LEVEL_PLAYER_NORM_pts": null,
+    "corr_LEVEL_PLAYER_NORM_pts": null,
+    "dMAE_team_minus_player": -0.6954598944968389,
+    "MAE_advantage_TEAM_over_PLAYER": 0.6954598944968389,
+    "N1_p": 4.999750012499375e-05,
+    "N1_null_mean": 0.0005259825438480225,
+    "N1_null_sd": 0.14268960984790108,
+    "N1_n_blocks": 36,
+    "MDE80_MAE": 0.399530907574123,
+    "winner": "TEAM",
+    "verdict": "DECIDED",
+    "preregistered": true,
+    "NORM_MAE_advantage_TEAM_over_PLAYER": 0.27693686241364973,
+    "NORM_N1_p": 4.999750012499375e-05,
+    "NORM_N1_null_mean": -0.0013993680493404547,
+    "NORM_N1_null_sd": 0.06534987856706623,
+    "NORM_MDE80_MAE": 0.18297965998778543,
+    "NORM_winner": "TEAM",
+    "NORM_verdict": "DECIDED",
+    "MAE_LEVEL_TEAM_fga": null,
+    "R2_LEVEL_TEAM_fga": null,
+    "bias_LEVEL_TEAM_fga": null,
+    "corr_LEVEL_TEAM_fga": null,
+    "MAE_LEVEL_PLAYER_fga": null,
+    "R2_LEVEL_PLAYER_fga": null,
+    "bias_LEVEL_PLAYER_fga": null,
+    "corr_LEVEL_PLAYER_fga": null,
+    "MAE_LEVEL_PLAYER_NORM_fga": null,
+    "R2_LEVEL_PLAYER_NORM_fga": null,
+    "bias_LEVEL_PLAYER_NORM_fga": null,
+    "corr_LEVEL_PLAYER_NORM_fga": null,
+    "MAE_LEVEL_TEAM_fta": null,
+    "R2_LEVEL_TEAM_fta": null,
+    "bias_LEVEL_TEAM_fta": null,
+    "corr_LEVEL_TEAM_fta": null,
+    "MAE_LEVEL_PLAYER_fta": null,
+    "R2_LEVEL_PLAYER_fta": null,
+    "bias_LEVEL_PLAYER_fta": null,
+    "corr_LEVEL_PLAYER_fta": null,
+    "MAE_LEVEL_PLAYER_NORM_fta": null,
+    "R2_LEVEL_PLAYER_NORM_fta": null,
+    "bias_LEVEL_PLAYER_NORM_fta": null,
+    "corr_LEVEL_PLAYER_NORM_fta": null,
+    "MAE_LEVEL_TEAM_ftm": 4.220232142762853,
+    "R2_LEVEL_TEAM_ftm": 0.0018281545835759916,
+    "bias_LEVEL_TEAM_ftm": -0.1556022501772931,
+    "corr_LEVEL_TEAM_ftm": 0.12831180740818374,
+    "MAE_LEVEL_PLAYER_ftm": 4.915692037259692,
+    "R2_LEVEL_PLAYER_ftm": -0.4463379152847524,
+    "bias_LEVEL_PLAYER_ftm": 1.3603418850797582,
+    "corr_LEVEL_PLAYER_ftm": 0.07919620771298147,
+    "MAE_LEVEL_PLAYER_NORM_ftm": 4.497169005176504,
+    "R2_LEVEL_PLAYER_NORM_ftm": -0.1145672408956695,
+    "bias_LEVEL_PLAYER_NORM_ftm": 0.2939236093166505,
+    "corr_LEVEL_PLAYER_NORM_ftm": 0.0872765789023644,
+    "MAE_LEVEL_TEAM_reb": null,
+    "R2_LEVEL_TEAM_reb": null,
+    "bias_LEVEL_TEAM_reb": null,
+    "corr_LEVEL_TEAM_reb": null,
+    "MAE_LEVEL_PLAYER_reb": null,
+    "R2_LEVEL_PLAYER_reb": null,
+    "bias_LEVEL_PLAYER_reb": null,
+    "corr_LEVEL_PLAYER_reb": null,
+    "MAE_LEVEL_PLAYER_NORM_reb": null,
+    "R2_LEVEL_PLAYER_NORM_reb": null,
+    "bias_LEVEL_PLAYER_NORM_reb": null,
+    "corr_LEVEL_PLAYER_NORM_reb": null,
+    "MAE_LEVEL_TEAM_ast": null,
+    "R2_LEVEL_TEAM_ast": null,
+    "bias_LEVEL_TEAM_ast": null,
+    "corr_LEVEL_TEAM_ast": null,
+    "MAE_LEVEL_PLAYER_ast": null,
+    "R2_LEVEL_PLAYER_ast": null,
+    "bias_LEVEL_PLAYER_ast": null,
+    "corr_LEVEL_PLAYER_ast": null,
+    "MAE_LEVEL_PLAYER_NORM_ast": null,
+    "R2_LEVEL_PLAYER_NORM_ast": null,
+    "bias_LEVEL_PLAYER_NORM_ast": null,
+    "corr_LEVEL_PLAYER_NORM_ast": null
+   },
+   {
+    "cell": "P13",
+    "quantity": "reb",
+    "n": 1392,
+    "SST": 44802.878591954024,
+    "response_mean": 34.32399425287356,
+    "response_sd": 5.67530745702949,
+    "MAE_LEVEL_TEAM_pts": null,
+    "R2_LEVEL_TEAM_pts": null,
+    "bias_LEVEL_TEAM_pts": null,
+    "corr_LEVEL_TEAM_pts": null,
+    "MAE_LEVEL_PLAYER_pts": null,
+    "R2_LEVEL_PLAYER_pts": null,
+    "bias_LEVEL_PLAYER_pts": null,
+    "corr_LEVEL_PLAYER_pts": null,
+    "MAE_LEVEL_PLAYER_NORM_pts": null,
+    "R2_LEVEL_PLAYER_NORM_pts": null,
+    "bias_LEVEL_PLAYER_NORM_pts": null,
+    "corr_LEVEL_PLAYER_NORM_pts": null,
+    "dMAE_team_minus_player": -2.720312574420045,
+    "MAE_advantage_TEAM_over_PLAYER": 2.720312574420045,
+    "N1_p": 4.999750012499375e-05,
+    "N1_null_mean": 0.004191499379797391,
+    "N1_null_sd": 0.5039342765208639,
+    "N1_n_blocks": 36,
+    "MDE80_MAE": 1.4110159742584187,
+    "winner": "TEAM",
+    "verdict": "DECIDED",
+    "preregistered": true,
+    "NORM_MAE_advantage_TEAM_over_PLAYER": 0.6917161882280013,
+    "NORM_N1_p": 4.999750012499375e-05,
+    "NORM_N1_null_mean": -0.002741212366331703,
+    "NORM_N1_null_sd": 0.15541951684419927,
+    "NORM_MDE80_MAE": 0.4351746471637579,
+    "NORM_winner": "TEAM",
+    "NORM_verdict": "DECIDED",
+    "MAE_LEVEL_TEAM_fga": null,
+    "R2_LEVEL_TEAM_fga": null,
+    "bias_LEVEL_TEAM_fga": null,
+    "corr_LEVEL_TEAM_fga": null,
+    "MAE_LEVEL_PLAYER_fga": null,
+    "R2_LEVEL_PLAYER_fga": null,
+    "bias_LEVEL_PLAYER_fga": null,
+    "corr_LEVEL_PLAYER_fga": null,
+    "MAE_LEVEL_PLAYER_NORM_fga": null,
+    "R2_LEVEL_PLAYER_NORM_fga": null,
+    "bias_LEVEL_PLAYER_NORM_fga": null,
+    "corr_LEVEL_PLAYER_NORM_fga": null,
+    "MAE_LEVEL_TEAM_fta": null,
+    "R2_LEVEL_TEAM_fta": null,
+    "bias_LEVEL_TEAM_fta": null,
+    "corr_LEVEL_TEAM_fta": null,
+    "MAE_LEVEL_PLAYER_fta": null,
+    "R2_LEVEL_PLAYER_fta": null,
+    "bias_LEVEL_PLAYER_fta": null,
+    "corr_LEVEL_PLAYER_fta": null,
+    "MAE_LEVEL_PLAYER_NORM_fta": null,
+    "R2_LEVEL_PLAYER_NORM_fta": null,
+    "bias_LEVEL_PLAYER_NORM_fta": null,
+    "corr_LEVEL_PLAYER_NORM_fta": null,
+    "MAE_LEVEL_TEAM_ftm": null,
+    "R2_LEVEL_TEAM_ftm": null,
+    "bias_LEVEL_TEAM_ftm": null,
+    "corr_LEVEL_TEAM_ftm": null,
+    "MAE_LEVEL_PLAYER_ftm": null,
+    "R2_LEVEL_PLAYER_ftm": null,
+    "bias_LEVEL_PLAYER_ftm": null,
+    "corr_LEVEL_PLAYER_ftm": null,
+    "MAE_LEVEL_PLAYER_NORM_ftm": null,
+    "R2_LEVEL_PLAYER_NORM_ftm": null,
+    "bias_LEVEL_PLAYER_NORM_ftm": null,
+    "corr_LEVEL_PLAYER_NORM_ftm": null,
+    "MAE_LEVEL_TEAM_reb": 4.399947628617945,
+    "R2_LEVEL_TEAM_reb": 0.052225605643338224,
+    "bias_LEVEL_TEAM_reb": 0.24717907113835594,
+    "corr_LEVEL_TEAM_reb": 0.2403799342091636,
+    "MAE_LEVEL_PLAYER_reb": 7.12026020303799,
+    "R2_LEVEL_PLAYER_reb": -2.9599449059946603,
+    "bias_LEVEL_PLAYER_reb": 3.0322059039773612,
+    "corr_LEVEL_PLAYER_reb": 0.11561284294595665,
+    "MAE_LEVEL_PLAYER_NORM_reb": 5.091663816845946,
+    "R2_LEVEL_PLAYER_NORM_reb": -0.27207719930995555,
+    "bias_LEVEL_PLAYER_NORM_reb": 0.19745344644568102,
+    "corr_LEVEL_PLAYER_NORM_reb": 0.13994769312503516,
+    "MAE_LEVEL_TEAM_ast": null,
+    "R2_LEVEL_TEAM_ast": null,
+    "bias_LEVEL_TEAM_ast": null,
+    "corr_LEVEL_TEAM_ast": null,
+    "MAE_LEVEL_PLAYER_ast": null,
+    "R2_LEVEL_PLAYER_ast": null,
+    "bias_LEVEL_PLAYER_ast": null,
+    "corr_LEVEL_PLAYER_ast": null,
+    "MAE_LEVEL_PLAYER_NORM_ast": null,
+    "R2_LEVEL_PLAYER_NORM_ast": null,
+    "bias_LEVEL_PLAYER_NORM_ast": null,
+    "corr_LEVEL_PLAYER_NORM_ast": null
+   },
+   {
+    "cell": "P14",
+    "quantity": "ast",
+    "n": 1392,
+    "SST": 25204.850574712647,
+    "response_mean": 20.195402298850574,
+    "response_sd": 4.256753468273307,
+    "MAE_LEVEL_TEAM_pts": null,
+    "R2_LEVEL_TEAM_pts": null,
+    "bias_LEVEL_TEAM_pts": null,
+    "corr_LEVEL_TEAM_pts": null,
+    "MAE_LEVEL_PLAYER_pts": null,
+    "R2_LEVEL_PLAYER_pts": null,
+    "bias_LEVEL_PLAYER_pts": null,
+    "corr_LEVEL_PLAYER_pts": null,
+    "MAE_LEVEL_PLAYER_NORM_pts": null,
+    "R2_LEVEL_PLAYER_NORM_pts": null,
+    "bias_LEVEL_PLAYER_NORM_pts": null,
+    "corr_LEVEL_PLAYER_NORM_pts": null,
+    "dMAE_team_minus_player": -1.378273077873328,
+    "MAE_advantage_TEAM_over_PLAYER": 1.378273077873328,
+    "N1_p": 4.999750012499375e-05,
+    "N1_null_mean": 0.0015522765214537972,
+    "N1_null_sd": 0.26514412990850633,
+    "N1_n_blocks": 36,
+    "MDE80_MAE": 0.7424035637438177,
+    "winner": "TEAM",
+    "verdict": "DECIDED",
+    "preregistered": true,
+    "NORM_MAE_advantage_TEAM_over_PLAYER": 0.35417208137406037,
+    "NORM_N1_p": 4.999750012499375e-05,
+    "NORM_N1_null_mean": -0.0016367414982621795,
+    "NORM_N1_null_sd": 0.08223609613124076,
+    "NORM_MDE80_MAE": 0.23026106916747413,
+    "NORM_winner": "TEAM",
+    "NORM_verdict": "DECIDED",
+    "MAE_LEVEL_TEAM_fga": null,
+    "R2_LEVEL_TEAM_fga": null,
+    "bias_LEVEL_TEAM_fga": null,
+    "corr_LEVEL_TEAM_fga": null,
+    "MAE_LEVEL_PLAYER_fga": null,
+    "R2_LEVEL_PLAYER_fga": null,
+    "bias_LEVEL_PLAYER_fga": null,
+    "corr_LEVEL_PLAYER_fga": null,
+    "MAE_LEVEL_PLAYER_NORM_fga": null,
+    "R2_LEVEL_PLAYER_NORM_fga": null,
+    "bias_LEVEL_PLAYER_NORM_fga": null,
+    "corr_LEVEL_PLAYER_NORM_fga": null,
+    "MAE_LEVEL_TEAM_fta": null,
+    "R2_LEVEL_TEAM_fta": null,
+    "bias_LEVEL_TEAM_fta": null,
+    "corr_LEVEL_TEAM_fta": null,
+    "MAE_LEVEL_PLAYER_fta": null,
+    "R2_LEVEL_PLAYER_fta": null,
+    "bias_LEVEL_PLAYER_fta": null,
+    "corr_LEVEL_PLAYER_fta": null,
+    "MAE_LEVEL_PLAYER_NORM_fta": null,
+    "R2_LEVEL_PLAYER_NORM_fta": null,
+    "bias_LEVEL_PLAYER_NORM_fta": null,
+    "corr_LEVEL_PLAYER_NORM_fta": null,
+    "MAE_LEVEL_TEAM_ftm": null,
+    "R2_LEVEL_TEAM_ftm": null,
+    "bias_LEVEL_TEAM_ftm": null,
+    "corr_LEVEL_TEAM_ftm": null,
+    "MAE_LEVEL_PLAYER_ftm": null,
+    "R2_LEVEL_PLAYER_ftm": null,
+    "bias_LEVEL_PLAYER_ftm": null,
+    "corr_LEVEL_PLAYER_ftm": null,
+    "MAE_LEVEL_PLAYER_NORM_ftm": null,
+    "R2_LEVEL_PLAYER_NORM_ftm": null,
+    "bias_LEVEL_PLAYER_NORM_ftm": null,
+    "corr_LEVEL_PLAYER_NORM_ftm": null,
+    "MAE_LEVEL_TEAM_reb": null,
+    "R2_LEVEL_TEAM_reb": null,
+    "bias_LEVEL_TEAM_reb": null,
+    "corr_LEVEL_TEAM_reb": null,
+    "MAE_LEVEL_PLAYER_reb": null,
+    "R2_LEVEL_PLAYER_reb": null,
+    "bias_LEVEL_PLAYER_reb": null,
+    "corr_LEVEL_PLAYER_reb": null,
+    "MAE_LEVEL_PLAYER_NORM_reb": null,
+    "R2_LEVEL_PLAYER_NORM_reb": null,
+    "bias_LEVEL_PLAYER_NORM_reb": null,
+    "corr_LEVEL_PLAYER_NORM_reb": null,
+    "MAE_LEVEL_TEAM_ast": 3.2329504784582674,
+    "R2_LEVEL_TEAM_ast": 0.07975979938566169,
+    "bias_LEVEL_TEAM_ast": -0.40525438314610185,
+    "corr_LEVEL_TEAM_ast": 0.3072616139217228,
+    "MAE_LEVEL_PLAYER_ast": 4.611223556331596,
+    "R2_LEVEL_PLAYER_ast": -1.4764523429543694,
+    "bias_LEVEL_PLAYER_ast": 1.188605193919195,
+    "corr_LEVEL_PLAYER_ast": 0.04708824802395299,
+    "MAE_LEVEL_PLAYER_NORM_ast": 3.5871225598323275,
+    "R2_LEVEL_PLAYER_NORM_ast": -0.12796222728823214,
+    "bias_LEVEL_PLAYER_NORM_ast": -0.28577491057579957,
+    "corr_LEVEL_PLAYER_NORM_ast": 0.26365714189915485
+   }
+  ],
+  "information_content": [
+   {
+    "arm": "LEVEL_TEAM_pts",
+    "n": 1392,
+    "corr_with_team_points": 0.25258528802494706,
+    "sd_of_forecast": 3.4947003223833524,
+    "MAE": 8.48020742289359,
+    "ORACLE": false
+   },
+   {
+    "arm": "R2_TEAM_EWMA",
+    "n": 1392,
+    "corr_with_team_points": 0.25258528802494706,
+    "sd_of_forecast": 3.4947003223833524,
+    "MAE": 8.48020742289359,
+    "ORACLE": false
+   },
+   {
+    "arm": "A_TEAM",
+    "n": 1392,
+    "corr_with_team_points": 0.18790970087629902,
+    "sd_of_forecast": 2.8358979270043876,
+    "MAE": 8.685506242216618,
+    "ORACLE": false
+   },
+   {
+    "arm": "LEVEL_PLAYER_NORM_pts",
+    "n": 1392,
+    "corr_with_team_points": 0.18234937456448702,
+    "sd_of_forecast": 10.200081026707016,
+    "MAE": 10.791474274744987,
+    "ORACLE": false
+   },
+   {
+    "arm": "B1N_ROSTER_NORMALISED",
+    "n": 1392,
+    "corr_with_team_points": 0.1655460066332787,
+    "sd_of_forecast": 9.397162405532537,
+    "MAE": 10.442556389250436,
+    "ORACLE": false
+   },
+   {
+    "arm": "B4N_NORMALISED_CAL",
+    "n": 1392,
+    "corr_with_team_points": 0.14833447999378369,
+    "sd_of_forecast": 1.2239513034986194,
+    "MAE": 8.654625109281886,
+    "ORACLE": false
+   },
+   {
+    "arm": "B3_ORACLE_ROSTER",
+    "n": 1392,
+    "corr_with_team_points": 0.14458668712651632,
+    "sd_of_forecast": 9.848777479846618,
+    "MAE": 10.650052436884797,
+    "ORACLE": true
+   },
+   {
+    "arm": "LEVEL_PLAYER_pts",
+    "n": 1392,
+    "corr_with_team_points": 0.025721418226558178,
+    "sd_of_forecast": 20.761803068118336,
+    "MAE": 14.759281724426721,
+    "ORACLE": false
+   },
+   {
+    "arm": "B1_BOTTOMUP_AVAIL",
+    "n": 1392,
+    "corr_with_team_points": 0.00130068433412519,
+    "sd_of_forecast": 31.389226849192717,
+    "MAE": 18.263036606875854,
+    "ORACLE": false
+   },
+   {
+    "arm": "R0_LEAGUE",
+    "n": 1392,
+    "corr_with_team_points": -0.00929988791833559,
+    "sd_of_forecast": 0.3705801660588836,
+    "MAE": 8.790931624564443,
+    "ORACLE": false
+   }
+  ]
+ },
+ "s09_ft_composition": {
+  "prereg_sha256": "0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e",
+  "arithmetic_ceiling": {
+   "d104_fta_differential_used": 1.087,
+   "venue_points_edge_at_league_rate": 0.43479274050123545,
+   "composed_minus_flat_sd_points": 0.015341212490004181,
+   "composed_minus_flat_range_points": [
+    -0.05639846461317122,
+    0.05663727454909817
+   ],
+   "response_sd": 11.013043940159491,
+   "max_dR2_of_composition_over_flat": 1.9404596960471173e-06,
+   "d103_single_cell_floor": 0.00102,
+   "d104_player_level_home_ceiling": 4.63e-05,
+   "ratio_below_d103_floor": 525.6486398959111,
+   "ratio_below_d104_player_ceiling": 23.8603255168438,
+   "verdict": "the composition is unmeasurable at this sample size BY ARITHMETIC. it is computed anyway below so the measurement can be checked against its own a-priori ceiling, exactly as D104 did."
+  },
+  "walk_forward_coefficients": {
+   "BASE_NO_VENUE": {
+    "2022": {
+     "_ftpct_c": 0.0,
+     "_ftarate_c": 0.0
+    },
+    "2023": {
+     "_ftpct_c": -31.219046074844236,
+     "_ftarate_c": -0.4385519403334634
+    },
+    "2024": {
+     "_ftpct_c": -7.226577840974356,
+     "_ftarate_c": -0.19994775785109797
+    }
+   },
+   "FT_FLAT": {
+    "2022": {
+     "_ftpct_c": 0.0,
+     "_ftarate_c": 0.0,
+     "_flat_term": 0.0
+    },
+    "2023": {
+     "_ftpct_c": -31.695705242478326,
+     "_ftarate_c": -0.44568055233460313,
+     "_flat_term": 1.298540147566048
+    },
+    "2024": {
+     "_ftpct_c": -7.666703300558827,
+     "_ftarate_c": -0.20177329051504717,
+     "_flat_term": 1.8559245872157082
+    }
+   },
+   "FT_COMPOSED": {
+    "2022": {
+     "_ftpct_c": 0.0,
+     "_ftarate_c": 0.0,
+     "_composed_term": 0.0
+    },
+    "2023": {
+     "_ftpct_c": -31.7082333401563,
+     "_ftarate_c": -0.44581567209966705,
+     "_composed_term": 1.359233998904736
+    },
+    "2024": {
+     "_ftpct_c": -7.664123327036668,
+     "_ftarate_c": -0.20176553743410486,
+     "_composed_term": 1.91278212708226
+    }
+   },
+   "FT_COMPOSED_OVER_FLAT": {
+    "2022": {
+     "_ftpct_c": 0.0,
+     "_ftarate_c": 0.0,
+     "_flat_term": 0.0,
+     "_delta_term": 0.0
+    },
+    "2023": {
+     "_ftpct_c": -31.45206665632272,
+     "_ftarate_c": -0.4398600883265828,
+     "_flat_term": 1.7416405357890137,
+     "_delta_term": 56.63445249652584
+    },
+    "2024": {
+     "_ftpct_c": -7.293886700507907,
+     "_ftarate_c": -0.2003015276790033,
+     "_flat_term": 1.9976684161405012,
+     "_delta_term": 48.39618373423399
+    }
+   }
+  },
+  "ft_composition_table": [
+   {
+    "arm": "R2_TEAM_EWMA",
+    "n": 1392,
+    "MAE": 8.48020742289359,
+    "R2_common_SST": 0.05702624234271014,
+    "bias": -0.5594109208463486,
+    "dR2_vs_BASE_NO_VENUE": 0.0030288132798920175
+   },
+   {
+    "arm": "BASE_NO_VENUE",
+    "n": 1392,
+    "MAE": 8.489782424133095,
+    "R2_common_SST": 0.053997429062818125,
+    "bias": -0.6405959876375903,
+    "dR2_vs_BASE_NO_VENUE": 0.0
+   },
+   {
+    "arm": "FT_FLAT",
+    "n": 1392,
+    "MAE": 8.489926985086173,
+    "R2_common_SST": 0.05524192528925209,
+    "bias": -0.6413683349986633,
+    "dR2_vs_BASE_NO_VENUE": 0.0012444962264339665
+   },
+   {
+    "arm": "FT_COMPOSED",
+    "n": 1392,
+    "MAE": 8.48955357826236,
+    "R2_common_SST": 0.05535550067225681,
+    "bias": -0.6415891671675433,
+    "dR2_vs_BASE_NO_VENUE": 0.0013580716094386824
+   },
+   {
+    "arm": "FT_COMPOSED_OVER_FLAT",
+    "n": 1392,
+    "MAE": 8.478907669665313,
+    "R2_common_SST": 0.05630298245214638,
+    "bias": -0.6456196979782954,
+    "dR2_vs_BASE_NO_VENUE": 0.002305553389328252
+   }
+  ],
+  "ft_cells": {
+   "P07": {
+    "cell": "P07",
+    "arm_A": "FT_COMPOSED",
+    "arm_B": "FT_FLAT",
+    "MAE_A": 8.48955357826236,
+    "MAE_B": 8.489926985086173,
+    "MAE_advantage_A_over_B": 0.0003734068238136458,
+    "N1_p": 0.671566421678916,
+    "N1_null_mean": 9.000530362908029e-06,
+    "N1_null_sd": 0.0008520887681126393,
+    "MDE80_MAE": 0.00238584855071539,
+    "exploratory": false
+   },
+   "P08": {
+    "cell": "P08",
+    "arm_A": "FT_COMPOSED",
+    "arm_B": "BASE_NO_VENUE",
+    "MAE_A": 8.48955357826236,
+    "MAE_B": 8.489782424133095,
+    "MAE_advantage_A_over_B": 0.0002288458707369862,
+    "N1_p": 0.9895005249737513,
+    "N1_null_mean": 0.00010891449813643027,
+    "N1_null_sd": 0.01669192383745426,
+    "MDE80_MAE": 0.04673738674487193,
+    "exploratory": false
+   },
+   "P07b_EXPLORATORY": {
+    "cell": "P07b_EXPLORATORY",
+    "arm_A": "FT_COMPOSED_OVER_FLAT",
+    "arm_B": "FT_FLAT",
+    "MAE_A": 8.478907669665313,
+    "MAE_B": 8.489926985086173,
+    "MAE_advantage_A_over_B": 0.011019315420858822,
+    "N1_p": 0.47852607369631517,
+    "N1_null_mean": 0.00015727453357084655,
+    "N1_null_sd": 0.015350967307135277,
+    "MDE80_MAE": 0.04298270845997877,
+    "exploratory": true
+   }
+  },
+  "spread_in_points": {
+   "lowest_team_season_ft_pct": 0.7422535211267606,
+   "highest_team_season_ft_pct": 0.8398328690807799,
+   "points_from_venue_edge_at_lowest": 0.8068295774647887,
+   "points_from_venue_edge_at_highest": 0.9128983286908078,
+   "spread_points_per_game": 0.10606875122601903,
+   "spread_in_response_sds": 0.009631192956493638,
+   "spread_as_pct_of_the_0.965_home_advantage": 10.990555412036082
+  }
+ },
+ "s10_player_value": {
+  "prereg_sha256": "0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e",
+  "conditioning": "the absence indicator is REALISED. this is a measurement of impact GIVEN absence, not a live forecasting increment. labelled per D091 ruling 3.",
+  "top3_pregame": {
+   "n_rows": 4176,
+   "appearance_rate": 0.9410919540229885,
+   "mean_realised_pts_when_present": 14.28320610687023,
+   "mean_pts_hat": 14.340803188880972
+  },
+  "absence_counts": {
+   "0": 1209,
+   "1": 139,
+   "2": 25,
+   "3": 19
+  },
+  "absence_impact": {
+   "mean_resid_no_absence": 0.5705196666569263,
+   "mean_resid_with_absence": 0.48602035426171264,
+   "raw_contrast_points": -0.08449931239521369,
+   "naive_estimator_mean_points": 15.815057110762845,
+   "substitution_ratio_realised_over_naive": 0.005342965997745792,
+   "n_no_absence": 1209,
+   "n_with_absence": 183
+  },
+  "walk_forward_absence_beta": {
+   "2022": {
+    "beta": 0.0,
+    "n_train": 0
+   },
+   "2023": {
+    "beta": 0.003987151689671409,
+    "n_train": 432
+   },
+   "2024": {
+    "beta": 0.024879105720590558,
+    "n_train": 912
+   }
+  },
+  "walk_forward_absence_beta_note": "beta is the fraction of an absent player's FORECAST points that the team actually fails to score. 1.0 would mean no substitution at all; 0.0 would mean the replacement fully absorbs the production.",
+  "absence_aware_forecast_ORACLE_ABSENCE": {
+   "table": [
+    {
+     "arm": "R2_TEAM_EWMA",
+     "n": 1392,
+     "MAE": 8.48020742289359,
+     "R2_common_SST": 0.05702624234271014
+    },
+    {
+     "arm": "R2_PLUS_ABSENCE",
+     "n": 1392,
+     "MAE": 8.480251918825298,
+     "R2_common_SST": 0.05719489823610835
+    },
+    {
+     "arm": "A_TEAM",
+     "n": 1392,
+     "MAE": 8.685506242216618,
+     "R2_common_SST": 0.0217228200202757
+    }
+   ],
+   "MAE_advantage_over_reference": -4.4495931707975216e-05,
+   "p": 0.9849507524623768,
+   "null_mean": -5.472409748316949e-06,
+   "null_sd": 0.0020845846896117718,
+   "MDE80": 0.00583683713091296,
+   "label": "ORACLE ON ABSENCE. the indicator is realised. this is the CEILING on what a perfect availability forecast could buy the team model, not an achievable increment."
+  },
+  "absence_heterogeneity": [
+   {
+    "_q": 0,
+    "n": 35,
+    "mean_forecast_points_of_absentee": 8.509613996564108,
+    "mean_resid": 3.9872528407954317,
+    "implied_substitution_ratio": -0.46855860235321467
+   },
+   {
+    "_q": 1,
+    "n": 35,
+    "mean_forecast_points_of_absentee": 11.491465882095532,
+    "mean_resid": 3.0440980035784344,
+    "implied_substitution_ratio": -0.26490075633617305
+   },
+   {
+    "_q": 2,
+    "n": 34,
+    "mean_forecast_points_of_absentee": 15.300226023564408,
+    "mean_resid": -0.624244769883879,
+    "implied_substitution_ratio": 0.040799709031909596
+   },
+   {
+    "_q": 3,
+    "n": 35,
+    "mean_forecast_points_of_absentee": 19.839469351415328,
+    "mean_resid": -1.6052425550006326,
+    "implied_substitution_ratio": 0.08091156706699497
+   }
+  ],
+  "existing_artifacts": {
+   "walk_forward_RAPM": {
+    "path": "experiments/rapm_walkforward",
+    "exists": true,
+    "n_files": 4
+   },
+   "RAPM_multiseason": {
+    "path": "experiments/rapm_multiseason",
+    "exists": true,
+    "n_files": 15
+   },
+   "RAPM_v0": {
+    "path": "experiments/rapm_v0",
+    "exists": true,
+    "n_files": 4
+   },
+   "E1_I0031_rapm_as_prior": {
+    "path": "experiments/exploration/E1_I0031_rapm_as_prior",
+    "exists": true,
+    "n_files": 53
+   },
+   "champion_p_active": {
+    "path": "experiments/cbs_v15_player_oof_v5",
+    "exists": true,
+    "n_files": 1
+   },
+   "E0_I0019_availability_forecast": {
+    "path": "experiments/exploration/E0_I0019_availability_forecast",
+    "exists": true,
+    "n_files": 65
+   },
+   "minutes_twostage": {
+    "path": "experiments/minutes_twostage",
+    "exists": true,
+    "n_files": 14
+   },
+   "derived_lineups": {
+    "path": "data/lineups",
+    "exists": true,
+    "n_files": 5
+   }
+  }
+ },
+ "s10b_absence_precision": {
+  "prereg_sha256": "0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e",
+  "exploratory": true,
+  "label": "EXPLORATORY ADDITION, added after the hash.  it does not change any preregistered verdict; it puts an interval on a number s10 reported as a point estimate, which is strictly more conservative than quoting it bare.",
+  "beta": {
+   "observed": 0.02843449674670419,
+   "null_mean": -0.029830661013516613,
+   "null_sd": 0.043516313005445256,
+   "p": 0.6012699365031748,
+   "ci95": [
+    -0.056857476743968516,
+    0.11372647023737689
+   ],
+   "sd_from_beta_1": 22.32646647090075,
+   "sd_from_beta_0": 0.653421551204169,
+   "n_team_games": 1392,
+   "n_with_absence": 183
+  },
+  "injection_power": [
+   {
+    "planted_beta": 0.0,
+    "recovered_beta": 0.02843449674670419,
+    "p": 0.6070982254436391,
+    "null_sd": 0.04397314104609402,
+    "detects": false
+   },
+   {
+    "planted_beta": 0.1,
+    "recovered_beta": 0.1284344967467042,
+    "p": 0.007748062984253936,
+    "null_sd": 0.04413943890932384,
+    "detects": true
+   },
+   {
+    "planted_beta": 0.25,
+    "recovered_beta": 0.2784344967467042,
+    "p": 0.00024993751562109475,
+    "null_sd": 0.044638547265399925,
+    "detects": true
+   },
+   {
+    "planted_beta": 0.5,
+    "recovered_beta": 0.5284344967467042,
+    "p": 0.00024993751562109475,
+    "null_sd": 0.046108539889458455,
+    "detects": true
+   },
+   {
+    "planted_beta": 1.0,
+    "recovered_beta": 1.0284344967467043,
+    "p": 0.00024993751562109475,
+    "null_sd": 0.05114779456714607,
+    "detects": true
+   }
+  ],
+  "smallest_detected_beta": 0.1
+ },
+ "defects_disclosed": {
+  "D-1": "the first injection-power construction was uninformative -- it measured power against ONE cell's loss-difference variance and reported it as the screen's power, and its type-I 'pass' of p=1.0000 at exactly zero effect was mechanically forced rather than measured. repaired in s07 with a PER-CELL minimum detectable effect and a genuine 400-dataset type-I check (rejection rate 0.0425). the defective file is kept on disk as injection_power.csv.",
+  "D-2": "B1_BOTTOMUP_AVAIL as preregistered carries a +8.14 point level bias driven by the champion's tier-B fallback universe, whose p_active is a declared constant of 0.8 against a realised appearance rate of 0.10. that is the LITERAL bottom-up arm and it is reported as such, but three repaired variants were added so the comparison is not a strawman.",
+  "D-3": "the preregistered DR4 gap shares do not partition the gap (roster 79.5%, level 98.6%, residual -78.1%) because the ORACLE arm repairs both at once. the preregistration said shares would not be clipped; s07 adds a SEQUENTIAL decomposition whose steps do sum to the total, and both are published.",
+  "file": "DEFECTS.md"
+ },
+ "where_this_screen_could_have_cheated": {
+  "declared_in_advance": "COMPARISONS_PRESELECTED.md section C-1..C-7",
+  "C-1_realised_roster": "summing only players who appeared. that is B3_ORACLE_ROSTER, labelled ORACLE, excluded from every headline and every ranking. it is the largest available cheat here and it would have made bottom-up look BETTER (MAE 10.65 against B1's 18.26).",
+  "C-2_tuning_on_the_scored_season": "every half-life, shrinkage constant, blend weight, affine calibration and beta is fitted on STRICTLY EARLIER SEASONS. the 2022 fold sees only 2021 and its thin fits are visible in the per-season tables.",
+  "C-3_level_recalibration": "B4 uses earlier seasons only.",
+  "C-4_rung_shopping": "all three team reference rungs are published. the conclusion does not depend on which is chosen: A_TEAM loses to R1 and R2 and beats only R0.",
+  "C-5_dropping_the_playoffs": "excluded BEFORE any statistic, for D104's structural reason, and reported separately anyway. on the playoff stratum the ordering is the same.",
+  "C-6_unmanifested_contract_v5": "the identity map was RECONSTRUCTED from cbs_obligation_key and verified EXACT against the manifest-verified contract v4 on all 22,659 shared rows. v5 was opened once, to DESCRIBE 40 rows that were then dropped, and no number depends on it.",
+  "C-7_cross_level_dR2": "no team-level dR2 is compared to any player-level dR2 anywhere. where both levels appear together only skill-against-a-matched-reference is shown, with the response difference stated in the same sentence.",
+  "one_more_not_in_the_prereg": "I could have quoted P02 (the team arm losing to its own matched reference) without noting that its observed effect of 0.205 MAE sits BELOW its own 80%-power MDE of 0.251. it is significant at p 0.0159 and underpowered, and both facts are stated wherever it is quoted."
+ }
+}

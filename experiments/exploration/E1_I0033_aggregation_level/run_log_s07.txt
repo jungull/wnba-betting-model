@@ -1,0 +1,79 @@
+﻿
+====================================================================================================
+S07 GAP DECOMPOSITION AND POWER REPAIR
+====================================================================================================
+  prereg hash verified: 0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e
+
+====================================================================================================
+1. THE ROSTER PROBLEM, QUANTIFIED
+====================================================================================================
+  champion rows on RS1 team-games: 20084
+ tier_A     n  mean_p_active  mean_pts_hat  appear_rate  mean_realised_pts
+  False  3772       0.524892      8.560577     0.101538           0.814422
+   True 16312       0.760833      8.087580     0.778813           6.813389
+
+  THE MISCALIBRATION: tier-B rows carry p_active 0.5249 but actually appear 0.1015 of the time.
+
+  prior-games mean roster size on RS1: mean 9.3999 (realised mean 9.4016)
+  walk-forward affine on B1_BOTTOMUP_AVAIL      slopes by season: {2022: -0.0166, 2023: 0.0001, 2024: -0.0102}
+  walk-forward affine on B1A_TIER_A_ONLY        slopes by season: {2022: 1.0, 2023: 0.1294, 2024: 0.2317}
+  walk-forward affine on B1N_ROSTER_NORMALISED  slopes by season: {2022: 0.0713, 2023: 0.1172, 2024: 0.1534}
+  walk-forward affine on B3_ORACLE_ROSTER       slopes by season: {2022: 0.0151, 2023: 0.0832, 2024: 0.1201}
+  walk-forward affine on A_TEAM                 slopes by season: {2022: 0.9857, 2023: 0.3259, 2024: 0.6987}
+
+  REPAIRED BOTTOM-UP ARMS (same response, same rows, same SST):
+                  arm    n       MAE  R2_common_SST      bias  skill_MAE_vs_R2_TEAM_EWMA  ORACLE  added_after_hash
+               A_TEAM 1392  8.685506       0.021723 -1.029449                  -0.024209   False             False
+           A_TEAM_CAL 1392  8.846406      -0.011751 -1.255222                  -0.043183   False             False
+    B1_BOTTOMUP_AVAIL 1392 18.263037      -8.662697  8.138903                  -1.153607   False             False
+      B1A_TIER_A_ONLY 1356  9.785074      -0.218800 -2.179747                  -0.155003   False              True
+B1N_ROSTER_NORMALISED 1392 10.442556      -0.445949  0.215144                  -0.231403   False              True
+      B4_BOTTOMUP_CAL 1392  8.819619      -0.010721 -0.831852                  -0.040024   False             False
+       B4A_TIER_A_CAL 1356  9.134038      -0.058031 -0.588463                  -0.078157   False             False
+   B4N_NORMALISED_CAL 1392  8.654625       0.020566 -0.080382                  -0.020568   False             False
+     B3_ORACLE_ROSTER 1392 10.650052      -0.544608 -0.648401                  -0.255872    True             False
+       B4O_ORACLE_CAL 1392  8.734009       0.008540 -0.571956                  -0.029929   False             False
+         R2_TEAM_EWMA 1392  8.480207       0.057026 -0.559411                   0.000000   False             False
+            R0_LEAGUE 1392  8.790932      -0.005095 -0.635931                  -0.036641   False             False
+
+====================================================================================================
+2. SEQUENTIAL GAP DECOMPOSITION (repairs DEFECT D-3: these DO sum to the total)
+====================================================================================================
+  decomposition row set: 1392 of 1392 RS1 rows carry every arm
+  start   B1_BOTTOMUP_AVAIL  (literal bottom-up)       MAE 18.26304   step     +nan   
+  + normalise the roster size to prior games (fixes the availability miscalibration) MAE 10.44256   step +7.82048   81.7% of the gap
+  + remove residual level and scale bias (walk-forward affine) MAE  8.65463   step +1.78793   18.7% of the gap
+  target  A_TEAM (top-down)                            MAE  8.68551   step -0.03088   -0.3% of the gap
+
+  TOTAL GAP 9.57753 MAE points; the steps sum to 9.57753
+
+====================================================================================================
+3. IS IT ERROR COMPOUNDING?  Variance accounting on the summed player errors
+====================================================================================================
+  [raw_B1] players summed 14.43 | sd(summed err) 33.4357 | independence sd 20.1445 | ratio 1.6598 | cancellation 0.3256 | within-game var share 0.9068
+  [roster_normalised] players summed 14.43 | sd(summed err) 13.2634 | independence sd 19.6766 | ratio 0.6741 | cancellation 0.2010 | within-game var share 0.9646
+
+====================================================================================================
+4. ARE THE PLAYER FORECASTS INDIVIDUALLY WEAK?  Skill at each level, matched refs
+====================================================================================================
+  PLAYER LEVEL  n=13021  champion MAE 4.2491  matched prior reference MAE 4.1324  skill -2.8245%
+  TEAM   LEVEL  n=1392  team arm MAE 8.6855  matched prior reference MAE 8.4802  skill -2.4209%
+  *** THESE TWO SKILLS ARE ON DIFFERENT RESPONSES (player points vs team points) AND
+      ARE NOT dR2.  They are ratios of MAE against a matched reference at each level,
+      which is the ONLY comparison D101's denominator rule permits across responses.
+
+====================================================================================================
+5. POWER REPAIR (DEFECT D-1): per-cell MDE and a genuine type-I check
+====================================================================================================
+  P01  A_TEAM             vs B1_BOTTOMUP_AVAIL   null_sd 1.76625  observed +9.5775 (= 5.4 sd)  MDE80 4.9455 MAE pts  detects 1.96sd: True
+  P02  A_TEAM             vs R2_TEAM_EWMA        null_sd 0.08971  observed -0.2053 (= -2.3 sd)  MDE80 0.2512 MAE pts  detects 1.96sd: True
+  P03  B1_BOTTOMUP_AVAIL  vs R2_TEAM_EWMA        null_sd 1.77885  observed -9.7828 (= -5.5 sd)  MDE80 4.9808 MAE pts  detects 1.96sd: True
+  P04  C1_BLEND           vs A_TEAM              null_sd 0.00920  observed -0.0104 (= -1.1 sd)  MDE80 0.0257 MAE pts  detects 1.96sd: False
+  P05  B3_ORACLE_ROSTER   vs B1_BOTTOMUP_AVAIL   null_sd 1.44570  observed +7.6130 (= 5.3 sd)  MDE80 4.0479 MAE pts  detects 1.96sd: True
+  P06  B4_BOTTOMUP_CAL    vs B1_BOTTOMUP_AVAIL   null_sd 1.75943  observed +9.4434 (= 5.4 sd)  MDE80 4.9264 MAE pts  detects 1.96sd: True
+
+  TYPE-I CHECK: 400 synthetic no-effect datasets through the full null
+    rejection rate at nominal 0.05 : 0.0425   (target ~0.05)
+    p quartiles                    : 0.255 / 0.488 / 0.735
+
+  wrote bottomup_repairs.csv, gap_decomposition.csv, injection_power_per_cell.csv, _s07.json

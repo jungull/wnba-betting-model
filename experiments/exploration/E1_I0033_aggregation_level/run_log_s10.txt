@@ -1,0 +1,72 @@
+﻿
+====================================================================================================
+S10 PLAYER-VALUE SCOPE
+====================================================================================================
+  prereg hash verified: 0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e
+  champion rows on RS1: 20084
+
+====================================================================================================
+1. WHO IS A STARTER, DECIDED STRICTLY PRE-GAME
+====================================================================================================
+  top-3 by PRE-GAME expected minutes: 4176 rows over 1392 team-games
+  their realised appearance rate: 0.9411
+  their mean realised points when they appear: 14.2832
+  their mean pts_hat: 14.3408
+
+====================================================================================================
+2. THE CHEAPEST AVAILABLE ESTIMATOR AND ITS HONEST ACCURACY
+====================================================================================================
+  team-games by number of pre-game top-3 players absent:
+n_top3_out
+0    1209
+1     139
+2      25
+3      19
+
+  mean (team points - prior reference):
+    no top-3 absent  n=1209  +0.5705 points
+    >=1 top-3 absent n= 183  +0.4860 points
+    RAW CONTRAST                    -0.0845 points
+  the NAIVE bottom-up estimate of that loss (their own forecast points):
+    mean naive_points_lost among absent-star games: 15.8151 points
+
+  *** THE SUBSTITUTION RATIO: the team actually loses 0.5% of what the naive
+      'subtract their forecast points' estimator says it loses. ***
+
+  walk-forward slope on the naive lost-points term (1.0 would mean 'the team loses
+  exactly the player's forecast points'):
+    season 2022: beta +0.0000  (n_train 0)
+    season 2023: beta +0.0040  (n_train 432)
+    season 2024: beta +0.0249  (n_train 912)
+
+  CONDITIONED ON REALISED ABSENCE -- not a live forecast increment:
+            arm    n      MAE  R2_common_SST
+   R2_TEAM_EWMA 1392 8.480207       0.057026
+R2_PLUS_ABSENCE 1392 8.480252       0.057195
+         A_TEAM 1392 8.685506       0.021723
+  dMAE (absence-aware minus prior reference) -0.00004  p 0.9850  (null_mean -5.47e-06 sd 0.00208)
+  MDE80 for this cell: 0.00584 MAE points
+
+====================================================================================================
+3. IS THE LOSS PROPORTIONAL TO THE PLAYER?  (the heterogeneity the user implies)
+====================================================================================================
+  team-games with EXACTLY ONE pre-game top-3 player absent, by that player's size:
+ _q  n  mean_forecast_points_of_absentee  mean_resid  implied_substitution_ratio
+  0 35                          8.509614    3.987253                   -0.468559
+  1 35                         11.491466    3.044098                   -0.264901
+  2 34                         15.300226   -0.624245                    0.040800
+  3 35                         19.839469   -1.605243                    0.080912
+
+====================================================================================================
+4. WHAT ALREADY EXISTS -- inventory, not measurement
+====================================================================================================
+  walk_forward_RAPM                exists=True  files=4  (experiments/rapm_walkforward)
+  RAPM_multiseason                 exists=True  files=15  (experiments/rapm_multiseason)
+  RAPM_v0                          exists=True  files=4  (experiments/rapm_v0)
+  E1_I0031_rapm_as_prior           exists=True  files=53  (experiments/exploration/E1_I0031_rapm_as_prior)
+  champion_p_active                exists=True  files=1  (experiments/cbs_v15_player_oof_v5)
+  E0_I0019_availability_forecast   exists=True  files=65  (experiments/exploration/E0_I0019_availability_forecast)
+  minutes_twostage                 exists=True  files=14  (experiments/minutes_twostage)
+  derived_lineups                  exists=True  files=5  (data/lineups)
+
+  wrote player_value_absence.csv, _s10.json

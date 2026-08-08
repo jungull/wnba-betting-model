@@ -1,0 +1,112 @@
+﻿
+====================================================================================================
+S06 TOP-DOWN VS BOTTOM-UP
+====================================================================================================
+  prereg hash verified: 0787b5caf7b035c2f3df3b95970ec637abf7d9e9780e17fe0f88d92a2838db2e
+
+====================================================================================================
+REFERENCES (matched, prior-history only, TEAM level)
+====================================================================================================
+  R0_LEAGUE: NaN on 8 rows (the partition's first date)
+  shrinkage target: prior-season team mean where it exists (1522 of 1940 rows), expanding league mean otherwise
+  strictly-prior assert: every team-season's first row has ZERO prior mass -- OK
+      season 2022 -> param 8.0 (fitted on 418 earlier rows)
+      season 2023 -> param 16.0 (fitted on 896 earlier rows)
+      season 2024 -> param 8.0 (fitted on 1416 earlier rows)
+      season 2022 -> param (8.0, 4.0) (fitted on 418 earlier rows)
+      season 2023 -> param (8.0, 8.0) (fitted on 896 earlier rows)
+      season 2024 -> param (12.0, 8.0) (fitted on 1416 earlier rows)
+
+====================================================================================================
+BOTTOM-UP ARMS
+====================================================================================================
+  RS1 roster arithmetic:
+    champion rows per team-game : mean 14.428  min 9  max 43
+    sum of p_active_hat         : mean 10.3381   (realised n_appeared mean 9.4016)
+    B1 mean 90.3609   B2 mean 117.9706   B3(ORACLE) mean 81.5736   response mean 82.2220
+    LEVEL BIAS: B1 +8.1389, A_TEAM -1.0294 points per team-game
+  B4 walk-forward calibration: {2022: (82.1387, -0.0166), 2023: (81.5362, 0.0001), 2024: (82.8116, -0.0102)}
+  C1 blend weight on A_TEAM by season: {2022: 0.9712, 2023: 1.0, 2024: 1.0}
+
+  SST re-checked against s05: OK (168710.407328)
+
+====================================================================================================
+SCORED TABLE -- RS1, one response, one row set, one SST, no weighting, no base
+====================================================================================================
+              row_set               arm    n       MAE      RMSE  R2_common_SST      bias  skill_MAE_vs_R2_TEAM_EWMA  ORACLE
+RS1_regular_2022_2024            A_TEAM 1392  8.685506 10.888857       0.021723 -1.029449                  -0.024209   False
+RS1_regular_2022_2024 B1_BOTTOMUP_AVAIL 1392 18.263037 34.221614      -8.662697  8.138903                  -1.153607   False
+RS1_regular_2022_2024   B2_BOTTOMUP_RAW 1392 37.417746 70.429416     -39.926588 35.748641                  -3.412362   False
+RS1_regular_2022_2024   B4_BOTTOMUP_CAL 1392  8.819619 11.067946      -0.010721 -0.831852                  -0.040024   False
+RS1_regular_2022_2024          C1_BLEND 1392  8.695863 10.900388       0.019650 -0.967883                  -0.025430   False
+RS1_regular_2022_2024        C2_PRORATE 1392  8.685506 10.888857       0.021723 -1.029449                  -0.024209   False
+RS1_regular_2022_2024         R0_LEAGUE 1392  8.790932 11.037097      -0.005095 -0.635931                  -0.036641   False
+RS1_regular_2022_2024    R1_TEAM_EXPAND 1392  8.476967 10.692152       0.056748 -0.652402                   0.000382   False
+RS1_regular_2022_2024      R2_TEAM_EWMA 1392  8.480207 10.690576       0.057026 -0.559411                   0.000000   False
+RS1_regular_2022_2024  B3_ORACLE_ROSTER 1392 10.650052 13.682343      -0.544608 -0.648401                  -0.255872    True
+
+  per-season MAE:
+season                  2022       2023       2024
+arm                                               
+A_TEAM              8.915351   8.738794   8.425358
+B1_BOTTOMUP_AVAIL  14.589480  17.714214  22.118060
+B2_BOTTOMUP_RAW    29.158503  37.385782  44.883028
+B3_ORACLE_ROSTER   10.670675  10.765128  10.516417
+B4_BOTTOMUP_CAL     8.674964   9.190821   8.578608
+C1_BLEND            8.948723   8.738794   8.425358
+C2_PRORATE          8.915351   8.738794   8.425358
+R0_LEAGUE           8.638575   9.177088   8.541896
+R1_TEAM_EXPAND      8.402645   8.619461   8.401362
+R2_TEAM_EWMA        8.455950   8.599210   8.383037
+
+  RS2 playoffs (SEPARATE, never pooled, n=130):
+              arm   n       MAE  R2_common_SST
+           A_TEAM 130  9.221737       0.044118
+B1_BOTTOMUP_AVAIL 130  9.770527      -0.099153
+  B2_BOTTOMUP_RAW 130 15.436203      -1.498065
+  B4_BOTTOMUP_CAL 130  9.501994      -0.002385
+         C1_BLEND 130  9.221156       0.044341
+       C2_PRORATE 130  9.221737       0.044118
+        R0_LEAGUE 130  9.531210      -0.002591
+   R1_TEAM_EXPAND 130  9.914547      -0.060658
+     R2_TEAM_EWMA 130  9.862045      -0.064760
+ B3_ORACLE_ROSTER 130 10.386016      -0.289662
+
+====================================================================================================
+NULLS -- paired block sign-flip, blocks = team-season
+====================================================================================================
+  P01  A_TEAM             vs B1_BOTTOMUP_AVAIL   dMAE +9.57753  N1 p 0.0000 (null_mean +1.39e-02 sd 1.77217, 36 blocks)  N1b p 0.0000  N2(naive) p 0.0000  inflation 2.194x
+  P02  A_TEAM             vs R2_TEAM_EWMA        dMAE -0.20530  N1 p 0.0159 (null_mean +6.06e-04 sd 0.08980, 36 blocks)  N1b p 0.0028  N2(naive) p 0.0023  inflation 1.342x
+  P03  B1_BOTTOMUP_AVAIL  vs R2_TEAM_EWMA        dMAE -9.78283  N1 p 0.0000 (null_mean -1.33e-02 sd 1.78490, 36 blocks)  N1b p 0.0000  N2(naive) p 0.0000  inflation 2.208x
+  P04  C1_BLEND           vs A_TEAM              dMAE -0.01036  N1 p 0.2823 (null_mean +4.50e-05 sd 0.00922, 36 blocks)  N1b p 0.2020  N2(naive) p 0.1985  inflation 1.154x
+  P05  B3_ORACLE_ROSTER   vs B1_BOTTOMUP_AVAIL   dMAE +7.61298  N1 p 0.0000 (null_mean +1.48e-02 sd 1.44970, 36 blocks)  N1b p 0.0000  N2(naive) p 0.0000  inflation 1.819x
+  P06  B4_BOTTOMUP_CAL    vs B1_BOTTOMUP_AVAIL   dMAE +9.44342  N1 p 0.0000 (null_mean +1.23e-02 sd 1.76562, 36 blocks)  N1b p 0.0000  N2(naive) p 0.0000  inflation 2.173x
+
+====================================================================================================
+POWER VERIFIED BY INJECTION -- before any null carries a verdict (D108 ruling 4)
+====================================================================================================
+  planted gap 0.00 -> observed +0.00000 | N1 p 1.0000 (sd 0.71837) | N1b p 1.0000 | N2 p 1.0000
+  planted gap 0.05 -> observed +0.05000 | N1 p 0.9415 (sd 0.71860) | N1b p 0.9683 | N2 p 0.9538
+  planted gap 0.10 -> observed +0.10000 | N1 p 0.8878 (sd 0.71894) | N1b p 0.9308 | N2 p 0.9098
+  planted gap 0.25 -> observed +0.25000 | N1 p 0.7376 (sd 0.72050) | N1b p 0.8150 | N2 p 0.7681
+  planted gap 0.50 -> observed +0.50000 | N1 p 0.4999 (sd 0.72498) | N1b p 0.6316 | N2 p 0.5384
+  planted gap 1.00 -> observed +1.00000 | N1 p 0.1757 (sd 0.74079) | N1b p 0.3324 | N2 p 0.2094
+  smallest PLANTED gap N1 detects at p<0.05: None
+  N1 p at ZERO planted effect (should be large): 1.0000
+
+====================================================================================================
+CONTROLS
+====================================================================================================
+  NEG1 date-swapped A_TEAM: 88.0% of rows actually changed; MAE 9.1782 (real 8.6855); dMAE vs B1 +9.08480 at p 0.0000
+  NEG2 date-swapped B1     : 99.9% of rows actually changed; MAE 19.2904 (real 18.2630); A_TEAM dMAE vs swapped-B1 +10.60485 at p 0.0000
+  PLACEBO no-op: reproduces P01 with deviation 0.000e+00 (must be exactly 0)
+
+====================================================================================================
+PREREGISTERED DECISION RULES
+====================================================================================================
+  DR1 TEAM LEVEL WINS   : True   (MAE_A 8.68551 < MAE_B 18.26304 and p 0.0000 < 0.05)
+  DR3 BOTTOM-UP WINS    : False
+  DR2 THE LEVELS AGREE  : False   (threshold 0.01*MAE_ref = 0.08480, |gap| = 9.57753)
+  DR4 gap attribution: total gap 9.57753 MAE | roster (ORACLE) 79.5% | level bias 98.6% | residual -78.1%
+
+  wrote topdown_vs_bottomup.csv, primary_cells_P01_P06.csv, injection_power.csv, _s06.json, _team_frame_scored.parquet
