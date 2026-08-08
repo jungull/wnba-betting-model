@@ -1,0 +1,244 @@
+{
+ "screen_id": "E1_I0032_aggregate_stack",
+ "directive": "i don't care how small an improvement is i want fractional improvements to aggregate.",
+ "partition": {
+  "seasons_allowed": [
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "seasons_scored": [
+   2022,
+   2023,
+   2024
+  ],
+  "note": "2021 exists in the ladder frame ONLY as training data for the walk-forward blend and for prior-only aggregates.  It is never scored. 2025/2026 are never read, joined, plotted or described."
+ },
+ "frames": {
+  "LADDER_AND_FEATURES": "experiments/exploration/E1_I0018_teammate_volume_channel/screen_frame.parquet",
+  "DEFENCE": "experiments/exploration/E0_I0016_efficiency_predictors/screen_frame.parquet",
+  "CHAMPION": "experiments/exploration/E1_I0020_coldstart_tiering/tier_frame.parquet",
+  "AVAILABILITY": "experiments/exploration/E0_I0019_availability_forecast/analysis_frame.parquet",
+  "join_key": [
+   "season",
+   "player_id",
+   "game_id"
+  ],
+  "forbidden_and_never_opened": [
+   "E0_I0029_freethrow_hurdle",
+   "E1_I0031_rapm_as_prior"
+  ]
+ },
+ "responses": {
+  "CONTINUOUS": [
+   "pts",
+   "minutes",
+   "fga",
+   "ppm"
+  ],
+  "BINARY_SEPARATE_RESPONSE": [
+   "p_active"
+  ],
+  "D1_RULING": "p_active is a BINARY response scored by Brier.  Under the D101 denominator rule D1 (same response) it is NOT commensurable with a dR2 on points, minutes, attempts or points-per-minute and CANNOT enter the continuous stack.  It is measured as its own single preregistered test and its result is reported beside, never inside, the stack number.  This is declared before any statistic, not after seeing one."
+ },
+ "denominator": {
+  "definition": "dR2 = (SSE_base - SSE_arm) / SST_common",
+  "SST_common": "SST of the realised response on the FULL common scored row set about its own unweighted mean, computed once per (target, stratum) and passed explicitly to every arm.  D3 of the D101 rule.",
+  "common_row_set": "ONE row set, identical for every target, every arm, every ablation and every placebo: rows present in all of LADDER_AND_FEATURES, DEFENCE and CHAMPION; season in seasons_scored; finite y for all four continuous targets; finite champion forecast for all four; finite R4_RICH_LOOKUP for all four; finite for every component feature used anywhere in the stack or in any placebo.",
+  "strata": {
+   "POOLED": "the whole common scored row set",
+   "DECISION": "n_prior >= 8 AND prior5_minutes >= 24 (D089/D099 definition, unchanged)"
+  }
+ },
+ "bases": {
+  "BASE_CHAMPION": "the champion's STORED forecast, scored as given.  No champion fitting anywhere in this screen (D091).",
+  "BASE_R4_COMPLETE": "R4_RICH_LOOKUP from the D101 canonical reference ladder, imported from E1_I0027/refladder.py, spec hash 8079f632ea1bc159bdb993e1e1efdf49d6f73c11e5ade1b5398bdffb8dac24db",
+  "HEADLINE_BASE": "BASE_CHAMPION",
+  "note": "Both bases are reported for every headline cell.  Ablation deltas are base-invariant by construction (R2(stack) - R2(stack_minus_c) contains no base term) and are reported once."
+ },
+ "components": [
+  {
+   "id": "C1_FALLBACK_ROUTE",
+   "ledger": [
+    "D092",
+    "D094",
+    "D102"
+   ],
+   "published": "D102, against D081's reference: points +2.8169%, minutes +4.9885%, attempts +4.0358% MAE skill from routing fallback_level == 2 (947 rows) alone; the pure cold-start rows (fallback_level == 3) yield +0.0767%.",
+   "implementation": "On rows where the champion's per-target fallback_level == 2, replace the champion's stored forecast with the tuned prior-history estimator R2_EWMA_TUNED.  fallback_level == 3 (pure cold start) is NOT routed -- D102 retargeted this and the cold-start rows are 2.7% of the value.  ppm has no champion fallback_level of its own and inherits pts__fallback_level; DISCLOSED.",
+   "per_target_verification": "MANDATORY.  D102's counterexample is binding: a blanket route destroys v15's availability forecast.  The route is applied to a target ONLY IF it is verified on that target, and the per-target verdict is published whether or not it passes.",
+   "ablation": "remove the route; the champion's own forecast stands on those rows."
+  },
+  {
+   "id": "C2_AVAIL_LONGABSENCE_RECAL",
+   "ledger": [
+    "D090"
+   ],
+   "published": "top decile of pl_days_since_appear (median 9 days out, n=1,659): model predicts 0.5091, observed 0.6239 -- an 11.5 point error.  The duration curve is MIS-SHAPED, not uniformly biased.",
+   "implementation": "walk-forward isotonic-free recalibration: fit, on seasons strictly earlier than the scored season, an additive logit offset per absence-duration bin of pl_days_since_appear, and apply it to p_active.  Bins frozen here: [0,2), [2,4), [4,7), [7,11), [11,inf).",
+   "response": "p_active (BINARY).  SEPARATE RESPONSE -- see responses.D1_RULING.",
+   "ablation": "measured on its own; it is structurally outside the continuous stack."
+  },
+  {
+   "id": "C3_PER_TARGET_HALFLIFE",
+   "ledger": [
+    "D094"
+   ],
+   "published": "EWMA beats SMA beats expanding on every target; the selected half-life differs by a factor of twenty across targets -- minutes 2, attempts 5, points 8, points-per-minute 40.  A single window across targets is measurably wrong.",
+   "implementation": "the routed-to estimator uses D094's per-target cell, imported from refladder.CANON, NOT re-searched.",
+   "ablation": "revert every target to ONE common half-life of 5.0 with mode 'equal' -- the single-window object D094 says is wrong.",
+   "scope_disclosure": "C3 acts ONLY through C1's routed rows.  Its pooled effect is bounded by the routed share of the row set.  A scoped delta on the routed rows alone is reported beside the pooled one and is labelled as a diagnostic, not as a stack contribution."
+  },
+  {
+   "id": "C4_SHRINK_OWN_PRIOR_SEASON",
+   "ledger": [
+    "D094",
+    "D092"
+   ],
+   "published": "shrinkage is weak and NEVER toward the league -- always toward the player's own prior season.  k = 0.5 points, 0.5 attempts, 2 ppm, and k = 0 for MINUTES where shrinkage strictly hurts.  A history minutes-floor hurts monotonically and is fixed at 0 everywhere.",
+   "implementation": "refladder.CANON's shrink / k / floor per target, unchanged.",
+   "ablation": "k = 0 on every target (no shrinkage at all).",
+   "scope_disclosure": "as C3."
+  },
+  {
+   "id": "C6_OPP_DEFENCE_SELECTIVE",
+   "ledger": [
+    "D099",
+    "D085",
+    "D098"
+   ],
+   "published": "dR2 +0.003335 (points) and +0.005028 (points-per-minute) on the full decision stratum against a complete reference, common denominator.  RAISED, NOT ACCEPTED.  70% is a pooled coefficient with no heterogeneity.  It HURTS low-volume players: SSE -0.0472 (T1) and -0.1656 (T2) against +1.3506 on the top tercile.",
+   "implementation": "walk-forward OLS residual correction on A10_opp_defrtg, APPLIED ONLY to the top tercile of prior own usage (O01_own_usg_pg), terciles cut on strictly earlier seasons.  Zero correction elsewhere.  This is the selective application D099 requires.",
+   "ablation": "drop the defence correction; the rest of the stack stands."
+  },
+  {
+   "id": "C5_TEAMMATE_VOLUME_PRIOR_ONLY",
+   "ledger": [
+    "D089",
+    "D101"
+   ],
+   "published": "walk-forward points dR2 0.0023492235735382717 at cluster p 0.0345 on the decision stratum against a complete own-prior reference, n=4,517.  D101 DOWNGRADED THE EVIDENCE: against the canonical rung it does NOT clear a correct-level null (cluster sign-flip p 0.2067, within-player cyclic p 0.0779) even though its point estimate GREW to +0.003572.",
+   "implementation": "walk-forward OLS residual correction on P01_c04_prevgame, the STRICTLY-PRIOR variant.  T01_c04_tiptime is a post-game observation and is NEVER used, quoted or fitted (D089 ruling 2).",
+   "ablation": "drop the teammate-volume correction.",
+   "carried_caveat": "included so the ablation can rule on it; its evidence is contested."
+  },
+  {
+   "id": "C7_HOME_AWAY",
+   "ledger": [
+    "D104"
+   ],
+   "published": "REAL and EXACTLY BOUNDED.  The largest dR2 a perfect home term can add is 4.63e-05; observed +6.5e-05 pooled at p 0.556.  97.6% of the team effect is free throws -- attempts, not accuracy.  D104 ruling 2 says do not add a home term to a player forecast.",
+   "implementation": "walk-forward OLS residual correction on tm_is_home.",
+   "ablation": "drop the home correction.",
+   "why_included": "it is the SMALLEST genuinely-established effect available and it sits BELOW the D103 detection floor by construction.  Whether it survives ablation is the sharpest available test of whether effects this size can aggregate at all.  Its ledger ruling says not to ship it; this screen tests it, it does not ship it."
+  }
+ ],
+ "pending_hooks": [
+  {
+   "id": "C8_FREETHROW_HURDLE",
+   "status": "RUNNING IN E0_I0029 -- NOT READ, NOT OPENED",
+   "attachment": "a residual-correction column in the FEATURE BLOCK, appended to the stack's walk-forward OLS at position 7.  The stack applies feature components through one common `apply_feature_block` step, so a new feature is one entry in FEATURE_COMPONENTS and one row in the ablation matrix.  No restructuring."
+  },
+  {
+   "id": "C9_RAPM_AS_PRIOR",
+   "status": "RUNNING IN E1_I0031 -- NOT READ, NOT OPENED",
+   "attachment": "a prior-only ESTIMATOR rung, i.e. an alternative or additional shrinkage target inside the routed-to estimator, alongside `prior_season`.  It attaches at the CANON dict as shrink='rapm' and needs no change to the routing or scoring machinery.  If instead it is a per-row feature, it attaches exactly as C8 does."
+  }
+ ],
+ "stack_order_largest_published_first": [
+  "C1_FALLBACK_ROUTE",
+  "C3_PER_TARGET_HALFLIFE",
+  "C4_SHRINK_OWN_PRIOR_SEASON",
+  "C6_OPP_DEFENCE_SELECTIVE",
+  "C5_TEAMMATE_VOLUME_PRIOR_ONLY",
+  "C7_HOME_AWAY"
+ ],
+ "stack_order_justification": "Ordered by PUBLISHED claim size, not by anything measured here.  C1 first (2.8-5.0% MAE skill).  C3 and C4 are configuration of the estimator C1 routes to, so they can only be added after C1 exists; step 1 therefore routes to a DELIBERATELY NAIVE estimator (one common half-life 5.0, mode 'equal', no shrinkage) and steps 2 and 3 upgrade it.  C6 (+0.005 dR2) before C5 (+0.0023 dR2) because both are published as dR2 on the decision stratum against a complete reference and are therefore comparable under D101.  C7 last (4.63e-05 ceiling).  THIS NESTING IS DECLARED IN ADVANCE: ablating C1 also removes C3 and C4, which will show up as redundancy in the sum-of-parts arithmetic and must not be reported as if it were a surprise.",
+ "inference": {
+  "null": "clustered PAIRED SIGN-FLIP on player-season blocks, via screenkit.paired_forecast_comparison.  Whole clusters are sign-flipped; rows are not.  The row-level naive p is computed for contrast only and published beside it with its inflation factor.",
+  "cluster": "season x player_id",
+  "n_draws": 4000,
+  "seed": 20260808,
+  "secondary_null": "screenkit SCHEME_WITHIN_CYCLIC for feature-level candidates.  The kit refuses the anticonservative plain within-player shuffle; the cyclic variant is used where a within-entity null is wanted.",
+  "cluster_robust_SEs": "NOT USED and NOT a substitute (constraint 5).",
+  "must_publish_beside_every_p": [
+   "null_mean",
+   "null_sd",
+   "n",
+   "n_clusters"
+  ],
+  "families": {
+   "HEADLINE": "8 cells: stack vs BASE_CHAMPION, 4 continuous targets x {POOLED, DECISION}.  This is the ONE preregistered test of the directive.  8 cells sits inside D103's <=18 recommendation.",
+   "SECONDARY_BASE": "the same 8 cells against BASE_R4_COMPLETE.",
+   "ABLATION": "6 components x 4 targets x 2 strata, reported per cell, no family-wise claim.",
+   "CUMULATIVE": "6 steps x 4 targets x 2 strata.",
+   "PLACEBO": "the identical HEADLINE family computed on the placebo stack.",
+   "AVAILABILITY": "1 cell: recalibrated p_active vs stored p_active, Brier, pooled."
+  }
+ },
+ "placebo_stack": {
+  "principle": "same COUNT, same FUNCTIONAL FORMS, same pipeline, same nulls, same row set, same denominator.  Only the information content is destroyed.",
+  "seed": 424242,
+  "components": [
+   {
+    "id": "P1_PLACEBO_ROUTE",
+    "mirrors": "C1_FALLBACK_ROUTE",
+    "design": "route a RANDOM subset of NON-fallback rows, of exactly the same size as the real routed set within the scored rows, to the same estimator.  Drawn once with the placebo seed and frozen."
+   },
+   {
+    "id": "P3_PLACEBO_HALFLIFE",
+    "mirrors": "C3_PER_TARGET_HALFLIFE",
+    "design": "per-target half-lives drawn uniformly at random from refladder's HALF_LIFE_GRID with the placebo seed, replacing D094's selection."
+   },
+   {
+    "id": "P4_PLACEBO_SHRINK",
+    "mirrors": "C4_SHRINK_OWN_PRIOR_SEASON",
+    "design": "per-target k drawn uniformly from {0.0, 0.5, 1.0, 2.0} with the placebo seed."
+   },
+   {
+    "id": "P6_PLACEBO_DEFENCE",
+    "mirrors": "C6_OPP_DEFENCE_SELECTIVE",
+    "design": "opponent defensive rating REASSIGNED ACROSS OPPONENTS within season (entity swap), then applied through the identical selective top-usage-tercile rule."
+   },
+   {
+    "id": "P5_PLACEBO_TEAMMATE",
+    "mirrors": "C5_TEAMMATE_VOLUME_PRIOR_ONLY",
+    "design": "G01_noise, the frame's own pre-existing negative-control column, in the identical walk-forward OLS position."
+   },
+   {
+    "id": "P7_PLACEBO_HOME",
+    "mirrors": "C7_HOME_AWAY",
+    "design": "a random one-team-per-game home relabel preserving the exact per-game marginal.  This is D104's third control, the one that passed at p 0.982; its two failing predecessors are not reused and the reason is recorded."
+   }
+  ],
+  "decision_rule": "If the placebo stack's HEADLINE dR2 is of the same order as the real stack's on any target, the real stack's gain on that target is reported as UNINTERPRETABLE, not as a gain.  Stated before computing either."
+ },
+ "additional_controls": [
+  {
+   "id": "NOOP",
+   "design": "stack == champion exactly",
+   "must_return": "dR2 == 0.0 and p == 1.0"
+  },
+  {
+   "id": "SELF",
+   "design": "champion vs champion",
+   "must_return": "dR2 == 0.0 and p == 1.0"
+  }
+ ],
+ "reproduction_rule": "Every component's PUBLISHED figure is quoted, reproduced on the ONE common row set with the ONE denominator, and the delta published.  Where the published figure sits on a non-comparable base (a different response, a different metric, a different row set), that is stated and the figure is NOT rescaled -- D101: failing D1 is not repairable.  A component that cannot be reproduced is EXCLUDED, not approximated, and the exclusion is published.",
+ "where_this_screen_could_have_cheated": [
+  "choosing the stack order after seeing the ablation -- prevented by hashing the order here",
+  "choosing the placebo design after seeing the real gain -- prevented by hashing it here",
+  "letting the routed rows define their own SST -- prevented by passing SST explicitly",
+  "quoting the vs-champion base when the vs-R4 base is worse -- both are always published",
+  "dropping C7 once its ceiling is recalled -- it is hashed into the list and cannot be dropped",
+  "re-searching D094's half-lives on the scored rows -- they are IMPORTED from refladder.CANON"
+ ],
+ "sha256": "7f784133085fffc3ef9ce93086b6c64045e5190e875f302c682547aafde0206d",
+ "n_components_continuous": 6,
+ "n_components_separate_response": 1,
+ "n_placebo_components": 6,
+ "added_after_hashing": 0,
+ "dropped_after_hashing": 0
+}

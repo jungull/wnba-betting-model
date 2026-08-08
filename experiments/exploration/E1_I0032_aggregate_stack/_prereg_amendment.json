@@ -1,0 +1,41 @@
+{
+ "amendment": 1,
+ "parent_sha256": "7f784133085fffc3ef9ce93086b6c64045e5190e875f302c682547aafde0206d",
+ "trigger": "A ROW COUNT ONLY: s04 reported 0 fallback_level == 2 rows inside the preregistered common row set (62 in the joined frame, 0 after the prior5_minutes requirement). No outcome statistic existed when this amendment was written.",
+ "components_added": 0,
+ "components_dropped": 0,
+ "changes": [
+  {
+   "what": "BASE UNIVERSE",
+   "from": "rows present in ALL of E1_I0018 (features), E0_I0016 (defence) and E1_I0020 (champion)",
+   "to": "E0_I0024_reb_ast_characterisation/screen_frame.parquet, 18,212 rows, seasons 2021-2024.  It STRICTLY CONTAINS the champion's universe (tier & rebast = 13,879, tier-only = 0) and is the most complete player-game history in the repository. 2021 rows are HISTORY ONLY and are never scored.",
+   "why": "the champion's own universe is 13,879 rows for 2022-2024 against E1_I0018's 11,706; using the narrower frame as the base deletes 885 of the 947 rows the largest component acts on."
+  },
+  {
+   "what": "MISSING-FEATURE RULE",
+   "from": "a component's feature had to be finite on every common row",
+   "to": "a feature component applies its walk-forward correction where its feature is finite and applies EXACTLY ZERO where it is not.  This is what a production stack does, it keeps ONE row set and ONE denominator, and it is applied IDENTICALLY in the real stack, in every ablation and in every placebo.",
+   "consequence_stated_in_advance": "C5 (teammate volume) reaches 11,706 of 13,879 scored rows and only 62 of the 947 routed rows.  C6 (defence) reaches ~12,030.  Their measured contribution is therefore bounded by their coverage and that bound is published beside their ablation delta."
+  },
+  {
+   "what": "DEFENCE COVERAGE",
+   "from": "A10_opp_defrtg joined on (season, player_id, game_id)",
+   "to": "A10_opp_defrtg joined on (season, game_id, opp_team_id).  It is a TEAM-GAME property, not a player property, so the team-game join is the correct one and it is exact where both are present -- verified and published.",
+   "why": "the player-row join carried the E1_I0016 universe's gaps for no reason."
+  },
+  {
+   "what": "DECISION STRATUM COLUMNS",
+   "from": "n_prior >= 8 AND prior5_minutes >= 24 (E1_I0018 columns)",
+   "to": "pl_games_prior >= 8 AND pl_min_mean5 >= 24 (the champion frame's own columns). VERIFIED IDENTICAL on the 11,706-row overlap: 4,513 rows either way, agreement 1.0000, corr 1.000000 on both ingredients.  The stratum DEFINITION is unchanged; only the columns carrying it are.",
+   "why": "prior5_minutes is finite on 9,496 of 11,706 rows and on ZERO routed rows."
+  },
+  {
+   "what": "PLACEBO TEAMMATE FEATURE",
+   "from": "E1_I0018's G01_noise",
+   "to": "E0_I0024's own G01_noise, which covers the whole base universe.  It is the same kind of object -- a pre-existing negative-control noise column written by an earlier screen, not one manufactured here.",
+   "why": "the E1_I0018 column does not exist outside the E1_I0018 universe."
+  }
+ ],
+ "what_this_amendment_could_have_bought_the_agent_and_did_not": "Widening the row set widens C1's population from 62 to 947 rows, which can only help the component with the largest published claim.  The agent had NOT computed any dR2 when it made the change, so it could not have known the sign -- but a reader should treat C1's measured gain as the figure this amendment most affects, and the ablation and the placebo route are the checks on it.  Both were hashed before the amendment.",
+ "sha256": "b33ff1e4e779dbec7ea1ebf11872b3fc873e3378d4d85908da7007dd2ab6d26f"
+}
