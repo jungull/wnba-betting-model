@@ -1,0 +1,72 @@
+﻿  guard ok  analysis frame reload                          n=17809   seasons=[2022, 2023, 2024] max_date=2024-10-20
+
+====================================================================================================
+s06A -- LOAD THE MINUTES FORECAST (same arm, same walk-forward, same manifest discipline)
+====================================================================================================
+  season 2022  asof=artifact  fit_seasons=[2021]             fit_through_season=2022  kit status=UNUSABLE
+  season 2023  asof=artifact  fit_seasons=[2021, 2022]       fit_through_season=2023  kit status=UNUSABLE
+  season 2024  asof=artifact  fit_seasons=[2021, 2022, 2023] fit_through_season=2024  kit status=UNUSABLE
+  minutes forecast attached to 17809 / 17809 rows
+  guard ok  frame with minutes forecast                    n=17809   seasons=[2022, 2023, 2024] max_date=2024-10-20
+
+====================================================================================================
+s06B -- ABSTENTION ON AVAILABILITY (Brier skill vs the RICH reference R3)
+====================================================================================================
+coverage                                         0.25    0.40    0.50    0.60    0.75    0.80    0.90    0.95    1.00
+rule                                                                                                                 
+boundary p_active first (|p-0.5| ascending)   +0.1097 +0.1402 +0.1286 +0.1226 +0.0820 +0.0539 +0.0604 +0.0633 +0.0714
+is_fallback first                             +0.0937 +0.0840 +0.0725 +0.0642 +0.0675 +0.0681 +0.0779 +0.0802 +0.0714
+low p_active first (-p_active)                +0.0757 +0.0662 +0.0618 +0.0528 +0.0341 +0.0682 +0.0621 +0.0557 +0.0714
+model uncertainty first (mdl_pred_entropy)    +0.1097 +0.1402 +0.1286 +0.1226 +0.0820 +0.0539 +0.0604 +0.0633 +0.0714
+thin depth first (D076 axis: -pl_games_prior) +0.0886 +0.0810 +0.0778 +0.0775 +0.0786 +0.0780 +0.0783 +0.0710 +0.0714
+
+====================================================================================================
+s06C -- ABSTENTION ON MINUTES, D076's OWN METRIC (appeared rows, 1 - MAE/MAE_ref)
+====================================================================================================
+  appeared rows with a minutes forecast: 13879
+  pooled: model MAE=5.0797  prior-mean-ref MAE=5.2669  SKILL=+0.03555
+  (D076 reported pooled minutes skill +0.03555 on 13,879 rows -- reproduced here as a
+   provenance cross-check, not as a new claim.)
+
+  MINUTES SKILL vs COVERAGE:
+coverage                                       0.25     0.40     0.50     0.60     0.75     0.80     0.90     0.95     1.00
+rule                                                                                                                       
+COMBINED: rank(-depth) + rank(entropy)     +0.07901 +0.09446 +0.09566 +0.09505 +0.08524 +0.08347 +0.07476 +0.05411 +0.03555
+D076: is_fallback first                    +0.06769 +0.05287 +0.05203 +0.05493 +0.04718 +0.04931 +0.04907 +0.04926 +0.03555
+D076: thin depth first (-pl_games_prior)   +0.11159 +0.10892 +0.10675 +0.10481 +0.09022 +0.08732 +0.07919 +0.04833 +0.03555
+NEW: boundary p_active first (|p-0.5| asc) +0.04017 +0.05559 +0.06412 +0.07151 +0.07393 +0.07195 +0.04704 +0.04098 +0.03555
+NEW: high p_active entropy first           +0.04017 +0.05559 +0.06412 +0.07151 +0.07393 +0.07195 +0.04704 +0.04098 +0.03555
+NEW: low p_active first                    +0.03988 +0.05603 +0.06520 +0.07250 +0.07471 +0.07426 +0.05141 +0.04372 +0.03555
+
+====================================================================================================
+s06D -- THE DECISIVE TEST: DOES p_active ADD ANYTHING *WITHIN* DEPTH STRATA?
+====================================================================================================
+  If p_active and D076's depth rule are the same rule wearing two names, then ordering by
+  p_active INSIDE a depth stratum should buy nothing.  Split the appeared rows into depth
+  quintiles (D076's own cut) and run the abstention curve on p_active entropy inside each.
+ depth_quintile    n  median_games_prior  skill_at_full_coverage  skill_at_cov_0.90  skill_at_cov_0.75  skill_at_cov_0.60  gain_from_p_active_at_075
+              0 2776             2.00000                -0.15088           -0.12221           -0.10505           -0.06157                    0.04582
+              1 2776             9.00000                 0.03047            0.02971            0.02972            0.02331                   -0.00074
+              2 2775            16.00000                 0.09650            0.10174            0.10129            0.09685                    0.00479
+              3 2776            24.00000                 0.10797            0.11311            0.10222            0.08610                   -0.00575
+              4 2776            34.00000                 0.10984            0.10818            0.09449            0.07411                   -0.01535
+
+  correlation between the two abstention axes on appeared rows:
+    corr(pl_games_prior, p_active entropy) = -0.3710
+    corr(pl_games_prior, p_active)         = +0.2781
+
+====================================================================================================
+s06E -- AND THE ONE THAT MATTERS FOR BETTING: VOID RISK AT EACH p_active LEVEL
+====================================================================================================
+  Player props are typically VOIDED on a no-show, so the operative quantity is the
+  probability of a void, and whether it is well estimated.
+p_active_band    n  share_of_rows  predicted_void  actual_void  void_gap_pred_minus_actual
+  [0.00,0.50) 3501         0.1966          0.7739       0.7489                      0.0250
+  [0.50,0.80) 1688         0.0948          0.2932       0.3703                     -0.0770
+  [0.80,0.90) 3411         0.1915          0.1501       0.1140                      0.0361
+  [0.90,0.95) 4884         0.2742          0.0720       0.0379                      0.0341
+  [0.95,1.01) 4325         0.2429          0.0367       0.0252                      0.0115
+
+wrote abstention_availability.csv, abstention_minutes.csv,
+      abstention_p_active_within_depth_quintiles.csv, void_risk_bands.csv, s06_abstention.json
+DONE

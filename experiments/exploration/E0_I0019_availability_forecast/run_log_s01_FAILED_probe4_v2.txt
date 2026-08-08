@@ -1,0 +1,183 @@
+﻿
+====================================================================================================
+s01A -- WALK-FORWARD RECEIPTS (both arms, 2021-2024)
+====================================================================================================
+  v15  2021  train=[]                     n_train=0      n_test=4997  fitted=False degen=True  fold_boundary=True prov_hist=True own_outcome_never_informed=True scored=False
+  v15  2022  train=[2021]                 n_train=4850   n_test=6333  fitted=True  degen=False fold_boundary=True prov_hist=True own_outcome_never_informed=True scored=False
+  v15  2023  train=[2021, 2022]           n_train=10413  n_test=7418  fitted=True  degen=False fold_boundary=True prov_hist=True own_outcome_never_informed=True scored=False
+  v15  2024  train=[2021, 2022, 2023]     n_train=16563  n_test=7866  fitted=True  degen=False fold_boundary=True prov_hist=True own_outcome_never_informed=True scored=False
+  v14  2021  train=[]                     n_train=0      n_test=4850  fitted=False degen=True  fold_boundary=True prov_hist=True own_outcome_never_informed=True scored=False
+  v14  2022  train=[2021]                 n_train=4850   n_test=5563  fitted=True  degen=False fold_boundary=True prov_hist=True own_outcome_never_informed=True scored=False
+  v14  2023  train=[2021, 2022]           n_train=10413  n_test=6150  fitted=True  degen=False fold_boundary=True prov_hist=True own_outcome_never_informed=True scored=False
+  v14  2024  train=[2021, 2022, 2023]     n_train=16563  n_test=6096  fitted=True  degen=False fold_boundary=True prov_hist=True own_outcome_never_informed=True scored=False
+  -> 2021 is DEGENERATE in BOTH arms (n_train=0, model_was_fitted=false). EXCLUDED.
+  -> SCREEN SEASONS = [2022, 2023, 2024]
+
+====================================================================================================
+s01B -- MANIFESTS, AND THE ARTIFACT-GRANULARITY QUESTION
+====================================================================================================
+  screenkit.check_manifest verdict field is `status`.
+  v15 p_active 2022  rows=6333   asof=artifact  fit_seasons=[2021]           fit_through_season=2022
+  v15 p_active 2023  rows=7418   asof=artifact  fit_seasons=[2021, 2022]     fit_through_season=2023
+  v15 p_active 2024  rows=7866   asof=artifact  fit_seasons=[2021, 2022, 2023] fit_through_season=2024
+  v14 p_active 2022  rows=5563   asof=artifact  fit_seasons=[2021]           fit_through_season=2022
+  v14 p_active 2023  rows=6150   asof=artifact  fit_seasons=[2021, 2022]     fit_through_season=2023
+  v14 p_active 2024  rows=6096   asof=artifact  fit_seasons=[2021, 2022, 2023] fit_through_season=2024
+
+  Every p_active file is asof_granularity='artifact' -> screenkit says UNUSABLE, which is
+  the correct GENERIC verdict.  D076's specific argument is that each file's OWN
+  fit_through_season equals its own season, so the artifact is wholly inside the
+  partition.  s01C VERIFIES THAT ON VALUES instead of inheriting it.
+
+  contract_v5 (v15's declared row universe) manifest presence:
+    -> 0 manifests in prediction_contract_v5.  NO SIBLING MANIFEST => UNVERIFIABLE, NOT OPENED (same rule D076 applied to minutes_baselines/test_predictions.csv).
+
+  FORBIDDEN artifacts -- MANIFEST ONLY, data never opened:
+    data/w1_truth/player_game_availability.csv     status=UNUSABLE      asof=artifact  fit_through_season=2026 -> NOT OPENED
+    data/w1_truth/roster_asof.csv                  status=UNUSABLE      asof=artifact  fit_through_season=2026 -> NOT OPENED
+
+====================================================================================================
+s01C -- VERIFY THE ARTIFACT SITS INSIDE ITS OWN SEASON (VALUE TEST, NOT INHERITED)
+====================================================================================================
+  contract_v4 manifest status = USABLE_IF_FILTERED
+  guard ok  contract_v4 after load                         n=22659   seasons=[2021, 2022, 2023, 2024] max_date=2024-10-20
+  v15  file 2022: rows=6333   joined=5563   unjoined=770   contract seasons seen=[2022] dates 2022-05-08..2022-09-18
+  v15  file 2023: rows=7418   joined=6150   unjoined=1268  contract seasons seen=[2023] dates 2023-05-21..2023-10-18
+  v15  file 2024: rows=7866   joined=6096   unjoined=1770  contract seasons seen=[2024] dates 2024-05-16..2024-10-20
+  v14  file 2022: rows=5563   joined=5563   unjoined=0     contract seasons seen=[2022] dates 2022-05-08..2022-09-18
+  v14  file 2023: rows=6150   joined=6150   unjoined=0     contract seasons seen=[2023] dates 2023-05-21..2023-10-18
+  v14  file 2024: rows=6096   joined=6096   unjoined=0     contract seasons seen=[2024] dates 2024-05-16..2024-10-20
+  VERDICT: every joined row of every per-season p_active artifact carries the file's own
+  season and a game_date inside it.  The artifact-level as-of bound is therefore not
+  relied upon for partitioning -- the values themselves are inside 2022-2024.
+  v15  forecast_cutoff earlier than end of game day on 17809/17809 rows (violations=0)
+  v14  forecast_cutoff earlier than end of game day on 17809/17809 rows (violations=0)
+
+====================================================================================================
+s01D -- BUILD THE SCORING FRAME (availability rebuilt from master_player box membership)
+====================================================================================================
+  master_player manifest status = USABLE_IF_FILTERED
+  guard ok  master_player after load                       n=21462   seasons=[2021, 2022, 2023, 2024] max_date=2024-10-20
+  contract `appeared` vs master_player box-membership rebuild: agreement = 1.000000 (n=17809)
+appeared_box  False  True 
+appeared                  
+False          3930      0
+True              0  13879
+  scoreable flag: outcome_scoreable__p_active True on 17809 / 17809 rows
+  after keeping prediction_required & outcome_scoreable p_active rows: n=17809
+  v15  predictions missing on 0 / 17809 contract rows
+  v14  predictions missing on 0 / 17809 contract rows
+  FINAL SCORED FRAME n=17809  (both arms present, 2022-2024)
+           n  appear_rate
+season                   
+2022    5563     0.784109
+2023    6150     0.772033
+2024    6096     0.782316
+  guard ok  scored frame                                   n=17809   seasons=[2022, 2023, 2024] max_date=2024-10-20
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    date   col forecast_cutoff          YEARS  = [2022, 2023, 2024]
+    skipped    candidate_at_cutoff      name is date-like but VALUES are NUMERIC (dtype bool, range True..True) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    -> PASS
+
+====================================================================================================
+s01E -- LEAK PROBE 1 (D076's): cold-start rows must carry ONE pooled constant per season
+====================================================================================================
+  v15  cold-start n=18    distinct pred_point per season = {2022: 1, 2023: 1, 2024: 1}   values={2022: [0.8], 2023: [0.8], 2024: [0.8]}
+  v14  cold-start n=489   distinct pred_point per season = {2022: 1, 2023: 1, 2024: 1}   values={2022: [0.8], 2023: [0.8], 2024: [0.8]}
+
+====================================================================================================
+s01F -- LEAK PROBE 2 (D076's): forecast must track PRIOR appearance rate more tightly than the REMAINING-season appearance rate
+====================================================================================================
+  v15  corr(pred, PRIOR rate)=+0.7628   corr(pred, FUTURE rate)=+0.6222   diff=+0.1406  n=16832
+  v14  corr(pred, PRIOR rate)=+0.7399   corr(pred, FUTURE rate)=+0.6092   diff=+0.1307  n=16832
+
+====================================================================================================
+s01G -- LEAK PROBE 3 (THIS SCREEN'S OWN, #1): within-stratum discrimination must be MODEST, not degenerate
+====================================================================================================
+  A forecast that had read its own outcome would separate appeared from not-appeared
+  almost perfectly INSIDE a stratum of identical pre-game state.  Strata are formed on
+  (n_prior_games decile x prior-appearance-rate quintile), both strictly-prior.
+  v15                  strata=45   weighted-mean within-stratum AUC=0.7444  max=0.9269  pooled AUC=0.9016
+  v14                  strata=45   weighted-mean within-stratum AUC=0.7310  max=0.9253  pooled AUC=0.8958
+  LEAK-FREE control    strata=45   weighted-mean within-stratum AUC=0.5798  max=0.8294  pooled AUC=0.8403
+  KNOWN-LEAKY control  strata=45   weighted-mean within-stratum AUC=1.0000  max=1.0000  pooled AUC=1.0000
+  Threshold declared BEFORE the run: fail if weighted-mean within-stratum AUC >= 0.90.
+  The KNOWN-LEAKY control shows what a 50%% outcome leak actually looks like on this
+  statistic, so the 0.90 cut is anchored by a measurement rather than by assertion.
+
+====================================================================================================
+s01H -- LEAK PROBE 4 (THIS SCREEN'S OWN, #2), v2 AFTER DEF-1: BRACKETED CONTRAST, NOT AN ABSOLUTE THRESHOLD
+====================================================================================================
+  DEF-1 (see DEFECTS.md): v1 of this probe used an absolute cut of 0.25 on the partial
+  correlation with the player's strictly-FUTURE remaining-season appearance rate.  It
+  FAILED (v15 +0.3962, v14 +0.3807) and stopped the gate.  That cut was a number I made
+  up, not a null; screenkit K1 says a probe of this shape cannot separate 'contains the
+  future' from 'is a better estimator of a persistent quantity'.  The probe is rebuilt
+  here as a CONTRAST against two CONSTRUCTED controls that bracket the question.  The
+  v1 numbers and the v1 script are preserved on disk and are reported unchanged.
+
+  LEAK-FREE CONTROL   ref_shrunk : Beta(k=5)-shrunk STRICTLY-PRIOR per-player
+                                   appearance rate (sort->shift(1)->expanding). It CANNOT
+                                   read the future by construction, so its own partial
+                                   correlation with the remainder IS the persistence floor.
+  KNOWN-LEAKY CONTROL leaky_50   : 0.5*ref_shrunk + 0.5*y  -- reads the row's OWN outcome.
+                                   Calibrates the probe's sensitivity.
+  v15 p_active         partial corr vs FUTURE remainder = +0.3962    vs OWN outcome = +0.4877
+  v14 p_active         partial corr vs FUTURE remainder = +0.3807    vs OWN outcome = +0.4644
+  LEAK-FREE control    partial corr vs FUTURE remainder = +0.1731    vs OWN outcome = +0.0955
+  KNOWN-LEAKY control  partial corr vs FUTURE remainder = +0.4381    vs OWN outcome = +0.9822
+  pure noise           partial corr vs FUTURE remainder = -0.0137    vs OWN outcome = -0.0086
+  v15  +0.3962  vs leak-free floor +0.1731 (+0.05 slack) and leaky ceiling +0.4381 -> FAIL
+  v14  +0.3807  vs leak-free floor +0.1731 (+0.05 slack) and leaky ceiling +0.4381 -> FAIL
+  probe sensitivity is real: the known-leaky control separates from the leak-free control
+  by +0.2651 on the same statistic, so the probe CAN see a leak of that size.
+
+====================================================================================================
+s01I -- LEAK PROBE 5: fold identity hashes are CONSTANT within a fold and DIFFER across
+====================================================================================================
+  v15  distinct hashes per season:
+        v15__model_hash  v15__config_hash  v15__data_snapshot_hash
+season                                                            
+2022                  1                 1                        1
+2023                  1                 1                        1
+2024                  1                 1                        1
+       distinct model_hash across the three folds = 3
+  v14  distinct hashes per season:
+        v14__model_hash  v14__config_hash  v14__data_snapshot_hash
+season                                                            
+2022                  1                 1                        1
+2023                  1                 1                        1
+2024                  1                 1                        1
+       distinct model_hash across the three folds = 3
+
+====================================================================================================
+s01J -- PROVENANCE VERDICT
+====================================================================================================
+  walk_forward_train_seasons_strictly_prior                  PASS
+  fold_boundary_receipt_ok_all_screened_folds                PASS
+  provenance_history_receipt_ok_all_screened_folds           PASS
+  own_outcome_never_informed_its_forecast_all_folds          PASS
+  forecast_never_scored_in_the_arm                           PASS
+  2021_degenerate_and_excluded                               PASS
+  artifact_values_inside_own_season                          PASS
+  cutoff_precedes_game_all_rows                              PASS
+  probe1_cold_start_single_constant                          PASS
+  probe2_tracks_prior_more_than_future                       PASS
+  probe3_within_stratum_auc_not_degenerate                   PASS
+  probe3_control_confirms_a_real_leak_would_be_seen          PASS
+  probe4_no_more_future_tracking_than_a_leak_free_control    FAIL
+  forbidden_artifacts_not_opened                             PASS
+  contract_v5_not_opened_no_manifest                         PASS
+
+  PROVENANCE VERDICT: NOT ESTABLISHED
+  wrote scored_frame.parquet  shape=(17809, 40)
+  wrote s01_provenance.json
+python : PROVENANCE NOT ESTABLISHED -- STOPPING, per the task's gate.
+At line:1 char:458
++ ... ity_forecast"; Set-Location $d; python s01_provenance.py 2>&1 | Tee-O ...
++                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PROVENANCE NOT ...he task's gate.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

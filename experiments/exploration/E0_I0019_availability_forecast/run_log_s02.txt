@@ -1,0 +1,56 @@
+﻿
+====================================================================================================
+s02A -- HISTORY FRAME (contract v4 obligations 2021-2024 + box-membership outcome)
+====================================================================================================
+  contract_v4 manifest status = USABLE_IF_FILTERED
+  guard ok  contract_v4 after load                         n=22659   seasons=[2021, 2022, 2023, 2024] max_date=2024-10-20
+  master_player manifest status = USABLE_IF_FILTERED
+  guard ok  master_player after load                       n=21462   seasons=[2021, 2022, 2023, 2024] max_date=2024-10-20
+  guard ok  history frame                                  n=22659   seasons=[2021, 2022, 2023, 2024] max_date=2024-10-20
+  history rows=22659  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]  appearance rate=0.7770
+
+====================================================================================================
+s02B -- TEAM PRE-GAME STATE (strictly prior team games, same season)
+====================================================================================================
+  master_team manifest status = USABLE_IF_FILTERED
+  guard ok  master_team after load                         n=1940    seasons=[2021, 2022, 2023, 2024] max_date=2024-10-20
+  team pre-game cols: ['tm_game_idx', 'tm_season_progress', 'tm_win_pct_prior', 'tm_win_pct_vs_league', 'tm_late_out_of_contention', 'tm_rest_days', 'tm_b2b', 'tm_3in4', 'tm_games_prior7d', 'tm_is_home', 'tm_roster_churn_prior', 'tm_newfaces_prior', 'tm_roster_size_prior', 'tm_five_tenure_prior', 'tm_five_changed_prior']
+
+====================================================================================================
+s02C -- PLAYER PRE-GAME STATE (strictly prior, over the player's own OBLIGATION rows)
+====================================================================================================
+  player pre-game cols built: 29
+
+====================================================================================================
+s02D -- POINT-IN-TIME REFERENCE FORECASTS (constructed, never fitted on scored rows)
+====================================================================================================
+  R0 expanding in-season league rate, R1 per-player prior rate, R2 Beta(k=5)-shrunk
+  R3 season 2022: table built on seasons [np.int64(2021)] (n=4850), 56 cells, backoff 0.7685
+  R3 season 2023: table built on seasons [np.int64(2021), np.int64(2022)] (n=10413), 58 cells, backoff 0.7768
+  R3 season 2024: table built on seasons [np.int64(2021), np.int64(2022), np.int64(2023)] (n=16563), 59 cells, backoff 0.7750
+
+====================================================================================================
+s02E -- ATTACH TO THE SCORED FRAME AND ADD MODEL-STATE + NEGATIVE-CONTROL CANDIDATES
+====================================================================================================
+  guard ok  candidate frame                                n=17809   seasons=[2022, 2023, 2024] max_date=2024-10-20
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    date   col forecast_cutoff          YEARS  = [2022, 2023, 2024]
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    skipped    pl_prior_rate_inseason   name is season-like but VALUES are not seasons (range 0.0..1.0) -> NOT a season column, skipped
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..129.0) -> NOT a season column, skipped
+    skipped    candidate_at_cutoff      name is date-like but VALUES are NUMERIC (dtype bool, range True..True) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    -> PASS
+  wrote analysis_frame.parquet shape=(17809, 98)
+
+====================================================================================================
+s02F -- CANDIDATE LIST, HASHED BEFORE ANY STATISTIC IS COMPUTED
+====================================================================================================
+  53 candidates in 9 families
+  CANDIDATE LIST SHA256 = aecb93baa9c7bb02e85fe6753562f2b86bbb56bd93a39ed0a7bda37b778c2048
+  6 dependents.  DEPENDENT LIST SHA256 = 8279f0c9089fb253113d9ea4528b5df160fc2f954cef2b0bd0bb5d41ab991bcc
+  TOTAL CELLS = 318
+  wrote CANDIDATES_PRESELECTED.md and candidates.json
+
+DONE
