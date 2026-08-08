@@ -1,0 +1,107 @@
+﻿
+====================================================================================================
+0. LOAD -- exploration partition only (2021-2024)
+====================================================================================================
+  data/shotcharts/shots_2021_regular.parquet       rows=  26269  seasons=[np.int64(2021)]
+  data/shotcharts/shots_2021_playoffs.parquet      rows=   2385  seasons=[np.int64(2021)]
+  data/shotcharts/shots_2022_regular.parquet       rows=  29374  seasons=[np.int64(2022)]
+  data/shotcharts/shots_2022_playoffs.parquet      rows=   3139  seasons=[np.int64(2022)]
+  data/shotcharts/shots_2023_regular.parquet       rows=  32809  seasons=[np.int64(2023)]
+  data/shotcharts/shots_2023_playoffs.parquet      rows=   2813  seasons=[np.int64(2023)]
+  data/shotcharts/shots_2024_regular.parquet       rows=  32759  seasons=[np.int64(2024)]
+  data/shotcharts/shots_2024_playoffs.parquet      rows=   3010  seasons=[np.int64(2024)]
+
+  concatenated rows = 132558
+  sorted(season.unique()) = [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  GAME_DATE range = 2021-05-14 .. 2024-10-20
+  PARTITION CHECK PASSED.
+
+  zone counts (from raw per-shot SHOT_ZONE_BASIC; zone_maps NOT read):
+zone
+Above the Break 3        37939
+Restricted Area          37743
+In The Paint (Non-RA)    27397
+Mid-Range                24370
+Corner 3                  4855
+Backcourt                  254
+
+  shots with resolved opponent = 132558  games = 970
+  Backcourt shots dropped from the 5-zone family: 254 (0.19%)  -- E0 also excluded it (n < 200 gate)
+
+====================================================================================================
+1. REPRODUCE BEFORE CHANGING -- corrected E1 conversion headline (beta +0.373)
+====================================================================================================
+  Target (E1_I0004_rim_finishing/measure_results.json, cell
+  B1_own_rate_v2_split_alpha | O2_pregame_prior_games_only):
+      n = 30764   corr = +0.02881718   diff = +0.01757440   beta = +0.37315357
+  Rebuilt here from the raw shot files by an independent transcription of the same
+  construction. Any later difference is then attributable to MY CHANGE, not my harness.
+
+  E0 zone table reproduction (zone                         n      corr      diff):
+    Restricted Area          34681   +0.0444   +0.0392   E0 published (34681, +0.0444, +0.0392)  MATCH
+    In The Paint (Non-RA)    25436   -0.0027   -0.0021   E0 published (25436, -0.0027, -0.0021)  MATCH
+    Mid-Range                22461   +0.0110   +0.0197   E0 published (22461, +0.0110, +0.0197)  MATCH
+    Corner 3                  3872   -0.0153   -0.0147   E0 published (3872, -0.0153, -0.0147)  MATCH
+    Above the Break 3        34961   +0.0027   +0.0033   E0 published (34961, +0.0027, +0.0033)  MATCH
+
+  reproduced: n=30764  corr=+0.02881718  diff=+0.01757440  beta=+0.37315357
+  E1 target : n=30764  corr=+0.02881718  diff=+0.01757440  beta=+0.37315357
+  ABSOLUTE DIFFERENCE: dn=0  |dcorr|=0.000e+00  |ddiff|=0.000e+00  |dbeta|=0.000e+00
+  REPRODUCTION: EXACT
+
+====================================================================================================
+2. CONVERSION FAMILY -- all five zones on the corrected (B1 x O2) construction
+====================================================================================================
+  The surviving lead must be assessed against its whole family, so the corrected
+  construction is extended to all five zones: own-rate = frozen split-alpha EWMA of
+  the player's PRIOR-GAMES-IN-SEASON zone conversion rate; opponent = the zone rate
+  allowed in the opponent's STRICTLY PRIOR games in season, minus its prior pooled rate.
+
+  zone                           n      corr      diff      beta    SE(cl)    t(cl)         R2
+  Restricted Area            33273   +0.0313   +0.0191   +0.4037    0.0884    +4.57   0.000980
+  In The Paint (Non-RA)      23798   -0.0078   +0.0017   -0.1216    0.0976    -1.25   0.000060
+  Mid-Range                  21100   +0.0025   +0.0094   +0.0377    0.1030    +0.37   0.000006
+  Corner 3                    3150   -0.0312   -0.0326   -0.2558    0.1775    -1.44   0.000975
+  Above the Break 3          33833   +0.0000   -0.0034   +0.0005    0.0857    +0.01   0.000000
+
+====================================================================================================
+3. SELECTION CHANNEL -- build the player-game x zone attempt-share panel
+====================================================================================================
+  RESPONSE   share_z = (player's attempts in zone z this game) / (player's total
+             attempts this game, over the five zones). Zones with zero attempts are
+             PRESENT as share = 0 -- otherwise the test would condition on shooting there.
+  OWN BASE   S1 = frozen own_rate_v2_split_alpha with minutes := total FGA in the game
+             and target := zone attempts, so the efficiency channel IS
+             EWMA_0.03(zone share) over the player's STRICTLY PRIOR games in season,
+             gated at n_prior >= 3. Reads: PRIOR GAMES OF THIS PLAYER, THIS SEASON.
+             S2 (robustness) = expanding attempt-weighted prior-games share shrunk toward
+             the expanding prior LEAGUE share, K = 50. Same window.
+  OPPONENT   OS_z = (attempts in zone z faced by the opponent in its STRICTLY PRIOR games
+             this season / total attempts faced in those games) - (LEAGUE share in zone z
+             over all games played STRICTLY BEFORE this calendar date this season).
+             Gate: >= 200 prior attempts faced. Reads: PRIOR GAMES ONLY.
+  GATE       player must have >= 5 FGA in the game.
+
+  panel rows = 85280  (970 games, 17056 player-games x 5 zones)
+  sorted(season.unique()) = [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  identity check  S1 == EWMA_0.03(zone share)[strictly prior]: max|diff| = 7.772e-16  OK
+
+  opponent-game rows = 1940; usable prior-share allowance (>= 200 prior attempts faced): 1781 (91.8%)
+
+  selection analysis rows = 51473  (10307 player-games x 5 zones)
+  sorted(season.unique()) = [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+  zone                           n  mean share     sd OS      corr      diff      beta    SE(cl)    t(cl)         R2
+  Restricted Area            10307      0.2897   0.04234   +0.1876   +0.0443   +0.7743    0.0529   +14.64   0.035209
+  In The Paint (Non-RA)      10307      0.2045   0.02686   +0.1112   +0.0255   +0.6530    0.0929    +7.03   0.012373
+  Mid-Range                  10307      0.1800   0.02086   +0.0861   +0.0164   +0.5558    0.0996    +5.58   0.007419
+  Corner 3                   10245      0.0378   0.00835   +0.0370   +0.0052   +0.3247    0.0944    +3.44   0.001370
+  Above the Break 3          10307      0.2882   0.02582   +0.0972   +0.0237   +0.5630    0.1035    +5.44   0.009447
+
+====================================================================================================
+4. WRITE FRAMES
+====================================================================================================
+  wrote selection_frame.parquet (51473 rows), conversion_frame.parquet (115154 rows), repro_ra_common.parquet, build_results.json
+  FINAL PARTITION RE-ASSERT: SEL=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] CONV=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] COMMON=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+Done.

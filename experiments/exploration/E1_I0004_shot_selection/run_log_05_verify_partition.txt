@@ -1,0 +1,91 @@
+﻿====================================================================================================
+1. STRUCTURAL -- season COLUMN VALUES in every frame this screen wrote
+====================================================================================================
+  conversion_frame.parquet                 rows= 115154  seasons=[2021, 2022, 2023, 2024]  OK
+  repro_ra_common.parquet                  rows=  30764  seasons=[2021, 2022, 2023, 2024]  OK
+  selection_frame.parquet                  rows=  51473  seasons=[2021, 2022, 2023, 2024]  OK
+  selection_frame_robust.parquet           rows=  51473  seasons=[2021, 2022, 2023, 2024]  OK
+  permutation_draws_cluster.csv            rows= 150000  (permutation draws; columns=['family', 'zone', 'metric', 'null_level', 'draw', 'value'])
+  permutation_draws_rowlevel.csv           rows=  60000  (permutation draws; columns=['family', 'zone', 'metric', 'null_level', 'draw', 'value'])
+
+====================================================================================================
+2. STRUCTURAL -- every DATA file this screen opened
+====================================================================================================
+  shot-file read patterns found in this screen's sources:
+    shots_2021_regular.parquet
+    shots_2025_playoffs.parquet
+    shots_2025_regular.parquet
+    shots_2026_regular.parquet
+    shots_{ssn}_{t}.parquet
+    shots_{s}_{t}.parquet
+
+  the PARTITION list those patterns are formatted with is, in every script:
+    addendum.py              PARTITION = [2021, 2022, 2023, 2024]
+    analyze.py               PARTITION = [2021, 2022, 2023, 2024]
+    build_frames.py          PARTITION = [2021, 2022, 2023, 2024]
+    dr2_playergame.py        PARTITION = [2021, 2022, 2023, 2024]
+    probe_schema.py          PARTITION = [2021, 2022, 2023, 2024]
+    robustness.py            PARTITION = [2021, 2022, 2023, 2024]
+
+  files in data/shotcharts that exist        : 22
+  files this screen enumerates and opens    : 8
+  of those, any with a 2025/2026 filename?  : NONE
+  holdout files present but NEVER opened    : ['league_avg_2025_playoffs.parquet', 'league_avg_2025_regular.parquet', 'league_avg_2026_regular.parquet', 'shots_2025_playoffs.parquet', 'shots_2025_regular.parquet', 'shots_2026_regular.parquet']
+
+====================================================================================================
+3. ARTIFACT CONTAMINATION -- asof_granularity COLUMN VALUES (not a text scan)
+====================================================================================================
+  data/masters/master_player.parquet.manifest.json           asof_granularity = 'row'   usable once filtered
+  data/masters/master_team.parquet.manifest.json             asof_granularity = 'row'   usable once filtered
+  data/rapm/rapm_v0.csv.manifest.json                        asof_granularity = 'artifact'   UNUSABLE at E0/E1
+  data/rapm/rapm_walkforward.csv.manifest.json               asof_granularity = 'season'   UNUSABLE at E0/E1
+  data/rapm/rapm_walkforward_seasons.csv.manifest.json       asof_granularity = 'season'   UNUSABLE at E0/E1
+  data/w1_truth/extraction_resolution.csv.manifest.json      asof_granularity = 'artifact'   UNUSABLE at E0/E1
+  data/w1_truth/player_game_availability.csv.manifest.json   asof_granularity = 'artifact'   UNUSABLE at E0/E1
+  data/w1_truth/roster_asof.csv.manifest.json                asof_granularity = 'artifact'   UNUSABLE at E0/E1
+  data/zone_maps/league_zone_averages.csv.manifest.json      asof_granularity = 'artifact'   UNUSABLE at E0/E1
+  data/zone_maps/player_zone_offense.csv.manifest.json       asof_granularity = 'artifact'   UNUSABLE at E0/E1
+  data/zone_maps/shrinkage_priors.csv.manifest.json          asof_granularity = 'artifact'   UNUSABLE at E0/E1
+  data/zone_maps/team_zone_defense.csv.manifest.json         asof_granularity = 'artifact'   UNUSABLE at E0/E1
+  data/zone_maps/team_zone_offense.csv.manifest.json         asof_granularity = 'artifact'   UNUSABLE at E0/E1
+
+  usable ('row'): 2   unusable ('artifact'): 11
+
+  pre-built artifacts actually read by this screen: NONE
+  data/zone_maps/* : NOT READ. All five carry asof_granularity == 'artifact'
+    and their own manifests state a 2021 row's shrunk value saw later seasons,
+    so FILTERING DOES NOT HELP. Zone assignment is instead taken from the raw
+    per-shot SHOT_ZONE_BASIC label inside each per-season shot file.
+  data/masters/*   : NOT READ by this screen (asof_granularity == 'row', so it
+    WOULD have been usable filtered; it simply was not needed).
+
+====================================================================================================
+4. TEXTUAL OCCURRENCES OF 2025/2026 IN THIS SCREEN'S SOURCES -- NO VERDICT
+====================================================================================================
+  A byte/regex scan is the WRONG contamination check. Listed only so a reader
+  can confirm every hit is prose about the partition rule, never a data value.
+    analyze.py:41: SEED = 20260807
+    build_frames.py:15: PARTITION (GRAPH_POLICY 13.2): seasons 2021, 2022, 2023, 2024 ONLY. 2025/2026 is
+    dr2_playergame.py:26: SEED = 20260807
+    make_findings.py:28: holdout_never_touched=["2025", "2026"],
+    make_findings.py:34: "data/shotcharts/shots_2025_regular.parquet",
+    make_findings.py:35: "data/shotcharts/shots_2025_playoffs.parquet",
+    make_findings.py:36: "data/shotcharts/shots_2026_regular.parquet",
+    make_findings.py:37: "data/shotcharts/league_avg_2025_regular.parquet",
+    make_findings.py:38: "data/shotcharts/league_avg_2025_playoffs.parquet",
+    make_findings.py:39: "data/shotcharts/league_avg_2026_regular.parquet"])
+    make_findings.py:51: "asof_granularity COLUMN VALUE. A byte/regex scan for 2025/2026 is the "
+    robustness.py:41: SEED = 20260807
+    verify_partition.py:7: screen READ is enumerated from the source and tested for a 2025/2026 filename.
+    verify_partition.py:15: A BYTE/REGEX SCAN FOR "2025"/"2026" IS THE WRONG CHECK and is not performed as a
+    verify_partition.py:18: Text occurrences of "2025"/"2026" in THIS screen's own sources are counted and
+    verify_partition.py:77: print(f"  of those, any with a 2025/2026 filename?  : "
+    verify_partition.py:115: print("4. TEXTUAL OCCURRENCES OF 2025/2026 IN THIS SCREEN'S SOURCES -- NO VERDICT")
+    verify_partition.py:125: print(f"\n  .py textual hits: {nhit} (all prose / the RNG seed 20260807, no data value)")
+
+  .py textual hits: 18 (all prose / the RNG seed 20260807, no data value)
+  .md textual hits: 2 -- NOTES.md prose describing the partition rule and the holdout it does not touch. Not listed; carries no verdict.
+
+====================================================================================================
+STRUCTURAL VIOLATIONS: 0
+====================================================================================================

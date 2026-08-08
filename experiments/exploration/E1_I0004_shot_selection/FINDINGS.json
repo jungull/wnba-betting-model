@@ -1,0 +1,1867 @@
+{
+  "screen_id": "E1_I0004_shot_selection",
+  "parent": [
+    "experiments/exploration/E0_I0004_shot_location_allowance",
+    "experiments/exploration/E1_I0004_rim_finishing"
+  ],
+  "status": "NON-CLAIMING EXPLORATION (E1). A LEAD, never a RESULT.",
+  "non_claiming_note": "No registry entry, no preregistration, no promotion, no leaderboard row. Must never be cited as evidence.",
+  "exploration_partition": {
+    "seasons": [
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "holdout_never_touched": [
+      "2025",
+      "2026"
+    ],
+    "structural_violations": 0,
+    "verifier": "verify_partition.py (season COLUMN VALUES, not a text scan)",
+    "files_opened": [
+      "data/shotcharts/shots_2021_regular.parquet",
+      "data/shotcharts/shots_2021_playoffs.parquet",
+      "data/shotcharts/shots_2022_regular.parquet",
+      "data/shotcharts/shots_2022_playoffs.parquet",
+      "data/shotcharts/shots_2023_regular.parquet",
+      "data/shotcharts/shots_2023_playoffs.parquet",
+      "data/shotcharts/shots_2024_regular.parquet",
+      "data/shotcharts/shots_2024_playoffs.parquet"
+    ],
+    "holdout_files_present_but_never_opened": [
+      "data/shotcharts/shots_2025_regular.parquet",
+      "data/shotcharts/shots_2025_playoffs.parquet",
+      "data/shotcharts/shots_2026_regular.parquet",
+      "data/shotcharts/league_avg_2025_regular.parquet",
+      "data/shotcharts/league_avg_2025_playoffs.parquet",
+      "data/shotcharts/league_avg_2026_regular.parquet"
+    ]
+  },
+  "r2_convention": {
+    "declared": "PLAIN UNWEIGHTED OLS R2 = 1 - SSE/SST with SST taken about the UNWEIGHTED mean of the response (decision D069).",
+    "exception": "One explicitly labelled robustness row uses attempt weighting; it uses STANDARD WEIGHTED SST about the WEIGHTED mean, and is labelled as such in robustness_results.json -> alternative_baseline.",
+    "defective_form_never_used": "sst = sum((sqrt(w)*y - mean(sqrt(w)*y))**2)"
+  },
+  "manifest_check": {
+    "method": "read the sibling <artifact>.manifest.json and inspect the asof_granularity COLUMN VALUE. A byte/regex scan for 2025/2026 is the WRONG check and was not used as a verdict.",
+    "zone_maps": {
+      "files": [
+        "data/zone_maps/league_zone_averages.csv",
+        "data/zone_maps/player_zone_offense.csv",
+        "data/zone_maps/shrinkage_priors.csv",
+        "data/zone_maps/team_zone_defense.csv",
+        "data/zone_maps/team_zone_offense.csv"
+      ],
+      "asof_granularity": "artifact",
+      "usable_at_E0_E1": false,
+      "read_by_this_screen": false,
+      "why": "their own manifests state a 2021 row's shrunk value saw later seasons; FILTERING DOES NOT HELP"
+    },
+    "masters": {
+      "files": [
+        "data/masters/master_player.parquet",
+        "data/masters/master_team.parquet"
+      ],
+      "asof_granularity": "row",
+      "usable_at_E0_E1": true,
+      "read_by_this_screen": false
+    },
+    "shotcharts": {
+      "files": "data/shotcharts/shots_<season>_<type>.parquet",
+      "manifests_present": false,
+      "why_safe": "raw single-season sources: the season IS the filename, so no pooled quantity can carry holdout information",
+      "read_by_this_screen": true
+    },
+    "zone_assignment_source": "raw per-shot SHOT_ZONE_BASIC inside each per-season shot file; Left/Right Corner 3 merged into 'Corner 3'. A shot's zone label is a property of that shot and reads no other row."
+  },
+  "reproduction_before_change": {
+    "target_screen": "E1_I0004_rim_finishing (cell B1_own_rate_v2_split_alpha | O2_pregame)",
+    "target": {
+      "n": 30764,
+      "corr": 0.02881718165669519,
+      "diff": 0.01757439922911997,
+      "beta": 0.3731535713274873
+    },
+    "reproduced": {
+      "n": 30764,
+      "corr": 0.02881718165669519,
+      "diff": 0.01757439922911997,
+      "beta": 0.3731535713274873
+    },
+    "absolute_difference": {
+      "corr": 0.0,
+      "diff": 0.0,
+      "beta": 0.0,
+      "n": 0
+    },
+    "exact": true,
+    "also_reproduced": {
+      "what": "E0 I0004's published five-zone leave-one-game-out table",
+      "result": "all five zones MATCH on n, corr and diff to <5e-5",
+      "detail": {
+        "Restricted Area": {
+          "n": 34681,
+          "corr": 0.04440434974644573,
+          "diff": 0.039216087905535706,
+          "se_diff": 0.005196406677113846
+        },
+        "In The Paint (Non-RA)": {
+          "n": 25436,
+          "corr": -0.0026575640759457786,
+          "diff": -0.0020728029566058678,
+          "se_diff": 0.0061447554308615634
+        },
+        "Mid-Range": {
+          "n": 22461,
+          "corr": 0.011038926790303149,
+          "diff": 0.019740330558583066,
+          "se_diff": 0.006457917996146203
+        },
+        "Corner 3": {
+          "n": 3872,
+          "corr": -0.015255953846764274,
+          "diff": -0.014693891389593828,
+          "se_diff": 0.015746810418763812
+        },
+        "Above the Break 3": {
+          "n": 34961,
+          "corr": 0.002727638044536568,
+          "diff": 0.0033114714929014816,
+          "se_diff": 0.00509467212449632
+        }
+      }
+    }
+  },
+  "selection_channel": {
+    "question": "does opponent identity shift WHERE the player shoots -- the distribution of field-goal ATTEMPTS across the five zones -- as distinct from how well they convert?",
+    "unit": "player-game x zone (zones with zero attempts present as share = 0)",
+    "response": "share_z = player's attempts in zone z / player's total attempts, that game",
+    "own_baseline_S1": "frozen own_rate_v2_split_alpha with minutes := total FGA in the game and target := zone attempts, i.e. EWMA_0.03(zone share) over the player's STRICTLY PRIOR games in season, gate n_prior >= 3",
+    "opponent_regressor_OS": "zone share of attempts faced by the opponent in its STRICTLY PRIOR games this season, minus the LEAGUE share in that zone over all games played STRICTLY BEFORE this calendar date; gate >= 200 prior attempts faced",
+    "n_player_games": 10294,
+    "gates": {
+      "min_fga_in_game": 5,
+      "min_prior_attempts_faced": 200,
+      "min_prior_games": 3
+    },
+    "per_zone": {
+      "Restricted Area": {
+        "n": 10307,
+        "corr_row": 0.18763991698998847,
+        "diff_row": 0.04427978792259863,
+        "beta_row": 0.7742726671354552,
+        "beta_cluster_level": 0.9193293906251634,
+        "corr_cluster_level": 0.2114736250386627,
+        "se_cluster_robust": 0.05287194530262361,
+        "t_cluster_robust": 14.644300728935658,
+        "t_naive": 19.392444159854353,
+        "n_clusters": 48,
+        "r2_unweighted_about_unweighted_mean": 0.03520873844800976,
+        "permutation_null_opponent_team_season": {
+          "null_mean": -0.0004875570814531993,
+          "null_sd": 0.15473938432791973,
+          "n_draws": 5000,
+          "z_row": 5.006871570427452,
+          "z_cluster": 5.94429757945375,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.0001999600079984003,
+          "p_unadjusted_one_sided_CLUSTER_real": 0.0001999600079984003,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 0.0001999600079984003,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 0.0001999600079984003,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.0001999600079984003,
+          "p_naive_rowlevel_null_WRONG": 0.0004997501249375312
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 3.8027040346877503,
+        "robustness": {
+          "beta_row_excluding_shooting_team_from_opponent_history": 0.775309371767741,
+          "p_excluding_shooting_team": 0.0001999600079984003,
+          "beta_row_excluding_own_player_from_opponent_history": 0.7834300415925142,
+          "p_excluding_own_player": 0.0001999600079984003,
+          "beta_row_S2_shrunk_baseline": 0.7644657317401865,
+          "beta_row_attempt_weighted": 0.7529550323244002
+        },
+        "persistence": {
+          "per_season": {
+            "2021": 0.6670700840836891,
+            "2022": 0.7861083685484873,
+            "2023": 0.9268896884636199,
+            "2024": 0.7327593644130741
+          },
+          "halves": {
+            "2021_2022": 0.7337004644289864,
+            "2023_2024": 0.8114753346015607
+          },
+          "n_positive": 4
+        },
+        "natural_units": {
+          "sd_of_regressor": 0.04233726916415309,
+          "share_change_per_1sd": 0.03278059031496048,
+          "relative_pct_per_1sd": 11.314141884096244,
+          "attempts_per_game_per_1sd": 0.3377256335456814,
+          "mean_share": 0.2897311227910144
+        }
+      },
+      "In The Paint (Non-RA)": {
+        "n": 10307,
+        "corr_row": 0.11123397813235968,
+        "diff_row": 0.025471378754686642,
+        "beta_row": 0.6529896973770617,
+        "beta_cluster_level": 0.9573065893798413,
+        "corr_cluster_level": 0.1433220501842653,
+        "se_cluster_robust": 0.09292830435942241,
+        "t_cluster_robust": 7.026811711224898,
+        "t_naive": 11.362266985200765,
+        "n_clusters": 48,
+        "r2_unweighted_about_unweighted_mean": 0.012372997891150206,
+        "permutation_null_opponent_team_season": {
+          "null_mean": -0.0018761153363469926,
+          "null_sd": 0.20523248884998496,
+          "n_draws": 5000,
+          "z_row": 3.1908486633034183,
+          "z_cluster": 4.673639685855506,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.0003999200159968006,
+          "p_unadjusted_one_sided_CLUSTER_real": 0.0001999600079984003,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 0.0023995200959808036,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 0.003799240151969606,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.0001999600079984003,
+          "p_naive_rowlevel_null_WRONG": 0.0004997501249375312
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 3.5833110190482294,
+        "robustness": {
+          "beta_row_excluding_shooting_team_from_opponent_history": 0.6606975607424028,
+          "p_excluding_shooting_team": 0.0007998400319936012,
+          "beta_row_excluding_own_player_from_opponent_history": 0.6708257175210116,
+          "p_excluding_own_player": 0.0005998800239952009,
+          "beta_row_S2_shrunk_baseline": 0.6218698658639058,
+          "beta_row_attempt_weighted": 0.6373297476374136
+        },
+        "persistence": {
+          "per_season": {
+            "2021": 0.3835760462843719,
+            "2022": 0.501391511608724,
+            "2023": 0.7335300015790777,
+            "2024": 0.7735983747674372
+          },
+          "halves": {
+            "2021_2022": 0.4400403292663685,
+            "2023_2024": 0.7612887745502366
+          },
+          "n_positive": 4
+        },
+        "natural_units": {
+          "sd_of_regressor": 0.026861405788950608,
+          "share_change_per_1sd": 0.017540221237249312,
+          "relative_pct_per_1sd": 8.57538790142465,
+          "attempts_per_game_per_1sd": 0.18071005655983965,
+          "mean_share": 0.2045414322812769
+        }
+      },
+      "Mid-Range": {
+        "n": 10307,
+        "corr_row": 0.08613546984344751,
+        "diff_row": 0.016368815704242173,
+        "beta_row": 0.5558250299356523,
+        "beta_cluster_level": 0.8107877872674014,
+        "corr_cluster_level": 0.11358512271295099,
+        "se_cluster_robust": 0.09960202043405605,
+        "t_cluster_robust": 5.580459387404206,
+        "t_naive": 8.77653554479226,
+        "n_clusters": 48,
+        "r2_unweighted_about_unweighted_mean": 0.007419319165151594,
+        "permutation_null_opponent_team_season": {
+          "null_mean": 0.0032109681843979975,
+          "null_sd": 0.15774133896861817,
+          "n_draws": 5000,
+          "z_row": 3.5032925760899865,
+          "z_cluster": 5.119627006866389,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.0001999600079984003,
+          "p_unadjusted_one_sided_CLUSTER_real": 0.0001999600079984003,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 0.0009998000399920016,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 0.0013997200559888023,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.0001999600079984003,
+          "p_naive_rowlevel_null_WRONG": 0.0004997501249375312
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 2.4750809721150584,
+        "robustness": {
+          "beta_row_excluding_shooting_team_from_opponent_history": 0.5763845824970719,
+          "p_excluding_shooting_team": 0.0001999600079984003,
+          "beta_row_excluding_own_player_from_opponent_history": 0.5788383798310682,
+          "p_excluding_own_player": 0.0001999600079984003,
+          "beta_row_S2_shrunk_baseline": 0.5410058725088109,
+          "beta_row_attempt_weighted": 0.5582352542801895
+        },
+        "persistence": {
+          "per_season": {
+            "2021": 0.5672299325895802,
+            "2022": 0.5607991224242848,
+            "2023": 0.5819077003353734,
+            "2024": 0.45295579154402954
+          },
+          "halves": {
+            "2021_2022": 0.5637601900256343,
+            "2023_2024": 0.5452581222039514
+          },
+          "n_positive": 4
+        },
+        "natural_units": {
+          "sd_of_regressor": 0.020863653059136077,
+          "share_change_per_1sd": 0.011596540586161374,
+          "relative_pct_per_1sd": 6.4413645079856146,
+          "attempts_per_game_per_1sd": 0.11947463357949842,
+          "mean_share": 0.18003236071774362
+        }
+      },
+      "Corner 3": {
+        "n": 10245,
+        "corr_row": 0.03701020160961165,
+        "diff_row": 0.005192975991357667,
+        "beta_row": 0.32472289963558754,
+        "beta_cluster_level": 0.6377490716953922,
+        "corr_cluster_level": 0.06336649746385578,
+        "se_cluster_robust": 0.09438901086941759,
+        "t_cluster_robust": 3.440261706787298,
+        "t_naive": 3.7482856447533055,
+        "n_clusters": 48,
+        "r2_unweighted_about_unweighted_mean": 0.0013697550231840383,
+        "permutation_null_opponent_team_season": {
+          "null_mean": -0.019736014477837092,
+          "null_sd": 0.1538566723102876,
+          "n_draws": 5000,
+          "z_row": 2.2388298729010803,
+          "z_cluster": 4.2733608903698235,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.010997800439912017,
+          "p_unadjusted_one_sided_CLUSTER_real": 0.0001999600079984003,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 0.060187962407518496,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 0.11017796440711858,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.0001999600079984003,
+          "p_naive_rowlevel_null_WRONG": 0.0004997501249375312
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 1.8015658580874971,
+        "robustness": {
+          "beta_row_excluding_shooting_team_from_opponent_history": 0.3821353914220833,
+          "p_excluding_shooting_team": 0.003799240151969606,
+          "beta_row_excluding_own_player_from_opponent_history": 0.3565802241598946,
+          "p_excluding_own_player": 0.0061987602479504095,
+          "beta_row_S2_shrunk_baseline": 0.3157211113196649,
+          "beta_row_attempt_weighted": 0.3212342508601072
+        },
+        "persistence": {
+          "per_season": {
+            "2021": 0.27108088800177754,
+            "2022": 0.524184806592195,
+            "2023": -0.0591595863792221,
+            "2024": 0.537377732332814
+          },
+          "halves": {
+            "2021_2022": 0.3342384608442153,
+            "2023_2024": 0.32051599632279215
+          },
+          "n_positive": 3
+        },
+        "natural_units": {
+          "sd_of_regressor": 0.008353549173199444,
+          "share_change_per_1sd": 0.0027125887097697882,
+          "relative_pct_per_1sd": 7.183844499251724,
+          "attempts_per_game_per_1sd": 0.02792708704262354,
+          "mean_share": 0.037759568849970705
+        }
+      },
+      "Above the Break 3": {
+        "n": 10307,
+        "corr_row": 0.09719538561244696,
+        "diff_row": 0.0236511783892321,
+        "beta_row": 0.5629840482545649,
+        "beta_cluster_level": 0.7916478162560328,
+        "corr_cluster_level": 0.1226608030661739,
+        "se_cluster_robust": 0.1035361560249671,
+        "t_cluster_robust": 5.437559881195563,
+        "t_naive": 9.913585895827994,
+        "n_clusters": 48,
+        "r2_unweighted_about_unweighted_mean": 0.009446942984352225,
+        "permutation_null_opponent_team_season": {
+          "null_mean": -0.0012719775060356373,
+          "null_sd": 0.15200298685114547,
+          "n_draws": 5000,
+          "z_row": 3.712137751037542,
+          "z_cluster": 5.216475085049242,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.0001999600079984003,
+          "p_unadjusted_one_sided_CLUSTER_real": 0.0001999600079984003,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 0.0001999600079984003,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 0.0003999200159968006,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.0001999600079984003,
+          "p_naive_rowlevel_null_WRONG": 0.0004997501249375312
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 2.65756785599255,
+        "robustness": {
+          "beta_row_excluding_shooting_team_from_opponent_history": 0.5370380666627739,
+          "p_excluding_shooting_team": 0.0005998800239952009,
+          "beta_row_excluding_own_player_from_opponent_history": 0.5812530302146738,
+          "p_excluding_own_player": 0.0001999600079984003,
+          "beta_row_S2_shrunk_baseline": 0.5336947909806682,
+          "beta_row_attempt_weighted": 0.5479730380925172
+        },
+        "persistence": {
+          "per_season": {
+            "2021": 0.47462966566902137,
+            "2022": 0.577544209549786,
+            "2023": 0.767215767229057,
+            "2024": 0.4294268246449623
+          },
+          "halves": {
+            "2021_2022": 0.5393524692884105,
+            "2023_2024": 0.5876236221014461
+          },
+          "n_positive": 4
+        },
+        "natural_units": {
+          "sd_of_regressor": 0.02582383535005025,
+          "share_change_per_1sd": 0.01453840736683063,
+          "relative_pct_per_1sd": 5.045208768692613,
+          "attempts_per_game_per_1sd": 0.1497835393302006,
+          "mean_share": 0.28816265160416804
+        }
+      }
+    },
+    "fixed_effects": {
+      "player_season": {
+        "beta_no_fe_cluster_x": 0.9193293906251634,
+        "beta_with_fe": 0.9383365721147887,
+        "n_groups": 550,
+        "perm_null_sd": 0.15902111803979135,
+        "perm_z": 5.8842979622555935,
+        "perm_p_one_sided": 0.0004997501249375312,
+        "n": 10307
+      },
+      "shooting_team_season": {
+        "beta_no_fe_cluster_x": 0.9193293906251634,
+        "beta_with_fe": 0.9361663523203912,
+        "n_groups": 48,
+        "perm_null_sd": 0.15832408385222566,
+        "perm_z": 5.898754499281012,
+        "perm_p_one_sided": 0.0004997501249375312,
+        "n": 10307
+      }
+    },
+    "player_game_increment": {
+      "model": {
+        "Restricted Area": {
+          "2021-2024": {
+            "m0": 0.5103262851681518,
+            "m0_coef": [
+              0.257306933507975,
+              0.92625621739305
+            ],
+            "m1": 0.5294651466632752,
+            "m1_coef": [
+              0.2548180198397708,
+              0.9285036272025335,
+              0.7176209700117118
+            ],
+            "dR2": 0.019138861495123338,
+            "n": 10307
+          },
+          "2021": {
+            "m0": 0.5152615297789946,
+            "m0_coef": [
+              0.2510608901073486,
+              0.9111228362905176
+            ],
+            "m1": 0.5352965109444305,
+            "m1_coef": [
+              0.25240345162865635,
+              0.9114561516913692,
+              0.7398552959564048
+            ],
+            "dR2": 0.020034981165435894,
+            "n": 2201
+          },
+          "2022": {
+            "m0": 0.5036698292949437,
+            "m0_coef": [
+              0.16059694879141964,
+              0.9603167878207476
+            ],
+            "m1": 0.5241615842207498,
+            "m1_coef": [
+              0.18948574340110333,
+              0.9510229791219176,
+              0.7394346131942487
+            ],
+            "dR2": 0.020491754925806016,
+            "n": 2586
+          },
+          "2023": {
+            "m0": 0.5037538971158352,
+            "m0_coef": [
+              0.3102040819352492,
+              0.9156344370722115
+            ],
+            "m1": 0.520019300513352,
+            "m1_coef": [
+              0.29755057261224666,
+              0.9213108229639198,
+              0.718457390932941
+            ],
+            "dR2": 0.01626540339751681,
+            "n": 2750
+          },
+          "2024": {
+            "m0": 0.51868795671716,
+            "m0_coef": [
+              0.2894935535918776,
+              0.9209004043631426
+            ],
+            "m1": 0.5383748374654708,
+            "m1_coef": [
+              0.27040503243596936,
+              0.9298320532887587,
+              0.6823219224201281
+            ],
+            "dR2": 0.01968688074831082,
+            "n": 2770
+          },
+          "2021-2022": {
+            "m0": 0.5087957401936143,
+            "m0_coef": [
+              0.20884465734705712,
+              0.9354113856183173
+            ],
+            "m1": 0.5291914988917116,
+            "m1_coef": [
+              0.2237888184739455,
+              0.9309857008190714,
+              0.7416438762726604
+            ],
+            "dR2": 0.020395758698097288,
+            "n": 4787
+          },
+          "2023-2024": {
+            "m0": 0.5115979337478271,
+            "m0_coef": [
+              0.2993837842006813,
+              0.9184250048441093
+            ],
+            "m1": 0.5296432068262952,
+            "m1_coef": [
+              0.283195640812995,
+              0.9258456576431864,
+              0.6966776475132084
+            ],
+            "dR2": 0.018045273078468038,
+            "n": 5520
+          }
+        },
+        "In The Paint (Non-RA)": {
+          "2021-2024": {
+            "m0": 0.40823477188676227,
+            "m0_coef": [
+              0.2503503672262091,
+              0.8915483750077782
+            ],
+            "m1": 0.41697851457192336,
+            "m1_coef": [
+              0.246564154836578,
+              0.8910450640775849,
+              0.6239732959695428
+            ],
+            "dR2": 0.008743742685161093,
+            "n": 10307
+          },
+          "2021": {
+            "m0": 0.38507363592007304,
+            "m0_coef": [
+              0.251327443688346,
+              0.9192098127328918
+            ],
+            "m1": 0.3887835781933705,
+            "m1_coef": [
+              0.2528724571439165,
+              0.9185937702886108,
+              0.45760478708843844
+            ],
+            "dR2": 0.003709942273297462,
+            "n": 2201
+          },
+          "2022": {
+            "m0": 0.363544077397822,
+            "m0_coef": [
+              0.2514443365774447,
+              0.9016836885862882
+            ],
+            "m1": 0.3654597128543593,
+            "m1_coef": [
+              0.2525109964241386,
+              0.8994056802543458,
+              0.3387601657428753
+            ],
+            "dR2": 0.001915635456537279,
+            "n": 2586
+          },
+          "2023": {
+            "m0": 0.4364374772310714,
+            "m0_coef": [
+              0.20054502697984897,
+              0.9031111275050022
+            ],
+            "m1": 0.4444236842463578,
+            "m1_coef": [
+              0.1911845409218226,
+              0.9049056129254458,
+              0.6886658223786793
+            ],
+            "dR2": 0.007986207015286406,
+            "n": 2750
+          },
+          "2024": {
+            "m0": 0.4175417001803374,
+            "m0_coef": [
+              0.2600652266929073,
+              0.8702132742444515
+            ],
+            "m1": 0.4365532310307614,
+            "m1_coef": [
+              0.2500650245105429,
+              0.8702979315042414,
+              0.7416896816276267
+            ],
+            "dR2": 0.019011530850423952,
+            "n": 2770
+          },
+          "2021-2022": {
+            "m0": 0.3753034644299008,
+            "m0_coef": [
+              0.24877177352173716,
+              0.9113587487078385
+            ],
+            "m1": 0.3780476256241656,
+            "m1_coef": [
+              0.24974653913201827,
+              0.9098608567953234,
+              0.39933366117497565
+            ],
+            "dR2": 0.0027441611942647937,
+            "n": 4787
+          },
+          "2023-2024": {
+            "m0": 0.42629124357196246,
+            "m0_coef": [
+              0.23289627843152177,
+              0.8854286274982576
+            ],
+            "m1": 0.44006411204156215,
+            "m1_coef": [
+              0.2232407389301051,
+              0.8863373636626486,
+              0.724932063302002
+            ],
+            "dR2": 0.013772868469599686,
+            "n": 5520
+          }
+        },
+        "Mid-Range": {
+          "2021-2024": {
+            "m0": 0.5318211225177438,
+            "m0_coef": [
+              0.1471992130182883,
+              0.9176852475531511
+            ],
+            "m1": 0.5362487872969997,
+            "m1_coef": [
+              0.147167271213462,
+              0.916772861839411,
+              0.5545820327259793
+            ],
+            "dR2": 0.004427664779255824,
+            "n": 10307
+          },
+          "2021": {
+            "m0": 0.5583017249814024,
+            "m0_coef": [
+              0.11839832057082507,
+              0.9384109668776486
+            ],
+            "m1": 0.5628206471554418,
+            "m1_coef": [
+              0.1172930136696451,
+              0.9370927636519544,
+              0.5129433868551885
+            ],
+            "dR2": 0.004518922174039375,
+            "n": 2201
+          },
+          "2022": {
+            "m0": 0.5099777687058027,
+            "m0_coef": [
+              0.22553807949334706,
+              0.8677589226777708
+            ],
+            "m1": 0.516762590000091,
+            "m1_coef": [
+              0.22891913271167139,
+              0.8664687967618397,
+              0.6634999026911593
+            ],
+            "dR2": 0.006784821294288257,
+            "n": 2586
+          },
+          "2023": {
+            "m0": 0.48342373618474976,
+            "m0_coef": [
+              0.13554371643982274,
+              0.929210905587463
+            ],
+            "m1": 0.4896438088803754,
+            "m1_coef": [
+              0.13762042244722297,
+              0.9276650330347613,
+              0.5629892390619949
+            ],
+            "dR2": 0.006220072695625634,
+            "n": 2750
+          },
+          "2024": {
+            "m0": 0.5619956425831413,
+            "m0_coef": [
+              0.1152645965243306,
+              0.9328975886911581
+            ],
+            "m1": 0.5632007046360978,
+            "m1_coef": [
+              0.11255736398849318,
+              0.933065087876832,
+              0.4233265442077144
+            ],
+            "dR2": 0.0012050620529565625,
+            "n": 2770
+          },
+          "2021-2022": {
+            "m0": 0.535883918462706,
+            "m0_coef": [
+              0.1709274637049881,
+              0.9045293671122809
+            ],
+            "m1": 0.5413981763253761,
+            "m1_coef": [
+              0.17216481527770142,
+              0.903118718596515,
+              0.5816770947065092
+            ],
+            "dR2": 0.005514257862670124,
+            "n": 4787
+          },
+          "2023-2024": {
+            "m0": 0.5262373806278984,
+            "m0_coef": [
+              0.12450311982235286,
+              0.931481550326397
+            ],
+            "m1": 0.529686073044525,
+            "m1_coef": [
+              0.12347839808148625,
+              0.9310167300112571,
+              0.5222790887725655
+            ],
+            "dR2": 0.0034486924166265975,
+            "n": 5520
+          }
+        },
+        "Corner 3": {
+          "2021-2024": {
+            "m0": 0.12476692753936836,
+            "m0_coef": [
+              0.1345386237390442,
+              0.5978714111331098
+            ],
+            "m1": 0.12620043511466617,
+            "m1_coef": [
+              0.1345098779609532,
+              0.5998012128076236,
+              0.27287403334937765
+            ],
+            "dR2": 0.00143350757529781,
+            "n": 10245
+          },
+          "2021": {
+            "m0": 0.06368134515076707,
+            "m0_coef": [
+              0.134935760618296,
+              0.38572276906874325
+            ],
+            "m1": 0.07112658872261679,
+            "m1_coef": [
+              0.1322307247132676,
+              0.3894202553544631,
+              0.3940059617023699
+            ],
+            "dR2": 0.0074452435718497245,
+            "n": 2159
+          },
+          "2022": {
+            "m0": 0.13745733090493228,
+            "m0_coef": [
+              0.12080499778597055,
+              0.6384132433230948
+            ],
+            "m1": 0.14079544728989168,
+            "m1_coef": [
+              0.12177435502782921,
+              0.6417151505448341,
+              0.48434033106298147
+            ],
+            "dR2": 0.0033381163849593998,
+            "n": 2586
+          },
+          "2023": {
+            "m0": 0.13813796434694758,
+            "m0_coef": [
+              0.13176801885932363,
+              0.6990097635450577
+            ],
+            "m1": 0.1381410356734326,
+            "m1_coef": [
+              0.1317149999294005,
+              0.6989794555836963,
+              -0.016727210714340468
+            ],
+            "dR2": 3.0713264850268374e-06,
+            "n": 2740
+          },
+          "2024": {
+            "m0": 0.13429255202215595,
+            "m0_coef": [
+              0.153504072921254,
+              0.592039955206911
+            ],
+            "m1": 0.13493365913393807,
+            "m1_coef": [
+              0.15368619690525687,
+              0.5936084030767212,
+              0.19009917168206047
+            ],
+            "dR2": 0.0006411071117821132,
+            "n": 2760
+          },
+          "2021-2022": {
+            "m0": 0.10467753773805155,
+            "m0_coef": [
+              0.12695487629102548,
+              0.5310797745341486
+            ],
+            "m1": 0.1092570188757086,
+            "m1_coef": [
+              0.12604134687072302,
+              0.5345629276306797,
+              0.4109134200107244
+            ],
+            "dR2": 0.004579481137657049,
+            "n": 4745
+          },
+          "2023-2024": {
+            "m0": 0.13505864807207457,
+            "m0_coef": [
+              0.14555152226799273,
+              0.6355141948928984
+            ],
+            "m1": 0.13525440717069215,
+            "m1_coef": [
+              0.14577382727029878,
+              0.6361647968299465,
+              0.11654950222077115
+            ],
+            "dR2": 0.00019575909861757612,
+            "n": 5500
+          }
+        },
+        "Above the Break 3": {
+          "2021-2024": {
+            "m0": 0.6899252954259094,
+            "m0_coef": [
+              0.15512315206002844,
+              0.936377214265045
+            ],
+            "m1": 0.6931597636647957,
+            "m1_coef": [
+              0.15547435885862093,
+              0.9366860319103921,
+              0.4952492662727948
+            ],
+            "dR2": 0.00323446823888629,
+            "n": 10307
+          },
+          "2021": {
+            "m0": 0.6735967842850573,
+            "m0_coef": [
+              0.1573083979638549,
+              0.9422644305372138
+            ],
+            "m1": 0.6753800028118029,
+            "m1_coef": [
+              0.1529323340936376,
+              0.944617299350135,
+              0.3899913348673825
+            ],
+            "dR2": 0.001783218526745567,
+            "n": 2201
+          },
+          "2022": {
+            "m0": 0.6745964248790288,
+            "m0_coef": [
+              0.192978614716075,
+              0.9093568723707475
+            ],
+            "m1": 0.6805973352059347,
+            "m1_coef": [
+              0.20003614039847128,
+              0.9070666744616205,
+              0.5884172148854306
+            ],
+            "dR2": 0.006000910326905862,
+            "n": 2586
+          },
+          "2023": {
+            "m0": 0.6774931964327802,
+            "m0_coef": [
+              0.09055864150110612,
+              0.9499981172673294
+            ],
+            "m1": 0.6806393165342356,
+            "m1_coef": [
+              0.09303173098847047,
+              0.9491289417125851,
+              0.507834398811388
+            ],
+            "dR2": 0.0031461201014554296,
+            "n": 2750
+          },
+          "2024": {
+            "m0": 0.7237001749779639,
+            "m0_coef": [
+              0.18428016395203964,
+              0.9421433656899549
+            ],
+            "m1": 0.7262508321978134,
+            "m1_coef": [
+              0.18281422785149357,
+              0.9433141269327019,
+              0.4632659889095133
+            ],
+            "dR2": 0.0025506572198494837,
+            "n": 2770
+          },
+          "2021-2022": {
+            "m0": 0.6737660913733343,
+            "m0_coef": [
+              0.1771206259692911,
+              0.9240834476411378
+            ],
+            "m1": 0.6775519698326049,
+            "m1_coef": [
+              0.1777992568013449,
+              0.9243879421209937,
+              0.5074767004103772
+            ],
+            "dR2": 0.0037858784592705863,
+            "n": 4787
+          },
+          "2023-2024": {
+            "m0": 0.7021883116788521,
+            "m0_coef": [
+              0.13870276954774324,
+              0.945679212492445
+            ],
+            "m1": 0.7050009354413702,
+            "m1_coef": [
+              0.1387649311914113,
+              0.9459958266577269,
+              0.48350146202618255
+            ],
+            "dR2": 0.0028126237625181183,
+            "n": 5520
+          }
+        }
+      },
+      "permutation": {
+        "Restricted Area": {
+          "coef_cluster_x": 0.8756901946353183,
+          "dR2_cluster_x": 0.025770372481462855,
+          "null_mean": -0.0009060918402112604,
+          "null_sd": 0.15204086050875704,
+          "z": 5.765530947024867,
+          "p_coef_one_sided": 0.0001999600079984003,
+          "p_dR2_one_sided": 0.0001999600079984003,
+          "dR2_null_p95": 0.002898838190124165,
+          "n_draws": 5000
+        },
+        "In The Paint (Non-RA)": {
+          "coef_cluster_x": 0.9178839092116557,
+          "dR2_cluster_x": 0.014617775764061203,
+          "null_mean": -0.002917601481823446,
+          "null_sd": 0.20529404144346802,
+          "z": 4.485281229884312,
+          "p_coef_one_sided": 0.0001999600079984003,
+          "p_dR2_one_sided": 0.0001999600079984003,
+          "dR2_null_p95": 0.0025688234076725546,
+          "n_draws": 5000
+        },
+        "Mid-Range": {
+          "coef_cluster_x": 0.7900105961099099,
+          "dR2_cluster_x": 0.007464842991449783,
+          "null_mean": -0.0024253449862587464,
+          "null_sd": 0.15931486538213338,
+          "z": 4.974023856439436,
+          "p_coef_one_sided": 0.0001999600079984003,
+          "p_dR2_one_sided": 0.0001999600079984003,
+          "dR2_null_p95": 0.0011348747312448562,
+          "n_draws": 5000
+        },
+        "Corner 3": {
+          "coef_cluster_x": 0.5289196708710628,
+          "dR2_cluster_x": 0.004141675376714837,
+          "null_mean": -0.019234560227120705,
+          "null_sd": 0.12284366131833195,
+          "z": 4.462210139420376,
+          "p_coef_one_sided": 0.0001999600079984003,
+          "p_dR2_one_sided": 0.0001999600079984003,
+          "dR2_null_p95": 0.0008283022102381467,
+          "n_draws": 5000
+        },
+        "Above the Break 3": {
+          "coef_cluster_x": 0.7025772254680124,
+          "dR2_cluster_x": 0.005233013270750764,
+          "null_mean": -0.0022178418894520944,
+          "null_sd": 0.13680608002481554,
+          "z": 5.15178175728462,
+          "p_coef_one_sided": 0.0001999600079984003,
+          "p_dR2_one_sided": 0.0001999600079984003,
+          "dR2_null_p95": 0.0007193084977553111,
+          "n_draws": 5000
+        }
+      },
+      "conditioning_caveat": "fga is the player's REALISED total attempts in the game and is NOT pregame-observable; this is a shot-MIX model given volume, not a volume model"
+    }
+  },
+  "conversion_family_five_zones": {
+    "note": "the surviving I0004 lead, re-measured on all five zones with the SAME fully pregame-observable construction, then family-wise corrected",
+    "corrected_headline_carried_forward": {
+      "beta": 0.3731535713274873,
+      "diff": 0.01757439922911997,
+      "corr": 0.02881718165669519,
+      "source": "E1_I0004_rim_finishing, 30764-row common set",
+      "killed_E0_headline_NOT_USED": 0.0392
+    },
+    "headline_family_wise": {
+      "beta": 0.3731535713274873,
+      "z": 2.749893742196894,
+      "null_mean": -0.04285316914009881,
+      "null_sd": 0.15128102372975244,
+      "p_unadjusted_one_sided": 0.002599480103979204,
+      "p_familywise_one_sided": 0.012397520495900819,
+      "p_familywise_two_sided": 0.021995600879824034,
+      "n_draws": 5000,
+      "note": "null built on the harmonised five-zone conversion frame (RA n = 33273); the headline beta itself is E1's 30,764-row common-set value, scored against it conservatively"
+    },
+    "per_zone": {
+      "Restricted Area": {
+        "n": 33273,
+        "corr_row": 0.03130275132937377,
+        "diff_row": 0.019087915511707937,
+        "beta_row": 0.4036869573915084,
+        "beta_cluster_level": 0.6700704452207322,
+        "se_cluster_robust": 0.08838722188646127,
+        "t_cluster_robust": 4.567254731798825,
+        "r2_unweighted_about_unweighted_mean": 0.0009798622407888313,
+        "permutation_null_opponent_team_season": {
+          "null_mean": -0.042853169140098867,
+          "null_sd": 0.15128102372975233,
+          "n_draws": 5000,
+          "z_row": 2.9517259701342575,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.0011997600479904018,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 0.0065986802639472104,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 0.01279744051189762,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.0001999600079984003,
+          "p_naive_rowlevel_null_WRONG": 0.0004997501249375312
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 2.2862705131368317,
+        "persistence": {
+          "per_season": {
+            "2021": 0.5742836854013097,
+            "2022": 0.3141412762275878,
+            "2023": 0.4990505312072049,
+            "2024": 0.5366757278446699
+          },
+          "halves": {
+            "2021_2022": 0.38662434558772735,
+            "2023_2024": 0.5180605380203508
+          },
+          "n_positive": 4
+        }
+      },
+      "In The Paint (Non-RA)": {
+        "n": 23798,
+        "corr_row": -0.007766666103002312,
+        "diff_row": 0.001749873453871417,
+        "beta_row": -0.12160406366988517,
+        "beta_cluster_level": 0.2985527804112295,
+        "se_cluster_robust": 0.09759399200817533,
+        "t_cluster_robust": -1.2460199769233373,
+        "r2_unweighted_about_unweighted_mean": 6.0321102355431755e-05,
+        "permutation_null_opponent_team_season": {
+          "null_mean": -0.05910889850097332,
+          "null_sd": 0.14810154410901283,
+          "n_draws": 5000,
+          "z_row": -0.421975108665384,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.6550689862027594,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 0.9958008398320336,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 0.9978004399120176,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.03519296140771846,
+          "p_naive_rowlevel_null_WRONG": 0.8300849575212393
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 1.4879432272503512,
+        "persistence": {
+          "per_season": {
+            "2021": -0.11477621862163641,
+            "2022": -0.19106949789324018,
+            "2023": 0.06456795386543847,
+            "2024": -0.14317561186320174
+          },
+          "halves": {
+            "2021_2022": -0.14375559689816245,
+            "2023_2024": -0.06599366559614839
+          },
+          "n_positive": 1
+        }
+      },
+      "Mid-Range": {
+        "n": 21100,
+        "corr_row": 0.002534412015615359,
+        "diff_row": 0.009441359001965332,
+        "beta_row": 0.03766593383819657,
+        "beta_cluster_level": 0.5627752400218804,
+        "se_cluster_robust": 0.1030316561138365,
+        "t_cluster_robust": 0.36557632148103814,
+        "r2_unweighted_about_unweighted_mean": 6.4232442648082255e-06,
+        "permutation_null_opponent_team_season": {
+          "null_mean": -0.02328190169455425,
+          "null_sd": 0.148113795246106,
+          "n_draws": 5000,
+          "z_row": 0.41149330777379606,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.34453109378124375,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 0.8860227954409118,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 0.9986002799440112,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.0001999600079984003,
+          "p_naive_rowlevel_null_WRONG": 0.29985007496251875
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 1.4709685634090466,
+        "persistence": {
+          "per_season": {
+            "2021": 0.01085616408288104,
+            "2022": -0.10351672335740174,
+            "2023": 0.27169650630873726,
+            "2024": 0.007115458921668822
+          },
+          "halves": {
+            "2021_2022": -0.042980794504147636,
+            "2023_2024": 0.15503568491689365
+          },
+          "n_positive": 3
+        }
+      },
+      "Corner 3": {
+        "n": 3150,
+        "corr_row": -0.03122634690092107,
+        "diff_row": -0.03256714725681504,
+        "beta_row": -0.2557563880242704,
+        "beta_cluster_level": 0.26397742378023886,
+        "se_cluster_robust": 0.17749191641585463,
+        "t_cluster_robust": -1.4409466819043524,
+        "r2_unweighted_about_unweighted_mean": 0.0009750847407765662,
+        "permutation_null_opponent_team_season": {
+          "null_mean": -0.03646679814120727,
+          "null_sd": 0.14263238941898637,
+          "n_draws": 5000,
+          "z_row": -1.5374459530289026,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.9370125974805039,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 1.0,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 0.490501899620076,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.08338332333533294,
+          "p_naive_rowlevel_null_WRONG": 0.9380309845077461
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 1.0336911855787283,
+        "persistence": {
+          "per_season": {
+            "2021": -0.16776670592526396,
+            "2022": -0.6966932018843457,
+            "2023": -0.04643721920703644,
+            "2024": -0.28751058623770737
+          },
+          "halves": {
+            "2021_2022": -0.29092698629129754,
+            "2023_2024": -0.1861470817719082
+          },
+          "n_positive": 0
+        }
+      },
+      "Above the Break 3": {
+        "n": 33833,
+        "corr_row": 2.8998304320138638e-05,
+        "diff_row": -0.003377559742818793,
+        "beta_row": 0.0005498013673199247,
+        "beta_cluster_level": 0.33777787098495193,
+        "se_cluster_robust": 0.08567350660452394,
+        "t_cluster_robust": 0.006417402404758207,
+        "r2_unweighted_about_unweighted_mean": 8.409019036648147e-10,
+        "permutation_null_opponent_team_season": {
+          "null_mean": -0.017781351079440347,
+          "null_sd": 0.11882297886640303,
+          "n_draws": 5000,
+          "z_row": 0.15427278983950216,
+          "p_unadjusted_one_sided_ROWLEVEL_real": 0.4379124175164967,
+          "p_familywise_5zone_one_sided_ROWLEVEL": 0.948010397920416,
+          "p_familywise_5zone_two_sided_ROWLEVEL": 1.0,
+          "p_familywise_5zone_one_sided_CLUSTER": 0.004999000199960008,
+          "p_naive_rowlevel_null_WRONG": 0.4592703648175912
+        },
+        "inflation_factor_cluster_null_over_naive_row_null": 1.1591506567778855,
+        "persistence": {
+          "per_season": {
+            "2021": -0.023315083060510094,
+            "2022": -0.03855777017511869,
+            "2023": 0.15430642911195092,
+            "2024": -0.10656903433002271
+          },
+          "halves": {
+            "2021_2022": -0.03511782955384425,
+            "2023_2024": 0.046132040471297625
+          },
+          "n_positive": 1
+        }
+      }
+    },
+    "fixed_effects": {
+      "player_season": {
+        "beta_no_fe_cluster_x": 0.6700704452207324,
+        "beta_with_fe": 0.7676319769343486,
+        "n_groups": 547,
+        "perm_null_sd": 0.16034503982702566,
+        "perm_z": 4.7609874247642345,
+        "perm_p_one_sided": 0.0004997501249375312,
+        "n": 33273
+      }
+    }
+  },
+  "role_volume_concentration": {
+    "role_feature": "EWMA_0.30 of the player's FGA per game over their STRICTLY PRIOR games this season (the frozen baseline's exposure channel)",
+    "binnings": {
+      "preselected_absolute_cuts_fga_per_game": [
+        6.0,
+        11.0
+      ],
+      "also_reported": "within-season empirical tertiles of the same feature"
+    },
+    "selection": {
+      "bin_abs": {
+        "low": {
+          "n": 2315,
+          "mean_role_fga": 4.330909906997298,
+          "beta_row": 0.8181215266512009,
+          "beta_cluster": 0.941443979363356,
+          "se_cluster": 0.08549129965640583,
+          "t_cluster": 9.569646618302396,
+          "perm_null_sd": 0.1866451846171315,
+          "perm_z": 5.0306792779507115,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.029806459163261856
+        },
+        "mid": {
+          "n": 4411,
+          "mean_role_fga": 8.492658289539962,
+          "beta_row": 0.847370314910651,
+          "beta_cluster": 0.9767382376596057,
+          "se_cluster": 0.0680417186521062,
+          "t_cluster": 12.453687703616243,
+          "perm_null_sd": 0.17575039464628234,
+          "perm_z": 5.533034330374368,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.04052581817514289
+        },
+        "high": {
+          "n": 3581,
+          "mean_role_fga": 14.043786695149862,
+          "beta_row": 0.6388940006914954,
+          "beta_cluster": 0.8086159879086059,
+          "se_cluster": 0.058380587927316284,
+          "t_cluster": 10.94360340267414,
+          "perm_null_sd": 0.14127867838496916,
+          "perm_z": 5.696349662233582,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.032603223390151426
+        }
+      },
+      "bin_ter": {
+        "low": {
+          "n": 3436,
+          "mean_role_fga": 5.079302082104692,
+          "beta_row": 0.8601826854353023,
+          "beta_cluster": 0.9922843113744387,
+          "se_cluster": 0.08667035248857456,
+          "t_cluster": 9.924762744546321,
+          "perm_null_sd": 0.1842078228890409,
+          "perm_z": 5.3699266255326785,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.034552590944857964
+        },
+        "mid": {
+          "n": 3434,
+          "mean_role_fga": 9.228089454336603,
+          "beta_row": 0.8123167928054146,
+          "beta_cluster": 0.9381813980866957,
+          "se_cluster": 0.06818803805602815,
+          "t_cluster": 11.912892876283626,
+          "perm_null_sd": 0.17413951898632737,
+          "perm_z": 5.362325227823072,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.0388812907829863
+        },
+        "high": {
+          "n": 3437,
+          "mean_role_fga": 14.150780088707464,
+          "beta_row": 0.6364458090147285,
+          "beta_cluster": 0.8012507145763221,
+          "se_cluster": 0.05949891967606752,
+          "t_cluster": 10.69676243669225,
+          "perm_null_sd": 0.13826008267994658,
+          "perm_z": 5.7681139438284585,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.03230875246933662
+        }
+      },
+      "interaction": {
+        "model": "y ~ 1 + x + role_centred + x*role_centred (plain unweighted OLS)",
+        "coef_x": 0.9135607158474135,
+        "coef_role": -0.001964177609855165,
+        "coef_interaction": -0.02446346020135312,
+        "perm_null_mean": 4.053978246510874e-05,
+        "perm_null_sd": 0.010115967136935074,
+        "perm_z": -2.4223091724319725,
+        "perm_p_two_sided": 0.01649175412293853,
+        "n": 10307,
+        "n_draws": 2000
+      }
+    },
+    "conversion": {
+      "bin_abs": {
+        "low": {
+          "n": 4626,
+          "mean_role_fga": 4.4017503403690625,
+          "beta_row": 0.25328690465625286,
+          "beta_cluster": 0.5903545749626168,
+          "se_cluster": 0.21747655491200862,
+          "t_cluster": 1.1646630357866996,
+          "perm_null_sd": 0.25544733807262926,
+          "perm_z": 2.324995461235829,
+          "perm_p_one_sided": 0.0079960019990005,
+          "r2_unweighted_about_unweighted_mean": 0.0003415846185556015
+        },
+        "mid": {
+          "n": 12713,
+          "mean_role_fga": 8.64731878608058,
+          "beta_row": 0.3536854754464456,
+          "beta_cluster": 0.5059504763421594,
+          "se_cluster": 0.1262882109426751,
+          "t_cluster": 2.800621473741448,
+          "perm_null_sd": 0.1650613145165598,
+          "perm_z": 3.543435893218751,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.0007661010718447159
+        },
+        "high": {
+          "n": 12250,
+          "mean_role_fga": 14.133761613362436,
+          "beta_row": 0.5565546431211703,
+          "beta_cluster": 0.7676375089236763,
+          "se_cluster": 0.13445269097959225,
+          "t_cluster": 4.139408732292657,
+          "perm_null_sd": 0.19992318839576537,
+          "perm_z": 3.848507361089788,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.0017459053296656757
+        }
+      },
+      "bin_ter": {
+        "low": {
+          "n": 9851,
+          "mean_role_fga": 5.895695207874791,
+          "beta_row": 0.3348040232939026,
+          "beta_cluster": 0.5916191980994197,
+          "se_cluster": 0.15655763806764122,
+          "t_cluster": 2.1385352220838274,
+          "perm_null_sd": 0.186338177246963,
+          "perm_z": 3.3505254772879742,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.0006220758931240189
+        },
+        "mid": {
+          "n": 9869,
+          "mean_role_fga": 10.132255516113819,
+          "beta_row": 0.3623167012125039,
+          "beta_cluster": 0.457136624483522,
+          "se_cluster": 0.14510314849027825,
+          "t_cluster": 2.4969596110230423,
+          "perm_null_sd": 0.19042555166034283,
+          "perm_z": 2.718583347430547,
+          "perm_p_one_sided": 0.0024987506246876563,
+          "r2_unweighted_about_unweighted_mean": 0.00082947093478003
+        },
+        "high": {
+          "n": 9869,
+          "mean_role_fga": 14.729021925663968,
+          "beta_row": 0.5757170082829736,
+          "beta_cluster": 0.872758681814363,
+          "se_cluster": 0.150902164599491,
+          "t_cluster": 3.8151673291830006,
+          "perm_null_sd": 0.2130325400591438,
+          "perm_z": 4.126342180790494,
+          "perm_p_one_sided": 0.0004997501249375312,
+          "r2_unweighted_about_unweighted_mean": 0.00182959371699698
+        }
+      },
+      "interaction": {
+        "model": "y ~ 1 + x + role_centred + x*role_centred (plain unweighted OLS)",
+        "coef_x": 0.6296988074487282,
+        "coef_role": -0.008508377807492883,
+        "coef_interaction": 0.03893064089190297,
+        "perm_null_mean": 0.006859790772187416,
+        "perm_null_sd": 0.02000090031493993,
+        "perm_z": 1.6034703245713304,
+        "perm_p_two_sided": 0.10844577711144428,
+        "n": 29589,
+        "n_draws": 2000
+      }
+    }
+  },
+  "nulls_and_placebos": {
+    "correct_grouping_level": "opponent team x season (12 teams x 4 seasons = 48 clusters)",
+    "permutation_form": "the ALREADY-COMPUTED team-season allowance VALUES are reshuffled across teams within season and re-assigned to rows; the whole five-zone vector travels with the team so the cross-zone structure survives and max-t is valid",
+    "n_draws_cluster": 5000,
+    "n_draws_row": 2000,
+    "seed": 20260807,
+    "row_level_null_reported_for_contrast": true,
+    "inflation_factor_summary": {
+      "selection": {
+        "Restricted Area": {
+          "beta": {
+            "sd_cluster": 0.15473938432791973,
+            "sd_row": 0.040691934717087645,
+            "inflation": 3.8027040346877503
+          },
+          "corr": {
+            "sd_cluster": 0.03502811304946581,
+            "sd_row": 0.009861424245705136,
+            "inflation": 3.5520338824000315
+          },
+          "diff": {
+            "sd_cluster": 0.012205286899161089,
+            "sd_row": 0.003352864119736271,
+            "inflation": 3.640256945492062
+          }
+        },
+        "In The Paint (Non-RA)": {
+          "beta": {
+            "sd_cluster": 0.20523248884998496,
+            "sd_row": 0.05727453959731835,
+            "inflation": 3.5833110190482294
+          },
+          "corr": {
+            "sd_cluster": 0.030492808578630515,
+            "sd_row": 0.00975647075397927,
+            "inflation": 3.1253933258800304
+          },
+          "diff": {
+            "sd_cluster": 0.008569474059692508,
+            "sd_row": 0.0030433153982649896,
+            "inflation": 2.8158350148584703
+          }
+        },
+        "Mid-Range": {
+          "beta": {
+            "sd_cluster": 0.15774133896861817,
+            "sd_row": 0.06373178928114893,
+            "inflation": 2.4750809721150584
+          },
+          "corr": {
+            "sd_cluster": 0.02209513477510573,
+            "sd_row": 0.009876431103383179,
+            "inflation": 2.2371577894708365
+          },
+          "diff": {
+            "sd_cluster": 0.005723268258754326,
+            "sd_row": 0.0025967567879533423,
+            "inflation": 2.2040062763310124
+          }
+        },
+        "Corner 3": {
+          "beta": {
+            "sd_cluster": 0.1538566723102876,
+            "sd_row": 0.08540163637071724,
+            "inflation": 1.8015658580874971
+          },
+          "corr": {
+            "sd_cluster": 0.01509000529878898,
+            "sd_row": 0.009733627605007355,
+            "inflation": 1.550296139439945
+          },
+          "diff": {
+            "sd_cluster": 0.0020575724541123225,
+            "sd_row": 0.0014617248556509476,
+            "inflation": 1.4076332123366864
+          }
+        },
+        "Above the Break 3": {
+          "beta": {
+            "sd_cluster": 0.15200298685114547,
+            "sd_row": 0.057196276854566075,
+            "inflation": 2.65756785599255
+          },
+          "corr": {
+            "sd_cluster": 0.02325452185738819,
+            "sd_row": 0.00987455009020452,
+            "inflation": 2.354995584098206
+          },
+          "diff": {
+            "sd_cluster": 0.006429785113997649,
+            "sd_row": 0.002956566130550312,
+            "inflation": 2.1747476058656123
+          }
+        }
+      },
+      "conversion": {
+        "Restricted Area": {
+          "beta": {
+            "sd_cluster": 0.15128102372975233,
+            "sd_row": 0.06616934560477282,
+            "inflation": 2.2862705131368317
+          },
+          "corr": {
+            "sd_cluster": 0.01046769242630768,
+            "sd_row": 0.005130912785683113,
+            "inflation": 2.04012285212017
+          },
+          "diff": {
+            "sd_cluster": 0.010244498548193502,
+            "sd_row": 0.00506882134654028,
+            "inflation": 2.021081006373578
+          }
+        },
+        "In The Paint (Non-RA)": {
+          "beta": {
+            "sd_cluster": 0.14810154410901283,
+            "sd_row": 0.09953440520892554,
+            "inflation": 1.4879432272503512
+          },
+          "corr": {
+            "sd_cluster": 0.007535186165556804,
+            "sd_row": 0.006357110672857373,
+            "inflation": 1.1853161842422217
+          },
+          "diff": {
+            "sd_cluster": 0.007319170957228122,
+            "sd_row": 0.0065880447507198165,
+            "inflation": 1.1109777231595797
+          }
+        },
+        "Mid-Range": {
+          "beta": {
+            "sd_cluster": 0.148113795246106,
+            "sd_row": 0.10069133965911856,
+            "inflation": 1.4709685634090466
+          },
+          "corr": {
+            "sd_cluster": 0.008223994486345525,
+            "sd_row": 0.006775176269270875,
+            "inflation": 1.2138421436569602
+          },
+          "diff": {
+            "sd_cluster": 0.00810143945533413,
+            "sd_row": 0.006722859631464145,
+            "inflation": 1.205058546428367
+          }
+        },
+        "Corner 3": {
+          "beta": {
+            "sd_cluster": 0.14263238941898637,
+            "sd_row": 0.13798355970224452,
+            "inflation": 1.0336911855787283
+          },
+          "corr": {
+            "sd_cluster": 0.01582045346350868,
+            "sd_row": 0.016846979014566624,
+            "inflation": 0.9390676779397443
+          },
+          "diff": {
+            "sd_cluster": 0.015758220090284197,
+            "sd_row": 0.017637629346198735,
+            "inflation": 0.8934432049214376
+          }
+        },
+        "Above the Break 3": {
+          "beta": {
+            "sd_cluster": 0.11882297886640303,
+            "sd_row": 0.10250865853511887,
+            "inflation": 1.1591506567778855
+          },
+          "corr": {
+            "sd_cluster": 0.005104257935117128,
+            "sd_row": 0.005406638565016266,
+            "inflation": 0.9440723424984063
+          },
+          "diff": {
+            "sd_cluster": 0.005074941408872219,
+            "sd_row": 0.0052136324201594265,
+            "inflation": 0.9733983909661652
+          }
+        }
+      }
+    },
+    "cluster_robust_se_caveat": "cluster-robust SEs are reported but are NOT the basis of any verdict: in this program clustering has been observed to RAISE t in one case and lower it in another",
+    "defective_noop_D0": {
+      "selection": {
+        "zone": "Restricted Area",
+        "kind": "DEFECTIVE_NOOP",
+        "n_draws": 400,
+        "reference": {
+          "beta": 0.9193293906251634,
+          "corr": 0.2114736250386627,
+          "diff": 0.051293367212419186
+        },
+        "defect_signature_confirmed": true,
+        "beta": {
+          "mean": 0.9193293906251634,
+          "sd": 0.0,
+          "max_abs_dev_from_reference": 0.0
+        },
+        "corr": {
+          "mean": 0.21147362503866268,
+          "sd": 2.77903352731012e-17,
+          "max_abs_dev_from_reference": 0.0
+        },
+        "diff": {
+          "mean": 0.05129336721241918,
+          "sd": 6.9475838182753e-18,
+          "max_abs_dev_from_reference": 0.0
+        }
+      },
+      "conversion": {
+        "zone": "Restricted Area",
+        "kind": "DEFECTIVE_NOOP",
+        "n_draws": 400,
+        "reference": {
+          "beta": 0.6700704452207322,
+          "corr": 0.04578472881499695,
+          "diff": 0.04047670153887102
+        },
+        "defect_signature_confirmed": true,
+        "beta": {
+          "mean": 0.6700704452207321,
+          "sd": 1.111613410924048e-16,
+          "max_abs_dev_from_reference": 0.0
+        },
+        "corr": {
+          "mean": 0.04578472881499694,
+          "sd": 6.9475838182753e-18,
+          "max_abs_dev_from_reference": 0.0
+        },
+        "diff": {
+          "mean": 0.040476701538871014,
+          "sd": 6.9475838182753e-18,
+          "max_abs_dev_from_reference": 0.0
+        }
+      }
+    }
+  },
+  "time_window_table": [
+    {
+      "quantity": "share_z (response)",
+      "window": "THE CURRENT GAME ONLY (the outcome)",
+      "prior_only": "n/a (outcome)"
+    },
+    {
+      "quantity": "S1 own zone-share baseline",
+      "window": "the player's PLAYED GAMES STRICTLY BEFORE this game, same season",
+      "prior_only": true,
+      "verified": "max|S1 - EWMA_0.03(share)[shift(1)]| = 7.772e-16"
+    },
+    {
+      "quantity": "S2 shrunk own zone-share baseline",
+      "window": "same player's strictly prior games in season, shrunk to the LEAGUE share over games played strictly before this calendar date",
+      "prior_only": true
+    },
+    {
+      "quantity": "OS opponent zone-share allowance",
+      "window": "the opponent's games STRICTLY BEFORE this game, same season (expanding cumsum minus the current row), centred on the league share over games played STRICTLY BEFORE this calendar date",
+      "prior_only": true
+    },
+    {
+      "quantity": "OS_exT",
+      "window": "same as OS, minus every prior game the opponent played against the shooting team",
+      "prior_only": true
+    },
+    {
+      "quantity": "OS_exP",
+      "window": "same as OS, minus this player's own prior attempts against that opponent",
+      "prior_only": true
+    },
+    {
+      "quantity": "role_prior_fga",
+      "window": "EWMA_0.30 of the player's FGA per game over strictly prior games in season",
+      "prior_only": true
+    },
+    {
+      "quantity": "lg_share_prior",
+      "window": "all league shots on calendar dates STRICTLY BEFORE this game's date, same season",
+      "prior_only": true
+    },
+    {
+      "quantity": "B1 / OC conversion own-rate",
+      "window": "the player's strictly prior games in season",
+      "prior_only": true
+    },
+    {
+      "quantity": "O2 / OC opponent conversion allowance",
+      "window": "the opponent's strictly prior games in season",
+      "prior_only": true
+    },
+    {
+      "quantity": "fga (denominator of the share, and the dR2 conditioner)",
+      "window": "THE CURRENT GAME",
+      "prior_only": false,
+      "disclosure": "realised, not pregame-observable. The share model is therefore a MIX model given volume. This is disclosed everywhere the dR2 appears and is NOT claimed as a forecasting increment."
+    },
+    {
+      "quantity": "B0 (E0's leave-one-season-out player x zone rate)",
+      "window": "THE PLAYER'S OTHER SEASONS -- READS THE FUTURE",
+      "prior_only": false,
+      "used_for": "the reproduction step ONLY; never used in any new statistic"
+    },
+    {
+      "quantity": "O1 (E0's leave-one-game-out full-season opponent rate)",
+      "window": "THE OPPONENT'S WHOLE SEASON minus this game -- READS THE FUTURE",
+      "prior_only": false,
+      "used_for": "the reproduction step ONLY; never used in any new statistic"
+    }
+  ],
+  "every_new_feature_is_prior_games_only": true,
+  "verdicts": {
+    "shot_selection_channel (existence)": {
+      "verdict": "KEEP-AS-LEAD",
+      "headline": "player-game Restricted-Area ATTEMPT SHARE vs the opponent's strictly-prior-games rim-share allowance: beta = +0.7743 (row-level), +0.9193 (cluster-level), corr +0.1876, R2 0.035209; opponent-team-season permutation p = 0.0002 unadjusted and 0.0002 family-wise across the five zones (both at the 1/5001 resolution floor)",
+      "why": "4/4 seasons positive, positive in both halves, STRENGTHENS under player-season and shooting-team-season fixed effects, and is unchanged when the opponent's allowance excludes every prior game against the shooting team or excludes the player's own prior attempts"
+    },
+    "shot_selection_channel (rim-SPECIFICITY)": {
+      "verdict": "KILL",
+      "why": "the effect is NOT rim-specific. All five zones are positive; four of five clear the five-zone family-wise correction on the row-level statistic (Corner 3 p_FWE = 0.0602). This is a general shot-LOCATION matchup effect, strongest at the rim, not an I0004 rim story. Any carry-forward must be framed as shot-mix, not rim."
+    },
+    "role_volume_concentration (selection channel)": {
+      "verdict": "KILL",
+      "why": "no concentration in a high-usage subgroup. Share-metric slope is flat to mildly DECREASING in role: +0.818 / +0.847 / +0.639 across preselected low/mid/high FGA bins, tertiles agree, and the continuous interaction is -0.02446 (two-sided permutation p = 0.0165), i.e. significantly NEGATIVE. The effect is broad-based. NOTE: measured in ATTEMPTS rather than share the ordering reverses, because high-usage players take more shots -- that is arithmetic, not concentration."
+    },
+    "role_volume_concentration (conversion channel)": {
+      "verdict": "KEEP-AS-LEAD (weak, NOT established)",
+      "why": "monotone gradient under BOTH binnings -- +0.253 / +0.354 / +0.557 and R2 0.000342 -> 0.001746 -- but the continuous interaction is +0.03893, two-sided permutation p = 0.1084. Suggestive of the program's conditional-edge thesis; NOT established."
+    },
+    "five_zone_multiplicity for the surviving conversion headline": {
+      "verdict": "SURVIVES",
+      "detail": "beta +0.3731536 -> z = 2.75; unadjusted one-sided p = 0.0026, five-zone family-wise p = 0.0124 (one-sided, preselected) / 0.0220 (two-sided). It clears 0.05 on both, but the margin is thin -- this is not the '0/400 draws' picture E1 reported, which was resolution-limited at 400 draws."
+    },
+    "OVERALL": "SPLIT"
+  },
+  "not_established": [
+    "No walk-forward, no preregistration, no holdout evaluation -- out of E1 scope.",
+    "The dR2 of +0.0191 on rim ATTEMPTS is conditional on the player's REALISED total FGA in the game, which is not pregame-observable. It is a shot-MIX increment, not a forecasting increment. A pregame-observable volume model was not built.",
+    "Pace, rest, home/away, injuries and lineup were not conditioned on. The opponent allowance is built from shot-event data alone.",
+    "Whether the selection effect is exploitable against a market is untested; a 0.34-attempt shift at the rim is small relative to typical prop lines.",
+    "The five-zone family excludes Backcourt (254 shots, 0.19%), following E0's own n >= 200 gate. Including it would make the family-wise correction slightly stricter, not looser.",
+    "The selection and conversion R2 values are NOT directly comparable: the selection response averages ~10 shots per row while the conversion response is a single Bernoulli draw. Quantified in addendum_results.json -> variance_decomposition (66.3% of the selection response variance is irreducible sampling noise, vs 90.7% for conversion)."
+  ],
+  "where_i_could_have_cheated": [
+    {
+      "choice": "row-level vs cluster-level 'real' statistic",
+      "more_favourable": "cluster-level, dramatically so for the conversion family (Mid-Range p_FWE 0.0002 cluster vs 0.8860 row)",
+      "chosen": "row-level as the number carried forward",
+      "when": "preselected -- it is the convention E1 used for its headline",
+      "disclosure": "both are reported for every cell; they DISAGREE for conversion Mid-Range / Above the Break 3 and that disagreement is the single most important caveat in this screen"
+    },
+    {
+      "choice": "one-sided vs two-sided max-t",
+      "more_favourable": "one-sided",
+      "chosen": "one-sided as the headline",
+      "when": "preselected (the hypothesis is directional)",
+      "disclosure": "two-sided reported everywhere; conclusions are unchanged"
+    },
+    {
+      "choice": "OS_exT / OS_exP stricter opponent regressors",
+      "more_favourable": "n/a -- they made the result slightly STRONGER",
+      "chosen": "reported as robustness, headline stays on the preselected OS",
+      "when": "AFTER seeing the headline",
+      "disclosure": "added specifically because an all-five-zones-positive result demanded a mechanical-confound test; had they weakened the result they would still have been reported"
+    },
+    {
+      "choice": "gates MIN_FGA_GAME=5, MIN_PRE_TOTAL=200, SHRINK_K=50, ROLE_CUTS=(6,11)",
+      "more_favourable": "unknown -- not searched",
+      "chosen": "as listed",
+      "when": "BEFORE any selection-channel statistic was computed; written into build_frames.py's docstring before the first run",
+      "disclosure": "no gate was tuned; no alternative gate was tried"
+    },
+    {
+      "choice": "unweighted vs attempt-weighted regression",
+      "more_favourable": "attempt-weighted (R2 0.0376 vs 0.0352)",
+      "chosen": "unweighted",
+      "when": "preselected by decision D069's default",
+      "disclosure": "weighted reported with weighted SST about the weighted mean"
+    },
+    {
+      "choice": "role binning",
+      "more_favourable": "neither -- both binnings agree in direction",
+      "chosen": "preselected absolute cuts as the headline, tertiles reported",
+      "when": "both specified before running",
+      "disclosure": "both reported in full"
+    },
+    {
+      "choice": "which zones and seasons to report",
+      "more_favourable": "reporting only Restricted Area",
+      "chosen": "all five zones, all four seasons, both halves",
+      "when": "preselected",
+      "disclosure": "nothing was dropped"
+    }
+  ],
+  "artifacts_written": [
+    "FINDINGS.json",
+    "NOTES.md",
+    "addendum.py",
+    "addendum_results.json",
+    "analysis_results.json",
+    "analyze.py",
+    "build_frames.py",
+    "build_results.json",
+    "conversion_frame.parquet",
+    "dr2_playergame.py",
+    "dr2_results.json",
+    "make_findings.py",
+    "permutation_draws_cluster.csv",
+    "permutation_draws_rowlevel.csv",
+    "probe_schema.py",
+    "repro_ra_common.parquet",
+    "robustness.py",
+    "robustness_results.json",
+    "run_log.txt",
+    "run_log_01_build_frames.txt",
+    "run_log_02_analyze.txt",
+    "run_log_03_robustness.txt",
+    "run_log_04_addendum.txt",
+    "run_log_05_verify_partition.txt",
+    "run_log_06_dr2.txt",
+    "run_log_07_make_findings.txt",
+    "selection_frame.parquet",
+    "selection_frame_robust.parquet",
+    "verify_partition.py"
+  ]
+}

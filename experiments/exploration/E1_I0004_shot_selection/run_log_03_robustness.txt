@@ -1,0 +1,95 @@
+﻿
+====================================================================================================
+0. RELOAD RAW SHOTS -- exploration partition only
+====================================================================================================
+  rows=132304  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+1. MERGE ONTO THE SELECTION FRAME
+====================================================================================================
+  rows=51473  OS non-null=51473  OS_exT non-null=51243  OS_exP non-null=51443
+  sanity: corr(OS, OS_exT) = 0.9817; corr(OS, OS_exP) = 0.9977
+
+====================================================================================================
+2. SELECTION -- stricter opponent regressors, all five zones
+====================================================================================================
+  OS      preselected headline regressor
+  OS_exT  drops every prior game the opponent played against the SHOTING team
+  OS_exP  drops this player's own prior attempts against the opponent
+  Reported: row-level beta (the number carried forward), cluster-level beta (the
+  like-for-like comparator for the null), and the opponent-team-season permutation p.
+
+  zone                    regressor       n  beta_row  beta_clu   null sd   z_clu    p_clu   z_row    p_row        R2
+  Restricted Area         OS          10307   +0.7743   +0.9193    0.1579   +5.84   0.0002   +4.92   0.0002  0.035209
+  Restricted Area         OS_exT      10261   +0.7753   +0.9213    0.1588   +5.82   0.0002   +4.90   0.0002  0.035848
+  Restricted Area         OS_exP      10301   +0.7834   +0.9197    0.1581   +5.84   0.0002   +4.97   0.0002  0.036105
+  In The Paint (Non-RA)   OS          10307   +0.6530   +0.9573    0.2037   +4.72   0.0002   +3.22   0.0008  0.012373
+  In The Paint (Non-RA)   OS_exT      10261   +0.6607   +0.9626    0.2046   +4.72   0.0002   +3.24   0.0008  0.013199
+  In The Paint (Non-RA)   OS_exP      10301   +0.6708   +0.9594    0.2038   +4.72   0.0002   +3.31   0.0006  0.013112
+  Mid-Range               OS          10307   +0.5558   +0.8108    0.1584   +5.14   0.0002   +3.53   0.0002  0.007419
+  Mid-Range               OS_exT      10261   +0.5764   +0.8170    0.1601   +5.12   0.0002   +3.62   0.0002  0.008239
+  Mid-Range               OS_exP      10301   +0.5788   +0.8126    0.1587   +5.14   0.0002   +3.67   0.0002  0.008065
+  Corner 3                OS          10245   +0.3247   +0.6377    0.1529   +4.32   0.0002   +2.28   0.0100  0.001370
+  Corner 3                OS_exT      10199   +0.3821   +0.6475    0.1548   +4.33   0.0002   +2.62   0.0038  0.001976
+  Corner 3                OS_exP      10239   +0.3566   +0.6403    0.1532   +4.33   0.0002   +2.47   0.0062  0.001660
+  Above the Break 3       OS          10307   +0.5630   +0.7916    0.1506   +5.28   0.0002   +3.76   0.0002  0.009447
+  Above the Break 3       OS_exT      10261   +0.5370   +0.7931    0.1505   +5.30   0.0002   +3.59   0.0006  0.009022
+  Above the Break 3       OS_exP      10301   +0.5813   +0.7928    0.1505   +5.29   0.0002   +3.89   0.0002  0.010167
+
+====================================================================================================
+3. SELECTION -- alternative own-share baseline (S2) and attempt weighting
+====================================================================================================
+  S2 = expanding attempt-weighted prior-games share shrunk to the expanding prior
+  league share (K=50). Same strictly-prior window as S1, different smoothing.
+  The weighted row declares standard weighted SST about the WEIGHTED mean (D069).
+
+  zone                    spec                              n  beta_row  beta_clu   z_clu    p_clu        R2
+  Restricted Area         S1 baseline, unweighted       10307   +0.7743   +0.9193   +5.84   0.0002  0.035209
+  Restricted Area         S2 baseline, unweighted       10307   +0.7645   +0.9248   +5.93   0.0002  0.033645
+  Restricted Area         S1 baseline, attempt-weighted  10307   +0.7530   +0.9053   +5.82   0.0002  0.037615
+  In The Paint (Non-RA)   S1 baseline, unweighted       10307   +0.6530   +0.9573   +4.72   0.0002  0.012373
+  In The Paint (Non-RA)   S2 baseline, unweighted       10307   +0.6219   +0.9573   +4.73   0.0002  0.011593
+  In The Paint (Non-RA)   S1 baseline, attempt-weighted  10307   +0.6373   +0.9418   +4.67   0.0002  0.013420
+  Mid-Range               S1 baseline, unweighted       10307   +0.5558   +0.8108   +5.14   0.0002  0.007419
+  Mid-Range               S2 baseline, unweighted       10307   +0.5410   +0.8385   +5.37   0.0002  0.007233
+  Mid-Range               S1 baseline, attempt-weighted  10307   +0.5582   +0.8040   +5.15   0.0002  0.008473
+  Corner 3                S1 baseline, unweighted       10245   +0.3247   +0.6377   +4.32   0.0002  0.001370
+  Corner 3                S2 baseline, unweighted       10245   +0.3157   +0.6717   +4.77   0.0002  0.001404
+  Corner 3                S1 baseline, attempt-weighted  10245   +0.3212   +0.5986   +4.52   0.0002  0.001688
+  Above the Break 3       S1 baseline, unweighted       10307   +0.5630   +0.7916   +5.28   0.0002  0.009447
+  Above the Break 3       S2 baseline, unweighted       10307   +0.5337   +0.8164   +5.33   0.0002  0.007816
+  Above the Break 3       S1 baseline, attempt-weighted  10307   +0.5480   +0.7656   +5.44   0.0002  0.010628
+
+====================================================================================================
+4. FAMILY-WISE max-t FOR THE ROW-LEVEL REALS (the numbers actually reported)
+====================================================================================================
+  Section 3 of analyze.py corrected the CLUSTER-LEVEL reals. The number carried
+  forward is the ROW-LEVEL beta, which is attenuated by within-team-season noise in
+  the regressor. Its family-wise p is computed here against the same null, using the
+  same per-zone standardisation. This is the STRICTER of the two readings and it is
+  the one reported in FINDINGS.json alongside the cluster-level one.
+
+  --- SELECTION ---
+  zone                      beta_row   z_row   p_unadj   p_FWE_1s   p_FWE_2s    beta_clu  p_FWE_clu
+  Restricted Area            +0.7743   +5.01    0.0002     0.0002     0.0002     +0.9193     0.0002
+  In The Paint (Non-RA)      +0.6530   +3.19    0.0004     0.0024     0.0038     +0.9573     0.0002
+  Mid-Range                  +0.5558   +3.50    0.0002     0.0010     0.0014     +0.8108     0.0002
+  Corner 3                   +0.3247   +2.24    0.0110     0.0602     0.1102     +0.6377     0.0002
+  Above the Break 3          +0.5630   +3.71    0.0002     0.0002     0.0004     +0.7916     0.0002
+
+  --- CONVERSION ---
+  zone                      beta_row   z_row   p_unadj   p_FWE_1s   p_FWE_2s    beta_clu  p_FWE_clu
+  Restricted Area            +0.4037   +2.95    0.0012     0.0066     0.0128     +0.6701     0.0002
+  In The Paint (Non-RA)      -0.1216   -0.42    0.6551     0.9958     0.9978     +0.2986     0.0352
+  Mid-Range                  +0.0377   +0.41    0.3445     0.8860     0.9986     +0.5628     0.0002
+  Corner 3                   -0.2558   -1.54    0.9370     1.0000     0.4905     +0.2640     0.0834
+  Above the Break 3          +0.0005   +0.15    0.4379     0.9480     1.0000     +0.3378     0.0050
+
+
+====================================================================================================
+5. WRITE
+====================================================================================================
+  wrote robustness_results.json, selection_frame_robust.parquet
+  PARTITION RE-ASSERT: [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+Done.

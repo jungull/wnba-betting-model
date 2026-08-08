@@ -1,0 +1,240 @@
+﻿
+====================================================================================================
+0. LOAD FRAMES -- exploration partition re-asserted
+====================================================================================================
+  selection_frame  rows=  51473  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  conversion_frame rows= 115154  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+1. REAL EFFECT SIZES -- both families, all five zones
+====================================================================================================
+  'row-level' uses x as it actually varies within team-season (the reported
+  number). 'cluster-level' replaces x by its team-season mean -- this is the
+  like-for-like comparator for the permutation null, whose x is by construction
+  team-season constant. R2 = plain unweighted OLS, SST about the unweighted mean.
+
+  --- SELECTION ---   canonical clusters (season_opponent) = 48
+  zone                           n      corr      diff      beta    SE(cl)   t(cl)  t(naive)         R2   cluster-level corr/beta
+  Restricted Area            10307   +0.1876   +0.0443   +0.7743    0.0529  +14.64    +19.39   0.035209     +0.2115  +0.9193
+  In The Paint (Non-RA)      10307   +0.1112   +0.0255   +0.6530    0.0929   +7.03    +11.36   0.012373     +0.1433  +0.9573
+  Mid-Range                  10307   +0.0861   +0.0164   +0.5558    0.0996   +5.58     +8.78   0.007419     +0.1136  +0.8108
+  Corner 3                   10245   +0.0370   +0.0052   +0.3247    0.0944   +3.44     +3.75   0.001370     +0.0634  +0.6377
+  Above the Break 3          10307   +0.0972   +0.0237   +0.5630    0.1035   +5.44     +9.91   0.009447     +0.1227  +0.7916
+
+  --- CONVERSION ---   canonical clusters (season_opponent) = 48
+  zone                           n      corr      diff      beta    SE(cl)   t(cl)  t(naive)         R2   cluster-level corr/beta
+  Restricted Area            33273   +0.0313   +0.0191   +0.4037    0.0884   +4.57     +5.71   0.000980     +0.0458  +0.6701
+  In The Paint (Non-RA)      23798   -0.0078   +0.0017   -0.1216    0.0976   -1.25     -1.20   0.000060     +0.0152  +0.2986
+  Mid-Range                  21100   +0.0025   +0.0094   +0.0377    0.1030   +0.37     +0.37   0.000006     +0.0311  +0.5628
+  Corner 3                    3150   -0.0312   -0.0326   -0.2558    0.1775   -1.44     -1.75   0.000975     +0.0282  +0.2640
+  Above the Break 3          33833   +0.0000   -0.0034   +0.0005    0.0857   +0.01     +0.01   0.000000     +0.0143  +0.3378
+
+
+====================================================================================================
+2. PERMUTATION NULL -- OPPONENT-TEAM-SEASON LEVEL (the correct grouping level)
+====================================================================================================
+  5000 draws, seed 20260807. Team labels are permuted WITHIN SEASON and the
+  whole five-zone allowance vector travels with the team, so the cross-zone
+  correlation structure survives and max-t across the family is valid.
+
+  selection: 5000 draws done (48 clusters = 12 teams x 4 seasons)
+  conversion: 5000 draws done (48 clusters = 12 teams x 4 seasons)
+
+  Row-level (NAIVE, KNOWN-TOO-NARROW) null for contrast: 2000 draws,
+  values shuffled across ROWS within season -- destroys the clustering.
+  selection: row-level null done
+  conversion: row-level null done
+
+  INFLATION FACTOR -- sd(correct cluster-level null) / sd(naive row-level null)
+  family      zone                    metric    sd cluster      sd row  inflation
+  selection   Restricted Area         beta        0.154739    0.040692       3.80x
+  selection   Restricted Area         corr        0.035028    0.009861       3.55x
+  selection   Restricted Area         diff        0.012205    0.003353       3.64x
+  selection   In The Paint (Non-RA)   beta        0.205232    0.057275       3.58x
+  selection   In The Paint (Non-RA)   corr        0.030493    0.009756       3.13x
+  selection   In The Paint (Non-RA)   diff        0.008569    0.003043       2.82x
+  selection   Mid-Range               beta        0.157741    0.063732       2.48x
+  selection   Mid-Range               corr        0.022095    0.009876       2.24x
+  selection   Mid-Range               diff        0.005723    0.002597       2.20x
+  selection   Corner 3                beta        0.153857    0.085402       1.80x
+  selection   Corner 3                corr        0.015090    0.009734       1.55x
+  selection   Corner 3                diff        0.002058    0.001462       1.41x
+  selection   Above the Break 3       beta        0.152003    0.057196       2.66x
+  selection   Above the Break 3       corr        0.023255    0.009875       2.35x
+  selection   Above the Break 3       diff        0.006430    0.002957       2.17x
+  conversion  Restricted Area         beta        0.151281    0.066169       2.29x
+  conversion  Restricted Area         corr        0.010468    0.005131       2.04x
+  conversion  Restricted Area         diff        0.010244    0.005069       2.02x
+  conversion  In The Paint (Non-RA)   beta        0.148102    0.099534       1.49x
+  conversion  In The Paint (Non-RA)   corr        0.007535    0.006357       1.19x
+  conversion  In The Paint (Non-RA)   diff        0.007319    0.006588       1.11x
+  conversion  Mid-Range               beta        0.148114    0.100691       1.47x
+  conversion  Mid-Range               corr        0.008224    0.006775       1.21x
+  conversion  Mid-Range               diff        0.008101    0.006723       1.21x
+  conversion  Corner 3                beta        0.142632    0.137984       1.03x
+  conversion  Corner 3                corr        0.015820    0.016847       0.94x
+  conversion  Corner 3                diff        0.015758    0.017638       0.89x
+  conversion  Above the Break 3       beta        0.118823    0.102509       1.16x
+  conversion  Above the Break 3       corr        0.005104    0.005407       0.94x
+  conversion  Above the Break 3       diff        0.005075    0.005214       0.97x
+
+====================================================================================================
+3. FIVE-ZONE FAMILY-WISE CORRECTION -- max-t permutation
+====================================================================================================
+  Per-zone unadjusted one-sided p = frac{draw beta >= real beta}.
+  Family-wise: each zone's beta is standardised by ITS OWN permutation null
+  (z = (beta - null mean)/null sd), the maximum z over the five zones is taken
+  WITHIN EACH DRAW (the same team permutation across all zones), and the
+  family-wise p for a zone is frac{max-over-zones z(draw) >= that zone's real z}.
+  Preselected form: ONE-SIDED (the hypothesis is directional -- a defence that
+  allows more of something should see more of it). The two-sided max-|z| version is
+  reported too, and it is the stricter of the two.
+
+  --- SELECTION ---
+  zone                      real beta  null mean   null sd       z   p_unadj   p_FWE_1s   p_FWE_2s
+  Restricted Area             +0.9193    -0.0005    0.1547   +5.94    0.0002     0.0002     0.0002
+  In The Paint (Non-RA)       +0.9573    -0.0019    0.2052   +4.67    0.0002     0.0002     0.0002
+  Mid-Range                   +0.8108    +0.0032    0.1577   +5.12    0.0002     0.0002     0.0002
+  Corner 3                    +0.6377    -0.0197    0.1539   +4.27    0.0002     0.0002     0.0002
+  Above the Break 3           +0.7916    -0.0013    0.1520   +5.22    0.0002     0.0002     0.0002
+                          row-level real beta scored against the SAME cluster-level null:
+    Restricted Area             +0.7743  p=0.0002
+    In The Paint (Non-RA)       +0.6530  p=0.0004
+    Mid-Range                   +0.5558  p=0.0002
+    Corner 3                    +0.3247  p=0.0110
+    Above the Break 3           +0.5630  p=0.0002
+                          what the NAIVE row-level null would have said (WRONG):
+    Restricted Area             +0.7743  p_naive=0.0005
+    In The Paint (Non-RA)       +0.6530  p_naive=0.0005
+    Mid-Range                   +0.5558  p_naive=0.0005
+    Corner 3                    +0.3247  p_naive=0.0005
+    Above the Break 3           +0.5630  p_naive=0.0005
+
+  --- CONVERSION ---
+  zone                      real beta  null mean   null sd       z   p_unadj   p_FWE_1s   p_FWE_2s
+  Restricted Area             +0.6701    -0.0429    0.1513   +4.71    0.0002     0.0002     0.0002
+  In The Paint (Non-RA)       +0.2986    -0.0591    0.1481   +2.41    0.0068     0.0352     0.0662
+  Mid-Range                   +0.5628    -0.0233    0.1481   +3.96    0.0002     0.0002     0.0002
+  Corner 3                    +0.2640    -0.0365    0.1426   +2.11    0.0178     0.0834     0.1564
+  Above the Break 3           +0.3378    -0.0178    0.1188   +2.99    0.0012     0.0050     0.0106
+                          row-level real beta scored against the SAME cluster-level null:
+    Restricted Area             +0.4037  p=0.0012
+    In The Paint (Non-RA)       -0.1216  p=0.6551
+    Mid-Range                   +0.0377  p=0.3445
+    Corner 3                    -0.2558  p=0.9370
+    Above the Break 3           +0.0005  p=0.4379
+                          what the NAIVE row-level null would have said (WRONG):
+    Restricted Area             +0.4037  p_naive=0.0005
+    In The Paint (Non-RA)       -0.1216  p_naive=0.8301
+    Mid-Range                   +0.0377  p_naive=0.2999
+    Corner 3                    -0.2558  p_naive=0.9380
+    Above the Break 3           +0.0005  p_naive=0.4593
+
+
+====================================================================================================
+4. D0 -- THE DEFECTIVE NO-OP, RUN ON PURPOSE (positive diagnostic)
+====================================================================================================
+  Permute the GROUPING KEY and then RECOMPUTE the aggregate from the permuted key.
+  A bijective relabel maps each permuted cell onto exactly the same row set under a
+  different name, so every row still receives its OWN true value. Expected signature:
+  every draw reproduces the real number, sd EXACTLY 0.000000. It tests NOTHING; it is
+  here so the genuine controls above can be seen to be genuine by contrast.
+
+  selection / Restricted Area:
+    beta  ref=+0.9193293906  mean=+0.9193293906  sd=0.0000000000  max|dev|=0.00e+00
+    corr  ref=+0.2114736250  mean=+0.2114736250  sd=0.0000000000  max|dev|=0.00e+00
+    diff  ref=+0.0512933672  mean=+0.0512933672  sd=0.0000000000  max|dev|=0.00e+00
+    DEFECT SIGNATURE PRESENT (reproduces the real number, sd exactly 0): True
+  conversion / Restricted Area:
+    beta  ref=+0.6700704452  mean=+0.6700704452  sd=0.0000000000  max|dev|=0.00e+00
+    corr  ref=+0.0457847288  mean=+0.0457847288  sd=0.0000000000  max|dev|=0.00e+00
+    diff  ref=+0.0404767015  mean=+0.0404767015  sd=0.0000000000  max|dev|=0.00e+00
+    DEFECT SIGNATURE PRESENT (reproduces the real number, sd exactly 0): True
+
+====================================================================================================
+5. ROLE / VOLUME CONCENTRATION
+====================================================================================================
+  Role feature: role_prior_fga = EWMA_0.30 of the player's FGA per game over their
+  STRICTLY PRIOR games this season (the frozen baseline's exposure channel). It reads
+  PRIOR GAMES ONLY -- no future information, and no season aggregate.
+  Two binnings are reported because they can disagree:
+    (a) PRESELECTED ABSOLUTE cut points (6.0, 11.0) FGA/game  -- fixed before looking;
+    (b) WITHIN-SEASON EMPIRICAL TERTILES of the same prior-only feature -- the cut
+        points are a function of the cross-sectional distribution of a prior-only
+        quantity, so they read no outcome, but they are data-dependent.
+  Interaction model (plain unweighted OLS):  y ~ 1 + x + r_c + x*r_c,
+  with r_c = role centred at its mean. p-values for the interaction coefficient come
+  from the SAME opponent-team-season permutation.
+
+  --- SELECTION / Restricted Area ---   n = 10307
+
+  PRESELECTED absolute cuts
+  group          n  mean FGA/g      beta    SE(cl)   t(cl)   null sd  z(perm)   p_perm         R2
+  low         2315        4.33   +0.8181    0.0855   +9.57    0.1866    +5.03   0.0005   0.029806
+  mid         4411        8.49   +0.8474    0.0680  +12.45    0.1758    +5.53   0.0005   0.040526
+  high        3581       14.04   +0.6389    0.0584  +10.94    0.1413    +5.70   0.0005   0.032603
+
+  within-season tertiles
+  group          n  mean FGA/g      beta    SE(cl)   t(cl)   null sd  z(perm)   p_perm         R2
+  low         3436        5.08   +0.8602    0.0867   +9.92    0.1842    +5.37   0.0005   0.034553
+  mid         3434        9.23   +0.8123    0.0682  +11.91    0.1741    +5.36   0.0005   0.038881
+  high        3437       14.15   +0.6364    0.0595  +10.70    0.1383    +5.77   0.0005   0.032309
+
+  interaction coef (x * centred role) = -0.02446   null sd = 0.01012   z = -2.42   two-sided perm p = 0.0165
+  main effect at mean role: +0.9136
+
+  --- CONVERSION / Restricted Area ---   n = 29589
+
+  PRESELECTED absolute cuts
+  group          n  mean FGA/g      beta    SE(cl)   t(cl)   null sd  z(perm)   p_perm         R2
+  low         4626        4.40   +0.2533    0.2175   +1.16    0.2554    +2.32   0.0080   0.000342
+  mid        12713        8.65   +0.3537    0.1263   +2.80    0.1651    +3.54   0.0005   0.000766
+  high       12250       14.13   +0.5566    0.1345   +4.14    0.1999    +3.85   0.0005   0.001746
+
+  within-season tertiles
+  group          n  mean FGA/g      beta    SE(cl)   t(cl)   null sd  z(perm)   p_perm         R2
+  low         9851        5.90   +0.3348    0.1566   +2.14    0.1863    +3.35   0.0005   0.000622
+  mid         9869       10.13   +0.3623    0.1451   +2.50    0.1904    +2.72   0.0025   0.000829
+  high        9869       14.73   +0.5757    0.1509   +3.82    0.2130    +4.13   0.0005   0.001830
+
+  interaction coef (x * centred role) = +0.03893   null sd = 0.02000   z = +1.60   two-sided perm p = 0.1084
+  main effect at mean role: +0.6297
+
+
+====================================================================================================
+6. FIXED EFFECTS -- is it within-player, or composition?
+====================================================================================================
+  Within transformation on the response AND the regressor, then plain OLS.
+  Permutation p from the same opponent-team-season null (2000 draws).
+
+  selection   Restricted Area     player_season          beta(no FE)=+0.9193  beta(FE)=+0.9383  groups=  550  perm z=+5.88  p=0.0005
+  selection   Restricted Area     shooting_team_season   beta(no FE)=+0.9193  beta(FE)=+0.9362  groups=   48  perm z=+5.90  p=0.0005
+  conversion  Restricted Area     player_season          beta(no FE)=+0.6701  beta(FE)=+0.7676  groups=  547  perm z=+4.76  p=0.0005
+
+====================================================================================================
+7. PERSISTENCE -- per season and by half, inside the exploration partition
+====================================================================================================
+  --- SELECTION ---
+  zone                          2021      2022      2023      2024   signs        H1        H2
+  Restricted Area            +0.6671   +0.7861   +0.9269   +0.7328     4/4   +0.7337   +0.8115
+  In The Paint (Non-RA)      +0.3836   +0.5014   +0.7335   +0.7736     4/4   +0.4400   +0.7613
+  Mid-Range                  +0.5672   +0.5608   +0.5819   +0.4530     4/4   +0.5638   +0.5453
+  Corner 3                   +0.2711   +0.5242   -0.0592   +0.5374     3/4   +0.3342   +0.3205
+  Above the Break 3          +0.4746   +0.5775   +0.7672   +0.4294     4/4   +0.5394   +0.5876
+
+  --- CONVERSION ---
+  zone                          2021      2022      2023      2024   signs        H1        H2
+  Restricted Area            +0.5743   +0.3141   +0.4991   +0.5367     4/4   +0.3866   +0.5181
+  In The Paint (Non-RA)      -0.1148   -0.1911   +0.0646   -0.1432     1/4   -0.1438   -0.0660
+  Mid-Range                  +0.0109   -0.1035   +0.2717   +0.0071     3/4   -0.0430   +0.1550
+  Corner 3                   -0.1678   -0.6967   -0.0464   -0.2875     0/4   -0.2909   -0.1861
+  Above the Break 3          -0.0233   -0.0386   +0.1543   -0.1066     1/4   -0.0351   +0.0461
+
+
+====================================================================================================
+8. WRITE
+====================================================================================================
+  wrote analysis_results.json, permutation_draws_cluster.csv, permutation_draws_rowlevel.csv
+  PARTITION RE-ASSERT: SEL=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] CONV=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+Done.
