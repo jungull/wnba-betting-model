@@ -1,0 +1,154 @@
+﻿================================================================================================
+run_log.txt -- captured output of 'python TESTS.py' for experiments\exploration\_screen_kit
+host: Windows 11 / PowerShell 5.1
+command: python TESTS.py
+run at: 2026-08-07 22:23:19
+================================================================================================
+
+================================================================================================
+screenkit TESTS -- known-answer tests, SYNTHETIC DATA ONLY, no 2025/2026 real data
+================================================================================================
+numpy 2.5.1   pandas 3.0.5   python 3.13.14
+
+================================================================================================
+TEST 1 -- r2_plain / delta_r2_plain against hand-computed arithmetic
+================================================================================================
+      hand-derived R2 = 169/175 = 0.9657142857142857
+      screenkit       =           0.9657142857142857
+    [PASS] r2_plain matches hand arithmetic (169/175)                 |diff| = 0.000e+00
+    [PASS] r2_plain == 1 on an exact linear fit                       R2 = 1.000000000000000
+    [PASS] r2_plain is invariant to shifting y by a constant          R2(y+1000) = 0.965714285714
+    [PASS] delta_r2_plain == r2_plain(full) - r2_plain(base)          dR2 = 0.0972953190, |diff| = 1.388e-17
+
+================================================================================================
+TEST 2 -- wls_r2_DEFECTIVE vs r2_weighted_standard (trap 4)
+================================================================================================
+      uniform w = 1.0      defective = 0.616518422578582  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=1 -> ratio EXACTLY 1.0000000000          ratio = 1.000000000000  (|ratio-1| = 0.000e+00)
+      uniform w = 3.7      defective = 0.616518422578582  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=3.7 -> ratio EXACTLY 1.0000000000        ratio = 1.000000000000  (|ratio-1| = 0.000e+00)
+      uniform w = 250.0    defective = 0.616518422578583  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=250 -> ratio EXACTLY 1.0000000000        ratio = 1.000000000000  (|ratio-1| = 4.441e-16)
+      construction check: sum(w*y) = 6.217e-15 (target 0)   t = T/S = 0.000689524 (target 0.000689524)
+      centered response:  standard R2 = 0.500000000000 (target 0.50)
+                          defective R2 = 0.499655000000
+                          ratio        = 0.999310000000 (target 0.99931)
+    [PASS] centered response: standard weighted R2 hits the constructed 0.5 R2_std = 0.500000000000
+    [PASS] centered response: ratio == 0.99931 (analytic target)      ratio = 0.999310000000
+    [PASS] centered response: ratio is NOT exactly 1                  ratio = 0.999310000000, 1-ratio = 6.900e-04
+    [PASS] defective R2 == closed form 1 - SSE/(S-T)                  |diff| = 1.110e-16
+      dispersed w, non-centered y:  dR2 standard  = 0.00959314
+                                    dR2 defective = 0.00812427
+                                    shortfall     = 15.3117%  (predicted 15.3117%)
+    [PASS] dR2 shortfall == closed form 1 - SST_std/SST_def           |diff| = 4.774e-15
+    [PASS] defect UNDERSTATES dR2 (defective <= standard)             def 0.00812427 <= std 0.00959314
+    [PASS] dR2 shortfall lands inside the measured 0-25.3%% band      shortfall = 15.31%
+
+================================================================================================
+TEST 3 -- detect_grouping_level must report `game`, not `row` (trap 1)
+================================================================================================
+  detect_grouping_level(game_pace): n_rows=300  distinct values overall=30
+    level            n_groups   distinct    constant? max within-group distinct
+    row                   300         30          YES 1
+    player_game           300         30          YES 1
+    team_game              60         30          YES 1
+    game                   30         30          YES 1
+    team_season            24         12           no 3
+    season                  4          4           no 8
+    -> COARSEST CONSTANT LEVEL = 'game'  == THE CORRECT PERMUTATION LEVEL
+    [PASS] recommends the GAME level for a per-game feature           recommended = 'game'
+    [PASS] recommendation is NOT `row`                                
+    [PASS] game level is flagged constant                             
+    [PASS] team_season level is NOT constant (feature varies across a team's games) max distinct within a team-season = 3
+    [PASS] reports 30 distinct feature values across 300 rows         30 distinct / 300 rows
+    [PASS] a genuinely row-varying feature falls back to `row`        recommended = 'row'
+    [PASS] permutation_null REFUSES a None grouping level             
+    [PASS] permutation_null refuses a level where the feature is not constant 
+
+================================================================================================
+TEST 4 -- CRITICAL: row-level null over-rejects, correct-level null does not
+================================================================================================
+      120 replicate datasets, 200 permutation draws each, TRUE EFFECT = 0
+      rejection rate at alpha=0.05  --  NAIVE ROW-LEVEL null  : 0.733   (nominal 0.05)
+      rejection rate at alpha=0.05  --  CORRECT GAME-LEVEL null: 0.033   (nominal 0.05)
+      correct-level p-values: mean 0.517  median 0.530  min 0.005   (uniform => mean 0.5)
+      null sd inflation (correct/row): median 39.19x  min 25.19x  max 57.81x
+      analytic design effect DE = 1 + (50-1)*0.8 = 40.2 ; the statistic is dR2 = r^2,
+      so the expected sd inflation on the REPORTED scale is DE itself (~40.2x), and
+      sqrt(DE) = 6.34x on the correlation scale.
+    [PASS] row-level null OVER-REJECTS (rate >= 0.50 with zero true effect) row-level rejection rate = 0.733
+    [PASS] correct-level null is calibrated (rejection rate <= 0.20)  correct-level rejection rate = 0.033
+    [PASS] correct-level p-values are ~uniform (mean p in [0.30, 0.70]) mean p = 0.517
+    [PASS] row-level rejection rate strictly exceeds correct-level    0.733 > 0.033
+    [PASS] measured null-sd inflation brackets the analytic design effect 40.2 median inflation = 39.19x vs DE = 40.2
+
+================================================================================================
+TEST 5 -- noop_placebo: sd < 1e-15 on a genuine no-op, nonzero on a real shuffle
+================================================================================================
+  noop_placebo: real=0.001086910004  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+    [PASS] identity transform -> sd < 1e-15 and is_noop True          sd = 0.000e+00
+  noop_placebo: real=0.001086910004  sd=4.337e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=4.337e-19 < tol=1e-15, real reproduced)
+    [PASS] permute-the-key-and-recompute is CONFIRMED a no-op (sd < 1e-15) sd = 4.337e-19, max|draw-real| = 0.000e+00
+    [PASS] noop_placebo RETURNS the observed sd rather than rounding it to zero sd = 4.337e-19 (reported, not asserted bitwise-zero)
+  noop_placebo: real=0.001086910004  sd=6.340e-04  max|draw-real|=1.084e-03  distinct=25 -> NOT a no-op (sd=6.340e-04) -- the transform does move the statistic
+    [PASS] a real shuffle FAILS the no-op signature (sd > 0, is_noop False) sd = 6.340e-04
+
+================================================================================================
+TEST 6 -- assert_partition is VALUE-based, never textual (trap 3)
+================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+    [PASS] PASSES on clean 2021-2024 data                             
+    [PASS] RAISES PartitionViolation on a 2025 season VALUE           
+    [PASS] RAISES on a 2025 YEAR VALUE inside a date column           
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    _team_season_2025        name is season-like but VALUES are not seasons (range 2.675597852080434e-05..0.00017124660739951432) -> NOT a season column, skipped
+    skipped    dr2_draw_season_2026     name is season-like but VALUES are not seasons (range 3.634522082194045e-05..0.00017372009567027274) -> NOT a season column, skipped
+    -> PASS
+    [PASS] PASSES on a column NAMED `_team_season_2025` holding dR2 draws (trap-3 regression) violations = []
+    [PASS] the name-only column is recorded as SKIPPED, not checked   skipped = ['_team_season_2025', 'dr2_draw_season_2026']
+    [PASS] prose containing '2025' in a text column does not trigger a violation 
+    [PASS] catches year-VALUED data in an innocuously named column    
+
+================================================================================================
+TEST 7 -- check_manifest: missing manifest is UNVERIFIABLE, never a pass
+================================================================================================
+  check_manifest no_manifest.parquet -> UNVERIFIABLE (no manifest)
+    [PASS] MISSING manifest -> status UNVERIFIABLE                    status = UNVERIFIABLE
+    [PASS] MISSING manifest -> usable_at_e0_e1 is False (not a pass)  
+  check_manifest row_gran.parquet                         granularity='row'      -> USABLE_IF_FILTERED
+    [PASS] asof_granularity 'row' -> USABLE_IF_FILTERED               status = USABLE_IF_FILTERED
+    [PASS] 'row' granularity says filtering helps                     
+  check_manifest artifact_gran.parquet                    granularity='artifact' -> UNUSABLE
+    [PASS] asof_granularity 'artifact' -> UNUSABLE at E0/E1           status = UNUSABLE
+    [PASS] 'artifact' granularity says filtering does NOT help        
+  check_manifest odd_gran.parquet                         granularity=None       -> UNVERIFIABLE
+    [PASS] manifest present but granularity absent -> UNVERIFIABLE    status = UNVERIFIABLE
+
+================================================================================================
+TEST 8 -- future_leakage_probe detects a full-season leave-one-out baseline (trap 2)
+================================================================================================
+  future_leakage_probe: n=1680
+    corr(baseline_loo            , own strictly-after-date future) = +0.9504
+    corr(baseline_pregame        , own strictly-after-date future) = +0.8781
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.142440
+    -> 'baseline_loo' predicts the entity's UNPLAYED FUTURE better than 'baseline_pregame' (|0.9504| vs |0.8781|) and adds dR2=0.1424 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment.
+    [PASS] flags the leave-one-out baseline as reading the future     
+    [PASS] LOO correlates with the unplayed future more strongly than the pregame baseline 0.9504 vs 0.8781
+    [PASS] LOO adds substantial dR2 over the pregame baseline in PREDICTING the future dR2 = 0.1424
+    [PASS] does NOT flag the pregame baseline when contrasted against the LOO one corr 0.8781 vs 0.9504, dR2 0.0102
+
+================================================================================================
+SUMMARY
+================================================================================================
+  49 assertions: 49 PASSED, 0 FAILED
+  RESULT: ALL TESTS PASS
+
+================================================================================================
+PROCESS EXIT CODE: 0
+wall clock: 141.9 s
+================================================================================================

@@ -1,0 +1,223 @@
+{
+  "screen_id": "TEMPLATE_DEMO",
+  "r2_convention": "plain unweighted OLS R2 = 1 - SSE/SST, SST about the UNWEIGHTED mean (D069 adopted default)",
+  "partition": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "holdout_never_touched": [
+    2025,
+    2026
+  ],
+  "screenkit_version": "1.0",
+  "time_window_table": [
+    {
+      "column": "own_pre",
+      "construction": "expanding mean over the player's games STRICTLY BEFORE this game_date",
+      "window": "(-inf, game_date)",
+      "reads_future": false,
+      "evidence": "np.searchsorted(dates, date, side='left') -> strictly-before prefix"
+    },
+    {
+      "column": "opp_strength",
+      "construction": "opponent team rate over the opponent's games strictly before this date",
+      "window": "(-inf, game_date)",
+      "reads_future": false,
+      "evidence": "same strictly-before prefix machinery, keyed on opp_team_id"
+    }
+  ],
+  "manifest_checks": {
+    "demo_input.parquet": {
+      "artifact": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\exploration\\_screen_kit\\_demo_out\\demo_input.parquet",
+      "manifest_path": "C:\\Users\\jgallagher\\wnba-betting-model\\.claude\\worktrees\\player-model-program\\experiments\\exploration\\_screen_kit\\_demo_out\\demo_input.parquet.manifest.json",
+      "manifest_present": false,
+      "asof_granularity": null,
+      "status": "UNVERIFIABLE",
+      "usable_at_e0_e1": false,
+      "filtering_helps": null,
+      "fit_seasons": null,
+      "fit_through_season": null,
+      "content_sha256": null,
+      "note": "NO SIBLING MANIFEST. Status is UNVERIFIABLE, which is NOT a pass. Two input parquets and 45 market-named files in this repo carry none. Record this status in FINDINGS.json; do not treat the artifact as clean."
+    }
+  },
+  "partition_check": {
+    "ok": true,
+    "allowed": [
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "checked_season_cols": {
+      "season": [
+        2021,
+        2022,
+        2023,
+        2024
+      ]
+    },
+    "checked_date_cols": {
+      "game_date": [
+        2021,
+        2022,
+        2023,
+        2024
+      ]
+    },
+    "skipped_name_only": {},
+    "violations": []
+  },
+  "grouping_level": {
+    "n_rows": 1080,
+    "feature_col": "opp_strength",
+    "n_distinct_values_global": 60,
+    "levels": {
+      "row": {
+        "key_cols": null,
+        "n_groups": 1080,
+        "constant_within": true,
+        "max_distinct_within_group": 1,
+        "max_within_group_spread": 0.0,
+        "n_distinct_at_level": 60
+      },
+      "player_game": {
+        "key_cols": [
+          "player_id",
+          "game_id"
+        ],
+        "n_groups": 540,
+        "constant_within": true,
+        "max_distinct_within_group": 1,
+        "max_within_group_spread": 0.0,
+        "n_distinct_at_level": 60
+      },
+      "team_game": {
+        "key_cols": [
+          "team_id",
+          "game_id"
+        ],
+        "n_groups": 120,
+        "constant_within": true,
+        "max_distinct_within_group": 1,
+        "max_within_group_spread": 0.0,
+        "n_distinct_at_level": 60
+      },
+      "game": {
+        "key_cols": [
+          "game_id"
+        ],
+        "n_groups": 60,
+        "constant_within": true,
+        "max_distinct_within_group": 1,
+        "max_within_group_spread": 0.0,
+        "n_distinct_at_level": 60
+      },
+      "team_season": {
+        "key_cols": [
+          "team_id",
+          "season"
+        ],
+        "n_groups": 24,
+        "constant_within": false,
+        "max_distinct_within_group": 5,
+        "max_within_group_spread": 3.9233580197891325,
+        "n_distinct_at_level": 12
+      },
+      "season": {
+        "key_cols": [
+          "season"
+        ],
+        "n_groups": 4,
+        "constant_within": false,
+        "max_distinct_within_group": 15,
+        "max_within_group_spread": 4.583837021415935,
+        "n_distinct_at_level": 4
+      }
+    },
+    "skipped": {},
+    "constant_levels": [
+      "game",
+      "team_game",
+      "player_game",
+      "row"
+    ],
+    "recommended_permutation_level": "game",
+    "recommended_key_cols": [
+      "game_id"
+    ]
+  },
+  "reproduction": {
+    "applicable": false,
+    "note": "new screen; nothing published to reproduce"
+  },
+  "real": {
+    "n": 1080,
+    "r2_base": 0.09898689958377527,
+    "dR2": 0.04966277292069053,
+    "baseline_cols": [
+      "own_pre"
+    ],
+    "feature_col": "opp_strength"
+  },
+  "null": {
+    "correct_level": {
+      "real": 0.04966277292069053,
+      "n_draws": 300,
+      "n_finite_draws": 300,
+      "mean": 0.013117955365919193,
+      "sd": 0.016590505707664828,
+      "p": 0.059800664451827246,
+      "alternative": "greater",
+      "level": "game_id",
+      "key_cols": [
+        "game_id"
+      ],
+      "n_groups": 60,
+      "block_col": [
+        "season"
+      ],
+      "constant_within": true,
+      "seed": 20260807,
+      "is_row_level_naive": false
+    },
+    "row_level_NAIVE": {
+      "real": 0.04966277292069053,
+      "n_draws": 300,
+      "n_finite_draws": 300,
+      "mean": 0.0011118946752217652,
+      "sd": 0.001569188564976001,
+      "p": 0.0033222591362126247,
+      "alternative": "greater",
+      "level": "row",
+      "key_cols": null,
+      "n_groups": 1080,
+      "block_col": [
+        "season"
+      ],
+      "constant_within": true,
+      "seed": 20260807,
+      "is_row_level_naive": true
+    },
+    "sd_inflation_correct_over_row": 10.572665438661645,
+    "p_correct": 0.059800664451827246,
+    "p_row_level_NAIVE": 0.0033222591362126247,
+    "note": "The row-level p is reported ONLY to expose the inflation factor and never carries a verdict. Cluster-robust standard errors are NOT an alternative to this: they moved t the WRONG way in two screens in this program."
+  },
+  "noop_placebo": {
+    "real": 0.04966277292069053,
+    "n_draws": 25,
+    "sd": 6.938893903907228e-18,
+    "max_abs_dev_from_real": 0.0,
+    "n_distinct_draw_values": 1,
+    "tol": 1e-15,
+    "is_noop": true,
+    "verdict": "CONFIRMED NO-OP -- this control tests nothing (sd=6.939e-18 < tol=1e-15, real reproduced)"
+  },
+  "leakage_probe": {
+    "applicable": false,
+    "note": "demo frame has a single pregame baseline"
+  }
+}
