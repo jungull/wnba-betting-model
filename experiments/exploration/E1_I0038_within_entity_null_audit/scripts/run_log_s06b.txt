@@ -1,0 +1,41 @@
+﻿  A_PARTITION ok E0_I0024: seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  RESOLVED B_COMPLETE(y_oreb) (10): ['ref_mean__y_oreb', 'ref_ewma__y_oreb', 'ref_trail5__y_oreb', 'ref_rate_x_min__y_oreb', 'ref_mean_minutes', 'ref_trail5_minutes', 'ref_pct__y_oreb', 'ref_mean_pace', 'n_prior', 'is_home']
+
+====================================================================================================
+R2b -- THE NULL'S OWN MEAN, REAL RESPONSE vs SYNTHETIC RESPONSE
+====================================================================================================
+  observed dR2 (real y)                                    = 6.488116e-03
+  N_CYCLIC null MEAN under the REAL response               = 7.881541e-03
+  N_CYCLIC null MEAN under the SYNTHETIC response (60 reps)= 4.731433e-05 +/- 4.82e-05
+  >>> COLLAPSE FACTOR = 166.6x
+      The null the injection test is graded against is a DIFFERENT DISTRIBUTION from
+      the null the real verdict was taken from.  That is the defect, stated correctly.
+
+====================================================================================================
+R2c -- WHY: THE ALIGNMENT OF ENTITY MEANS, NOT THE VARIANCE SHARE
+====================================================================================================
+  A cyclic shift preserves each entity's carrier mean exactly, so what the N_CYCLIC
+  statistic can never destroy is the association between ENTITY-MEAN CARRIER and
+  ENTITY-MEAN RESIDUAL.  Measure that association directly:
+  corr(entity-mean carrier, entity-mean residual), REAL      = +0.4407
+  corr(entity-mean carrier, entity-mean residual), SYNTHETIC = -0.0059 +/- 0.0313
+  >>> the ALIGNMENT collapses by 74.1x, while the
+      variance SHARE moved only 1.17x.  D-04 named the marginal; the joint is the cause.
+
+  Corroborating marginals (unchanged, reported so the correction is auditable):
+    var share between entity, REAL residual      = 0.0396
+    var share between entity, carrier            = 0.8762
+
+====================================================================================================
+R2d -- THE PRACTICAL CONSEQUENCE: A DROP-IN CHECK THAT COSTS NOTHING
+====================================================================================================
+  Because the defect is that the injection null and the verdict null are different
+  distributions, it is detectable WITHOUT any component decomposition at all:
+  compare the null mean the injection test generates against the null mean the real
+  verdict was taken from.  If they differ by more than an order of magnitude, the
+  injection test did not test the null that decided the cell.
+
+    N_CYCLIC: injection null mean 4.731e-05 vs verdict null mean 7.882e-03 -> 167x  ** FAILS **
+    N_PSWAP : injection null mean 5.492e-05 vs verdict null mean 7.551e-05 -> 1.37x  ** PASSES **
+
+wrote D04_MECHANISM.csv

@@ -1,0 +1,71 @@
+﻿prereg sha256 33135817779e66637ac68e3da2baa590dcb2be224f34c8a3332a159bb17c68d1  MATCH  (15833 bytes)
+
+==========================================================================================================
+1. CHAMPION FOLD RECEIPTS -- 2021-2024 ONLY.  2025/2026 receipts are NOT opened.
+==========================================================================================================
+  receipt files on disk: ['fold_receipt__2021.json', 'fold_receipt__2021.json.manifest.json', 'fold_receipt__2022.json', 'fold_receipt__2022.json.manifest.json', 'fold_receipt__2023.json', 'fold_receipt__2023.json.manifest.json', 'fold_receipt__2024.json', 'fold_receipt__2024.json.manifest.json', 'fold_receipt__2025.json', 'fold_receipt__2025.json.manifest.json', 'fold_receipt__2026.json', 'fold_receipt__2026.json.manifest.json']
+  SEALED, NOT OPENED: fold_receipt__2025.json  (exists=True)
+  SEALED, NOT OPENED: fold_receipt__2026.json  (exists=True)
+
+ season  degenerate  model_was_fitted  n_train_rows  n_test_rows      train_seasons  cold_start_declared_constant_only  n_fallback_rows          minutes_fallback_levels  minutes_n_fallback          fit_through_date
+   2021        True             False             0         4997                 []                               True                0                      {"4": 4997}                4997 2021-10-16T12:00:00+00:00
+   2022       False              True          4850         6333             [2021]                              False              429  {"0": 4972, "2": 546, "3": 815}                1361 2022-09-17T12:00:00+00:00
+   2023       False              True         10413         7418       [2021, 2022]                              False              767 {"0": 5604, "2": 572, "3": 1242}                1814 2023-10-17T12:00:00+00:00
+   2024       False              True         16563         7866 [2021, 2022, 2023]                              False             1026 {"0": 5663, "2": 697, "3": 1506}                2203 2024-10-19T12:00:00+00:00
+
+==========================================================================================================
+2. ANCHORS A1-A4 -- the 2021 degeneracy verified FIRST-HAND from the receipt
+==========================================================================================================
+  ANCHOR A1  2021 degenerate                                want True                     got True                     EXACT
+  ANCHOR A2  2021 model_was_fitted                          want False                    got False                    EXACT
+  ANCHOR A3  2021 n_train_rows                              want 0                        got 0                        |d|=0.000e+00  EXACT
+  ANCHOR A4  2022 train_seasons                             want [2021]                   got [2021]                   EXACT
+  ANCHOR A1b 2021 minutes fallback levels                   want ['4']                    got ['4']                    EXACT
+  ANCHOR A1c 2021 minutes n_fallback == n_test              want 4997                     got 4997                     |d|=0.000e+00  EXACT
+
+  2021 is degenerate on its own receipt: no model was fitted, no training rows existed,
+  and all 4997 minutes forecasts are level-4 constant fallbacks.  INHERITED FROM NOBODY.
+
+==========================================================================================================
+3. ADMISSIBILITY -- PREREG s1 (R1) and (R2), applied mechanically
+==========================================================================================================
+  (R1) champion fold not degenerate:
+       2021  FAIL
+       2022  PASS
+       2023  PASS
+       2024  PASS
+
+ scored_season  R1_champion_not_degenerate overlay_training_pool  R2_has_admissible_prior  SCORABLE                                                  reason
+          2021                       False                    []                    False     False                                champion fold degenerate
+          2022                        True                    []                    False     False no admissible strictly-prior season for the overlay fit
+          2023                        True                [2022]                     True      True                                              admissible
+          2024                        True          [2022, 2023]                     True      True                                              admissible
+
+  SCORABLE SEASONS: [2023, 2024]
+  MAXIMAL CONTIGUOUS CLEAN WINDOWS: 1  ->  [(2023, 2024)]
+
+==========================================================================================================
+4. WHAT A SECOND WINDOW WOULD HAVE REQUIRED, AND WHY IT DOES NOT EXIST
+==========================================================================================================
+  2022 is the only candidate for a second window and it fails (R2), not (R1): its champion
+  fold IS fitted, but the ONLY strictly-prior season is 2021, whose champion emitted a constant.
+  Forcing 2022 through means fitting the redistribution overlay on residuals about a constant.
+  E1_I0039 did exactly that and reported C at -12.56% on decision-stratum minutes with cross-window
+  sign agreement of 0.64.  PREREG s1 forbids relaxing (R2), so that window is NOT run here as a
+  replication; it is reported in WINDOWS.md as the known-bad alternative it is.
+
+  A THIRD OBSERVATION, which weakens even the one window that survives: 2023's overlay training
+  pool is the single season 2022, and 2022's OWN champion was trained on nothing but the degenerate
+  2021 fold (train_seasons == [2021]).  The degeneracy is therefore not fully quarantined -- it is
+  one step removed from the 2023 fold and two steps from the 2024 fold.  Stated in WINDOWS.md.
+
+==========================================================================================================
+5. THE SPLIT THAT IS AVAILABLE -- and it is a SPLIT, not a second window
+==========================================================================================================
+  The one clean window contains TWO DISJOINT SCORED FOLDS, 2023 and 2024, each with its own
+  admissible training pool.  Scoring them separately is the strongest honest second test the
+  partition allows, and this screen runs it.  It is NOT a second window and is never reported as
+  one: 2024's overlay training pool CONTAINS 2023, so the two folds share fitted information in
+  one direction.  Every table labels it PRIMARY_WINDOW_SPLIT.
+
+  wrote WINDOW_CENSUS.csv, _s01.json

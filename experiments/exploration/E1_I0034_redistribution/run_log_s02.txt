@@ -1,0 +1,88 @@
+﻿
+====================================================================================================
+S02 BUILD AND ANCHOR
+====================================================================================================
+
+====================================================================================================
+1. MANIFEST CHECK -- every input, before it is loaded
+====================================================================================================
+  check_manifest master_team.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest player_game.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest team_game.parquet                        granularity='row'      -> USABLE_IF_FILTERED
+  check_manifest predictions__player_scoring_distribution__2023.parquet granularity='artifact' -> UNUSABLE
+  check_manifest injury_log.csv -> UNVERIFIABLE (no manifest)
+  check_manifest injury_history.csv -> UNVERIFIABLE (no manifest)
+
+====================================================================================================
+2. LOAD AND PARTITION ASSERT ON VALUES
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['game_date', 'season']
+    -> PASS
+  ALLOWLIST PLAYER_BOX_COLS    resolved 11/11: ['game_id', 'team_id', 'player_id', 'season', 'game_date', 'minutes', 'fga', 'pts', 'appeared', 'position', 'starter_flag']
+
+====================================================================================================
+3. ANCHOR A1 -- D104 HOME ADVANTAGE
+====================================================================================================
+  n games = 888   (published 888)
+  home - away mean = 0.965090   (published +0.965090)
+  REPRODUCED: True
+
+====================================================================================================
+4. IDENTITY MAP FROM THE CANONICAL KEY
+====================================================================================================
+  OBLIGATION_KEY_ID = cbs_obligation_key/1
+  contract v4 rows 22659, reconstruction agrees on all three fields for 22659
+
+====================================================================================================
+5. PLAYER FRAME
+====================================================================================================
+  champion rows 26614, identity unresolved 40 (0.1503%) -- DROPPED
+
+====================================================================================================
+6. ANCHOR A2 -- D076 APPEARED PLAYER-GAMES
+====================================================================================================
+  tier-A appeared player-games 2022-2024 = 13879   (published 13,879)
+  REPRODUCED: True
+
+====================================================================================================
+7. ROW SET RS1 AND ANCHOR A3 -- E1_I0033 / D111 ABSENCE CONSTRUCTION
+====================================================================================================
+  RS1 team-games = 1392   (published 1,392)
+  pre-game top-3 rows            = 4176      (published 4,176)
+  their appearance rate          = 0.9411  (published 0.9411)
+  their mean pts_hat             = 14.3408  (published 14.341)
+  team-games with >=1 top-3 out  = 183      (published 183)
+  naive points lost in those     = 15.8151 (published 15.815)
+  A3 REPRODUCED: True
+
+====================================================================================================
+8. STRICTLY-PRIOR TRAILING-5 BASELINES AND THE RETROSPECTIVE-BASELINE CHECK
+====================================================================================================
+  first row of every player-season block is NaN in all 3 channels: True
+  brute-force recompute for one row: stored 28.270000 vs brute 28.270000  (diff 0.00e+00)
+
+====================================================================================================
+9. BIOS REFERENCE COVERAGE -- D087 INCOMPLETENESS ASSERTION
+====================================================================================================
+  ALLOWLIST BIOS_COLS          resolved 4/4: ['player_id', 'season', 'position_raw', 'draft_number']
+  bios rows 1058; champion rows 26574
+  position_raw coverage 0.9332 (24800/26574)
+  draft_number coverage 0.8494 (22572/26574)
+
+====================================================================================================
+10. FINAL PARTITION ASSERT AND WRITE
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    in-partition anchor columns: ['season']
+    -> PASS
+  wrote _team_frame (1940, 13), _player_frame (26574, 30), _s02.json

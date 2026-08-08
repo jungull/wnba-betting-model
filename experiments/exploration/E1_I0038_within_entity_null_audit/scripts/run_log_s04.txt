@@ -1,0 +1,138 @@
+﻿
+====================================================================================================
+0. PRIOR-SCREEN ANCHOR -- reproduce D115/E1_I0036's exposed-level counts EXACTLY
+====================================================================================================
+  CENSUS.csv: 1999 cells, 8 screens
+  killed cells: 1580   (E1_I0036 recorded 1,580)
+  killed at player_season   = 213   (E1_I0036/D115 recorded 213)
+  killed at opp_team_season = 337   (E1_I0036/D115 recorded 337)
+  ALL cells  player_season  = 299    (recorded 299)
+  ALL cells  opp_team_seas. = 427    (recorded 427)
+  SUM of the two killed levels = 550  (D115's '550 exposed cells')
+  >>> ANCHOR REPRODUCED: 213 + 337 = 550, and 299 / 427.  Gate passed.
+
+====================================================================================================
+1. DECISION-NULL ADAPTERS (one per screen; every classification cites its source)
+====================================================================================================
+  adapter rows built: 1999   (census has 1999)
+screen
+E0_I0014_residual_heterogeneity       348
+E0_I0016_efficiency_predictors        132
+E0_I0017_shot_quality_efficiency      117
+E0_I0019_availability_forecast        318
+E0_I0024_reb_ast_characterisation     250
+E0_I0029_freethrow_hurdle             560
+E1_I0018_teammate_volume_channel      154
+E1_I0023_usage_defence_interaction    120
+
+====================================================================================================
+2. JOIN CENSUS VERDICTS (kill_reason, eligibility, power) BY POSITION WITHIN SCREEN
+====================================================================================================
+  positional join mismatches on (candidate,target): 0 / 1999
+  >>> join verified exact on candidate AND target for all rows
+
+====================================================================================================
+3. COMPUTED BETWEEN-ENTITY VARIANCE SHARES (PREREG 2.2) -- D097 only
+====================================================================================================
+  D097 cells needing a computed share: 250
+  D097 headline frame (14327, 78), seasons [2022, 2023, 2024]
+  computed shares for 210 D097 cells
+  var_share_source counts:
+var_share_source
+RECORDED    1069
+NONE         720
+COMPUTED     210
+
+====================================================================================================
+4. EXPOSURE CLASSIFICATION (frozen rule, PREREG section 3)
+====================================================================================================
+
+EXPOSURE (threshold 0.50, the headline):
+EXPOSURE
+NOT_EXPOSED         1284
+NOT_A_KILL           419
+CEILING_EXCLUDED     213
+EXPOSED               83
+
+by screen:
+EXPOSURE                            CEILING_EXCLUDED  EXPOSED  NOT_A_KILL  NOT_EXPOSED
+screen                                                                                
+E0_I0014_residual_heterogeneity                    0        0          28          320
+E0_I0016_efficiency_predictors                     0       65           8           59
+E0_I0017_shot_quality_efficiency                   0        0          31           86
+E0_I0019_availability_forecast                     0        0          83          235
+E0_I0024_reb_ast_characterisation                213       16          17            4
+E0_I0029_freethrow_hurdle                          0        0         179          381
+E1_I0018_teammate_volume_channel                   0        2          64           88
+E1_I0023_usage_defence_interaction                 0        0           9          111
+
+null_class over KILLED cells only:
+null_class
+BETWEEN_ENTITY    1051
+WITHIN_ENTITY      424
+ROW                105
+
+SENSITIVITY -- exposed count at each threshold:
+  thr=0.30   EXPOSED=  143  NOT_EXPOSED= 1224  UNDETERMINABLE=    0
+  thr=0.50   EXPOSED=   83  NOT_EXPOSED= 1284  UNDETERMINABLE=    0
+  thr=0.80   EXPOSED=   35  NOT_EXPOSED= 1332  UNDETERMINABLE=    0
+
+====================================================================================================
+5. THE null_mean > observed FLAG
+====================================================================================================
+  cells total                                  : 1999
+  stat scale allows the flag at all            : 1762
+  ... of which the SCREEN ITSELF recorded a mean: 846
+  ... recovered by this screen FROM RAW DRAWS   : 916
+  ... NO null mean available anywhere           : 0
+  flag COMPUTABLE                              : 1756
+  flag TRIPS (null_mean > observed)            : 632
+
+null_mean_source x stat_scale:
+stat_scale        ABS_T  DR2  SIGNED_SYMMETRIC  STANDARDISED
+null_mean_source                                            
+FROM_DRAWS          666  250                 0             0
+NONE                  0    0               120           117
+RECORDED              0  846                 0             0
+
+flag trips by screen (killed cells only):
+flag_null_mean_gt_observed          0.0  1.0  NaN
+screen                                           
+E0_I0014_residual_heterogeneity     233   87    0
+E0_I0016_efficiency_predictors       38   86    0
+E0_I0017_shot_quality_efficiency      0    0   86
+E0_I0019_availability_forecast      155   80    0
+E0_I0024_reb_ast_characterisation    58  175    0
+E0_I0029_freethrow_hurdle           219  162    0
+E1_I0018_teammate_volume_channel     48   42    0
+E1_I0023_usage_defence_interaction    0    0  111
+
+====================================================================================================
+5b. FLAG vs STRUCTURAL EXPOSURE (killed, non-ceiling, flag computable)
+====================================================================================================
+EXPOSURE                    EXPOSED  NOT_EXPOSED
+flag_null_mean_gt_observed                      
+0.0                              14          684
+1.0                              69          403
+
+  determinate cells with a computable flag: 1170
+  TP=69  FN=14  FP=403  TN=684
+  sensitivity (flag | EXPOSED)     = 0.8313
+  specificity (no flag | NOT_EXP)  = 0.6293
+
+====================================================================================================
+6. THE SUPERSEDED-RULE COUNTERFACTUAL (D090 only, reported not adopted)
+====================================================================================================
+  D090's PUBLISHED (repaired) rule uses the BETWEEN null only -> 0 exposed.
+  Under the SUPERSEDED pre-repair rule p_correct = max(between, within), the within arm would have decided 117 of 318 cells,
+  and 70 of those also have var_share_between >= 0.5 -- i.e. would have been EXPOSED.
+  D090 also self-flagged within_null_degenerate on 144 of 318 cells, in its OWN repair, months before D115.
+
+====================================================================================================
+7. WRITE AUDIT_TABLE.csv
+====================================================================================================
+  wrote AUDIT_TABLE.csv  (1999, 41)
+  wrote EXPOSURE_BY_SCREEN.csv
+  wrote CEILING_EXCLUSIONS.csv  (213 cells, 16 distinct candidates)
+
+DONE.

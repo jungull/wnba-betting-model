@@ -1,0 +1,102 @@
+﻿
+====================================================================================================
+1. LOAD D097's OWN FRAME (re-examination must sit on D097's exact rows -- D101)
+====================================================================================================
+  A_PARTITION ok screen_frame: seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  headline frame (14327, 78) (seasons (2022, 2023, 2024))
+  RESOLVED B_COMPLETE(y_oreb) (10): ['ref_mean__y_oreb', 'ref_ewma__y_oreb', 'ref_trail5__y_oreb', 'ref_rate_x_min__y_oreb', 'ref_mean_minutes', 'ref_trail5_minutes', 'ref_pct__y_oreb', 'ref_mean_pace', 'n_prior', 'is_home']
+  analysis rows n = 13784   (D097 recorded n = 13784)
+  A_REF_COVERAGE ok: all 10 base columns cover all 13784 rows
+
+====================================================================================================
+2. ANCHOR REPRODUCTION (GATE)
+====================================================================================================
+  fast dR2 (Frisch-Waugh) = 0.0064881160
+  literal two-fit dR2     = 0.0064881160
+  D097 recorded dR2       = 0.0064880000
+  |fast - literal|        = 8.934e-17
+  |fast - D097|           = 1.160e-07
+  >>> ANCHOR REPRODUCED. Gate passed.
+
+====================================================================================================
+3. ARITHMETIC CEILING BEFORE FITTING (PREREG 5.5)
+====================================================================================================
+  beta=0.685579  sd(resid carrier)=0.144190  sd(y)=1.227250
+  CEILING (residualised form) = 6.488116e-03
+  single-cell floor           = 1.020000e-03
+  CEILING/floor               = 6.361x
+  VERDICT: CEILING ABOVE FLOOR -- fitting is warranted
+
+====================================================================================================
+4. WHERE DOES R08 ACTUALLY VARY?  (decides which null can possibly have power)
+====================================================================================================
+  var share BETWEEN players           = 0.7975
+  var share BETWEEN player-seasons    = 0.8762
+  var share WITHIN player (residual)  = 0.2025
+  dR2 using ONLY the between-player component of R08 = 1.099242e-02
+  dR2 using ONLY the within-player component of R08  = 2.031320e-04
+  share of the measured effect carried BETWEEN players = 0.9819
+
+====================================================================================================
+5. THREE NULLS + INJECTION VERIFICATION (PREREG 5.2 / 5.3) -- D108 MANDATE
+====================================================================================================
+
+---- N_ROW ----
+  observed dR2 = 6.488116e-03
+  null_mean = 4.925810e-05   null_sd = 6.795547e-05   R=601
+  sd inflation vs N_ROW = 1.000
+  p = 0.001661
+  INJECTION:
+    delta=0.000000  achieved=1.579849e-05  power=0.05  TYPE-I CHECK
+    delta=0.000050  achieved=5.000000e-05  power=0.04  (below every benchmark)
+    delta=0.000129  achieved=1.290000e-04  power=0.00  D084 opp conversion, DEAD
+    delta=0.000500  achieved=5.000000e-04  power=1.00  (intermediate)
+    delta=0.001127  achieved=1.127000e-03  power=1.00  D079 shot mix, DEAD
+    delta=0.002057  achieved=2.057000e-03  power=1.00  D089 largest measured, ALIVE
+  MDE80 = 4.258000e-04   power@0.002057 = 1.00   typeI@0 = 0.050   STATUS = USABLE
+
+---- N_CYCLIC ----
+  observed dR2 = 6.488116e-03
+  null_mean = 7.900880e-03   null_sd = 5.774944e-04   R=601
+  sd inflation vs N_ROW = 8.498
+  p = 0.995017
+  INJECTION:
+    delta=0.000000  achieved=1.579849e-05  power=0.04  TYPE-I CHECK
+    delta=0.000050  achieved=5.000000e-05  power=0.07  (below every benchmark)
+    delta=0.000129  achieved=1.290000e-04  power=0.11  D084 opp conversion, DEAD
+    delta=0.000500  achieved=5.000000e-04  power=0.40  (intermediate)
+    delta=0.001127  achieved=1.127000e-03  power=0.68  D079 shot mix, DEAD
+    delta=0.002057  achieved=2.057000e-03  power=0.95  D089 largest measured, ALIVE
+  MDE80 = 1.540333e-03   power@0.002057 = 0.95   typeI@0 = 0.040   STATUS = USABLE
+
+---- N_PSWAP ----
+  observed dR2 = 6.488116e-03
+  null_mean = 7.543285e-05   null_sd = 9.484294e-05   R=601
+  sd inflation vs N_ROW = 1.396
+  p = 0.001661
+  INJECTION:
+    delta=0.000000  achieved=1.579849e-05  power=0.05  TYPE-I CHECK
+    delta=0.000050  achieved=5.000000e-05  power=0.04  (below every benchmark)
+    delta=0.000129  achieved=1.290000e-04  power=0.02  D084 opp conversion, DEAD
+    delta=0.000500  achieved=5.000000e-04  power=1.00  (intermediate)
+    delta=0.001127  achieved=1.127000e-03  power=1.00  D079 shot mix, DEAD
+    delta=0.002057  achieved=2.057000e-03  power=1.00  D089 largest measured, ALIVE
+  MDE80 = 4.242857e-04   power@0.002057 = 1.00   typeI@0 = 0.050   STATUS = USABLE
+
+====================================================================================================
+6. VERDICT TABLE
+====================================================================================================
+    null     n  obs_dr2        p  null_mean  null_sd   R    mde80  power_at_best_live  typeI_at_0 status
+   N_ROW 13784 0.006488 0.001661   0.000049 0.000068 601 0.000426                1.00        0.05 USABLE
+N_CYCLIC 13784 0.006488 0.995017   0.007901 0.000577 601 0.001540                0.95        0.04 USABLE
+ N_PSWAP 13784 0.006488 0.001661   0.000075 0.000095 601 0.000424                1.00        0.05 USABLE
+
+  MATCHED NULL (PREREG 6.4: usable, most conservative) = N_CYCLIC
+  p under the matched null = 0.995017
+  MDE80 under the matched null = 1.540333e-03
+  observed dR2 = 6.488116e-03  -> ABOVE the matched null's MDE80
+
+  D097's kill was made under N_CYCLIC (p = 0.996672).
+  N_CYCLIC here: p=0.995017  status=USABLE  power@0.002057=0.95
+
+wrote D097_NULL_COMPARISON.csv, D097_INJECTION_POWER.csv, D097_DECOMPOSITION.csv, nulls/d097_r08_null_draws.npz

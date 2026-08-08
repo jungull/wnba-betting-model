@@ -1,0 +1,125 @@
+﻿
+====================================================================================================
+HEADLINE RECONCILIATION
+====================================================================================================
+  census cells                      1999
+  surviving cells                   419
+  KILLED cells                      1580
+  ... CEILING (excluded by rule)    213
+  ... auditable kills               1367
+
+  decision-null class over ALL killed cells:
+null_class
+BETWEEN_ENTITY    1051
+WITHIN_ENTITY      424
+ROW                105
+
+  decision-null class over NON-CEILING killed cells:
+null_class
+BETWEEN_ENTITY    962
+WITHIN_ENTITY     340
+ROW                65
+
+  EXPOSURE over non-ceiling kills:
+EXPOSURE
+NOT_EXPOSED    1284
+EXPOSED          83
+
+  within-entity-null kills (non-ceiling)          : 340
+  ... EXPOSED  (between-share >= 0.50)            : 83
+  ... NOT EXPOSED (the null was the right tool)   : 257
+  ... UNDETERMINABLE                              : 0
+
+====================================================================================================
+THE CONJUNCTION RULE -- WHICH SCREENS REQUIRE A CANDIDATE TO BEAT *BOTH* NULLS
+====================================================================================================
+  E0_I0014 (D078/D082)  chooses ONE null by var_share_between > 0.5      -> IMMUNE BY DESIGN
+  E0_I0016 (D085)       p_correct = max(p_N1_within, p_N2_swap)            -> CONJUNCTION
+  E0_I0017 (D087)       entity swap only                                   -> IMMUNE
+  E0_I0019 (D090)       repaired to between-only ("two questions, no max") -> IMMUNE (post-repair)
+  E0_I0024 (D097)       p_correct = max(p_swap, p_cyclic)                  -> CONJUNCTION
+  E0_I0029 (D108)       cyclic COMPUTED AND EXPLICITLY EXCLUDED            -> IMMUNE BY DESIGN
+  E1_I0018 (D089)       p_correct = max(p_N1_within, p_N2_swap)            -> CONJUNCTION
+  E1_I0023 (D098/D099)  whole-cluster sign-flip only                       -> IMMUNE
+
+====================================================================================================
+EXPOSURE BY SCREEN (non-ceiling kills)
+====================================================================================================
+EXPOSURE                            EXPOSED  NOT_EXPOSED
+screen                                                  
+E0_I0014_residual_heterogeneity           0          320
+E0_I0016_efficiency_predictors           65           59
+E0_I0017_shot_quality_efficiency          0           86
+E0_I0019_availability_forecast            0          235
+E0_I0024_reb_ast_characterisation        16            4
+E0_I0029_freethrow_hurdle                 0          381
+E1_I0018_teammate_volume_channel          2           88
+E1_I0023_usage_defence_interaction        0          111
+
+====================================================================================================
+THE FLAG
+====================================================================================================
+  cells where the flag is meaningful at all (DR2 or ABS_T)   1762 / 1999
+  ... a null mean RECORDED BY THE SCREEN                     846
+  ... recovered by this audit FROM RAW DRAW ARCHIVES         916
+  cells where the flag is VACUOUS by construction            120 (sign-flip null, symmetric about 0)
+  cells where the flag was DESTROYED by standardisation      117 (draws stored standardised)
+  flag computable                                            1756
+  FLAG TRIPS                                                 632
+
+  as a detector of structural exposure (n=1170): TP=69 FN=14 FP=403 TN=684
+  sensitivity 0.831   specificity 0.629
+  positive predictive value 0.146  <- 403 of 472 flagged cells are structurally FINE
+
+====================================================================================================
+MATCHED-NULL RECHECK (already on disk -- no refit)
+====================================================================================================
+  exposed cells                                                  83
+  ... vetoed by the within-entity null (its own p >= 0.05)        80
+  ... matched between-entity null p ALREADY RECORDED              83
+  ... matched null clears PER-CELL                                55
+  ... VERDICT FLIPS (vetoed by blind null, cleared by matched)    52
+  ... matched null clears FAMILY-WISE                             11 (of 67 with a recorded family-wise p; the 16 D097 cells have none)
+
+  by screen (family-wise clears under the matched null):
+screen
+E0_I0016_efficiency_predictors       11
+E0_I0024_reb_ast_characterisation     0
+E1_I0018_teammate_volume_channel      0
+
+====================================================================================================
+RE-MEASUREMENT
+====================================================================================================
+                           screen                candidate target                base     n  dr2_reproduced  p_recorded_within_null  p_matched_N_ESWAP amended_verdict_on_matched_null  mde80_injection_verified  obs_over_mde80  obs_over_floor_132
+E0_I0024_reb_ast_characterisation      R08_player_ra_share y_oreb B_COMPLETE_PLUS_R10 13784        0.006540                0.995008           0.001661                          USABLE                  0.000422       15.502138            2.783094
+E0_I0024_reb_ast_characterisation      R08_player_ra_share y_oreb          B_COMPLETE 13784        0.006488                0.996672           0.001661                          USABLE                  0.000422       15.378518            2.760900
+   E0_I0016_efficiency_predictors B03_pl_fouls_drawn_per36   y_ts                 NaN 14079        0.002471                0.998336           0.001661                          USABLE                  0.000423        5.838526            1.051534
+   E0_I0016_efficiency_predictors    E02_pl_paintpts_share   y_ts                 NaN 14036        0.002320                0.003328           0.001661                          USABLE                  0.000426        5.448999            0.987312
+
+====================================================================================================
+D-04 SCORECARD
+====================================================================================================
+                                                    check  passed                                 detail
+                          R1  ORIGINAL certifies N_CYCLIC    True     power 0.93 @ 0.002057, type-I 0.07
+           R2  shuffle destroys response entity structure   False residual between-share collapses 1.17x
+                               R3  AMENDED voids N_CYCLIC    True     power on dominant (BETWEEN) = 0.00
+                               R4  AMENDED passes N_PSWAP    True  power on dominant = 1.00, type-I 0.07
+R5  AMENDED passes N_CYCLIC on a within-varying candidate    True G01_noise: dominant=WITHIN, power=1.00
+
+    null  verdict_null_mean  injection_null_mean      ratio drop_in_check
+N_CYCLIC           0.007882             0.000047 166.578299          FAIL
+ N_PSWAP           0.000076             0.000055   1.374798          PASS
+
+====================================================================================================
+MONTE-CARLO STABILITY OF THE INJECTION VERDICT ITSELF
+====================================================================================================
+  nrep=  60   se(power estimate at true power 0.80) = 0.0516   95% CI half-width = 0.1012
+  nrep= 100   se(power estimate at true power 0.80) = 0.0400   95% CI half-width = 0.0784
+  nrep= 250   se(power estimate at true power 0.80) = 0.0253   95% CI half-width = 0.0496
+  nrep= 500   se(power estimate at true power 0.80) = 0.0179   95% CI half-width = 0.0351
+  This screen and E1_I0036 both decide CERTIFY/VOID at a hard 0.80 threshold.
+  At 60-100 replicates a null whose true power IS 0.80 is misclassified about half the
+  time.  Observed here: the SAME null on the SAME cell scored 0.93 (R1) and 0.80
+  (the FULL arm of R3) under two seeds -- one CERTIFIES, one does not.
+
+wrote scripts/_all_summary.json

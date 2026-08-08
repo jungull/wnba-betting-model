@@ -1,0 +1,137 @@
+﻿
+================================================================================================
+0. THE DECLARED CONSTANT, READ FROM THE IMPLEMENTATION
+================================================================================================
+  cbs_generator.DECLARED['p_active']['point'] = 0.800000
+  cbs_generator.py sha256 = bb79931dee17fa60aa99f7ebb36e0bceb8f9c1765bf167ce4daca0a235b1d6e5
+  cbs_v7.py        sha256 = e5b32abdb227ec5a8dd77d67d55973120a49d36b5572c063a19883751619aafb
+
+================================================================================================
+1. LOAD  (2021-2024 ONLY)
+================================================================================================
+    [pick] master_team                        -> 14 cols: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'opp_team_id', 'is_home', 'pts', 'fga', 'fta', 'ftm', 'reb', 'ast', 'minutes']
+    [pick] master_player                      -> 17 cols: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'player_id', 'player_name', 'position', 'starter_flag', 'dnp_reason', 'minutes', 'pts', 'fga', 'fta', 'ftm', 'reb', 'ast']
+  master_team rows   = 1940   seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  master_player rows = 21462   seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+    [pick] arm/p_active                       -> 9 cols: ['row_uid', 'season', 'pred_point', 'is_fallback', 'fallback_level', 'component_id', 'is_cold_start', 'n_prior_games', 'forecast_cutoff']
+    [pick] arm/player_scoring_distribution    -> 9 cols: ['row_uid', 'season', 'pred_point', 'is_fallback', 'fallback_level', 'component_id', 'is_cold_start', 'n_prior_games', 'forecast_cutoff']
+    [pick] arm/e_minutes_given_active         -> 9 cols: ['row_uid', 'season', 'pred_point', 'is_fallback', 'fallback_level', 'component_id', 'is_cold_start', 'n_prior_games', 'forecast_cutoff']
+  champion p_active rows 2021-2024 = 26614
+  champion pts_hat  rows 2021-2024 = 26614
+    [pick] arm/team                           -> 7 cols: ['row_uid', 'season', 'pred_point', 'is_fallback', 'fallback_level', 'component_id', 'n_prior_games']
+  team arm rows 2021-2024 = 1940
+    [pick] cv4/player_game                    -> 9 cols: ['row_uid', 'game_id', 'team_id', 'player_id', 'season', 'candidate_at_cutoff', 'appeared', 'minutes', 'pts']
+    [pick] cv4/team_game                      -> 4 cols: ['row_uid', 'game_id', 'team_id', 'season']
+  contract v4 player rows 2021-2024 = 22659
+
+================================================================================================
+2. IDENTITY MAP, RECONSTRUCTED FROM cbs_obligation_key/1
+================================================================================================
+    team-games=1940  players=268  triples=519920
+  contract v4 rows                : 22659
+  reconstructed                   : 22659
+  agree on all three fields       : 22659
+  EXACT on every shared row.
+
+================================================================================================
+3. BUILD THE CHAMPION PLAYER FRAME
+================================================================================================
+  champion rows with BOTH p_active and pts_hat: 26614
+  unresolved row_uid (dropped, reported): 40  (0.15%)
+  champion rows with a realised box row: 18061 of 26574
+  tier A rows (in contract v4) = 22659
+  tier B rows (not in v4)      = 3915
+
+================================================================================================
+4. ANCHOR -- D076's 13,879 APPEARED PLAYER-GAMES, REPRODUCED BEFORE ANY NEW NUMBER
+================================================================================================
+  reproduced (tier-A obligation set, 2022-2024) = 13879
+  published                                     = 13879
+  EXACT.
+
+================================================================================================
+5. ROW SET RS1 -- rebuilt to E1_I0033's declared recipe
+================================================================================================
+  RS1 team-games = 1392      (E1_I0033: 1392)
+  by season: {2022: 432, 2023: 480, 2024: 480}
+  response mean 82.2220  sd 11.0130  SST 168710.4073
+  champion rows on RS1 team-games = 20084
+
+================================================================================================
+6. THE FOUR DISPUTED NUMBERS -- MINE vs E1_I0033's
+================================================================================================
+ tier_A     n  mean_p_active  mean_pts_hat  appear_rate  mean_realised_pts  sum_p_active  sum_appeared
+  False  3772       0.524892      8.560577     0.101538           0.814422   1979.892745           383
+   True 16312       0.760833      8.087580     0.778813           6.813389  12410.713179         12704
+
+  quantity                                       MINE       E1_I0033     abs diff
+  universe rows per team-game                 14.4282        14.4280       0.0002
+  realised roster per team-game                9.4016         9.4016       0.0000
+  sum p_active_hat per team-game              10.3381        10.3381       0.0000
+  tier-B mean p_active_hat                     0.5249         0.5249       0.0000
+  tier-B realised appearance rate              0.1015         0.1015       0.0000
+  tier-B n rows                             3772.0000      3772.0000       0.0000
+  tier-B mean pts_hat                          8.5606         8.5610       0.0004
+  tier-A mean p_active_hat                     0.7608         0.7608       0.0000
+  tier-A realised appearance rate              0.7788         0.7788       0.0000
+  tier-A n rows                            16312.0000     16312.0000       0.0000
+  tier-A mean pts_hat                          8.0876         8.0880       0.0004
+
+  excess p_active mass per team-game       = 0.9365 players
+  p_active-weighted mean pts_hat           = 8.7406 points
+  excess x conditional points              = 8.1855
+  ACTUAL B1 level bias (mean B1 - mean pts)= 8.1389   (E1_I0033: +8.139)
+  B1 MAE = 18.263037   (E1_I0033: 18.263037)
+  A_TEAM MAE = 8.685506 (E1_I0033: 8.685506)
+
+================================================================================================
+7. THE 0.80 QUESTION -- WHERE DOES THE DECLARED CONSTANT ACTUALLY LAND?
+================================================================================================
+  rows on component 'p_active/declared_constant' : 2239
+  rows with p_active EXACTLY == 0.800            : 2239
+  the two agree on every row                     : True
+
+  tier_A x is_declared_constant:
+is_declared_const  False  True 
+tier_A                         
+False               2147   1625
+True               15698    614
+
+  by tier x p_active fallback level (RS1 rows):
+ tier_A  pa_fallback_level     n  mean_p_active  appear_rate  mean_pts_hat  sum_p_active  sum_appeared  excess_players  excess_per_team_game
+  False                  0  2147       0.316671     0.017233      8.450363    679.892745            37      642.892745              0.461848
+  False                  2   716       0.800000     0.055866      8.706083    572.800000            40      532.800000              0.382759
+  False                  3   909       0.800000     0.336634      8.706284    727.200000           306      421.200000              0.302586
+   True                  0 15698       0.759301     0.777169      8.063497  11919.513179         12200     -280.486821             -0.201499
+   True                  2   596       0.800000     0.830537      8.703370    476.800000           495      -18.200000             -0.013075
+   True                  3    18       0.800000     0.500000      8.701280     14.400000             9        5.400000              0.003879
+
+  E1_I0033's WHICH_LEVEL_WINS.md says tier-B rows receive 'a declared-constant
+  p_active of 0.80'.  Its own NOTES.md says the tier-B MEAN is 0.5249.  Both cannot
+  describe the same rows.  Resolved above: 43.1% of tier-B rows carry the 0.80
+  constant; the rest carry a FITTED logistic value.
+
+  WHERE THE EXCESS AVAILABILITY MASS SITS (total 0.9365 players/team-game):
+ tier_A                   band     n  sum_p_active  sum_appeared   mean_p  appear_rate  excess_per_team_game  share_of_excess
+  False declared_constant_0.80  1625   1300.000000           346 0.800000     0.212923              0.685345         0.731816
+  False        fitted_logistic  2147    679.892745            37 0.316671     0.017233              0.461848         0.493165
+   True declared_constant_0.80   614    491.200000           504 0.800000     0.820847             -0.009195        -0.009819
+   True        fitted_logistic 15698  11919.513179         12200 0.759301     0.777169             -0.201499        -0.215162
+
+================================================================================================
+8. D090's PER-PLAYER VERDICT -- RECOMPUTED ON THE SAME ROWS
+================================================================================================
+  ALL RS1 rows   n= 20084  base=0.6516  mean_p=0.7165  AUC=0.9026  Brier=0.1302  logloss=0.4056
+  tier A only    n= 16312  base=0.7788  mean_p=0.7608  AUC=0.8979  Brier=0.0932  logloss=0.3136
+  tier B only    n=  3772  base=0.1015  mean_p=0.5249  AUC=0.7603  Brier=0.2905  logloss=0.8034
+
+  D090 published AUC 0.9016 on the per-player screen.  The AUC on ALL RS1 rows above
+  is the discrimination number; the mean_p vs base gap is the LEVEL number.  A model
+  can have both.
+
+================================================================================================
+9. PERSIST
+================================================================================================
+  wrote _player_frame.parquet (20084 rows), _team_frame.parquet (1392 rows), _s02.json
+
+DONE s02

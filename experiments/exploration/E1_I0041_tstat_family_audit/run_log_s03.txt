@@ -1,0 +1,95 @@
+
+====================================================================================================
+A. S4 -- CLOSED FORM vs LITERAL RECOMPUTE (must agree to 1e-10)
+====================================================================================================
+  conditions: 96
+     12/96  4s
+     24/96  37s
+     36/96  90s
+     48/96  139s
+     60/96  311s
+     72/96  367s
+     84/96  379s
+     96/96  393s
+
+  wrote SIMULATION.csv  rows=192  (393s)
+  S4 worst |closed-form - literal| = 1.066e-14
+
+====================================================================================================
+B. S1 -- TYPE-I RATE OF MY OWN MACHINERY (pre-committed: 0.05 +/- 0.02)
+====================================================================================================
+  measured AT THE LEVEL THE BAR IS CALIBRATED FOR: per-cell bar -> per-cell rate;
+  family-wise bar -> probability ANY of K cells exceeds it.
+  family_wise  per-cell rejection   n= 96  min=0.0000  median=0.0000  max=0.0058  outside[0.03,0.07]: 96
+  family_wise  AT ITS OWN LEVEL     n= 96  min=0.2515  median=0.2843  max=0.3165  outside[0.03,0.07]: 96
+  per_cell     per-cell rejection   n= 96  min=0.0292  median=0.0525  max=0.0767  outside[0.03,0.07]: 6
+  per_cell     AT ITS OWN LEVEL     n= 96  min=0.0292  median=0.0525  max=0.0767  outside[0.03,0.07]: 6
+  S1: *** FAIL -- output preserved, nothing reported ***
+
+====================================================================================================
+C. S2 -- NON-DEGENERACY (power must move, and reach the top of the grid)
+====================================================================================================
+  conditions with max_power >= 0.99 : 183 / 192
+  conditions with power monotone    : 192 / 192
+  conditions with a finite E_inj    : 190 / 192
+  E_inj status counts: {'OK': 190, 'ABOVE_GRID_MAX': 2}
+
+====================================================================================================
+D. S3 -- THE FOLD RECOVERY sd(t) = sqrt(sd(|t|)^2 + mean(|t|)^2), CHECKED AGAINST TRUTH
+====================================================================================================
+  relative error of the recovery: median=0.00032  p90=0.00522  max=0.04608  (n=192)
+  TRUE fold factor sd(t)/sd(|t|): min=1.5606 p10=1.6282 median=1.6613 p90=1.6995 max=1.7310
+  half-normal reference = 1.658855
+  |mean(signed t)| / sd(signed t): median=0.0343  max=0.3080
+
+====================================================================================================
+E. S5 -- DOES THE PERMUTATION NULL'S sd MOVE WITH THE PLANTED EFFECT?
+====================================================================================================
+  sd(statistic at delta=0.3) / sd(at delta=0): median=1.0001  p10=0.9987  p90=1.0030
+  (E1_I0037's two structural gates require a null whose sd GROWS with the effect.)
+
+====================================================================================================
+F. THE RATIO DISTRIBUTION -- analytic floor / injection-verified floor
+====================================================================================================
+
+  --- family_wise (n=94) ---
+    A_pub_folded           min=0.847 p10=0.993 median=1.170 p90=1.410 max=1.632
+    A_pub_signed           min=2.282 p10=2.679 median=3.239 p90=3.931 max=4.591
+    A_cor                  min=0.787 p10=0.949 median=0.984 p90=1.012 max=1.092
+
+  --- per_cell (n=96) ---
+    A_pub_folded           min=0.271 p10=0.338 median=0.359 p90=0.386 max=0.474
+    A_pub_signed           min=0.661 p10=0.927 median=0.995 p90=1.071 max=1.212
+    A_cor                  min=0.734 p10=0.933 median=0.989 p90=1.052 max=1.236
+
+====================================================================================================
+G. P4 -- DO THE RATIOS DEPEND ON n, rho, OR IMBALANCE?  (they should not)
+====================================================================================================
+
+  by n_blocks (per_cell regime):
+ n_blocks  n  folded  signed    cor   fold
+       36 16  0.3546  0.9912 0.9910 1.6586
+       64 16  0.3560  1.0101 0.9879 1.6652
+      128 16  0.3438  0.9728 0.9694 1.6640
+      475 16  0.3595  0.9965 0.9905 1.6517
+      489 16  0.3699  1.0265 1.0061 1.6720
+     1486 16  0.3545  0.9799 0.9906 1.6565
+
+  by rho (per_cell regime):
+   rho  n  folded  signed    cor   fold
+0.0000 48  0.3611  1.0095 0.9984 1.6613
+0.5000 48  0.3556  0.9893 0.9796 1.6614
+
+  by lam (per_cell regime):
+ lam  n  folded  signed    cor   fold
+  12 48  0.3553  0.9860 0.9792 1.6613
+  30 48  0.3619  1.0051 0.9906 1.6629
+
+  by w_between (per_cell regime):
+ w_between  n  folded  signed    cor   fold
+    0.1000 24  0.3541  0.9992 0.9818 1.6569
+    0.5000 24  0.3625  0.9996 0.9922 1.6520
+    0.8000 24  0.3555  0.9784 0.9785 1.6682
+    1.0000 24  0.3590  0.9930 0.9936 1.6651
+
+wrote _s03.json   total 394s

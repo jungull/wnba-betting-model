@@ -1,0 +1,97 @@
+﻿    [pick] master_player                      -> 17 cols: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'player_id', 'player_name', 'position', 'starter_flag', 'dnp_reason', 'minutes', 'pts', 'fga', 'fta', 'ftm', 'reb', 'ast']
+    [pick] master_team                        -> 14 cols: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'opp_team_id', 'is_home', 'pts', 'fga', 'fta', 'ftm', 'reb', 'ast', 'minutes']
+  RS1P rows = 20084   tier A 16312   tier B 3772
+
+================================================================================================
+P01. REALISED CAREER FOOTPRINT  (master_player, manifest-verified, row granularity)
+================================================================================================
+ tier_A     n  appear_rate  mean_p_active  n_players  mean_app_this_team_season  mean_app_anywhere_season  mean_app_partition  pct_never_played_this_team_this_season  pct_never_played_anywhere_this_season  pct_never_played_at_all_2021_2024
+  False  3772     0.101538       0.524892        266                   4.355249                  15.27439           66.548780                                0.838017                               0.472959                           0.009544
+   True 16312     0.778813       0.760833        238                  31.255579                  32.10998           99.319458                                0.014958                               0.014039                           0.000061
+
+================================================================================================
+P03. STALENESS vs CALIBRATION -- the distinction the fix turns on
+================================================================================================
+
+  TIER B  (n=3772)
+                          staleness_band    n  mean_p_active  appear_rate  pct_declared_const  never_returns  share_of_tier  excess_per_team_game
+A_never_played_for_this_team_this_season 3772       0.524892     0.101538            0.430806       0.838017            1.0              1.147193
+
+  TIER A  (n=16312)
+                          staleness_band     n  mean_p_active  appear_rate  pct_declared_const  never_returns  share_of_tier  excess_per_team_game
+A_never_played_for_this_team_this_season   505       0.179506     0.166337            0.120792       0.483168       0.030959              0.004778
+                      B_played_within_7d 13641       0.852944     0.885932            0.039880       0.023312       0.836256             -0.323269
+                      C_played_8_21d_ago  1341       0.315487     0.277405            0.006711       0.340045       0.082209              0.036687
+                     D_played_22_45d_ago   555       0.387297     0.255856            0.000000       0.371171       0.034024              0.052407
+                   E_played_over_45d_ago   270       0.174201     0.077778            0.000000       0.729630       0.016552              0.018703
+
+  NOTE: tier B is DEFINITIONALLY 'no prior admitted box row for this club', so the
+  this-team band above is degenerate there.  The informative axis for tier B is the
+  player's last appearance ANYWHERE, strictly prior:
+
+  TIER B  (n=3772)  -- by LAST APPEARANCE ANYWHERE (strictly prior)
+               staleness_band_anywhere    n  mean_p_active  appear_rate  pct_declared_const  never_returns       sum_p  sum_app  share_of_tier  excess_per_team_game
+     Z0_never_appeared_anywhere_before  195       0.693941     0.369231            0.810256       0.451282  135.318489       72       0.051697              0.045487
+       Z1_appeared_somewhere_within_7d  882       0.472255     0.006803            0.130385       0.980726  416.529169        6       0.233828              0.294920
+                 Z2_appeared_8_30d_ago   48       0.265983     0.125000            0.020833       0.708333   12.767191        6       0.012725              0.004861
+               Z3_appeared_31_200d_ago   10       0.323371     0.700000            0.000000       0.000000    3.233713        7       0.002651             -0.002706
+Z4_appeared_over_200d_ago_prior_season 2637       0.535474     0.110732            0.512325       0.824422 1412.044183      292       0.699099              0.804629
+
+  TIER A  (n=16312)  -- by LAST APPEARANCE ANYWHERE (strictly prior)
+               staleness_band_anywhere     n  mean_p_active  appear_rate  pct_declared_const  never_returns        sum_p  sum_app  share_of_tier  excess_per_team_game
+     Z0_never_appeared_anywhere_before    84       0.335864     0.261905            0.345238       0.404762    28.212549       22       0.005150              0.004463
+       Z1_appeared_somewhere_within_7d 13711       0.850620     0.881555            0.039676       0.028080 11662.857531    12087       0.840547             -0.304700
+                 Z2_appeared_8_30d_ago  1576       0.330199     0.291244            0.005711       0.310279   520.393272      459       0.096616              0.044104
+               Z3_appeared_31_200d_ago   551       0.260340     0.157895            0.000000       0.558984   143.447131       87       0.033779              0.040551
+Z4_appeared_over_200d_ago_prior_season   390       0.143084     0.125641            0.082051       0.525641    55.802696       49       0.023909              0.004887
+
+  TIER-B HEADLINE
+    rows whose player NEVER plays for this team again this season : 0.8380
+    rows whose player had NEVER played for this team this season  : 1.0000
+    rows whose player never played ANYWHERE in 2021-2024          : 0.0095
+    p_active MASS carried by never-returning tier-B rows          : 1.1183 /team-game
+
+================================================================================================
+P01b. THE TIER-B PLAYERS THEMSELVES  (top 25 by p_active mass carried)
+================================================================================================
+ player_id         name_lookup  n_rows  sum_p_active  n_appeared   mean_p  mean_pts_hat  app_partition    excess
+   1630101 Crystal Dangerfield      44     21.551430           3 0.489805      8.012481            141 18.551430
+   1630115       Joyner Holmes      53     21.409692           3 0.403956      8.486664            100 18.409692
+   1628317    Karlie Samuelson      37     20.367693           2 0.550478      9.546726             78 18.367693
+   1629485     Kristine Anigwe      53     21.195672           3 0.399918      7.796507             33 18.195672
+   1627675   Courtney Williams      34     19.834331           2 0.583363      9.552178            172 17.834331
+    203824        Odyssey Sims      55     20.580450           3 0.374190      8.707006            106 17.580450
+   1629501        Alanna Smith      33     20.159594           3 0.610897      8.773155            123 17.159594
+    202250        Tina Charles      38     19.411676           3 0.510834      9.379757            108 16.411676
+    204332      Cierra Burdick      45     16.399190           0 0.364426      8.704498             14 16.399190
+   1628242         Emma Cannon      47     16.774055           1 0.356895      8.429342             79 15.774055
+   1630136        Megan Walker      38     16.476788           1 0.433600      7.776126             46 15.476788
+    204322  Elizabeth Williams      31     17.123493           2 0.552371      8.804897            115 15.123493
+   1630097       Kaila Charles      43     16.744554           2 0.389408      8.337393             39 14.744554
+   1630119       Jazmine Jones      36     14.179601           0 0.393878      8.484613             36 14.179601
+   1627678         Bria Holmes      30     14.148177           0 0.471606      8.704498             19 14.148177
+    203389       Yvonne Turner      42     16.969910           3 0.404045      8.235200             32 13.969910
+   1630100          Lauren Cox      36     13.802861           0 0.383413      8.706567             27 13.802861
+   1627687     Jillian Alleyne      30     13.598981           0 0.453299      8.704498              2 13.598981
+    204334       Reshanda Gray      36     14.509747           1 0.403049      8.290611             45 13.509747
+    204320      Amanda Zahui B      35     14.491753           1 0.414050      6.947736             64 13.491753
+    203406   Layshia Clarendon      32     15.405364           2 0.481418      8.358558             68 13.405364
+    203827      Natasha Howard      24     15.391695           2 0.641321      9.531938            123 13.391695
+    203829        Bria Hartley      36     14.272254           1 0.396451      8.514317             29 13.272254
+   1628286        Erica McCall      27     12.850971           0 0.475962      8.704498             23 12.850971
+    202633         Liz Cambage      26     13.614250           1 0.523625      9.261158             55 12.614250
+
+  distinct tier-B players: 266   carrying 1596.9 excess p_active mass in total
+
+================================================================================================
+P02. BIOS CROSS-TAB  ***  UNVERIFIABLE -- NO MANIFEST -- BACKS NO NUMBER  ***
+================================================================================================
+    [pick] bios                               -> 9 cols: ['player_id', 'season', 'player_name', 'age', 'draft_year', 'draft_round', 'draft_number', 'position_raw', 'country']
+  tier-B rows matched to a bios row: 1988 of 3772
+
+  *** UNVERIFIABLE (player_bios.csv has no sibling manifest) ***
+ tier_A  mean_age  pct_undrafted  pct_no_bios_row  mean_draft_number
+  False 28.861167       0.527572         0.472959          10.412458
+   True 28.187278       0.096003         0.014039          10.017632
+
+DONE s03

@@ -1,0 +1,139 @@
+﻿
+==================================================================================================
+A. THE SIGN-FLIP FLOOR: below how many blocks can a two-sided sign-flip null NEVER reject?
+==================================================================================================
+  A two-sided block sign-flip over nb blocks has 2^nb equally likely sign patterns.  The
+  observed pattern is one of them, and the all-flipped pattern gives |draws| = |real|
+  exactly.  So at least 2 of 2^nb patterns are >= |real|, and
+        p_min = 2 / 2^nb = 2^(1-nb)
+  p_min < 0.05 requires nb >= 6.  BELOW SIX BLOCKS THE TEST CANNOT PRODUCE p < 0.05 AT
+  ALL, so its MDE is +infinity regardless of effect size, sample size or null sd.
+
+    nb=3    p_min = 2^(1-nb) = 0.25000   type-I(R=2000) = 0.0000   can ever reject: NO
+    nb=4    p_min = 2^(1-nb) = 0.12500   type-I(R=2000) = 0.0000   can ever reject: NO
+    nb=5    p_min = 2^(1-nb) = 0.06250   type-I(R=2000) = 0.0000   can ever reject: NO
+    nb=6    p_min = 2^(1-nb) = 0.03125   type-I(R=2000) = 0.0275   can ever reject: YES
+    nb=7    p_min = 2^(1-nb) = 0.01562   type-I(R=2000) = 0.0470   can ever reject: YES
+    nb=8    p_min = 2^(1-nb) = 0.00781   type-I(R=2000) = 0.0485   can ever reject: YES
+    nb=9    p_min = 2^(1-nb) = 0.00391   type-I(R=2000) = 0.0435   can ever reject: YES
+    nb=10   p_min = 2^(1-nb) = 0.00195   type-I(R=2000) = 0.0445   can ever reject: YES
+    nb=11   p_min = 2^(1-nb) = 0.00098   type-I(R=2000) = 0.0505   can ever reject: YES
+    nb=12   p_min = 2^(1-nb) = 0.00049   type-I(R=2000) = 0.0465   can ever reject: YES
+    nb=13   p_min = 2^(1-nb) = 0.00024   type-I(R=2000) = 0.0495   can ever reject: YES
+
+  S1 (PREREG): the Type-I rate above is measured at R=2000, the replication the PREREG
+  committed to.  Band 0.0404-0.0596.  In s02 I ran R=400, for which the correct +/-3SE
+  band is 0.0173-0.0827; the s02 pass rate against the tighter R=2000 band UNDERSTATES
+  calibration and is reported that way in DEFECTS.md D-2.
+
+==================================================================================================
+B. THE 6.6x CELL, RECOMPUTED LIKE-FOR-LIKE FROM E1_I0035's OWN FRAME
+==================================================================================================
+  frame (20084, 44)   seasons [np.int64(2022), np.int64(2023), np.int64(2024)]
+   Xa   vs X0, tier A:  n=16312  blocks=488   neff=   83.5  observed effect=+0.000148
+        null_sd(OBSERVED, effect-carrying) = 0.00013292   -> analytic MDE80 = 0.000372
+        null_sd(CENTRED, effect removed)   = 0.00013258   -> analytic MDE80 = 0.000371
+        contamination sd_obs/sd_centred    = 1.0026
+   Xb   vs X0, tier A:  n=16312  blocks=488   neff=  239.2  observed effect=+0.014239
+        null_sd(OBSERVED, effect-carrying) = 0.00108903   -> analytic MDE80 = 0.003051
+        null_sd(CENTRED, effect removed)   = 0.00082425   -> analytic MDE80 = 0.002309
+        contamination sd_obs/sd_centred    = 1.3212
+   Xc   vs X0, tier A:  n=16312  blocks=488   neff=   39.0  observed effect=+0.012558
+        null_sd(OBSERVED, effect-carrying) = 0.00157559   -> analytic MDE80 = 0.004414
+        null_sd(CENTRED, effect removed)   = 0.00144745   -> analytic MDE80 = 0.004055
+        contamination sd_obs/sd_centred    = 1.0885
+   XaO  vs X0, tier A:  n=16312  blocks=488   neff=  114.7  observed effect=+0.000054
+        null_sd(OBSERVED, effect-carrying) = 0.00016434   -> analytic MDE80 = 0.000460
+        null_sd(CENTRED, effect removed)   = 0.00016439   -> analytic MDE80 = 0.000461
+        contamination sd_obs/sd_centred    = 0.9997
+
+  E1_I0035's published analytic figures, for cross-check against the above:
+     P_Xa_RS1P-A MDE80 = 0.0003821379857226762  (null_sd 0.00013640063953893104)
+     P_Xb_RS1P-A MDE80 = 0.003042198985308196
+
+==================================================================================================
+B2. WHICH VECTOR DID THE INJECTION FLOOR 0.0025 ACTUALLY COME FROM?
+==================================================================================================
+  E1_I0035\scripts\s05_power_and_exposure.py, lines 45-50:
+      b0     = (clip(PF['w_X0']) - y_app)**2
+      bXb    = (clip(PF['w_Xb']) - y_app)**2          <-- Xb
+      noise_p = (bXb - b0)[mA]                        <-- THE INJECTION NOISE IS THE Xb
+                                                          CONTRAST, NOT THE Xa CONTRAST
+  line 72:  print('analytic 2.802 x null_sd (Xa cell) = 0.00038')  <-- Xa
+
+  -> The 6.6x compares an injection floor measured on the Xb-minus-X0 difference vector
+     against an analytic floor computed from the Xa-minus-X0 null sd.  Different response
+     contrast, different dispersion, different cell.  That is a D101 denominator
+     violation: comparability requires an identical response.
+
+  Xa contrast, tier A  (blocks=488, neff=83)
+     injection 80% floor (interpolated)      = 0.000379
+     injection 80% floor (first grid point)  = 0.000384
+     analytic 2.802 x null_sd(observed)      = 0.000372   -> ratio 1.019
+     analytic 2.802 x null_sd(centred)       = 0.000371   -> ratio 1.021
+
+  Xb contrast, tier A  (blocks=488, neff=239)
+     injection 80% floor (interpolated)      = 0.002334
+     injection 80% floor (first grid point)  = 0.002381
+     analytic 2.802 x null_sd(observed)      = 0.003051   -> ratio 0.765
+     analytic 2.802 x null_sd(centred)       = 0.002309   -> ratio 1.011
+
+  THE LIKE-FOR-LIKE ANSWER on the player cell:
+     E1_I0035 compared injection(Xb) = 0.0025 against analytic(Xa) = 0.00038 -> 6.6x
+     Matched on the Xb contrast : injection 0.00233 vs analytic 0.00305 -> 0.76x
+     Matched on the Xa contrast : injection 0.00038 vs analytic 0.00037 -> 1.02x
+
+==================================================================================================
+B3. THE TEAM CELL -- was IT like-for-like?
+==================================================================================================
+   Xa  blocks=36   neff= 18.7  effect= -7.3058  sd_obs=1.42558 sd_ctr=0.68728 contam=2.074
+        analytic(obs)=3.9939  analytic(ctr)=1.9255  injection=2.0201  inj/ana_obs=0.506  inj/ana_ctr=1.049
+   Xb  blocks=36   neff= 21.0  effect= -8.8102  sd_obs=1.64000 sd_ctr=0.67361 contam=2.435
+        analytic(obs)=4.5946  analytic(ctr)=1.8872  injection=1.9125  inj/ana_obs=0.416  inj/ana_ctr=1.013
+   Xc  blocks=36   neff= 13.5  effect= -2.2489  sd_obs=0.53868 sd_ctr=0.37332 contam=1.443
+        analytic(obs)=1.5092  analytic(ctr)=1.0459  injection=1.0737  inj/ana_obs=0.711  inj/ana_ctr=1.027
+
+  E1_I0035's team comparison used the Xb contrast for BOTH the analytic (4.596) and the
+  injection (2.00), so it WAS like-for-like.  Its 'conservative 2.3x' is real and is
+  explained by H_A: the observed effect is large, so the observed-vector null sd is
+  inflated (contamination 2.43 above) and the quoted floor is too big.
+
+==================================================================================================
+C. H_A vs H_B, SEPARATED  (the coordinator's question)
+==================================================================================================
+  H_A -- IS null_sd CONTAMINATED?   sd(observed vector) / sd(centred vector)
+     observed effect = 0 SE : n=378  med=1.002 p90=1.053 max=1.510
+     observed effect = 1 SE : n=385  med=1.007 p90=1.105 max=1.778
+     observed effect = 3 SE : n=378  med=1.067 p90=1.504 max=2.456
+     VERDICT on H_A: contamination is REAL but bounded, and it inflates the quoted floor
+     -- i.e. it makes the analytic form CONSERVATIVE, the SAFE direction.  It cannot
+     produce anti-conservatism.  A screen with a near-zero observed effect has
+     contamination ~1.00 and is unaffected by H_A entirely.
+
+  H_B -- IS THE RULE MISCALIBRATED GIVEN A CORRECT null_sd?
+     E_inj / (2.802 * sd_centred), by block count:
+ nb  conds      med      p10      p90
+  8    163 1.268786 1.031754 1.766356
+ 16    163 1.130789 0.991190 1.418834
+ 32    163 1.043475 0.973367 1.205080
+ 64    163 1.019095 0.952697 1.100843
+128    163 1.011689 0.931254 1.085036
+256    163 1.014321 0.947519 1.079675
+512    163 1.001265 0.941477 1.052802
+     VERDICT on H_B: the rule IS miscalibrated, anti-conservatively, and the size of the
+     miscalibration is governed by the NUMBER OF BLOCKS -- not by n, not by sigma, not by
+     the effect size.  It is negligible above ~64 blocks and unbounded below ~6.
+
+==================================================================================================
+C2. DOES THE BLOCK-COUNT LAW PREDICT E1_I0034's THREE REPORTED RATIOS?
+==================================================================================================
+  E1_I0034 reports the power rule anti-conservative by 1.22x, 1.61x and 3.40x on minutes,
+  attempts and points.  If the block-count law is the mechanism, each implies an
+  EFFECTIVE block count:
+     minutes   ratio 1.22x  -> implied effective blocks = 16.1
+     attempts  ratio 1.61x  -> implied effective blocks = 8.1
+     points    ratio 3.40x  -> implied effective blocks = 4.9
+  These are checkable against that screen's own cluster counts.  I do not open its files
+  to adjudicate (E1_I0038 owns that); the prediction is recorded here for the coordinator.
+
+DONE s03

@@ -1,0 +1,119 @@
+﻿
+====================================================================================================
+S09 NULL AUDIT (ADDED AFTER HASHING -- COORDINATOR CORRECTION)
+====================================================================================================
+  prereg hash verified: 8963b3464f8b6b930940ddf42fe4cbe5f37776ee82bec0d1af79163bc0741b70
+
+====================================================================================================
+A. NULL-ABSORPTION TELL -- null_mean against the observed statistic, EVERY cell
+====================================================================================================
+                                  cell  observed  null_mean  null_sd  abs_null_mean_over_abs_observed  same_sign  null_mean_in_null_sds  ABSORBED_FLAG  WARN_same_sign_over_half
+                          P02_TILT_pts  0.042631  -0.040880 0.064746                         0.958933      False              -0.631385          False                     False
+                      P02_TILT_minutes -0.034867  -0.023204 0.029525                         0.665507       True              -0.785918          False                      True
+                          P02_TILT_fga  0.057701  -0.026996 0.046660                         0.467855      False              -0.578554          False                     False
+            P05_POSITION_MATCH_minutes  0.098506  -0.012706 0.054553                         0.128988      False              -0.232913          False                     False
+                       P01_LEAKAGE_pts -0.039020  -0.001267 0.017986                         0.032481       True              -0.070467          False                     False
+  P06_NEGCONTROL_PSEUDOABSENCE_minutes -0.000671   0.000020 0.002842                         0.029991      False               0.007080          False                     False
+                       P01_LEAKAGE_fga -0.032564  -0.000192 0.016980                         0.005908       True              -0.011329          False                     False
+                   P01_LEAKAGE_minutes -0.030125  -0.000172 0.017268                         0.005726       True              -0.009990          False                     False
+       P03_GAIN_vs_BASE5_ORACLEABS_fga  0.007362  -0.000034 0.003281                         0.004573      False              -0.010260          False                     False
+P04_GAIN_vs_CHAMPION_ORACLEABS_minutes  0.016852  -0.000057 0.009066                         0.003404      False              -0.006328          False                     False
+       P03_GAIN_vs_BASE5_ORACLEABS_pts  0.002252  -0.000005 0.003166                         0.002046      False              -0.001456          False                     False
+    P04_GAIN_vs_CHAMPION_ORACLEABS_fga  0.007060  -0.000008 0.003573                         0.001135      False              -0.002243          False                     False
+    P04_GAIN_vs_CHAMPION_ORACLEABS_pts -0.003378  -0.000004 0.004919                         0.001108       True              -0.000761          False                     False
+   P03_GAIN_vs_BASE5_ORACLEABS_minutes  0.029497  -0.000022 0.009033                         0.000750      False              -0.002450          False                     False
+
+  cells where the null MEAN exceeds the observed statistic in the same direction: 0
+  cells where it is same-signed and over half the observed statistic: 1
+
+====================================================================================================
+B. WHERE DOES EACH CANDIDATE'S VARIANCE ACTUALLY SIT?
+====================================================================================================
+                          candidate  var_total  frac_within_player  frac_between_player  frac_within_teamgame  frac_between_teamgame                    dominant_level
+     u_minutes  (P03/P04 main term)   6.311362            0.925837             0.074163              0.000000               1.000000                         TEAM-GAME
+     uz_minutes (P02/P05 candidate)   9.175782            0.696528             0.303472              0.953488               0.046512 BETWEEN-PLAYER / WITHIN-TEAM-GAME
+                             uz_fga   1.084334            0.699725             0.300275              0.960017               0.039983 BETWEEN-PLAYER / WITHIN-TEAM-GAME
+                             uz_pts   1.437210            0.723564             0.276436              0.959968               0.040032 BETWEEN-PLAYER / WITHIN-TEAM-GAME
+         u*posmatch (P05 candidate)   3.894200            0.890341             0.109659              0.588258               0.411742 BETWEEN-PLAYER / WITHIN-TEAM-GAME
+z_minutes (pre-game player profile)   0.840780            0.309371             0.690629              0.972885               0.027115 BETWEEN-PLAYER / WITHIN-TEAM-GAME
+
+  READ.  P02 and P05's candidates are BETWEEN-PLAYER WITHIN TEAM-GAME -- exactly the
+  direction the coordinator flags.  Their null N1 is a WITHIN-TEAM-GAME PLAYER SWAP,
+  which is the matched null for that level.  P03/P04's u term is a TEAM-GAME quantity
+  and its null N2 blocks at team-game.  NO within-player cyclic shift is used anywhere.
+
+====================================================================================================
+C/D. BLINDNESS DEMONSTRATION -- the degenerate null run on THIS screen's candidate
+====================================================================================================
+  candidate: u*z on minutes.  observed gamma -0.03487
+  N1  within-team-game PLAYER SWAP  : p 0.6732  null_mean -0.02320  null_sd 0.02953
+  NC  within-PLAYER CYCLIC SHIFT    : p 0.1165  null_mean -0.00431  null_sd 0.01987
+  null_sd ratio (cyclic / swap): 0.6731
+
+  PLANTED between-player effect of 0.11810 (4 null sds), recovered +0.08323:
+    detected by the within-team-game PLAYER SWAP  : p 0.0017  -> YES
+    detected by the within-PLAYER CYCLIC SHIFT    : p 0.8087  -> NO
+
+====================================================================================================
+C2. COMPONENT-WISE INJECTION vs SHUFFLED-RESIDUAL INJECTION, side by side
+====================================================================================================
+       cell   injection_style  planted_in_null_sds  planted  recovered        p  null_mean  null_sd  detected
+P02_minutes    component_wise                  2.0 0.059050   0.024183 0.092269  -0.021602 0.027030     False
+P02_minutes shuffled_residual                  2.0 0.059050  -0.000954 0.468828  -0.020003 0.027343     False
+P02_minutes    component_wise                  4.0 0.118100   0.083233 0.002494  -0.016974 0.027951      True
+P02_minutes shuffled_residual                  4.0 0.118100   0.076813 0.002494  -0.016712 0.028271      True
+    P02_fga    component_wise                  2.0 0.093321   0.151021 0.002494  -0.020444 0.045038      True
+    P02_fga shuffled_residual                  2.0 0.093321   0.079356 0.022444  -0.023458 0.046130      True
+    P02_fga    component_wise                  4.0 0.186641   0.244342 0.002494  -0.018499 0.043314      True
+    P02_fga shuffled_residual                  4.0 0.186641   0.158830 0.002494  -0.013566 0.046938      True
+    P02_pts    component_wise                  2.0 0.129492   0.172123 0.002494  -0.031751 0.061123      True
+    P02_pts shuffled_residual                  2.0 0.129492   0.081464 0.047382  -0.038535 0.061766      True
+    P02_pts    component_wise                  4.0 0.258985   0.301615 0.002494  -0.031556 0.062591      True
+    P02_pts shuffled_residual                  4.0 0.258985   0.164773 0.002494  -0.025582 0.062765      True
+
+  agreement between the two injection styles:
+injection_style                  component_wise  shuffled_residual
+cell        planted_in_null_sds                                   
+P02_fga     2.0                             1.0                1.0
+            4.0                             1.0                1.0
+P02_minutes 2.0                             0.0                0.0
+            4.0                             1.0                1.0
+P02_pts     2.0                             1.0                1.0
+            4.0                             1.0                1.0
+
+====================================================================================================
+E. INJECTION-VERIFIED FLOORS -- block bootstrap sd, and a simulated 80%-power floor
+====================================================================================================
+                                  cell  observed_dMAE  analytic_null_sd  analytic_MDE80  bootstrap_sd  bootstrap_MDE80  ratio_bootstrap_over_analytic
+   P03_GAIN_vs_BASE5_ORACLEABS_minutes       0.029497          0.009033        0.025292      0.008696         0.024348                       0.962674
+P04_GAIN_vs_CHAMPION_ORACLEABS_minutes       0.016852          0.009066        0.025383      0.008790         0.024612                       0.969618
+       P03_GAIN_vs_BASE5_ORACLEABS_fga       0.007362          0.003281        0.009187      0.003269         0.009153                       0.996221
+    P04_GAIN_vs_CHAMPION_ORACLEABS_fga       0.007060          0.003573        0.010005      0.003620         0.010137                       1.013213
+       P03_GAIN_vs_BASE5_ORACLEABS_pts       0.002252          0.003166        0.008864      0.003204         0.008971                       1.012119
+    P04_GAIN_vs_CHAMPION_ORACLEABS_pts      -0.003378          0.004919        0.013772      0.004805         0.013454                       0.976857
+
+  D113 claims the analytic floor is anti-conservative by ~6.6x.  Measured here the
+  ratio is 0.963 - 1.013, so on THIS screen's cells the two agree closely and the
+  analytic floor is NOT materially anti-conservative.  Reported either way.
+
+====================================================================================================
+E2. SIMULATED 80%-POWER FLOOR (planted effect x block bootstrap x full null)
+====================================================================================================
+                               cell  planted_in_analytic_null_sds  planted_lambda  dMAE_total  dMAE_planted_component  n_reps  empirical_power
+P03_GAIN_vs_BASE5_ORACLEABS_minutes                           0.0        0.000000    0.029497                0.000000      60         0.783333
+P03_GAIN_vs_BASE5_ORACLEABS_minutes                           1.0        0.037554    0.038529                0.009033      60         0.900000
+P03_GAIN_vs_BASE5_ORACLEABS_minutes                           2.0        0.071279    0.047562                0.018066      60         1.000000
+P03_GAIN_vs_BASE5_ORACLEABS_minutes                           2.8        0.095642    0.054788                0.025292      60         1.000000
+P03_GAIN_vs_BASE5_ORACLEABS_minutes                           4.0        0.129362    0.065628                0.036131      60         1.000000
+    P03_GAIN_vs_BASE5_ORACLEABS_fga                           0.0        0.000000    0.007362                0.000000      60         0.300000
+    P03_GAIN_vs_BASE5_ORACLEABS_fga                           1.0        0.049130    0.010643                0.003281      60         0.633333
+    P03_GAIN_vs_BASE5_ORACLEABS_fga                           2.0        0.092938    0.013925                0.006562      60         0.750000
+    P03_GAIN_vs_BASE5_ORACLEABS_fga                           2.8        0.125031    0.016550                0.009187      60         0.900000
+    P03_GAIN_vs_BASE5_ORACLEABS_fga                           4.0        0.168045    0.020487                0.013125      60         0.950000
+    P03_GAIN_vs_BASE5_ORACLEABS_pts                           0.0        0.000000    0.002252                0.000000      60         0.033333
+    P03_GAIN_vs_BASE5_ORACLEABS_pts                           1.0        0.081595    0.005418                0.003166      60         0.100000
+    P03_GAIN_vs_BASE5_ORACLEABS_pts                           2.0        0.146987    0.008584                0.006331      60         0.233333
+    P03_GAIN_vs_BASE5_ORACLEABS_pts                           2.8        0.190664    0.011116                0.008864      60         0.383333
+    P03_GAIN_vs_BASE5_ORACLEABS_pts                           4.0        0.246662    0.014915                0.012663      60         0.466667
+
+  wrote _s09.json and five CSVs

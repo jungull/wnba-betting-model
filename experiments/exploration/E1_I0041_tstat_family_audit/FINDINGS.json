@@ -1,0 +1,442 @@
+{
+  "experiment": "E1_I0041_tstat_family_audit",
+  "question": "Is D103's t_statistic scale conversion -- 666 of 1,349 cells, 518 of 760 blind verdicts -- correct, in which direction is it wrong, and by how much?",
+  "prereg_sha256": "869a92f0bb041c825c9cf73de5f19ca9cf239b292b8756ad702fd095deafe660",
+  "partition": "2021-2024 exploration only; 2025/26 never opened",
+  "anchor": {
+    "n_cells": 1349,
+    "n_blind": 760,
+    "share": 0.5633802816901409,
+    "share_repr": "0.5633802816901409",
+    "matches_published": true
+  },
+  "family_census": [
+    {
+      "stat_family": "increment",
+      "cells": 653,
+      "blind": 218,
+      "share_of_cells": 0.4840622683469237,
+      "share_of_blind": 0.2868421052631579
+    },
+    {
+      "stat_family": "paired",
+      "cells": 30,
+      "blind": 24,
+      "share_of_cells": 0.02223869532987398,
+      "share_of_blind": 0.031578947368421054
+    },
+    {
+      "stat_family": "t_statistic",
+      "cells": 666,
+      "blind": 518,
+      "share_of_cells": 0.4936990363232024,
+      "share_of_blind": 0.6815789473684211
+    }
+  ],
+  "conversion": {
+    "source": "E1_I0026_detection_floor/scripts/s06_retrospective.py:66-77",
+    "formula": "MDE80 = ((t_crit + z80) * sd_null_t)**2 / n",
+    "call_sites": 4,
+    "call_sites_file": "s06_retrospective.py lines 167,168,201,202",
+    "assumption_a_scale_identity": {
+      "claim": "dR2 = t^2/(t^2+df) ~= t^2/n",
+      "verdict": "SOUND -- verified on real cells, not simulated",
+      "evidence": {
+        "n": 330,
+        "ratio_min": 0.9997118266323662,
+        "ratio_p10": 0.99974261034311,
+        "ratio_median": 1.0034396458436765,
+        "ratio_p90": 1.0484027418122457,
+        "ratio_max": 1.1244340528039551
+      }
+    },
+    "assumption_c_signed_statistic": {
+      "claim": "the statistic is signed and its null mean cancels",
+      "verdict": "VIOLATED for E0_I0014's 348 cells: null_correct_sd is sd(|t|). HOLDS for E0_I0019's 318 cells: nullsd_between is sd(t).",
+      "evidence": {
+        "E0_I0014": "s04_screen.py:211  v = np.abs(tvec(yt, Xx, NS)[1])",
+        "E0_I0019": "s04_screen.py:181  null_t[s][d, ci, di] = tt"
+      }
+    },
+    "assumption_e_threshold_scale": {
+      "claim": "t_crit is a valid multiplier of a t-scale null sd",
+      "verdict": "VIOLATED for all 666: t_crit is the q95 max of a standardised DELTA-R^2 statistic (right-skewed), 6.686/6.974 sd; the correctly calibrated family-wise bar for K independent near-normal cells is 3.795/3.773 sd.",
+      "measured_by": "s03b, 60,000-draw null cloud with a held-out calibration half"
+    }
+  },
+  "gate": {
+    "claim_by_E1_I0037": "validate() reads a file containing only increment cells",
+    "confirmed_at_source": true,
+    "detail": {
+      "validate_reads": "experiments\\exploration\\E1_I0026_detection_floor\\out\\s04_mde_table.csv",
+      "rows": 216,
+      "has_stat_family_col": false,
+      "nulls_present": [
+        "N_A_within_player_cyclic",
+        "N_B_entity_swap_team_season",
+        "N_C_entity_swap_opp_team_season",
+        "N_D_within_date_opp_swap",
+        "N_R_row_level_CONTRAST_ONLY",
+        "N_R_row_level_CONTRAST_ONLY_OPP"
+      ],
+      "validation_rows": 192,
+      "validation_median_ratio": 0.989142551355554
+    },
+    "other_validation_found": false,
+    "unparsable_files_checked": 20,
+    "only_D103_unparsable_file": "scripts/s06b_ns.py -- a parquet shape probe, validates nothing"
+  },
+  "machinery": {
+    "S1_type1": {
+      "passed": false,
+      "median_at_own_level": 0.16408333333333333,
+      "per_cell_median": 0.0525,
+      "per_cell_min": 0.029166666666666667,
+      "per_cell_max": 0.07666666666666666,
+      "fw_family_median": 0.28425,
+      "fw_percell_rejection_median": 0.0
+    },
+    "S2_nondegeneracy": {
+      "max_power_ge_099": 183,
+      "n": 192,
+      "monotone": 192,
+      "finite_E_inj": 190
+    },
+    "S3_fold_recovery": {
+      "rel_err_median": 0.00031563507244330004,
+      "rel_err_p90": 0.005223365246291234,
+      "rel_err_max": 0.04608312849450331,
+      "fold_median": 1.661308524170857
+    },
+    "S4_closed_form_pass": true,
+    "S5_null_sd_drift": {
+      "median": 1.0001370606117104,
+      "p10": 0.9986548302245953,
+      "p90": 1.0029524046595588
+    },
+    "defective_run_preserved": "SIMULATION_DEFECTIVE_s03run1.csv"
+  },
+  "simulation_ratio_distribution": {
+    "family_wise": {
+      "ratio_A_pub_folded": {
+        "n": 94,
+        "min": 0.8472730779552308,
+        "p10": 0.9926121822273763,
+        "median": 1.1701509728737824,
+        "p90": 1.4101886366556855,
+        "max": 1.632198230606411
+      },
+      "ratio_A_pub_signed": {
+        "n": 94,
+        "min": 2.2823947674132055,
+        "p10": 2.678855464397611,
+        "median": 3.239479965403817,
+        "p90": 3.9313372008233385,
+        "max": 4.591236635594678
+      },
+      "ratio_A_cor": {
+        "n": 94,
+        "min": 0.7873006748124763,
+        "p10": 0.9494149576193964,
+        "median": 0.9837394017569931,
+        "p90": 1.0117767607974184,
+        "max": 1.09238284638071
+      }
+    },
+    "per_cell": {
+      "ratio_A_pub_folded": {
+        "n": 96,
+        "min": 0.27128100453627013,
+        "p10": 0.3384703358130061,
+        "median": 0.3586927133861301,
+        "p90": 0.3864354550833098,
+        "max": 0.47404260273839927
+      },
+      "ratio_A_pub_signed": {
+        "n": 96,
+        "min": 0.6606660244750117,
+        "p10": 0.92662488728686,
+        "median": 0.9949599278930445,
+        "p90": 1.0707564488016372,
+        "max": 1.2123407579886871
+      },
+      "ratio_A_cor": {
+        "n": 96,
+        "min": 0.7337275810281259,
+        "p10": 0.9329871137798398,
+        "median": 0.9890763477950703,
+        "p90": 1.0518581992311267,
+        "max": 1.2361926519495192
+      }
+    }
+  },
+  "familywise_bar_calibration": {
+    "E0_I0014_player475": {
+      "bar_in_sd": 3.7914902948429177,
+      "t_crit": 6.686212,
+      "famerr_exact": 0.07249506775193226,
+      "famerr_folded": 0.02856841437859453,
+      "famerr_signed": 0.0,
+      "mde_ratio_folded": 1.107534158477246,
+      "mde_ratio_signed": 2.6402189965375618
+    },
+    "E0_I0014_team36": {
+      "bar_in_sd": 3.671405282369749,
+      "t_crit": 6.686212,
+      "famerr_exact": 0.0341383181759734,
+      "famerr_folded": 0.0,
+      "famerr_signed": 0.0,
+      "mde_ratio_folded": 1.168286007998625,
+      "mde_ratio_signed": 2.7829870223315005
+    },
+    "E0_I0019_playerseason489": {
+      "bar_in_sd": 3.72975785565287,
+      "t_crit": 6.974475,
+      "famerr_exact": 0.07631472234572062,
+      "famerr_folded": 0.0,
+      "famerr_signed": 0.0,
+      "mde_ratio_folded": 1.2243252788667864,
+      "mde_ratio_signed": 2.9255093405663883
+    },
+    "E0_I0019_teamgame1486": {
+      "bar_in_sd": 3.789260884534438,
+      "t_crit": 6.974475,
+      "famerr_exact": 0.041301621904194896,
+      "famerr_folded": 0.0,
+      "famerr_signed": 0.0,
+      "mde_ratio_folded": 1.1850217614958782,
+      "mde_ratio_signed": 2.849066983130959
+    }
+  },
+  "real_cell_ratio_distribution": {
+    "E0_I0014_residual_heterogeneity": {
+      "mde_RA_fold_only": {
+        "n": 342,
+        "min": 2.458115216689564,
+        "p10": 2.716138750224471,
+        "median": 3.205158841421837,
+        "p90": 115.03523848405443,
+        "max": 6.821713070088441e+31
+      },
+      "mde_RB_own_bar": {
+        "n": 342,
+        "min": 6.007612111257124,
+        "p10": 10.050764240452455,
+        "median": 27.157275450942187,
+        "p90": 48.72980464575434,
+        "max": 6.008211367822311e+60
+      },
+      "mde_RC_sidak": {
+        "n": 342,
+        "min": 0.9327115506753443,
+        "p10": 1.0306164529517103,
+        "median": 1.2161710943596011,
+        "p90": 43.649172723998056,
+        "max": 2.5884427762638983e+31
+      },
+      "mde_RA_fold_only_nondegenerate": {
+        "n": 276,
+        "min": 2.458115216689564,
+        "p10": 2.7070277106231844,
+        "median": 2.9500030634123027,
+        "p90": 10.528545988045558,
+        "max": 25.947284507562426
+      },
+      "mde_RB_own_bar_nondegenerate": {
+        "n": 276,
+        "min": 6.007612111257124,
+        "p10": 9.511409862477716,
+        "median": 22.0227358873769,
+        "p90": 44.52728415964807,
+        "max": 84.70870517314347
+      },
+      "mde_RC_sidak_nondegenerate": {
+        "n": 276,
+        "min": 0.9327115506753443,
+        "p10": 1.0271593440997302,
+        "median": 1.1193543382713402,
+        "p90": 3.9949699624298876,
+        "max": 9.845483159026138
+      }
+    },
+    "E0_I0019_availability_forecast": {
+      "mde_RA_fold_only": {
+        "n": 318,
+        "min": 1.0,
+        "p10": 1.0,
+        "median": 1.0,
+        "p90": 1.0,
+        "max": 1.0
+      },
+      "mde_RB_own_bar": {
+        "n": 318,
+        "min": 0.23933649817975294,
+        "p10": 0.34048005044753404,
+        "median": 0.9417882587800599,
+        "p90": 1.44171341305516,
+        "max": 2.6608674081069084
+      },
+      "mde_RC_sidak": {
+        "n": 318,
+        "min": 0.3485741359409729,
+        "p10": 0.34857413594100034,
+        "median": 0.3485741359410107,
+        "p90": 0.3485741359410158,
+        "max": 0.34857413594102205
+      },
+      "mde_RA_fold_only_nondegenerate": {
+        "n": 317,
+        "min": 1.0,
+        "p10": 1.0,
+        "median": 1.0,
+        "p90": 1.0,
+        "max": 1.0
+      },
+      "mde_RB_own_bar_nondegenerate": {
+        "n": 317,
+        "min": 0.23933649817975294,
+        "p10": 0.34028275076638886,
+        "median": 0.9416922893292478,
+        "p90": 1.4417905386204166,
+        "max": 2.6608674081069084
+      },
+      "mde_RC_sidak_nondegenerate": {
+        "n": 317,
+        "min": 0.3485741359409729,
+        "p10": 0.34857413594100056,
+        "median": 0.3485741359410108,
+        "p90": 0.3485741359410158,
+        "max": 0.34857413594102205
+      }
+    }
+  },
+  "restatement": {
+    "mde_published": {
+      "label": "published (control -- must reproduce 760)",
+      "blind": 760,
+      "share": 0.5633802816901409,
+      "delta": 0
+    },
+    "mde_RA_fold_only": {
+      "label": "R-A  fold fixed only",
+      "blind": 886,
+      "share": 0.6567828020756116,
+      "delta": 126
+    },
+    "mde_RB_own_bar": {
+      "label": "R-B  screen's own family-wise bar",
+      "blind": 908,
+      "share": 0.6730911786508524,
+      "delta": 148
+    },
+    "mde_RC_sidak": {
+      "label": "R-C  Sidak-normal bar",
+      "blind": 613,
+      "share": 0.45441067457375833,
+      "delta": -147
+    }
+  },
+  "degenerate_nulls": {
+    "criterion": "mean(|t|)/sd(|t|) > 5 ; symmetric reference 1.3236",
+    "degenerate_cells": 67,
+    "degenerate_by_screen": {
+      "E0_I0014_residual_heterogeneity": 66,
+      "E0_I0019_availability_forecast": 1
+    },
+    "zero_width_null_cells": 6,
+    "zero_width_published_floor_max": 0.0,
+    "zero_width_all_recorded_as_powered": true,
+    "total_unusable": 73,
+    "recorded_by_D103_as_adequately_powered": 35
+  },
+  "structural_gates": {
+    "below_six": 0,
+    "tcrit_ge_sqrt_nb": 102,
+    "tcrit_ge_sqrt_nb_by_screen": {
+      "E0_I0014_residual_heterogeneity": 102
+    },
+    "gate_a_applicable": false,
+    "gate_b_applicable": false,
+    "block_counts": {
+      "475": 246,
+      "489": 228,
+      "36": 102,
+      "1486": 90
+    }
+  },
+  "headline": {
+    "published_blind": "760 / 1349 = 0.5633802816901409",
+    "primary_correction": "R-B (each screen's own family-wise bar): 908 / 1349 = 0.6731, +148 cells, +10.97 pp",
+    "fold_only": "R-A: 886 / 1349 = 0.6568, +126 cells, +9.34 pp",
+    "counter_result": "R-C (Sidak-normal bar): 613 / 1349 = 0.4544, -147 cells, -10.90 pp",
+    "direction": "The conversion is defective and ANTI-CONSERVATIVE relative to the decision rule each screen actually applied: D103 understates how blind the t_statistic family was.  Against a textbook Sidak bar the sign reverses, and that is reported with equal prominence.",
+    "qualitative_verdict": "D103's conclusion SURVIVES and STRENGTHENS under the primary correction"
+  },
+  "bars_in_units_of_each_cells_own_signed_sd": {
+    "E0_I0014_residual_heterogeneity": {
+      "D103_published": 3.734700971874285,
+      "screens_own": 15.863453018546707,
+      "sidak_normal": 3.795436924588529
+    },
+    "E0_I0019_availability_forecast": {
+      "D103_published": 6.97447469907285,
+      "screens_own": 6.743569686525982,
+      "sidak_normal": 3.7730148844332985
+    }
+  },
+  "restatement_alternative_denominator": {
+    "note": "R-A with the 73 non-functioning nulls removed from BOTH numerator and denominator; their correct status is UNVERIFIABLE, neither blind nor powered",
+    "unusable": 73,
+    "unusable_recorded_powered_as_published": 35,
+    "unusable_counted_blind_under_RA": 55,
+    "blind": 831,
+    "scoreable": 1276,
+    "share": 0.6512539184952978
+  },
+  "proposed_fix": {
+    "location": "PROPOSED_FIX/",
+    "tests": "13/13 pass",
+    "recommended": false,
+    "worse_than_incumbent": [
+      "returns nan for 73 real cells the incumbent scores, and D103's own comparison `mde80_fw > 0.0023` evaluates nan to False, i.e. silently 'not blind'",
+      "degeneracy guard has a blind band at mean|t|/sd|t| ~ 2, where E[t]=0 already fails and the moment recovery overstates sd(t) by 124 percent"
+    ],
+    "adopt_only_with": "a caller-side rule that nan == UNVERIFIABLE, never nan == not-blind",
+    "applied_to_shared_kit": false
+  },
+  "files": [
+    "CONVERSION_ANATOMY.md",
+    "D103_RESTATED.md",
+    "DEFECTS.md",
+    "FAMILYWISE_BAR.csv",
+    "FINDINGS.json",
+    "NOTES.md",
+    "PREREG.md",
+    "PREREG.sha256",
+    "PROPOSED_FIX",
+    "SIMULATION.csv",
+    "SIMULATION_DEFECTIVE_s03run1.csv",
+    "STRUCTURAL_GATES.csv",
+    "TSTAT_CELL_FLOORS.csv",
+    "VERDICT.md",
+    "_d103_cells.csv",
+    "_fold_factors_E0_I0014.csv",
+    "_s01.json",
+    "_s02_probe.json",
+    "_s03.json",
+    "_s03b.json",
+    "_s04.json",
+    "run_log_fixtest.txt",
+    "run_log_s01.txt",
+    "run_log_s02_probe.txt",
+    "run_log_s03.txt",
+    "run_log_s03_DEFECTIVE_run1.txt",
+    "run_log_s03_err.txt",
+    "run_log_s03b.txt",
+    "run_log_s03b_err.txt",
+    "run_log_s04.txt",
+    "run_log_s05.txt",
+    "run_log_s06.txt",
+    "scripts"
+  ]
+}

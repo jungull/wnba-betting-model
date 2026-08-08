@@ -1,0 +1,55 @@
+﻿
+==================================================================================================
+A. THE CONDITION nb > t_crit^2, CHECKED BY SIMULATION
+==================================================================================================
+  Closed form: power is bounded below 1 (and typically far below 0.80) whenever
+  t_crit >= sqrt(nb).  Sweeping the effect from 0.5 SE to 10,000,000 SE.
+
+  E1_I0023 as D103 tests it              nb=48   t_crit=6.974  sqrt(nb)= 6.928  t_crit<sqrt(nb): False
+      max power over the whole sweep = 0.0000    effect reaching 80% power = NEVER (infinite MDE) SE
+  E1_I0023 at the per-cell threshold     nb=48   t_crit=1.645  sqrt(nb)= 6.928  t_crit<sqrt(nb): True 
+      max power over the whole sweep = 1.0000    effect reaching 80% power = 2.76 SE
+  just above the boundary                nb=60   t_crit=6.974  sqrt(nb)= 7.746  t_crit<sqrt(nb): True 
+      max power over the whole sweep = 1.0000    effect reaching 80% power = 20.31 SE
+  well above the boundary                nb=200  t_crit=6.974  sqrt(nb)=14.142  t_crit<sqrt(nb): True 
+      max power over the whole sweep = 1.0000    effect reaching 80% power = 11.49 SE
+  E1_I0033 team-season, two-sided        nb=36   t_crit=1.960  sqrt(nb)= 6.000  t_crit<sqrt(nb): True 
+      max power over the whole sweep = 1.0000    effect reaching 80% power = 3.67 SE
+  E1_I0035 player-season, two-sided      nb=488  t_crit=1.960  sqrt(nb)=22.091  t_crit<sqrt(nb): True 
+      max power over the whole sweep = 1.0000    effect reaching 80% power = 3.67 SE
+  below the boundary, small t_crit       nb=3    t_crit=1.960  sqrt(nb)= 1.732  t_crit<sqrt(nb): False
+      max power over the whole sweep = 0.0000    effect reaching 80% power = NEVER (infinite MDE) SE
+
+==================================================================================================
+B. WHAT THIS MEANS FOR D103's PAIRED FAMILY
+==================================================================================================
+  D103 publishes finite mde80_fw for E1_I0023's 30 cells (median 0.0044) and counts 24 of
+  them 'blind to 0.0023'.  The simulation above says the family-wise test on that design
+  has NO finite MDE at all: those cells are blind to EVERY effect size, not merely to
+  0.0023.  The published finite floor is not conservative -- it is not a floor.
+
+  This moves D103's headline in the SAME direction it already points: 24 of the 30 were
+  already counted blind, so the correction adds only the remaining 6 cells
+  (760 -> 766 of 1349, 56.34%% -> 56.78%%).  The QUALITATIVE conclusion survives
+  untouched; it was, if anything, slightly understated.
+
+  IT DOES NOT VALIDATE E1_I0035's 6.6x.  The mechanism here is the critical value, not
+  the variance, and the cell E1_I0035 named (488 player-season blocks, two-sided 1.96)
+  is nowhere near the boundary -- sqrt(488)=22.1 against t_crit=1.96.
+
+==================================================================================================
+C. THE RESULT THAT MOST WEAKENS MY OWN CONCLUSION
+==================================================================================================
+  Everything above says the effect-carrying null_sd matters ONLY where the block count is
+  small relative to t_crit^2.  Across the programme's actual cells that is rare:
+     E1_I0035 player cells : 488 blocks, two-sided 1.96 -> H_B factor 1.005  (negligible)
+     E1_I0035 team cells   :  36 blocks, two-sided 1.96 -> H_B factor 1.085  (small)
+     E1_I0033 all cells    :  36 blocks, two-sided 1.96 -> H_B factor 1.085  (small)
+     E1_I0023 per-cell     :  48 blocks, one-sided 1.645 -> H_B factor 1.045 (small)
+     E1_I0023 family-wise  :  48 blocks, t_crit 6.974    -> H_B factor INFINITE
+  So on the programme's own designs the defect I was sent to audit is NEGLIGIBLE almost
+  everywhere, and catastrophic in exactly one place -- and that one place was already
+  counted as blind. The headline number I was asked to check, 6.6x, does not survive at
+  all: it is a comparison of two different response contrasts.
+
+DONE s05

@@ -1,0 +1,147 @@
+﻿  RS1 team-games 1392   RS1P rows 20084   fit pool (all seasons) 26574
+  strata resolved: ('A|const', 'A|fit', 'B|const', 'B|fit')
+
+================================================================================================
+1. Xa -- PER-STRATUM RECALIBRATION, WALK-FORWARD
+================================================================================================
+ season stratum  n_train  n_test         a        b                               action  train_base_rate
+   2022 A|const     4850     248  1.199600 0.000000                       intercept_only         0.768454
+   2022   A|fit        0    4777       NaN      NaN UNRECALIBRATED (train pool too thin)              NaN
+   2022 B|const      143     408  0.013986 0.000000                       intercept_only         0.503497
+   2022   B|fit        0     358       NaN      NaN UNRECALIBRATED (train pool too thin)              NaN
+   2023 A|const     5098     198  1.213347 0.000000                       intercept_only         0.770891
+   2023   A|fit     5315    5514  0.102399 1.067845                      affine_in_logit         0.782502
+   2023 B|const      551     546 -0.706790 0.000000                       intercept_only         0.330309
+   2023   B|fit      358     718 -3.043376 0.023561                      affine_in_logit         0.044693
+   2024 A|const     5296     168  1.222310 0.000000                       intercept_only         0.772470
+   2024   A|fit    11267    5407  0.106825 1.096425                      affine_in_logit         0.776249
+   2024 B|const     1097     671 -0.967915 0.000000                       intercept_only         0.275296
+   2024   B|fit     1076    1071 -3.758590 0.131746                      affine_in_logit         0.020446
+
+================================================================================================
+2. Xb -- ROSTER-SIZE NORMALISATION (strictly prior games)
+================================================================================================
+    season 2022 opener prior from 418 earlier team-games (seasons [2021])
+    season 2023 opener prior from 896 earlier team-games (seasons [2021, 2022])
+    season 2024 opener prior from 1416 earlier team-games (seasons [2021, 2022, 2023])
+  league prior-season mean roster size used for season openers: {2022: 9.0885, 2023: 9.2489, 2024: 9.2945}
+  season-opener rows using the league prior: 36
+  mean roster_target 9.4104   vs realised 9.4016
+  Xb scale factor: mean 0.8941  min 0.2702  max 1.2477
+
+================================================================================================
+3. Xc -- PRUNE THE UNIVERSE (threshold fitted on strictly earlier seasons)
+================================================================================================
+  tau by season (fitted on strictly earlier seasons only): {2022: 0.0, 2023: 0.68, 2024: 0.57}
+  rows pruned: 4197 of 20084 (20.9%)
+  APPEARED player-games left with NO forecast: 684 of 13087 (5.23%)  <-- the coverage cost
+
+================================================================================================
+4. ASSEMBLE THE TEAM-LEVEL ARMS
+================================================================================================
+  Xd walk-forward affine (a + b*B1):
+ season  n_train         a         b
+   2022        0 82.221983  0.000000
+   2023      432 83.654790 -0.016027
+   2024      912 84.381823 -0.021165
+
+  TEAM LEVEL  (RS1, n=1392, response master_team.pts, SST 168710.4073, no weighting, no base)
+arm    n       MAE      RMSE      bias  R2_common_SST  corr_with_response  mean_sum_w  MAE_vs_X0
+ X0 1392 18.263037 34.221614  8.138903      -8.662697            0.001301   10.338079   0.000000
+ Xa 1392 10.957277 14.476702  1.127289      -0.729166            0.055862    9.560942   7.305759
+XaO 1392 10.413865 13.506534 -0.407708      -0.505169            0.096052    9.401580   7.849172
+ Xb 1392  9.452877 12.032875  0.071811      -0.194638            0.163386    9.410427   8.810159
+ Xc 1392 16.014120 29.313779  2.606000      -6.089914            0.005893    9.514143   2.248916
+ Xd 1392  8.793884 11.036710  0.053622      -0.005024           -0.020746         NaN   9.469153
+
+================================================================================================
+5. TEAM-LEVEL NULLS  (paired block sign-flip at TEAM-SEASON, 36 blocks)
+================================================================================================
+ cell arm  delta_MAE_vs_X0       p  null_mean  null_sd    MDE80  n_blocks     verdict
+ T_Xa  Xa         7.305759 0.00005   0.011402 1.431605 4.010762        36 ESTABLISHED
+T_XaO XaO         7.849172 0.00005   0.010280 1.495276 4.189142        36 ESTABLISHED
+ T_Xb  Xb         8.810159 0.00005   0.011423 1.640429 4.595801        36 ESTABLISHED
+ T_Xc  Xc         2.248916 0.00005   0.007480 0.539207 1.510634        36 ESTABLISHED
+ T_Xd  Xd         9.469153 0.00005   0.010058 1.763267 4.939942        36 ESTABLISHED
+
+  (delta_MAE_vs_X0 > 0 means the repair IMPROVES on the champion as emitted)
+
+  POWER VERIFIED BY INJECTION (team-season blocks).
+  Noise vector = the REAL Xb-vs-X0 per-row loss difference, centred, so the planted
+  world has this data's actual dispersion and block structure.
+    planted 0.50 MAE  ->  detection rate 0.075
+    planted 1.00 MAE  ->  detection rate 0.285
+    planted 2.00 MAE  ->  detection rate 0.835
+    planted 4.60 MAE  ->  detection rate 1.000
+    planted 6.00 MAE  ->  detection rate 1.000
+
+================================================================================================
+6. PLAYER LEVEL -- THE PART THAT DECIDES
+================================================================================================
+
+  p_active AS A PROBABILITY FORECAST OF APPEARANCE, and unconditional E[pts]
+  (response `appeared` / `pts`; n stated per row; Xd is ABSENT because it changes
+   nothing at the player level -- that is its defining property)
+arm         row_set     n   mean_w  base_rate    brier  logloss      AUC  cal_intercept  cal_slope  uncond_pts_MAE  uncond_pts_bias
+ X0      RS1P (all) 20084 0.716521   0.651613 0.130248 0.405581 0.902573  -6.884429e-01   1.150162        3.907382         0.576098
+ X0 RS1P-A (tier A) 16312 0.760833   0.778813 0.093201 0.313589 0.897850   1.338983e-01   1.059142        3.776286        -0.155697
+ X0 RS1P-B (tier B)  3772 0.524892   0.101538 0.290459 0.803401 0.760331  -3.054613e+00   1.230192        4.474306         3.740745
+ Xa      RS1P (all) 20084 0.662658   0.651613 0.094677 0.314125 0.928452  -1.661595e-01   1.096157        3.454724         0.090131
+ Xa RS1P-A (tier A) 16312 0.770531   0.778813 0.093349 0.312474 0.897331   8.384297e-02   1.005078        3.783533        -0.091687
+ Xa RS1P-B (tier B)  3772 0.196164   0.101538 0.100420 0.321264 0.772287  -1.016977e+00   0.859610        2.032792         0.876403
+XaO      RS1P (all) 20084 0.651613   0.651613 0.090974 0.303332 0.932567  -1.156234e-08   1.000000        3.346403        -0.016258
+XaO RS1P-A (tier A) 16312 0.778813   0.778813 0.093255 0.311361 0.898060  -1.871038e-10   1.000000        3.795709        -0.035446
+XaO RS1P-B (tier B)  3772 0.101538   0.101538 0.081108 0.268612 0.794885   1.620497e-07   1.000000        1.403379         0.066719
+ Xb      RS1P (all) 20084 0.652226   0.651613 0.107621 0.387604 0.915264   5.168758e-02   0.924409        3.583452         0.016977
+ Xb RS1P-A (tier A) 16312 0.745272   0.778813 0.107440 0.391169 0.881890   4.941782e-01   0.710061        3.828850        -0.290438
+ Xb RS1P-B (tier B)  3772 0.249849   0.101538 0.108406 0.372191 0.742026  -8.279045e-01   1.383968        2.522229         1.346389
+ Xc      RS1P (all) 20084 0.659415   0.651613 0.132237 0.775360 0.900118   9.368076e-01   0.221130        3.593956         0.192619
+ Xc RS1P-A (tier A) 16312 0.722443   0.778813 0.105759 0.792527 0.889955   1.578516e+00   0.213097        3.653299        -0.361081
+ Xc RS1P-B (tier B)  3772 0.386850   0.101538 0.246739 0.701121 0.770723  -1.743151e+00   0.214974        3.337325         2.587090
+
+================================================================================================
+7. INVARIANCE CHECK -- conditional pts_hat on appeared rows must not move
+================================================================================================
+  conditional pts_hat MAE on appeared rows (n=13087): 4.255252
+  every repair Xa/Xb/Xd leaves pts_hat untouched by construction -> identical.
+  Xc: 12403 appeared rows survive; conditional MAE on SURVIVORS 4.297213
+      but 684 appeared player-games have NO FORECAST AT ALL under Xc.
+
+================================================================================================
+8. PLAYER-LEVEL NULLS  (paired block sign-flip at PLAYER-SEASON)
+================================================================================================
+        cell arm         row_set metric  delta_vs_X0        p     null_mean  null_sd    MDE80  n_blocks         verdict
+   P_Xa_RS1P  Xa      RS1P (all)  Brier     0.035571 0.000050 -2.643610e-05 0.001990 0.005576       725     ESTABLISHED
+ P_Xa_RS1P-A  Xa RS1P-A (tier A)  Brier    -0.000148 0.280886  5.202595e-08 0.000136 0.000382       488 NOT ESTABLISHED
+ P_Xa_RS1P-B  Xa RS1P-B (tier B)  Brier     0.190039 0.000050 -1.198329e-04 0.010475 0.029347       709     ESTABLISHED
+  P_XaO_RS1P XaO      RS1P (all)  Brier     0.039274 0.000050 -2.950941e-05 0.002252 0.006308       725     ESTABLISHED
+P_XaO_RS1P-A XaO RS1P-A (tier A)  Brier    -0.000054 0.747813  1.952138e-06 0.000166 0.000466       488 NOT ESTABLISHED
+P_XaO_RS1P-B XaO RS1P-B (tier B)  Brier     0.209352 0.000050 -1.393068e-04 0.011832 0.033149       709     ESTABLISHED
+   P_Xb_RS1P  Xb      RS1P (all)  Brier     0.022627 0.000050 -1.326111e-05 0.001957 0.005483       725     ESTABLISHED
+ P_Xb_RS1P-A  Xb RS1P-A (tier A)  Brier    -0.014239 0.000050 -4.383804e-06 0.001086 0.003042       488     ESTABLISHED
+ P_Xb_RS1P-B  Xb RS1P-B (tier B)  Brier     0.182053 0.000050 -1.045777e-04 0.009919 0.027790       709     ESTABLISHED
+   P_Xc_RS1P  Xc      RS1P (all)  Brier    -0.001988 0.137443 -2.295557e-05 0.001332 0.003731       725 NOT ESTABLISHED
+ P_Xc_RS1P-A  Xc RS1P-A (tier A)  Brier    -0.012558 0.000050  6.381022e-06 0.001580 0.004427       488     ESTABLISHED
+ P_Xc_RS1P-B  Xc RS1P-B (tier B)  Brier     0.043721 0.000050 -6.486657e-05 0.003487 0.009768       709     ESTABLISHED
+
+  (delta_vs_X0 > 0 means the repair LOWERS Brier, i.e. IMPROVES the player forecast)
+
+  POWER VERIFIED BY INJECTION (player-season blocks, Brier scale).
+  Noise = the REAL Xb-vs-X0 per-row Brier difference on tier A, centred.
+    planted 0.0005 Brier (tier A) -> detection rate 0.075
+    planted 0.0010 Brier (tier A) -> detection rate 0.225
+    planted 0.0030 Brier (tier A) -> detection rate 0.970
+    planted 0.0100 Brier (tier A) -> detection rate 1.000
+
+================================================================================================
+9. TYPE-I CHECK (400 synthetic no-effect datasets, team-season blocks)
+================================================================================================
+  rejection rate at nominal 0.05 = 0.0650
+  p quartiles 0.236 / 0.482 / 0.750
+
+================================================================================================
+10. PERSIST
+================================================================================================
+  written.
+
+DONE s04

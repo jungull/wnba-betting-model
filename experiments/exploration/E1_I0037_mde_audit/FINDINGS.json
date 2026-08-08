@@ -1,0 +1,435 @@
+{
+  "screen": "E1_I0037_mde_audit",
+  "question": "Is the programme's analytic MDE80 = 2.802 x null_sd anti-conservative because null_sd is computed from an effect-carrying vector, as E1_I0035 D-3 / D113 claims, and if so by how much and how generally?",
+  "partition": "2021-2024 exploration only; 2025/26 never opened",
+  "prereg_sha256": "\ufeffa79a99034a60c6b446aca5668189d72fe752263a09ca0ddde84c4b7c388a8455  PREREG.md",
+  "VERDICT": {
+    "claim_as_stated": "REFUTED",
+    "the_6_6x": "NOT REPRODUCIBLE. E1_I0035 compared an injection floor measured on the Xb response contrast (0.0025) against an analytic floor computed from the Xa contrast's null_sd (0.00038). Different response vectors -- a D101 denominator violation. Recomputed like-for-like from that screen's own frame: Xa 1.02x, Xb 0.76x.",
+    "mechanism_as_stated": "MISATTRIBUTED, and in the reassuring direction. An effect-carrying null_sd INFLATES the quoted floor, making the analytic form CONSERVATIVE. It cannot produce anti-conservatism.",
+    "a_real_defect_does_exist": "YES, but it is the CRITICAL VALUE, not the variance. The rejection threshold t_crit*sd(e) also grows with the effect. Size is governed by BLOCK COUNT alone.",
+    "generality": "232 quoted figures across 4 screens use the affected construction, but on their ACTUAL designs the bias is <= 9% everywhere except one place: D103's family-wise threshold on E1_I0023's 48-cluster cells, where the MDE is infinite."
+  },
+  "anchor_reproduced_before_new_statistics": {
+    "cells": 1349,
+    "blind": 760,
+    "share": 0.5633802816901409,
+    "reproduced": true
+  },
+  "construction_confirmed_at_source": {
+    "shared_kit": "_screen_kit\\screenkit.py::paired_forecast_comparison lines 2143-2170: d = (y-a)**2 - (y-b)**2 (OBSERVED); csum = bincount(gcodes, weights=d); draws = -(signs @ csum)/sst; sd = draws.std(ddof=1). Nothing permuted or resampled -- only signs flipped on observed block sums.",
+    "local_copies": [
+      "E1_I0035\\scripts\\av_base.py::paired_signflip_block lines 273-294",
+      "E1_I0034\\scripts\\redist_base.py::paired_signflip_block lines 235-256"
+    ],
+    "C1_effect_carrying": true
+  },
+  "call_graph_resolution_no_name_matching": {
+    "py_files_enumerated": 417,
+    "parsed_ok": 410,
+    "UNRESOLVED_parse_failures": 7,
+    "unresolved_reason": "UTF-8 BOM (U+FEFF); all seven named in run_log_s01.txt",
+    "mde_producing_functions": 14,
+    "classified_by": "the arithmetic performed -- a constant within 0.01 of z_alpha + Phi^-1(0.80), or Phi^-1(0.80) itself -- NOT by any identifier",
+    "call_sites_resolved": 85
+  },
+  "two_hypotheses_separated": {
+    "H_A_null_sd_contaminated": {
+      "real": true,
+      "direction": "CONSERVATIVE (inflates the quoted floor) -- the safe one",
+      "sd_obs_over_sd_centred": {
+        "n": 1304,
+        "min": 0.99653611231477,
+        "p10": 1.0000945498721028,
+        "median": 1.0185348070390279,
+        "p90": 1.4067737288196052,
+        "max": 14.415725860438322
+      },
+      "by_observed_effect_SE": [
+        {
+          "obs_effect_u": 0.0,
+          "conds": 432,
+          "med_E_over_Aobs": 1.0366938012494615,
+          "p10": 0.9436057142130408,
+          "p90": NaN,
+          "med_inflation": 1.0034905807514158,
+          "pct_apparently_conservative": 0.29398148148148145
+        },
+        {
+          "obs_effect_u": 1.0,
+          "conds": 440,
+          "med_E_over_Aobs": 1.0414164148538676,
+          "p10": 0.9410889293887659,
+          "p90": NaN,
+          "med_inflation": 1.0094747434374933,
+          "pct_apparently_conservative": 0.3068181818181818
+        },
+        {
+          "obs_effect_u": 3.0,
+          "conds": 432,
+          "med_E_over_Aobs": 0.9695200643160966,
+          "p10": 0.819808456245883,
+          "p90": NaN,
+          "med_inflation": 1.0942918217186977,
+          "pct_apparently_conservative": 0.6412037037037037
+        }
+      ],
+      "corroborates_E1_I0034": "E1_I0034 measured 0.963-1.013 on its own cells; that is what H_A predicts when the observed effect is small."
+    },
+    "H_B_rule_miscalibrated": {
+      "real": true,
+      "direction": "ANTI-CONSERVATIVE -- this is the genuine defect",
+      "governed_by": "number of blocks; NOT n, NOT sigma, NOT effect size",
+      "E_inj_over_2.802_x_sd_centred_by_block_count": [
+        {
+          "nb": 8,
+          "conds": 163,
+          "med": 1.268786044808562,
+          "p10": 1.031753641982873,
+          "p90": 1.7663556961431164
+        },
+        {
+          "nb": 16,
+          "conds": 163,
+          "med": 1.1307892644870274,
+          "p10": 0.9911897761130215,
+          "p90": 1.4188337144383407
+        },
+        {
+          "nb": 32,
+          "conds": 163,
+          "med": 1.043475447612021,
+          "p10": 0.9733669801317887,
+          "p90": 1.2050800450589927
+        },
+        {
+          "nb": 64,
+          "conds": 163,
+          "med": 1.01909515614998,
+          "p10": 0.9526965799107329,
+          "p90": 1.100842522042397
+        },
+        {
+          "nb": 128,
+          "conds": 163,
+          "med": 1.0116894145750628,
+          "p10": 0.9312535238136294,
+          "p90": 1.0850362333909749
+        },
+        {
+          "nb": 256,
+          "conds": 163,
+          "med": 1.0143210789896675,
+          "p10": 0.9475188044614301,
+          "p90": 1.079675180116083
+        },
+        {
+          "nb": 512,
+          "conds": 163,
+          "med": 1.0012645746727875,
+          "p10": 0.9414770206088904,
+          "p90": 1.0528019329901843
+        }
+      ],
+      "closed_form": "u^2(1 - t_crit^2/nb) - 2*z80*u + (z80^2 - t_crit^2) >= 0, u = effect/SE"
+    }
+  },
+  "ratio_distribution": {
+    "n_conditions": 1304,
+    "n_with_finite_crossing": 1141,
+    "E_inj_over_A_obs_the_D3_comparison": {
+      "n": 1141,
+      "min": 0.5532291473039477,
+      "p10": 0.8774772327601378,
+      "median": 1.0055564700567865,
+      "p90": 1.1727323091845736,
+      "max": 2.318648478597249
+    },
+    "E_inj_over_A_centred": {
+      "n": 1141,
+      "min": 0.6323912568689611,
+      "p10": 0.950603951541711,
+      "median": 1.0375706621334726,
+      "p90": 1.278547072236954,
+      "max": 3.1778890541670384
+    },
+    "E_inj_over_A_oracle": {
+      "n": 1141,
+      "min": 0.8540612098432079,
+      "p10": 0.9733021677243608,
+      "median": 1.0285578021970163,
+      "p90": 1.1875781722670051,
+      "max": 1.3967213711645765
+    },
+    "6_6x_lies_beyond": "the maximum of every column above"
+  },
+  "structural_results": {
+    "signflip_cannot_reject_below_six_blocks": {
+      "p_min": "2^(1-nb)",
+      "requires": "nb >= 6 for alpha=0.05",
+      "measured_type_I_R2000": [
+        {
+          "nb": 3,
+          "p_min_theory": 0.25,
+          "type_I_R2000": 0.0,
+          "can_ever_reject": false
+        },
+        {
+          "nb": 4,
+          "p_min_theory": 0.125,
+          "type_I_R2000": 0.0,
+          "can_ever_reject": false
+        },
+        {
+          "nb": 5,
+          "p_min_theory": 0.0625,
+          "type_I_R2000": 0.0,
+          "can_ever_reject": false
+        },
+        {
+          "nb": 6,
+          "p_min_theory": 0.03125,
+          "type_I_R2000": 0.0275,
+          "can_ever_reject": true
+        },
+        {
+          "nb": 7,
+          "p_min_theory": 0.015625,
+          "type_I_R2000": 0.047,
+          "can_ever_reject": true
+        },
+        {
+          "nb": 8,
+          "p_min_theory": 0.0078125,
+          "type_I_R2000": 0.0485,
+          "can_ever_reject": true
+        },
+        {
+          "nb": 9,
+          "p_min_theory": 0.00390625,
+          "type_I_R2000": 0.0435,
+          "can_ever_reject": true
+        },
+        {
+          "nb": 10,
+          "p_min_theory": 0.001953125,
+          "type_I_R2000": 0.0445,
+          "can_ever_reject": true
+        },
+        {
+          "nb": 11,
+          "p_min_theory": 0.0009765625,
+          "type_I_R2000": 0.0505,
+          "can_ever_reject": true
+        },
+        {
+          "nb": 12,
+          "p_min_theory": 0.00048828125,
+          "type_I_R2000": 0.0465,
+          "can_ever_reject": true
+        },
+        {
+          "nb": 13,
+          "p_min_theory": 0.000244140625,
+          "type_I_R2000": 0.0495,
+          "can_ever_reject": true
+        }
+      ]
+    },
+    "mde_is_infinite_when_t_crit_ge_sqrt_nb": {
+      "verified_by_simulation_not_algebra": true,
+      "sweep": "0.5 SE to 1e7 SE",
+      "cases": [
+        {
+          "case": "E1_I0023 as D103 tests it",
+          "nb": 48,
+          "m": 180,
+          "n": 8640,
+          "t_crit": 6.974,
+          "sqrt_nb": 6.928203230275509,
+          "condition_satisfied": false,
+          "max_power_attained": 0.0,
+          "effect_SE_for_80pct_power": Infinity
+        },
+        {
+          "case": "E1_I0023 at the per-cell threshold",
+          "nb": 48,
+          "m": 180,
+          "n": 8640,
+          "t_crit": 1.645,
+          "sqrt_nb": 6.928203230275509,
+          "condition_satisfied": true,
+          "max_power_attained": 1.0,
+          "effect_SE_for_80pct_power": 2.7634246741475152
+        },
+        {
+          "case": "just above the boundary",
+          "nb": 60,
+          "m": 100,
+          "n": 6000,
+          "t_crit": 6.974,
+          "sqrt_nb": 7.745966692414834,
+          "condition_satisfied": true,
+          "max_power_attained": 1.0,
+          "effect_SE_for_80pct_power": 20.308204536554953
+        },
+        {
+          "case": "well above the boundary",
+          "nb": 200,
+          "m": 40,
+          "n": 8000,
+          "t_crit": 6.974,
+          "sqrt_nb": 14.142135623730951,
+          "condition_satisfied": true,
+          "max_power_attained": 1.0,
+          "effect_SE_for_80pct_power": 11.48626909668905
+        },
+        {
+          "case": "E1_I0033 team-season, two-sided",
+          "nb": 36,
+          "m": 40,
+          "n": 1440,
+          "t_crit": 1.959964,
+          "sqrt_nb": 6.0,
+          "condition_satisfied": true,
+          "max_power_attained": 1.0,
+          "effect_SE_for_80pct_power": 3.6744631989688292
+        },
+        {
+          "case": "E1_I0035 player-season, two-sided",
+          "nb": 488,
+          "m": 33,
+          "n": 16104,
+          "t_crit": 1.959964,
+          "sqrt_nb": 22.090722034374522,
+          "condition_satisfied": true,
+          "max_power_attained": 1.0,
+          "effect_SE_for_80pct_power": 3.6744631989688292
+        },
+        {
+          "case": "below the boundary, small t_crit",
+          "nb": 3,
+          "m": 100,
+          "n": 300,
+          "t_crit": 1.959964,
+          "sqrt_nb": 1.7320508075688772,
+          "condition_satisfied": false,
+          "max_power_attained": 0.0,
+          "effect_SE_for_80pct_power": Infinity
+        }
+      ]
+    }
+  },
+  "d103_exposure": {
+    "cells": 1349,
+    "blind_published": 760,
+    "share_published": 0.5633802816901409,
+    "paired_cells": 30,
+    "paired_blind_published": 24,
+    "paired_blind_after_H_B": 30,
+    "blind_after_H_B": 766,
+    "share_after_H_B": 0.5678280207561156,
+    "H_B_factor_median": Infinity,
+    "fw_t_crit": 6.97447469907285,
+    "qualitative_conclusion_survives": true,
+    "movement_pp": 0.4447739065974732,
+    "affected_family": "paired (E1_I0023) only, 30 of 1349 cells = 2.2%",
+    "unaffected": "1319 cells on permutation nulls",
+    "larger_unquantified_exposure": {
+      "family": "t_statistic",
+      "cells": 666,
+      "share_of_1349": 0.4937,
+      "blind_verdicts_carried": 518,
+      "share_of_760_blind": 0.6816,
+      "problem": "MDE80 = ((t_crit+z80)*sd_t)^2/n was NEVER validated; D103's validate() gate reads s04_mde_table.csv, which contains only increment cells",
+      "recommendation": "this is the next power screen, not another sign-flip pass"
+    }
+  },
+  "census": {
+    "total_figures": 2368,
+    "by_classification": {
+      "ANALYTIC_(1.645+z80)xSD_on_EFFECT_CARRYING_SIGNFLIP": 120,
+      "ANALYTIC_2.800xSD": 95,
+      "ANALYTIC_2.8016xSD": 17,
+      "ANALYTIC_CLOSED_FORM_on_PERMUTATION_null": 1189,
+      "ANALYTIC_CLOSED_FORM_on_PERMUTATION_null_UNVALIDATED": 666,
+      "INJECTION_OR_OTHER": 281
+    },
+    "on_effect_carrying_nulls": 232,
+    "screens_affected": [
+      "E1_I0023_usage_defence_interaction",
+      "E1_I0033_aggregation_level",
+      "E1_I0034_redistribution",
+      "E1_I0035_availability_sum"
+    ]
+  },
+  "machinery_checks_MY_OWN": {
+    "S1_type_I_at_committed_R2000": {
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0,
+      "6": 0.0275,
+      "7": 0.047,
+      "8": 0.0485,
+      "9": 0.0435,
+      "10": 0.0445,
+      "11": 0.0505,
+      "12": 0.0465,
+      "13": 0.0495
+    },
+    "S1_grid_R400_note": "the s02 grid ran at R=400 against a band computed for R=2000; that understates calibration -- see DEFECTS.md D-5",
+    "S2_discrimination_pass": 1141,
+    "S3_degenerate_plant_guard": "discriminates: constant plant sd/|mean| = 0.000000 fires, plant onto real noise 0.482362 does not",
+    "S4_large_nb_recovery_E_inj_over_A_oracle": 0.9604,
+    "S5_FRESH_vs_FLIP": [
+      {
+        "arm": "FLIP",
+        "conds": 648,
+        "med_E_over_Aobs": 1.0172223282470434,
+        "med_E_over_Aorc": 1.043103451408124,
+        "med_typeI": 0.045
+      },
+      {
+        "arm": "FRESH",
+        "conds": 648,
+        "med_E_over_Aobs": 1.0192387060700585,
+        "med_E_over_Aorc": 1.0338722380805194,
+        "med_typeI": 0.0475
+      }
+    ],
+    "first_run_was_degenerate": "YES -- type-I 0.0000 in all 648 FRESH conditions; caught by S1; defective output preserved at SIMULATION_DEFECTIVE_s02run1.csv. See DEFECTS.md D-1.",
+    "null_mean_gt_observed_diagnostic": "STRUCTURALLY VACUOUS on this family: sign-flip draws are +/- a fixed set of block sums so E[draws]=0 exactly. It cannot police sign-flip nulls. Coverage gap, not a clean bill of health."
+  },
+  "proposed_fix": {
+    "location": "PROPOSED_FIX\\mde_signflip.py  (NOT applied to the shared kit)",
+    "tests": "PROPOSED_FIX\\test_mde_signflip.py -- 23 assertions, all passing",
+    "p_value_unchanged": "verified to 0.000e+00 over four cells (T4)",
+    "guards": [
+      "assert_null_sd_not_effect_carrying (the assertion the brief asked for)",
+      "assert_signflip_can_reject (nb >= 6)",
+      "assert_mde_is_finite (t_crit < sqrt(nb))"
+    ],
+    "known_limitation": "the fix is WORSE than the incumbent below 16 blocks; it now warns that no data-driven MDE is stable there. See DEFECTS.md D-3."
+  },
+  "predictions_for_other_screens_not_adjudicated_here": {
+    "E1_I0034_implied_effective_block_counts": {
+      "minutes": 16.050833716165428,
+      "attempts": 8.124541095086144,
+      "points": 4.870265923590072
+    },
+    "note": "E1_I0034's reported 1.22x/1.61x/3.40x imply effective block counts of 16.1, 8.1 and 4.9 under the block-count law. 4.9 is BELOW SIX, where the sign-flip cannot reject at all. Checkable against that screen's own cluster counts; E1_I0038 owns it.",
+    "E1_I0033": "36 blocks -> H_B factor 1.085. Its P02 and s10 cells have near-zero observed effects so H_A does not rescue them; both become ~9% MORE underpowered. Its NOTES.md section 5 labels an analytic table 'Power verified by injection' -- that label is wrong whatever else is decided."
+  },
+  "deliverable_hashes": {
+    "D103_EXPOSURE.md": "1e0b7a44045167bd6c0e8e4c0f3d85e99c3f965a59a2fbabdecba1301103357d",
+    "DEFECTS.md": "c7e379cd7f01281fec7ca1cd81d9d4192677b902216703f7df32ceb706178569",
+    "MDE_CENSUS.csv": "608b4ddeb8b457209cd01c1e4f920d586c3b830d8649d90f3a9054784115a33b",
+    "PREREG.md": "a79a99034a60c6b446aca5668189d72fe752263a09ca0ddde84c4b7c388a8455",
+    "SIMULATION.csv": "84d29803293b8a51797815bf0129b64a29b24413a721f828834533ca200b4ade",
+    "SIMULATION_DEFECTIVE_s02run1.csv": "fb876fac1935d6b2db0b32035333771ba97bc6964ac66d8df9f3bb3330e8db44",
+    "VERDICT.md": "def067b01d8ef7d93bad45725fab175e4e55f9e209446d0061aa220125b80e1a",
+    "d103_paired_family_correction.csv": "469c9e2b75e2cc4d948ffc7e5dd93684324bd5d851fcfe39342d0790377849ba",
+    "infinite_mde_verification.csv": "5e166132f4abad7eec573d3319738160cf46572703b412f18c496651a1fcbf26",
+    "signflip_floor_by_block_count.csv": "7e58c267638924d22575a1408d7efffe809bca36a0a84674250226558ab48249"
+  }
+}

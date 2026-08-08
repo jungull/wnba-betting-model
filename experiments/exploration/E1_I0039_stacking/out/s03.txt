@@ -1,0 +1,60 @@
+﻿
+========================================================================================================
+1. U -- recap
+========================================================================================================
+  n=9022  seasons=[2023, 2024]  team-games=960  DECISION=3158
+
+========================================================================================================
+2. JOIN tier_frame (component A's structural inputs) by row_uid
+========================================================================================================
+  ALLOWLIST TIER_KEEP        resolved 8/8: ['row_uid', 'depth_rank', 'depth_bucket', 'roster_size', 'draft_pick', 'draft_bucket', 'undrafted', 'pos_group']
+  merge indicator:
+_merge
+both          8765
+left_only      257
+right_only       0
+    D087 coverage depth_bucket  on U        = 0.9715  (8765/9022)
+    D087 coverage depth_bucket  on TREAT_A  = 0.9984  (631/632)
+    D087 coverage depth_bucket  on TREAT_B  = 0.7376  (697/945)
+    D087 coverage draft_bucket  on U        = 0.9715  (8765/9022)
+    D087 coverage draft_bucket  on TREAT_A  = 0.9984  (631/632)
+    D087 coverage draft_bucket  on TREAT_B  = 0.7376  (697/945)
+
+========================================================================================================
+3. JOIN E1_I0032 _work (component B's tuned simple estimator) by game/team/player/season
+========================================================================================================
+  ALLOWLIST WORK_KEEP        resolved 14/14: ['season', 'player_id', 'game_id', 'team_id', 'e_full_pts', 'e_full_minutes', 'e_full_fga', 'e_naive_pts', 'e_naive_minutes', 'e_naive_fga', 'R4_pts', 'R4_minutes', 'n_prior', 'min5']
+  work rows: 18212 ; duplicate keys: 0
+_m2
+both          9022
+left_only        0
+right_only       0
+    D087 coverage e_full_pts       on U        = 1.0000  (9022/9022)
+    D087 coverage e_full_pts       on TREAT_A  = 1.0000  (632/632)
+    D087 coverage e_full_pts       on TREAT_B  = 1.0000  (945/945)
+    D087 coverage e_full_pts       on TREAT_C  = 1.0000  (2533/2533)
+    D087 coverage e_full_minutes   on U        = 1.0000  (9022/9022)
+    D087 coverage e_full_minutes   on TREAT_A  = 1.0000  (632/632)
+    D087 coverage e_full_minutes   on TREAT_B  = 1.0000  (945/945)
+    D087 coverage e_full_minutes   on TREAT_C  = 1.0000  (2533/2533)
+
+========================================================================================================
+4. cross-check: does E1_I0032's n_prior agree with the champion's n_prior_games on U?
+========================================================================================================
+  rows with both: 8765 ; identical: 7981 ; corr 0.999523
+  E1_I0032 min5 vs base5_minutes: corr 0.871830
+  DECISION by E1_I0032 fields: 3164 ; by champion fields: 3158 ; agree 0.9991
+
+========================================================================================================
+5. component C's ingredients on U -- u_i and z_i must be rebuilt on U, not inherited
+========================================================================================================
+  rem frame carries u/z only for REM rows (n=8118 in W2 RS).
+  U contains 904 rows that are NOT established (no base5 or <3 priors).
+  => C's forecast term is DEFINED ONLY on established remaining rows and is IDENTICALLY
+     ZERO elsewhere.  That is a treated/untreated split inside C's own nominal row set
+     and the VACUOUS-CONTROL check must be run against it (E1_I0034's own trap).
+  established rows on U: 8118 (89.98%)
+  established AND freed>=25: 2475
+  established AND freed>=25 AND DECISION: 1051
+
+  wrote _universe2.parquet

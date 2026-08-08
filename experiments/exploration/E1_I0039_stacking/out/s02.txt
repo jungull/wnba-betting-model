@@ -1,0 +1,98 @@
+﻿
+========================================================================================================
+0. LOAD -- read-only, from three prior screens' stored frames
+========================================================================================================
+  sha256 ae239ed31bc3382d  E1_I0020_coldstart_tiering\tier_frame.parquet
+  sha256 207fe8a48afa8c3d  E1_I0034_redistribution\_player_frame.parquet
+  sha256 1212f7e1808c66e4  E1_I0034_redistribution\_rem_frame.parquet
+  sha256 20971bb1bbaecfee  E1_I0034_redistribution\_tg_frame.parquet
+  sha256 85c02a74d7ab09ab  E1_I0032_aggregate_stack\_work.parquet
+  PARTITION OK  tier                   seasons=[2022, 2023, 2024] n=13879
+  PARTITION OK  player                 seasons=[2021, 2022, 2023, 2024] n=26574
+  PARTITION OK  rem                    seasons=[2021, 2022, 2023, 2024] n=14826
+  PARTITION OK  tg                     seasons=[2021, 2022, 2023, 2024] n=1632
+  PARTITION OK  work                   seasons=[2021, 2022, 2023, 2024] n=18212
+
+========================================================================================================
+1. ANCHORS -- reproduced on bytes BEFORE any new statistic is generated
+========================================================================================================
+  ANCHOR A1  D076 tier-A appeared player-games 2022-2024      want 13879                  got 13879                  |d|=0.000e+00  EXACT
+  ANCHOR A2  D092 champion fallback rows (pts)                want 1061                   got 1061                   |d|=0.000e+00  EXACT
+    candidate skills on n=1061 : MAE-basis -0.186264   SSE-basis -0.219258
+  ANCHOR A3  D092 fallback-row points skill                   want -0.1863                got -0.1863                |d|=0.000e+00  EXACT
+  ANCHOR A4a D109 common scored row set                       want 13808                  got 13808                  |d|=0.000e+00  EXACT
+  ANCHOR A4b D109 decision stratum                            want 5107                   got 5107                   |d|=0.000e+00  EXACT
+  ANCHOR A5a D102 fallback_level==2 routed rows               want 947                    got 947                    |d|=0.000e+00  EXACT
+  ANCHOR A5b D109 routed rows inside decision stratum         want 0                      got 0                      |d|=0.000e+00  EXACT
+  ANCHOR A5c D109 max n_prior among routed rows               want 5.0                    got 5.0                    |d|=0.000e+00  EXACT
+  ANCHOR A6a E1_I0034 RSP-W2 remaining-player rows            want 8118                   got 8118                   |d|=0.000e+00  EXACT
+  ANCHOR A6b E1_I0034 RSP-W2 team-game blocks                 want 888                    got 888                    |d|=0.000e+00  EXACT
+  ANCHOR A6c D116 >=25min-freed rows                          want 2475                   got 2475                   |d|=0.000e+00  EXACT
+  ANCHOR A6d D116 >=25min-freed team-games                    want 282                    got 282                    |d|=0.000e+00  EXACT
+  ANCHOR A7a E1_I0034 RSP-W1 remaining-player rows            want 11721                  got 11721                  |d|=0.000e+00  EXACT
+  ANCHOR A7b E1_I0034 RSP-W1 team-game blocks                 want 1284                   got 1284                   |d|=0.000e+00  EXACT
+
+  ALL 14 ANCHORS REPRODUCED.
+
+========================================================================================================
+2. THE COMMON ROW SET -- one universe, W2, on which every lattice cell is measured
+========================================================================================================
+  ALLOWLIST PLAYER_KEEP      resolved 23/23: ['row_uid', 'season', 'game_id', 'team_id', 'player_id', 'game_date', 'appeared', 'minutes', 'pts', 'fga', 'min_hat', 'pts_hat', 'fga_hat', 'is_fallback', 'fallback_level', 'is_cold_start', 'n_prior_games', 'base5_minutes', 'base5_pts', 'base5_fga', 'nprior_minutes', 'nprior_pts', 'nprior_fga']
+  PARTITION OK  universe_pre           seasons=[2023, 2024] n=15252
+  scored seasons W2 rows          : 15252
+  game_id prefixes present        : ['1022', '1042']
+  + REGULAR SEASON only           : 14293
+  + appeared == 1                 : 9022
+  + finite y/champ on min & pts   : 9022   <-- THE COMMON ROW SET (U)
+  rebuilt COMPLETE team-game reference: 960 team-games in W2
+  inherited team-games in W2: 888; overlap with rebuild: 888
+    max |inherited - rebuilt| freed_minutes  = 1.421e-14
+    max |inherited - rebuilt| n_absent       = 0.000e+00
+    max |inherited - rebuilt| n_elig         = 0.000e+00
+    max |inherited - rebuilt| n_rem          = 0.000e+00
+  team-games present in rebuild but NOT in the inherited frame: 72
+    their n_elig: max 0 ; their freed_minutes: max 0.000000  (must both be 0)
+  D087 coverage AFTER repair: freed_minutes present on 1.0000 of U (9022/9022)
+  DECISION stratum (n_prior>=8 & prior5_minutes>=24): 3158 rows
+
+========================================================================================================
+3. THE THREE TREATED ROW SETS, on the common row set U
+========================================================================================================
+  A  cold-start tiering  (fallback_level == 2)         n=   632  (7.01% of U)   in DECISION:      0
+  B  fallback routing    (is_fallback)                 n=   945  (10.47% of U)   in DECISION:      0
+  C  redistribution      (team-game freed >= 25 min)   n=  2533  (28.08% of U)   in DECISION:   1051
+
+  fallback_level composition on U:
+0.0    8077
+2.0     632
+3.0     313
+
+========================================================================================================
+4. ROW OVERLAP -- the exact intersections.  THIS DECIDES THE REST OF THE SCREEN.
+========================================================================================================
+  set_id                                                        definition                kind    n  pct_of_universe  n_in_decision  pct_of_set_in_decision  jaccard  pct_of_A_side  pct_of_B_side
+       A                                       coldstart_tiering_D092_D102              single  632         7.005099              0                0.000000      NaN            NaN            NaN
+       B                                             fallback_routing_D094              single  945        10.474396              0                0.000000      NaN            NaN            NaN
+       C                                       minutes_redistribution_D116              single 2533        28.075815           1051               41.492302      NaN            NaN            NaN
+     A&B       coldstart_tiering_D092_D102 INTERSECT fallback_routing_D094   pair_intersection  632         7.005099              0                0.000000 0.668783     100.000000      66.878307
+     A&C coldstart_tiering_D092_D102 INTERSECT minutes_redistribution_D116   pair_intersection   48         0.532033              0                0.000000 0.015399       7.594937       1.894986
+     B&C       fallback_routing_D094 INTERSECT minutes_redistribution_D116   pair_intersection   63         0.698293              0                0.000000 0.018448       6.666667       2.487169
+   A&B&C                                                         all three triple_intersection   48         0.532033              0                0.000000      NaN            NaN            NaN
+UNIVERSE                           common row set U (W2, appeared, finite)            universe 9022       100.000000           3158               35.003325      NaN            NaN            NaN
+
+========================================================================================================
+5. WHY THE INTERSECTIONS ARE WHAT THEY ARE
+========================================================================================================
+  A is a strict subset of B?  True   (A minus B = 0 rows)
+  B minus A = 313 rows; their fallback_level values:
+3.0    313
+  A: n_prior  min 1  median 2  max 2   |  prior5_minutes median 18.66
+  B: n_prior  min 0  median 1  max 2   |  prior5_minutes median 18.62
+  C: n_prior  min 0  median 19  max 39   |  prior5_minutes median 22.20
+
+  E1_I0034's REM definition requires >= 3 strictly-prior same-season appearances
+  AND a finite trailing-5.  The champion's fallback flag fires BELOW 3 priors.
+  Those two conditions are close to complementary BY CONSTRUCTION -- which is the
+  mechanism the intersection numbers above are measuring, not a coincidence.
+
+  wrote ROW_OVERLAP.csv, _universe.parquet, _s02.json

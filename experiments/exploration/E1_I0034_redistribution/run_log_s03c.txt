@@ -1,0 +1,59 @@
+﻿
+====================================================================================================
+S03c PROBE 3 (EXPLORATORY, DECLARED)
+====================================================================================================
+
+====================================================================================================
+1. THE PHANTOM DIAGNOSIS -- how the champion ranking gets contaminated
+====================================================================================================
+  pre-game top-8 by champion expected minutes: 11136 rows
+  of those, 682 (0.0612) have FEWER THAN 3 prior same-season appearances
+  their appearance rate: 0.8974  (vs 0.8976 for the rest)
+  their mean p_active_hat: 0.8158  mean min_hat: 21.6307
+
+====================================================================================================
+2. THRESHOLD SWEEP ON THE NEW, PHANTOM-FREE DEFINITION
+====================================================================================================
+ thresh  absence_games  noabs_games  mean_n_absent  mean_freed_min  mean_freed_fga  mean_freed_pts  mean_n_rem  remaining_rows
+     10            601          683       1.595674       33.489610       11.122407       12.998114    8.941764            5374
+     12            532          752       1.488722       34.383558       11.634023       13.752663    8.947368            4760
+     15            479          805       1.438413       35.217858       12.083855       14.479367    8.943633            4284
+     18            422          862       1.357820       35.397439       12.271564       14.892575    8.938389            3772
+     20            364          920       1.263736       35.084788       12.375687       15.029808    8.909341            3243
+     24            272         1012       1.191176       35.882157       12.859743       15.953860    8.834559            2403
+
+====================================================================================================
+3. THE ACCOUNTING -- where do the freed minutes actually go?  (thresh=15)
+====================================================================================================
+  absence team-games 479, no-absence 805
+
+                                   absence      no-absence     contrast
+  freed minutes (by construction)     35.2179      0.0000    +35.2179
+  gain of ESTABLISHED players who played   5.7854     -3.5049     +9.2903
+  minutes of UNESTABLISHED players     3.0974      4.2651     -1.1677
+  count of unestablished who played    0.2317      0.3019     -0.0701
+
+====================================================================================================
+4. THE MEAN-REVERSION CONTROL -- the same correlation on NO-ABSENCE games
+====================================================================================================
+channel    stratum    n  within_corr_delta_vs_base5  mean_delta
+minutes    ABSENCE 4284                   -0.185730    0.646869
+minutes NO-ABSENCE 7437                   -0.110576   -0.379381
+    fga    ABSENCE 4284                   -0.133975    0.228925
+    fga NO-ABSENCE 7437                   -0.127946   -0.137157
+    pts    ABSENCE 4284                   -0.164386    0.265760
+    pts NO-ABSENCE 7437                   -0.147198   -0.109717
+
+  READ: if the within-team-game correlation is EQUALLY negative in the no-absence
+  stratum, the 'big players absorb least' pattern of probe 2 is MEAN REVERSION in a
+  noisy trailing-5 and carries no absence information at all.
+
+====================================================================================================
+5. RAW TREATMENT CONTRAST PER CHANNEL, established remaining players only
+====================================================================================================
+channel  n_absence  n_noabs  mean_delta_absence  mean_delta_noabs  contrast       sd  mae_zero
+minutes       4284     7437            0.646869         -0.379381  1.026249 6.279896  4.813520
+    fga       4284     7437            0.228925         -0.137157  0.366082 3.323277  2.553086
+    pts       4284     7437            0.265760         -0.109717  0.375477 5.542432  4.197115
+
+  wrote _s03c_probe.json

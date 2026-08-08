@@ -1,0 +1,66 @@
+﻿================================================================================================
+T1  -- the fix reduces to the incumbent when the incumbent's assumptions all hold
+================================================================================================
+  [PASS] T1 identical on a signed sd with a multiplier bar    incumbent=0.0056793  fix=0.0056793
+
+================================================================================================
+T2  -- the folded recovery is exact on a symmetric null (Monte Carlo, 200 trials)
+================================================================================================
+  [PASS] T2 recovery relative error < 1% at every trial       median=0.00000  max=0.00002
+
+================================================================================================
+T3  -- the recovery is exact for a NON-normal but symmetric null (t_3 and uniform)
+================================================================================================
+  [PASS] T3 student_t3                                        rel err = 0.00000
+  [PASS] T3 uniform                                           rel err = 0.00000
+  [PASS] T3 laplace                                           rel err = 0.00000
+
+================================================================================================
+T4  -- THE REGIME WHERE THE RECOVERY IS WRONG, AND WHERE THE FIX MUST REFUSE
+================================================================================================
+  A degenerate permutation null sits away from zero.  E[t] != 0, so
+  sd(t) = sqrt(sd|t|^2 + mean|t|^2) is an UPPER BOUND, not the answer.
+    shift=2    ACCEPTED rel err = 1.237  <-- the recovery is WRONG here
+    shift=5    REFUSED  (DEGENERATE_NULL mean|t|/sd|t|=5.001 > 5.0 (symmetric reference 1.3236))
+    shift=10   REFUSED  (DEGENERATE_NULL mean|t|/sd|t|=10.012 > 5.0 (symmetric reference 1.3236))
+    shift=20   REFUSED  (DEGENERATE_NULL mean|t|/sd|t|=19.987 > 5.0 (symmetric reference 1.3236))
+    shift=50   REFUSED  (DEGENERATE_NULL mean|t|/sd|t|=49.857 > 5.0 (symmetric reference 1.3236))
+  [PASS] T4 the guard refuses every shift >= 5                refused 4 of 5; worst accepted error 1.237
+  FIX IS WORSE: at shift = 2 (mean|t|/sd|t| = 2.01) the guard lets it through and the
+  recovery overstates sd(t) by ~124%.  The incumbent, which ignores the issue entirely,
+  is not 'better' there -- it is wrong in a different direction -- but the fix does NOT
+  detect this regime and must not be described as safe in it.
+
+================================================================================================
+T5  -- HEAD TO HEAD ON THE 666 REAL CELLS: where is the fix WORSE?
+================================================================================================
+  cells where the fix REFUSES to produce a number: 73 of 666
+  reasons: {'DEGENERATE_NULL': 67, 'NULL_SD_NOT_POSITIVE_OR_NOT_FINITE': 6}
+  [PASS] T5 refusals == degenerate + zero-width nulls         refusals=73, degeneracy>5=67, zero-width=6
+  THE ZERO-WIDTH NULLS: 6 cells whose permutation null has sd(|t|) EXACTLY 0.
+    D103's published floor for them: max = 0  (a zero-width null gives a zero floor,
+     so every one is recorded as PERFECTLY POWERED).  blind as published: 0 of 6
+  FIX IS WORSE: it returns nan for 73 cells the incumbent happily scores.
+  Those 73 nans must NOT be swept into 'not blind' the way `mde80_fw > 0.0023` does
+  today -- a caller that ignores the reason string is worse off than with the incumbent.
+
+================================================================================================
+T6  -- the fix refuses on malformed input instead of returning a plausible number
+================================================================================================
+  [PASS] T6 both bars given -> nan + reason                   SPECIFY_EXACTLY_ONE_OF_bar_abs_OR_bar_in_sd
+  [PASS] T6 no bar given -> nan + reason                      SPECIFY_EXACTLY_ONE_OF_bar_abs_OR_bar_in_sd
+  [PASS] T6 negative sd -> nan + reason                       NULL_SD_NOT_POSITIVE_OR_NOT_FINITE
+  [PASS] T6 n = 0 -> nan + reason                             N_NOT_POSITIVE
+  [PASS] T6 folded without mean -> nan + reason               FOLDED_SD_REQUIRES_mean_abs
+  [PASS] T6 bad sd_kind -> nan + reason                       sd_kind_MUST_BE_signed_OR_folded
+
+================================================================================================
+SUMMARY: 13/13 checks passed
+REGIMES WHERE THE FIX IS WORSE THAN THE INCUMBENT (see DEFECTS.md D-5):
+  * mean|t|/sd|t| between ~1.5 and 5: the degeneracy guard does not fire but E[t] != 0,
+    so the recovered sd(t) is an over-estimate and the floor is over-stated.
+  * 73 real cells get nan instead of a number; any caller that treats nan as 'powered'
+    is strictly worse off than with the incumbent.
+RECOMMENDATION: adopt only together with a caller-side rule that nan == UNVERIFIABLE,
+  never nan == not-blind.  Without that rule this fix is NOT an improvement.
+================================================================================================

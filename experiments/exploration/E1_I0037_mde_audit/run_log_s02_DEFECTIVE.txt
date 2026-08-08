@@ -1,0 +1,60 @@
+﻿
+==================================================================================================
+PRE-COMMITTED ANALYTIC PREDICTION (PREREG P2), before any simulation is read
+==================================================================================================
+    nb=4     predicted true_MDE / (2.802*SE) = 15.796
+    nb=8     predicted true_MDE / (2.802*SE) = 1.628
+    nb=16    predicted true_MDE / (2.802*SE) = 1.221
+    nb=32    predicted true_MDE / (2.802*SE) = 1.096
+    nb=64    predicted true_MDE / (2.802*SE) = 1.045
+    nb=128   predicted true_MDE / (2.802*SE) = 1.022
+    nb=256   predicted true_MDE / (2.802*SE) = 1.011
+    nb=512   predicted true_MDE / (2.802*SE) = 1.005
+
+==================================================================================================
+A. SELF-CHECKS FIRST (PREREG S1-S4).  Assume broken until proven otherwise.
+==================================================================================================
+  S4 recovery (nb=512, gauss, icc=0, no effect in the observed vector):
+     type-I at planted 0        = 0.0000   [S1 band 0.0404-0.0596]  -> FAIL
+     power spans 0.000 -> 0.000    [S2 needs <0.15 and >0.90]      -> FAIL
+     E_inj / A_oracle           = inf   [S4 band 0.95-1.05]      -> FAIL
+     E_inj / A_ctr              = inf
+     sd_obs / sd_centred        = 1.0000   (no effect -> must be ~1)
+
+==================================================================================================
+A2. S3 GUARD -- does it catch E1_I0035's D-1 degenerate plant?
+==================================================================================================
+  constant plant (D-1's bug): sd/|mean| = 0.000000  -> GUARD FIRES (correct)
+  plant onto real noise     : sd/|mean| = 0.482362  -> guard silent (correct)
+  S3 GUARD DISCRIMINATES.
+
+==================================================================================================
+B. THE GRID
+==================================================================================================
+  arm FRESH  done  (648 conditions, 325s)
+  arm FLIP   done  (1296 conditions, 531s)
+  1304 conditions -> SIMULATION.csv   (534s)
+
+==================================================================================================
+C. SELF-CHECK SUMMARY OVER THE WHOLE GRID (reported whether or not it passes)
+==================================================================================================
+  Type-I rate at planted effect 0, over 1304 conditions:
+     min=0.0000  p25=0.0000  median=0.0000  p75=0.0475  max=0.0850
+     conditions inside the pre-committed band 0.0404-0.0596 : 309 of 1304 (23.7%)
+     conditions with type-I EXACTLY 0.0000 (degenerate)     : 737
+     conditions with type-I EXACTLY 1.0000 (degenerate)     : 0
+  S2 discrimination (power spans <0.15 to >0.90, monotone)  : 567 of 1304 pass
+  S3 non-degenerate plant                                   : 1304 of 1304 pass
+
+==================================================================================================
+D. THE RATIO DISTRIBUTION -- E_inj / A_obs  (the D-3 comparison)
+==================================================================================================
+  E_inj / A_obs   (programme's construction) n=567  min=0.675 p10=0.904 med=1.009 p90=1.126 max=1.485
+  E_inj / A_ctr   (proposed fix)             n=567  min=0.904 p10=0.983 med=1.042 p90=1.254 max=2.076
+  E_inj / A_oracle(known SE)                 n=567  min=0.931 p10=0.981 med=1.032 p90=1.187 max=1.399
+  sd_obs/sd_centred (the inflation itself)   n=1304 min=0.997 p10=1.000 med=1.000 p90=1.163 max=4.398
+
+==================================================================================================
+E. THE RATIO BY nb -- PREREG P2 said the bias depends on nb and (to first order) nothing else
+==================================================================================================
+ nb  conds  med_E_over_Aorc      p10  p90  med_typeI   med_neff  predicted_P2

@@ -1,0 +1,57 @@
+﻿================================================================================================
+T1  EFFECT-CARRYING GUARD
+================================================================================================
+     clean contamination = 1.0011    dirty contamination = 9.8419
+  [PASS] T1a guard SILENT on a clean null                           ratio 1.0011
+  [PASS] T1b guard FIRES on a contaminated null                     ratio 9.8419
+  [PASS] T1c the incumbent would have quoted the inflated floor     naive 0.52343 vs 0.05324
+================================================================================================
+T2  SIX-BLOCK GUARD  (p_min = 2^(1-nb))
+================================================================================================
+  [PASS] T2 fires at nb=3                                           p_min=0.2500
+  [PASS] T2 fires at nb=4                                           p_min=0.1250
+  [PASS] T2 fires at nb=5                                           p_min=0.0625
+  [PASS] T2 silent at nb=6                                          p_min=0.03125
+  [PASS] T2 silent at nb=12                                         p_min=0.00049
+  [PASS] T2 silent at nb=48                                         p_min=0.00000
+================================================================================================
+T3  INFINITE-MDE GUARD  (t_crit >= sqrt(nb))
+================================================================================================
+  [PASS] T3a fires: E1_I0023 as D103 tests it (nb=48, t_crit=6.974) sqrt(48)=6.928
+  [PASS] T3b silent: same cells at the per-cell threshold (nb=48, t_crit=1.645) 
+  [PASS] T3c silent just above the boundary (nb=60, t_crit=6.974)   sqrt(60)=7.746
+  [PASS] T3d mde80_signflip_closed returns inf with a reason, not a finite fiction INFINITE: t_crit=6.9740 >= sqrt(n_blocks)=6.9282. The rejection thresh
+================================================================================================
+T4  THE P-VALUE IS UNCHANGED  (the fix must not move any published p)
+================================================================================================
+  [PASS] T4 p and null_sd reproduce the incumbent exactly           worst |diff| = 0.000e+00 over 4 cells
+================================================================================================
+T5  CENTRING FOR THE P-VALUE IS DEGENERATE  (E1_I0035 D-2)
+================================================================================================
+  [PASS] T5a centring the vector gives p = 1.0000 exactly (the D-2 bug) p_centred = 1.000000
+  [PASS] T5b the replacement does NOT centre for the p-value        p = 0.0003
+  [PASS] T5c but it DOES use the centred sd for the MDE             0.024138 < 0.047747
+================================================================================================
+T6  CALIBRATION AGAINST A SIMULATED POWER CURVE
+================================================================================================
+     nb    empirical   EXACT       CLOSED      INCUMBENT   exact    closed   incumb  
+     8     0.19231     0.27133     0.26323     0.16173     0.411    0.369    0.159   
+     16    0.11898     0.16318     0.13378     0.10958     0.371    0.124    0.079   
+     32    0.08424     0.07821     0.08455     0.07711     0.072    0.004    0.085   
+     64    0.05586     0.05865     0.05779     0.05528     0.050    0.035    0.010   
+     256   0.02744     0.02758     0.02713     0.02683     0.005    0.012    0.022   
+  [PASS] T6a the EXACT mde80 is within 15% of the simulated crossing at nb >= 32 
+  [PASS] T6b the CLOSED FORM is NOT, at small nb -- it over-corrects (documented limitation) which is why mde80_signflip_exact is the one to quote
+  [PASS] T6c the INCUMBENT under-states by >=10% at nb<=16 (this is the defect) worst incumbent error at nb<=16 = 0.159
+  [PASS] T6d BELOW 32 BLOCKS the exact solver WARNS that no estimate is stable there the honest answer at nb<=16 is 'this design has no reliable floor'
+================================================================================================
+T7  LARGE-BLOCK LIMIT RECOVERS THE INCUMBENT CONSTANT
+================================================================================================
+  [PASS] T7 mde80_signflip_closed -> 2.8016 * sd as nb -> inf       2.801662 vs 2.801585
+================================================================================================
+T8  THE GUARDS ARE NOT VACUOUS
+================================================================================================
+  [PASS] T8 every guard has both a firing and a silent case above   13 guard assertions exercised
+================================================================================================
+  23 passed, 0 FAILED
+================================================================================================

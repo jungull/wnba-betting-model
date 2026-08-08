@@ -1,0 +1,97 @@
+﻿
+====================================================================================================
+A. PREREG §2 RESIDUAL RISK -- read the one unparsable D103 script literally
+====================================================================================================
+  experiments\exploration\E1_I0026_detection_floor\scripts\s06b_ns.py  (597 chars)
+  import pandas as pd, json, os
+  E=r"C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration"
+  for rel in [r"E0_I0014_residual_heterogeneity\analysis_frame.parquet",
+              r"E0_I0019_availability_forecast\analysis_frame.parquet"]:
+      p=os.path.join(E,rel)
+      d=pd.read_parquet(p)
+      print(rel, d.shape)
+      for c in ("season","game_date","player_id","team_id","opp_team_id","game_id"):
+          if c in d.columns:
+              try: print("   ",c, d[c].nunique(), sorted(d[c].unique())[:6] if c=="season" else "")
+              except Exception: pass
+  -> contains a validation of the t-scale conversion: NO
+
+====================================================================================================
+B. THE 666 CELLS -- published floor, and three corrected floors
+====================================================================================================
+  each screen's OWN published family-wise bar (q95 of its max|t| null):
+    E0_I0014 (348 cells, 1000 draws) = 29.1266
+    E0_I0019 (318 cells, 1000 draws) = 8.6767
+  Sidak-normal bar for K INDEPENDENT two-sided cells, in sd(t) units:
+    K=348 -> 3.7954 sd     K=318 -> 3.7730 sd
+    (s03b measured the same quantity by simulation: median 3.67-3.79 sd)
+
+  CHECK -- my reconstruction of D103's own mde80_fw for all 666 cells:
+    max abs diff = 9.975e-17   max relative diff = 1.067e-13
+    REPRODUCED to 1e-9 relative -- the corrections below are applied to the real thing.
+
+  as published                                    median floor by screen:
+     E0_I0014                           0.00283825   blind(>0.0023): 203 / 348
+     E0_I0019                           0.00591901   blind(>0.0023): 315 / 318
+
+  R-A: fold fixed, D103's t_crit kept             median floor by screen:
+     E0_I0014                           0.0137648   blind(>0.0023): 329 / 348
+     E0_I0019                           0.00591901   blind(>0.0023): 315 / 318
+
+  R-B: the screen's OWN family-wise bar           median floor by screen:
+     E0_I0014                           0.0677835   blind(>0.0023): 348 / 348
+     E0_I0019                           0.00546226   blind(>0.0023): 318 / 318
+
+  R-C: Sidak-normal bar for K independent cells   median floor by screen:
+     E0_I0014                           0.00522293   blind(>0.0023): 231 / 348
+     E0_I0019                           0.00206321   blind(>0.0023): 140 / 318
+
+====================================================================================================
+C. C4 -- DEGENERATE NULLS (the shuffle barely moves the statistic)
+====================================================================================================
+  reference: for ANY symmetric null, mean(|t|)/sd(|t|) ~ 1.32 (exactly 1.3236 if normal).
+  E0_I0019's own criterion for a degenerate null is |mean|/sd > 5 (s05:56-58).
+
+  E0_I0014_residual_heterogeneity  (n=342)
+    ratio: min=1.208 p50=1.485 p90=10.678 p99=5215499117339653.000 max=8.26e+15
+    cells with ratio > 3   : 97 (28.4%)
+    cells with ratio > 5   : 66 (19.3%)
+    cells with ratio > 10  : 36 (10.5%)
+
+  E0_I0019_availability_forecast  (n=318)
+    ratio: min=0.000 p50=0.086 p90=1.463 p99=3.735 max=5.01
+    cells with ratio > 3   : 12 (3.8%)
+    cells with ratio > 5   : 1 (0.3%)
+    cells with ratio > 10  : 0 (0.0%)
+
+  DEGENERATE cells and what D103 recorded for them:
+    total degenerate: 67 of 666
+    of these, D103's published floor put them BELOW the 0.0023 lead (i.e. counted as
+    ADEQUATELY POWERED): 29
+    their published floors: median=0.00259  min=1.02e-62
+
+====================================================================================================
+D. THE RESTATED D103 BLIND COUNT
+====================================================================================================
+  as published: 760 / 1349 = 0.5633802816901409
+  published (control -- must reproduce 760)     760 / 1349 = 0.5634   (+0 cells, +0.00 pp)
+  R-A  fold fixed only                          886 / 1349 = 0.6568   (+126 cells, +9.34 pp)
+  R-B  screen's own family-wise bar             908 / 1349 = 0.6731   (+148 cells, +10.97 pp)
+  R-C  Sidak-normal bar                         613 / 1349 = 0.4544   (-147 cells, -10.90 pp)
+
+====================================================================================================
+E. THE TWO STRUCTURAL GATES FROM E1_I0037, ACROSS THE 666 CELLS
+====================================================================================================
+  block counts in the family: {475: 246, 489: 228, 36: 102, 1486: 90}
+  GATE A -- fewer than six blocks       : 0 of 666 cells
+  GATE B -- t_crit >= sqrt(n_blocks)    : 102 of 666 cells
+    of which, by screen: {'E0_I0014_residual_heterogeneity': 102}
+
+  APPLICABILITY (decided by measurement, not assertion):
+    Gate A: NOT applicable -- sign-flip identity p_min=2^(1-nb) does not hold for a permutation null; here p_min = 1/(R+1) = 1/1001
+    Gate B: NOT applicable -- requires sd(null) to grow with the planted effect; s03 S5 measured sd(delta=0.3)/sd(0) = 1.0001 (p10 0.9987, p90 1.0030) -- flat
+
+  The applicable analogue for this family is C4 (degenerate permutation nulls):
+    67 of 666 cells, 29 of them recorded by D103 as adequately powered.
+
+wrote TSTAT_CELL_FLOORS.csv, STRUCTURAL_GATES.csv, _s04.json

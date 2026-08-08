@@ -1,0 +1,87 @@
+﻿
+====================================================================================================
+A. THE FAMILY-WISE t_crit VALUES D103 ACTUALLY PASSED TO mde80_tscale
+====================================================================================================
+           arm   K  q95_maxt  q95_maxt_lo  q95_maxt_hi  extrapolated_beyond_real_family  real_family_size
+     N1_within   1  1.999254     1.871631     2.124601                            False               154
+     N1_within  18  4.974338     4.787932     5.177934                            False               154
+     N1_within  39  5.695987     5.471366     5.930189                            False               154
+     N1_within  44  5.833238     5.578416     6.037815                            False               154
+     N1_within 132  6.606554     6.529168     6.715323                            False               154
+     N1_within 154  6.726313     6.726313     6.726313                            False               154
+     N1_within 250  6.535049     6.475072     6.715320                             True               154
+     N1_within 318  6.606554     6.529168     6.726313                             True               154
+     N1_within 348  6.686212     6.532632     6.726313                             True               154
+N2_entity_swap   1  2.002969     1.838332     2.149933                            False               154
+N2_entity_swap  18  5.065915     4.912934     5.267160                            False               154
+N2_entity_swap  39  5.748932     5.513126     5.931908                            False               154
+N2_entity_swap  44  5.866628     5.616742     6.006876                            False               154
+N2_entity_swap 132  6.974475     6.902519     7.008328                            False               154
+N2_entity_swap 154  7.008328     7.008328     7.008328                            False               154
+N2_entity_swap 250  6.964094     6.849388     6.975527                             True               154
+N2_entity_swap 318  6.974475     6.907124     7.008328                             True               154
+N2_entity_swap 348  6.974475     6.907124     7.008328                             True               154
+
+  E0_I0014 (K=348, N1_within)      t_crit = 6.686212
+  E0_I0019 (K=318, N2_entity_swap) t_crit = 6.974475
+  These are q95 of max over K of (dR2 - mu)/sd  -- a standardised DELTA-R^2 statistic
+  (s04_power.py:70-72), i.e. a RIGHT-SKEWED chi-square-like quantity, not a t.
+
+====================================================================================================
+B. EACH SCREEN'S OWN FAMILY-WISE max|t| NULL -- the like-for-like t-scale threshold
+====================================================================================================
+  E0_I0014 maxt_null_draws_whole_screen.csv cols=['maxt_correct_level', 'maxt_correct_level_absres_family', 'maxt_between_block', 'maxt_within_block', 'maxt_row_naive'] rows=1000
+    columns available: ['maxt_correct_level', 'maxt_correct_level_absres_family', 'maxt_between_block', 'maxt_within_block', 'maxt_row_naive']
+    maxt_correct_level           n=1000  mean=27.5776  q95=29.1266  max=30.3158
+    maxt_correct_level_absres_family n=1000  mean=27.5776  q95=29.1266  max=30.3158
+    maxt_between_block           n=1000  mean=21.6771  q95=23.4302  max=24.8853
+    maxt_within_block            n=1000  mean=36.2119  q95=36.9379  max=37.8514
+    maxt_row_naive               n=1000  mean=2.9154  q95=3.7295  max=5.7462
+
+  E0_I0019 maxt_null_draws.csv cols=['draw', 'maxt_correct_level', 'maxt_row_NAIVE'] rows=1000
+    draw                         n=1000  mean=499.5000  q95=949.0500  max=999.0000
+    maxt_correct_level           n=1000  mean=6.9864  q95=8.6767  max=11.4213
+    maxt_row_NAIVE               n=1000  mean=2.9345  q95=3.7160  max=4.6831
+
+====================================================================================================
+C. THE FOLDED-sd CORRECTION, RECOVERED EXACTLY FROM E0_I0014'S OWN SAVED DRAWS
+====================================================================================================
+  If the signed null t has mean 0 then  E[t^2] = E[|t|^2] = var(|t|) + mean(|t|)^2,
+  so  sd(t) = sqrt( sd(|t|)^2 + mean(|t|)^2 )  EXACTLY -- no normality assumed.
+  cells recovered: 348
+  fold factor on sd   : min=1.5678 p10=1.6481 median=1.7903 p90=10.7244 max=8259366240873717.0000
+  fold factor on MDE  : median=3.2052  (MDE scales as sd^2)
+  half-normal reference (t exactly N(0,s)): sd factor 1.658855, MDE factor 2.752110
+
+  CROSS-CHECK  |recomputed sd(|t|) - published null_correct_sd|:
+    matched 348 cells, max abs diff = 2.220e-16, median = 0.000e+00
+
+====================================================================================================
+D. E0_I0019 -- is nullsd_between ever missing, and what does D103 then record?
+====================================================================================================
+  rows=318  nullsd_between NaN: 0  n NaN: 0
+  scheme_between value counts: {'player_between': 228, 'teamgame_between': 90}
+  D103 rows for E0_I0019: 318   mde80_fw NaN: 0
+  D103 rows for E0_I0014: 348   mde80_fw NaN: 0
+
+====================================================================================================
+E. BLOCK / CLUSTER COUNTS actually used by the two screens
+====================================================================================================
+  [E0_I0014] PLAYER blocks (season,player_id): 475   TEAM blocks (season,team_id): 36
+  [E0_I0014] candidates whose variance is mostly BETWEEN blocks: 23 / 58
+  [E0_I0019] blocks: player-season=489  team-game=1486  team-season=36
+
+  E0_I0019 grouping_levels.csv cols: ['candidate', 'family', 'status', 'recommended', 'row_null_anticonservative', 'var_share_between_primary_block', 'scheme_primary', 'scheme_secondary', 'secondary_is_identity']
+             candidate             family                                                status   recommended  row_null_anticonservative  var_share_between_primary_block scheme_primary scheme_secondary  secondary_is_identity
+         pl_opps_prior A_depth_experience NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE           NaN                       True                         0.093425 player_between    player_within                  False
+        pl_games_prior A_depth_experience NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE           NaN                       True                         0.263061 player_between    player_within                  False
+pl_prior_rate_inseason A_depth_experience NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE           NaN                       True                         0.808743 player_between    player_within                  False
+  pl_career_opps_prior A_depth_experience NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE           NaN                       True                         0.919297 player_between    player_within                  False
+ pl_career_games_prior A_depth_experience NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE           NaN                       True                         0.934861 player_between    player_within                  False
+  pl_prior_rate_career A_depth_experience NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE           NaN                       True                         0.893548 player_between    player_within                  False
+ pl_prior_season_games A_depth_experience                                   COARSER_LEVEL_FOUND player_season                      False                         1.000000 player_between    player_within                   True
+   pl_is_rookie_window A_depth_experience                                   COARSER_LEVEL_FOUND player_season                      False                         1.000000 player_between    player_within                   True
+    var_share_between_primary_block          min=0.0 median=0.8 max=1.0
+
+wrote _s02_probe.json, _fold_factors_E0_I0014.csv
+DONE s02 probe

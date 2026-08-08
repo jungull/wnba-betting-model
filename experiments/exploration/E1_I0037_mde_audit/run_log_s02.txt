@@ -1,0 +1,132 @@
+﻿
+==================================================================================================
+PRE-COMMITTED ANALYTIC PREDICTION (PREREG P2), before any simulation is read
+==================================================================================================
+    nb=4     predicted true_MDE / (2.802*SE) = 15.796
+    nb=8     predicted true_MDE / (2.802*SE) = 1.628
+    nb=16    predicted true_MDE / (2.802*SE) = 1.221
+    nb=32    predicted true_MDE / (2.802*SE) = 1.096
+    nb=64    predicted true_MDE / (2.802*SE) = 1.045
+    nb=128   predicted true_MDE / (2.802*SE) = 1.022
+    nb=256   predicted true_MDE / (2.802*SE) = 1.011
+    nb=512   predicted true_MDE / (2.802*SE) = 1.005
+
+==================================================================================================
+A. SELF-CHECKS FIRST (PREREG S1-S4).  Assume broken until proven otherwise.
+==================================================================================================
+  S4 recovery (nb=512, gauss, icc=0, no effect in the observed vector):
+     type-I at planted 0        = 0.0600   [S1 band 0.0404-0.0596]  -> FAIL
+     power spans 0.060 -> 1.000    [S2 needs <0.15 and >0.90]      -> PASS
+     E_inj / A_oracle           = 0.9604   [S4 band 0.95-1.05]      -> PASS
+     E_inj / A_ctr              = 1.0062
+     sd_obs / sd_centred        = 0.9999   (no effect -> must be ~1)
+
+==================================================================================================
+A2. S3 GUARD -- does it catch E1_I0035's D-1 degenerate plant?
+==================================================================================================
+  constant plant (D-1's bug): sd/|mean| = 0.000000  -> GUARD FIRES (correct)
+  plant onto real noise     : sd/|mean| = 0.482362  -> guard silent (correct)
+  S3 GUARD DISCRIMINATES.
+
+==================================================================================================
+B. THE GRID
+==================================================================================================
+  arm FRESH  done  (648 conditions, 278s)
+  arm FLIP   done  (1296 conditions, 523s)
+  1304 conditions -> SIMULATION.csv   (527s)
+
+==================================================================================================
+C. SELF-CHECK SUMMARY OVER THE WHOLE GRID (reported whether or not it passes)
+==================================================================================================
+  Type-I rate at planted effect 0, over 1304 conditions:
+     min=0.0000  p25=0.0375  median=0.0475  p75=0.0550  max=0.0900
+     conditions inside the pre-committed band 0.0404-0.0596 : 622 of 1304 (47.7%)
+     conditions with type-I EXACTLY 0.0000 (degenerate)     : 162
+     conditions with type-I EXACTLY 1.0000 (degenerate)     : 0
+  S2 discrimination (power spans <0.15 to >0.90, monotone)  : 1141 of 1304 pass
+  S3 non-degenerate plant                                   : 1304 of 1304 pass
+
+==================================================================================================
+D. THE RATIO DISTRIBUTION -- E_inj / A_obs  (the D-3 comparison)
+==================================================================================================
+  E_inj / A_obs   (programme's construction) n=1141 min=0.553 p10=0.877 med=1.006 p90=1.173 max=2.319
+  E_inj / A_ctr   (proposed fix)             n=1141 min=0.632 p10=0.951 med=1.038 p90=1.279 max=3.178
+  E_inj / A_oracle(known SE)                 n=1141 min=0.854 p10=0.973 med=1.029 p90=1.188 max=1.397
+  sd_obs/sd_centred (the inflation itself)   n=1304 min=0.997 p10=1.000 med=1.019 p90=1.407 max=14.416
+
+==================================================================================================
+E. THE RATIO BY nb -- PREREG P2 said the bias depends on nb and (to first order) nothing else
+==================================================================================================
+ nb  conds  med_E_over_Aorc      p10      p90  med_typeI   med_neff  predicted_P2
+  4     54              inf      NaN      NaN    0.00000   2.090515     15.796245
+  8     54         1.222531 1.161582 1.270931    0.04500   3.686995      1.627631
+ 16     54         1.076090 1.035683 1.127633    0.05250   6.752160      1.220902
+ 32     54         1.027833 0.974346 1.072943    0.05000  10.830469      1.096499
+ 64     54         1.014616 0.969573 1.051227    0.04875  22.607238      1.045409
+128     54         1.002463 0.968450 1.053677    0.04750  42.199156      1.022058
+256     54         1.008355 0.972903 1.052905    0.04750  84.251360      1.010875
+512     54         0.996427 0.959696 1.043983    0.05250 165.917807      1.005400
+
+==================================================================================================
+F. DOES THE OBSERVED EFFECT SIZE FLIP THE APPARENT DIRECTION?  (PREREG P3)
+==================================================================================================
+ obs_effect_u  conds  med_E_over_Aobs      p10  p90  med_inflation  pct_apparently_conservative
+          0.0    432         1.036694 0.943606  NaN       1.003491                     0.293981
+          1.0    440         1.041416 0.941089  NaN       1.009475                     0.306818
+          3.0    432         0.969520 0.819808  NaN       1.094292                     0.641204
+
+==================================================================================================
+G. FRESH vs FLIP  (PREREG S5 -- the coordinator's amended-protocol check)
+==================================================================================================
+  arm  conds  med_E_over_Aobs  med_E_over_Aorc  med_typeI
+ FLIP    648         1.017222         1.043103     0.0450
+FRESH    648         1.019239         1.033872     0.0475
+
+arm      FLIP     FRESH  FLIP/FRESH
+nb                                 
+4         inf       inf         NaN
+8    1.218340  1.221088    0.997750
+16   1.091490  1.069386    1.020669
+32   1.033110  1.021729    1.011139
+64   1.021212  1.001813    1.019364
+128  1.015202  1.004658    1.010495
+256  1.010866  1.004107    1.006731
+512  1.005369  0.991651    1.013833
+
+==================================================================================================
+H. DOES sigma MATTER?  (PREREG P2 said no)
+==================================================================================================
+ nb  sigma  se_true     A_obs    E_inj  ratio_E_over_A_oracle
+  4    1.0 0.123319  0.504006      inf                    inf
+  4   25.0 3.317327 13.531366      inf                    inf
+  8    1.0 0.089661  0.260050 0.302451               1.204057
+  8   25.0 2.116277  7.957213 7.882939               1.329572
+ 16    1.0 0.059279  0.111366 0.188258               1.133576
+ 16   25.0 1.674066  6.616341 4.813787               1.026385
+ 32    1.0 0.044097  0.167873 0.127110               1.028888
+ 32   25.0 1.085305  2.532713 3.237646               1.064814
+ 64    1.0 0.031793  0.089452 0.085892               0.964308
+ 64   25.0 0.776555  2.240683 2.234797               1.027216
+128    1.0 0.022165  0.070768 0.064385               1.036831
+128   25.0 0.568665  1.461620 1.578827               0.991001
+256    1.0 0.015863  0.045233 0.045878               1.032297
+256   25.0 0.395787  1.043572 1.085387               0.978857
+512    1.0 0.011205  0.030639 0.031767               1.011974
+512   25.0 0.276184  0.710394 0.789308               1.020103
+
+==================================================================================================
+I. GRID COARSENESS (PREREG P4d) -- floor80 returns a GRID POINT, not the crossing
+==================================================================================================
+  E_inj(first grid point) / E_inj(interpolated):  med=1.040 p90=1.075 max=1.084
+
+==================================================================================================
+J. THE null_mean > observed DIAGNOSTIC (coordinator's cheap universal flag)
+==================================================================================================
+  For a paired block SIGN-FLIP null the draws are +/- a fixed set of block sums, so
+  E[draws] = 0 EXACTLY by construction, independent of the effect.  Measured over the
+  grid, the null mean is 0 to Monte-Carlo error in every condition.
+  -> the diagnostic is STRUCTURALLY VACUOUS on this family.  It polices permutation
+     nulls (where the effect can be absorbed into the null mean); it CANNOT police
+     sign-flip nulls, which is the family this audit is about.
+
+DONE s02  (527s)

@@ -1,0 +1,71 @@
+﻿
+==================================================================================================
+A. CENSUS -- every quoted power figure, classified by arithmetic fingerprint
+==================================================================================================
+  FINDINGS.json files found: 47
+  census rows: 2368
+
+                                                      figures  screens
+classification                                                        
+ANALYTIC_(1.645+z80)xSD_on_EFFECT_CARRYING_SIGNFLIP       120        1
+ANALYTIC_2.800xSD                                          95        2
+ANALYTIC_2.8016xSD                                         17        1
+ANALYTIC_CLOSED_FORM_on_PERMUTATION_null                 1189        4
+ANALYTIC_CLOSED_FORM_on_PERMUTATION_null_UNVALIDATED      666        2
+INJECTION_OR_OTHER                                        281       13
+
+  by screen (analytic-on-effect-carrying-null only):
+screen                              classification                                     
+E1_I0023_usage_defence_interaction  ANALYTIC_(1.645+z80)xSD_on_EFFECT_CARRYING_SIGNFLIP    120
+E1_I0033_aggregation_level          ANALYTIC_2.800xSD                                       24
+E1_I0034_redistribution             ANALYTIC_2.800xSD                                       71
+E1_I0035_availability_sum           ANALYTIC_2.8016xSD                                      17
+
+==================================================================================================
+B. D103 EXPOSURE -- how much does the 56.3% move?
+==================================================================================================
+  published: 1349 cells, 760 blind (0.5634)
+
+  the EFFECT-CARRYING family (E1_I0023, stat_family='paired'):
+     unique cells                 : 30 of 1349  (2.22%)
+     currently counted blind      : 24
+     cluster counts (n_clusters)  : min=48.0 med=48.0 max=48.0
+     family-wise t_crit used      : 6.974 (N2_entity_swap, K=132 grid point)
+
+  CORRECTION H_A (remove the effect contamination from null_sd).
+     Direction: contamination INFLATES the quoted floor, so removing it makes floors
+     SMALLER and cells LESS blind.  Magnitude on the two real cells I measured:
+        E1_I0035 team Xb   contamination 2.435  -> floor falls 4.595 -> 1.887
+        E1_I0035 player Xa contamination 1.003  -> floor essentially unchanged
+     E1_I0023's cells are not in my scope to recompute (I do not hold its loss vectors),
+     so H_A's correction factor for D103 is bounded, not point-estimated:
+        contamination in [1.00, 2.44] -> paired floors currently OVERSTATED by up to 2.4x
+
+  CORRECTION H_B (block-count miscalibration of the rule).
+     H_B factor over the 30 paired cells: min=inf med=inf max=inf  (n_clusters min=48 med=48)
+     blind BEFORE H_B: 24 of 30      blind AFTER H_B: 30 of 30
+
+  WHOLE-AUDIT EFFECT OF H_B ALONE:
+     published : 760 of 1349 blind = 0.5634 (56.3%)
+     H_B-corr  : 766 of 1349 blind = 0.5678
+     movement  : +6 cells, +0.44 percentage points
+
+==================================================================================================
+C. THE UNQUANTIFIED EXPOSURE -- what I could NOT bound
+==================================================================================================
+  1. stat_family='t_statistic' -- 666 of 1349 cells (49.4%), E0_I0014 and E0_I0019.
+     Its formula MDE80 = ((t_crit + z80) * sd_t)^2 / n was NEVER validated against the
+     simulated power surface -- s06's validate() reads s04_mde_table.csv, which contains
+     only 'increment' cells.  These 666 cells carry 518 of the 760 blind verdicts, i.e.
+     68.2% of the entire blind count rests on an unvalidated conversion.
+     THIS IS A LARGER EXPOSURE THAN THE ONE I WAS SENT TO AUDIT, and I have not
+     quantified it.  It is a different defect (a scale conversion, not an effect-carrying
+     null) and needs its own screen.
+
+  2. E1_I0033's 30+ quoted floors are all 2.800 x null_sd on a paired block sign-flip at
+     team-season with 36 blocks.  At nb=36 the H_B factor is 1.085 -- small.  But two of
+     its cells (P02 'significant AND underpowered', s10 'floor 0.00584') have near-zero
+     observed effects, so H_A does not rescue them and H_B raises their floors ~9%%.
+     Direction: those two verdicts get MORE underpowered, not less.
+
+DONE s04

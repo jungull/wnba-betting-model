@@ -1,0 +1,40 @@
+﻿prereg sha256 9ff719757ee33742d590ea20b5ea4b8ca63171f8d9c48843c84463e9a60bdacd  MATCH
+
+========================================================================================================
+1. FIT FRAME -- 2021-2024 regular-season appeared rows.  W2 is SCORED; 2021-2022 TRAIN ONLY
+========================================================================================================
+  ALLOWLIST PLAYER_KEEP      resolved 23/23: ['row_uid', 'season', 'game_id', 'team_id', 'player_id', 'game_date', 'appeared', 'minutes', 'pts', 'fga', 'min_hat', 'pts_hat', 'fga_hat', 'is_fallback', 'fallback_level', 'is_cold_start', 'n_prior_games', 'base5_minutes', 'base5_pts', 'base5_fga', 'nprior_minutes', 'nprior_pts', 'nprior_fga']
+  PARTITION OK  player_all             seasons=[2021, 2022, 2023, 2024] n=26574
+  fit frame rows 16566 ; by season:
+season
+2021    3479
+2022    4065
+2023    4520
+2024    4502
+  PARTITION OK  pall_rs                seasons=[2021, 2022, 2023, 2024] n=24696
+  team-games 1776 ; freed>0 in 0.6346
+  ALLOWLIST TIER_KEEP_A      resolved 3/3: ['row_uid', 'depth_bucket', 'draft_bucket']
+  ALLOWLIST WORK_KEEP_B      resolved 6/6: ['season', 'player_id', 'game_id', 'team_id', 'e_full_pts', 'e_full_minutes']
+  PARTITION OK  fit_frame_final        seasons=[2021, 2022, 2023, 2024] n=16566
+
+  SCORED (W2) rows in fit frame: 9022   (this is U)
+    TA on U: 632
+    TB on U: 945
+    TC on U: 2475
+  ANCHOR A8-pre  established & freed>=25 on U                 want 2475                   got 2475                   |d|=0.000e+00  EXACT
+  wrote _fit.parquet  (16566 rows, 47 cols)
+
+========================================================================================================
+2. WALK-FORWARD MACHINERY -- fitted on STRICTLY EARLIER seasons only
+========================================================================================================
+
+========================================================================================================
+3. ANCHOR A8 -- reproduce E1_I0034's P04 minutes cell on E1_I0034's OWN row set
+========================================================================================================
+  n on the >=25 stratum: 2475
+  MAE(M0') 5.101386713527127   MAE(M1') 5.008694067293478   dMAE 0.092692646233649
+  ANCHOR A8a E1_I0034 P04 minutes n                           want 2475                   got 2475                   |d|=0.000e+00  EXACT
+  ANCHOR A8b E1_I0034 P04 minutes MAE(M0')                    want 5.101386713527127      got 5.101386713527127      |d|=0.000e+00  EXACT
+  ANCHOR A8c E1_I0034 P04 minutes dMAE                        want 0.09269264623364977    got 0.09269264623364926    |d|=5.135e-16  OK
+
+  A8 REPRODUCED.  The C machinery in this screen is byte-compatible with D116's.

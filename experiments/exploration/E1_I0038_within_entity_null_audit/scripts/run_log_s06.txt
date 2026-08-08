@@ -1,0 +1,163 @@
+
+====================================================================================================
+GATE -- ANCHOR A2: D097's OWN RECORDED CYCLIC NULL MEAN, READ FROM ITS OWN BYTES
+====================================================================================================
+  key                         = POOLED|y_oreb|B_COMPLETE|R08_player_ra_share
+  draws                       = 600
+  mean of D097's own draws    = 0.0078802401
+  PREREG A2 target            = 0.0078802000
+  |diff|                      = 4.012e-08
+  D097's recorded observed dR2= 0.0064880000
+  null_mean > observed ?        True   (ratio 1.2146x)
+  >>> A2 REPRODUCED.  The flag was sitting in D097's own permutation_draws.npz all along.
+
+====================================================================================================
+GATE -- ANCHOR A1: reproduce D097's dR2 = 0.006488 on exactly 13,784 rows
+====================================================================================================
+  A_PARTITION ok E0_I0024/screen_frame: seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  RESOLVED B_COMPLETE(y_oreb) (10): ['ref_mean__y_oreb', 'ref_ewma__y_oreb', 'ref_trail5__y_oreb', 'ref_rate_x_min__y_oreb', 'ref_mean_minutes', 'ref_trail5_minutes', 'ref_pct__y_oreb', 'ref_mean_pace', 'n_prior', 'is_home']
+  rows = 13784  (D097 recorded 13784)
+  A_REF_COVERAGE ok: all 10 base columns cover all 13784 rows (D087 guard)
+  fast dR2 (Frisch-Waugh) = 0.0064881160
+  literal two-fit dR2     = 0.0064881160    |diff| = 8.934e-17
+  D097 recorded           = 0.0064880000    |diff| = 1.160e-07
+  >>> A1 REPRODUCED.  Both gates passed; the demonstration may proceed.
+
+====================================================================================================
+BUILD THE TWO NULLS (R = 601 draws each)
+====================================================================================================
+  N_CYCLIC  p=0.996678  null_mean=7.9343e-03  null_sd=6.1022e-04  flag_null_mean>obs=True
+  N_PSWAP   p=0.001661  null_mean=7.0576e-05  null_sd=1.0220e-04  flag_null_mean>obs=False
+
+====================================================================================================
+R1 -- D108's ORIGINAL INJECTION PROTOCOL ON N_CYCLIC (must CERTIFY for D-04 to hold)
+====================================================================================================
+   delta                    benchmark  achieved_dr2_med    power  nrep
+0.000000                 TYPE-I CHECK          0.000026 0.066667    60
+0.000129    D084 opp conversion, DEAD          0.000129 0.116667    60
+0.000500               (intermediate)          0.000500 0.350000    60
+0.001127          D079 shot mix, DEAD          0.001127 0.650000    60
+0.002057 D089 largest measured, ALIVE          0.002057 0.933333    60
+
+  power @ 0.002057 = 0.93   type-I @ 0 = 0.07   MDE80 (injection-verified) = 1.6194e-03
+  >>> ORIGINAL PROTOCOL VERDICT ON N_CYCLIC: CERTIFIED
+      (E1_I0036 reported power 0.95 at 100 replicates; this is 60 replicates)
+
+====================================================================================================
+R2 -- THE MECHANISM: DOES SHUFFLING RESIDUALS DESTROY THE RESPONSE'S ENTITY STRUCTURE?
+====================================================================================================
+  D-04's stated cause: the synthetic response y0 = fitted + shuffle(resid) loses the
+  BETWEEN-ENTITY structure that N_CYCLIC fails to destroy in the CARRIER, so the test
+  and the real candidate exercise different structures.  Measured directly:
+  var share BETWEEN player-season, REAL response y            = 0.3304
+  var share BETWEEN player-season, base FITTED values         = 0.8416
+  var share BETWEEN player-season, SYNTHETIC y0 (60 draws)    = 0.2437 +/- 0.0051
+  var share BETWEEN player-season, REAL residual e            = 0.0396
+  var share BETWEEN player-season, SHUFFLED residual (60)     = 0.0337 +/- 0.0023
+
+  >>> the RESIDUAL's between-entity share collapses by 1.17x under the shuffle.
+      That residual is the ONLY part of the synthetic response a planted effect has to
+      compete against, so the original protocol hands N_CYCLIC an easier problem than
+      the real one.  D-04's stated mechanism is CONFIRMED / REFUTED below.
+      MECHANISM CONFIRMED: False
+
+====================================================================================================
+R3 / R4 -- THE AMENDED PROTOCOL (PREREG 6.4), COMPONENT-WISE
+====================================================================================================
+  carrier decomposition at player_season:
+    var share BETWEEN            = 0.8762
+    dR2 from BETWEEN component   = 9.829210e-03
+    dR2 from WITHIN component    = 4.809007e-04
+
+---- AMENDED on N_CYCLIC ----
+planted_along  BETWEEN      FULL    WITHIN
+delta                                     
+0.000000           0.0  0.116667  0.150000
+0.000129           0.0  0.133333  0.600000
+0.000500           0.0  0.383333  0.983333
+0.001127           0.0  0.700000  1.000000
+0.002057           0.0  0.800000  1.000000
+    w_between                            = 0.9533563919206178
+    dominant_component                   = BETWEEN
+    power_full_at_best_live              = 0.8
+    power_dominant_at_best_live          = 0.0
+    type_I_at_zero                       = 0.11666666666666667
+    mde80_injection_verified_full        = 0.002057
+    mde80_injection_verified_dominant    = inf
+    ORIGINAL_VERDICT                     = REJECTED
+    AMENDED_VERDICT                      = VOID_FOR_THIS_CANDIDATE
+    FLAG_NULL_MEAN_GT_OBSERVED           = True  (null_mean 7.9343e-03 vs observed 6.4881e-03)
+
+---- AMENDED on N_PSWAP ----
+planted_along   BETWEEN      FULL    WITHIN
+delta                                      
+0.000000       0.083333  0.066667  0.083333
+0.000129       0.033333  0.016667  0.033333
+0.000500       1.000000  1.000000  1.000000
+0.001127       1.000000  1.000000  1.000000
+0.002057       1.000000  1.000000  1.000000
+    w_between                            = 0.9533563919206178
+    dominant_component                   = BETWEEN
+    power_full_at_best_live              = 1.0
+    power_dominant_at_best_live          = 1.0
+    type_I_at_zero                       = 0.06666666666666667
+    mde80_injection_verified_full        = 0.000424542372881356
+    mde80_injection_verified_dominant    = 0.0004232413793103449
+    ORIGINAL_VERDICT                     = CERTIFIED
+    AMENDED_VERDICT                      = USABLE
+    FLAG_NULL_MEAN_GT_OBSERVED           = False  (null_mean 7.0576e-05 vs observed 6.4881e-03)
+
+====================================================================================================
+R5 -- SPECIFICITY CONTROL: THE AMENDED PROTOCOL MUST NOT REJECT A VALID CYCLIC NULL
+====================================================================================================
+  Select, ON THE REGRESSOR ALONE and before any response is touched, the D097 candidate
+  with the LOWEST between-player-season variance share on these exact 13,784 rows.
+  D097 candidate columns present in the frame: 16
+
+  between-player-season variance share, every usable candidate on this row set:
+G01_noise                       0.033967
+R03_opp_allowed_atb3_share      0.035645
+R01_opp_allowed_miss_pg         0.038436
+R02_opp_allowed_ra_share        0.043098
+R10_opp_allowed_oreb_pg         0.055760
+R05_opp_allowed_long_miss_pg    0.060534
+R09_opp_allowed_paint_share     0.098349
+A02_n_present_prevgame          0.118912
+R04_opp_allowed_mid_share       0.243780
+A03_absent_usg_prevgame         0.404785
+A01_c04_prevgame                0.411389
+A04_teammate_prior_fgm_pg       0.452889
+A05_teammate_prior_fgpct        0.523573
+R07_own_miss_pg                 0.613955
+R06_own_atb3_share              0.873696
+R08_player_ra_share             0.876151
+
+  >>> WITHIN-VARYING CONTROL CANDIDATE = G01_noise  (between-share 0.0340, i.e. 96.6% of its variance is WITHIN player-season)
+  observed dR2 = 1.671647e-05   N_CYCLIC p = 0.549834   null_mean = 4.8222e-05  flag=True
+planted_along   BETWEEN      FULL  WITHIN
+delta                                    
+0.000000       0.016667  0.083333     0.1
+0.000129       0.016667  0.050000     0.0
+0.000500       1.000000  1.000000     1.0
+0.001127       1.000000  1.000000     1.0
+0.002057       1.000000  1.000000     1.0
+    w_between                            = 0.14466584253987327
+    dominant_component                   = WITHIN
+    power_full_at_best_live              = 1.0
+    power_dominant_at_best_live          = 1.0
+    type_I_at_zero                       = 0.08333333333333333
+    ORIGINAL_VERDICT                     = CERTIFIED
+    AMENDED_VERDICT                      = USABLE
+
+====================================================================================================
+THE PREREGISTERED SCORECARD (PREREG 6.3) -- ALL FIVE MUST LAND
+====================================================================================================
+  [PASS]  R1  ORIGINAL certifies N_CYCLIC                           power 0.93 @ 0.002057, type-I 0.07
+  [FAIL]  R2  shuffle destroys response entity structure            residual between-share collapses 1.17x
+  [PASS]  R3  AMENDED voids N_CYCLIC                                power on dominant (BETWEEN) = 0.00
+  [PASS]  R4  AMENDED passes N_PSWAP                                power on dominant = 1.00, type-I 0.07
+  [PASS]  R5  AMENDED passes N_CYCLIC on a within-varying candidate  G01_noise: dominant=WITHIN, power=1.00
+
+  >>> DEMONSTRATION: PARTIAL / FAILED (4/5 preregistered checks landed)
+
+wrote D04_PROTOCOL_RESULTS.csv, D04_INJECTION_POWER.csv, D04_SCORECARD.csv, nulls/d04_*.npz
