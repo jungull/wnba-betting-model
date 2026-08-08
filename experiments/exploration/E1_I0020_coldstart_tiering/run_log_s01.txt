@@ -1,0 +1,98 @@
+﻿
+====================================================================================================
+STEP 1.0 -- PARTITION VALUE TEST AND MANIFEST STATUS OF EVERY INPUT
+====================================================================================================
+  analysis_frame.parquet     -> status=UNVERIFIABLE                               asof=None fit_through=None
+  decomp_frame.parquet       -> status=UNVERIFIABLE                               asof=None fit_through=None
+  master_player.parquet      -> status=USABLE_IF_FILTERED                         asof=row fit_through=2026
+  player_bios.csv            -> status=UNVERIFIABLE                               asof=None fit_through=None
+
+  HONEST STATUS.  Three of the four inputs have NO sibling manifest and check_manifest therefore
+  returns UNVERIFIABLE, which this program's rule says is NEVER a pass.  Two of them
+  (analysis_frame, decomp_frame) are the FROZEN OUTPUTS of D076 and D081, whose own inputs were
+  manifest-checked in those screens; they are re-verified here on COLUMN VALUES (assert_partition +
+  explicit max-date assertion) rather than on a manifest.  player_bios.csv is verified structurally
+  in s02 on column values.  master_player.parquet DOES have a manifest and it is row-granular.
+
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+  analysis_frame  shape=(13879, 101)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]  max_date=2024-10-20
+  decomp_frame    shape=(13879, 121)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+STEP 1.1 -- ANCHOR A: D076 depth-quintile skill table
+====================================================================================================
+ depth_quintile    n  median_prior_games  mean_team_game_idx  mean_newfaces  fallback_rate  mae_minutes  ref_mae_minutes  mae_pts  ref_mae_pts  skill_minutes  skill_pts
+              0 2778                 3.0            6.659467       1.468323       0.381929     6.573394         5.710522 4.618185     4.330620      -0.151102  -0.066403
+              1 2894                10.0           13.786109       0.101244       0.000000     4.735160         4.881736 3.998855     4.014149       0.030025   0.003810
+              2 2961                17.0           21.316785       0.091523       0.000000     4.695928         5.216376 3.941944     4.005539       0.099772   0.015877
+              3 2552                25.0           28.510972       0.071708       0.000000     4.622076         5.194892 4.112182     4.210872       0.110265   0.023437
+              4 2694                35.0           37.374907       0.024870       0.000000     4.764710         5.346981 4.304894     4.373746       0.108897   0.015742
+
+  ABSOLUTE DELTAS vs the frozen published depth_quintile_table.csv:
+     n                  max |delta| = 0.000e+00
+     median_prior_games max |delta| = 0.000e+00
+     fallback_rate      max |delta| = 5.551e-17
+     mae_minutes        max |delta| = 0.000e+00
+     ref_mae_minutes    max |delta| = 0.000e+00
+     mae_pts            max |delta| = 8.882e-16
+     ref_mae_pts        max |delta| = 0.000e+00
+     skill_minutes      max |delta| = 8.327e-17
+     skill_pts          max |delta| = 9.714e-17
+
+  WORST ABSOLUTE DELTA ACROSS THE WHOLE TABLE: 8.882e-16
+  ANCHOR A REPRODUCES EXACTLY (bottom quintile: minutes skill -0.1511, points skill -0.0664)
+  wrote repro_depth_quintile_table.csv (5 rows)
+
+====================================================================================================
+STEP 1.2 -- ANCHOR B: D081 cold-start splice
+====================================================================================================
+ splice_threshold_prior_games  n_spliced  pct_spliced  pooled_points_mae  pooled_skill_vs_ref  skill_on_UNspliced_rows  p_vs_champion_blockflip
+                            0          0     0.000000           4.190920            -0.002222                -0.002222                 1.000000
+                            3        999     7.197925           4.124764             0.013599                 0.014916                 0.000999
+                            5       1899    13.682542           4.129411             0.012487                 0.014696                 0.000999
+                            8       3213    23.150083           4.135578             0.011013                 0.014430                 0.000999
+                           10       4063    29.274443           4.136817             0.010716                 0.015210                 0.000999
+                           15       6060    43.663088           4.137809             0.010479                 0.018525                 0.000999
+                           20       7922    57.079040           4.150087             0.007543                 0.017214                 0.001998
+
+  ABSOLUTE DELTAS vs the frozen published coldstart_splice.csv:
+     n_spliced                    max |delta| = 0.000e+00
+     pct_spliced                  max |delta| = 7.105e-15
+     pooled_points_mae            max |delta| = 0.000e+00
+     pooled_skill_vs_ref          max |delta| = 9.194e-17
+     skill_on_UNspliced_rows      max |delta| = 9.368e-17
+     p_vs_champion_blockflip      max |delta| = 9.910e-17
+
+  ANCHOR B REPRODUCES EXACTLY: pooled points skill -0.002222 -> +0.013599 at threshold 3, p=0.0010
+  wrote repro_coldstart_splice.csv (7 rows)
+
+====================================================================================================
+STEP 1.3 -- THE 'FALLBACK ROWS SCORING -18.6%' CLAIM
+====================================================================================================
+  fallback rows      n= 1061  champ MAE=6.0640  ref MAE=5.1118  skill=-0.1863
+  non-fallback rows  n=12818  champ MAE=4.0359  ref MAE=4.1046  skill=+0.0168
+  (briefing said ~1,061 fallback rows scoring -18.6%; measured n=1061, skill=-0.1863)
+
+====================================================================================================
+STEP 1.4 -- KIT CROSS-CHECK AND NEGATIVE CONTROLS
+====================================================================================================
+  screenkit.r2_of_forecast (scores as-is) vs screenkit.r2_plain (REFITS) on champion points:
+     r2_of_forecast = 0.469409   r2_plain(REFIT) = 0.474673   gap = 0.005264
+
+  NEGATIVE CONTROL 1 -- paired_forecast_comparison of the champion WITH ITSELF:
+     dR2 = -0.000e+00   p = 1.000000   n=13879  n_groups=475
+
+  NEGATIVE CONTROL 2 -- noop_placebo on a statistic that ignores the permuted column:
+  noop_placebo: real=4.190919668  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+     observed sd across 200 draws = 0.000e+00   n_distinct_draw_values = 1
+
+  NEGATIVE CONTROL 3 -- a PURE-NOISE placeholder must not beat the champion:
+     dR2(noise - champ) = -1.45450   p = 0.0005  (must be strongly NEGATIVE)
+  wrote _s01.json
+
+STEP 1 COMPLETE -- BOTH ANCHORS REPRODUCE.

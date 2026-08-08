@@ -1,0 +1,68 @@
+﻿  assert_partition (adjudicated) at s05                          -> PASS  strict-on-remainder=PASS
+     tolerated attribute-year column draft_year     VALUES=2002..2024  (all strictly BEFORE the partition; K4)
+
+====================================================================================================
+STEP 7.1 -- POOLED IMPACT OF THE RECOMMENDED RULE ON ALL 13,879 ROWS
+====================================================================================================
+
+  --- target=pts   (pooled over all 13,879 rows, 475 player-season clusters)
+                           variant  pooled_mae  pooled_r2_of_forecast  pooled_skill_vs_refD076  dr2_vs_champion  p_vs_champion  dr2_vs_crude_complete  p_vs_crude_complete
+                champion_untouched    +4.19092               +0.46941                 -0.00222         -0.00000       +1.00000               -0.02713             +0.00050
+         D081_crude_splice_refD076    +4.12476               +0.48073                 +0.01360         +0.01132       +0.00050               -0.01581             +0.00050
+crude_splice_COMPLETE_running_mean    +4.05240               +0.49654                 +0.03090         +0.02713       +0.00050               -0.00000             +1.00000
+          RECOMMENDED_blend_splice    +4.03501               +0.50416                 +0.03506         +0.03475       +0.00050               +0.00762             +0.00050
+
+  --- target=minutes   (pooled over all 13,879 rows, 475 player-season clusters)
+                           variant  pooled_mae  pooled_r2_of_forecast  pooled_skill_vs_refD076  dr2_vs_champion  p_vs_champion  dr2_vs_crude_complete  p_vs_crude_complete
+                champion_untouched    +5.07967               +0.61936                 +0.03555         -0.00000       +1.00000               -0.05142             +0.00050
+         D081_crude_splice_refD076    +4.90602               +0.64679                 +0.06852         +0.02744       +0.00050               -0.02398             +0.00050
+crude_splice_COMPLETE_running_mean    +4.75274               +0.67078                 +0.09762         +0.05142       +0.00050               -0.00000             +1.00000
+          RECOMMENDED_blend_splice    +4.75012               +0.67307                 +0.09812         +0.05371       +0.00050               +0.00229             +0.01749
+
+  --- target=ppm   (pooled over all 13,879 rows, 475 player-season clusters)
+                           variant  pooled_mae  pooled_r2_of_forecast  pooled_skill_vs_refD076  dr2_vs_champion  p_vs_champion  dr2_vs_crude_complete  p_vs_crude_complete
+                champion_untouched    +0.18174               +0.14356                 +0.01100         -0.00000       +1.00000               +0.01367             +0.00950
+         D081_crude_splice_refD076    +0.18236               +0.12544                 +0.00763         -0.01812       +0.00050               -0.00445             +0.37031
+crude_splice_COMPLETE_running_mean    +0.18132               +0.12990                 +0.01328         -0.01367       +0.00950               -0.00000             +1.00000
+          RECOMMENDED_blend_splice    +0.17947               +0.15652                 +0.02336         +0.01296       +0.00050               +0.02662             +0.00050
+
+  The `pooled_skill_vs_refD076` column is the number that is directly comparable to D081's
+  headline: the champion untouched sits at -0.00222 and D081's crude splice at +0.01360, both
+  reproduced exactly in s01.
+
+
+====================================================================================================
+STEP 7.2 -- PER-SEASON STABILITY (a rule that works in one fold is not a rule)
+====================================================================================================
+ season  target    n  n_tier  mae_champion  mae_recommended  dr2_vs_champion  p_vs_champion  dr2_vs_crude  p_vs_crude
+   2022     pts 4362     363      +4.11097         +3.98636         +0.02789       +0.00050      +0.01239    +0.00050
+   2022 minutes 4362     363      +5.03533         +4.76736         +0.04996       +0.00050      +0.00253    +0.20740
+   2023     pts 4748     348      +4.22680         +4.07258         +0.03286       +0.00050      +0.00626    +0.00050
+   2023 minutes 4748     348      +5.04801         +4.72720         +0.04773       +0.00050      +0.00275    +0.05647
+   2024     pts 4769     350      +4.22832         +4.04210         +0.04210       +0.00050      +0.00526    +0.01399
+   2024 minutes 4769     350      +5.15175         +4.75719         +0.06244       +0.00050      +0.00164    +0.26587
+
+====================================================================================================
+STEP 7.3 -- WHAT THE CHAMPION EMITS ON THE TIER, AND WHAT THE RULE EMITS INSTEAD
+====================================================================================================
+  pts      champion: mean=  8.704 sd= 0.013  min=  8.691 max=  8.722
+           RULE    : mean=  7.766 sd= 4.943  min= -0.103 max= 23.376
+           truth   : mean=  7.473 sd= 7.219
+
+  minutes  champion: mean= 21.624 sd= 0.091  min= 21.518 max= 21.739
+           RULE    : mean= 19.780 sd= 8.175  min=  3.447 max= 36.977
+           truth   : mean= 18.921 sd=11.047
+
+
+====================================================================================================
+STEP 7.4 -- FINAL NEGATIVE CONTROL: THE RULE APPLIED TO A RANDOMISED TIER
+====================================================================================================
+
+  If the rule's pooled gain came from the blend simply being a better forecast everywhere, then
+  applying it on a RANDOM 7.6% of rows would gain too.  It must not.
+
+  pts      real tier dR2=+0.03475 | random-tier dR2 mean=+0.00280 sd=0.00100 max=+0.00654
+  minutes  real tier dR2=+0.05371 | random-tier dR2 mean=+0.00013 sd=0.00107 max=+0.00269
+  wrote _s05.json
+
+STEP 7 COMPLETE.

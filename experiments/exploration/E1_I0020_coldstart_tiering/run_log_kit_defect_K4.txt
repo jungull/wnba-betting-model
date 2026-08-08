@@ -1,0 +1,95 @@
+﻿====================================================================================================
+K4 REPRODUCTION 1 -- a frame that is ENTIRELY inside 2021-2024 and is rejected anyway
+====================================================================================================
+frame:
+ player_id  season  game_date  draft_year  y_pts
+         1    2022 2022-05-08        2008   10.0
+         2    2022 2022-06-01        2015    4.0
+         3    2023 2023-05-19        2002   22.0
+         4    2023 2023-07-02        2021    7.0
+         5    2024 2024-05-14        2019   13.0
+         6    2024 2024-08-30        2024    2.0
+
+EVERY observation is in 2021-2024.  There is no 2025 or 2026 value anywhere.
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    season col draft_year               VALUES = [2002, 2008, 2015, 2019, 2021, 2024]
+    date   col game_date                YEARS  = [2022, 2023, 2024]
+    -> VIOLATIONS: ["season column 'draft_year' has out-of-partition VALUES [2002, 2008, 2015, 2019]"]
+
+  -> RAISED PartitionViolation: season column 'draft_year' has out-of-partition VALUES [2002, 2008, 2015, 2019]
+  *** THIS IS THE DEFECT: clean data rejected. ***
+
+====================================================================================================
+K4 REPRODUCTION 2 -- the value gate answers the WRONG QUESTION, and answers it correctly
+====================================================================================================
+  _is_season_valued(draft_year) -> is_season=True  values=[2002, 2008, 2015, 2019, 2021, 2024]
+  It is not wrong about the values.  They ARE years.  They are simply not THIS ROW'S SEASON.
+  Contrast the K0 case, where the value gate correctly says NO:
+  _is_season_valued(mae_floats)  -> is_season=False
+
+====================================================================================================
+K4 REPRODUCTION 3 -- DIRECTION: the guard cannot tell a PAST attribute from a FUTURE leak
+====================================================================================================
+  all draft years <= 2024 (harmless history)     ok=False violations=["season column 'draft_year' has out-of-partition VALUES [2002, 2008, 2015, 2019]"]
+  one draft year == 2026 (would be worth a look) ok=False violations=["season column 'draft_year' has out-of-partition VALUES [2002, 2008, 2015, 2019, 2026]"]
+
+  Both are rejected, with violation strings of the same shape.  A caller cannot distinguish them
+  programmatically without re-parsing the message text -- and parsing the guard's own prose is the
+  textual check this whole module exists to forbid.
+
+====================================================================================================
+K4 REPRODUCTION 4 -- the OBVIOUS WORKAROUND IS A FALSE-PASS DOOR (the K0 lesson, again)
+====================================================================================================
+  default auto-detection      -> violations=["column 'source_season' holds year-like VALUES outside the partition: [2026]", "season column 'draft_year' has out-of-partition VALUES [2008, 2015, 2019]", "season column 'source_season' has out-of-partition VALUES [2026]"]
+  season_cols=['season']      -> violations=["column 'source_season' holds year-like VALUES outside the partition: [2026]"]
+
+  `season_cols=['season']` silences the draft_year false alarm AND SILENCES THE REAL 2026 LEAK in
+  `source_season`.  That is precisely the shape K0 named a "false-pass door": the workaround that
+  makes the guard quiet is the workaround that makes the guard useless.  So the fix cannot be
+  "callers should pass season_cols".
+
+  (Note the numeric catch-all sweep at the end of assert_partition does NOT rescue this case: it
+   only fires when a column's values lie ENTIRELY inside [2020, 2030], and `source_season` here
+   does, so it is caught -- but a leak column also holding a 2019 value would escape it. The sweep
+   is a backstop, not the check.)
+  season_cols=['season','source_season'] -> violations=["column 'source_season' holds year-like VALUES outside the partition: [2026]", "season column 'source_season' has out-of-partition VALUES [2026]"]
+
+====================================================================================================
+SUGGESTED FIX -- reported, NOT applied.  screenkit.py is shared and is not in this screen's
+write scope; two other agents are running against it.
+====================================================================================================
+
+  The repair that matches the module's existing style is to make the value gate answer the question
+  the partition actually asks, and to make DIRECTION explicit:
+
+  1. Split the season branch's verdict into two categories instead of one:
+         VIOLATION_FUTURE   any flagged value >  max(allowed)   -- the holdout direction. FATAL.
+         OUT_OF_RANGE_PAST  all flagged values <  min(allowed)  -- historical. NOT fatal by default
+                            for an AUTO-DETECTED column; recorded in a new `historical_year_cols`
+                            field with its values, so it is visible and auditable.
+     A column the caller NAMES in `season_cols` stays STRICT IN BOTH DIRECTIONS -- naming it is an
+     assertion that it is an observation season, and that assertion should be honoured loudly, which
+     is exactly the asymmetry B2 already established for `date_cols`.
+
+  2. Return the violations as STRUCTURED records -- {col, kind, values, direction} -- not only as
+     formatted strings, so a caller can adjudicate without parsing prose.  (Reproduction 3 shows
+     that today there is no non-textual way to tell the two cases apart.)
+
+  3. Add `_ATTRIBUTE_YEAR_TOKENS = {"draft_year", "birth_year", "founded", "grad_year", "rookie_
+     year", "debut_year"}` as a NOMINATION-ONLY hint that routes a column to category (1)'s
+     historical branch by default.  Keep it nomination-only: per the K0 invariant, a name must never
+     by itself decide anything, and here it would only choose which REPORT the value test writes to.
+
+  A regression test that FAILS against the current module: `assert_partition` on REPRODUCTION 1 must
+  return ok=True, while REPRODUCTION 4's `source_season` 2026 must still raise, and a `draft_year`
+  of 2026 must still surface (as a flagged future value) rather than being waved through.
+
+  WHAT E1_I0020 DID INSTEAD, so no result in this screen depends on the defect:
+  `ct_base.assert_partition_adjudicated` calls the kit with raise_on_violation=False and applies the
+  direction rule above in the SCREEN, with an explicit allowlist of adjudicated attribute columns;
+  any flagged value >= 2025, and any flagged column not on the allowlist, is still FATAL.  The
+  strict unmodified `sk.assert_partition` is ALSO run on the frame with the allowlisted attribute
+  columns dropped, so the guard still runs at full strength over everything else.
+
+K4 REPRO COMPLETE.

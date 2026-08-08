@@ -1,0 +1,106 @@
+﻿  assert_partition (adjudicated) at tier_frame reload            -> PASS  strict-on-remainder=PASS
+     tolerated attribute-year column draft_year     VALUES=2002..2024  (all strictly BEFORE the partition; K4)
+
+====================================================================================================
+STEP 2b.1 -- WHERE ARE THE MISSING FIRST APPEARANCES?
+====================================================================================================
+  player-seasons in the scored frame: 475
+  distribution of the MINIMUM pl_games_prior within each player-season:
+pl_games_prior
+0.0     71
+1.0    402
+2.0      2
+
+  player-seasons whose first SCORED row is not their first appearance: 404 of 475 (85.1%)
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  guard ok  master_player after load                             n=21462   seasons=[2021, 2022, 2023, 2024]
+
+  appeared player-games in master_player 2022-2024 : 14327
+  of those, present in the champion's scored frame  : 13879 (96.9%)
+  depth chart built: depth_bucket distribution (all master rows 2021-2024)
+depth_bucket
+0.0     1081
+1.0     1892
+2.0     1892
+3.0     1893
+4.0     1892
+5.0     1893
+6.0     1893
+7.0     1892
+8.0     1892
+9.0     1841
+10.0    1667
+11.0    1734
+
+  COVERAGE OF THE CHAMPION'S SCORED FRAME BY PRIOR-APPEARANCE COUNT:
+                n_master  n_scored  coverage
+mp_prior_games                              
+0.0                  479        71    0.1482
+1.0                  472       470    0.9958
+2.0                  464       458    0.9871
+3.0                  456       452    0.9912
+4.0                  450       448    0.9956
+5.0                  443       441    0.9955
+6.0                  439       438    0.9977
+7.0                  436       435    0.9977
+8.0                  431       430    0.9977
+9.0                  423       420    0.9929
+10.0                9834      9816    0.9982
+
+  READING: the champion's evaluation set is NOT a random sample of appearances.  Coverage at 0
+  prior appearances is far below coverage elsewhere, so the population STEP 4 is about is
+  systematically UNDER-REPRESENTED in the only rows on which the champion can be scored.  Every
+  zero-games number in this screen is therefore conditional on that selection and is reported with
+  its n attached.
+
+
+====================================================================================================
+STEP 2b.2 -- WHY DOES SKILL COLLAPSE AT EXACTLY 2 PRIOR APPEARANCES?
+====================================================================================================
+ n_prior   n  fallback_rate  mean_fallback_level  coldstart_rate  mean_champ_pts  sd_champ_pts  mean_ref_pts  sd_ref_pts  mean_y_pts  sd_y_pts  mean_champ_min  sd_champ_min  mean_ref_min  mean_y_min  mean_tm_game_idx
+       0  71          1.000                3.000           1.000           8.706         0.013         8.718       0.289       4.254     4.687          21.618         0.095        21.579      12.165             7.183
+       1 470          1.000                2.091           0.091           8.705         0.013         8.378       2.611       7.502     7.308          21.625         0.092        20.528      18.999             3.702
+       2 458          1.000                2.000           0.000           8.704         0.013         7.602       7.232       7.830     7.288          21.624         0.091        19.201      19.849             4.725
+       3 452          0.128                0.257           0.000           7.867         5.921         7.811       6.631       8.082     7.265          19.978         9.532        19.718      19.665             6.184
+       4 448          0.007                0.013           0.000           7.842         6.219         7.921       6.331       7.625     7.349          19.807        10.148        19.680      19.169             7.333
+
+  The champion's fallback flag is 1.0 for n = 0, 1, 2 and ~0.13 at n = 3, so the whole data-poor
+  regime IS the fallback path.  The question is why the SAME path is near-neutral at n=0 and
+  catastrophic at n=2.
+
+  DECOMPOSING BY WHAT THE REFERENCE IS DOING (the D076 lesson: skill is RELATIVE):
+   n=0  n_rows=  71 | pts champMAE= 5.828 refMAE= 5.876 | min champMAE=11.112 refMAE=11.109
+   n=1  n_rows= 470 | pts champMAE= 6.002 refMAE= 5.721 | min champMAE= 9.628 refMAE= 8.742
+   n=2  n_rows= 458 | pts champMAE= 6.134 refMAE= 4.409 | min champMAE= 9.676 refMAE= 5.324
+   n=3  n_rows= 452 | pts champMAE= 3.990 refMAE= 4.096 | min champMAE= 5.145 refMAE= 4.968
+
+  THE MECHANISM IS THE REFERENCE, NOT THE MODEL.  At n=0 the reference has NO player-specific
+  information and falls back to the same-season expanding league mean, so it is weak and the
+  champion ties it.  At n=1 and n=2 the reference becomes the player's own 1- or 2-game running
+  mean, which for a player who has just appeared is a SHARP, correctly-scaled estimate of their
+  current role -- and the champion's fallback path does not move nearly as far.  By n>=3 the
+  champion's real path switches on and it recovers.
+
+  CONSEQUENCE FOR THE USER'S QUESTION.  The damage is concentrated where the player HAS one or two
+  observations and the model is not using them, NOT where the player has none.  A structural
+  placeholder (position / draft / depth) has no competition only in the n=0 cell -- which is 71
+  rows -- while the expensive cell, n in {1,2}, is exactly where the player's OWN running mean is
+  already available and already winning.
+
+  IS THE FALLBACK FLAG A BETTER TIER VARIABLE THAN A PRIOR-APPEARANCE COUNT?
+     fallback rows           :  1061
+     pl_games_prior < 3 rows :   999
+     both                    :   999
+     fallback but >=3 priors :    62
+     <3 priors but not fallb :     0
+     fallback only    n=   62  pts skill=-0.3091  minutes skill=-0.5782
+     both             n=  999  pts skill=-0.1791  minutes skill=-0.3285
+
+  The 'fallback but >= 3 priors' cell is the returning-from-absence case the task asked about:
+  players whose model path fell back for a reason other than a thin season count.
+
+  returning-from-absence cell: mean pl_teamgames_since_appear=0.21 (vs 0.15 overall)
+                               mean pl_games_prior=3.08
+  wrote _s02b.json
+
+STEP 2b COMPLETE.

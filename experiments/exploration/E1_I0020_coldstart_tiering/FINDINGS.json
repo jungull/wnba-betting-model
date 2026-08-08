@@ -1,0 +1,1839 @@
+{
+  "screen": "E1_I0020_coldstart_tiering",
+  "question": "USER, VERBATIM: 'we should categorise players by ones we have sufficient data to model and ones that will have to be given a smart filler score maybe rookies get a placeholder based on their position on the team and draft position.'",
+  "partition": {
+    "scored_seasons": [
+      2022,
+      2023,
+      2024
+    ],
+    "prior_pool_seed_season": 2021,
+    "why_2021_is_not_scored": "D076 established the 2021 champion fold is degenerate (n_train_rows=0, model_was_fitted=false).  2021 is used ONLY as a source of OBSERVED OUTCOMES to seed the walk-forward prior pool for the 2022 fold.",
+    "holdout_never_read": [
+      2025,
+      2026
+    ],
+    "enforcement": "screenkit.assert_partition on COLUMN VALUES at every load and before every write, plus an explicit max-date assertion, plus the K4 adjudication described in kit_defects."
+  },
+  "authorisation": {
+    "champion_retrained_or_refitted": false,
+    "champion_scored_as_is": true,
+    "models_fitted_here": "shrunk group means (position / draft bucket / depth bucket / two crosses) on strictly prior seasons; one 3-parameter OLS of production on log(draft pick) and a round-2 indicator; one fixed-form shrinkage blend weight lam(n)=n/(n+k).  Nothing else."
+  },
+  "step1_reproduction": {
+    "anchor_A_D076_depth_quintile_table": {
+      "reproduced": true,
+      "worst_absolute_delta_across_whole_table": 8.881784197001252e-16,
+      "per_column_max_abs_delta": {
+        "n": 0.0,
+        "median_prior_games": 0.0,
+        "fallback_rate": 5.551115123125783e-17,
+        "mae_minutes": 0.0,
+        "ref_mae_minutes": 0.0,
+        "mae_pts": 8.881784197001252e-16,
+        "ref_mae_pts": 0.0,
+        "skill_minutes": 8.326672684688674e-17,
+        "skill_pts": 9.71445146547012e-17
+      },
+      "bottom_quintile_skill_minutes": -0.15110202804883022,
+      "bottom_quintile_skill_pts": -0.06640273461336599,
+      "published_values_for_comparison": {
+        "minutes": -0.151,
+        "points": -0.066
+      }
+    },
+    "anchor_B_D081_coldstart_splice": {
+      "reproduced": true,
+      "per_column_max_abs_delta": {
+        "n_spliced": 0.0,
+        "pct_spliced": 7.105427357601002e-15,
+        "pooled_points_mae": 0.0,
+        "pooled_skill_vs_ref": 9.194034422677078e-17,
+        "skill_on_UNspliced_rows": 9.367506770274758e-17,
+        "p_vs_champion_blockflip": 9.90960785651751e-17
+      },
+      "pooled_points_skill_threshold_0": -0.0022218316796525084,
+      "pooled_points_skill_threshold_3": 0.013598819181952826,
+      "p_blockflip_threshold_3": 0.000999000999000999
+    },
+    "fallback_row_claim": {
+      "briefing_said": "~1,061 fallback rows scoring -18.6%",
+      "measured_n": 1061,
+      "measured_points_skill": -0.18626417611743906,
+      "reproduced": true
+    },
+    "verdict": "BOTH ANCHORS REPRODUCE TO MACHINE PRECISION.  The screen proceeded."
+  },
+  "step2_taxonomy": {
+    "tier_variables_all_pregame": [
+      "pl_games_prior",
+      "pl_career_games_prior",
+      "pl_minutes_prior",
+      "pl_prior_season_games",
+      "pl_is_rookie_window",
+      "pl_teamgames_since_appear",
+      "depth_bucket"
+    ],
+    "boundary_derivation": "NOT a round number.  Taken from where the champion's MAE skill against the point-in-time running-mean reference CROSSES ZERO on the skill-versus-tier curve: negative at 0,1,2 prior same-season appearances, positive and stable from 3 upward.",
+    "skill_at_exactly_n_prior_appearances_points": {
+      "0": 0.008214341418050664,
+      "1": -0.04898624272981378,
+      "2": -0.3911248669300904,
+      "3": 0.025843019905060105,
+      "4": 0.009554224487075325,
+      "5": 0.017250565129671602,
+      "6": 0.015841036599950398
+    },
+    "skill_at_exactly_n_prior_appearances_minutes": {
+      "0": -0.0002815579685420122,
+      "1": -0.10137815419948715,
+      "2": -0.8175062778579112,
+      "3": -0.035631226203311606,
+      "4": -0.012307654195180762,
+      "5": 0.03715658667237798,
+      "6": 0.019473093418440057
+    },
+    "chosen_boundary": "the champion's OWN pts__is_fallback flag.  It is a strict superset of 'fewer than 3 prior same-season appearances' (999 rows, ALL flagged) plus 62 returning-from-absence rows, and ZERO rows with <3 priors escape it.",
+    "tier_sizes": {
+      "n_rows_data_poor": 1061,
+      "pct_of_all_rows": 7.644642985805894,
+      "n_rows_lt3_priors": 999,
+      "pct_of_decision_relevant_population_lt3": 7.757418840868353,
+      "decision_relevant_definition": "PRE-GAME: point-in-time running-mean minutes expectation >= 15 (ref_minutes >= 15), 10,042 rows / 72.4%.  The outcome-conditioned version agrees (69.4%) and was NOT used to define anything."
+    },
+    "THE_CENTRAL_MECHANICAL_FACT": {
+      "what": "On the data-poor tier the champion emits a CONSTANT.  It is the same filler score for every player, in all three seasons.",
+      "champion_points_on_tier_mean": 0.012987812489286184,
+      "champion_points_sd": 0.012987812489286184,
+      "champion_minutes_sd": 0.09123055099189283,
+      "truth_points_sd": 7.219240829830245,
+      "rule_points_sd": 4.943418812321301,
+      "reading": "champion sd 0.013 points against a truth sd of 7.2.  The user's 'smart filler score' is precisely the thing this constant should be replaced by."
+    },
+    "SURPRISE_skill_is_not_monotone": {
+      "what": "Skill is ~0 at ZERO prior appearances, -4.9%/-10.1% (pts/min) at ONE, -39.1%/-81.8% at TWO, and back to +2.6%/-3.6% at THREE.",
+      "mechanism": "It is the REFERENCE moving, not the model.  At 0 priors the reference has no player information either and both sides are constants, so skill is ~0 by construction.  At 1-2 priors the reference has become a sharp player-specific estimate while the champion is still emitting its constant.",
+      "consequence": "The damage is where the player HAS one or two observations the model is not using, NOT where they have none.  The zero-games cell is 71 rows."
+    }
+  },
+  "step3_placeholders": {
+    "tier_n": 1061,
+    "tier_clusters": 475,
+    "clustering_level": "(season, player_id); row-level null reported alongside for contrast only",
+    "n_draws": 2000,
+    "TWO_BASELINES_AND_WHY": {
+      "P1_ref_D076": "D076's frozen reference.  It is an expanding mean over THE CHAMPION'S SCORED ROWS, and the champion scores only 71 of 479 true first appearances, so for 404 of 475 player-seasons its first scored row has no prior row of its own frame and the 'running mean' is the LEAGUE MEAN wearing that name.",
+      "P1full_running_mean": "the player's own prior same-season appearances taken from master_player, COMPLETE.  *** THIS IS THE CRUDE BASELINE THAT HAS TO BE BEATEN. ***",
+      "why_this_matters": "D087.  Scoring against the incomplete reference would have credited the placeholders with a large, significant, permutation-surviving increment that was nothing but the reference's blind spot.",
+      "size_of_the_illusion_points_dr2": {
+        "blend_vs_incomplete_reference": 0.3164522175944895,
+        "blend_vs_complete_running_mean": 0.1099282404581956
+      }
+    },
+    "points": {
+      "P0_champion": {
+        "mae": 6.063956135864848,
+        "r2_of_forecast": -0.0291107944376236,
+        "dr2_vs_champion": -0.0,
+        "p_cluster_vs_champion": 1.0,
+        "dr2_vs_P1full_complete_running_mean": -0.3915878828024973,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.2010709921775606
+      },
+      "P1_ref_D076": {
+        "mae": 5.111809205696288,
+        "r2_of_forecast": 0.1559531112285798,
+        "dr2_vs_champion": 0.1850639056662035,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.2065239771362937,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 0.914044309061966
+      },
+      "P1full_running_mean": {
+        "mae": 4.252019916011727,
+        "r2_of_forecast": 0.3624770883648737,
+        "dr2_vs_champion": 0.3915878828024973,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0,
+        "p_cluster_vs_P1full": 1.0,
+        "p_row_level_NAIVE_vs_P1full": 1.0,
+        "null_sd_inflation_vs_P1full": Infinity
+      },
+      "P1c_career_mean": {
+        "mae": 4.107886117397483,
+        "r2_of_forecast": 0.444077215860723,
+        "dr2_vs_champion": 0.4731880102983467,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.0816001274958493,
+        "p_cluster_vs_P1full": 0.0099950024987506,
+        "p_row_level_NAIVE_vs_P1full": 0.008495752123938,
+        "null_sd_inflation_vs_P1full": 0.985144751193052
+      },
+      "P2_position": {
+        "mae": 6.042699460519594,
+        "r2_of_forecast": -0.0282856663021129,
+        "dr2_vs_champion": 0.0008251281355107,
+        "p_cluster_vs_champion": 0.912543728135932,
+        "dr2_vs_P1full_complete_running_mean": -0.3907627546669865,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.2009091693984195
+      },
+      "P3_draft_bin": {
+        "mae": 5.535518695636234,
+        "r2_of_forecast": 0.1278236391282076,
+        "dr2_vs_champion": 0.1569344335658312,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.234653449236666,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.1835929408133945
+      },
+      "P3_draft_ols": {
+        "mae": 5.277862502152165,
+        "r2_of_forecast": 0.1960991405776021,
+        "dr2_vs_champion": 0.2252099350152258,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.1663779477872714,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.192959501567356
+      },
+      "P4_teamrole": {
+        "mae": 4.680121616222157,
+        "r2_of_forecast": 0.3387529455169052,
+        "dr2_vs_champion": 0.367863739954529,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0237241428479682,
+        "p_cluster_vs_P1full": 0.5062468765617192,
+        "p_row_level_NAIVE_vs_P1full": 0.4437781109445277,
+        "null_sd_inflation_vs_P1full": 1.1107008123908293
+      },
+      "P5a_draft_x_depth": {
+        "mae": 5.198658722570681,
+        "r2_of_forecast": 0.2428670762014446,
+        "dr2_vs_champion": 0.2719778706390683,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.1196100121634289,
+        "p_cluster_vs_P1full": 0.000999500249875,
+        "p_row_level_NAIVE_vs_P1full": 0.0014992503748125,
+        "null_sd_inflation_vs_P1full": 1.1130283049562832
+      },
+      "P5b_pos_x_draft": {
+        "mae": 5.63477411373206,
+        "r2_of_forecast": 0.104146727666484,
+        "dr2_vs_champion": 0.1332575221041076,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.2583303606983896,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.1817775653884797
+      },
+      "P5c_additive": {
+        "mae": 4.39021093129481,
+        "r2_of_forecast": 0.3953834884198697,
+        "dr2_vs_champion": 0.4244942828574933,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.032906400054996,
+        "p_cluster_vs_P1full": 0.3033483258370814,
+        "p_row_level_NAIVE_vs_P1full": 0.2603698150924537,
+        "null_sd_inflation_vs_P1full": 1.0762845674137178
+      },
+      "P5d_blend_k1": {
+        "mae": 3.992726770910223,
+        "r2_of_forecast": 0.4697732811151498,
+        "dr2_vs_champion": 0.4988840755527735,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.1072961927502762,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0082905511642433
+      },
+      "P5d_blend_k2": {
+        "mae": 4.024504400813759,
+        "r2_of_forecast": 0.4724053288230693,
+        "dr2_vs_champion": 0.501516123260693,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.1099282404581956,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0182454500735043
+      },
+      "P5d_blend_k3": {
+        "mae": 4.073148405760102,
+        "r2_of_forecast": 0.4659308111023978,
+        "dr2_vs_champion": 0.4950416055400215,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.1034537227375242,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0261062400509993
+      },
+      "P5d_blend_k5": {
+        "mae": 4.142364176793263,
+        "r2_of_forecast": 0.4525894191201657,
+        "dr2_vs_champion": 0.4817002135577894,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.0901123307552921,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.03753376123258
+      },
+      "P5d_blend_k10": {
+        "mae": 4.234289452653505,
+        "r2_of_forecast": 0.4327262649065567,
+        "dr2_vs_champion": 0.4618370593441804,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.0702491765416831,
+        "p_cluster_vs_P1full": 0.0069965017491254,
+        "p_row_level_NAIVE_vs_P1full": 0.008495752123938,
+        "null_sd_inflation_vs_P1full": 1.052135647861326
+      },
+      "P5e_careerblend_k2": {
+        "mae": 4.113231503514206,
+        "r2_of_forecast": 0.4651717079370852,
+        "dr2_vs_champion": 0.4942825023747088,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.1026946195722115,
+        "p_cluster_vs_P1full": 0.0019990004997501,
+        "p_row_level_NAIVE_vs_P1full": 0.000999500249875,
+        "null_sd_inflation_vs_P1full": 0.9816773625856352
+      },
+      "P5e_careerblend_k3": {
+        "mae": 4.125533585536922,
+        "r2_of_forecast": 0.4661090958979755,
+        "dr2_vs_champion": 0.4952198903355992,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.1036320075331019,
+        "p_cluster_vs_P1full": 0.0019990004997501,
+        "p_row_level_NAIVE_vs_P1full": 0.000999500249875,
+        "null_sd_inflation_vs_P1full": 0.9823299303066176
+      },
+      "P5e_careerblend_k5": {
+        "mae": 4.135276419657165,
+        "r2_of_forecast": 0.4678913611340998,
+        "dr2_vs_champion": 0.4970021555717234,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.1054142727692261,
+        "p_cluster_vs_P1full": 0.0019990004997501,
+        "p_row_level_NAIVE_vs_P1full": 0.000999500249875,
+        "null_sd_inflation_vs_P1full": 0.9838558704489933
+      },
+      "league": {
+        "mae": 6.064167466435654,
+        "r2_of_forecast": -0.0291261268398232,
+        "dr2_vs_champion": -1.5332402199838292e-05,
+        "p_cluster_vs_champion": 0.6136931534232883,
+        "dr2_vs_P1full_complete_running_mean": -0.3916032152046971,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.20100927829012
+      }
+    },
+    "minutes": {
+      "P0_champion": {
+        "mae": 9.748011180732442,
+        "r2_of_forecast": -0.0596242867556844,
+        "dr2_vs_champion": -0.0,
+        "p_cluster_vs_champion": 1.0,
+        "dr2_vs_P1full_complete_running_mean": -0.6391109812642335,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.2891339249051423
+      },
+      "P1_ref_D076": {
+        "mae": 7.270426946350769,
+        "r2_of_forecast": 0.3086086626074853,
+        "dr2_vs_champion": 0.3682329493631698,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.2708780319010634,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 0.9650117382640332
+      },
+      "P1full_running_mean": {
+        "mae": 5.471450670279611,
+        "r2_of_forecast": 0.5794866945085488,
+        "dr2_vs_champion": 0.6391109812642335,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0,
+        "p_cluster_vs_P1full": 1.0,
+        "p_row_level_NAIVE_vs_P1full": 1.0,
+        "null_sd_inflation_vs_P1full": Infinity
+      },
+      "P1c_career_mean": {
+        "mae": 6.352970605990485,
+        "r2_of_forecast": 0.4710638031785162,
+        "dr2_vs_champion": 0.5306880899342009,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.1084228913300325,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.1886734667185526
+      },
+      "P2_position": {
+        "mae": 9.716539823749464,
+        "r2_of_forecast": -0.0555619451391082,
+        "dr2_vs_champion": 0.0040623416165761,
+        "p_cluster_vs_champion": 0.6376811594202898,
+        "dr2_vs_P1full_complete_running_mean": -0.6350486396476571,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.2882149595952743
+      },
+      "P3_draft_bin": {
+        "mae": 8.953290994802833,
+        "r2_of_forecast": 0.0792816836442006,
+        "dr2_vs_champion": 0.1389059703998852,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.5002050108643481,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.2564331558130175
+      },
+      "P3_draft_ols": {
+        "mae": 8.631427173398263,
+        "r2_of_forecast": 0.1238089832221094,
+        "dr2_vs_champion": 0.183433269977794,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.4556777112864393,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.2517454872306062
+      },
+      "P4_teamrole": {
+        "mae": 6.459229473823684,
+        "r2_of_forecast": 0.487898239345254,
+        "dr2_vs_champion": 0.5475225261009387,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0915884551632947,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.073765025510727
+      },
+      "P5a_draft_x_depth": {
+        "mae": 7.814905608213443,
+        "r2_of_forecast": 0.2827408822170344,
+        "dr2_vs_champion": 0.342365168972719,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.2967458122915143,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.184980573070045
+      },
+      "P5b_pos_x_draft": {
+        "mae": 9.036395555943235,
+        "r2_of_forecast": 0.0603515654097801,
+        "dr2_vs_champion": 0.1199758521654647,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.5191351290987688,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.2631530650731022
+      },
+      "P5c_additive": {
+        "mae": 6.064635245809886,
+        "r2_of_forecast": 0.5232540299416608,
+        "dr2_vs_champion": 0.5828783166973452,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.056232664566888,
+        "p_cluster_vs_P1full": 0.0049975012493753,
+        "p_row_level_NAIVE_vs_P1full": 0.0019990004997501,
+        "null_sd_inflation_vs_P1full": 1.125411543951561
+      },
+      "P5d_blend_k1": {
+        "mae": 5.293838216046719,
+        "r2_of_forecast": 0.6205311496361363,
+        "dr2_vs_champion": 0.680155436391821,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.0410444551275875,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0246586718544668
+      },
+      "P5d_blend_k2": {
+        "mae": 5.437187654968994,
+        "r2_of_forecast": 0.6079056064598362,
+        "dr2_vs_champion": 0.6675298932155207,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.0284189119512873,
+        "p_cluster_vs_P1full": 0.0174912543728135,
+        "p_row_level_NAIVE_vs_P1full": 0.0114942528735632,
+        "null_sd_inflation_vs_P1full": 1.039241059367774
+      },
+      "P5d_blend_k3": {
+        "mae": 5.546649511182256,
+        "r2_of_forecast": 0.5960761130139847,
+        "dr2_vs_champion": 0.6557003997696691,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.0165894185054358,
+        "p_cluster_vs_P1full": 0.216391804097951,
+        "p_row_level_NAIVE_vs_P1full": 0.1944027986006996,
+        "null_sd_inflation_vs_P1full": 1.0523543392918142
+      },
+      "P5d_blend_k5": {
+        "mae": 5.679540890139215,
+        "r2_of_forecast": 0.5792860333182672,
+        "dr2_vs_champion": 0.6389103200739518,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0002006611902816,
+        "p_cluster_vs_P1full": 0.9945027486256872,
+        "p_row_level_NAIVE_vs_P1full": 0.9880059970014992,
+        "null_sd_inflation_vs_P1full": 1.0706416104480616
+      },
+      "P5d_blend_k10": {
+        "mae": 5.833085610025899,
+        "r2_of_forecast": 0.5583632601685427,
+        "dr2_vs_champion": 0.6179875469242272,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0211234343400061,
+        "p_cluster_vs_P1full": 0.2233883058470764,
+        "p_row_level_NAIVE_vs_P1full": 0.1914042978510744,
+        "null_sd_inflation_vs_P1full": 1.0924231454251612
+      },
+      "P5e_careerblend_k2": {
+        "mae": 6.316428206194858,
+        "r2_of_forecast": 0.4938725713511116,
+        "dr2_vs_champion": 0.5534968581067963,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0856141231574371,
+        "p_cluster_vs_P1full": 0.0014992503748125,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.1553113319968331
+      },
+      "P5e_careerblend_k3": {
+        "mae": 6.335695762216398,
+        "r2_of_forecast": 0.4948530874403619,
+        "dr2_vs_champion": 0.5544773741960465,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0846336070681868,
+        "p_cluster_vs_P1full": 0.0014992503748125,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.147195013774618
+      },
+      "P5e_careerblend_k5": {
+        "mae": 6.3424196039195015,
+        "r2_of_forecast": 0.4979690565849053,
+        "dr2_vs_champion": 0.5575933433405899,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0815176379236434,
+        "p_cluster_vs_P1full": 0.0024987506246876,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.1360634710089796
+      },
+      "league": {
+        "mae": 9.738812594942605,
+        "r2_of_forecast": -0.0568222555868203,
+        "dr2_vs_champion": 0.0028020311688642,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.6363089500953691,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.2884264187386258
+      }
+    },
+    "points_per_minute": {
+      "P0_champion": {
+        "mae": 0.2233448317266851,
+        "r2_of_forecast": -0.0499750484109324,
+        "dr2_vs_champion": -0.0,
+        "p_cluster_vs_champion": 1.0,
+        "dr2_vs_P1full_complete_running_mean": 0.1623085066148409,
+        "p_cluster_vs_P1full": 0.009495252373813,
+        "p_row_level_NAIVE_vs_P1full": 0.009495252373813,
+        "null_sd_inflation_vs_P1full": 1.0753842051944331
+      },
+      "P1_ref_D076": {
+        "mae": 0.231894214554522,
+        "r2_of_forecast": -0.2769938644872358,
+        "dr2_vs_champion": -0.2270188160763036,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": -0.0647103094614627,
+        "p_cluster_vs_P1full": 0.255872063968016,
+        "p_row_level_NAIVE_vs_P1full": 0.3458270864567716,
+        "null_sd_inflation_vs_P1full": 0.7998824175802429
+      },
+      "P1full_running_mean": {
+        "mae": 0.2178737312893015,
+        "r2_of_forecast": -0.2122835550257733,
+        "dr2_vs_champion": -0.1623085066148409,
+        "p_cluster_vs_champion": 0.009495252373813,
+        "dr2_vs_P1full_complete_running_mean": -0.0,
+        "p_cluster_vs_P1full": 1.0,
+        "p_row_level_NAIVE_vs_P1full": 1.0,
+        "null_sd_inflation_vs_P1full": Infinity
+      },
+      "P1c_career_mean": {
+        "mae": 0.1910836001287802,
+        "r2_of_forecast": 0.0821748044623992,
+        "dr2_vs_champion": 0.1321498528733316,
+        "p_cluster_vs_champion": 0.000999500249875,
+        "dr2_vs_P1full_complete_running_mean": 0.2944583594881725,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0919742928920768
+      },
+      "P2_position": {
+        "mae": 0.2165417005363582,
+        "r2_of_forecast": -0.0020395658443896,
+        "dr2_vs_champion": 0.0479354825665427,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.2102439891813836,
+        "p_cluster_vs_P1full": 0.000999500249875,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.065606737765713
+      },
+      "P3_draft_bin": {
+        "mae": 0.2090884457340576,
+        "r2_of_forecast": 0.0454484228960333,
+        "dr2_vs_champion": 0.0954234713069658,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.2577319779218067,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0533950986366538
+      },
+      "P3_draft_ols": {
+        "mae": 0.2054650973592924,
+        "r2_of_forecast": 0.0676396509586201,
+        "dr2_vs_champion": 0.1176146993695524,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.2799232059843933,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0539842309724337
+      },
+      "P4_teamrole": {
+        "mae": 0.2046971545043385,
+        "r2_of_forecast": 0.0696937090908524,
+        "dr2_vs_champion": 0.1196687575017849,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.2819772641166259,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.046080008691029
+      },
+      "P5a_draft_x_depth": {
+        "mae": 0.207963778398707,
+        "r2_of_forecast": 0.0555838201443826,
+        "dr2_vs_champion": 0.105558868555315,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.2678673751701559,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0532224673306645
+      },
+      "P5b_pos_x_draft": {
+        "mae": 0.2101379939626565,
+        "r2_of_forecast": 0.0412178923097937,
+        "dr2_vs_champion": 0.091192940720726,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.2535014473355669,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.062240675084076
+      },
+      "P5c_additive": {
+        "mae": 0.1988045424625632,
+        "r2_of_forecast": 0.098028609600141,
+        "dr2_vs_champion": 0.1480036580110734,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.3103121646259143,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0260113238663269
+      },
+      "P5d_blend_k1": {
+        "mae": 0.1970697316356216,
+        "r2_of_forecast": 0.0553945595224113,
+        "dr2_vs_champion": 0.1053696079333437,
+        "p_cluster_vs_champion": 0.0044977511244377,
+        "dr2_vs_P1full_complete_running_mean": 0.2676781145481846,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0699565151734158
+      },
+      "P5d_blend_k2": {
+        "mae": 0.193652473547039,
+        "r2_of_forecast": 0.1038989275868864,
+        "dr2_vs_champion": 0.153873975997819,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.3161824826126599,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.065795832833225
+      },
+      "P5d_blend_k3": {
+        "mae": 0.1929523405962735,
+        "r2_of_forecast": 0.1180926353843329,
+        "dr2_vs_champion": 0.1680676837952653,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.3303761904101062,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.060601724192442
+      },
+      "P5d_blend_k5": {
+        "mae": 0.1931926771873077,
+        "r2_of_forecast": 0.1237106709104696,
+        "dr2_vs_champion": 0.1736857193214019,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.3359942259362428,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.052669131309473
+      },
+      "P5d_blend_k10": {
+        "mae": 0.1945276380387361,
+        "r2_of_forecast": 0.1193722305616202,
+        "dr2_vs_champion": 0.1693472789725526,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.3316557855873936,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0425397382284192
+      },
+      "P5e_careerblend_k2": {
+        "mae": 0.1880164544680285,
+        "r2_of_forecast": 0.1622238370679176,
+        "dr2_vs_champion": 0.2121988854788501,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.374507392093691,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0450406199096336
+      },
+      "P5e_careerblend_k3": {
+        "mae": 0.1881239510263179,
+        "r2_of_forecast": 0.165552947418119,
+        "dr2_vs_champion": 0.2155279958290514,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.3778365024438924,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0382391141568863
+      },
+      "P5e_careerblend_k5": {
+        "mae": 0.1886776675257291,
+        "r2_of_forecast": 0.167066077389434,
+        "dr2_vs_champion": 0.2170411258003666,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.3793496324152076,
+        "p_cluster_vs_P1full": 0.0004997501249375,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0314812346687974
+      },
+      "league": {
+        "mae": 0.2170583969757958,
+        "r2_of_forecast": -0.0061808517545001,
+        "dr2_vs_champion": 0.0437941966564325,
+        "p_cluster_vs_champion": 0.0004997501249375,
+        "dr2_vs_P1full_complete_running_mean": 0.2061027032712734,
+        "p_cluster_vs_P1full": 0.000999500249875,
+        "p_row_level_NAIVE_vs_P1full": 0.0004997501249375,
+        "null_sd_inflation_vs_P1full": 1.0684167804941185
+      }
+    },
+    "HEADLINE_ANSWER": {
+      "does_a_smarter_placeholder_beat_the_crude_running_mean": "YES, BUT ONLY AS A BLEND, AND THE MARGIN IS MODEST ON MINUTES.  A standalone structural prior LOSES to the crude complete running mean on every target except in the zero-games cell.",
+      "standalone_draft_prior_vs_complete_running_mean_points_dr2": -0.1663779477872714,
+      "standalone_position_prior_vs_complete_running_mean_points_dr2": -0.3907627546669865,
+      "pure_structural_P5c_vs_complete_running_mean_points_dr2": 0.032906400054996,
+      "pure_structural_P5c_vs_complete_running_mean_points_p": 0.3033483258370814,
+      "winner": "P5d_blend_k2"
+    },
+    "shrinkage_k_sensitivity_file": "shrinkage_sensitivity.csv"
+  },
+  "step3b_D087_decomposition": {
+    "the_confound": "BLEND_STRUCT mixes two mechanisms: SHRINKING a noisy 1-2 game mean toward a constant, and the CONTENT of that constant.  The control BLEND_LEAGUE is identical in every respect except that it shrinks toward the plain league mean.",
+    "points_k2": {
+      "gain_of_BLEND_STRUCT_over_complete_running_mean": 0.1099282404581956,
+      "p": 0.0004997501249375,
+      "gain_of_SHRINKAGE_ALONE_over_complete_running_mean": -0.0270888228956537,
+      "p_shrinkage_alone": 0.3268365817091454,
+      "gain_of_STRUCTURE_on_top_of_shrinkage": 0.1370170633538494,
+      "p_cluster": 0.0004997501249375,
+      "p_row_level_NAIVE": 0.0004997501249375,
+      "null_sd_inflation": 1.0186305294395952
+    },
+    "minutes_k2": {
+      "gain_of_BLEND_STRUCT_over_complete_running_mean": 0.0284189119512873,
+      "gain_of_SHRINKAGE_ALONE_over_complete_running_mean": -0.1611126891100533,
+      "gain_of_STRUCTURE_on_top_of_shrinkage": 0.1895316010613407,
+      "p_cluster": 0.0004997501249375
+    },
+    "VERDICT": "SHRINKAGE ALONE CONTRIBUTES NOTHING AND ON MINUTES IT HURTS.  Shrinking toward the league mean moves points by -0.0271 (p=0.327) and minutes by -0.1611.  ALL of the gain, and more, comes from WHAT the blend shrinks toward.  The user's proposal is doing the work.",
+    "component_ladder_points_tier": [
+      {
+        "step": "league",
+        "r2_of_forecast": -0.0291261268398232,
+        "dr2_vs_previous": NaN,
+        "p_cluster_vs_previous": NaN
+      },
+      {
+        "step": "league+depth",
+        "r2_of_forecast": 0.3387529455169052,
+        "dr2_vs_previous": 0.3678790723567289,
+        "p_cluster_vs_previous": 0.0004997501249375
+      },
+      {
+        "step": "league+depth+draft",
+        "r2_of_forecast": 0.3967424422804261,
+        "dr2_vs_previous": 0.0579894967635206,
+        "p_cluster_vs_previous": 0.0029985007496251
+      },
+      {
+        "step": "league+depth+draft+pos",
+        "r2_of_forecast": 0.3953834884198697,
+        "dr2_vs_previous": -0.0013589538605564,
+        "p_cluster_vs_previous": 0.782608695652174
+      }
+    ],
+    "component_reading": "DEPTH-CHART RANK is the dominant component.  DRAFT SLOT adds a real but much smaller increment on top of it.  LISTED POSITION adds NOTHING (points dR2 -0.0014, p=0.78) and should be dropped."
+  },
+  "step3c_permutation_nulls": {
+    "note": "Correct grouping level chosen with screenkit.detect_grouping_level; the row-level null is reported alongside with its width ratio.  Cluster-robust SEs are not used anywhere as a substitute.",
+    "levels_found": {
+      "draft_bucket": {
+        "status": "COARSER_LEVEL_FOUND",
+        "recommended": "player",
+        "recommended_key_cols": [
+          "player_id"
+        ]
+      },
+      "pos_group": {
+        "status": "COARSER_LEVEL_FOUND",
+        "recommended": "player",
+        "recommended_key_cols": [
+          "player_id"
+        ]
+      },
+      "depth_bucket": {
+        "status": "NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE",
+        "recommended": null,
+        "recommended_key_cols": null
+      }
+    },
+    "results": [
+      {
+        "feature": "draft_bucket",
+        "target": "pts",
+        "level": "ps_block",
+        "rationale": "player-season: draft slot is constant within a player; reassigns WHOSE draft slot a player gets, inside the same season",
+        "real_r2": 0.1278236391282076,
+        "p_correct_level": 0.0019960079840319,
+        "null_sd_correct": 0.025660474778322,
+        "p_row_level_NAIVE": 0.0019960079840319,
+        "null_sd_row": 0.0193439775265139,
+        "inflation_correct_over_row": 1.3265355970947728
+      },
+      {
+        "feature": "draft_bucket",
+        "target": "minutes",
+        "level": "ps_block",
+        "rationale": "player-season: draft slot is constant within a player; reassigns WHOSE draft slot a player gets, inside the same season",
+        "real_r2": 0.0792816836442006,
+        "p_correct_level": 0.0019960079840319,
+        "null_sd_correct": 0.022825166315383,
+        "p_row_level_NAIVE": 0.0019960079840319,
+        "null_sd_row": 0.0163322786553638,
+        "inflation_correct_over_row": 1.3975494048949988
+      },
+      {
+        "feature": "pos_group",
+        "target": "pts",
+        "level": "ps_block",
+        "rationale": "player-season: listed position is constant within a player",
+        "real_r2": -0.0282856663021129,
+        "p_correct_level": 0.1996007984031936,
+        "null_sd_correct": 0.006861412979823,
+        "p_row_level_NAIVE": 0.1217564870259481,
+        "null_sd_row": 0.004857895595712,
+        "inflation_correct_over_row": 1.4124249573991343
+      },
+      {
+        "feature": "pos_group",
+        "target": "minutes",
+        "level": "ps_block",
+        "rationale": "player-season: listed position is constant within a player",
+        "real_r2": -0.0555619451391082,
+        "p_correct_level": 0.1497005988023952,
+        "null_sd_correct": 0.0086843791098112,
+        "p_row_level_NAIVE": 0.0898203592814371,
+        "null_sd_row": 0.0058718845888605,
+        "inflation_correct_over_row": 1.4789764646066446
+      },
+      {
+        "feature": "depth_bucket",
+        "target": "pts",
+        "level": "gt_block",
+        "rationale": "game-team: reshuffles WHO occupies which depth slot on the same roster on the same night, preserving that night's depth-slot marginal exactly",
+        "real_r2": 0.3387529455169052,
+        "p_correct_level": 0.0019960079840319,
+        "null_sd_correct": 0.0216038504216792,
+        "p_row_level_NAIVE": 0.0019960079840319,
+        "null_sd_row": 0.0292922467779622,
+        "inflation_correct_over_row": 0.7375279399166027
+      },
+      {
+        "feature": "depth_bucket",
+        "target": "minutes",
+        "level": "gt_block",
+        "rationale": "game-team: reshuffles WHO occupies which depth slot on the same roster on the same night, preserving that night's depth-slot marginal exactly",
+        "real_r2": 0.487898239345254,
+        "p_correct_level": 0.0019960079840319,
+        "null_sd_correct": 0.027293525199624,
+        "p_row_level_NAIVE": 0.0019960079840319,
+        "null_sd_row": 0.0332487325812093,
+        "inflation_correct_over_row": 0.8208891912785005
+      }
+    ],
+    "reading": "DRAFT SLOT and DEPTH RANK both carry genuine cross-sectional signal (p=0.002 at the correct level).  LISTED POSITION does NOT (p=0.200 points, 0.150 minutes) -- it is the one component of the user's proposal that the data does not support.",
+    "an_honest_oddity": "For depth_bucket the CORRECT (game-team) null is NARROWER than the row null (ratio 0.74/0.82), the opposite of the usual direction.  That is because reshuffling depth slots inside one roster on one night preserves that night's depth marginal exactly, which is a more constrained -- and here more conservative -- null than a free row shuffle.  Reported rather than smoothed over."
+  },
+  "step4_zero_games_case": {
+    "why_the_contrast_is_vs_the_league_mean": "At zero prior appearances a same-season running mean does not exist, so the honest comparator is what a system with no player information can do: the league mean.",
+    "SELECTION_CAVEAT": {
+      "true_first_appearances_in_master_2022_2024": 479,
+      "of_those_scored_by_the_champion": 71,
+      "coverage": 0.14822546972860126,
+      "meaning": "The champion produces no scored forecast for 85% of debuts, so every number in this section is conditional on that selection.  It also means the production system is ALREADY abstaining on most of this population."
+    },
+    "zero_same_season_n71_points": {
+      "P0_champion": {
+        "mae": 5.828049611763992,
+        "dr2_vs_league_mean": 0.0006495231392653,
+        "p_cluster": 0.0004997501249375
+      },
+      "P1full_running_mean": {
+        "mae": 5.7179783693207815,
+        "dr2_vs_league_mean": 0.0742782342483393,
+        "p_cluster": 0.0004997501249375
+      },
+      "P2_position": {
+        "mae": 5.90709021064572,
+        "dr2_vs_league_mean": -0.0404895262963249,
+        "p_cluster": 0.3503248375812094
+      },
+      "P3_draft_bin": {
+        "mae": 5.125529102353155,
+        "dr2_vs_league_mean": 0.3079731081505916,
+        "p_cluster": 0.0384807596201899
+      },
+      "P3_draft_ols": {
+        "mae": 4.8015196387794,
+        "dr2_vs_league_mean": 0.5275044781897122,
+        "p_cluster": 0.0014992503748125
+      },
+      "P4_teamrole": {
+        "mae": 5.280376787021098,
+        "dr2_vs_league_mean": 0.3259218135723983,
+        "p_cluster": 0.0004997501249375
+      },
+      "P5c_additive": {
+        "mae": 4.608729147995687,
+        "dr2_vs_league_mean": 0.5675904544625063,
+        "p_cluster": 0.0014992503748125
+      },
+      "P1c_career_mean": {
+        "mae": 4.650284575396609,
+        "dr2_vs_league_mean": 0.4851453451122168,
+        "p_cluster": 0.0339830084957521
+      },
+      "P5e_careerblend_k3": {
+        "mae": 4.256908266844296,
+        "dr2_vs_league_mean": 0.7449655603683578,
+        "p_cluster": 0.0019990004997501
+      }
+    },
+    "zero_same_season_n71_minutes": {
+      "P0_champion": {
+        "mae": 11.112378344987338,
+        "dr2_vs_league_mean": -0.0169603456396256,
+        "p_cluster": 0.0004997501249375
+      },
+      "P1full_running_mean": {
+        "mae": 10.765524179186238,
+        "dr2_vs_league_mean": 0.1140826225994413,
+        "p_cluster": 0.0004997501249375
+      },
+      "P2_position": {
+        "mae": 11.167052581844027,
+        "dr2_vs_league_mean": -0.0224771184442576,
+        "p_cluster": 0.5912043978010995
+      },
+      "P3_draft_bin": {
+        "mae": 10.298379855095831,
+        "dr2_vs_league_mean": 0.2961287835321784,
+        "p_cluster": 0.0139930034982508
+      },
+      "P3_draft_ols": {
+        "mae": 10.020331440042415,
+        "dr2_vs_league_mean": 0.4258246895343244,
+        "p_cluster": 0.000999500249875
+      },
+      "P4_teamrole": {
+        "mae": 9.988364081600505,
+        "dr2_vs_league_mean": 0.3933457743121771,
+        "p_cluster": 0.0004997501249375
+      },
+      "P5c_additive": {
+        "mae": 9.384576078269353,
+        "dr2_vs_league_mean": 0.6416227321812092,
+        "p_cluster": 0.0004997501249375
+      },
+      "P1c_career_mean": {
+        "mae": 9.490318692502802,
+        "dr2_vs_league_mean": 0.5833784058880556,
+        "p_cluster": 0.0014992503748125
+      },
+      "P5e_careerblend_k3": {
+        "mae": 8.822092822889623,
+        "dr2_vs_league_mean": 0.8501224312382087,
+        "p_cluster": 0.0004997501249375
+      }
+    },
+    "zero_career_n22_points": {
+      "P0_champion": {
+        "mae": 5.816391769096452,
+        "dr2_vs_league_mean": 0.0007755071581709,
+        "p_cluster": 0.128935532233883
+      },
+      "P1full_running_mean": {
+        "mae": 5.674580216900905,
+        "dr2_vs_league_mean": 0.1911875004099656,
+        "p_cluster": 0.0014992503748125
+      },
+      "P2_position": {
+        "mae": 6.1689412212231165,
+        "dr2_vs_league_mean": -0.3105893203405037,
+        "p_cluster": 0.0069965017491254
+      },
+      "P3_draft_bin": {
+        "mae": 4.9248038281697575,
+        "dr2_vs_league_mean": 0.861352456172982,
+        "p_cluster": 0.0144927536231884
+      },
+      "P3_draft_ols": {
+        "mae": 4.592976981894423,
+        "dr2_vs_league_mean": 1.0729454341357338,
+        "p_cluster": 0.0124937531234382
+      },
+      "P4_teamrole": {
+        "mae": 5.236624190289562,
+        "dr2_vs_league_mean": 0.6870500044612904,
+        "p_cluster": 0.000999500249875
+      },
+      "P5c_additive": {
+        "mae": 4.605285603817527,
+        "dr2_vs_league_mean": 1.1609042370136795,
+        "p_cluster": 0.0069965017491254
+      },
+      "P1c_career_mean": {
+        "mae": 5.81679309393732,
+        "dr2_vs_league_mean": -0.0,
+        "p_cluster": 1.0
+      },
+      "P5e_careerblend_k3": {
+        "mae": 4.605285603817527,
+        "dr2_vs_league_mean": 1.1609042370136795,
+        "p_cluster": 0.0069965017491254
+      }
+    },
+    "zero_career_n22_minutes": {
+      "P0_champion": {
+        "mae": 12.639139326575098,
+        "dr2_vs_league_mean": -0.0289287971293245,
+        "p_cluster": 0.0004997501249375
+      },
+      "P1full_running_mean": {
+        "mae": 12.2609570769576,
+        "dr2_vs_league_mean": 0.2355901169062508,
+        "p_cluster": 0.000999500249875
+      },
+      "P2_position": {
+        "mae": 13.002361100828058,
+        "dr2_vs_league_mean": -0.3492106947961707,
+        "p_cluster": 0.0044977511244377
+      },
+      "P3_draft_bin": {
+        "mae": 11.519618280309228,
+        "dr2_vs_league_mean": 0.7478077469985461,
+        "p_cluster": 0.0154922538730634
+      },
+      "P3_draft_ols": {
+        "mae": 11.224458889326838,
+        "dr2_vs_league_mean": 0.9536930901857864,
+        "p_cluster": 0.0109945027486256
+      },
+      "P4_teamrole": {
+        "mae": 11.25471608788121,
+        "dr2_vs_league_mean": 0.8114466839639385,
+        "p_cluster": 0.0004997501249375
+      },
+      "P5c_additive": {
+        "mae": 10.840323266708207,
+        "dr2_vs_league_mean": 1.1693023684495858,
+        "p_cluster": 0.0024987506246876
+      },
+      "P1c_career_mean": {
+        "mae": 12.602597802941265,
+        "dr2_vs_league_mean": -0.0,
+        "p_cluster": 1.0
+      },
+      "P5e_careerblend_k3": {
+        "mae": 10.840323266708207,
+        "dr2_vs_league_mean": 1.1693023684495858,
+        "p_cluster": 0.0024987506246876
+      }
+    },
+    "zero_same_season_but_has_career_n49_points": {
+      "P0_champion": {
+        "mae": 5.833283745206559,
+        "dr2_vs_league_mean": 0.000633383651943,
+        "p_cluster": 0.0014992503748125
+      },
+      "P1full_running_mean": {
+        "mae": 5.737463254080728,
+        "dr2_vs_league_mean": 0.0484121992339314,
+        "p_cluster": 0.000999500249875
+      },
+      "P2_position": {
+        "mae": 5.789524450794647,
+        "dr2_vs_league_mean": 0.0219714676742595,
+        "p_cluster": 0.6376811594202898
+      },
+      "P3_draft_bin": {
+        "mae": 5.215650654027334,
+        "dr2_vs_league_mean": 0.1846398643806614,
+        "p_cluster": 0.3008495752123938
+      },
+      "P3_draft_ols": {
+        "mae": 4.895151035748165,
+        "dr2_vs_league_mean": 0.4105550435685725,
+        "p_cluster": 0.0079960019990005
+      },
+      "P4_teamrole": {
+        "mae": 5.300020810043423,
+        "dr2_vs_league_mean": 0.2480106234881844,
+        "p_cluster": 0.0004997501249375
+      },
+      "P5c_additive": {
+        "mae": 4.610275229055269,
+        "dr2_vs_league_mean": 0.4402484682517409,
+        "p_cluster": 0.0079960019990005
+      },
+      "P1c_career_mean": {
+        "mae": 4.126546056868124,
+        "dr2_vs_league_mean": 0.6088310970116372,
+        "p_cluster": 0.0384807596201899
+      },
+      "P5e_careerblend_k3": {
+        "mae": 4.100493952284885,
+        "dr2_vs_league_mean": 0.66284460650024,
+        "p_cluster": 0.0164917541229385
+      }
+    },
+    "VERDICT": "THIS IS WHERE THE USER'S PROPOSAL HAS NO COMPETITION AND IT WINS BY A LOT.  On the 22 rows with literally no prior appearance, the draft+depth prior beats the league mean by dR2 +1.16 on points (p=0.007) and +1.17 on minutes (p=0.003), while the champion beats it by +0.0008 / -0.029.  The draft prior ALONE gets +1.07 / +0.95.  But the cell is 22 rows, and 49 of the 71 zero-same-season rows are veterans with prior-season history for whom the CAREER mean is the better answer."
+  },
+  "step5_handover_curve": {
+    "statistic": "r2_of_forecast(y, champion) - r2_of_forecast(y, P5d_blend_k2) in bins of prior same-season appearances.  POSITIVE = champion ahead.  95% CI from a 2000-draw CLUSTER BOOTSTRAP over (season, player_id).",
+    "points": [
+      {
+        "target": "pts",
+        "bin": "0",
+        "lo": 0,
+        "hi": 1,
+        "n": 71,
+        "n_clusters": 71,
+        "dr2_champion_minus_placeholder": -0.5669409313232419,
+        "ci95_lo": -1.3056555690449525,
+        "ci95_hi": -0.2310854396880239,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "pts",
+        "bin": "1",
+        "lo": 1,
+        "hi": 2,
+        "n": 470,
+        "n_clusters": 470,
+        "dr2_champion_minus_placeholder": -0.4597893008313908,
+        "ci95_lo": -0.538156948941323,
+        "ci95_hi": -0.3858221451608038,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "pts",
+        "bin": "2",
+        "lo": 2,
+        "hi": 3,
+        "n": 458,
+        "n_clusters": 458,
+        "dr2_champion_minus_placeholder": -0.5598681373261141,
+        "ci95_lo": -0.6185969582484525,
+        "ci95_hi": -0.4975617450068365,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "pts",
+        "bin": "3",
+        "lo": 3,
+        "hi": 4,
+        "n": 452,
+        "n_clusters": 452,
+        "dr2_champion_minus_placeholder": -0.090106535215261,
+        "ci95_lo": -0.1471088103816085,
+        "ci95_hi": -0.0407163925667327,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "pts",
+        "bin": "4",
+        "lo": 4,
+        "hi": 5,
+        "n": 448,
+        "n_clusters": 448,
+        "dr2_champion_minus_placeholder": -0.0387005177592857,
+        "ci95_lo": -0.0684112339531924,
+        "ci95_hi": -0.0114397526248528,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "pts",
+        "bin": "5",
+        "lo": 5,
+        "hi": 6,
+        "n": 441,
+        "n_clusters": 441,
+        "dr2_champion_minus_placeholder": -0.052170826292182,
+        "ci95_lo": -0.0919725321863096,
+        "ci95_hi": -0.0203082156945915,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "pts",
+        "bin": "6-7",
+        "lo": 6,
+        "hi": 8,
+        "n": 873,
+        "n_clusters": 439,
+        "dr2_champion_minus_placeholder": -0.0106828839473385,
+        "ci95_lo": -0.0267421699352147,
+        "ci95_hi": 0.0059624675144568,
+        "champion_ahead": false,
+        "placeholder_ahead": false
+      },
+      {
+        "target": "pts",
+        "bin": "8-10",
+        "lo": 8,
+        "hi": 11,
+        "n": 1259,
+        "n_clusters": 431,
+        "dr2_champion_minus_placeholder": -0.0177596327008826,
+        "ci95_lo": -0.028781666779391,
+        "ci95_hi": -0.0066651611169633,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "pts",
+        "bin": "11-15",
+        "lo": 11,
+        "hi": 16,
+        "n": 1972,
+        "n_clusters": 407,
+        "dr2_champion_minus_placeholder": -0.0098122249710765,
+        "ci95_lo": -0.0185991141137505,
+        "ci95_hi": -0.0003152016352205,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "pts",
+        "bin": "16-24",
+        "lo": 16,
+        "hi": 25,
+        "n": 3204,
+        "n_clusters": 377,
+        "dr2_champion_minus_placeholder": 0.0135718854080134,
+        "ci95_lo": 0.0038236062748924,
+        "ci95_hi": 0.0243791938612104,
+        "champion_ahead": true,
+        "placeholder_ahead": false
+      },
+      {
+        "target": "pts",
+        "bin": "25+",
+        "lo": 25,
+        "hi": 999,
+        "n": 4231,
+        "n_clusters": 324,
+        "dr2_champion_minus_placeholder": 0.0062084372042219,
+        "ci95_lo": -0.0035109993773229,
+        "ci95_hi": 0.0164934825868236,
+        "champion_ahead": false,
+        "placeholder_ahead": false
+      }
+    ],
+    "minutes": [
+      {
+        "target": "minutes",
+        "bin": "0",
+        "lo": 0,
+        "hi": 1,
+        "n": 71,
+        "n_clusters": 71,
+        "dr2_champion_minus_placeholder": -0.6585830778208348,
+        "ci95_lo": -1.1801811226942909,
+        "ci95_hi": -0.364092813279983,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "minutes",
+        "bin": "1",
+        "lo": 1,
+        "hi": 2,
+        "n": 470,
+        "n_clusters": 470,
+        "dr2_champion_minus_placeholder": -0.6646889195741734,
+        "ci95_lo": -0.7369214869161349,
+        "ci95_hi": -0.6008797473680566,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "minutes",
+        "bin": "2",
+        "lo": 2,
+        "hi": 3,
+        "n": 458,
+        "n_clusters": 458,
+        "dr2_champion_minus_placeholder": -0.722314986955751,
+        "ci95_lo": -0.7750406548164046,
+        "ci95_hi": -0.6726190479291448,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "minutes",
+        "bin": "3",
+        "lo": 3,
+        "hi": 4,
+        "n": 452,
+        "n_clusters": 452,
+        "dr2_champion_minus_placeholder": -0.0609366168179188,
+        "ci95_lo": -0.1068652251964895,
+        "ci95_hi": -0.0176846601327879,
+        "champion_ahead": false,
+        "placeholder_ahead": true
+      },
+      {
+        "target": "minutes",
+        "bin": "4",
+        "lo": 4,
+        "hi": 5,
+        "n": 448,
+        "n_clusters": 448,
+        "dr2_champion_minus_placeholder": -0.012179920624026,
+        "ci95_lo": -0.0362862967856616,
+        "ci95_hi": 0.0089592032390766,
+        "champion_ahead": false,
+        "placeholder_ahead": false
+      },
+      {
+        "target": "minutes",
+        "bin": "5",
+        "lo": 5,
+        "hi": 6,
+        "n": 441,
+        "n_clusters": 441,
+        "dr2_champion_minus_placeholder": 0.0171625246836839,
+        "ci95_lo": -0.0035267003066019,
+        "ci95_hi": 0.0355045157681123,
+        "champion_ahead": false,
+        "placeholder_ahead": false
+      },
+      {
+        "target": "minutes",
+        "bin": "6-7",
+        "lo": 6,
+        "hi": 8,
+        "n": 873,
+        "n_clusters": 439,
+        "dr2_champion_minus_placeholder": 0.0282318279890557,
+        "ci95_lo": 0.0136733744142618,
+        "ci95_hi": 0.0431077370371528,
+        "champion_ahead": true,
+        "placeholder_ahead": false
+      },
+      {
+        "target": "minutes",
+        "bin": "8-10",
+        "lo": 8,
+        "hi": 11,
+        "n": 1259,
+        "n_clusters": 431,
+        "dr2_champion_minus_placeholder": 0.0132236273901111,
+        "ci95_lo": -0.0002308836978873,
+        "ci95_hi": 0.0267477313152696,
+        "champion_ahead": false,
+        "placeholder_ahead": false
+      },
+      {
+        "target": "minutes",
+        "bin": "11-15",
+        "lo": 11,
+        "hi": 16,
+        "n": 1972,
+        "n_clusters": 407,
+        "dr2_champion_minus_placeholder": 0.0430312794284963,
+        "ci95_lo": 0.0279692282363529,
+        "ci95_hi": 0.0599726886677595,
+        "champion_ahead": true,
+        "placeholder_ahead": false
+      },
+      {
+        "target": "minutes",
+        "bin": "16-24",
+        "lo": 16,
+        "hi": 25,
+        "n": 3204,
+        "n_clusters": 377,
+        "dr2_champion_minus_placeholder": 0.0808157889900657,
+        "ci95_lo": 0.0568255948401178,
+        "ci95_hi": 0.1074252036205485,
+        "champion_ahead": true,
+        "placeholder_ahead": false
+      },
+      {
+        "target": "minutes",
+        "bin": "25+",
+        "lo": 25,
+        "hi": 999,
+        "n": 4231,
+        "n_clusters": 324,
+        "dr2_champion_minus_placeholder": 0.081352383752778,
+        "ci95_lo": 0.0591317077599061,
+        "ci95_hi": 0.1064755740468855,
+        "champion_ahead": true,
+        "placeholder_ahead": false
+      }
+    ],
+    "CROSSOVER": {
+      "minutes": "6-7 prior appearances -- the first bin whose whole 95% CI is above zero (+0.0282, CI [+0.0137, +0.0431]).  4-5 is ambiguous.",
+      "points": "16-24 prior appearances (+0.0136, CI [+0.0038, +0.0244]), and the 25+ bin is NOT significant (+0.0062, CI [-0.0035, +0.0165]).  On points the champion barely ever pulls clear of the blend.",
+      "operating_reading": "Hand over at 3 prior appearances -- that is where the champion stops emitting its constant and its own path switches on.  Between 3 and 5 the blend is still slightly ahead on points; from 6 the champion is clearly ahead on minutes.  A conservative rule hands over at 3; a points-optimal rule hands over at 6."
+    }
+  },
+  "step6_recommended_rule_priced": {
+    "rule": "IF pts__is_fallback THEN forecast = lam(n)*own_complete_running_mean + (1-lam(n))*(league_prior + depth_deviation + draft_deviation), lam(n)=n/(n+2), n = prior same-season appearances.  ELSE keep the champion untouched.",
+    "pooled": [
+      {
+        "target": "pts",
+        "variant": "champion_untouched",
+        "pooled_mae": 4.190919667572693,
+        "pooled_r2_of_forecast": 0.4694094384707139,
+        "pooled_skill_vs_refD076": -0.0022218316796525,
+        "dr2_vs_champion": -0.0,
+        "p_vs_champion": 1.0,
+        "p_row_NAIVE_vs_champion": 1.0,
+        "inflation": Infinity,
+        "dr2_vs_crude_complete": -0.0271299606494364,
+        "p_vs_crude_complete": 0.0004997501249375
+      },
+      {
+        "target": "pts",
+        "variant": "D081_crude_splice_refD076",
+        "pooled_mae": 4.124763578417677,
+        "pooled_r2_of_forecast": 0.480730290877677,
+        "pooled_skill_vs_refD076": 0.0135988191819528,
+        "dr2_vs_champion": 0.011320852406963,
+        "p_vs_champion": 0.0004997501249375,
+        "p_row_NAIVE_vs_champion": 0.0004997501249375,
+        "inflation": 0.9813321328388126,
+        "dr2_vs_crude_complete": -0.0158091082424734,
+        "p_vs_crude_complete": 0.0004997501249375
+      },
+      {
+        "target": "pts",
+        "variant": "crude_splice_COMPLETE_running_mean",
+        "pooled_mae": 4.052403612434415,
+        "pooled_r2_of_forecast": 0.4965393991201504,
+        "pooled_skill_vs_refD076": 0.0309030729974465,
+        "dr2_vs_champion": 0.0271299606494364,
+        "p_vs_champion": 0.0004997501249375,
+        "p_row_NAIVE_vs_champion": 0.0004997501249375,
+        "inflation": 1.1511964168911977,
+        "dr2_vs_crude_complete": -0.0,
+        "p_vs_crude_complete": 1.0
+      },
+      {
+        "target": "pts",
+        "variant": "RECOMMENDED_blend_splice",
+        "pooled_mae": 4.035010863560213,
+        "pooled_r2_of_forecast": 0.5041554387599592,
+        "pooled_skill_vs_refD076": 0.0350623969686317,
+        "dr2_vs_champion": 0.0347460002892453,
+        "p_vs_champion": 0.0004997501249375,
+        "p_row_NAIVE_vs_champion": 0.0004997501249375,
+        "inflation": 1.2117157511889616,
+        "dr2_vs_crude_complete": 0.0076160396398088,
+        "p_vs_crude_complete": 0.0004997501249375
+      },
+      {
+        "target": "minutes",
+        "variant": "champion_untouched",
+        "pooled_mae": 5.079670829517938,
+        "pooled_r2_of_forecast": 0.6193570946106857,
+        "pooled_skill_vs_refD076": 0.0355494604123175,
+        "dr2_vs_champion": -0.0,
+        "p_vs_champion": 1.0,
+        "p_row_NAIVE_vs_champion": 1.0,
+        "inflation": Infinity,
+        "dr2_vs_crude_complete": -0.0514215373634271,
+        "p_vs_crude_complete": 0.0004997501249375
+      },
+      {
+        "target": "minutes",
+        "variant": "D081_crude_splice_refD076",
+        "pooled_mae": 4.90602273185986,
+        "pooled_r2_of_forecast": 0.6467947346343699,
+        "pooled_skill_vs_refD076": 0.0685191167356193,
+        "dr2_vs_champion": 0.0274376400236841,
+        "p_vs_champion": 0.0004997501249375,
+        "p_row_NAIVE_vs_champion": 0.0004997501249375,
+        "inflation": 1.065456981419144,
+        "dr2_vs_crude_complete": -0.0239838973397429,
+        "p_vs_crude_complete": 0.0004997501249375
+      },
+      {
+        "target": "minutes",
+        "variant": "crude_splice_COMPLETE_running_mean",
+        "pooled_mae": 4.752743046421861,
+        "pooled_r2_of_forecast": 0.6707786319741127,
+        "pooled_skill_vs_refD076": 0.0976215291339711,
+        "dr2_vs_champion": 0.0514215373634271,
+        "p_vs_champion": 0.0004997501249375,
+        "p_row_NAIVE_vs_champion": 0.0004997501249375,
+        "inflation": 1.2476203126904688,
+        "dr2_vs_crude_complete": -0.0,
+        "p_vs_crude_complete": 1.0
+      },
+      {
+        "target": "minutes",
+        "variant": "RECOMMENDED_blend_splice",
+        "pooled_mae": 4.750123761225192,
+        "pooled_r2_of_forecast": 0.6730651583921698,
+        "pooled_skill_vs_refD076": 0.0981188391184256,
+        "dr2_vs_champion": 0.0537080637814842,
+        "p_vs_champion": 0.0004997501249375,
+        "p_row_NAIVE_vs_champion": 0.0004997501249375,
+        "inflation": 1.3207310128803758,
+        "dr2_vs_crude_complete": 0.0022865264180571,
+        "p_vs_crude_complete": 0.0174912543728135
+      },
+      {
+        "target": "ppm",
+        "variant": "champion_untouched",
+        "pooled_mae": 0.1817428309958613,
+        "pooled_r2_of_forecast": 0.1435623302077924,
+        "pooled_skill_vs_refD076": 0.0110043374336604,
+        "dr2_vs_champion": -0.0,
+        "p_vs_champion": 1.0,
+        "p_row_NAIVE_vs_champion": 1.0,
+        "inflation": Infinity,
+        "dr2_vs_crude_complete": 0.0136670655480647,
+        "p_vs_crude_complete": 0.009495252373813
+      },
+      {
+        "target": "ppm",
+        "variant": "D081_crude_splice_refD076",
+        "pooled_mae": 0.1823628658427613,
+        "pooled_r2_of_forecast": 0.1254440789343714,
+        "pooled_skill_vs_refD076": 0.0076302743640802,
+        "dr2_vs_champion": -0.0181182512734209,
+        "p_vs_champion": 0.0004997501249375,
+        "p_row_NAIVE_vs_champion": 0.0004997501249375,
+        "inflation": 0.9990676231142384,
+        "dr2_vs_crude_complete": -0.0044511857253561,
+        "p_vs_crude_complete": 0.3703148425787106
+      },
+      {
+        "target": "ppm",
+        "variant": "crude_splice_COMPLETE_running_mean",
+        "pooled_mae": 0.1813245849000285,
+        "pooled_r2_of_forecast": 0.1298952646597275,
+        "pooled_skill_vs_refD076": 0.0132803203288172,
+        "dr2_vs_champion": -0.0136670655480647,
+        "p_vs_champion": 0.009495252373813,
+        "p_row_NAIVE_vs_champion": 0.0099950024987506,
+        "inflation": 1.059533926010069,
+        "dr2_vs_crude_complete": -0.0,
+        "p_vs_crude_complete": 1.0
+      },
+      {
+        "target": "ppm",
+        "variant": "RECOMMENDED_blend_splice",
+        "pooled_mae": 0.1794729562189607,
+        "pooled_r2_of_forecast": 0.1565191724581742,
+        "pooled_skill_vs_refD076": 0.0233563861864094,
+        "dr2_vs_champion": 0.0129568422503817,
+        "p_vs_champion": 0.0004997501249375,
+        "p_row_NAIVE_vs_champion": 0.0004997501249375,
+        "inflation": 1.063961024475437,
+        "dr2_vs_crude_complete": 0.0266239077984465,
+        "p_vs_crude_complete": 0.0004997501249375
+      }
+    ],
+    "headline_points": {
+      "champion_pooled_skill_vs_refD076": -0.0022218316796525,
+      "D081_crude_splice": 0.0135988191819528,
+      "crude_splice_with_COMPLETE_running_mean": 0.0309030729974465,
+      "RECOMMENDED": 0.0350623969686317,
+      "dr2_of_rule_over_champion": 0.0347460002892453,
+      "p": 0.0004997501249375,
+      "dr2_of_rule_over_the_CRUDE_splice": 0.0076160396398088,
+      "p_over_crude": 0.0004997501249375
+    },
+    "per_season_stability": [
+      {
+        "season": 2022,
+        "target": "pts",
+        "n": 4362,
+        "n_tier": 363,
+        "mae_champion": 4.11097365778674,
+        "mae_recommended": 3.986360518557318,
+        "dr2_vs_champion": 0.0278863862474638,
+        "p_vs_champion": 0.0004997501249375,
+        "dr2_vs_crude": 0.012388183761522,
+        "p_vs_crude": 0.0004997501249375
+      },
+      {
+        "season": 2022,
+        "target": "minutes",
+        "n": 4362,
+        "n_tier": 363,
+        "mae_champion": 5.035327663130936,
+        "mae_recommended": 4.767355575521057,
+        "dr2_vs_champion": 0.049963469012443,
+        "p_vs_champion": 0.0004997501249375,
+        "dr2_vs_crude": 0.0025308905124785,
+        "p_vs_crude": 0.2073963018490754
+      },
+      {
+        "season": 2023,
+        "target": "pts",
+        "n": 4748,
+        "n_tier": 348,
+        "mae_champion": 4.226803415354732,
+        "mae_recommended": 4.072582852233767,
+        "dr2_vs_champion": 0.0328577793576261,
+        "p_vs_champion": 0.0004997501249375,
+        "dr2_vs_crude": 0.0062636476613862,
+        "p_vs_crude": 0.0004997501249375
+      },
+      {
+        "season": 2023,
+        "target": "minutes",
+        "n": 4748,
+        "n_tier": 348,
+        "mae_champion": 5.048011723847636,
+        "mae_recommended": 4.727198759874065,
+        "dr2_vs_champion": 0.0477284189070799,
+        "p_vs_champion": 0.0004997501249375,
+        "dr2_vs_crude": 0.0027528480393393,
+        "p_vs_crude": 0.056471764117941
+      },
+      {
+        "season": 2024,
+        "target": "pts",
+        "n": 4769,
+        "n_tier": 350,
+        "mae_champion": 4.228317122011194,
+        "mae_recommended": 4.042102707276003,
+        "dr2_vs_champion": 0.0420995505280703,
+        "p_vs_champion": 0.0004997501249375,
+        "dr2_vs_crude": 0.0052582191449147,
+        "p_vs_crude": 0.0139930034982508
+      },
+      {
+        "season": 2024,
+        "target": "minutes",
+        "n": 4769,
+        "n_tier": 350,
+        "mae_champion": 5.151749320921312,
+        "mae_recommended": 4.757186611394323,
+        "dr2_vs_champion": 0.062441463515405,
+        "p_vs_champion": 0.0004997501249375,
+        "dr2_vs_crude": 0.0016424592343759,
+        "p_vs_crude": 0.2658670664667666
+      }
+    ],
+    "per_season_reading": "The rule beats the untouched champion in all three seasons on both targets, every p = 0.0005.  Against the CRUDE complete-running-mean splice it is significant on points in all three seasons but NOT on minutes in any single season -- the minutes increment is real pooled and small per fold."
+  },
+  "controls": {
+    "noop_placebo": {
+      "real": 4.190919667572693,
+      "n_draws": 200,
+      "sd": 0.0,
+      "max_abs_dev_from_real": 0.0,
+      "n_distinct_draw_values": 1,
+      "tol": 1e-15,
+      "is_noop": true,
+      "verdict": "CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)"
+    },
+    "negative_control_self_comparison": {
+      "dr2": -0.0,
+      "p": 1.0
+    },
+    "negative_control_pure_noise": {
+      "dr2": -1.454496768491994,
+      "p": 0.0004997501249375312
+    },
+    "negative_control_random_tier": [
+      {
+        "target": "pts",
+        "real_dr2": 0.0347460002892453,
+        "random_tier_mean": 0.002797134980416647,
+        "random_tier_sd": 0.0009961005902157391,
+        "random_tier_max": 0.006537566999060829
+      },
+      {
+        "target": "minutes",
+        "real_dr2": 0.053708063781484204,
+        "random_tier_mean": 0.00013048013776484124,
+        "random_tier_sd": 0.0010677215688421537,
+        "random_tier_max": 0.002688858240306735
+      }
+    ],
+    "random_tier_reading": "Applying the same blend to a RANDOM 7.6% of rows gains dR2 +0.0028 (sd 0.0010, max 0.0065) on points against the real tier's +0.0348.  The gain is located in the tier, not in the blend being better everywhere."
+  },
+  "kit_defects": {
+    "K4_assert_partition_raises_on_clean_data": {
+      "severity": "HIGH -- a guard that rejects correct data trains callers to disable it",
+      "summary": "screenkit.assert_partition raises PartitionViolation on a frame whose every observation is inside 2021-2024, whenever the frame carries a year-valued player attribute such as draft_year (values 2002-2020), because such a year legitimately PREDATES the partition.",
+      "not_a_repeat_of_K0": "K0 was a NAME match with no value gate.  K4 SATISFIES the K0 invariant: the value gate is asked 'are these years?' and answers YES correctly.  The defect is that the partition needs to know 'is this the OBSERVATION SEASON of the row?', which is a different question that every year-valued attribute answers NO to.",
+      "direction_is_ignored": "The guard exists to stop 2025/2026 -- the FUTURE -- entering. draft_year=2008 cannot be a holdout leak.  The current code returns both cases as identically-shaped violation STRINGS, so a caller cannot distinguish them without parsing the guard's own prose, which is the textual check the module forbids.",
+      "workaround_is_a_false_pass_door": "season_cols=['season'] silences the false alarm AND a genuine 2026 leak in any column the caller did not name.  Demonstrated in reproduction 4.",
+      "repro": "KIT_DEFECT_K4_REPRO.py (4 reproductions) / run_log_kit_defect_K4.txt",
+      "fix_applied_to_kit": false,
+      "why_not": "screenkit.py is outside this screen's write scope and two other agents are running against it.",
+      "what_this_screen_did_instead": "ct_base.assert_partition_adjudicated: calls the kit with raise_on_violation=False; any flagged value >= 2025 is FATAL in any column; a flagged column is tolerated only if it is on an explicit one-column allowlist AND every flagged value is strictly earlier than the partition; and the strict unmodified kit check is ALSO run on the frame with the allowlisted column dropped."
+    },
+    "K5_nit_permutation_null_refuses_string_categoricals": {
+      "severity": "LOW -- correct, safe behaviour with an actionable message; reported as friction",
+      "summary": "permutation_null raises TypeError on a string/categorical feature ('the kit will not guess an encoding for you').  Group priors over categorical labels -- position, draft bucket, depth bucket -- are among the most natural things to permute in this program, so most users will hit it.",
+      "resolution": "Not a bug.  The message names the fix and the refusal is the safe failure mode.  This screen declared a bijective integer codebook (see categorical_codebooks) and mapped back inside stat_fn.  A worked categorical example in the kit README would remove the friction.",
+      "categorical_codebooks": {
+        "draft_bucket": {
+          "p01_04": 0,
+          "p05_08": 1,
+          "p09_12": 2,
+          "p13_20": 3,
+          "p21_plus": 4,
+          "undrafted": 5
+        },
+        "pos_group": {
+          "C": 0,
+          "F": 1,
+          "G": 2
+        }
+      }
+    },
+    "kit_functions_used": [
+      "check_manifest",
+      "assert_partition",
+      "r2_of_forecast",
+      "r2_plain",
+      "paired_forecast_comparison",
+      "permutation_null",
+      "detect_grouping_level",
+      "var_share_between",
+      "noop_placebo"
+    ]
+  },
+  "manifest_status_honest": {
+    "master_player.parquet": "USABLE_IF_FILTERED (asof_granularity=row) -- filtered at load",
+    "analysis_frame.parquet": "UNVERIFIABLE (no manifest) -- frozen D076 output, value-checked here",
+    "decomp_frame.parquet": "UNVERIFIABLE (no manifest) -- frozen D081 output, value-checked here",
+    "player_bios.csv": "UNVERIFIABLE (no manifest).  NEVER TREATED AS A PASS.  Used on an explicit structural argument tested on COLUMN VALUES: age advances by exactly +1 across 100% of consecutive player-season pairs inside 2021-2024, and height/weight vary within player across seasons -- neither is possible from a replicated current-state pull.  draft_year/round/number are constant within player, as immutable facts must be.",
+    "residual_caveat_not_resolved": "position_raw varies within player in 0.00% of cases, so this screen CANNOT distinguish 'position never changes' from 'position is a current-state field replicated backwards'.  This is defused by the result rather than by evidence: the position prior carries no signal (permutation p = 0.20) and is dropped from the recommendation.",
+    "forbidden_artifacts_not_opened": [
+      "data/w1_truth/player_game_availability.csv",
+      "data/w1_truth/roster_asof.csv"
+    ],
+    "availability_rebuilt_from": "master_player box membership, as D076 did"
+  },
+  "files_written": [
+    "FINDINGS.json",
+    "KIT_DEFECT_K4_REPRO.py",
+    "NOTES.md",
+    "TIER_RULE.md",
+    "__pycache__",
+    "_s00.json",
+    "_s01.json",
+    "_s02.json",
+    "_s02b.json",
+    "_s03.json",
+    "_s04.json",
+    "_s05.json",
+    "component_decomposition.csv",
+    "crossover_curve.csv",
+    "ct_base.py",
+    "d087_decomposition.csv",
+    "handover_curve.csv",
+    "negative_control_random_tier.csv",
+    "noop_placebo_draws.csv",
+    "per_season_stability.csv",
+    "perm_draws_depth_bucket_pts.csv",
+    "perm_draws_draft_bucket_pts.csv",
+    "perm_draws_pos_group_pts.csv",
+    "permutation_draws_datapoor_pts.csv",
+    "permutation_nulls.csv",
+    "placeholder_comparison.csv",
+    "placeholder_frame.parquet",
+    "placeholders_minutes.csv",
+    "placeholders_ppm.csv",
+    "placeholders_pts.csv",
+    "pooled_operating_rule.csv",
+    "prior_pool.parquet",
+    "repro_coldstart_splice.csv",
+    "repro_depth_quintile_table.csv",
+    "run_log.txt",
+    "run_log_kit_defect_K4.txt",
+    "run_log_s00.txt",
+    "run_log_s01.txt",
+    "run_log_s02.txt",
+    "run_log_s02b.txt",
+    "run_log_s03.txt",
+    "run_log_s04.txt",
+    "run_log_s05.txt",
+    "run_log_s06.txt",
+    "run_log_s07.txt",
+    "s00_inspect.py",
+    "s01_reproduce.py",
+    "s02_taxonomy.py",
+    "s02b_diagnose.py",
+    "s03_placeholders.py",
+    "s04_decompose_and_crossover.py",
+    "s05_operating_rule.py",
+    "s06_findings.py",
+    "s07_redact_s00.py",
+    "shrinkage_sensitivity.csv",
+    "skill_versus_tier.csv",
+    "tier_frame.parquet",
+    "tier_sizes.csv",
+    "zero_games_case.csv"
+  ]
+}

@@ -1,0 +1,251 @@
+﻿
+====================================================================================================
+STEP 2.0 -- player_bios.csv VERIFIED ON COLUMN VALUES (manifest is UNVERIFIABLE)
+====================================================================================================
+  guard ok  player_bios after load                               n=648     seasons=[2021, 2022, 2023, 2024]
+  player_bios  shape=(648, 21)  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+  THE QUESTION: does this file carry GENUINE PER-SEASON values, or is it a replicated pull of each
+  player's CURRENT state stamped onto every season?  A replicated current-state pull would make
+  every mutable attribute CONSTANT within player across seasons.  This is a VALUE test.
+
+  players with >1 season inside 2021-2024: 184 (564 rows)
+     age              varies within player across seasons in 100.00% of multi-season players
+     height_inches    varies within player across seasons in   7.07% of multi-season players
+     weight_lbs       varies within player across seasons in  23.91% of multi-season players
+     position_raw     varies within player across seasons in   0.00% of multi-season players
+     draft_number     varies within player across seasons in   0.00% of multi-season players
+     draft_round      varies within player across seasons in   0.00% of multi-season players
+     draft_year       varies within player across seasons in   0.00% of multi-season players
+     college          varies within player across seasons in   0.00% of multi-season players
+     country          varies within player across seasons in   0.00% of multi-season players
+
+  age delta across CONSECUTIVE seasons (a current-state pull would be 0 everywhere):
+dage
+1.0    342
+     fraction with delta_age == +1 : 1.0000
+
+  VERDICT ON STRUCTURAL GROUNDS (stated explicitly because the manifest is UNVERIFIABLE, which is
+  never a pass):  age advances by exactly +1 across 100.0% of consecutive player-season pairs, and
+  height/weight also vary within player across seasons.  A replicated current-state pull cannot
+  produce that.  draft_year / draft_round / draft_number are CONSTANT within player (0.0% /
+  0.0% / 0.0% varying), which is what immutable facts must do.  The file is therefore treated as
+  genuinely per-season.  ONE RESIDUAL CAVEAT, NOT RESOLVED: position_raw varies within player in
+  0.00% of cases, so this screen CANNOT distinguish "position never changes" from "position is a
+  current-state field replicated backwards".  Position is used only as a coarse G/F/C grouping and
+  every result is reported with and without it.
+
+
+====================================================================================================
+STEP 2.1 -- BUILD THE WORKING FRAME (champion + reference + depth chart + bios)
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+  analysis_frame  shape=(13879, 101)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]  max_date=2024-10-20
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  guard ok  master_player after load                             n=21462   seasons=[2021, 2022, 2023, 2024]
+  depth chart built: depth_bucket distribution (all master rows 2021-2024)
+depth_bucket
+0.0     1081
+1.0     1892
+2.0     1892
+3.0     1893
+4.0     1892
+5.0     1893
+6.0     1893
+7.0     1892
+8.0     1892
+9.0     1841
+10.0    1667
+11.0    1734
+  guard ok  depth chart                                          n=21462   seasons=[2021, 2022, 2023, 2024]
+  merged depth chart onto 13879 rows; unmatched=0
+     independent rebuild mp_prior_games           vs frozen pl_games_prior           max|delta|=0.000e+00  mismatched rows=0
+     independent rebuild mp_career_prior_games    vs frozen pl_career_games_prior    max|delta|=0.000e+00  mismatched rows=0
+     independent rebuild mp_prior_minutes         vs frozen pl_minutes_prior         max|delta|=0.000e+00  mismatched rows=0
+
+  bios attached.  coverage on the 13879 scored rows:
+     pos_group      non-null 1.0000
+     draft_bucket   non-null 1.0000
+     draft_pick     non-null 0.9086
+     draft_round    non-null 0.9086
+
+  pos_group counts:  {'G': np.int64(6952), 'F': np.int64(5009), 'C': np.int64(1918)}
+  draft_bucket counts: {'p01_04': np.int64(3875), 'p05_08': np.int64(3376), 'p13_20': np.int64(2738), 'p09_12': np.int64(1473), 'undrafted': np.int64(1269), 'p21_plus': np.int64(1148)}
+  depth_bucket counts: {0.0: np.int64(71), 1.0: np.int64(1415), 2.0: np.int64(1372), 3.0: np.int64(1385), 4.0: np.int64(1425), 5.0: np.int64(1381), 6.0: np.int64(1384), 7.0: np.int64(1299), 8.0: np.int64(1308), 9.0: np.int64(1190), 10.0: np.int64(884), 11.0: np.int64(765)}
+  assert_partition (adjudicated) at tier_frame                   -> PASS  strict-on-remainder=PASS
+     tolerated attribute-year column draft_year     VALUES=2002..2024  (all strictly BEFORE the partition; K4)
+
+  wrote tier_frame.parquet  shape=(13879, 125)
+
+====================================================================================================
+STEP 2.2 -- THE WALK-FORWARD PRIOR POOL
+====================================================================================================
+  guard ok  prior pool (appeared rows, 2021-2024)                n=18212   seasons=[2021, 2022, 2023, 2024]
+  pool rows per season: {2021: np.int64(3885), 2022: np.int64(4519), 2023: np.int64(4897), 2024: np.int64(4911)}
+
+  USE RULE: the pool for target season S is pool[season < S].  2021 is present ONLY to seed the
+  2022 fold and is NEVER a scored row -- the champion did not forecast it (degenerate fold).
+
+
+====================================================================================================
+STEP 2.3 -- SKILL VERSUS TIER: WHERE DOES THE CHAMPION'S SKILL ACTUALLY CROSS ZERO?
+====================================================================================================
+
+  Two skill measures on every cell, both against D076's point-in-time running-mean reference on the
+  SAME rows:
+     skill_mae = 1 - MAE_champ / MAE_ref          (D076/D081 continuity)
+     dR2       = r2_of_forecast(y, champ) - r2_of_forecast(y, ref)   (kit, D069 denominator)
+  A cell is DATA-POOR when the champion loses to the running mean there.
+
+
+  --- AXIS: pl_games_prior
+  bin    n  pct_rows  n_players  fallback_rate  skill_mae_pts  skill_mae_minutes  skill_mae_ppm  dr2_pts  dr2_minutes
+    0   71   +0.5116         71        +1.0000        +0.0082            -0.0003        +0.0202  +0.0276      -0.0116
+    1  470   +3.3864        470        +1.0000        -0.0490            -0.1014        +0.0353  -0.0313      -0.1452
+    2  458   +3.2999        458        +1.0000        -0.3911            -0.8175        +0.0421  -0.3413      -0.6327
+    3  452   +3.2567        452        +0.1283        +0.0258            -0.0356        +0.0625  +0.0365      -0.0142
+    4  448   +3.2279        448        +0.0067        +0.0096            -0.0123        +0.0321  +0.0046      -0.0093
+    5  441   +3.1775        441        +0.0023        +0.0173            +0.0372        +0.0169  +0.0140      +0.0262
+  6-7  873   +6.2901        439        +0.0000        +0.0169            +0.0321        +0.0169  +0.0079      +0.0254
+  8-9  850   +6.1244        431        +0.0000        +0.0051            +0.0102        -0.0038  -0.0097      +0.0083
+10-12 1214   +8.7470        416        +0.0000        -0.0020            +0.0337        +0.0062  -0.0071      +0.0281
+13-16 1541  +11.1031        395        +0.0000        +0.0141            +0.0848        +0.0061  +0.0060      +0.0682
+17-24 2830  +20.3905        374        +0.0000        +0.0180            +0.0988        +0.0067  +0.0153      +0.0828
+  25+ 4231  +30.4849        324        +0.0000        +0.0184            +0.1129        +0.0005  +0.0064      +0.0802
+
+  --- AXIS: pl_career_games_prior
+  bin    n  pct_rows  n_players  fallback_rate  skill_mae_pts  skill_mae_minutes  skill_mae_ppm  dr2_pts  dr2_minutes
+  1-2  211   +1.5203        111        +1.0000        -0.4165            -0.4807        -0.1172  -0.7446      -0.8227
+  3-5  297   +2.1399        104        +0.0842        -0.0318            -0.0485        +0.0242  -0.0087      -0.0314
+  6-9  402   +2.8965        105        +0.0323        +0.0138            +0.0347        +0.0242  +0.0023      +0.0252
+10-19  964   +6.9457        125        +0.0591        -0.0160            +0.0489        +0.0227  -0.0218      +0.0349
+20-39 2444  +17.6093        239        +0.1240        +0.0135            +0.0266        +0.0301  +0.0083      +0.0210
+40-79 4961  +35.7447        254        +0.0542        +0.0113            +0.0601        +0.0068  +0.0041      +0.0452
+  80+ 4578  +32.9851        163        +0.0352        -0.0024            +0.0524        +0.0067  -0.0056      +0.0493
+
+  --- AXIS: pl_minutes_prior
+    bin    n  pct_rows  n_players  fallback_rate  skill_mae_pts  skill_mae_minutes  skill_mae_ppm  dr2_pts  dr2_minutes
+      0   80   +0.5764         80        +1.0000        +0.0061            -0.0018        +0.0161  +0.0206      -0.0182
+   1-24  655   +4.7194        314        +0.7023        -0.3018            -0.4249        +0.0259  -0.4737      -0.7789
+  25-59 1023   +7.3708        450        +0.3969        -0.0152            -0.0334        +0.0335  -0.0066      -0.0161
+ 60-119 1487  +10.7140        424        +0.0773        -0.0048            -0.0503        +0.0331  -0.0395      -0.0316
+120-249 2513  +18.1065        390        +0.0000        +0.0167            +0.0613        +0.0161  +0.0108      +0.0564
+250-499 3572  +25.7367        348        +0.0000        +0.0178            +0.1041        -0.0031  +0.0101      +0.0921
+   500+ 4549  +32.7761        263        +0.0000        +0.0113            +0.0925        -0.0011  +0.0066      +0.0991
+
+  wrote skill_versus_tier.csv
+
+====================================================================================================
+STEP 2.4 -- THE CROSSOVER: SMALLEST n SUCH THAT THE CHAMPION WINS ON ROWS WITH >= n PRIORS
+====================================================================================================
+
+  --- AXIS: pl_games_prior   (skill_at = rows with EXACTLY n priors; skill_lt = rows BELOW n)
+ n  n_at  n_lt  skill_at_pts  skill_at_minutes  skill_lt_pts  skill_lt_minutes  skill_ge_pts  skill_ge_minutes
+ 0    71     0       +0.0082           -0.0003           NaN               NaN       -0.0022           +0.0355
+ 1   470    71       -0.0490           -0.1014       +0.0082           -0.0003       -0.0023           +0.0359
+ 2   458   541       -0.3911           -0.8175       -0.0413           -0.0851       -0.0000           +0.0442
+ 3   452   999       +0.0258           -0.0356       -0.1791           -0.3285       +0.0149           +0.0762
+ 4   448  1451       +0.0096           -0.0123       -0.1247           -0.2599       +0.0145           +0.0801
+ 5   441  1899       +0.0173           +0.0372       -0.0979           -0.2150       +0.0147           +0.0833
+ 6   438  2340       +0.0158           +0.0195       -0.0791           -0.1757       +0.0146           +0.0850
+ 7   435  2778       +0.0180           +0.0444       -0.0664           -0.1511       +0.0146           +0.0873
+ 8   430  3213       +0.0232           +0.0251       -0.0559           -0.1287       +0.0144           +0.0889
+ 9   420  3643       -0.0151           -0.0050       -0.0468           -0.1128       +0.0141           +0.0914
+10   409  4063       +0.0029           +0.0376       -0.0438           -0.1029       +0.0152           +0.0952
+11   405  4472       +0.0011           +0.0404       -0.0397           -0.0917       +0.0157           +0.0974
+12   400  4877       -0.0103           +0.0232       -0.0365           -0.0812       +0.0164           +0.0999
+13   395  5277       +0.0038           +0.0447       -0.0346           -0.0738       +0.0175           +0.1033
+14   388  5672       +0.0112           +0.0800       -0.0319           -0.0658       +0.0182           +0.1060
+15   384  6060       +0.0279           +0.0958       -0.0292           -0.0569       +0.0185           +0.1073
+16   374  6444       +0.0146           +0.1205       -0.0260           -0.0482       +0.0181           +0.1078
+17   374  6818       +0.0066           +0.1164       -0.0238           -0.0390       +0.0182           +0.1072
+18   367  7192       +0.0128           +0.0498       -0.0223           -0.0309       +0.0189           +0.1067
+19   363  7559       +0.0528           +0.1533       -0.0207           -0.0269       +0.0192           +0.1100
+20   361  7922       -0.0156           +0.0766       -0.0174           -0.0182       +0.0172           +0.1072
+21   350  8283       +0.0149           +0.1024       -0.0173           -0.0141       +0.0191           +0.1091
+22   343  8633       +0.0221           +0.0849       -0.0159           -0.0095       +0.0194           +0.1096
+23   341  8976       +0.0264           +0.0975       -0.0145           -0.0058       +0.0192           +0.1113
+24   331  9317       +0.0220           +0.1069       -0.0129           -0.0018       +0.0187           +0.1124
+25   324  9648       +0.0094           +0.1121       -0.0117           +0.0019       +0.0184           +0.1129
+26   318  9972       +0.0230           +0.1747       -0.0109           +0.0056       +0.0192           +0.1129
+27   304 10290       +0.0166           +0.1231       -0.0099           +0.0106       +0.0190           +0.1077
+28   301 10594       +0.0439           +0.1069       -0.0092           +0.0136       +0.0192           +0.1063
+29   290 10895       +0.0279           +0.0804       -0.0078           +0.0159       +0.0170           +0.1063
+30   281 11185       +0.0011           +0.0808       -0.0068           +0.0175       +0.0157           +0.1089
+
+  --- AXIS: pl_career_games_prior   (skill_at = rows with EXACTLY n priors; skill_lt = rows BELOW n)
+ n  n_at  n_lt  skill_at_pts  skill_at_minutes  skill_lt_pts  skill_lt_minutes  skill_ge_pts  skill_ge_minutes
+ 0    22     0           NaN               NaN           NaN               NaN       -0.0022           +0.0355
+ 1   108    22       -0.1350           -0.1555           NaN               NaN       -0.0022           +0.0357
+ 2   103   130       -0.9099           -1.1133       -0.1124           -0.1254       -0.0009           +0.0386
+ 3    99   233       -0.0304           -0.0958       -0.3669           -0.4120       +0.0044           +0.0474
+ 4    99   332       -0.0357           -0.0513       -0.2834           -0.3455       +0.0047           +0.0485
+ 5    99   431       -0.0292           +0.0009       -0.2359           -0.2982       +0.0049           +0.0491
+ 6   100   530       +0.0082           +0.0274       -0.2046           -0.2528       +0.0051           +0.0495
+ 7   103   630       +0.0131           +0.0412       -0.1765           -0.2153       +0.0051           +0.0496
+ 8   101   733       +0.0300           +0.0583       -0.1537           -0.1846       +0.0050           +0.0497
+ 9    98   834       +0.0009           +0.0115       -0.1326           -0.1583       +0.0049           +0.0496
+10    95   932       +0.0093           +0.0776       -0.1210           -0.1419       +0.0049           +0.0499
+11    94  1027       -0.0701           +0.0018       -0.1110           -0.1251       +0.0049           +0.0497
+12    98  1121       +0.0133           +0.0548       -0.1075           -0.1148       +0.0053           +0.0501
+13    95  1219       -0.0568           -0.0093       -0.0975           -0.1016       +0.0053           +0.0501
+14    93  1314       -0.0500           +0.0579       -0.0947           -0.0950       +0.0056           +0.0506
+15    95  1407       +0.0238           +0.0844       -0.0918           -0.0854       +0.0059           +0.0505
+16    94  1502       -0.0363           +0.0526       -0.0853           -0.0730       +0.0059           +0.0502
+17    98  1596       -0.0504           +0.0061       -0.0826           -0.0655       +0.0061           +0.0502
+18   100  1694       -0.0031           +0.0077       -0.0808           -0.0613       +0.0064           +0.0506
+19   102  1794       +0.0631           +0.1420       -0.0772           -0.0581       +0.0065           +0.0509
+20   102  1896       -0.0308           +0.0103       -0.0699           -0.0471       +0.0061           +0.0500
+21   103  1998       -0.0203           +0.0820       -0.0679           -0.0442       +0.0064           +0.0504
+22   100  2101       +0.0700           +0.0734       -0.0653           -0.0374       +0.0066           +0.0500
+23   104  2201       -0.0040           +0.0276       -0.0586           -0.0320       +0.0061           +0.0498
+24   104  2305       +0.0610           +0.0158       -0.0563           -0.0293       +0.0062           +0.0500
+25   103  2409       +0.0173           +0.0317       -0.0510           -0.0272       +0.0058           +0.0504
+26   105  2512       +0.0240           +0.0926       -0.0480           -0.0248       +0.0057           +0.0506
+27   102  2617       +0.0117           +0.0374       -0.0449           -0.0204       +0.0055           +0.0502
+28   107  2719       +0.0542           +0.0770       -0.0426           -0.0184       +0.0055           +0.0503
+29   113  2826       +0.0679           +0.0736       -0.0388           -0.0153       +0.0051           +0.0500
+30   112  2939       -0.0580           +0.0115       -0.0340           -0.0118       +0.0045           +0.0498
+
+  wrote crossover_curve.csv
+
+====================================================================================================
+STEP 2.5 -- TIER SIZES AS A SHARE OF ROWS AND OF THE DECISION-RELEVANT POPULATION
+====================================================================================================
+
+  DECISION-RELEVANT is defined PRE-GAME so it cannot read the outcome: rows whose point-in-time
+  running-mean minutes expectation is >= 15 (ref_minutes >= 15).  A player nobody expects to play
+  is not a player anybody prices a prop on.  The outcome-conditioned version (y_minutes >= 15) is
+  reported beside it ONLY to show the two agree, and is NOT used to define anything.
+
+  decision-relevant (pre-game ref_minutes>=15): 10042 rows (72.4%)
+  outcome-conditioned  (y_minutes>=15)        : 9636 rows (69.4%)
+
+ boundary_prior_games_lt  n_poor  pct_rows  n_poor_decision  pct_decision  n_poor_outcome  pct_outcome  n_players
+                       1      71      0.51               71          0.71              26         0.27         71
+                       2     541      3.90              499          4.97             310         3.22        473
+                       3     999      7.20              779          7.76             601         6.24        475
+                       4    1451     10.45             1072         10.68             885         9.18        475
+                       5    1899     13.68             1348         13.42            1155        11.99        475
+                       6    2340     16.86             1622         16.15            1437        14.91        475
+                       8    3213     23.15             2182         21.73            1993        20.68        475
+                      10    4063     29.27             2741         27.30            2553        26.49        475
+
+====================================================================================================
+STEP 2.6 -- THE ZERO-HISTORY POPULATION (STEP 4's subject), SIZED
+====================================================================================================
+  zero SAME-SEASON prior appearances : 71 rows (0.51%)
+  zero CAREER prior appearances      : 22 rows (0.16%)
+  of the zero-career rows, drafted in this same season (rookie by draft year): 11
+  of the zero-career rows, undrafted: 5
+  NOTE: 'career' here is TRUNCATED AT 2021 because master_player is filtered to the
+        partition.  A 2022 zero-career row is a player with no 2021 appearance, which
+        includes genuine rookies AND returning players whose history predates the window.
+  wrote _s02.json
+
+STEP 2 COMPLETE.
