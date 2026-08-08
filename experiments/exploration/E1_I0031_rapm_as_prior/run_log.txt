@@ -1,0 +1,766 @@
+﻿
+====================================================================================================
+STEP 1a -- rapm_v0.csv IS FORBIDDEN: assert it is never opened by this screen
+====================================================================================================
+  rapm_v0.csv manifest asof_granularity is 'artifact' (bound at 2026) -> UNUSABLE.
+  This screen NEVER opens data/rapm/rapm_v0.csv.  The only RAPM read is:
+    C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\rapm\rapm_walkforward.csv
+  and its per-season companion C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\rapm\rapm_walkforward_seasons.csv
+
+====================================================================================================
+STEP 1b -- MANIFEST, RE-CHECKED HERE (not inherited)
+====================================================================================================
+  guard ok  rapm_walkforward after filter                  n=598     {'season': [2022, 2023, 2024]}
+  rapm_walkforward  raw=1177  kept=598  emit_seasons_kept=[2022, 2023, 2024] (dropped 579 holdout rows)
+  strict-prior verified on VALUES: True   row-level clean: True
+  manifest status .............. UNVERIFIABLE
+  manifest asof_granularity .... season
+
+====================================================================================================
+STEP 1c -- STRICT-PRIOR VERIFICATION ON THE ARTIFACT'S OWN COLUMN VALUES
+====================================================================================================
+  per emit season (BEFORE the partition filter, so the check covers every row in the file):
+    emit=2022  train_seasons=[2021]  max_train=2021  fit_through_season=[2021]  strictly_prior=True  n=155  players=155
+    emit=2023  train_seasons=[2021, 2022]  max_train=2022  fit_through_season=[2022]  strictly_prior=True  n=206  players=206
+    emit=2024  train_seasons=[2021, 2022, 2023]  max_train=2023  fit_through_season=[2023]  strictly_prior=True  n=237  players=237
+    emit=2025  train_seasons=[2021, 2022, 2023, 2024]  max_train=2024  fit_through_season=[2024]  strictly_prior=True  n=265  players=265
+    emit=2026  train_seasons=[2021, 2022, 2023, 2024, 2025]  max_train=2025  fit_through_season=[2025]  strictly_prior=True  n=314  players=314
+
+  ROW-LEVEL checks (every row, not just group maxima):
+    rows with max(train_seasons) >= emit season .... 0
+    rows with fit_through_season >= emit season .... 0
+
+  VERDICT: every row's training seasons are STRICTLY PRIOR to its emit season.  PASS.
+  CORRECTION TO THE BRIEF: train_seasons is CUMULATIVE, not prior-season-only.
+    emit 2022 <- 2021 ; emit 2023 <- 2021-2022 ; emit 2024 <- 2021-2023 (expanding window).
+    `fit_through_season` is the LAST training season, which is what the manifest note names.
+    This is still strictly prior, and it is MORE data, but it is not 'the prior season only'.
+
+====================================================================================================
+STEP 1d -- CROSS-SEASON COMPARABILITY HAZARD (found here, not in the manifest)
+====================================================================================================
+  guard ok  rapm_walkforward_seasons after filter          n=3       {'season': [2022, 2023, 2024]}
+ season  fit_through_season train_seasons  n_train_possessions  n_players  lambda_chosen     lambda_source  sd_net_100  replacement_net_100_p25  unseen_slot_pct  thin_history_caveat
+   2022                2021          2021                33161        155         100000 fallback_max_grid       0.095                   -0.054            18.37                 True
+   2023                2022     2021-2022                71264        206          33000  inner_validation       0.373                   -0.194            11.21                False
+   2024                2023     2021-2023               112608        237           2000  inner_validation       2.372                   -1.490            11.71                False
+
+  READ THIS CAREFULLY.  `lambda_chosen` is 100000 (2022, 'fallback_max_grid'), 33000 (2023) and
+  2000 (2024).  The 2022 fit had ONE training season, no inner validation season was available, and
+  the selector fell back to the maximum of the grid -- i.e. maximal shrinkage.  The consequence is
+  visible in sd_net_100: 0.095 (2022), 0.373 (2023), 2.372 (2024) -- a 25x spread in the SCALE of
+  the same column.  net_100 for 2022 is very nearly a constant.
+
+  THEREFORE:
+    * `net_100`, `orapm_100`, `drapm_100` are used ONLY after WITHIN-EMIT-SEASON standardisation
+      (z_ prefix).  Pooling them raw across seasons would let 2024 dominate purely by scale.
+    * the PRIMARY continuous RAPM measure in this screen is a FIXED-lambda column
+      (net_100_lam2000), which IS on a common scale across emit seasons by construction.
+    * 2022 is additionally flagged thin_history_caveat=True by the artifact's own producer.
+
+  post-filter within-season SD of each RAPM column (2022-2024 only):
+        orapm_100  drapm_100   net_100  net_100_lam500  net_100_lam1000  net_100_lam2000  net_100_lam5000
+season                                                                                                   
+2022     0.060181   0.054785  0.094673        3.849267         2.677240         1.784608         1.013808
+2023     0.252323   0.199243  0.371746        4.028717         2.986721         2.110882         1.274986
+2024     1.649200   1.333295  2.366850        4.284240         3.255796         2.366864         1.469645
+
+====================================================================================================
+STEP 1e -- SEASON GRANULARITY: WHAT IT DOES AND DOES NOT DISCHARGE (D080)
+====================================================================================================
+
+  asof_granularity 'season' SATISFIES the partition guard: the value attached to a 2023 row is a
+  season-level object whose inputs all predate the 2023 season, so no 2023+ information crosses.
+  It DOES NOT discharge the retrospective check on its own -- a season-granular artifact could still
+  have been built retrospectively.  Here the artifact's OWN train_seasons / fit_through_season
+  columns were checked on values above and are strictly prior, which is stronger than season
+  boundedness and IS what discharges it.
+
+  THE LIMITATION THAT TRAVELS WITH EVERY RESULT BELOW: RAPM is a SLOW-MOVING PRIOR.  It takes ONE
+  value per player per season.  It cannot move when a player's role changes in June, when they come
+  back from injury, when a teammate is traded, or when they get hot.  Any within-season form signal
+  it appears to carry is an artefact of something else.  It is a level, not a trajectory.
+
+
+====================================================================================================
+STEP 1f -- COVERAGE AGAINST THE SCORED FRAME
+====================================================================================================
+  decomp_frame  shape=(13879, 122)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]  max_date=2024-10-20
+  RAPM join coverage by season (row level):
+            mean   sum  size
+season                      
+2022    0.763182  3329  4362
+2023    0.831508  3948  4748
+2024    0.861816  4110  4769
+  RAPM coverage at player-season level: 367 / 475 = 0.773
+has_rapm  no_rapm  has_rapm
+season                     
+2022         1033      3329
+2023          800      3948
+2024          659      4110
+
+  player-seasons in the scored frame WITHOUT a RAPM value, by season:
+season
+2022    50
+2023    30
+2024    28
+  guard ok  write:provenance_emit_seasons.csv              n=3       {'emit_season': [2022, 2023, 2024]}
+  wrote provenance_emit_seasons.csv (3 rows)
+
+  (the 2025/2026 emit rows are verified above and then DROPPED; they are not written to any
+   output table, and no 2025/2026 value is described anywhere in this screen.)
+  wrote _s00.json
+
+STEP 1 COMPLETE -- provenance VERIFIED independently.
+
+====================================================================================================
+BUILD -- base frame + RAPM + D094 estimators + raw plus-minus
+====================================================================================================
+  guard ok  rapm_walkforward after filter                  n=598     {'season': [2022, 2023, 2024]}
+  decomp_frame  shape=(13879, 122)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]  max_date=2024-10-20
+  RAPM join coverage by season (row level):
+            mean   sum  size
+season                      
+2022    0.763182  3329  4362
+2023    0.831508  3948  4748
+2024    0.861816  4110  4769
+  RAPM coverage at player-season level: 367 / 475 = 0.773
+  VERIFIED: every RAPM column is CONSTANT within (season, player_id) -> the honest null relabels whole player-seasons, not rows.
+
+--- Rebuilding D094's walk-forward-selected best simple estimator per target ------------------------
+    pts      rebuilt wf MAE=4.1475852209  D094 stored=4.1475852209  diff=0.00e+00
+    minutes  rebuilt wf MAE=4.8845280846  D094 stored=4.8845280846  diff=8.88e-16
+    fga      rebuilt wf MAE=2.5588360013  D094 stored=2.5588360013  diff=0.00e+00
+    ppm      rebuilt wf MAE=0.1802930175  D094 stored=0.1802930175  diff=0.00e+00
+  D094 REPRODUCED EXACTLY (all four targets, <1e-9).  Standing on the same ground.
+  wrote d094_reproduction.csv (4 rows)
+
+--- Raw per-game plus_minus -> strictly-prior aggregates (a DIFFERENT OBJECT from RAPM) -------------
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+  guard ok  master_player after filter                     n=21462   {'season': [2021, 2022, 2023, 2024]}
+  master_player appeared rows with a finite plus_minus, 2021-2024: 18212  (seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)])
+  plus-minus feature coverage on the scored frame:
+pm_run_mean       0.994884
+pm_per36_prior    0.994884
+pm_ewma5          0.994884
+pm_ewma2          0.994884
+pm_prev_season    0.771093
+
+--- COMPLETE base reference: EVERY prior measurement of the target already in the frame -------------
+    pts      11 base columns, all-finite on 0.9280 of rows
+    minutes  11 base columns, all-finite on 0.9280 of rows
+    fga      11 base columns, all-finite on 0.9280 of rows
+    ppm      10 base columns, all-finite on 1.0000 of rows
+  strata: wf_eval=9517  decision_stratum=5107  decision_stratum&wf=3549  data_poor=999  data_poor&wf=657
+  assert_partition_values analysis frame           PASS  season_cols=['season'] date_cols=['gdate']
+  wrote analysis_frame.parquet  shape=(13879, 200)
+
+====================================================================================================
+PREREGISTRATION -- candidate list frozen and hashed BEFORE any candidate/outcome statistic
+====================================================================================================
+  CANDIDATE LIST SHA256 = 79331a724bbde189d17a887400e36587ee53d8cf242411b2baeec765cda7c026
+  wrote CANDIDATES_PRESELECTED.md  (10 RAPM, 5 plus-minus, 3 controls, 6 ref variants, 5 cold-start variants)
+  wrote _prereg.json
+
+PREREG COMPLETE.
+
+====================================================================================================
+STEP 2 -- RAPM AS A FEATURE   (candidate sha256 79331a724bbde189 verified)
+====================================================================================================
+  guard ok  analysis frame reload                          n=13879   {'season': [2022, 2023, 2024]}
+
+--- Base imputation: missingness moved INTO the base as indicators, so no row is dropped ------------
+    pts      design width 13 (11 values + 2 missingness indicators); all finite: True
+    minutes  design width 13 (11 values + 2 missingness indicators); all finite: True
+    fga      design width 13 (11 values + 2 missingness indicators); all finite: True
+    ppm      design width 10 (10 values + 0 missingness indicators); all finite: True
+
+====================================================================================================
+STEP 2a -- DETECTION: in-sample dR2 of the RAPM block over the COMPLETE base
+====================================================================================================
+  Denominator rule (D099): every dR2 is reported BOTH on its own stratum's SST and on the
+  FULL wf_eval SST, so the two rows are comparable.  `sst_basis` names which.
+
+  relabeller verified: 475 player-seasons, identity relabelling round-trips exactly.
+    pts      wf_eval_2023_24      n= 9517  R2base=0.51772  dR2=+0.002576  perm p=0.0010  null95=+0.001333
+    pts      decision_stratum_wf  n= 3549  R2base=0.32426  dR2=+0.004075  perm p=0.0755  null95=+0.004439
+    minutes  wf_eval_2023_24      n= 9517  R2base=0.67457  dR2=+0.001397  perm p=0.0005  null95=+0.000825
+    minutes  decision_stratum_wf  n= 3549  R2base=0.27251  dR2=+0.004041  perm p=0.0620  null95=+0.004207
+    fga      wf_eval_2023_24      n= 9517  R2base=0.64251  dR2=+0.001459  perm p=0.0015  null95=+0.000950
+    fga      decision_stratum_wf  n= 3549  R2base=0.47454  dR2=+0.002640  perm p=0.1699  null95=+0.003429
+    ppm      wf_eval_2023_24      n= 9517  R2base=0.19463  dR2=+0.003103  perm p=0.0035  null95=+0.002167
+    ppm      decision_stratum_wf  n= 3549  R2base=0.25775  dR2=+0.004259  perm p=0.1289  null95=+0.005108
+
+--- Per-candidate marginal dR2 over the complete base (wf_eval), for decomposition ------------------
+target                    fga   minutes       ppm       pts
+candidate                                                  
+has_rapm_f          +0.000308 +0.000034 +0.002000 +0.000892
+log_total_poss_imp  +0.000075 +0.000320 +0.000498 +0.000023
+net_100_lam1000_imp +0.000060 +0.000405 +0.000000 +0.000052
+net_100_lam2000_imp +0.000048 +0.000330 +0.000000 +0.000034
+net_100_lam5000_imp +0.000027 +0.000218 +0.000000 +0.000012
+net_100_lam500_imp  +0.000069 +0.000462 +0.000000 +0.000070
+z_drapm_100_imp     +0.000011 +0.000018 +0.000056 +0.000012
+z_net_100_imp       +0.000027 +0.000142 +0.000002 +0.000022
+z_net_x_poss        +0.000026 +0.000125 +0.000002 +0.000019
+z_orapm_100_imp     +0.000130 +0.000199 +0.000090 +0.000125
+
+====================================================================================================
+STEP 2b -- FORECAST: walk-forward OLS, coefficients from STRICTLY EARLIER seasons only
+====================================================================================================
+  2023 rows scored by coefficients fitted on 2022; 2024 rows by coefficients fitted on
+  2022+2023.  BASE and BASE+RAPM are fitted the same way on the same rows, so the skill
+  difference is differential skill, not a difference in what each side was allowed to see.
+
+  structural-availability sources registered for 9 design columns
+     b_prevseason_pts           undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_role_pts                 undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_prevseason_minutes       undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_role_minutes             undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_prevseason_fga           undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_role_fga                 undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_prevseason_ppm           undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_role_ppm                 undefined on 2022 rows=1.000  on 2023 rows=0.209
+     b_pl_prior_season_games    undefined on 2022 rows=0.237  on 2023 rows=0.168
+      pts base               fold 2023: train n= 4362  cols 13->11  alpha=30        inner-val MAE=4.0303  dropped=['b_prevseason_pts', 'b_role_pts']
+      pts base               fold 2024: train n= 9110  cols 13->13  alpha=300       inner-val MAE=4.0774  dropped=-
+      pts base+RAPM          fold 2023: train n= 4362  cols 23->21  alpha=100       inner-val MAE=4.0550  dropped=['b_prevseason_pts', 'b_role_pts']
+      pts base+RAPM          fold 2024: train n= 9110  cols 23->23  alpha=100       inner-val MAE=4.0960  dropped=-
+    pts      wf_eval_2023_24      n= 9517  MAE base=4.22102  +RAPM=4.19919  skill=+0.5172%  p=0.0065
+    pts      decision_stratum_wf  n= 3549  MAE base=5.12667  +RAPM=5.09626  skill=+0.5930%  p=0.0125
+      minutes base           fold 2023: train n= 4362  cols 13->11  alpha=0.001     inner-val MAE=4.7212  dropped=['b_prevseason_minutes', 'b_role_minutes']
+      minutes base           fold 2024: train n= 9110  cols 13->13  alpha=30        inner-val MAE=4.5993  dropped=-
+      minutes base+RAPM      fold 2023: train n= 4362  cols 23->21  alpha=3         inner-val MAE=4.7888  dropped=['b_prevseason_minutes', 'b_role_minutes']
+      minutes base+RAPM      fold 2024: train n= 9110  cols 23->23  alpha=0.001     inner-val MAE=4.6092  dropped=-
+    minutes  wf_eval_2023_24      n= 9517  MAE base=4.89014  +RAPM=4.95376  skill=-1.3010%  p=0.0005
+    minutes  decision_stratum_wf  n= 3549  MAE base=4.27826  +RAPM=4.36604  skill=-2.0518%  p=0.0005
+      fga base               fold 2023: train n= 4362  cols 13->11  alpha=0.001     inner-val MAE=2.5221  dropped=['b_prevseason_fga', 'b_role_fga']
+      fga base               fold 2024: train n= 9110  cols 13->13  alpha=100       inner-val MAE=2.5092  dropped=-
+      fga base+RAPM          fold 2023: train n= 4362  cols 23->21  alpha=10        inner-val MAE=2.5443  dropped=['b_prevseason_fga', 'b_role_fga']
+      fga base+RAPM          fold 2024: train n= 9110  cols 23->23  alpha=0.1       inner-val MAE=2.5132  dropped=-
+    fga      wf_eval_2023_24      n= 9517  MAE base=2.58737  +RAPM=2.58118  skill=+0.2394%  p=0.2104
+    fga      decision_stratum_wf  n= 3549  MAE base=2.93763  +RAPM=2.92484  skill=+0.4353%  p=0.1049
+      ppm base               fold 2023: train n= 4362  cols 10-> 8  alpha=10        inner-val MAE=0.1777  dropped=['b_prevseason_ppm', 'b_role_ppm']
+      ppm base               fold 2024: train n= 9110  cols 10->10  alpha=300       inner-val MAE=0.1848  dropped=-
+      ppm base+RAPM          fold 2023: train n= 4362  cols 20->18  alpha=30        inner-val MAE=0.1788  dropped=['b_prevseason_ppm', 'b_role_ppm']
+      ppm base+RAPM          fold 2024: train n= 9110  cols 20->20  alpha=100       inner-val MAE=0.1841  dropped=-
+    ppm      wf_eval_2023_24      n= 9517  MAE base=0.18366  +RAPM=0.18241  skill=+0.6850%  p=0.0005
+    ppm      decision_stratum_wf  n= 3549  MAE base=0.15540  +RAPM=0.15345  skill=+1.2545%  p=0.0005
+
+====================================================================================================
+STEP 2c -- NEGATIVE CONTROL AND PLACEBOS (constraint 8)
+====================================================================================================
+  NO-OP placebo   : cells changed = 0 of 138790  -> VERIFIED to perturb NOTHING
+  PERTURBED placebo: cells changed = 138790 of 138790  -> VERIFIED to ACTUALLY PERTURB
+  NEGATIVE control : rows whose RAPM block changed = 13594 of 13879  (player-season relabel)
+
+variant  negative_control_relabelled  noop_placebo  perturbed_placebo      real
+target                                                                         
+fga                        +0.000891     +0.001459          +0.001459 +0.001459
+minutes                    +0.000754     +0.001397          +0.001397 +0.001397
+ppm                        +0.001228     +0.003103          +0.003103 +0.003103
+pts                        +0.001076     +0.002576          +0.002576 +0.002576
+
+  no-op placebo reproduces the real dR2 EXACTLY for every target: True
+
+====================================================================================================
+STEP 2d -- DECOMPOSE ANY SURVIVOR AGAINST ITS OWN COMPONENTS
+====================================================================================================
+target                         fga   minutes       ppm       pts
+component                                                       
+everything_but_existence +0.000592 +0.000868 +0.001834 +0.000972
+everything_but_net       +0.001358 +0.001100 +0.002631 +0.002299
+existence_only           +0.000308 +0.000034 +0.002000 +0.000892
+full_block               +0.001459 +0.001397 +0.003103 +0.002576
+net_only                 +0.000196 +0.000579 +0.000485 +0.000320
+net_plus_existence       +0.000437 +0.000409 +0.002149 +0.001041
+off_def_split            +0.000179 +0.000200 +0.000205 +0.000172
+reliability_only         +0.000095 +0.000439 +0.000511 +0.000040
+
+====================================================================================================
+WRITE
+====================================================================================================
+  wrote rapm_as_feature.csv (16 rows)
+  wrote rapm_feature_marginal_dr2.csv (40 rows)
+  wrote rapm_feature_wf_folds.csv (per-fold rank handling)
+  wrote rapm_feature_decomposition.csv (64 rows)
+  wrote rapm_feature_controls.csv (16 rows)
+  wrote permutation_draws_feature_dr2.csv (16000 draws), permutation_draws_feature_paired.csv (16000 draws)
+  wrote _s02.json
+DONE s02
+
+====================================================================================================
+STEP 3 -- RAPM AS A REFERENCE COMPONENT   (candidate sha256 79331a724bbde189)
+====================================================================================================
+  guard ok  analysis frame                                 n=13879   {'season': [2022, 2023, 2024]}
+
+--- Player-season levels, in the SAME units as each D094 cell's aggregation mode --------------------
+
+  ==== PTS ====  D094 cell A: composite ewma 5.0 league 0.5 0.0 | cell B: composite ewma 8.0 prior_season 0.5 0.0
+
+  ==== MINUTES ====  D094 cell A: equal ewma 2.0 none 0.0 0.0 | cell B: equal ewma 2.0 none 0.0 0.0
+
+  ==== FGA ====  D094 cell A: equal ewma 3.0 none 0.0 0.0 | cell B: equal ewma 5.0 prior_season 0.5 0.0
+
+  ==== PPM ====  D094 cell A: mean_of_prior_ratios expanding 0.0 league 2.0 0.0 | cell B: mean_of_prior_ratios ewma 40.0 prior_season 2.0 0.0
+
+====================================================================================================
+STEP 3 EVALUATION -- walk-forward rows (2023+2024), against D094's exact incumbent
+====================================================================================================
+
+  --- wf_eval_2023_24 ---
+  skill vs D094 incumbent (positive = the variant BEATS D094's best):
+target       fga  minutes      ppm      pts
+variant                                    
+V0      +0.0149% +0.0000% +0.0000% +0.0999%
+V1      +0.1621% +1.0890% -0.0866% +0.5431%
+V2      +0.7829% +1.3438% +0.2855% +0.8060%
+V3      +0.9629% +1.3331% +0.3781% +1.0391%
+V4      +0.4358% +1.1557% +0.1583% +0.6812%
+V5      -0.0256% +0.7236% +0.0063% +0.0931%
+  block sign-flip p:
+target     fga  minutes    ppm    pts
+variant                              
+V0      0.9000   1.0000 1.0000 0.1024
+V1      0.3773   0.0005 0.4708 0.0005
+V2      0.0005   0.0005 0.0320 0.0005
+V3      0.0005   0.0005 0.0160 0.0005
+V4      0.0010   0.0005 0.1954 0.0005
+V5      0.8156   0.0005 0.7401 0.1534
+
+  --- decision_stratum_wf ---
+  skill vs D094 incumbent (positive = the variant BEATS D094's best):
+target       fga  minutes      ppm      pts
+variant                                    
+V0      +0.0896% +0.0000% +0.0000% -0.0367%
+V1      +0.1922% +0.0000% +0.1752% +0.2066%
+V2      +0.2540% +0.0000% +0.2779% +0.1830%
+V3      +0.3085% +0.0000% +0.0559% +0.0970%
+V4      +0.1519% +0.1754% +0.1272% +0.0456%
+V5      +0.0867% +0.0000% +0.0842% +0.0071%
+  block sign-flip p:
+target     fga  minutes    ppm    pts
+variant                              
+V0      0.3523   1.0000 1.0000 0.4268
+V1      0.0805   1.0000 0.0630 0.0040
+V2      0.0030   1.0000 0.0125 0.0030
+V3      0.0005   1.0000 0.6997 0.2229
+V4      0.0295   0.1079 0.1149 0.3683
+V5      0.3728   1.0000 0.0005 0.8831
+
+  --- fold_2024_only ---
+  skill vs D094 incumbent (positive = the variant BEATS D094's best):
+target       fga  minutes      ppm      pts
+variant                                    
+V0      +0.1914% +0.0000% +0.0000% +0.0000%
+V1      -0.5470% +1.1752% -0.5542% -0.1894%
+V2      +0.0738% +1.5039% -0.1142% +0.0989%
+V3      +0.2019% +1.6535% +0.0702% +0.3243%
+V4      +0.0052% +1.3079% -0.0579% +0.0893%
+V5      +0.1098% +1.4389% +0.0128% -0.0138%
+  block sign-flip p:
+target     fga  minutes    ppm    pts
+variant                              
+V0      0.1474   1.0000 1.0000 1.0000
+V1      0.0675   0.0005 0.0070 0.3938
+V2      0.7211   0.0005 0.6072 0.3978
+V3      0.2209   0.0005 0.7391 0.0040
+V4      0.9775   0.0090 0.7891 0.5402
+V5      0.3888   0.0005 0.7446 0.7376
+
+  --- data_poor_wf ---
+  skill vs D094 incumbent (positive = the variant BEATS D094's best):
+target       fga   minutes      ppm      pts
+variant                                     
+V0      +1.0545%  +0.0000% +0.0000% +0.0603%
+V1      +0.7804% +10.4198% -1.5115% +3.2928%
+V2      +6.8417% +12.8579% +1.6693% +6.5403%
+V3      +8.5820% +12.7559% +2.5471% +9.4650%
+V4      +4.9365% +11.9684% +1.3488% +6.2250%
+V5      +0.7310%  +6.9237% -0.1643% -0.2718%
+  block sign-flip p:
+target     fga  minutes    ppm    pts
+variant                              
+V0      0.1159   1.0000 1.0000 0.8716
+V1      0.6357   0.0005 0.1474 0.0635
+V2      0.0005   0.0005 0.0805 0.0005
+V3      0.0005   0.0005 0.0475 0.0005
+V4      0.0005   0.0005 0.0625 0.0005
+V5      0.2664   0.0005 0.4658 0.5862
+
+====================================================================================================
+WRITE
+====================================================================================================
+  wrote rapm_as_reference.csv (96 rows)
+  wrote rapm_reference_fold_detail.csv (48 rows)
+  wrote permutation_draws_reference.csv (96000 draws)
+  wrote _s03.json
+DONE s03
+
+====================================================================================================
+STEP 4 -- COLD START   (candidate sha256 79331a724bbde189)
+====================================================================================================
+  guard ok  D092 placeholder_frame                         n=13879   {'season': [2022, 2023, 2024]}
+
+--- Reproducing D092's recommended placeholder from its components ----------------------------------
+    pts      P5d_blend_k2 == lambda(n)*own_running_mean + (1-lambda)*(league+depth+draft):  True
+    minutes  P5d_blend_k2 == lambda(n)*own_running_mean + (1-lambda)*(league+depth+draft):  True
+    ppm      P5d_blend_k2 == lambda(n)*own_running_mean + (1-lambda)*(league+depth+draft):  True
+
+--- Splitting the data-poor tier: VETERAN-RETURNING vs TRUE ROOKIE ----------------------------------
+    data-poor tier (D092's tier_poor), seasons 2023-2024: n=698
+season             2023  2024
+pop                          
+true_rookie          66    60
+veteran_returning   282   290
+
+    marker agreement on the data-poor tier (has_rapm vs pl_prior_season_games>0):
+has_prior_season_games  False  True 
+has_rapm                            
+False                     126      0
+True                        0    572
+    AMBIGUOUS rows (the two markers disagree): 0 -- reported as their own population, never silently merged into either.
+
+--- Walk-forward RAPM->level map g_S, fitted on player-seasons of seasons < S -----------------------
+    pts      fold 2023: pool=164 player-seasons from [2022], in-pool R2=0.1454
+    pts      fold 2024: pool=318 player-seasons from [2022, 2023], in-pool R2=0.2412
+    minutes  fold 2023: pool=164 player-seasons from [2022], in-pool R2=0.1764
+    minutes  fold 2024: pool=318 player-seasons from [2022, 2023], in-pool R2=0.2485
+    ppm      fold 2023: pool=164 player-seasons from [2022], in-pool R2=0.0361
+    ppm      fold 2024: pool=318 player-seasons from [2022, 2023], in-pool R2=0.1083
+
+--- Building C0..C4 (C0 is D092's, untouched) -------------------------------------------------------
+    NOTE, stated rather than hidden: C1 and C4 as preregistered are the SAME construction
+    (both set the structural prior to g_S(rapm) alone).  Both are reported; they agree by
+    construction, and that identity is a property of the preregistered list, not a result.
+
+====================================================================================================
+STEP 4 EVALUATION -- on the data-poor tier, split by population
+====================================================================================================
+
+  --- all_data_poor  (n=698 rows per target) ---
+  skill vs D092's placeholder (positive = the RAPM variant is BETTER):
+target    minutes      ppm       pts
+variant                             
+C0       +0.0000% +0.0000%  +0.0000%
+C1      -19.2511% -3.1886% -10.8796%
+C2       -4.7540% -1.0771%  -2.8265%
+C3       +2.4199% +0.0998%  +2.3494%
+C4      -19.2511% -3.1886% -10.8796%
+  block sign-flip p:
+target   minutes    ppm    pts
+variant                       
+C0        1.0000 1.0000 1.0000
+C1        0.0005 0.0005 0.0005
+C2        0.0010 0.0250 0.0205
+C3        0.0195 0.7051 0.0005
+C4        0.0005 0.0005 0.0005
+
+  --- veteran_returning  (n=572 rows per target) ---
+  skill vs D092's placeholder (positive = the RAPM variant is BETTER):
+target    minutes      ppm      pts
+variant                            
+C0       +0.0000% +0.0000% +0.0000%
+C1      -11.6354% -1.1239% -3.9203%
+C2       -0.8733% -0.0481% +0.4056%
+C3       +1.0293% +0.5248% +2.2829%
+C4      -11.6354% -1.1239% -3.9203%
+  block sign-flip p:
+target   minutes    ppm    pts
+variant                       
+C0        1.0000 1.0000 1.0000
+C1        0.0005 0.2574 0.0950
+C2        0.5392 0.9280 0.7311
+C3        0.3743 0.0635 0.0015
+C4        0.0005 0.2574 0.0950
+
+  --- true_rookie  (n=126 rows per target) ---
+  skill vs D092's placeholder (positive = the RAPM variant is BETTER):
+target    minutes       ppm       pts
+variant                              
+C0       +0.0000%  +0.0000%  +0.0000%
+C1      -50.5876% -10.8848% -54.3119%
+C2      -20.7218%  -4.9129% -22.9975%
+C3       +8.1415%  -1.4844%  +2.7645%
+C4      -50.5876% -10.8848% -54.3119%
+  block sign-flip p:
+target   minutes    ppm    pts
+variant                       
+C0        1.0000 1.0000 1.0000
+C1        0.0005 0.0005 0.0005
+C2        0.0005 0.0005 0.0005
+C3        0.0010 0.0215 0.1484
+C4        0.0005 0.0005 0.0005
+
+--- Context: the champion on the same rows (D092's headline was against the champion) ---------------
+ target        population   n  mae_champion  mae_D092_C0  mae_C1_rapm_only  mae_C2_half_rapm  mae_C3_fitted
+    pts     all_data_poor 698        6.3099       3.9886            4.4225            4.1013         3.8949
+    pts veteran_returning 572        6.3118       4.1950            4.3594            4.1780         4.0992
+    pts       true_rookie 126        6.3015       3.0515            4.7088            3.7532         2.9671
+minutes     all_data_poor 698       10.2367       5.3586            6.3902            5.6134         5.2290
+minutes veteran_returning 572        9.7293       5.2606            5.8726            5.3065         5.2064
+minutes       true_rookie 126       12.5401       5.8039            8.7399            7.0066         5.3314
+    ppm     all_data_poor 698        0.2272       0.1953            0.2016            0.1974         0.1951
+    ppm veteran_returning 572        0.2122       0.1879            0.1901            0.1880         0.1870
+    ppm       true_rookie 126        0.2953       0.2289            0.2538            0.2401         0.2323
+
+====================================================================================================
+WRITE
+====================================================================================================
+  wrote coldstart_comparison.csv (45 rows)
+  wrote coldstart_context_vs_champion.csv (9 rows)
+  wrote coldstart_rapm_map.csv, permutation_draws_coldstart.csv (90000 draws)
+  guard ok  write:coldstart_populations.csv                n=4       {'season': [2023, 2024]}
+  wrote coldstart_populations.csv (4 rows)
+  wrote _s04.json
+DONE s04
+
+====================================================================================================
+DECOMPOSITION (POST-HOC)   candidate sha256 79331a724bbde189
+====================================================================================================
+
+--- Building the RAW previous-season box score from master_player (SAME coverage as RAPM) -----------
+  guard ok  master_player for prior-season box score       n=21462   {'season': [2021, 2022, 2023, 2024]}
+  guard ok  prior-season box score after shift             n=477     {'season': [2022, 2023, 2024]}
+  coverage of the RAW prior-season box score on the scored frame, by season:
+season
+2022    0.763182
+2023    0.791702
+2024    0.757811
+  coverage of RAPM on the same rows, by season:
+season
+2022    0.763182
+2023    0.831508
+2024    0.861816
+  rows with BOTH: 0.7711   RAPM only: 0.0494   raw-box only: 0.0000
+
+====================================================================================================
+A -- STEP 3 SURVIVOR: what is the V3 fill actually buying?
+====================================================================================================
+
+  --- wf_eval_2023_24: skill vs D094's incumbent, by WHAT FILLS the missing prior season ---
+target                           fga  minutes      ppm      pts
+fill_source                                                    
+F0_league_D094              +0.8582% +1.2035% +0.3182% +0.6113%
+F1_rapm                     +0.9629% +1.3331% +0.3781% +1.0391%
+F2_raw_prev_box_master      +0.8517% +1.0609% +0.4530% +0.6256%
+F3_rapm_plus_raw_box        +0.6660% +0.9790% +0.2604% +0.7357%
+F4_negcontrol_shuffled_rapm +0.8572% +1.2061% +0.2630% +0.7340%
+  block sign-flip p:
+target                         fga  minutes    ppm    pts
+fill_source                                              
+F0_league_D094              0.0005   0.0005 0.0080 0.0005
+F1_rapm                     0.0005   0.0005 0.0160 0.0005
+F2_raw_prev_box_master      0.0005   0.0010 0.0060 0.0005
+F3_rapm_plus_raw_box        0.0005   0.0015 0.1554 0.0005
+F4_negcontrol_shuffled_rapm 0.0005   0.0005 0.0315 0.0005
+
+  --- data_poor_wf: skill vs D094's incumbent, by WHAT FILLS the missing prior season ---
+target                           fga   minutes      ppm      pts
+fill_source                                                     
+F0_league_D094              +7.4823% +11.5156% +2.3318% +5.4770%
+F1_rapm                     +8.5820% +12.7559% +2.5471% +9.4650%
+F2_raw_prev_box_master      +7.3735% +12.5643% +2.6296% +6.2109%
+F3_rapm_plus_raw_box        +5.4615% +11.7709% +1.2114% +6.3144%
+F4_negcontrol_shuffled_rapm +7.1876% +11.5407% +1.9413% +6.6022%
+  block sign-flip p:
+target                         fga  minutes    ppm    pts
+fill_source                                              
+F0_league_D094              0.0005   0.0005 0.0500 0.0020
+F1_rapm                     0.0005   0.0005 0.0475 0.0005
+F2_raw_prev_box_master      0.0005   0.0005 0.0455 0.0005
+F3_rapm_plus_raw_box        0.0005   0.0005 0.3618 0.0005
+F4_negcontrol_shuffled_rapm 0.0005   0.0005 0.1209 0.0005
+
+====================================================================================================
+B -- STEP 4 SURVIVOR: is C3 recalibration, or RAPM?
+====================================================================================================
+
+  --- all_data_poor: skill vs D092's placeholder ---
+target                         minutes      ppm      pts
+variant                                                 
+C3_full_rapm                  +2.4199% +0.0998% +2.3494%
+C3_negcontrol_shuffled_rapm   +1.7314% +0.1584% +1.8180%
+C3_recalibration_only_NO_RAPM +1.6979% +0.1544% +2.1052%
+  block sign-flip p:
+target                         minutes    ppm    pts
+variant                                             
+C3_full_rapm                    0.0195 0.7051 0.0005
+C3_negcontrol_shuffled_rapm     0.1004 0.3013 0.0035
+C3_recalibration_only_NO_RAPM   0.1049 0.1934 0.0010
+
+  --- veteran_returning: skill vs D092's placeholder ---
+target                         minutes      ppm      pts
+variant                                                 
+C3_full_rapm                  +1.0293% +0.5248% +2.2829%
+C3_negcontrol_shuffled_rapm   -0.4442% +0.1529% +0.7718%
+C3_recalibration_only_NO_RAPM -0.4496% +0.1065% +1.1116%
+  block sign-flip p:
+target                         minutes    ppm    pts
+variant                                             
+C3_full_rapm                    0.3743 0.0635 0.0015
+C3_negcontrol_shuffled_rapm     0.6827 0.3888 0.1809
+C3_recalibration_only_NO_RAPM   0.6817 0.4563 0.0475
+
+  --- true_rookie: skill vs D092's placeholder ---
+target                          minutes      ppm      pts
+variant                                                  
+C3_full_rapm                   +8.1415% -1.4844% +2.7645%
+C3_negcontrol_shuffled_rapm   +10.6834% +0.1787% +8.3468%
+C3_recalibration_only_NO_RAPM +10.5343% +0.3326% +8.3061%
+  block sign-flip p:
+target                         minutes    ppm    pts
+variant                                             
+C3_full_rapm                    0.0010 0.0215 0.1484
+C3_negcontrol_shuffled_rapm     0.0005 0.5747 0.0010
+C3_recalibration_only_NO_RAPM   0.0010 0.0815 0.0010
+
+====================================================================================================
+WRITE
+====================================================================================================
+  wrote decomposition_posthoc.csv (67 rows)
+  wrote permutation_draws_decomposition.csv (40000 draws)
+  wrote _s05.json
+DONE s05
+
+====================================================================================================
+STEP 5 -- RAW PLUS-MINUS   (candidate sha256 79331a724bbde189)
+====================================================================================================
+  guard ok  analysis frame                                 n=13879   {'season': [2022, 2023, 2024]}
+
+--- Confirming the two plus-minus families sit at DIFFERENT levels (this drives the null) -----------
+    pm_ewma5_imp           constant within player-season for 0.017 of player-seasons -> CYCLIC SHIFT null
+    pm_ewma2_imp           constant within player-season for 0.017 of player-seasons -> CYCLIC SHIFT null
+    pm_run_mean_imp        constant within player-season for 0.017 of player-seasons -> CYCLIC SHIFT null
+    pm_per36_prior_imp     constant within player-season for 0.017 of player-seasons -> CYCLIC SHIFT null
+    pm_prev_season_imp     constant within player-season for 1.000 of player-seasons -> PLAYER-SEASON RELABEL null
+    VERIFIED: pm_prev_season is constant within player-season; the game-level series are not.
+  vectorised cyclic shifter VERIFIED against the loop implementation (same multiset, values never leave their player-season), 5 seeds.
+
+====================================================================================================
+STEP 5a -- dR2 over BASE, and over BASE+RAPM, with level-correct nulls
+====================================================================================================
+    pts      over base_only      add pm_game_level   wf_eval_2023_24      dR2=+0.000215  p=0.9570  null95=+0.001016
+    pts      over base_only      add pm_game_level   decision_stratum_wf  dR2=+0.001091  p=0.4118  null95=+0.002372
+    pts      over base_only      add pm_prev_season  wf_eval_2023_24      dR2=+0.000019  p=0.6052  null95=+0.000279
+    pts      over base_only      add pm_prev_season  decision_stratum_wf  dR2=+0.000001  p=0.9375  null95=+0.000918
+    pts      over base_only      add pm_all          wf_eval_2023_24      dR2=+0.000216  p=0.9720  null95=+0.001028
+    pts      over base_only      add pm_all          decision_stratum_wf  dR2=+0.001094  p=0.4428  null95=+0.002294
+    pts      over base_plus_RAPM add pm_game_level   wf_eval_2023_24      dR2=+0.000205  p=0.9220  null95=+0.000785
+    pts      over base_plus_RAPM add pm_game_level   decision_stratum_wf  dR2=+0.001202  p=0.3463  null95=+0.002109
+    pts      over base_plus_RAPM add pm_prev_season  wf_eval_2023_24      dR2=+0.000060  p=0.3808  null95=+0.000308
+    pts      over base_plus_RAPM add pm_prev_season  decision_stratum_wf  dR2=+0.000005  p=0.8826  null95=+0.000926
+    pts      over base_plus_RAPM add pm_all          wf_eval_2023_24      dR2=+0.000251  p=0.9405  null95=+0.000849
+    pts      over base_plus_RAPM add pm_all          decision_stratum_wf  dR2=+0.001203  p=0.3518  null95=+0.002140
+    minutes  over base_only      add pm_game_level   wf_eval_2023_24      dR2=+0.000492  p=0.4713  null95=+0.000872
+    minutes  over base_only      add pm_game_level   decision_stratum_wf  dR2=+0.002023  p=0.1444  null95=+0.002706
+    minutes  over base_only      add pm_prev_season  wf_eval_2023_24      dR2=+0.000031  p=0.3898  null95=+0.000159
+    minutes  over base_only      add pm_prev_season  decision_stratum_wf  dR2=+0.000000  p=0.9785  null95=+0.000834
+    minutes  over base_only      add pm_all          wf_eval_2023_24      dR2=+0.000520  p=0.4823  null95=+0.000923
+    minutes  over base_only      add pm_all          decision_stratum_wf  dR2=+0.002061  p=0.1334  null95=+0.002711
+    minutes  over base_plus_RAPM add pm_game_level   wf_eval_2023_24      dR2=+0.000401  p=0.5217  null95=+0.000820
+    minutes  over base_plus_RAPM add pm_game_level   decision_stratum_wf  dR2=+0.001640  p=0.2669  null95=+0.002759
+    minutes  over base_plus_RAPM add pm_prev_season  wf_eval_2023_24      dR2=+0.000001  p=0.9150  null95=+0.000175
+    minutes  over base_plus_RAPM add pm_prev_season  decision_stratum_wf  dR2=+0.000000  p=0.9985  null95=+0.000832
+    minutes  over base_plus_RAPM add pm_all          wf_eval_2023_24      dR2=+0.000402  p=0.5177  null95=+0.000786
+    minutes  over base_plus_RAPM add pm_all          decision_stratum_wf  dR2=+0.001640  p=0.2369  null95=+0.002669
+    fga      over base_only      add pm_game_level   wf_eval_2023_24      dR2=+0.000498  p=0.1679  null95=+0.000652
+    fga      over base_only      add pm_game_level   decision_stratum_wf  dR2=+0.001133  p=0.0805  null95=+0.001300
+    fga      over base_only      add pm_prev_season  wf_eval_2023_24      dR2=+0.000000  p=0.9440  null95=+0.000194
+    fga      over base_only      add pm_prev_season  decision_stratum_wf  dR2=+0.000002  p=0.9380  null95=+0.000731
+    fga      over base_only      add pm_all          wf_eval_2023_24      dR2=+0.000499  p=0.1659  null95=+0.000640
+    fga      over base_only      add pm_all          decision_stratum_wf  dR2=+0.001134  p=0.0820  null95=+0.001290
+    fga      over base_plus_RAPM add pm_game_level   wf_eval_2023_24      dR2=+0.000380  p=0.2654  null95=+0.000560
+    fga      over base_plus_RAPM add pm_game_level   decision_stratum_wf  dR2=+0.000926  p=0.1794  null95=+0.001399
+    fga      over base_plus_RAPM add pm_prev_season  wf_eval_2023_24      dR2=+0.000000  p=0.9610  null95=+0.000216
+    fga      over base_plus_RAPM add pm_prev_season  decision_stratum_wf  dR2=+0.000000  p=0.9675  null95=+0.000751
+    fga      over base_plus_RAPM add pm_all          wf_eval_2023_24      dR2=+0.000380  p=0.2539  null95=+0.000561
+    fga      over base_plus_RAPM add pm_all          decision_stratum_wf  dR2=+0.000926  p=0.1554  null95=+0.001328
+    ppm      over base_only      add pm_game_level   wf_eval_2023_24      dR2=+0.000460  p=0.8876  null95=+0.002245
+    ppm      over base_only      add pm_game_level   decision_stratum_wf  dR2=+0.001514  p=0.4488  null95=+0.003226
+    ppm      over base_only      add pm_prev_season  wf_eval_2023_24      dR2=+0.000055  p=0.4888  null95=+0.000479
+    ppm      over base_only      add pm_prev_season  decision_stratum_wf  dR2=+0.000063  p=0.6422  null95=+0.001233
+    ppm      over base_only      add pm_all          wf_eval_2023_24      dR2=+0.000470  p=0.8876  null95=+0.002191
+    ppm      over base_only      add pm_all          decision_stratum_wf  dR2=+0.001563  p=0.4718  null95=+0.003163
+    ppm      over base_plus_RAPM add pm_game_level   wf_eval_2023_24      dR2=+0.000509  p=0.8356  null95=+0.002228
+    ppm      over base_plus_RAPM add pm_game_level   decision_stratum_wf  dR2=+0.001849  p=0.3228  null95=+0.003212
+    ppm      over base_plus_RAPM add pm_prev_season  wf_eval_2023_24      dR2=+0.000037  p=0.5677  null95=+0.000455
+    ppm      over base_plus_RAPM add pm_prev_season  decision_stratum_wf  dR2=+0.000009  p=0.8561  null95=+0.001058
+    ppm      over base_plus_RAPM add pm_all          wf_eval_2023_24      dR2=+0.000537  p=0.8381  null95=+0.002419
+    ppm      over base_plus_RAPM add pm_all          decision_stratum_wf  dR2=+0.001850  p=0.3158  null95=+0.003132
+
+====================================================================================================
+STEP 5b -- HEAD TO HEAD: which of the two, if either, survives over the other?
+====================================================================================================
+target                       fga   minutes       ppm       pts
+comparison                                                    
+PM_over_base           +0.000499 +0.000520 +0.000470 +0.000216
+PM_over_base_plus_RAPM +0.000380 +0.000402 +0.000537 +0.000251
+RAPM_over_base         +0.001459 +0.001397 +0.003103 +0.002576
+RAPM_over_base_plus_PM +0.001340 +0.001279 +0.003170 +0.002611
+
+====================================================================================================
+STEP 5c -- plus-minus as a REFERENCE FILL, head to head with RAPM on the same rows
+====================================================================================================
+  This is the step-3 question asked of plus-minus: on rows with no prior-season mean in the
+  frame, does a PREVIOUS-SEASON PLUS-MINUS fill do what a RAPM fill does?
+
+  (for reference, from s05 -- skill vs D094's incumbent on wf_eval rows)
+target                           fga  minutes      ppm      pts
+fill_source                                                    
+F0_league_D094              +0.8582% +1.2035% +0.3182% +0.6113%
+F1_rapm                     +0.9629% +1.3331% +0.3781% +1.0391%
+F2_raw_prev_box_master      +0.8517% +1.0609% +0.4530% +0.6256%
+F3_rapm_plus_raw_box        +0.6660% +0.9790% +0.2604% +0.7357%
+F4_negcontrol_shuffled_rapm +0.8572% +1.2061% +0.2630% +0.7340%
+
+====================================================================================================
+STEP 5d -- WALK-FORWARD FORECAST: does adding plus-minus improve the refit forecast?
+====================================================================================================
+target            fga  minutes      ppm      pts
+arm                                             
+base         +0.0000% +0.0000% +0.0000% +0.0000%
+base+PM      +0.1029% +0.0454% +0.0207% -0.0062%
+base+RAPM    +0.2394% -1.3010% +0.6850% +0.5172%
+base+RAPM+PM -2.8641% -5.7444% +0.6293% +0.4127%
+
+  block sign-flip p:
+target          fga  minutes    ppm    pts
+arm                                       
+base         1.0000   1.0000 1.0000 1.0000
+base+PM      0.0025   0.4198 0.6397 0.9150
+base+RAPM    0.2104   0.0005 0.0005 0.0065
+base+RAPM+PM 0.0005   0.0005 0.0005 0.0210
+
+====================================================================================================
+WRITE
+====================================================================================================
+  wrote plusminus_separate.csv (112 rows)
+  wrote permutation_draws_plusminus.csv (48000 draws)
+  wrote _s06.json
+DONE s06
+
+====================================================================================================
+ASSEMBLE FINDINGS
+====================================================================================================
+  wrote FINDINGS.json
+{
+ "experiment": "E1_I0031_rapm_as_prior",
+ "question": "The user asked whether the WNBA already has a plus-minus-style stat we should factor in or compete against. Does prior-season RAPM improve a strictly prior-games-only forecast, as a feature or as a reference component; does it beat D092's cold-start placeholder; and does raw per-game plus-minus add anything?",
+ "headline": "RAPM is REAL BUT SMALL, and it is worth more as a REFERENCE COMPONENT than as a FEATURE. As a feature it never lifts a refit forecast past D094's tuned simple estimator. As a reference component its honest marginal contribution, after controlling for re-tuned shrinkage and against its own negative control, is about +0.1 to +0.4 percentage points of MAE skill pooled. The one place it clearly earns its keep is the COLD-START tier for VETERANS RETURNING (+1.2pp points, +1.5pp minutes over a no-RAPM control); for TRUE ROOKIES it does not exist and actively hurts. Raw per-game plus-minus is a CLEAN NULL everywhere.",
+ "candidate_sha256": "79331a724bbde189d17a887400e36587ee53d8cf242411b2baeec765cda7c026",
+ "candidates_added_after_prereg": 0,
+ "candidates_dropped_after_prereg": 0,
+ "posthoc_analyses_disclosed": [
+  "step3_V3_fill_decomposition_POSTHOC",
+  "step4_C3_decomposition_POSTHOC"
+ ],
+ "step1_provenance": "...",
+ "step2_rapm_as_feature": "...",
+ "step3_rapm_as_reference": "...",
+ "step4_coldstart": "...",
+ "step5_raw_plusminus": "...",
+ "controls": "...",
+ "denominator_rule_D099": "Every dR2 in every
+
+DONE s07

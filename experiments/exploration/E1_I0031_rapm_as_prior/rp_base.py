@@ -445,6 +445,35 @@ def cyclic_shift_within_groups(x, starts, ns, rng):
     return out
 
 
+class CyclicShifter:
+    """Vectorised cyclic shift within (season, player) blocks, rows sorted by group then DATE.
+
+    Same construction as `cyclic_shift_within_groups` above (CREDIT: E1_I0021/hd_base.py, D093),
+    but the per-group rotation is turned into a single gather index so a draw costs one fancy-index
+    instead of one np.roll per group.  Verified against the loop implementation in s06.
+
+    ONE SHIFT PER DRAW IS APPLIED TO THE WHOLE BLOCK OF COLUMNS, for the same reason the RAPM block
+    is relabelled under a single permutation: the plus-minus columns are different memory lengths
+    of the SAME underlying series, and their mutual correlation is real structure that the null is
+    not meant to destroy.  Only the alignment to the response is broken.
+    """
+
+    def __init__(self, starts, ns):
+        self.starts = np.asarray(starts)
+        self.ns = np.asarray(ns)
+        self.N = int(self.ns.sum())
+        self.start_exp = np.repeat(self.starts, self.ns)
+        self.n_exp = np.repeat(self.ns, self.ns)
+        self.pos = np.arange(self.N) - self.start_exp
+
+    def draw_index(self, rng):
+        k = rng.integers(0, np.maximum(self.ns, 1))
+        return self.start_exp + (self.pos + np.repeat(k, self.ns)) % self.n_exp
+
+    def draw(self, X, rng):
+        return X[self.draw_index(rng)]
+
+
 def group_bounds(f, keys=("season", "player_id")):
     codes = f.groupby(list(keys), sort=False).ngroup().to_numpy()
     change = np.flatnonzero(np.r_[True, codes[1:] != codes[:-1]])

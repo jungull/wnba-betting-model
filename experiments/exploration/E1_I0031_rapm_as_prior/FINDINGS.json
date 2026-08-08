@@ -1,0 +1,443 @@
+{
+  "experiment": "E1_I0031_rapm_as_prior",
+  "question": "The user asked whether the WNBA already has a plus-minus-style stat we should factor in or compete against. Does prior-season RAPM improve a strictly prior-games-only forecast, as a feature or as a reference component; does it beat D092's cold-start placeholder; and does raw per-game plus-minus add anything?",
+  "headline": "RAPM is REAL BUT SMALL, and it is worth more as a REFERENCE COMPONENT than as a FEATURE. As a feature it never lifts a refit forecast past D094's tuned simple estimator. As a reference component its honest marginal contribution, after controlling for re-tuned shrinkage and against its own negative control, is about +0.1 to +0.4 percentage points of MAE skill pooled. The one place it clearly earns its keep is the COLD-START tier for VETERANS RETURNING (+1.2pp points, +1.5pp minutes over a no-RAPM control); for TRUE ROOKIES it does not exist and actively hurts. Raw per-game plus-minus is a CLEAN NULL everywhere.",
+  "candidate_sha256": "79331a724bbde189d17a887400e36587ee53d8cf242411b2baeec765cda7c026",
+  "candidates_added_after_prereg": 0,
+  "candidates_dropped_after_prereg": 0,
+  "posthoc_analyses_disclosed": [
+    "step3_V3_fill_decomposition_POSTHOC",
+    "step4_C3_decomposition_POSTHOC"
+  ],
+  "step1_provenance": {
+    "artifact": "data/rapm/rapm_walkforward.csv",
+    "manifest_asof_granularity": "season",
+    "manifest_sha256_matches_bytes": true,
+    "kit_check_manifest_status": "UNVERIFIABLE",
+    "kit_status_note": "screenkit.check_manifest only recognises 'row' and 'artifact'; it returns UNVERIFIABLE and usable_at_e0_e1=False for 'season' and says explicitly that this is NOT a pass. The manifest sha256 DOES match the bytes (169,266 bytes, 924411f3...). What discharges the check here is the VALUE-LEVEL verification below, not the manifest and not the coordinator's byte check.",
+    "strict_prior_verified_on_values": true,
+    "row_level_train_ge_emit": 0,
+    "row_level_fitthrough_ge_emit": 0,
+    "correction_to_brief": "train_seasons is CUMULATIVE, not prior-season-only: emit 2022<-2021, 2023<-2021-2022, 2024<-2021-2023 (expanding window). `fit_through_season` is the LAST training season, which is what the manifest note names. Still STRICTLY PRIOR, and more data than the brief assumed, but not 'the prior season only'.",
+    "holdout_emit_rows_dropped": 579,
+    "emit_seasons_kept": [
+      2022,
+      2023,
+      2024
+    ],
+    "hazard_found_here": "lambda_chosen varies 50x across emit seasons (2022: 100000, 'fallback_max_grid', one training season, no inner validation, thin_history_caveat=True; 2023: 33000; 2024: 2000). Within-season SD of net_100 is 0.095 / 0.372 / 2.367 -- a 25x spread in the SCALE of the same column. net_100/orapm_100/drapm_100 are therefore used ONLY after within-emit-season standardisation; the primary continuous measure is a FIXED-lambda column.",
+    "season_granularity_limitation": "Season granularity satisfies the partition guard (D080) and, combined with the value-level strict-prior check, discharges the retrospective check. But RAPM is a SLOW-MOVING PRIOR: one value per player per season. It cannot capture within-season form, role change, injury return or a trade. It is a level, not a trajectory. This limitation travels with every result below.",
+    "coverage": {
+      "row_level_by_season": {
+        "no_rapm": {
+          "2022": 1033,
+          "2023": 800,
+          "2024": 659
+        },
+        "has_rapm": {
+          "2022": 3329,
+          "2023": 3948,
+          "2024": 4110
+        }
+      },
+      "player_season_level": 0.7726315789473684,
+      "frame_rows_with_rapm": 0.8204481590892716
+    }
+  },
+  "step2_rapm_as_feature": {
+    "verdict": "NO. RAPM is DETECTABLE over a complete prior-only base but does not produce a forecast that beats the existing incumbent.",
+    "detection_dr2_wf_eval": {
+      "pts": 0.0025764103267799,
+      "minutes": 0.0013970598981189,
+      "fga": 0.0014592606170533,
+      "ppm": 0.0031029058153708
+    },
+    "detection_perm_p_wf_eval": {
+      "pts": 0.000999500249875,
+      "minutes": 0.0004997501249375,
+      "fga": 0.0014992503748125,
+      "ppm": 0.0034982508745627
+    },
+    "detection_dr2_decision_stratum": {
+      "pts": 0.0040749848101523,
+      "minutes": 0.0040414180897303,
+      "fga": 0.0026401723360168,
+      "ppm": 0.0042592789620429
+    },
+    "detection_perm_p_decision_stratum": {
+      "pts": 0.0754622688655672,
+      "minutes": 0.0619690154922538,
+      "fga": 0.1699150424787606,
+      "ppm": 0.128935532233883
+    },
+    "detection_note": "Significant POOLED for all four targets; NOT significant on D081's decision stratum for any of them (p = 0.07 to 0.19). The negative control (whole-player-season relabelling) itself reproduces 40-50% of the pooled dR2, which is why the permutation null and not a t-test is what decides this.",
+    "walkforward_skill_vs_base_wf_eval": {
+      "pts": 0.0051717961569861,
+      "minutes": -0.0130097386975276,
+      "fga": 0.0023938390573406,
+      "ppm": 0.0068496286151747
+    },
+    "walkforward_p_wf_eval": {
+      "pts": 0.0064967516241879,
+      "minutes": 0.0004997501249375,
+      "fga": 0.2103948025987006,
+      "ppm": 0.0004997501249375
+    },
+    "walkforward_skill_vs_base_decision_stratum": {
+      "pts": 0.0059302969625298,
+      "minutes": -0.0205176941878175,
+      "fga": 0.0043532904437543,
+      "ppm": 0.0125450626864578
+    },
+    "skill_of_base_plus_rapm_vs_D094_estimator": {
+      "pts": -0.0124424648127237,
+      "minutes": -0.0141743020735087,
+      "fga": -0.0087324630317797,
+      "ppm": -0.0117186699981148
+    },
+    "decisive_point": "Even WITH RAPM, the refit forecast is WORSE than D094's tuned simple estimator on 7 of 8 target x stratum cells. RAPM buys back part of the loss from refitting; it never gets the refit past the incumbent.",
+    "decomposition": "The single largest component of the detectable signal is `has_rapm_f` -- the INDICATOR THAT A RAPM VALUE EXISTS AT ALL, not its value. For points-per-minute existence alone is +0.00200 of the block's +0.00310 (64%); for points +0.00089 of +0.00258 (35%). Dropping every net-RAPM column barely moves the block (pts +0.00230 of +0.00258) while keeping only the net columns collapses it (+0.00032). What RAPM mostly carries as a feature is a veteran/rookie indicator, not player quality.",
+    "walkforward_rank_hazard_found_and_fixed": "A plain lstsq walk-forward fit scored MAE 9.30 on 2023 points where D094's estimator scores 4.19, because prevseason_*/lgexp_*/role_* are THE SAME COLUMN in the 2022 training fold. See NOTES.md; fixed by a structural-availability drop plus fold-internal ridge, applied identically to both arms."
+  },
+  "step3_rapm_as_reference": {
+    "verdict": "YES, but far smaller than the raw comparison suggests, and MOST of the apparent gain is NOT RAPM.",
+    "raw_skill_vs_D094_incumbent_wf_eval": {
+      "V0": {
+        "pts": 0.0009992240792946,
+        "minutes": 0.0,
+        "fga": 0.0001488442299083,
+        "ppm": 0.0
+      },
+      "V1": {
+        "pts": 0.0054307657258381,
+        "minutes": 0.0108896005700102,
+        "fga": 0.0016212794074944,
+        "ppm": -0.0008661143628019
+      },
+      "V2": {
+        "pts": 0.0080595271448903,
+        "minutes": 0.0134377172267963,
+        "fga": 0.0078290599986294,
+        "ppm": 0.0028553999447462
+      },
+      "V3": {
+        "pts": 0.0103913172007389,
+        "minutes": 0.0133311194849142,
+        "fga": 0.0096287026733203,
+        "ppm": 0.0037813677581209
+      },
+      "V4": {
+        "pts": 0.0068120125219078,
+        "minutes": 0.011556887232489,
+        "fga": 0.004357590435446,
+        "ppm": 0.0015832420568904
+      },
+      "V5": {
+        "pts": 0.0009306740213393,
+        "minutes": 0.0072358943033326,
+        "fga": -0.0002555219444302,
+        "ppm": 6.293774045673661e-05
+      }
+    },
+    "raw_p_wf_eval": {
+      "V0": {
+        "pts": 0.1024487756121939,
+        "minutes": 1.0,
+        "fga": 0.9000499750124937,
+        "ppm": 1.0
+      },
+      "V1": {
+        "pts": 0.0004997501249375,
+        "minutes": 0.0004997501249375,
+        "fga": 0.3773113443278361,
+        "ppm": 0.4707646176911544
+      },
+      "V2": {
+        "pts": 0.0004997501249375,
+        "minutes": 0.0004997501249375,
+        "fga": 0.0004997501249375,
+        "ppm": 0.031984007996002
+      },
+      "V3": {
+        "pts": 0.0004997501249375,
+        "minutes": 0.0004997501249375,
+        "fga": 0.0004997501249375,
+        "ppm": 0.015992003998001
+      },
+      "V4": {
+        "pts": 0.0004997501249375,
+        "minutes": 0.0004997501249375,
+        "fga": 0.000999500249875,
+        "ppm": 0.1954022988505747
+      },
+      "V5": {
+        "pts": 0.153423288355822,
+        "minutes": 0.0004997501249375,
+        "fga": 0.815592203898051,
+        "ppm": 0.7401299350324838
+      }
+    },
+    "best_variant": "V3 -- keep the player's own prior-season mean where it exists, and fill the rows where it does not with a RAPM-derived value.",
+    "posthoc_fill_decomposition_wf_eval": {
+      "F0_league_D094": {
+        "pts": 0.0061127476708631,
+        "minutes": 0.0120348800222294,
+        "fga": 0.0085820559268988,
+        "ppm": 0.0031821369356311
+      },
+      "F1_rapm": {
+        "pts": 0.0103913172007389,
+        "minutes": 0.0133311194849142,
+        "fga": 0.0096287026733203,
+        "ppm": 0.0037813677581209
+      },
+      "F2_raw_prev_box_master": {
+        "pts": 0.0062563295766533,
+        "minutes": 0.0106089402470337,
+        "fga": 0.0085165103601249,
+        "ppm": 0.004529804642914
+      },
+      "F3_rapm_plus_raw_box": {
+        "pts": 0.0073573572342626,
+        "minutes": 0.0097900564967564,
+        "fga": 0.0066603679333054,
+        "ppm": 0.0026036603761336
+      },
+      "F4_negcontrol_shuffled_rapm": {
+        "pts": 0.0073404247031507,
+        "minutes": 0.0120610419865533,
+        "fga": 0.0085716959982515,
+        "ppm": 0.0026304763482374
+      }
+    },
+    "what_the_decomposition_shows": "V3's headline (+1.04% points, +0.96% attempts, +1.33% minutes, +0.38% ppm over D094) is mostly NOT RAPM. Filling with the LEAGUE value and merely RE-TUNING the shrinkage strength already gives +0.61 / +0.86 / +1.20 / +0.32. RAPM's marginal contribution over that is +0.43pp points, +0.10pp attempts, +0.13pp minutes, +0.06pp ppm. The negative control -- the SAME map fed RELABELLED RAPM -- itself reaches +0.73pp points, so even the points figure is only about +0.31pp clear of its own null.",
+    "the_users_question_answered_directly": "F2 replaces the RAPM fill with the player's RAW previous-season box score from master_player, which has the SAME backward coverage (both reach 2021) and is the same season-level object but carries NO opponent or teammate adjustment. It scores +0.63 / +0.85 / +1.06 / +0.45 -- indistinguishable from RAPM on attempts, minutes and ppm, and BETTER than RAPM on ppm. The ADJUSTMENT buys almost nothing over the raw box score; only on points does RAPM lead, by ~0.4pp.",
+    "mechanism": {
+      "wf_rows_with_no_prior_season_mean_in_frame": 2147,
+      "as_fraction_of_wf_rows": 0.22559630135546915,
+      "of_those_that_actually_have_a_rapm_value": 688,
+      "of_those_with_no_rapm_either": 1459,
+      "note": "Only 688 of the 2,147 rows the fill touches have a real RAPM value; the other 1,459 receive a season-mean-imputed RAPM, which the map turns into something close to the league constant. That is why F1 sits so close to F0."
+    }
+  },
+  "step4_coldstart": {
+    "verdict": "SPLIT. For VETERANS RETURNING, RAPM genuinely beats D092's placeholder. For TRUE ROOKIES it does not exist, and using it is actively harmful.",
+    "tier": "D092's tier_poor (fewer than 3 prior same-season appearances), seasons 2023-2024 only, n=698",
+    "why_2022_excluded": "The RAPM->level map must be fitted on seasons strictly earlier than the scored season and 2022 has no earlier season inside the frame. This step therefore covers a SUBSET of D092's rows and its numbers are NOT directly comparable to D092's three-season headline. The incumbent is rescored on exactly these rows.",
+    "population_counts": {
+      "veteran_returning": 572,
+      "true_rookie": 126
+    },
+    "population_split_agreement": "The two independent markers (a RAPM value exists; pl_prior_season_games > 0) agree on ALL 698 rows -- 572 veteran-returning, 126 true rookie, 0 ambiguous.",
+    "D092_blend_reproduced": true,
+    "skill_vs_D092_all_data_poor": {
+      "C0": {
+        "pts": 0.0,
+        "minutes": 0.0,
+        "ppm": 0.0
+      },
+      "C1": {
+        "pts": -0.1087958807574007,
+        "minutes": -0.1925109184681168,
+        "ppm": -0.0318858970994786
+      },
+      "C2": {
+        "pts": -0.0282651596066072,
+        "minutes": -0.0475400360912832,
+        "ppm": -0.0107709256554011
+      },
+      "C3": {
+        "pts": 0.023493723334146,
+        "minutes": 0.0241985838242652,
+        "ppm": 0.0009978434816605
+      },
+      "C4": {
+        "pts": -0.1087958807574007,
+        "minutes": -0.1925109184681168,
+        "ppm": -0.0318858970994786
+      }
+    },
+    "skill_vs_D092_veteran_returning": {
+      "C0": {
+        "pts": 0.0,
+        "minutes": 0.0,
+        "ppm": 0.0
+      },
+      "C1": {
+        "pts": -0.0392027118033786,
+        "minutes": -0.1163535137115865,
+        "ppm": -0.0112392131525609
+      },
+      "C2": {
+        "pts": 0.0040555423433551,
+        "minutes": -0.0087334320895549,
+        "ppm": -0.0004806318894488
+      },
+      "C3": {
+        "pts": 0.0228285169586681,
+        "minutes": 0.0102932922501797,
+        "ppm": 0.0052477335192714
+      },
+      "C4": {
+        "pts": -0.0392027118033786,
+        "minutes": -0.1163535137115865,
+        "ppm": -0.0112392131525609
+      }
+    },
+    "skill_vs_D092_true_rookie": {
+      "C0": {
+        "pts": 0.0,
+        "minutes": 0.0,
+        "ppm": 0.0
+      },
+      "C1": {
+        "pts": -0.5431187847542893,
+        "minutes": -0.5058756878374349,
+        "ppm": -0.1088481093898314
+      },
+      "C2": {
+        "pts": -0.2299749156230304,
+        "minutes": -0.2072175165921563,
+        "ppm": -0.049128841889382
+      },
+      "C3": {
+        "pts": 0.0276451992490538,
+        "minutes": 0.0814146680784072,
+        "ppm": -0.0148439711228631
+      },
+      "C4": {
+        "pts": -0.5431187847542893,
+        "minutes": -0.5058756878374349,
+        "ppm": -0.1088481093898314
+      }
+    },
+    "posthoc_C3_decomposition": {
+      "all_data_poor": {
+        "C3_full_rapm": {
+          "pts": 0.023493723334146,
+          "minutes": 0.0241985838242652,
+          "ppm": 0.0009978434816605
+        },
+        "C3_recalibration_only_NO_RAPM": {
+          "pts": 0.0210518366964854,
+          "minutes": 0.0169792715009634,
+          "ppm": 0.0015436485519518
+        },
+        "C3_negcontrol_shuffled_rapm": {
+          "pts": 0.01817962863421,
+          "minutes": 0.0173136360806801,
+          "ppm": 0.001583541970975
+        }
+      },
+      "veteran_returning": {
+        "C3_full_rapm": {
+          "pts": 0.0228285169586681,
+          "minutes": 0.0102932922501797,
+          "ppm": 0.0052477335192714
+        },
+        "C3_recalibration_only_NO_RAPM": {
+          "pts": 0.0111158396908628,
+          "minutes": -0.0044959828004123,
+          "ppm": 0.0010654751319105
+        },
+        "C3_negcontrol_shuffled_rapm": {
+          "pts": 0.0077182296726122,
+          "minutes": -0.0044424850444544,
+          "ppm": 0.0015288869436305
+        }
+      },
+      "true_rookie": {
+        "C3_full_rapm": {
+          "pts": 0.0276451992490538,
+          "minutes": 0.0814146680784072,
+          "ppm": -0.0148439711228631
+        },
+        "C3_recalibration_only_NO_RAPM": {
+          "pts": 0.0830612427696233,
+          "minutes": 0.1053434710533524,
+          "ppm": 0.0033260792977057
+        },
+        "C3_negcontrol_shuffled_rapm": {
+          "pts": 0.0834680074386441,
+          "minutes": 0.1068335179693044,
+          "ppm": 0.0017872730799535
+        }
+      }
+    },
+    "the_clean_result": "On VETERANS RETURNING, C3 (D092's structural prior plus a walk-forward-fitted RAPM term) beats D092 by +2.28% on points (p=0.0015) and +1.03% on minutes, while the SAME construction with the RAPM term removed gives +1.11% and -0.45%, and the negative control with relabelled RAPM gives +0.77% and -0.44%. RAPM's own contribution is therefore about +1.2pp on points and +1.5pp on minutes, clear of its own null.",
+    "the_rookie_result": "On TRUE ROOKIES, C3 with RAPM (+2.76% points, +8.14% minutes) is much WORSE than the same construction without RAPM (+8.31%, +10.53%). Replacing D092's prior with RAPM outright (C1/C4) costs -54% on points and -51% on minutes. RAPM has nothing to say about a player with no prior-season possessions, and the imputed value destroys the draft-slot signal D092 correctly relies on.",
+    "note_on_prereg": "C1 and C4 as preregistered turned out to be the SAME construction. Both are reported; the identity is a property of the preregistered list, not a result, and nothing was dropped."
+  },
+  "step5_raw_plusminus": {
+    "verdict": "CLEAN NULL. Raw per-game plus-minus adds nothing, over the base or over base+RAPM, on any target, on either stratum.",
+    "dr2_over_base_wf_eval": {
+      "pts": 0.000216185924765,
+      "minutes": 0.0005197358795873,
+      "fga": 0.0004994569718704,
+      "ppm": 0.000469613926833
+    },
+    "perm_p_over_base_wf_eval": {
+      "pts": 0.9720139930034982,
+      "minutes": 0.4822588705647176,
+      "fga": 0.1659170414792603,
+      "ppm": 0.8875562218890555
+    },
+    "dr2_over_base_plus_rapm_wf_eval": {
+      "pts": 0.0002509778889857,
+      "minutes": 0.0004018618403945,
+      "fga": 0.0003798765845928,
+      "ppm": 0.0005365241400378
+    },
+    "perm_p_over_base_plus_rapm_wf_eval": {
+      "pts": 0.9405297351324338,
+      "minutes": 0.5177411294352824,
+      "fga": 0.2538730634682659,
+      "ppm": 0.8380809595202399
+    },
+    "smallest_p_anywhere": 0.0804597701149425,
+    "head_to_head": "RAPM's dR2 over base+plus-minus is essentially identical to its dR2 over base alone (points +0.00261 vs +0.00258), while plus-minus's dR2 over base+RAPM is +0.00025 and inside its null. RAPM survives plus-minus; plus-minus does not survive RAPM. Neither is large.",
+    "within_season_form_hypothesis": "The motivation for testing it -- that a game-level series could carry within-season form that a season-level RAPM structurally cannot -- is NOT supported. The game-level family (P01-P04) is as null as the season-level one.",
+    "null_used": "CYCLIC SHIFT within (season, player) for the game-level family (credit D093, E1_I0021); PLAYER-SEASON RELABELLING for pm_prev_season, which is constant within a player-season. Never a within-player shuffle."
+  },
+  "controls": {
+    "negative_control": "Whole-player-season relabelling of the RAPM block. Run in step 2 (dR2), in the step-3 fill decomposition (F4) and in the step-4 C3 decomposition. It is NOT near zero in step 2 -- it reproduces 40-50% of the pooled dR2 -- and that is exactly why every claim here is measured against the permutation null rather than against zero.",
+    "noop_placebo": "RAPM block multiplied by 1.0: VERIFIED to change 0 of 138,790 cells and to reproduce the real dR2 to machine precision for all four targets.",
+    "perturbed_placebo": "RAPM block + 1e-6*sd: VERIFIED to change all 138,790 cells, so the placebo machinery is demonstrably live rather than silently inert.",
+    "d094_reproduced_exactly": true,
+    "d092_blend_reproduced_exactly": true
+  },
+  "denominator_rule_D099": "Every dR2 in every output table carries an `sst_basis` column and is reported BOTH on its own stratum's SST and on the full wf_eval SST (or, in step 4, the full data-poor-tier SST). No subset dR2 is compared to a full-stratum dR2 anywhere.",
+  "strata": {
+    "wf_eval": 9517,
+    "decision_stratum_wf": 3549,
+    "data_poor": 999,
+    "data_poor_wf": 657
+  },
+  "partition": {
+    "exploration_seasons": [
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "scored_seasons": [
+      2022,
+      2023,
+      2024
+    ],
+    "headline_evaluation_seasons": [
+      2023,
+      2024
+    ],
+    "holdout_never_read": [
+      2025,
+      2026
+    ],
+    "rapm_holdout_emit_rows_dropped": 579
+  },
+  "what_would_change_the_answer": [
+    "A RAPM built at a finer as-of granularity than the season. Every limitation above traces to it being one number per player per season; the cold-start veteran result is the only place a season-level prior is the right shape for the problem.",
+    "A frame that reaches back to 2021 as scored rows. 22.6% of walk-forward rows have no prior-season mean IN THE FRAME, and that gap -- not RAPM's adjustment -- is most of what the step-3 fill is repairing.",
+    "More seasons. The 2023 fold is trained on 2022 alone, the first season in the frame, where no prior-season quantity exists at all; and the 2022 RAPM fit itself is maximally shrunk with thin_history_caveat=True."
+  ]
+}

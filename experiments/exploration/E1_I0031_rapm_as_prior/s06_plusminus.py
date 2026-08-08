@@ -65,6 +65,19 @@ M_STRAT = M_WF & f["m_stratum"].to_numpy(bool)
 ps_codes = f.groupby(["season", "player_id"], sort=False).ngroup().to_numpy()
 codes, starts, ns = B.group_bounds(f)
 RELAB = B.PlayerSeasonRelabeller(ps_codes)
+SHIFT = B.CyclicShifter(starts, ns)
+
+# VERIFY the vectorised shifter against the loop implementation it replaces, on the same seed.
+_v = f["pm_ewma5_imp"].to_numpy(float)
+for _s in range(5):
+    _a = B.cyclic_shift_within_groups(_v, starts, ns, np.random.default_rng(_s))
+    _b = SHIFT.draw(_v, np.random.default_rng(_s))
+    assert np.array_equal(np.sort(_a), np.sort(_b)), "shifter changes the multiset"
+    _ga = pd.Series(_a).groupby(codes).apply(lambda s: tuple(sorted(s)))
+    _gb = pd.Series(_b).groupby(codes).apply(lambda s: tuple(sorted(s)))
+    assert (_ga == _gb).all(), "shifter moves values ACROSS groups -- that is not a cyclic shift"
+print("  vectorised cyclic shifter VERIFIED against the loop implementation "
+      "(same multiset, values never leave their player-season), 5 seeds.")
 
 # ============================================================ dR2 with the level-correct null
 B.hdr("STEP 5a -- dR2 over BASE, and over BASE+RAPM, with level-correct nulls")
@@ -84,12 +97,7 @@ def dr2_with_null(y, Xb, add_cols, mask, null_kind, seed, n_draws=B.N_DRAWS):
     blockv = RELAB.block_values(Xa) if null_kind == "relabel" else None
     draws = np.empty(n_draws)
     for j in range(n_draws):
-        if null_kind == "relabel":
-            Xp = RELAB.draw(blockv, rng)
-        else:
-            Xp = np.column_stack([B.cyclic_shift_within_groups(Xa[:, k], starts, ns, rng)
-                                  for k in range(Xa.shape[1])])
-        Xp = Xp[idx]
+        Xp = (RELAB.draw(blockv, rng) if null_kind == "relabel" else SHIFT.draw(Xa, rng))[idx]
         R = Xp - Ab @ (P @ Xp)
         b = R.T @ ry
         coef = np.linalg.solve(R.T @ R + 1e-10 * np.eye(R.shape[1]), b)
