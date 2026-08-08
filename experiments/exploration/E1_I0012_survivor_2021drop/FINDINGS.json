@@ -1,0 +1,179 @@
+{
+  "screen_id": "E1_I0012_survivor_2021drop",
+  "parent_screen": "E0_I0012_layer3_noncollinear",
+  "subject": "the sole survivor of E0_I0012, formulations[13] = F3_style_orthogonalized__dpace, target = reb",
+  "question": "The survivor's per-season beta_OxM decays monotonically 0.356 -> 0.335 -> 0.167 -> 0.064 across 2021-2024. Re-run with 2021 dropped entirely: does the 2022-2024 trend still decay? If yes the lead is dying on its own and should be abandoned without touching the holdout. If dropping 2021 flattens the decay, 2021 was an artifact of that season's structure and the lead survives in reduced form.",
+  "stage": "E1 exploration (targeted robustness re-run)",
+  "claiming": {
+    "is_claiming": false,
+    "statement": "NON-CLAIMING. This screen makes no claim of edge, no promotion recommendation, and no forecast. No registry entry, no preregistration, no leaderboard row, no REPORT.md was produced. It exists to decide whether an existing exploration lead is worth any further spend, and its conclusion is a KILL."
+  },
+  "partition": {
+    "seasons_used_headline": [2022, 2023, 2024],
+    "seasons_used_anchor_only": [2021, 2022, 2023, 2024],
+    "holdout_touched": false,
+    "statement": "Only seasons 2021-2024 were read, joined, filtered, counted or described, and every headline number uses 2022-2024 only. 2021 appears solely in the reproduction anchor of Stage A. The 2025/2026 confirmation holdout was never opened, joined against, filtered against, counted, plotted or described. The entire purpose of this screen was to decide the lead's fate without spending holdout, and no holdout was spent.",
+    "filter_points": "base.load_player() and base.load_team() filter on base.PARTITION immediately after read_parquet and assert there; run_drop2021.py and run_recency.py mark each further restriction with '# FILTER-POINT' and call guard(), which prints sorted(season.unique()), hard-asserts the seasons are a subset of the allowed set, and hard-asserts no intersection with {2025, 2026}. The guard runs on both masters after load, on the merged feature frame, on every slice, and on every analysis frame. A final re-assertion over all three analysis frames runs immediately before results_raw.json is written. All printed season lists are in run_log_drop2021.txt and run_log_recency.txt.",
+    "artifact_contamination_check_13_2_2": {
+      "method": "base.check_manifest() parses <artifact>.manifest.json and requires asof_granularity == 'row', raising otherwise. fit_seasons was NOT used as the test.",
+      "data/masters/master_player.parquet": "asof_granularity=row -> row-bounded -> filtering to 2022-2024 is SUFFICIENT -> usable",
+      "data/masters/master_team.parquet": "asof_granularity=row -> usable",
+      "note_on_fit_seasons": "Both manifests report fit_seasons=[2021,2022,2023,2024,2025,2026]. Per 13.2.2 that is NOT the contamination test; asof_granularity=='row' is, and both pass. The row filter is what bounds these artifacts.",
+      "no_byte_scan": "No literal '2025'/'2026' byte-scan was run. That check produced a FALSE partition violation in this program by matching row counts and digit runs inside floats. Season COLUMN VALUES were tested instead."
+    }
+  },
+  "r2_convention": {
+    "convention": "PLAIN UNWEIGHTED OLS R2 = 1 - SSE/SST, SST about the unweighted mean. Inherited unchanged from base.r2 / base.fit_beta / base.resid_on, which are all unweighted lstsq. No observation weights appear anywhere in this screen.",
+    "why": "Kept identical to the E0 screen so the 2022-2024 numbers are directly comparable to the published all-four-season numbers.",
+    "relation_to_the_wls_r2_defect": "The ~8% understatement reported elsewhere in this program affects a WEIGHTED-R2 helper. This screen contains no weighted regression, so no number here is affected."
+  },
+  "reuse": {
+    "statement": "Nothing was reimplemented. base.py (load_player, load_team, check_manifest, prior_expanding, build_base, prep_frame, zwithin, resid_on, r2, fit_beta, screen_increment, screen_increment_quiet, collinearity) and f34_style_rest.py (build_team_style, player_style, placebo) were imported from the read-only E0 directory and called unmodified.",
+    "write_scope_guard": "base.OUT was re-pointed to this directory at import time so no reused helper could write into E0. PYTHONDONTWRITEBYTECODE=1 was set so no .pyc was added to E0/__pycache__. Nothing in E0_I0012_layer3_noncollinear was modified, added to, or overwritten."
+  },
+  "placebo_discipline": {
+    "construction": "f34_style_rest.placebo(), unchanged. It permutes the ASSIGNMENT of the ALREADY-COMPUTED dpace value to rows, within season, and re-runs the full residualize-then-increment path on the permuted column. No grouping key is permuted and no aggregate is recomputed from a permuted key -- that is the no-op whose signature is sd exactly 0.000000.",
+    "n_perm": 400,
+    "all_placebo_sds_nondegenerate": true,
+    "min_placebo_sd_observed": 0.00010523009466639394,
+    "note_on_the_widened_floor": "Dropping 2021 cuts n from 10167 to 8039 and the recency slices cut it further (5555, 2771). The placebo sd widens accordingly: 0.0000928 at n=10167, 0.000126 at n=8039, 0.000178 at n=5555, 0.000385 at n=2771. Every effect below is compared to ITS OWN placebo distribution, never to the original n=10167 floor."
+  },
+  "reproduction_anchor": {
+    "purpose": "A re-run that cannot be anchored is not interpretable. Before reporting anything, reproduce the published all-four-season pooled dR2_OxM of 0.001071 with this harness.",
+    "seasons": [2021, 2022, 2023, 2024],
+    "n": 10167,
+    "pooled_dR2_OxM_reproduced": 0.0010713241044830735,
+    "pooled_dR2_OxM_published": 0.0010713241044830735,
+    "abs_diff": 0.0,
+    "per_season_beta_OxM_reproduced": {
+      "2021": 0.35599767969471996,
+      "2022": 0.33477624294433783,
+      "2023": 0.16743308359021705,
+      "2024": 0.06401679555459161
+    },
+    "per_season_beta_OxM_published": {
+      "2021": 0.35599767969471996,
+      "2022": 0.33477624294433783,
+      "2023": 0.16743308359021705,
+      "2024": 0.06401679555459161
+    },
+    "reproduced": true,
+    "outcome": "EXACT. Pooled dR2_OxM and all four per-season betas reproduce to every printed digit, |diff| = 0.0. Per-season n (2128 / 2484 / 2784 / 2771), R2_base, dR2_M, beta_M and the collinearity vector all match run_log_f34.txt lines 261-283 as well. Every number below is therefore attributable to the season drop and not to the harness."
+  },
+  "headline_2022_2024": {
+    "design": "2021 dropped at the ANALYSIS stage: features are built with 2021 present so that 2022's prev-season shrinkage priors (prev_lg, prev_own) are byte-identical to E0, then 2021 rows are removed and O, D, O*D, M and the residualisation of M on (D, O*D) are all recomputed within 2022-2024 only. This isolates the effect of dropping the season from the effect of changing 2022's priors.",
+    "n": 8039,
+    "per_season_n": {"2022": 2484, "2023": 2784, "2024": 2771},
+    "per_season_beta_OxM": {
+      "2022": 0.322504487235469,
+      "2023": 0.16147039092658283,
+      "2024": 0.06171020312407083
+    },
+    "per_season_beta_OxM_in_the_original_E0_run": {
+      "2022": 0.33477624294433783,
+      "2023": 0.16743308359021705,
+      "2024": 0.06401679555459161
+    },
+    "per_season_dR2_OxM": {
+      "2022": 0.0029440633382324943,
+      "2023": 0.0007346069562073065,
+      "2024": 0.00011141968328098883
+    },
+    "pooled_dR2_OxM": 0.0008094564095497692,
+    "pooled_beta_OxM": 0.16680215113181962,
+    "pooled_dR2_M": 3.8157817182638e-05,
+    "placebo_dR2_OxM": {
+      "real": 0.0008094564095497692,
+      "mean": 9.246478175551575e-05,
+      "sd": 0.00012606956252154278,
+      "frac_ge": 0.0025,
+      "n_perm": 400,
+      "degenerate": false
+    },
+    "placebo_dR2_M": {
+      "real": 3.8157817182526976e-05,
+      "mean": 7.635924096553254e-05,
+      "sd": 0.0001053879417901992,
+      "frac_ge": 0.465,
+      "n_perm": 400,
+      "degenerate": false
+    },
+    "collinearity_vs_overall_def_within_season": -0.013761003276291579,
+    "collinearity_per_season": {"2022": -0.11472103250462361, "2023": -0.05968496160574793, "2024": 0.17475214798972744},
+    "monotonic_decay_still_present": true,
+    "beta_2024_over_beta_2022": 0.1914,
+    "trend_test": {
+      "specification": "y ~ O + D + O*D + Mres + O*Mres + t + O*t + Mres*t + O*Mres*t, t = centered season index over 2022-2024. The coefficient on O*Mres*t IS the decay.",
+      "beta_OxM_at_partition_midpoint": 0.16993681911886674,
+      "beta_OxM_x_seasonindex": -0.13871237156677885,
+      "dR2_of_the_decay_term": 0.0003672516457066122,
+      "reading": "The decay coefficient is negative and large relative to the level: -0.1387 per season against a midpoint level of +0.1699. Extrapolating one season past the partition puts the level at roughly +0.031, i.e. essentially nothing. The decay term alone carries dR2 0.000367, about 45% of the size of the entire pooled interaction effect it is eroding."
+    },
+    "outcome": "THE DECAY SURVIVES THE DROP INTACT. Removing 2021 barely moves the 2022-2024 betas at all (0.3348/0.1674/0.0640 -> 0.3225/0.1615/0.0617, changes of 0.4-3.7%). The decay is not a 2021 artifact; it is internal to 2022-2024 and reproduces almost exactly with 2021 gone."
+  },
+  "variant_2022_2024_dropped_at_load_stage": {
+    "design": "Stronger form of the drop: 2021 is never read at all, so 2022 loses its prev-season shrinkage prior (prev_lg / prev_own) and falls back to the within-2022 expanding league rate. Confirms the headline is not an artifact of retaining 2021-derived priors.",
+    "n": 8039,
+    "per_season_beta_OxM": {
+      "2022": 0.41846905089877817,
+      "2023": 0.14720999447374022,
+      "2024": 0.056285115050001555
+    },
+    "pooled_dR2_OxM": 0.0005026085848642836,
+    "pooled_beta_OxM": 0.13215429551013894,
+    "placebo_dR2_OxM": {
+      "real": 0.0005026085848642836,
+      "mean": 8.356379556477473e-05,
+      "sd": 0.00011298905822228773,
+      "frac_ge": 0.0075,
+      "n_perm": 400,
+      "degenerate": false
+    },
+    "trend_test": {
+      "beta_OxM_at_partition_midpoint": 0.1831105355867093,
+      "beta_OxM_x_seasonindex": -0.1633976755211738,
+      "dR2_of_the_decay_term": 0.00039213223076428605
+    },
+    "outcome": "SAME VERDICT, SLIGHTLY WORSE FOR THE LEAD. Still monotonic (0.418 -> 0.147 -> 0.056), the decay coefficient is steeper (-0.1634), and the pooled effect is smaller (0.000503 vs 0.000809). Losing 2021's priors makes 2022 look stronger and everything after it weaker, which sharpens rather than softens the decay."
+  },
+  "recency_slices": {
+    "purpose": "Follow-on that decides what a confirmation run would actually face. If the effect is concentrated in the oldest remaining season, a holdout test is testing something that no longer exists.",
+    "2023_2024": {
+      "seasons": [2023, 2024],
+      "n": 5555,
+      "pooled_dR2_OxM": 0.00026897216917571043,
+      "pooled_beta_OxM": 0.09597736920176397,
+      "placebo": {"mean": 0.00012543223580325, "sd": 0.00017842264719236, "frac_ge": 0.1175, "n_perm": 400},
+      "outcome": "NOT DISTINGUISHABLE FROM PLACEBO. 47 of 400 permutations at or above the real value."
+    },
+    "2024_alone": {
+      "seasons": [2024],
+      "n": 2771,
+      "pooled_dR2_OxM": 0.00011144049274573236,
+      "pooled_beta_OxM": 0.061188253524437,
+      "placebo": {"mean": 0.00025931538172556, "sd": 0.00038479423279253, "frac_ge": 0.4875, "n_perm": 400},
+      "outcome": "DEAD. The real value sits BELOW the placebo mean; 195 of 400 permutations are at or above it. In the season immediately preceding the holdout the effect is statistically indistinguishable from noise, and by point estimate is smaller than the average permutation."
+    }
+  },
+  "verdict": "KILL -- the lead is dying on its own. Dropping 2021 does not flatten the decay; the 2022-2024 betas are essentially unchanged (+0.322 / +0.161 / +0.062), the decay remains monotonic with a season-trend coefficient of -0.139, the pooled effect on 2022-2024 falls to 0.000809 (placebo mean 0.0000925, sd 0.000126, 1/400 at or above), and by 2024 -- the season nearest the holdout -- the effect is indistinguishable from placebo (frac_ge 0.4875, real value below the placebo mean). Abandon F3_style_orthogonalized__dpace/reb without spending any 2025/2026 confirmation budget.",
+  "verdict_reasoning": "The worklist posed a binary. Branch 1: if the 2022-2024 trend still decays, the lead is dying on its own and should be abandoned without touching the holdout. Branch 2: if dropping 2021 flattens the decay, 2021 was an artifact and the lead survives in reduced form. The result is unambiguously Branch 1, and by the widest possible margin: the 2022-2024 betas after the drop differ from their in-E0 values by 0.4-3.7%, so 2021 contributed essentially nothing to the shape of the decay. The pooled 2022-2024 effect that remains is not evidence the lead is alive -- it is 2022 wearing a pooled label, since 2022 alone carries dR2 0.002944 while 2023 carries 0.000735 and 2024 carries 0.000111, and the two most recent seasons together do not clear their own placebo. The E0 screen's own NOTES.md predicted this reading in advance and named this exact test as the highest-value next step; it was run and it returned the killing answer. Confirming on 2025/2026 would test a trend that reached zero in 2024.",
+  "cost_avoided": "One confirmation run against the 2025/2026 holdout, on a lead whose most recent exploration season is already indistinguishable from noise. The holdout is unspent and remains available.",
+  "what_this_screen_does_NOT_establish": [
+    "It does not explain WHY the effect decayed. Whether the league's rebounding-vs-tempo relationship genuinely changed after 2022, or the dpace instrument degraded, is untested and now not worth testing for this lead's sake.",
+    "It does not test the E0 NOTES.md follow-ups 2-4 (cleaner pace instruments such as opponent shot attempts or missed shots per 48; splitting rebounds into OREB/DREB; heterogeneity by player rebound volume). Those were deliberately not run: they are ways to strengthen a lead, and the prior question of whether the lead is alive at all has now been answered no. If a future worker wants the underlying mechanism rather than this formulation, those remain open.",
+    "It does not re-audit the E0 screen's other 29 killed cells; they were out of scope and untouched.",
+    "The 2024-alone and 2023-2024 slices are small (n=2771 and n=5555). Their placebo distributions are correspondingly wide. They are reported as evidence of ABSENCE OF SIGNAL at usable precision, not as precise effect estimates."
+  ],
+  "artifacts": {
+    "run_drop2021.py": "Stages A (anchor), B (headline 2022-2024 drop at analysis stage), C (variant, drop at load stage), plus the trend test.",
+    "run_recency.py": "Supplement: 2023-2024 and 2024-alone slices with placebos.",
+    "run_log_drop2021.txt": "Full stdout of run_drop2021.py including every printed sorted(season.unique()).",
+    "run_log_recency.txt": "Full stdout of run_recency.py.",
+    "results_raw.json": "Machine-readable output of run_drop2021.py.",
+    "results_recency.json": "Machine-readable output of run_recency.py.",
+    "placebo_draws_drop2021.csv": "400 permutation draws, headline 2022-2024.",
+    "placebo_draws_drop2021_loadstage.csv": "400 permutation draws, load-stage variant.",
+    "placebo_draws_2023_2024.csv": "400 permutation draws, 2023-2024 slice.",
+    "placebo_draws_2024_alone.csv": "400 permutation draws, 2024 slice."
+  }
+}

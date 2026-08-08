@@ -1,0 +1,85 @@
+﻿
+==============================================================================
+STAGE A -- REPRODUCTION ANCHOR (2021-2024, exact E0 replication)
+==============================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 19642 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  [PARTITION] master_player after load               seasons=[2021, 2022, 2023, 2024]  n=19642
+  manifest master_team.parquet                        asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_team:   raw 2990 -> partition+RS 1776 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  [PARTITION] master_team after load                 seasons=[2021, 2022, 2023, 2024]  n=1776
+  possessions sanity: n=19642 min=0.0 p1=0.0 med=39.0 mean=36.9 p99=80.0 max=95.0
+  [PARTITION] merged feature frame                   seasons=[2021, 2022, 2023, 2024]  n=16711
+  [PARTITION] analysis frame -> ANCHOR_2021_2024     seasons=[2021, 2022, 2023, 2024]  n=10167
+  collinearity corr(dpace, def_pre) within season = +0.1078 | per season {2021: 0.325, 2022: -0.115, 2023: -0.06, 2024: 0.175}
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2021         2128   0.39955   0.000580    0.1133    0.002601     0.3560
+  2022         2484   0.39502   0.000102    0.0650    0.002948     0.3348
+  2023         2784   0.39225   0.000045   -0.0418    0.000734     0.1674
+  2024         2771   0.39836   0.000232    0.0993    0.000111     0.0640
+  POOLED      10167   0.38729   0.000164    0.0740    0.001071     0.2028
+
+  ANCHOR pooled dR2_OxM  reproduced = 0.0010713241   published = 0.0010713241   |diff| = 0.000e+00
+    beta_OxM 2021  reproduced = +0.3559976797   published = +0.3559976797
+    beta_OxM 2022  reproduced = +0.3347762429   published = +0.3347762429
+    beta_OxM 2023  reproduced = +0.1674330836   published = +0.1674330836
+    beta_OxM 2024  reproduced = +0.0640167956   published = +0.0640167956
+  ANCHOR REPRODUCED: True
+
+==============================================================================
+STAGE B -- HEADLINE RE-RUN, 2021 DROPPED (analysis stage), seasons 2022-2024
+==============================================================================
+  [PARTITION] feature frame after dropping 2021      seasons=[2022, 2023, 2024]  n=13147
+  [PARTITION] analysis frame -> DROP2021_2022_2024   seasons=[2022, 2023, 2024]  n=8039
+  collinearity corr(dpace, def_pre) within season = -0.0138 | per season {2022: -0.115, 2023: -0.06, 2024: 0.175}
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2022         2484   0.39502   0.000102    0.0590    0.002944     0.3225
+  2023         2784   0.39225   0.000045   -0.0379    0.000735     0.1615
+  2024         2771   0.39836   0.000232    0.0901    0.000111     0.0617
+  POOLED       8039   0.39491   0.000038    0.0356    0.000809     0.1668
+
+  PLACEBO (400 perms, same value-assignment construction as E0):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000382   0.0000764   0.0001054       0.465
+      dR2_OxM      0.0008095   0.0000925   0.0001261       0.003
+  TREND TEST  beta(O x Mres) at midpoint = +0.1699 | beta(O x Mres x season) = -0.1387  (negative = still decaying) | dR2 of decay term = 0.000367
+
+==============================================================================
+STAGE C -- VARIANT, 2021 dropped at the LOAD stage (2021 never read)
+==============================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 15438 rows | seasons [np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  [PARTITION] master_player after load               seasons=[2022, 2023, 2024]  n=15438
+  manifest master_team.parquet                        asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_team:   raw 2990 -> partition+RS 1392 rows | seasons [np.int64(2022), np.int64(2023), np.int64(2024)]
+  [PARTITION] master_team after load                 seasons=[2022, 2023, 2024]  n=1392
+  possessions sanity: n=15438 min=0.0 p1=0.0 med=39.0 mean=36.9 p99=80.0 max=95.0
+  [PARTITION] merged feature frame                   seasons=[2022, 2023, 2024]  n=13147
+  [PARTITION] analysis frame -> DROP2021_LOADSTAGE   seasons=[2022, 2023, 2024]  n=8039
+  collinearity corr(dpace, def_pre) within season = -0.0138 | per season {2022: -0.115, 2023: -0.06, 2024: 0.175}
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2022         2484   0.38361   0.000173    0.0768    0.002523     0.4185
+  2023         2784   0.39225   0.000045   -0.0379    0.000734     0.1472
+  2024         2771   0.39836   0.000232    0.0901    0.000111     0.0563
+  POOLED       8039   0.38227   0.000043    0.0377    0.000503     0.1322
+
+  PLACEBO (400 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000428   0.0000794   0.0001052       0.490
+      dR2_OxM      0.0005026   0.0000836   0.0001130       0.007
+  TREND TEST  beta(O x Mres) at midpoint = +0.1831 | beta(O x Mres x season) = -0.1634  (negative = still decaying) | dR2 of decay term = 0.000392
+
+==============================================================================
+SUMMARY
+==============================================================================
+  season   beta_OxM (E0 all-4)   beta_OxM (2022-24 re-run)
+    2021               +0.3560                     dropped
+    2022               +0.3348                     +0.3225
+    2023               +0.1674                     +0.1615
+    2024               +0.0640                     +0.0617
+
+  pooled dR2_OxM   2021-2024 = 0.001071
+  pooled dR2_OxM   2022-2024 = 0.000809   placebo mean 0.0000925 sd 0.0001261 frac>=real 0.003
+  monotonic decay across 2022-2024: True | 2024/2022 beta ratio = 0.191
+
+  wrote results_raw.json

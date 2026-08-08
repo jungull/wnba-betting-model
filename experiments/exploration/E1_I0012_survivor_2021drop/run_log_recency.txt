@@ -1,0 +1,46 @@
+﻿
+==============================================================================
+SUPPLEMENT -- recency slices of the survivor (dpace x own rebound rate, reb)
+==============================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 15438 rows | seasons [np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  [PARTITION] master_player after load           seasons=[2022, 2023, 2024]  n=15438
+  manifest master_team.parquet                        asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_team:   raw 2990 -> partition+RS 1392 rows | seasons [np.int64(2022), np.int64(2023), np.int64(2024)]
+  [PARTITION] master_team after load             seasons=[2022, 2023, 2024]  n=1392
+  [PARTITION] merged feature frame               seasons=[2022, 2023, 2024]  n=13147
+
+==============================================================================
+slice = 2023_2024
+==============================================================================
+  [PARTITION] slice frame 2023_2024              seasons=[2023, 2024]  n=9051
+  [PARTITION] analysis frame 2023_2024           seasons=[2023, 2024]  n=5555
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2023         2784   0.39225   0.000045   -0.0379    0.000735     0.1614
+  2024         2771   0.39836   0.000232    0.0902    0.000111     0.0617
+  POOLED       5555   0.39497   0.000021    0.0267    0.000269     0.0960
+  PLACEBO (400 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0000214   0.0001123   0.0001746       0.613
+      dR2_OxM      0.0002690   0.0001254   0.0001784       0.117
+
+==============================================================================
+slice = 2024_alone
+==============================================================================
+  [PARTITION] slice frame 2024_alone             seasons=[2024]  n=4510
+  [PARTITION] analysis frame 2024_alone          seasons=[2024]  n=2771
+  scope           n   R2_base      dR2_M    beta_M     dR2_OxM   beta_OxM
+  2024         2771   0.39836   0.000232    0.0884    0.000111     0.0612
+  POOLED       2771   0.39836   0.000232    0.0884    0.000111     0.0612
+  PLACEBO (400 perms):
+      stat              REAL    plc_mean      plc_SD  frac>=real
+      dR2_M        0.0002316   0.0002432   0.0003550       0.325
+      dR2_OxM      0.0001114   0.0002593   0.0003848       0.487
+
+==============================================================================
+SUPPLEMENT SUMMARY
+==============================================================================
+  2023_2024    n= 5555  pooled dR2_OxM=0.000269  beta=+0.0960  placebo mean=0.0001254 sd=0.0001784 frac>=real=0.117
+  2024_alone   n= 2771  pooled dR2_OxM=0.000111  beta=+0.0612  placebo mean=0.0002593 sd=0.0003848 frac>=real=0.487
+
+  wrote results_recency.json
