@@ -1,0 +1,136 @@
+﻿
+============================================================================================
+STEP 2 -- REBUILD THE E0 FRAME (target = ast)
+============================================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 19642 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  [PARTITION] master_player after load                             seasons=[2021, 2022, 2023, 2024] n=19642
+  manifest master_team.parquet                        asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_team:   raw 2990 -> partition+RS 1776 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  [PARTITION] master_team after load                               seasons=[2021, 2022, 2023, 2024] n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] player frame target=ast                              seasons=[2021, 2022, 2023, 2024] n=16711
+  [PARTITION] analysis frame target=ast                            seasons=[2021, 2022, 2023, 2024] n=10167
+  analysis rows=10167 players=198 games=774
+  per-season n = {2021: 2128, 2022: 2484, 2023: 2784, 2024: 2771}
+
+============================================================================================
+STEP 2 -- REPRODUCTION
+============================================================================================
+  R2 CONVENTION: plain unweighted OLS R2 = 1 - SSE/SST, SST about the UNWEIGHTED mean (D069)
+  outcome y = RAW ast count (not centered, not weighted); no weights anywhere
+  dR2(exp_gposs | E0 base)       reproduced=0.001132538   reported=0.001133   |diff|=4.616e-07
+  R2_base                        reproduced=0.416486281   reported=0.4165    |diff|=1.372e-05
+  beta_M (residual scale)        reproduced=0.078995347   reported=0.0790    |diff|=4.653e-06
+
+  PER-SEASON (E0 method: pooled residualisation, then slice)
+  season       n   games  dR2(pooled)       beta |  dR2(within)       beta
+  2021      2128     163     0.002526    +0.0862 |     0.002526    +0.1144
+         reported dR2=0.002526  |diff|=2.052e-07 ; reported beta=+0.086 |diff|=1.707e-04
+  2022      2484     187     0.000728    +0.0707 |     0.000728    +0.0611
+         reported dR2=0.000728  |diff|=7.764e-08 ; reported beta=+0.071 |diff|=3.246e-04
+  2023      2784     213     0.000012    -0.0100 |     0.000012    -0.0090
+         reported dR2=0.000012  |diff|=2.835e-07 ; reported beta=-0.010 |diff|=4.854e-05
+  2024      2771     211     0.002574    +0.1315 |     0.002574    +0.1207
+         reported dR2=0.002574  |diff|=5.135e-08 ; reported beta=+0.132 |diff|=5.065e-04
+
+============================================================================================
+STEP 2 -- LAYER CHECK (sum vs difference reparameterisation)
+============================================================================================
+  dR2(sum)                = 0.001133
+  dR2(joint, 2 df)        = 0.001133
+  dR2(difference | sum)   = 0.000001   (E0 reports 0.000001)
+  -> LAYER 2 (symmetric game tempo), confirmed independently.
+
+============================================================================================
+STEP 2 -- UNIT OF VARIATION OF exp_gposs (governs the correct null)
+============================================================================================
+  distinct exp_gposs values per game_id: max=1  frac(games with 1 value)=1.0000
+  n rows=10167  n team-games=1531  n games=774  n team-seasons=48
+  -> exp_gposs is symmetric in the two teams, so it is a GAME-level quantity.
+     The row-level null is wrong by a factor of roughly n_rows/n_games.
+
+============================================================================================
+STEP 2 -- PERMUTATION NULLS (row-level WRONG, team-season, game-level)
+============================================================================================
+  team_season_relabel    mean=0.00010176 sd=0.00012484 p95=0.00036931 frac>=real=0.0000
+  game_level             mean=0.00006082 sd=0.00009030 p95=0.00023502 frac>=real=0.0000
+  row_level_naive        mean=0.00005896 sd=0.00007782 p95=0.00022751 frac>=real=0.0000
+  INFLATION FACTOR correct/naive:  team-season 1.60x   game-level 1.16x
+  wrote perm_draws_step2.csv
+
+============================================================================================
+STEP 2 -- DELIBERATE NO-OP PLACEBO, RUN ON PURPOSE (expect sd EXACTLY 0.000000)
+============================================================================================
+  Defective form: permute the grouping KEY consistently in master_team AND in the player
+  frame, then RECOMPUTE the aggregate from the permuted key.  The permuted cell is the same row set
+  under a bijection, so every row still receives its own true value.  Demonstrating the signature
+  proves the real controls above are genuinely shuffling something.
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+
+  real dR2          = 0.001132538408
+  no-op mean        = 0.001132538408
+  no-op sd          = 0.000000000000   <-- the defect signature
+  max |draw - real| = 7.806e-18
+  BY CONTRAST the real game-level control: mean=0.00006082 sd=0.00009030 (non-degenerate)
+
+  wrote step2_reproduce.json

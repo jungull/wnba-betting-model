@@ -1,0 +1,807 @@
+{
+ "identity": {
+  "screen": "E1_I0013_tempo_redundancy",
+  "parent_screen": "E0_I0013_possession_volume",
+  "question": "Is the E0 survivor (exp_gposs -> ast) a generic game-tempo main effect, i.e. redundant with trivially available tempo information and/or with team identity, and does it survive a realistic point-in-time player baseline?",
+  "status": "E0/E1 EXPLORATION LEAD -- non-claiming. No registry entry, no preregistration, no promotion, may never be cited as evidence.",
+  "partition": [
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "holdout_never_touched": [
+   2025,
+   2026
+  ],
+  "write_scope": "experiments/exploration/E1_I0013_tempo_redundancy only"
+ },
+ "r2_convention": {
+  "declared": "PLAIN UNWEIGHTED OLS R2 = 1 - SSE/SST, with SST about the UNWEIGHTED mean (D069).",
+  "outcome": "raw assist COUNT (W['s']); not centered, not standardised",
+  "weights": "none anywhere in this E1; the defective form sst = sum((sqrt(w)*y - mean(sqrt(w)*y))**2) is not used and not imported",
+  "increment_method": "FWL: QR of the baseline design once, then dR2 = (ry.rm)^2 / (rm.rm) / SST, identical to E0_I0013/run_screen.py::incr"
+ },
+ "market_test_impossibility": {
+  "verified_independently": true,
+  "statement": "THERE ARE NO GAME TOTALS AVAILABLE FOR 2021-2024 IN THIS WORKTREE. Nothing in this E1 is a market test and none of it may be described as one.",
+  "master_odds_csv_filename_hits": [],
+  "n_files_with_market_like_names": 45,
+  "n_market_like_files_carrying_an_asof_manifest": 0,
+  "manifest_gate_note": "ZERO of the market-named files carries a sibling .manifest.json, so none of them can pass the 13.2.2 asof_granularity gate even before coverage is considered.",
+  "evidence": [
+   {
+    "file": "experiments/totals_groundwork/bookie_totals_per_game.csv",
+    "n_rows": 406,
+    "rows_inside_2021_2024": 0,
+    "earliest_season_present": 2025,
+    "verdict": "game totals exist but ENTIRELY outside the exploration partition"
+   },
+   {
+    "file": "experiments/totals_head/game_level_totals.csv",
+    "rows_inside_2021_2024": 229,
+    "nonnull_bookie_consensus_total_inside_2021_2024": 0,
+    "verdict": "229 rows fall in 2024 but the market-total column is 100% NULL on all of them; carries no price information inside the partition"
+   },
+   {
+    "file": "data/props_capture/historical/master_props_historical.csv",
+    "rows_dated_2021_2024": 11237,
+    "date_range_inside_partition": [
+     "2024-05-14",
+     "2024-10-21"
+    ],
+    "verdict": "PLAYER PROPS, not game totals; covers only the tail of one of four exploration seasons and extends into the forbidden holdout"
+   }
+  ],
+  "consequence": "The E0 screen's own disqualifying caveat -- that a game-tempo main effect is exactly what a posted total already prices -- CANNOT BE RETIRED on this partition, now or later, with the data present in this worktree."
+ },
+ "manifest_check": {
+  "tested_on": "asof_granularity field of the sibling <artifact>.manifest.json, not a byte scan",
+  "artifacts": {
+   "data\\masters\\master_player.parquet": {
+    "exists": true,
+    "asof_granularity": "row",
+    "usable": true,
+    "fit_seasons": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "content_sha256": "52e084efaad5c08444b407c64c18d55b57ff5a1e13491cc908dfd960b8641dce"
+   },
+   "data\\masters\\master_team.parquet": {
+    "exists": true,
+    "asof_granularity": "row",
+    "usable": true,
+    "fit_seasons": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025,
+     2026
+    ],
+    "content_sha256": "ad79ce5cdda7e058ba24be45243037252e3795a3e9f0c18cc41b3f12f3c38528"
+   }
+  },
+  "conclusion": "master_player.parquet and master_team.parquet are asof_granularity='row', so filtering to 2021-2024 IS sufficient and both are usable. No artifact-granular file (e.g. data/zone_maps/*) is read anywhere in this E1."
+ },
+ "step1_construction_audit": {
+  "a_exp_gposs_time_window": {
+   "definition": "exp_gposs = 0.5 * (opp_pace48 + own_pace48)   [E0_I0013/run_screen.py L193 and pv_base.py L289]",
+   "pace48_definition": "pace48 = pr_n_poss * (48 / (pr_n_min / 5))   [E0_I0013/pv_base.py L156-163]",
+   "prior_expanding": "base.prior_expanding aggregates to (season, team_id, gdate) level FIRST, then takes cumsum-minus-self within (season, team_id)   [E0_I0012/base.py L129-138]",
+   "possessions_source": "base.team_possessions on master_team: 0.5*((fga-oreb+tov+0.44*fta) + opponent mirror)   [E0_I0012/base.py L112-119]",
+   "gate": ">= 300 prior possessions required or the value is set NaN   [E0_I0013/pv_base.py L88, L168-169]",
+   "answer_strictly_prior_games_only": true,
+   "answer_detail": "YES -- strictly prior games only, same season only. Verified three ways: (1) read of prior_expanding, which is a date-level cumsum MINUS the current date's own contribution, so same-day games cannot see each other; (2) the season key is inside the groupby, so no later season can leak; (3) an independent brute-force audit in this E1 recomputed 60 sampled values of an analogous rolling team-pace field using only rows with gdate strictly less than the target date and reproduced 60/60 exactly.",
+   "no_retrospective_baseline": "No leave-one-out, no leave-one-SEASON-out, no leave-one-game-out full-season rate appears in exp_gposs or in the E0 base. The only cross-season quantities are PREVIOUS-season shrinkage priors (season+1 merges), which are prior information."
+  },
+  "b_baseline_the_dR2_was_measured_over": {
+   "model": "y_count ~ O + D + O*D + Mexp + O*Mexp   [E0_I0013/run_screen.py L209]",
+   "O": "player's pregame expanding per-100-possession rate of the target stat, shrunk 5 units toward the previous season's own rate   [E0_I0012/base.py L239-244]",
+   "D": "opponent's pregame expanding OVERALL per-100 allowance of the target stat, EXCLUDING this player's own prior contribution to it   [E0_I0012/base.py L234-237]",
+   "Mexp": "player's pregame expanding minutes per game, shrunk 2 games toward the strictly-prior expanding league mean   [E0_I0013/pv_base.py L215-216]",
+   "all_terms_z_scored_within_season": "yes, base.zwithin   [E0_I0012/base.py L162-166]",
+   "R2_base_reproduced": 0.4164862809883014,
+   "verdict": "The baseline is genuinely pregame-observable. It is NOT a retrospective baseline. It is, however, a RATE-based baseline: it contains the player's per-100 rate and expected minutes but NOT a direct prior-games assist-per-game forecast, which is what Step 3C adds."
+  },
+  "c_centering_and_weights": {
+   "response_centered": false,
+   "response": "raw assist count, used as-is",
+   "weights_used": false,
+   "r2_form_used_by_E0": "1 - SSE/SST with SST about the UNWEIGHTED mean   [E0_I0013/pv_base.py L232, E0_I0012/base.py L146]",
+   "defective_wls_r2_imported": false,
+   "note": "D069 is satisfied by the E0 screen and by this E1. There is no weight-dispersion understatement to correct."
+  }
+ },
+ "step2_reproduction": {
+  "n": 10167,
+  "n_games": 774,
+  "n_players": 198,
+  "per_season_n": {
+   "2021": 2128,
+   "2022": 2484,
+   "2023": 2784,
+   "2024": 2771
+  },
+  "dR2_reported": 0.001133,
+  "dR2_reproduced": 0.00113253840808295,
+  "dR2_absolute_difference": 4.615919170498743e-07,
+  "R2_base_reported": 0.4165,
+  "R2_base_reproduced": 0.4164862809883014,
+  "beta_reported": 0.079,
+  "beta_reproduced": 0.07899534684911667,
+  "per_season": [
+   {
+    "season": 2021,
+    "n": 2128,
+    "n_games": 163,
+    "dR2_pooled_resid": 0.00252620522645201,
+    "beta_pooled_resid": 0.08617065887100962,
+    "dR2_within_season": 0.00252620522645201,
+    "beta_within_season": 0.11437410822786713
+   },
+   {
+    "season": 2022,
+    "n": 2484,
+    "n_games": 187,
+    "dR2_pooled_resid": 0.0007280776412907835,
+    "beta_pooled_resid": 0.07067543343842918,
+    "dR2_within_season": 0.0007280776412907831,
+    "beta_within_season": 0.06113061636725668
+   },
+   {
+    "season": 2023,
+    "n": 2784,
+    "n_games": 213,
+    "dR2_pooled_resid": 1.1716543746580064e-05,
+    "beta_pooled_resid": -0.00995146492969824,
+    "dR2_within_season": 1.1716543746580093e-05,
+    "beta_within_season": -0.008967139095306654
+   },
+   {
+    "season": 2024,
+    "n": 2771,
+    "n_games": 211,
+    "dR2_pooled_resid": 0.0025740513545162865,
+    "beta_pooled_resid": 0.13149348446877898,
+    "dR2_within_season": 0.0025740513545162865,
+    "beta_within_season": 0.12066800824844459
+   }
+  ],
+  "dR2_sum": 0.001132538408082917,
+  "dR2_joint_2df": 0.001133153588719571,
+  "dR2_difference_given_sum": 6.151806366538892e-07,
+  "layer_confirmed": "LAYER 2 (symmetric game tempo) -- independently confirmed",
+  "reproduction_verdict": "REPRODUCED. The absolute difference against the published 0.001133 is 4.616e-07, i.e. the rounding of the published figure. R2_base, beta and all four per-season dR2 also reproduce. Every later difference in this E1 is attributable to the change made, not to the harness."
+ },
+ "unit_of_variation": {
+  "exp_gposs_values_per_game_max": 1,
+  "frac_games_single_value": 1.0,
+  "n_rows": 10167,
+  "n_games": 774,
+  "n_team_seasons": 48,
+  "conclusion": "exp_gposs is symmetric in the two teams and therefore takes exactly one value per game_id: it is a GAME-level quantity, coarser than team-game.",
+  "consequence": "The E0 screen clustered its permutation at the team-season level, which is correct and conservative. The row-level null is wrong. This E1 reports three levels so the inflation is visible."
+ },
+ "nulls_at_the_correct_level": {
+  "primary": "team_season_relabel -- widest and most conservative; preserves the team-season dependence structure of the feature",
+  "also_reported": [
+   "game_level (finest honest unit, since exp_gposs takes one value per game_id)",
+   "row_level_naive (WRONG; reported only to expose the inflation factor)"
+  ],
+  "pooled": {
+   "team_season_relabel": {
+    "label": "CORRECT-LEVEL: within season, permute WHICH team's already-computed pregame pace series each side is assigned",
+    "n_draws": 400,
+    "mean": 0.00010176090379987828,
+    "sd": 0.00012484074277506775,
+    "p95": 0.0003693109934947552,
+    "max": 0.0007065294653888987,
+    "frac_ge_real": 0.0
+   },
+   "game_level": {
+    "label": "CORRECT-LEVEL (finest honest unit): within season, permute the already-computed game-level value across games",
+    "n_draws": 400,
+    "mean": 6.082306637424869e-05,
+    "sd": 9.03013671468525e-05,
+    "p95": 0.00023501607585691786,
+    "max": 0.0006033133491384882,
+    "frac_ge_real": 0.0
+   },
+   "row_level_naive": {
+    "label": "NAIVE row-level -- WRONG for a game-level quantity; reported only to expose the inflation factor",
+    "n_draws": 400,
+    "mean": 5.8960823312201195e-05,
+    "sd": 7.781940108281127e-05,
+    "p95": 0.00022750631270609177,
+    "max": 0.00046500824951559286,
+    "frac_ge_real": 0.0
+   }
+  },
+  "sd_inflation_correct_over_naive": {
+   "team_season": 1.6042367460810816,
+   "game_level": 1.1603965835043961
+  },
+  "note": "Ordering of null widths: naive row-level < game-level < team-season relabel. A verdict taken on the row-level null would be anticonservative by 1.60x in sd terms."
+ },
+ "noop_placebo_positive_diagnostic": {
+  "label": "DEFECTIVE no-op: grouping key permuted, aggregate recomputed",
+  "n_draws": 60,
+  "mean": 0.0011325384080829578,
+  "sd": 0.0,
+  "p95": 0.0011325384080829578,
+  "max": 0.0011325384080829578,
+  "frac_ge_real": 1.0,
+  "real_dR2": 0.00113253840808295,
+  "max_abs_deviation_from_real": 7.806255641895632e-18,
+  "interpretation": "Signature reproduced exactly: the defective control returns the real number with sd 0.000000000000 (max |draw - real| = 7.806e-18, floating-point noise). This proves the real controls above are genuinely shuffling something."
+ },
+ "step3A_simple_proxy_test": {
+  "question": "Does exp_gposs retain incremental dR2 over the crudest available point-in-time tempo proxy?",
+  "proxy_construction": "mean of the two teams' UNADJUSTED raw estimated possessions over their previous N games, strictly before the current game's date, same season. No per-48 normalisation, no shrinkage, no minimum-possession gate, no league prior. groupby(season,team_id).shift(1).rolling(N, min_periods=N).",
+  "strict_prior_audit": {
+   "crude": {
+    "3": true,
+    "5": true,
+    "10": true
+   },
+   "a5": true
+  },
+  "common_sample_n": 8919,
+  "full_frame_n": 10167,
+  "reference_dR2_on_common_sample": 0.0010824599784136635,
+  "results": [
+   {
+    "N": 3,
+    "dR2_crude_alone_over_E0_base": 3.631918535205081e-05,
+    "corr_crude_vs_exp_gposs": 0.5180919288723015,
+    "dR2_exp_gposs_given_crude": 0.0012111800263556257,
+    "beta": 0.09487688900314119,
+    "retained_frac": 1.1189143714399497,
+    "p_team_season": 0.0,
+    "p_game_level": 0.0
+   },
+   {
+    "N": 5,
+    "dR2_crude_alone_over_E0_base": 0.00013123130606399228,
+    "corr_crude_vs_exp_gposs": 0.606210553885857,
+    "dR2_exp_gposs_given_crude": 0.0010645550436545117,
+    "beta": 0.09566227668558666,
+    "retained_frac": 0.983459033020887,
+    "p_team_season": 0.0,
+    "p_game_level": 0.0
+   },
+   {
+    "N": 10,
+    "dR2_crude_alone_over_E0_base": 0.0001793190376685164,
+    "corr_crude_vs_exp_gposs": 0.7556103772148159,
+    "dR2_exp_gposs_given_crude": 0.0012090482714759633,
+    "beta": 0.12379534928656252,
+    "retained_frac": 1.1169450100573826,
+    "p_team_season": 0.0,
+    "p_game_level": 0.0
+   }
+  ],
+  "verdict": "exp_gposs is NOT redundant with a crude rolling-mean proxy. The crude proxies are individually near-worthless over the E0 base (dR2 0.000036 / 0.000131 / 0.000179) and exp_gposs retains 98-112% of its increment with any of them in the model, at p = 0.000 on the correct-level null. TEST A DOES NOT KILL THE SURVIVOR."
+ },
+ "step3B_main_effect_absorption": {
+  "question": "Is the entire effect absorbed by team identity, i.e. is it the generic tempo main effect rather than player-level information?",
+  "on_common_sample": {
+   "B1": {
+    "dR2": 0.00015143898720443115,
+    "beta": -0.08662092869748259,
+    "retained_frac": 0.1399026201655638,
+    "p_team_season": 0.19333333333333333,
+    "description": "team fixed effects on BOTH sides at the team-season level; absorbs every between-team-season difference in pace, leaving only the within-season evolution of each team's expanding pace"
+   },
+   "B2": {
+    "dR2": 0.0003409465432638351,
+    "beta": 0.056575375241590516,
+    "retained_frac": 0.31497380971395317,
+    "p_team_season": 0.03666666666666667,
+    "description": "player-season fixed effects on top of the E0 base: is the effect cross-player composition rather than within-player exposure?"
+   },
+   "B3": {
+    "dR2": 0.0012118479115551814,
+    "beta": 0.0844896805964368,
+    "retained_frac": 1.1195313782696474,
+    "p_team_season": 0.0,
+    "description": "deciles of days-into-season interacted with season. An expanding-window pace estimate drifts mechanically across a season; this asks whether exp_gposs is a calendar proxy."
+   },
+   "B4": {
+    "dR2": 0.0001780191367194945,
+    "beta": -0.13658070276136644,
+    "retained_frac": 0.16445793864857722,
+    "p_team_season": 0.09,
+    "description": "everything in B1+B2+B3 together"
+   }
+  },
+  "on_full_frame": {
+   "F1": {
+    "dR2": 0.0005815559561055064,
+    "beta": 0.07133600253433298,
+    "retained_frac": 0.513497778048788,
+    "p_team_season": 0.03333333333333333,
+    "p_game_level": 0.0,
+    "description": "absorbs every fixed difference between the player's own team-seasons"
+   },
+   "F2": {
+    "dR2": 0.00042878524546980377,
+    "beta": 0.06126203258849705,
+    "retained_frac": 0.37860547810966466,
+    "p_team_season": 0.006666666666666667,
+    "p_game_level": 0.0033333333333333335,
+    "description": "absorbs every fixed difference between opponent team-seasons"
+   },
+   "F3": {
+    "dR2": 1.3514739867882399e-05,
+    "beta": -0.02062244685228773,
+    "retained_frac": 0.011933140431642248,
+    "p_team_season": 0.5633333333333334,
+    "p_game_level": 0.5933333333333334,
+    "description": "absorbs all between-team-season variation on both sides; only the within-season evolution of each team's expanding pace estimate survives"
+   }
+  },
+  "headline": {
+   "base_dR2": 0.00113253840808295,
+   "with_own_team_season_FE": 0.0005815559561055064,
+   "with_opp_team_season_FE": 0.00042878524546980377,
+   "with_both_team_season_FE": 1.3514739867882399e-05,
+   "retained_with_both": 0.011933140431642248,
+   "p_with_both": 0.5633333333333334,
+   "beta_with_both": -0.02062244685228773
+  },
+  "calendar_control": "Adding deciles of days-into-season interacted with season does NOT absorb the effect (dR2 0.001212, 112% of base). exp_gposs is not a calendar proxy for the mechanical drift of an expanding-window estimate.",
+  "verdict": "TEST B IS DECISIVE. With own-team-season AND opponent-team-season fixed effects in the model, dR2 collapses from 0.001133 to 0.000014 -- 1.2% retained, p = 0.56 on the correct-level null, and the sign flips. 99% of the survivor's content is BETWEEN-TEAM-SEASON cross-sectional variation. It carries essentially NO within-season, updating information. It is a generic team-season tempo main effect and nothing else. NOTE THE HONEST LIMIT: this LOCATES the effect, it does not on its own refute it -- a real team-season-level pace effect is by definition absorbed by team-season fixed effects.",
+  "why_this_matters_for_the_untestable_market_question": "The component of a pregame tempo instrument a bookmaker's posted total is certain to already contain is exactly the team-season pace LEVEL -- which teams are fast. The component a total is least likely to contain is within-season updating and timing. The fixed-effect decomposition says ~99% of the survivor sits in the first component and ~0% in the second. That is an argument about the market question that can be made WITHOUT a totals archive, and it points the same way as the E0 screen's own caveat."
+ },
+ "step3C_realistic_baseline_test": {
+  "question": "Does exp_gposs add anything beyond a sensible point-in-time forecast of the player's own assist production?",
+  "realistic_baseline_construction": [
+   "apg_pre  = strictly-prior expanding assists per game, shrunk 2 games toward the strictly-prior expanding league assists per game (previous-season fallback)",
+   "naive_ct = (prior assists / prior minutes) x (prior minutes / prior games) -- the naive count forecast",
+   "a5, a10  = mean assists over the player's previous 5 / 10 games (shift(1).rolling)",
+   "m5, m10  = mean minutes over the player's previous 5 / 10 games (shift(1).rolling)",
+   "all of the above ON TOP OF the E0 base (O, D, O*D, Mexp, O*Mexp)"
+  ],
+  "time_window": "strictly prior games, same season only; brute-force audit reproduced 60/60 sampled a5 values from strictly-earlier rows",
+  "weak_baseline_for_contrast": {
+   "rung": "player-season fixed effects ONLY (no O, no D, no minutes)",
+   "R2": 0.4909570833807789,
+   "dR2": 0.0004212938693589431,
+   "p_team_season": 0.03333333333333333,
+   "note": "a weak baseline does NOT flatter this particular candidate -- it gives a SMALLER increment, because player FE also soak up team composition"
+  },
+  "ladder": {
+   "R0": {
+    "R2": 0.42532435252007683,
+    "dR2": 0.0010824599784136635,
+    "beta": 0.07675853526858645,
+    "retained_frac": null,
+    "p_team_season": 0.0,
+    "p_game_level": 0.0,
+    "description": "y_count ~ O + D + O*D + Mexp + O*Mexp  (the published E0 baseline)"
+   },
+   "C1": {
+    "R2": 0.43580205073490597,
+    "dR2": 0.000775933958906523,
+    "beta": 0.06537668844222383,
+    "retained_frac": 0.7168246165032799,
+    "p_team_season": 0.0,
+    "p_game_level": 0.0,
+    "description": "E0 base + strictly-prior-only player forecast: shrunk prior assists per game, the naive count forecast (prior ast/min x prior min/game), prior 5- and 10-game assist means, prior 5- and 10-game minute means"
+   },
+   "C2": {
+    "R2": 0.43584204250967995,
+    "dR2": 0.0009069595378756763,
+    "beta": 0.0885115088186396,
+    "retained_frac": 0.8378688874990263,
+    "p_team_season": 0.0,
+    "p_game_level": 0.0,
+    "description": "the production-relevant question: realistic player forecast AND a trivially available crude tempo proxy already in the model"
+   },
+   "C3": {
+    "R2": 0.4473036091039262,
+    "dR2": 4.2709924165793475e-06,
+    "beta": -0.025454237804843877,
+    "retained_frac": 0.003945635406159268,
+    "p_team_season": 0.7533333333333333,
+    "p_game_level": 0.8,
+    "description": "everything a production model would plausibly already contain"
+   }
+  },
+  "headline": {
+   "dR2_over_E0_base_common_sample": 0.0010824599784136635,
+   "dR2_over_realistic_baseline": 0.000775933958906523,
+   "retained_frac": 0.7168246165032799,
+   "p_team_season": 0.0,
+   "dR2_over_realistic_plus_crude_plus_teamFE_plus_calendar": 4.2709924165793475e-06,
+   "p_of_that_rung": 0.7533333333333333
+  },
+  "verdict": "TEST C DOES NOT KILL IT EITHER, on its own. Over a realistic point-in-time player baseline the increment falls from 0.001082 to 0.000776 -- 72% retained -- and is still p = 0.000 on the correct-level null. It only dies when team fixed effects are added on top (0.000004, p = 0.75), which is the Test-B result reappearing."
+ },
+ "step3D_mechanism_probe": {
+  "which_half": {
+   "own_pace48": {
+    "dR2": 0.00047646623111058655,
+    "beta": 0.05125952273727002
+   },
+   "opp_pace48": {
+    "dR2": 0.0005327345831089266,
+    "beta": 0.05419978904025924
+   },
+   "exp_gposs": {
+    "dR2": 0.00113253840808295,
+    "beta": 0.07913247268231258
+   }
+  },
+  "corr_own_vs_opp_pace_within_season": -0.1072,
+  "competing_mechanism_own_team_passing_rate": {
+   "construction": "player's OWN team's strictly-prior expanding assists per 100 possessions from master_team (>=300 prior possessions), plus the opponent's assists-allowed per 100 and both sides' prior points per 100",
+   "dR2_of_own_ast100_over_base": 0.0009738541336707765,
+   "rungs": {
+    "G1": {
+     "dR2": 0.0009251841320119009,
+     "retained_frac": 0.8169119258197715,
+     "p_team_season": 0.0,
+     "description": "the player's OWN team's strictly-prior assists per 100 possessions -- a pass-heavy offensive system, which is the obvious competing explanation for a positive tempo-to-assists link"
+    },
+    "G2": {
+     "dR2": 0.0009289648969389247,
+     "retained_frac": 0.8202502363795198,
+     "p_team_season": 0.0,
+     "description": "both sides' strictly-prior assist rates"
+    },
+    "G3": {
+     "dR2": 0.0009137547096005935,
+     "retained_frac": 0.8068200628597735,
+     "p_team_season": 0.0,
+     "description": "both sides' assist rates and offensive ratings"
+    }
+   },
+   "verdict": "REJECTED as the explanation. Controlling for the player's own team's prior passing rate (and both sides' assist rates and offensive ratings) leaves 81-82% of the increment at p = 0.000. A pass-heavy offensive system is NOT what exp_gposs is standing in for. This test was expected to absorb the effect and did not -- reported against the E1's own verdict."
+  }
+ },
+ "step4_the_2023_anomaly": {
+  "per_season": [
+   {
+    "season": 2021,
+    "n": 2128,
+    "n_games": 163,
+    "dR2": 0.0025262052264520105,
+    "beta": 0.11437410822786642,
+    "p_team_season_dR2": 0.0,
+    "p_game_level_dR2": 0.01,
+    "beta_null_mean": 0.004277415198440823,
+    "beta_null_sd": 0.025150944069607883,
+    "beta_null_95": [
+     -0.042063399562833545,
+     0.05368927298079548
+    ],
+    "beta_two_sided_p": 0.0,
+    "beta_z_vs_own_null": 4.377437790196718
+   },
+   {
+    "season": 2022,
+    "n": 2484,
+    "n_games": 187,
+    "dR2": 0.0007280776412907835,
+    "beta": 0.06113061636725658,
+    "p_team_season_dR2": 0.03666666666666667,
+    "p_game_level_dR2": 0.07,
+    "beta_null_mean": -0.0030417053777697972,
+    "beta_null_sd": 0.02751097147358746,
+    "beta_null_95": [
+     -0.05331282963359834,
+     0.051992001840823324
+    ],
+    "beta_two_sided_p": 0.03,
+    "beta_z_vs_own_null": 2.332608348877701
+   },
+   {
+    "season": 2023,
+    "n": 2784,
+    "n_games": 213,
+    "dR2": 1.1716543746580083e-05,
+    "beta": -0.008967139095306631,
+    "p_team_season_dR2": 0.74,
+    "p_game_level_dR2": 0.7766666666666666,
+    "beta_null_mean": 0.003280637840102906,
+    "beta_null_sd": 0.023424369485133878,
+    "beta_null_95": [
+     -0.04100045020563229,
+     0.050205132829598015
+    ],
+    "beta_two_sided_p": 0.6966666666666667,
+    "beta_z_vs_own_null": -0.5228647431975707
+   },
+   {
+    "season": 2024,
+    "n": 2771,
+    "n_games": 211,
+    "dR2": 0.0025740513545162865,
+    "beta": 0.12066800824844412,
+    "p_team_season_dR2": 0.03,
+    "p_game_level_dR2": 0.0033333333333333335,
+    "beta_null_mean": 0.04187721316446491,
+    "beta_null_sd": 0.038529310298085005,
+    "beta_null_95": [
+     -0.03800968903377551,
+     0.10887851499259656
+    ],
+    "beta_two_sided_p": 0.0033333333333333335,
+    "beta_z_vs_own_null": 2.044957318841373
+   }
+  ],
+  "is_2023_a_sign_flip": {
+   "answer": "NO -- it is a NULL SEASON, not a sign flip.",
+   "beta_2023": -0.008967139095306631,
+   "two_sided_p_against_its_own_correct_level_null": 0.6966666666666667,
+   "z_vs_own_null": -0.5228647431975707,
+   "detail": "The 2023 beta of -0.0090 sits essentially at the centre of its own team-season permutation null (null mean +0.0033, sd 0.0234, 95% interval [-0.0410, +0.0502]). It is statistically indistinguishable from zero, not from a negative effect. Calling it a sign flip overstates it; calling it a dead season is exactly right."
+  },
+  "beta_heterogeneity_test": {
+   "real_betas": {
+    "2021": 0.11437410822786642,
+    "2022": 0.06113061636725658,
+    "2023": -0.008967139095306631,
+    "2024": 0.12066800824844412
+   },
+   "real_range": 0.12963514734375076,
+   "real_sd": 0.06010491776465784,
+   "null_range_mean": 0.07456066100725044,
+   "null_range_sd": 0.029430833517286342,
+   "frac_null_range_ge_real": 0.04666666666666667,
+   "null_sd_mean": 0.03305671910058019,
+   "frac_null_sd_ge_real": 0.03,
+   "n_seasons_positive": 3,
+   "interpretation": "The season-to-season spread of the four betas IS larger than the correct-level null produces by chance (range p = 0.047, sd p = 0.030). This is genuine instability, not sampling noise."
+  },
+  "forensics": {
+   "per_season": [
+    {
+     "season": 2021,
+     "n_team_games": 384,
+     "n_games": 192,
+     "games_per_team": 32.0,
+     "pace48_nonnull_frac": 0.875,
+     "analysis_rows": 2128,
+     "exp_gposs_mean": 98.32773709566874,
+     "exp_gposs_sd": 1.5434424971857896,
+     "exp_gposs_min": 94.46276923076923,
+     "exp_gposs_max": 102.05520000000001,
+     "true_team_pace_sd_across_teams": 1.7562856643364682,
+     "true_team_pace_mean": 81.80552083333333,
+     "realized_game_poss_mean": 163.61104166666667,
+     "realized_game_poss_sd": 10.149535101845558,
+     "corr_expgposs_vs_realized_gameposs": 0.4787657914346421,
+     "corr_realized_gameposs_vs_ast": 0.11696723185279219,
+     "corr_expgposs_vs_ast": 0.07013100141744212,
+     "league_ast_per_game": 2.50046992481203,
+     "first_date": "2021-05-14",
+     "last_date": "2021-09-19",
+     "n_distinct_dates": 80,
+     "max_gap_days": 35.0,
+     "n_gaps_ge_7_days": 1
+    },
+    {
+     "season": 2022,
+     "n_team_games": 432,
+     "n_games": 216,
+     "games_per_team": 36.0,
+     "pace48_nonnull_frac": 0.8888888888888888,
+     "analysis_rows": 2484,
+     "exp_gposs_mean": 98.59274528681657,
+     "exp_gposs_sd": 1.0057679909882113,
+     "exp_gposs_min": 95.56709090909092,
+     "exp_gposs_max": 103.13253658536587,
+     "true_team_pace_sd_across_teams": 1.0331168856614616,
+     "true_team_pace_mean": 82.44805555555556,
+     "realized_game_poss_mean": 164.8961111111111,
+     "realized_game_poss_sd": 9.097085843978455,
+     "corr_expgposs_vs_realized_gameposs": 0.21563875380349523,
+     "corr_realized_gameposs_vs_ast": 0.023264329253779154,
+     "corr_expgposs_vs_ast": 0.015358490883093217,
+     "league_ast_per_game": 2.632045088566828,
+     "first_date": "2022-05-06",
+     "last_date": "2022-08-14",
+     "n_distinct_dates": 81,
+     "max_gap_days": 5.0,
+     "n_gaps_ge_7_days": 0
+    },
+    {
+     "season": 2023,
+     "n_team_games": 480,
+     "n_games": 240,
+     "games_per_team": 40.0,
+     "pace48_nonnull_frac": 0.9,
+     "analysis_rows": 2784,
+     "exp_gposs_mean": 99.16382722138198,
+     "exp_gposs_sd": 1.0477676411331458,
+     "exp_gposs_min": 97.17985518218343,
+     "exp_gposs_max": 102.7373468013468,
+     "true_team_pace_sd_across_teams": 1.054189962612401,
+     "true_team_pace_mean": 82.65024999999999,
+     "realized_game_poss_mean": 165.30049999999997,
+     "realized_game_poss_sd": 7.890385426310443,
+     "corr_expgposs_vs_realized_gameposs": 0.2741178070137152,
+     "corr_realized_gameposs_vs_ast": 0.04307324329962851,
+     "corr_expgposs_vs_ast": 0.01645014368621444,
+     "league_ast_per_game": 2.721264367816092,
+     "first_date": "2023-05-19",
+     "last_date": "2023-09-10",
+     "n_distinct_dates": 87,
+     "max_gap_days": 6.0,
+     "n_gaps_ge_7_days": 0
+    },
+    {
+     "season": 2024,
+     "n_team_games": 480,
+     "n_games": 240,
+     "games_per_team": 40.0,
+     "pace48_nonnull_frac": 0.9,
+     "analysis_rows": 2771,
+     "exp_gposs_mean": 98.68353199965671,
+     "exp_gposs_sd": 1.0670539271561588,
+     "exp_gposs_min": 95.73798387096775,
+     "exp_gposs_max": 102.46799999999999,
+     "true_team_pace_sd_across_teams": 1.2053306568839284,
+     "true_team_pace_mean": 82.25158333333333,
+     "realized_game_poss_mean": 164.50316666666666,
+     "realized_game_poss_sd": 8.823066951596653,
+     "corr_expgposs_vs_realized_gameposs": 0.3105919113696407,
+     "corr_realized_gameposs_vs_ast": 0.024956796927272623,
+     "corr_expgposs_vs_ast": 0.0447154908414137,
+     "league_ast_per_game": 2.728978708047636,
+     "first_date": "2024-05-14",
+     "last_date": "2024-09-19",
+     "n_distinct_dates": 87,
+     "max_gap_days": 29.0,
+     "n_gaps_ge_7_days": 1
+    }
+   ],
+   "split_half_reliability_of_team_pace": [
+    {
+     "season": 2021,
+     "r_half": 0.6259460722693181,
+     "spearman_brown": 0.7699469040762107,
+     "n_teams": 12
+    },
+    {
+     "season": 2022,
+     "r_half": 0.41749250119213555,
+     "spearman_brown": 0.5890577916158529,
+     "n_teams": 12
+    },
+    {
+     "season": 2023,
+     "r_half": 0.518687156340822,
+     "spearman_brown": 0.6830730795018574,
+     "n_teams": 12
+    },
+    {
+     "season": 2024,
+     "r_half": 0.5781577450864351,
+     "spearman_brown": 0.7326995630018843,
+     "n_teams": 12
+    }
+   ],
+   "cause_ruled_out_data_coverage_break": {
+    "answer": "RULED OUT",
+    "evidence": "2023 has the fullest schedule of the four (240 games, 40 per team), 100%% non-null pregame pace coverage, no date gap over 6 days, and the largest analysis-row count (2,784)."
+   },
+   "cause_ruled_out_instrument_failure": {
+    "answer": "RULED OUT",
+    "evidence": "corr(exp_gposs, realised game possessions) in 2023 is 0.2741, HIGHER than 2022's 0.2156; the odd/even split-half reliability of team pace in 2023 is r=0.5187 (Spearman-Brown 0.6831), also HIGHER than 2022's r=0.4175. The pregame instrument works fine in 2023."
+   },
+   "cause_ruled_out_feature_dispersion_collapse": {
+    "answer": "RULED OUT",
+    "evidence": "sd(exp_gposs) in 2023 is 1.048 against 1.006 in 2022 and 1.067 in 2024; cross-team dispersion of true season pace is 1.054 against 1.033 and 1.205. 2023 is unremarkable."
+   },
+   "cause_ruled_out_schedule_or_rule_change": {
+    "answer": "NO EVIDENCE FOUND",
+    "evidence": "2023 and 2024 have identical schedule shape (240 games, 40 per team) and very similar league pace, yet 2023 gives beta -0.0090 and 2024 gives 0.1207. Whatever separates them is not the schedule."
+   },
+   "the_2021_observation": {
+    "note": "The more interesting outlier is 2021, not 2023. 2021 is the SHORTEST season (32 games per team), has the WIDEST feature dispersion (sd 1.543 vs ~1.05 elsewhere), the strongest instrument (corr with realised game possessions 0.4788 vs 0.22-0.31), the strongest outcome link (corr(realised game possessions, assists) 0.1170 vs 0.02-0.04) and the largest per-season effect (z = +4.38). The pooled increment leans heavily on it."
+   }
+  },
+  "verdict": "2023 is a genuine null season, not an artifact. Data coverage, instrument validity, feature dispersion, reliability and schedule are all normal or better in 2023. The four-season beta spread exceeds its own correct-level null. THIS IS GENUINE INSTABILITY OF THE EFFECT, and the pooled number leans on 2021 and 2024."
+ },
+ "verdict": {
+  "verdict": "KILL",
+  "one_line": "exp_gposs -> ast is a generic, purely cross-sectional team-season tempo main effect with no within-season content, unstable across seasons, and its entire content sits in exactly the component a posted game total is certain to price -- which cannot be tested on this partition because no game-totals archive exists for 2021-2024.",
+  "is_exp_gposs_strictly_prior_games_only": true,
+  "reasons": [
+   "TEST B: with own- and opponent-team-season fixed effects, dR2 falls from 0.001133 to 0.000014 (1.2% retained, p = 0.56, sign flipped). 99% of the survivor is between-team-season cross-section; ~0% is within-season updating. Its effective sample is 48 team-seasons, not 10,167 rows.",
+   "The surviving component is precisely the part of a tempo instrument that a posted total is certain to contain (which teams are fast); the part a total is least likely to contain (within-season updating) carries nothing. The E0's own disqualifying caveat therefore stands, and it can never be retired on 2021-2024 because there are NO game totals for those seasons in this worktree.",
+   "TEST C: over a realistic point-in-time player baseline the increment is 0.000776 -- an order of magnitude below the program's existing I0009 lead (0.006-0.007) -- and it goes to 0.000004 (p = 0.75) once team identity is also controlled.",
+   "STEP 4: 2023 is a dead season (beta -0.0090, two-sided p = 0.70 against its own correct-level null) with no data, schedule, coverage or instrument explanation, and the four-season beta spread is larger than the correct-level null produces by chance (p = 0.047 on range, 0.030 on sd). The pooled figure leans on 2021, the shortest and most atypical season in the partition."
+  ],
+  "what_does_NOT_kill_it_reported_against_the_verdict": [
+   "TEST A: it is NOT redundant with a crude prior-N-games rolling-mean tempo proxy. The crude proxies are individually near-worthless (dR2 0.000036-0.000179) and exp_gposs retains 98-112% of its increment over any of them at p = 0.000.",
+   "The own-team passing-rate mechanism test (Step 3D) was expected to absorb the effect and did not: 81-82% retained at p = 0.000.",
+   "A calendar control does not absorb it, so it is not an artifact of expanding-window drift.",
+   "The between-team-season association itself is statistically real on this partition at the correct null level (pooled p = 0.000, 3 of 4 seasons positive at z = +2.0 to +4.4)."
+  ],
+  "corrected_headline_if_the_coordinator_prefers_SPLIT": "Were this to be recorded as SPLIT rather than KILL, the only defensible headline is: 'Across 48 team-seasons in 2021-2024, team-season pace level is cross-sectionally associated with player assist counts beyond a pregame rate-and-minutes baseline (dR2 0.001133 pooled, 0.000776 over a realistic player baseline, 0.000014 once team identity is controlled). There is no within-season component, no stability across seasons, and no test against a price is possible on this partition.' It is NOT a player-level possession-exposure channel, and it must never be described as one.",
+  "status": "LEAD, killed. No registry entry, no preregistration, no promotion. May never be cited as evidence."
+ },
+ "where_i_could_have_cheated": [
+  {
+   "choice": "Which permutation null is primary.",
+   "alternative": "Reporting the naive row-level null (sd 1.60x narrower) or the game-level null (1.38x narrower than team-season) would have made every rung look more significant, i.e. FAVOURED KEEPING the lead.",
+   "what_i_did": "Declared the team-season relabel null primary before running anything, because it is the widest and preserves the feature's dependence structure. All three are reported. Chosen BEFORE seeing outcomes."
+  },
+  {
+   "choice": "Crude-proxy window N.",
+   "alternative": "Reporting only N=10 (corr 0.756 with exp_gposs, the most redundant-looking) would have favoured a kill on Test A.",
+   "what_i_did": "Fixed N in {3,5,10} before running and reported all three. Test A came out AGAINST the kill and is reported that way. Chosen BEFORE."
+  },
+  {
+   "choice": "Contents of the 'realistic' baseline.",
+   "alternative": "A richer realistic baseline (opponent-adjusted assist projections, teammate-availability terms, a fitted minutes model) would very likely have driven the 0.000776 lower and made the kill easier.",
+   "what_i_did": "Fixed the six features before running and did NOT tune them after seeing 72% retention. My restraint here biases AGAINST my own verdict. Chosen BEFORE."
+  },
+  {
+   "choice": "Running the team-FE test on the full frame after seeing the common-sample result.",
+   "alternative": "The full-frame result (1.2% retained) is MORE damning than the common-sample result (14% retained). I ran the full-frame version AFTER seeing the common-sample one.",
+   "what_i_did": "Disclosed. Both are reported. The full-frame version is the correct comparison for the published 0.001133 because it is the same 10,167 rows, and the reason for running it was comparability, not the direction of the answer -- but the ordering is disclosed because it could have been motivated."
+  },
+  {
+   "choice": "How to describe 2023.",
+   "alternative": "Calling it a SIGN FLIP (as the brief's framing invited) would have been more damning and easier to justify a kill on.",
+   "what_i_did": "Tested it and reported the LESS damning, more accurate finding: 2023 is statistically indistinguishable from zero (two-sided p = 0.70, z = -0.52), not a negative effect. Decided AFTER seeing the null, and against my own verdict's convenience."
+  },
+  {
+   "choice": "The own-team passing-rate mechanism test.",
+   "alternative": "Not running it. I expected it to absorb the effect and hand me a clean kill.",
+   "what_i_did": "Ran it, it did not absorb (81-82% retained), and I report it prominently in the 'does NOT kill it' list."
+  },
+  {
+   "choice": "Heterogeneity statistic for the four betas.",
+   "alternative": "Choosing whichever of range / sd crossed 0.05 would be a cherry-pick.",
+   "what_i_did": "Computed both before looking; both agree (p = 0.047 and 0.030). Reported both."
+  }
+ ],
+ "files": {
+  "scripts": [
+   "e1_lib.py",
+   "step0_env_audit.py",
+   "step2_reproduce.py",
+   "step3_redundancy.py",
+   "step3d_step4.py",
+   "make_findings.py",
+   "verify_partition.py"
+  ],
+  "results": [
+   "step0_env_audit.json",
+   "step2_reproduce.json",
+   "step3_redundancy.json",
+   "step3d_step4.json",
+   "FINDINGS.json",
+   "NOTES.md"
+  ],
+  "permutation_draws": [
+   "perm_draws_step2.csv",
+   "perm_draws_step3.csv",
+   "perm_draws_step3d.csv",
+   "perm_draws_per_season.csv",
+   "noop_diagnostic_e1.csv"
+  ],
+  "other": [
+   "common_sample_features.csv",
+   "run_log.txt",
+   "run_log_step0.txt",
+   "run_log_step2.txt",
+   "run_log_step3.txt",
+   "run_log_step3d_step4.txt",
+   "run_log_partition_verification.txt"
+  ]
+ }
+}

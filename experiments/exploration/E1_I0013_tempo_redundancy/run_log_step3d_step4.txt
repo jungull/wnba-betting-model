@@ -1,0 +1,76 @@
+﻿
+============================================================================================
+REBUILD FULL FRAME (n should be 10,167)
+============================================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 19642 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  [PARTITION] master_player after load                             seasons=[2021, 2022, 2023, 2024] n=19642
+  manifest master_team.parquet                        asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_team:   raw 2990 -> partition+RS 1776 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  [PARTITION] master_team after load                               seasons=[2021, 2022, 2023, 2024] n=1776
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] player frame target=ast                              seasons=[2021, 2022, 2023, 2024] n=16711
+  [PARTITION] analysis frame target=ast                            seasons=[2021, 2022, 2023, 2024] n=10167
+  reference dR2(exp_gposs | E0 base) on the full frame = 0.001132538
+
+============================================================================================
+STEP 3D-1 -- WHICH HALF OF exp_gposs CARRIES THE INCREMENT?
+============================================================================================
+  own_pace48   dR2=0.000476  beta=+0.0513
+  opp_pace48   dR2=0.000533  beta=+0.0542
+  exp_gposs    dR2=0.001133  beta=+0.0791
+  corr(own_pace48, opp_pace48) within season = -0.1072
+
+============================================================================================
+STEP 3D-2 -- TEAM FIXED-EFFECT ABSORPTION (full frame)
+============================================================================================
+  F1  base + OWN team-season FE                  dR2=0.000582 (51% of base) beta=+0.0713 | p_ts=0.0333 p_game=0.0000 p_rowNAIVE=0.0000
+  F2  base + OPP team-season FE                  dR2=0.000429 (38% of base) beta=+0.0613 | p_ts=0.0067 p_game=0.0033 p_rowNAIVE=0.0067
+  F3  base + OWN + OPP team-season FE            dR2=0.000014 (1% of base) beta=-0.0206 | p_ts=0.5633 p_game=0.5933 p_rowNAIVE=0.6133
+
+============================================================================================
+STEP 3D-3 -- THE COMPETING MECHANISM: OWN-TEAM PASSING RATE (strictly prior)
+============================================================================================
+  [PARTITION] team pregame passing table                           seasons=[2021, 2022, 2023, 2024] n=1776
+  coverage: {'own_ast100': 1.0, 'opp_astA100': 1.0, 'own_ortg': 1.0}
+  corr(own_ast100, exp_gposs) within season = -0.1118   corr(own_ast100, own_pace48) = -0.1779
+  dR2(own_ast100 | E0 base) = 0.000974   beta=-0.0742
+  G1  base + own-team prior ast/100              dR2=0.000925 (82% of base) beta=+0.0720 | p_ts=0.0000 p_game=0.0000 p_rowNAIVE=0.0000
+  G2  base + own ast/100 + opp ast-allowed/100   dR2=0.000929 (82% of base) beta=+0.0721 | p_ts=0.0000 p_game=0.0000 p_rowNAIVE=0.0000
+  G3  base + own/opp ast rates + own/opp ortg    dR2=0.000914 (81% of base) beta=+0.0720 | p_ts=0.0000 p_game=0.0000 p_rowNAIVE=0.0000
+  wrote perm_draws_step3d.csv
+
+============================================================================================
+STEP 4 -- THE 2023 ANOMALY: per-season effect against ITS OWN correct-level null
+============================================================================================
+  2021 n= 2128 games=163 | dR2=0.002526 p_ts=0.0000 p_game=0.0100 | beta=+0.1144 (null mean +0.0043 sd 0.0252, 95% [-0.0421,+0.0537], two-sided p=0.000, z=+4.38)
+  2022 n= 2484 games=187 | dR2=0.000728 p_ts=0.0367 p_game=0.0700 | beta=+0.0611 (null mean -0.0030 sd 0.0275, 95% [-0.0533,+0.0520], two-sided p=0.030, z=+2.33)
+  2023 n= 2784 games=213 | dR2=0.000012 p_ts=0.7400 p_game=0.7767 | beta=-0.0090 (null mean +0.0033 sd 0.0234, 95% [-0.0410,+0.0502], two-sided p=0.697, z=-0.52)
+  2024 n= 2771 games=211 | dR2=0.002574 p_ts=0.0300 p_game=0.0033 | beta=+0.1207 (null mean +0.0419 sd 0.0385, 95% [-0.0380,+0.1089], two-sided p=0.003, z=+2.04)
+
+============================================================================================
+STEP 4 -- IS THE FOUR-SEASON BETA SPREAD LARGER THAN CHANCE?
+============================================================================================
+  real per-season betas: [0.1144, 0.0611, -0.009, 0.1207]
+  real range = 0.1296 ; null range mean = 0.0746 sd = 0.0294 ; frac(null >= real) = 0.047
+  real sd    = 0.0601 ; frac(null sd >= real sd) = 0.030
+  -> the four-season spread is LARGER than the null produces by chance.
+
+============================================================================================
+STEP 4 -- 2023 FORENSICS: coverage, dispersion, instrument validity, schedule
+============================================================================================
+  season   rows  games  g/team   expg_sd truepc_sd r(exp,real) r(real,ast) r(exp,ast)    maxgap   gaps>=7
+  2021     2128    192    32.0     1.543     1.756      0.4788      0.1170     0.0701        35         1
+  2022     2484    216    36.0     1.006     1.033      0.2156      0.0233     0.0154         5         0
+  2023     2784    240    40.0     1.048     1.054      0.2741      0.0431     0.0165         6         0
+  2024     2771    240    40.0     1.067     1.205      0.3106      0.0250     0.0447        29         1
+
+============================================================================================
+STEP 4 -- SPLIT-HALF RELIABILITY OF TEAM PACE, PER SEASON
+============================================================================================
+  2021  odd/even split-half r=0.6259  Spearman-Brown=0.7699  (n=12 teams)
+  2022  odd/even split-half r=0.4175  Spearman-Brown=0.5891  (n=12 teams)
+  2023  odd/even split-half r=0.5187  Spearman-Brown=0.6831  (n=12 teams)
+  2024  odd/even split-half r=0.5782  Spearman-Brown=0.7327  (n=12 teams)
+
+  wrote step3d_step4.json
