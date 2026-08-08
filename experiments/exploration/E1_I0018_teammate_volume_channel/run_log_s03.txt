@@ -1,0 +1,330 @@
+﻿  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  frame (14852, 59)
+  DECISION stratum: 5673 of 14852 rows (38.2%)
+
+  CELL GRID: 154 cells
+
+====================================================================================================
+A. NO-OP PLACEBO (mandatory) -- report the OBSERVED sd, never rounded to zero
+====================================================================================================
+  noop_placebo: real=0.00329970454  sd=4.337e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=4.337e-19 < tol=1e-15, real reproduced)
+  noop_placebo: real=0.00329970454  sd=1.735e-18  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=1.735e-18 < tol=1e-15, real reproduced)
+  identity placebo OBSERVED sd = 4.336809e-19  (distinct draw values = 1, is_noop=True)
+  relabel-the-key placebo OBSERVED sd = 1.734723e-18  is_noop=True
+  -> a key-relabel-and-recompute control would test NOTHING on this frame.
+
+  OBSERVED SDs: {
+  "G01_noise": 0.996881,
+  "M01_dev_pos": 5.66182,
+  "M02_dev_neg": 6.787069,
+  "M03_dev_pos_playernorm": 5.173388,
+  "M04_dev_neg_playernorm": 6.430667,
+  "N01_news_vs_prevgame": 8.206206,
+  "N02_news_vs_avail": 9.701497,
+  "O01_own_usg_pg": 5.594806,
+  "P01_c04_prevgame": 10.375639,
+  "P02_c04_availweighted": 6.124051,
+  "P03_c04_avail5": 8.057725,
+  "P04_absent_usg_prevgame": 14.189715,
+  "P05_n_present_prevgame": 1.011112,
+  "P06_c04_rotstab": 9.319945,
+  "T01_c04_tiptime": 11.176819,
+  "T02_teamgame_present_usg": 10.244867,
+  "T03_absent_usg": 14.407872,
+  "T04_n_present": 1.018546,
+  "y_ppm": 0.276259,
+  "y_spm": 0.199216,
+  "y_pps": 0.540485,
+  "y_ts": 0.270243,
+  "y_efg": 0.279755,
+  "y_fgapm": 0.166858,
+  "y_ppfga": 0.668263,
+  "y_pts": 7.483134
+}
+
+====================================================================================================
+B. SCREEN 154 CELLS -- three nulls each (N1 within-entity-season, N2 entity swap, N3 row CONTRAST ONLY)
+====================================================================================================
+    [  0/154] T01_c04_tiptime            ppm    B_SINGLE               POOLED   dR2=0.003300 p_N1=0.0017 p_N2=0.0017     2.3s
+    [ 10/154] T01_c04_tiptime            spm    B_COMPLETE_PLUS_USAGE  POOLED   dR2=0.001911 p_N1=0.0017 p_N2=0.0017    24.1s
+    [ 20/154] T01_c04_tiptime            ts     B_COMPLETE             POOLED   dR2=0.000022 p_N1=0.5824 p_N2=0.5907    47.5s
+    [ 30/154] T01_c04_tiptime            fgapm  B_SINGLE               POOLED   dR2=0.004254 p_N1=0.0017 p_N2=0.0017    67.7s
+    [ 40/154] T02_teamgame_present_usg   spm    B_COMPLETE             POOLED   dR2=0.001677 p_N1=0.0017 p_N2=0.0017    90.3s
+    [ 50/154] T03_absent_usg             ppm    B_SINGLE               POOLED   dR2=0.000129 p_N1=0.0549 p_N2=0.1980   110.5s
+    [ 60/154] T04_n_present              ppm    B_COMPLETE             POOLED   dR2=0.000087 p_N1=0.1814 p_N2=0.1880   131.3s
+    [ 70/154] P01_c04_prevgame           spm    B_SINGLE               POOLED   dR2=0.001458 p_N1=0.0017 p_N2=0.0017   151.3s
+    [ 80/154] P02_c04_availweighted      spm    B_COMPLETE             POOLED   dR2=0.000414 p_N1=0.0067 p_N2=0.0133   171.6s
+    [ 90/154] P04_absent_usg_prevgame    ppm    B_SINGLE               POOLED   dR2=0.000000 p_N1=1.0000 p_N2=0.9917   193.6s
+    [100/154] P05_n_present_prevgame     ppm    B_COMPLETE             POOLED   dR2=0.000004 p_N1=0.7554 p_N2=0.7754   215.1s
+    [110/154] P06_c04_rotstab            spm    B_SINGLE               POOLED   dR2=0.001057 p_N1=0.0017 p_N2=0.0017   237.8s
+    [120/154] N01_news_vs_prevgame       spm    B_COMPLETE             POOLED   dR2=0.000738 p_N1=0.0017 p_N2=0.0017   260.8s
+    [130/154] M01_dev_pos                ppm    B_SINGLE               POOLED   dR2=0.002100 p_N1=0.0017 p_N2=0.0017   284.0s
+    [140/154] M03_dev_pos_playernorm     spm    B_SINGLE               POOLED   dR2=0.000796 p_N1=0.0017 p_N2=0.0017   308.8s
+    [150/154] G01_noise                  spm    B_SINGLE               POOLED   dR2=0.000021 p_N1=0.5258 p_N2=0.5458   330.7s
+
+  154 cells screened in 336.0s
+
+====================================================================================================
+C. FAMILY-WISE MAX-T ACROSS ALL 154 CELLS -- on BOTH correct-level nulls, WORSE reported
+====================================================================================================
+{
+  "n_cells": 154,
+  "n_candidates_preselected": 16,
+  "n_candidates_declared_addition_before_any_statistic": 2,
+  "n_candidates_screened": 18,
+  "n_candidates_added_after_seeing_results": 0,
+  "n_candidates_dropped_after_seeing_results": 0,
+  "cleared_per_candidate_N1_p05": 98,
+  "cleared_per_candidate_N2_p05": 97,
+  "cleared_per_candidate_BOTH_nulls_p05": 97,
+  "cleared_familywise_worse_null_p05": 64,
+  "cleared_familywise_N1_only_p05": 72,
+  "cleared_familywise_N2_only_p05": 72,
+  "would_have_cleared_on_NAIVE_row_level_p05": 98,
+  "median_inflation_N1_over_row": 1.0181046787872217,
+  "median_inflation_N2_over_row": 1.1655977109905318
+}
+
+  NEGATIVE CONTROL G01_noise:
+outcome       base  stratum      dr2  p_N1_within_entity  p_N2_entity_swap  p_familywise_maxt  p_row_level_NAIVE
+    ppm   B_SINGLE   POOLED 0.000043            0.384359          0.394343                1.0           0.367720
+    ppm   B_SINGLE DECISION 0.000256            0.194676          0.202995                1.0           0.164725
+    ppm B_COMPLETE   POOLED 0.000048            0.327787          0.352745                1.0           0.344426
+    ppm B_COMPLETE DECISION 0.000263            0.191348          0.189684                1.0           0.154742
+    spm   B_SINGLE   POOLED 0.000021            0.525790          0.545757                1.0           0.517471
+    spm   B_SINGLE DECISION 0.000048            0.509151          0.490849                1.0           0.487521
+    spm B_COMPLETE   POOLED 0.000026            0.494176          0.507488                1.0           0.472546
+    spm B_COMPLETE DECISION 0.000057            0.457571          0.445923                1.0           0.452579
+
+====================================================================================================
+D. STEP 2 -- THE CHANNEL DECOMPOSITION, T01 (TIP-TIME)
+====================================================================================================
+outcome                  base  stratum     n      dr2  sign  p_correct_level  p_familywise_maxt  p_row_level_NAIVE
+    efg            B_COMPLETE DECISION  5652 0.000038   1.0         0.643927           1.000000           0.633943
+    ppm            B_COMPLETE DECISION  5673 0.004240  -1.0         0.001664           0.001664           0.001664
+    pps            B_COMPLETE DECISION  5654 0.000047  -1.0         0.595674           1.000000           0.565724
+    spm            B_COMPLETE DECISION  5673 0.007567  -1.0         0.001664           0.001664           0.001664
+     ts            B_COMPLETE DECISION  5654 0.000047  -1.0         0.595674           1.000000           0.565724
+    efg B_COMPLETE_PLUS_USAGE DECISION  5652 0.000038   1.0         0.648918           1.000000           0.627288
+    ppm B_COMPLETE_PLUS_USAGE DECISION  5673 0.004235  -1.0         0.001664           0.001664           0.001664
+    pps B_COMPLETE_PLUS_USAGE DECISION  5654 0.000046  -1.0         0.612313           1.000000           0.572379
+    spm B_COMPLETE_PLUS_USAGE DECISION  5673 0.007563  -1.0         0.001664           0.001664           0.001664
+     ts B_COMPLETE_PLUS_USAGE DECISION  5654 0.000046  -1.0         0.612313           1.000000           0.572379
+    efg              B_SINGLE DECISION  5652 0.000068   1.0         0.552413           1.000000           0.527454
+  fgapm              B_SINGLE DECISION  5673 0.007341  -1.0         0.001664           0.001664           0.001664
+  ppfga              B_SINGLE DECISION  5652 0.000090  -1.0         0.477537           1.000000           0.439268
+    ppm              B_SINGLE DECISION  5673 0.004963  -1.0         0.001664           0.001664           0.001664
+    pps              B_SINGLE DECISION  5654 0.000062  -1.0         0.557404           1.000000           0.502496
+    spm              B_SINGLE DECISION  5673 0.007987  -1.0         0.001664           0.001664           0.001664
+     ts              B_SINGLE DECISION  5654 0.000062  -1.0         0.557404           1.000000           0.502496
+    efg            B_COMPLETE   POOLED 13989 0.000144   1.0         0.189684           1.000000           0.166389
+    ppm            B_COMPLETE   POOLED 14852 0.001274  -1.0         0.001664           0.004992           0.001664
+    pps            B_COMPLETE   POOLED 14079 0.000022   1.0         0.590682           1.000000           0.600666
+    spm            B_COMPLETE   POOLED 14852 0.002213  -1.0         0.001664           0.001664           0.001664
+     ts            B_COMPLETE   POOLED 14079 0.000022   1.0         0.590682           1.000000           0.600666
+    efg B_COMPLETE_PLUS_USAGE   POOLED 13989 0.000104   1.0         0.269551           1.000000           0.246256
+    ppm B_COMPLETE_PLUS_USAGE   POOLED 14852 0.001117  -1.0         0.001664           0.009983           0.001664
+    pps B_COMPLETE_PLUS_USAGE   POOLED 14079 0.000012   1.0         0.703827           1.000000           0.700499
+    spm B_COMPLETE_PLUS_USAGE   POOLED 14852 0.001911  -1.0         0.001664           0.001664           0.001664
+     ts B_COMPLETE_PLUS_USAGE   POOLED 14079 0.000012   1.0         0.703827           1.000000           0.700499
+    efg              B_SINGLE   POOLED 13989 0.000118  -1.0         0.289517           1.000000           0.214642
+  fgapm              B_SINGLE   POOLED 14852 0.004254  -1.0         0.001664           0.001664           0.001664
+  ppfga              B_SINGLE   POOLED 13989 0.000479  -1.0         0.021631           0.587354           0.006656
+    ppm              B_SINGLE   POOLED 14852 0.003300  -1.0         0.001664           0.001664           0.001664
+    pps              B_SINGLE   POOLED 14079 0.000491  -1.0         0.023295           0.590682           0.013311
+    spm              B_SINGLE   POOLED 14852 0.003066  -1.0         0.001664           0.001664           0.001664
+     ts              B_SINGLE   POOLED 14079 0.000491  -1.0         0.023295           0.590682           0.013311
+
+  ALGEBRAIC CHECK (must hold to machine precision): dR2(pps|refB_pps) == dR2(ts|refB_ts)
+    POOLED   B_SINGLE               |dR2_pps - dR2_ts| = 4.337e-19
+    POOLED   B_COMPLETE             |dR2_pps - dR2_ts| = 0.000e+00
+    POOLED   B_COMPLETE_PLUS_USAGE  |dR2_pps - dR2_ts| = 0.000e+00
+    DECISION B_SINGLE               |dR2_pps - dR2_ts| = 2.711e-20
+    DECISION B_COMPLETE             |dR2_pps - dR2_ts| = 0.000e+00
+    DECISION B_COMPLETE_PLUS_USAGE  |dR2_pps - dR2_ts| = 0.000e+00
+
+====================================================================================================
+E. STEP 2b -- THE D087 REFERENCE-INCOMPLETENESS LADDER on y_ppm and y_spm
+====================================================================================================
+
+  --- outcome=ppm stratum=POOLED
+      T01_c04_tiptime            B_SINGLE               dR2=0.003300 p_fw=0.0017  |  B_COMPLETE             dR2=0.001274 p_fw=0.0050  |  B_COMPLETE_PLUS_USAGE  dR2=0.001117 p_fw=0.0100
+      T02_teamgame_present_usg   B_SINGLE               dR2=0.000621 p_fw=0.2679  |  B_COMPLETE             dR2=0.000969 p_fw=0.0749  |  B_COMPLETE_PLUS_USAGE  --
+      O01_own_usg_pg             B_SINGLE               dR2=0.011116 p_fw=0.0017  |  B_COMPLETE             dR2=0.001360 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      T03_absent_usg             B_SINGLE               dR2=0.000129 p_fw=1.0000  |  B_COMPLETE             dR2=0.000094 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+      T04_n_present              B_SINGLE               dR2=0.000020 p_fw=1.0000  |  B_COMPLETE             dR2=0.000087 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+
+  --- outcome=ppm stratum=DECISION
+      T01_c04_tiptime            B_SINGLE               dR2=0.004963 p_fw=0.0017  |  B_COMPLETE             dR2=0.004240 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  dR2=0.004235 p_fw=0.0017
+      T02_teamgame_present_usg   B_SINGLE               dR2=0.003374 p_fw=0.0017  |  B_COMPLETE             dR2=0.004216 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      O01_own_usg_pg             B_SINGLE               dR2=0.002482 p_fw=0.0017  |  B_COMPLETE             dR2=0.000078 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+      T03_absent_usg             B_SINGLE               dR2=0.000119 p_fw=1.0000  |  B_COMPLETE             dR2=0.000161 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+      T04_n_present              B_SINGLE               dR2=0.000001 p_fw=1.0000  |  B_COMPLETE             dR2=0.000000 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+
+  --- outcome=spm stratum=POOLED
+      T01_c04_tiptime            B_SINGLE               dR2=0.003066 p_fw=0.0017  |  B_COMPLETE             dR2=0.002213 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  dR2=0.001911 p_fw=0.0017
+      T02_teamgame_present_usg   B_SINGLE               dR2=0.001439 p_fw=0.0017  |  B_COMPLETE             dR2=0.001677 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      O01_own_usg_pg             B_SINGLE               dR2=0.003097 p_fw=0.0017  |  B_COMPLETE             dR2=0.002620 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      T03_absent_usg             B_SINGLE               dR2=0.000370 p_fw=0.5191  |  B_COMPLETE             dR2=0.000506 p_fw=0.1730  |  B_COMPLETE_PLUS_USAGE  --
+      T04_n_present              B_SINGLE               dR2=0.000045 p_fw=1.0000  |  B_COMPLETE             dR2=0.000140 p_fw=0.9967  |  B_COMPLETE_PLUS_USAGE  --
+
+  --- outcome=spm stratum=DECISION
+      T01_c04_tiptime            B_SINGLE               dR2=0.007987 p_fw=0.0017  |  B_COMPLETE             dR2=0.007567 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  dR2=0.007563 p_fw=0.0017
+      T02_teamgame_present_usg   B_SINGLE               dR2=0.007284 p_fw=0.0017  |  B_COMPLETE             dR2=0.007575 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      O01_own_usg_pg             B_SINGLE               dR2=0.000340 p_fw=1.0000  |  B_COMPLETE             dR2=0.000028 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+      T03_absent_usg             B_SINGLE               dR2=0.001900 p_fw=0.0483  |  B_COMPLETE             dR2=0.003158 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      T04_n_present              B_SINGLE               dR2=0.000062 p_fw=1.0000  |  B_COMPLETE             dR2=0.000056 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+
+====================================================================================================
+F. STEP 3 -- TIP-TIME vs STRICTLY-PRIOR-ONLY
+====================================================================================================
+
+  --- outcome=ppm stratum=POOLED   (B_SINGLE | B_COMPLETE)
+      G01_noise                  prior      dR2=0.000043 p_fw=1.0000 sgn+1   |   dR2=0.000048 p_fw=1.0000 sgn+1
+      M01_dev_pos                TIP-TIME   dR2=0.002100 p_fw=0.0017 sgn-1   |   --
+      M02_dev_neg                TIP-TIME   dR2=0.003448 p_fw=0.0017 sgn-1   |   --
+      M03_dev_pos_playernorm     TIP-TIME   dR2=0.000425 p_fw=0.2912 sgn-1   |   --
+      M04_dev_neg_playernorm     TIP-TIME   dR2=0.000763 p_fw=0.0532 sgn-1   |   --
+      N01_news_vs_prevgame       TIP-TIME   dR2=0.000348 p_fw=0.4043 sgn-1   |   dR2=0.000386 p_fw=0.2928 sgn-1
+      N02_news_vs_avail          TIP-TIME   dR2=0.000701 p_fw=0.1331 sgn-1   |   dR2=0.000937 p_fw=0.0666 sgn-1
+      O01_own_usg_pg             prior      dR2=0.011116 p_fw=0.0017 sgn+1   |   dR2=0.001360 p_fw=0.0017 sgn+1
+      P01_c04_prevgame           prior      dR2=0.002200 p_fw=0.0017 sgn-1   |   dR2=0.000484 p_fw=0.3727 sgn-1
+      P02_c04_availweighted      prior      dR2=0.006193 p_fw=0.0017 sgn-1   |   dR2=0.000482 p_fw=0.3611 sgn-1
+      P03_c04_avail5             prior      dR2=0.002636 p_fw=0.0017 sgn-1   |   dR2=0.000232 p_fw=0.9667 sgn-1
+      P04_absent_usg_prevgame    prior      dR2=0.000000 p_fw=1.0000 sgn+1   |   dR2=0.000005 p_fw=1.0000 sgn-1
+      P05_n_present_prevgame     prior      dR2=0.000018 p_fw=1.0000 sgn-1   |   dR2=0.000004 p_fw=1.0000 sgn-1
+      P06_c04_rotstab            prior      dR2=0.001749 p_fw=0.0017 sgn-1   |   dR2=0.000119 p_fw=1.0000 sgn-1
+      T01_c04_tiptime            TIP-TIME   dR2=0.003300 p_fw=0.0017 sgn-1   |   dR2=0.001274 p_fw=0.0050 sgn-1
+      T02_teamgame_present_usg   TIP-TIME   dR2=0.000621 p_fw=0.2679 sgn-1   |   dR2=0.000969 p_fw=0.0749 sgn-1
+      T03_absent_usg             TIP-TIME   dR2=0.000129 p_fw=1.0000 sgn+1   |   dR2=0.000094 p_fw=1.0000 sgn+1
+      T04_n_present              TIP-TIME   dR2=0.000020 p_fw=1.0000 sgn+1   |   dR2=0.000087 p_fw=1.0000 sgn+1
+
+  --- outcome=ppm stratum=DECISION   (B_SINGLE | B_COMPLETE)
+      G01_noise                  prior      dR2=0.000256 p_fw=1.0000 sgn+1   |   dR2=0.000263 p_fw=1.0000 sgn+1
+      M01_dev_pos                TIP-TIME   dR2=0.001842 p_fw=0.1082 sgn-1   |   --
+      M02_dev_neg                TIP-TIME   dR2=0.003802 p_fw=0.0017 sgn-1   |   --
+      M03_dev_pos_playernorm     TIP-TIME   dR2=0.000992 p_fw=0.3028 sgn-1   |   --
+      M04_dev_neg_playernorm     TIP-TIME   dR2=0.001987 p_fw=0.0033 sgn-1   |   --
+      N01_news_vs_prevgame       TIP-TIME   dR2=0.000656 p_fw=0.8170 sgn-1   |   dR2=0.000638 p_fw=0.8453 sgn-1
+      N02_news_vs_avail          TIP-TIME   dR2=0.002244 p_fw=0.0067 sgn-1   |   dR2=0.002775 p_fw=0.0017 sgn-1
+      O01_own_usg_pg             prior      dR2=0.002482 p_fw=0.0017 sgn+1   |   dR2=0.000078 p_fw=1.0000 sgn-1
+      P01_c04_prevgame           prior      dR2=0.002911 p_fw=0.0017 sgn-1   |   dR2=0.002342 p_fw=0.0815 sgn-1
+      P02_c04_availweighted      prior      dR2=0.005120 p_fw=0.0017 sgn-1   |   dR2=0.002601 p_fw=0.1980 sgn-1
+      P03_c04_avail5             prior      dR2=0.002416 p_fw=0.0599 sgn-1   |   dR2=0.001607 p_fw=0.7354 sgn-1
+      P04_absent_usg_prevgame    prior      dR2=0.000045 p_fw=1.0000 sgn-1   |   dR2=0.000024 p_fw=1.0000 sgn-1
+      P05_n_present_prevgame     prior      dR2=0.000024 p_fw=1.0000 sgn+1   |   dR2=0.000023 p_fw=1.0000 sgn+1
+      P06_c04_rotstab            prior      dR2=0.001736 p_fw=0.0233 sgn-1   |   dR2=0.001230 p_fw=0.5075 sgn-1
+      T01_c04_tiptime            TIP-TIME   dR2=0.004963 p_fw=0.0017 sgn-1   |   dR2=0.004240 p_fw=0.0017 sgn-1
+      T02_teamgame_present_usg   TIP-TIME   dR2=0.003374 p_fw=0.0017 sgn-1   |   dR2=0.004216 p_fw=0.0017 sgn-1
+      T03_absent_usg             TIP-TIME   dR2=0.000119 p_fw=1.0000 sgn+1   |   dR2=0.000161 p_fw=1.0000 sgn+1
+      T04_n_present              TIP-TIME   dR2=0.000001 p_fw=1.0000 sgn+1   |   dR2=0.000000 p_fw=1.0000 sgn+1
+
+  --- outcome=spm stratum=POOLED   (B_SINGLE | B_COMPLETE)
+      G01_noise                  prior      dR2=0.000021 p_fw=1.0000 sgn-1   |   dR2=0.000026 p_fw=1.0000 sgn-1
+      M01_dev_pos                TIP-TIME   dR2=0.001363 p_fw=0.0017 sgn-1   |   --
+      M02_dev_neg                TIP-TIME   dR2=0.003351 p_fw=0.0017 sgn-1   |   --
+      M03_dev_pos_playernorm     TIP-TIME   dR2=0.000796 p_fw=0.0033 sgn-1   |   --
+      M04_dev_neg_playernorm     TIP-TIME   dR2=0.001278 p_fw=0.0017 sgn-1   |   --
+      N01_news_vs_prevgame       TIP-TIME   dR2=0.000686 p_fw=0.0017 sgn-1   |   dR2=0.000738 p_fw=0.0017 sgn-1
+      N02_news_vs_avail          TIP-TIME   dR2=0.001494 p_fw=0.0017 sgn-1   |   dR2=0.001860 p_fw=0.0017 sgn-1
+      O01_own_usg_pg             prior      dR2=0.003097 p_fw=0.0017 sgn+1   |   dR2=0.002620 p_fw=0.0017 sgn+1
+      P01_c04_prevgame           prior      dR2=0.001458 p_fw=0.0017 sgn-1   |   dR2=0.000776 p_fw=0.0116 sgn-1
+      P02_c04_availweighted      prior      dR2=0.002019 p_fw=0.0017 sgn-1   |   dR2=0.000414 p_fw=0.4326 sgn-1
+      P03_c04_avail5             prior      dR2=0.001538 p_fw=0.0017 sgn-1   |   dR2=0.000577 p_fw=0.1398 sgn-1
+      P04_absent_usg_prevgame    prior      dR2=0.000023 p_fw=1.0000 sgn+1   |   dR2=0.000060 p_fw=1.0000 sgn+1
+      P05_n_present_prevgame     prior      dR2=0.000005 p_fw=1.0000 sgn-1   |   dR2=0.000000 p_fw=1.0000 sgn-1
+      P06_c04_rotstab            prior      dR2=0.001057 p_fw=0.0033 sgn-1   |   dR2=0.000400 p_fw=0.3028 sgn-1
+      T01_c04_tiptime            TIP-TIME   dR2=0.003066 p_fw=0.0017 sgn-1   |   dR2=0.002213 p_fw=0.0017 sgn-1
+      T02_teamgame_present_usg   TIP-TIME   dR2=0.001439 p_fw=0.0017 sgn-1   |   dR2=0.001677 p_fw=0.0017 sgn-1
+      T03_absent_usg             TIP-TIME   dR2=0.000370 p_fw=0.5191 sgn+1   |   dR2=0.000506 p_fw=0.1730 sgn+1
+      T04_n_present              TIP-TIME   dR2=0.000045 p_fw=1.0000 sgn+1   |   dR2=0.000140 p_fw=0.9967 sgn+1
+
+  --- outcome=spm stratum=DECISION   (B_SINGLE | B_COMPLETE)
+      G01_noise                  prior      dR2=0.000048 p_fw=1.0000 sgn+1   |   dR2=0.000057 p_fw=1.0000 sgn+1
+      M01_dev_pos                TIP-TIME   dR2=0.001981 p_fw=0.0050 sgn-1   |   --
+      M02_dev_neg                TIP-TIME   dR2=0.005624 p_fw=0.0017 sgn-1   |   --
+      M03_dev_pos_playernorm     TIP-TIME   dR2=0.002252 p_fw=0.0017 sgn-1   |   --
+      M04_dev_neg_playernorm     TIP-TIME   dR2=0.004567 p_fw=0.0017 sgn-1   |   --
+      N01_news_vs_prevgame       TIP-TIME   dR2=0.001980 p_fw=0.0017 sgn-1   |   dR2=0.001985 p_fw=0.0017 sgn-1
+      N02_news_vs_avail          TIP-TIME   dR2=0.006221 p_fw=0.0017 sgn-1   |   dR2=0.006892 p_fw=0.0017 sgn-1
+      O01_own_usg_pg             prior      dR2=0.000340 p_fw=1.0000 sgn+1   |   dR2=0.000028 p_fw=1.0000 sgn-1
+      P01_c04_prevgame           prior      dR2=0.003345 p_fw=0.0083 sgn-1   |   dR2=0.003037 p_fw=0.0116 sgn-1
+      P02_c04_availweighted      prior      dR2=0.001541 p_fw=0.0133 sgn-1   |   dR2=0.000695 p_fw=0.4742 sgn-1
+      P03_c04_avail5             prior      dR2=0.002506 p_fw=0.1730 sgn-1   |   dR2=0.002126 p_fw=0.1930 sgn-1
+      P04_absent_usg_prevgame    prior      dR2=0.000327 p_fw=0.9967 sgn+1   |   dR2=0.000890 p_fw=0.4759 sgn+1
+      P05_n_present_prevgame     prior      dR2=0.000210 p_fw=0.9983 sgn+1   |   dR2=0.000226 p_fw=0.9967 sgn+1
+      P06_c04_rotstab            prior      dR2=0.002003 p_fw=0.4143 sgn-1   |   dR2=0.001941 p_fw=0.4193 sgn-1
+      T01_c04_tiptime            TIP-TIME   dR2=0.007987 p_fw=0.0017 sgn-1   |   dR2=0.007567 p_fw=0.0017 sgn-1
+      T02_teamgame_present_usg   TIP-TIME   dR2=0.007284 p_fw=0.0017 sgn-1   |   dR2=0.007575 p_fw=0.0017 sgn-1
+      T03_absent_usg             TIP-TIME   dR2=0.001900 p_fw=0.0483 sgn+1   |   dR2=0.003158 p_fw=0.0017 sgn+1
+      T04_n_present              TIP-TIME   dR2=0.000062 p_fw=1.0000 sgn-1   |   dR2=0.000056 p_fw=1.0000 sgn-1
+
+  SURVIVORS (family-wise p < 0.05 on the WORSE of the two correct-level nulls):
+               candidate outcome                  base  stratum  tip_time     n      dr2  sign  p_familywise_maxt
+          O01_own_usg_pg     ppm              B_SINGLE   POOLED     False 14807 0.011116   1.0           0.001664
+         T01_c04_tiptime     spm              B_SINGLE DECISION      True  5673 0.007987  -1.0           0.001664
+T02_teamgame_present_usg     spm            B_COMPLETE DECISION      True  5673 0.007575  -1.0           0.001664
+         T01_c04_tiptime     spm            B_COMPLETE DECISION      True  5673 0.007567  -1.0           0.001664
+         T01_c04_tiptime     spm B_COMPLETE_PLUS_USAGE DECISION      True  5673 0.007563  -1.0           0.001664
+         T01_c04_tiptime   fgapm              B_SINGLE DECISION      True  5673 0.007341  -1.0           0.001664
+T02_teamgame_present_usg     spm              B_SINGLE DECISION      True  5673 0.007284  -1.0           0.001664
+       N02_news_vs_avail     spm            B_COMPLETE DECISION      True  5673 0.006892  -1.0           0.001664
+       N02_news_vs_avail     spm              B_SINGLE DECISION      True  5673 0.006221  -1.0           0.001664
+   P02_c04_availweighted     ppm              B_SINGLE   POOLED     False 14852 0.006193  -1.0           0.001664
+             M02_dev_neg     spm              B_SINGLE DECISION      True  5673 0.005624  -1.0           0.001664
+   P02_c04_availweighted     ppm              B_SINGLE DECISION     False  5673 0.005120  -1.0           0.001664
+         T01_c04_tiptime     ppm              B_SINGLE DECISION      True  5673 0.004963  -1.0           0.001664
+  M04_dev_neg_playernorm     spm              B_SINGLE DECISION      True  5673 0.004567  -1.0           0.001664
+         T01_c04_tiptime   fgapm              B_SINGLE   POOLED      True 14852 0.004254  -1.0           0.001664
+         T01_c04_tiptime     ppm            B_COMPLETE DECISION      True  5673 0.004240  -1.0           0.001664
+         T01_c04_tiptime     ppm B_COMPLETE_PLUS_USAGE DECISION      True  5673 0.004235  -1.0           0.001664
+T02_teamgame_present_usg     ppm            B_COMPLETE DECISION      True  5673 0.004216  -1.0           0.001664
+             M02_dev_neg     ppm              B_SINGLE DECISION      True  5673 0.003802  -1.0           0.001664
+             M02_dev_neg     ppm              B_SINGLE   POOLED      True 14852 0.003448  -1.0           0.001664
+T02_teamgame_present_usg     ppm              B_SINGLE DECISION      True  5673 0.003374  -1.0           0.001664
+             M02_dev_neg     spm              B_SINGLE   POOLED      True 14852 0.003351  -1.0           0.001664
+        P01_c04_prevgame     spm              B_SINGLE DECISION     False  5673 0.003345  -1.0           0.008319
+         T01_c04_tiptime     ppm              B_SINGLE   POOLED      True 14852 0.003300  -1.0           0.001664
+          T03_absent_usg     spm            B_COMPLETE DECISION      True  5673 0.003158   1.0           0.001664
+          O01_own_usg_pg     spm              B_SINGLE   POOLED     False 14807 0.003097   1.0           0.001664
+         T01_c04_tiptime     spm              B_SINGLE   POOLED      True 14852 0.003066  -1.0           0.001664
+        P01_c04_prevgame     spm            B_COMPLETE DECISION     False  5673 0.003037  -1.0           0.011647
+        P01_c04_prevgame     ppm              B_SINGLE DECISION     False  5673 0.002911  -1.0           0.001664
+       N02_news_vs_avail     ppm            B_COMPLETE DECISION      True  5673 0.002775  -1.0           0.001664
+          P03_c04_avail5     ppm              B_SINGLE   POOLED     False 14852 0.002636  -1.0           0.001664
+          O01_own_usg_pg     spm            B_COMPLETE   POOLED     False 14807 0.002620   1.0           0.001664
+          O01_own_usg_pg     ppm              B_SINGLE DECISION     False  5670 0.002482   1.0           0.001664
+  M03_dev_pos_playernorm     spm              B_SINGLE DECISION      True  5673 0.002252  -1.0           0.001664
+       N02_news_vs_avail     ppm              B_SINGLE DECISION      True  5673 0.002244  -1.0           0.006656
+         T01_c04_tiptime     spm            B_COMPLETE   POOLED      True 14852 0.002213  -1.0           0.001664
+        P01_c04_prevgame     ppm              B_SINGLE   POOLED     False 14852 0.002200  -1.0           0.001664
+             M01_dev_pos     ppm              B_SINGLE   POOLED      True 14852 0.002100  -1.0           0.001664
+   P02_c04_availweighted     spm              B_SINGLE   POOLED     False 14852 0.002019  -1.0           0.001664
+  M04_dev_neg_playernorm     ppm              B_SINGLE DECISION      True  5673 0.001987  -1.0           0.003328
+    N01_news_vs_prevgame     spm            B_COMPLETE DECISION      True  5673 0.001985  -1.0           0.001664
+             M01_dev_pos     spm              B_SINGLE DECISION      True  5673 0.001981  -1.0           0.004992
+    N01_news_vs_prevgame     spm              B_SINGLE DECISION      True  5673 0.001980  -1.0           0.001664
+         T01_c04_tiptime     spm B_COMPLETE_PLUS_USAGE   POOLED      True 14852 0.001911  -1.0           0.001664
+          T03_absent_usg     spm              B_SINGLE DECISION      True  5673 0.001900   1.0           0.048253
+       N02_news_vs_avail     spm            B_COMPLETE   POOLED      True 14852 0.001860  -1.0           0.001664
+         P06_c04_rotstab     ppm              B_SINGLE   POOLED     False 14852 0.001749  -1.0           0.001664
+         P06_c04_rotstab     ppm              B_SINGLE DECISION     False  5673 0.001736  -1.0           0.023295
+T02_teamgame_present_usg     spm            B_COMPLETE   POOLED      True 14852 0.001677  -1.0           0.001664
+   P02_c04_availweighted     spm              B_SINGLE DECISION     False  5673 0.001541  -1.0           0.013311
+          P03_c04_avail5     spm              B_SINGLE   POOLED     False 14852 0.001538  -1.0           0.001664
+       N02_news_vs_avail     spm              B_SINGLE   POOLED      True 14852 0.001494  -1.0           0.001664
+        P01_c04_prevgame     spm              B_SINGLE   POOLED     False 14852 0.001458  -1.0           0.001664
+T02_teamgame_present_usg     spm              B_SINGLE   POOLED      True 14852 0.001439  -1.0           0.001664
+             M01_dev_pos     spm              B_SINGLE   POOLED      True 14852 0.001363  -1.0           0.001664
+          O01_own_usg_pg     ppm            B_COMPLETE   POOLED     False 14807 0.001360   1.0           0.001664
+  M04_dev_neg_playernorm     spm              B_SINGLE   POOLED      True 14852 0.001278  -1.0           0.001664
+         T01_c04_tiptime     ppm            B_COMPLETE   POOLED      True 14852 0.001274  -1.0           0.004992
+         T01_c04_tiptime     ppm B_COMPLETE_PLUS_USAGE   POOLED      True 14852 0.001117  -1.0           0.009983
+         P06_c04_rotstab     spm              B_SINGLE   POOLED     False 14852 0.001057  -1.0           0.003328
+  M03_dev_pos_playernorm     spm              B_SINGLE   POOLED      True 14852 0.000796  -1.0           0.003328
+        P01_c04_prevgame     spm            B_COMPLETE   POOLED     False 14852 0.000776  -1.0           0.011647
+    N01_news_vs_prevgame     spm            B_COMPLETE   POOLED      True 14852 0.000738  -1.0           0.001664
+    N01_news_vs_prevgame     spm              B_SINGLE   POOLED      True 14852 0.000686  -1.0           0.001664

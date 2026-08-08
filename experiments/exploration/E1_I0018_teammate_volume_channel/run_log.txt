@@ -1,0 +1,1393 @@
+﻿E1_I0018 CONSOLIDATED RUN LOG -- concatenation of every step log, in execution order.
+
+==============================================================================================================
+### run_log_s01.txt
+==============================================================================================================
+
+====================================================================================================
+1. MANIFEST CHECKS -- read from disk at call time, not cited from notes
+====================================================================================================
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+     -> usable_at_e0_e1=True  fit_through_season=2026
+  check_manifest master_team.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+     -> usable_at_e0_e1=True  fit_through_season=2026
+  check_manifest player_game_availability.csv             granularity='artifact' -> UNUSABLE
+     -> usable_at_e0_e1=False  fit_through_season=2026
+  check_manifest roster_asof.csv                          granularity='artifact' -> UNUSABLE
+     -> usable_at_e0_e1=False  fit_through_season=2026
+
+  USED:       master_player.parquet, master_team.parquet (both asof_granularity='row').
+  NOT OPENED: w1_truth/player_game_availability.csv, w1_truth/roster_asof.csv
+              -- artifact-granular, fit_through_season 2026, FILTERING DOES NOT HELP.
+              Availability is rebuilt from box membership (minutes>0), the D076 method.
+  READ-ONLY REPRODUCTION TARGET: E0_I0016/screen_frame.parquet (frozen).
+
+====================================================================================================
+2. LOAD + PARTITION FILTER (VALUE-BASED, never a byte scan)
+====================================================================================================
+  raw master_player (33712, 78)
+  after season filter: master_player (21462, 78)
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+  master_player partition ok=True
+  appeared player-game rows 2021-2024: 18212  (players=265, games=970)
+
+====================================================================================================
+3. STRICTLY-PRIOR PLAYER AGGREGATES.  .shift(1) ALWAYS PRECEDES .expanding().
+====================================================================================================
+
+====================================================================================================
+4. TEAMMATE CONTEXT -- availability REBUILT FROM BOX MEMBERSHIP (D076 method)
+====================================================================================================
+
+====================================================================================================
+5. OUTCOMES + STRICTLY-PRIOR REFERENCES (D085 REF-B construction, extended)
+====================================================================================================
+  reference fallback accounting:
+{
+  "ppm": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 4
+  },
+  "spm": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 4
+  },
+  "pps": {
+    "n_from_player_prior_B": 17513,
+    "n_still_nan_B": 4
+  },
+  "ts": {
+    "n_from_player_prior_B": 17513,
+    "n_still_nan_B": 4
+  },
+  "efg": {
+    "n_from_player_prior_B": 17504,
+    "n_still_nan_B": 4
+  },
+  "fgapm": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 4
+  },
+  "ppfga": {
+    "n_from_player_prior_B": 17504,
+    "n_still_nan_B": 4
+  },
+  "mpg": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 466
+  },
+  "own_usg_pg": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 466
+  }
+}
+
+  IDENTITY  max|y_pps - 2*y_ts|            = 0.000e+00
+  IDENTITY  max|refB_pps - 2*refB_ts|      = 0.000e+00
+  IDENTITY  max|y_ppm - y_spm*y_pps|       = 1.776e-15
+  IDENTITY  max|T01 - (T02 - O01)|         = 1.421e-14   <-- the reference-incompleteness vector
+
+====================================================================================================
+6. SCREEN FRAME: Regular Season, >= 3 prior appearances (D085's filter)
+====================================================================================================
+  screen frame: 14852 rows, 247 players, 827 games, seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+
+====================================================================================================
+7. EXACT REPRODUCTION CHECK against D085's FROZEN screen_frame.parquet
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  C04        max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  C08        max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  y_ppm      max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  y_ts       max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  y_efg      max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  refB_ppm   max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  refB_ts    max|new - frozen| = 2.220446e-16     NaN-pattern mismatches = 0
+  refB_efg   max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  n_prior    max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+
+  -> D085's C04 column is REPRODUCED EXACTLY from master_player.  Row set identical.
+
+====================================================================================================
+8. LEAKAGE PROBES (trap 2).  A FLAG IS A SCREENING FLAG, NOT A VERDICT (kit K1).
+====================================================================================================
+  future_leakage_probe: n=14252
+    corr(refB_ppm                , own strictly-after-date future) = +0.6741
+    corr(refA_ppm                , own strictly-after-date future) = +0.6571
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.023511
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): 'refB_ppm' tracks the entity's UNPLAYED FUTURE more closely than 'refA_ppm' does (|0.6741| vs |0.6571|) and adds dR2=0.0235 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) 'refB_ppm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) 'refB_ppm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refA_ppm' will correlate more with the entity's own future than 'refA_ppm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+  future_leakage_probe: n=14252
+    corr(refB_spm                , own strictly-after-date future) = +0.6558
+    corr(refA_spm                , own strictly-after-date future) = +0.6391
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.021852
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): 'refB_spm' tracks the entity's UNPLAYED FUTURE more closely than 'refA_spm' does (|0.6558| vs |0.6391|) and adds dR2=0.0219 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) 'refB_spm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) 'refB_spm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refA_spm' will correlate more with the entity's own future than 'refA_spm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+  future_leakage_probe: n=14252
+    corr(_LEAKY_control_ppm      , own strictly-after-date future) = +0.8465
+    corr(refB_ppm                , own strictly-after-date future) = +0.6741
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.273145
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): '_LEAKY_control_ppm' tracks the entity's UNPLAYED FUTURE more closely than 'refB_ppm' does (|0.8465| vs |0.6741|) and adds dR2=0.2731 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) '_LEAKY_control_ppm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) '_LEAKY_control_ppm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refB_ppm' will correlate more with the entity's own future than 'refB_ppm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+
+  candidates found in frame: 18
+  ['G01_noise', 'M01_dev_pos', 'M02_dev_neg', 'M03_dev_pos_playernorm', 'M04_dev_neg_playernorm', 'N01_news_vs_prevgame', 'N02_news_vs_avail', 'O01_own_usg_pg', 'P01_c04_prevgame', 'P02_c04_availweighted', 'P03_c04_avail5', 'P04_absent_usg_prevgame', 'P05_n_present_prevgame', 'P06_c04_rotstab', 'T01_c04_tiptime', 'T02_teamgame_present_usg', 'T03_absent_usg', 'T04_n_present']
+
+  candidates the probe FLAGS (screening flag, NOT a verdict): 0
+
+====================================================================================================
+9. FAST-dR2 IDENTITY CHECK against screenkit.delta_r2_plain (kit is ground truth)
+====================================================================================================
+  max |fast dR2 - screenkit.delta_r2_plain| over 18 candidates x 2 bases = 2.854e-16
+  -> fast path VERIFIED against the kit; used for the permutation loops only.
+
+====================================================================================================
+10. WRITE
+====================================================================================================
+  wrote screen_frame.parquet (14852, 59)
+
+  candidate non-null coverage (fraction of frame rows):
+    G01_noise                      1.0000   sd=0.99688
+    M01_dev_pos                    1.0000   sd=5.66182
+    M02_dev_neg                    1.0000   sd=6.78707
+    M03_dev_pos_playernorm         1.0000   sd=5.17339
+    M04_dev_neg_playernorm         1.0000   sd=6.43067
+    N01_news_vs_prevgame           1.0000   sd=8.20621
+    N02_news_vs_avail              1.0000   sd=9.70150
+    O01_own_usg_pg                 0.9970   sd=5.59481
+    P01_c04_prevgame               1.0000   sd=10.37564
+    P02_c04_availweighted          1.0000   sd=6.12405
+    P03_c04_avail5                 1.0000   sd=8.05772
+    P04_absent_usg_prevgame        1.0000   sd=14.18971
+    P05_n_present_prevgame         1.0000   sd=1.01111
+    P06_c04_rotstab                1.0000   sd=9.31994
+    T01_c04_tiptime                1.0000   sd=11.17682
+    T02_teamgame_present_usg       1.0000   sd=10.24487
+    T03_absent_usg                 1.0000   sd=14.40787
+    T04_n_present                  1.0000   sd=1.01855
+
+==============================================================================================================
+### run_log_s02.txt
+==============================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  frame (14852, 59)
+  decision stratum (>=8 prior appearances AND trailing-5 minutes >=24): 5673 of 14852 rows (38.2%)
+
+====================================================================================================
+A. GROUPING LEVEL -- chosen by screenkit.detect_grouping_level, not by assertion
+====================================================================================================
+  detect_grouping_level(feat): n_rows=14852  dtype=float64  distinct values overall=14742
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                 14852      14742          YES    YES 1
+    player_game         14852      14742          YES    YES 1
+    team_game            1632       1631           no     no 12
+    opp_team_game        1632       1631           no     no 12
+    game                  827        826           no     no 24
+    player_season         600        580           no     no 37
+    team_season            48         48           no     no 369
+    opp_team_season         48         48           no     no 351
+    season                  4          4           no     no 4075
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'feat': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+
+  status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+  -> NO coarser constant level exists for T01, which is the K2 signature: the between-entity
+     question needs entity_swap_null, and the within-entity question needs SCHEME_WITHIN.
+     Neither alone is sufficient; a candidate is credited only if it beats BOTH.
+
+====================================================================================================
+B. REPRODUCE THE FOUR HEADLINE CELLS
+====================================================================================================
+
+  --- ppm_pooled
+      n           published 14852          reproduced 14852          delta 0
+      dR2         published 0.0032997045   reproduced 0.0032997045   ABS DELTA 0.000e+00
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 0.000e+00
+      p_N2        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 0.000e+00
+      p_row(NAIVE)published 0.0016638935   reproduced 0.0016638935   ABS DELTA 0.000e+00
+      null sd N1=6.209e-05  N2=1.541e-04  row=7.813e-05   inflation N1/row=0.795 N2/row=1.972
+      var_share_between published 0.1456975908  reproduced 0.1456975908  ABS DELTA 0.000e+00
+      corr_with_ref_residual published -0.0587726586  reproduced -0.0587726586  ABS DELTA 0.000e+00
+
+  --- ts_pooled
+      n           published 14079          reproduced 14079          delta 0
+      dR2         published 0.0004907097   reproduced 0.0004907097   ABS DELTA 3.253e-19
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0116472546   reproduced 0.0116472546   ABS DELTA 0.000e+00
+      p_N2        published 0.0216306156   reproduced 0.0216306156   ABS DELTA 0.000e+00
+      p_row(NAIVE)published 0.0099833611   reproduced 0.0099833611   ABS DELTA 0.000e+00
+      null sd N1=1.074e-04  N2=1.341e-04  row=9.891e-05   inflation N1/row=1.085 N2/row=1.356
+      var_share_between published 0.1469972096  reproduced 0.1469972096  ABS DELTA 0.000e+00
+      corr_with_ref_residual published -0.0221555907  reproduced -0.0221555907  ABS DELTA 0.000e+00
+
+  --- efg_pooled
+      n           published 13989          reproduced 13989          delta 0
+      dR2         published 0.0001182488   reproduced 0.0001182488   ABS DELTA 0.000e+00
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.2445923461   reproduced 0.2445923461   ABS DELTA 0.000e+00
+      p_N2        published 0.3294509151   reproduced 0.3294509151   ABS DELTA 0.000e+00
+      p_row(NAIVE)published 0.2279534110   reproduced 0.2279534110   ABS DELTA 0.000e+00
+      null sd N1=1.090e-04  N2=1.366e-04  row=1.060e-04   inflation N1/row=1.028 N2/row=1.288
+      var_share_between published 0.1470310748  reproduced 0.1470310748  ABS DELTA 0.000e+00
+      corr_with_ref_residual published -0.0108905016  reproduced -0.0108905016  ABS DELTA 0.000e+00
+
+  --- ppm_decision
+      n           published 5673           reproduced 5673           delta 0
+      dR2         published 0.0049627746   reproduced 0.0049627746   ABS DELTA 3.601e-11
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_N2        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_row(NAIVE)published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      null sd N1=2.645e-04  N2=2.728e-04  row=2.018e-04   inflation N1/row=1.311 N2/row=1.352
+
+  --- ppm_reliability
+      n           published 11933          reproduced 11933          delta 0
+      dR2         published 0.0016436943   reproduced 0.0016436943   ABS DELTA 2.632e-12
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_N2        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_row(NAIVE)published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      null sd N1=8.125e-05  N2=1.342e-04  row=9.664e-05   inflation N1/row=0.841 N2/row=1.389
+
+  --- ppm_alt_entity_player_season
+      n           published 14852          reproduced 14852          delta 0
+      dR2         published 0.0032997045   reproduced 0.0032997045   ABS DELTA 4.020e-11
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0099833611   reproduced 0.0099833611   ABS DELTA 3.511e-11
+      p_N2        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_row(NAIVE)published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      null sd N1=5.895e-04  N2=1.076e-04  row=7.813e-05   inflation N1/row=7.545 N2/row=1.377
+
+====================================================================================================
+C. PER-SEASON dR2 (D085 reported these; sign stability is the point)
+====================================================================================================
+  2021  n= 3114  published dR2 0.0010443   reproduced 0.0010443   ABS DELTA 3.141e-11   sign -1
+  2022  n= 3607  published dR2 0.0043235   reproduced 0.0043235   ABS DELTA 3.337e-11   sign -1
+  2023  n= 4081  published dR2 0.0039319   reproduced 0.0039319   ABS DELTA 2.853e-12   sign -1
+  2024  n= 4050  published dR2 0.0043922   reproduced 0.0043922   ABS DELTA 2.554e-11   sign -1
+
+====================================================================================================
+D. VERDICT ON THE REPRODUCTION
+====================================================================================================
+  WORST absolute dR2 delta across all 10 reproduced cells = 4.020e-11
+  WORST absolute permutation-p delta across the 6 cells with nulls = 3.511e-11
+  REPRODUCED = True
+
+  wrote _s02.json and permutation_draws_s02.npz
+
+==============================================================================================================
+### run_log_s03.txt
+==============================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  frame (14852, 59)
+  DECISION stratum: 5673 of 14852 rows (38.2%)
+
+  CELL GRID: 154 cells
+
+====================================================================================================
+A. NO-OP PLACEBO (mandatory) -- report the OBSERVED sd, never rounded to zero
+====================================================================================================
+  noop_placebo: real=0.00329970454  sd=4.337e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=4.337e-19 < tol=1e-15, real reproduced)
+  noop_placebo: real=0.00329970454  sd=1.735e-18  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=1.735e-18 < tol=1e-15, real reproduced)
+  identity placebo OBSERVED sd = 4.336809e-19  (distinct draw values = 1, is_noop=True)
+  relabel-the-key placebo OBSERVED sd = 1.734723e-18  is_noop=True
+  -> a key-relabel-and-recompute control would test NOTHING on this frame.
+
+  OBSERVED SDs: {
+  "G01_noise": 0.996881,
+  "M01_dev_pos": 5.66182,
+  "M02_dev_neg": 6.787069,
+  "M03_dev_pos_playernorm": 5.173388,
+  "M04_dev_neg_playernorm": 6.430667,
+  "N01_news_vs_prevgame": 8.206206,
+  "N02_news_vs_avail": 9.701497,
+  "O01_own_usg_pg": 5.594806,
+  "P01_c04_prevgame": 10.375639,
+  "P02_c04_availweighted": 6.124051,
+  "P03_c04_avail5": 8.057725,
+  "P04_absent_usg_prevgame": 14.189715,
+  "P05_n_present_prevgame": 1.011112,
+  "P06_c04_rotstab": 9.319945,
+  "T01_c04_tiptime": 11.176819,
+  "T02_teamgame_present_usg": 10.244867,
+  "T03_absent_usg": 14.407872,
+  "T04_n_present": 1.018546,
+  "y_ppm": 0.276259,
+  "y_spm": 0.199216,
+  "y_pps": 0.540485,
+  "y_ts": 0.270243,
+  "y_efg": 0.279755,
+  "y_fgapm": 0.166858,
+  "y_ppfga": 0.668263,
+  "y_pts": 7.483134
+}
+
+====================================================================================================
+B. SCREEN 154 CELLS -- three nulls each (N1 within-entity-season, N2 entity swap, N3 row CONTRAST ONLY)
+====================================================================================================
+    [  0/154] T01_c04_tiptime            ppm    B_SINGLE               POOLED   dR2=0.003300 p_N1=0.0017 p_N2=0.0017     2.3s
+    [ 10/154] T01_c04_tiptime            spm    B_COMPLETE_PLUS_USAGE  POOLED   dR2=0.001911 p_N1=0.0017 p_N2=0.0017    24.1s
+    [ 20/154] T01_c04_tiptime            ts     B_COMPLETE             POOLED   dR2=0.000022 p_N1=0.5824 p_N2=0.5907    47.5s
+    [ 30/154] T01_c04_tiptime            fgapm  B_SINGLE               POOLED   dR2=0.004254 p_N1=0.0017 p_N2=0.0017    67.7s
+    [ 40/154] T02_teamgame_present_usg   spm    B_COMPLETE             POOLED   dR2=0.001677 p_N1=0.0017 p_N2=0.0017    90.3s
+    [ 50/154] T03_absent_usg             ppm    B_SINGLE               POOLED   dR2=0.000129 p_N1=0.0549 p_N2=0.1980   110.5s
+    [ 60/154] T04_n_present              ppm    B_COMPLETE             POOLED   dR2=0.000087 p_N1=0.1814 p_N2=0.1880   131.3s
+    [ 70/154] P01_c04_prevgame           spm    B_SINGLE               POOLED   dR2=0.001458 p_N1=0.0017 p_N2=0.0017   151.3s
+    [ 80/154] P02_c04_availweighted      spm    B_COMPLETE             POOLED   dR2=0.000414 p_N1=0.0067 p_N2=0.0133   171.6s
+    [ 90/154] P04_absent_usg_prevgame    ppm    B_SINGLE               POOLED   dR2=0.000000 p_N1=1.0000 p_N2=0.9917   193.6s
+    [100/154] P05_n_present_prevgame     ppm    B_COMPLETE             POOLED   dR2=0.000004 p_N1=0.7554 p_N2=0.7754   215.1s
+    [110/154] P06_c04_rotstab            spm    B_SINGLE               POOLED   dR2=0.001057 p_N1=0.0017 p_N2=0.0017   237.8s
+    [120/154] N01_news_vs_prevgame       spm    B_COMPLETE             POOLED   dR2=0.000738 p_N1=0.0017 p_N2=0.0017   260.8s
+    [130/154] M01_dev_pos                ppm    B_SINGLE               POOLED   dR2=0.002100 p_N1=0.0017 p_N2=0.0017   284.0s
+    [140/154] M03_dev_pos_playernorm     spm    B_SINGLE               POOLED   dR2=0.000796 p_N1=0.0017 p_N2=0.0017   308.8s
+    [150/154] G01_noise                  spm    B_SINGLE               POOLED   dR2=0.000021 p_N1=0.5258 p_N2=0.5458   330.7s
+
+  154 cells screened in 336.0s
+
+====================================================================================================
+C. FAMILY-WISE MAX-T ACROSS ALL 154 CELLS -- on BOTH correct-level nulls, WORSE reported
+====================================================================================================
+{
+  "n_cells": 154,
+  "n_candidates_preselected": 16,
+  "n_candidates_declared_addition_before_any_statistic": 2,
+  "n_candidates_screened": 18,
+  "n_candidates_added_after_seeing_results": 0,
+  "n_candidates_dropped_after_seeing_results": 0,
+  "cleared_per_candidate_N1_p05": 98,
+  "cleared_per_candidate_N2_p05": 97,
+  "cleared_per_candidate_BOTH_nulls_p05": 97,
+  "cleared_familywise_worse_null_p05": 64,
+  "cleared_familywise_N1_only_p05": 72,
+  "cleared_familywise_N2_only_p05": 72,
+  "would_have_cleared_on_NAIVE_row_level_p05": 98,
+  "median_inflation_N1_over_row": 1.0181046787872217,
+  "median_inflation_N2_over_row": 1.1655977109905318
+}
+
+  NEGATIVE CONTROL G01_noise:
+outcome       base  stratum      dr2  p_N1_within_entity  p_N2_entity_swap  p_familywise_maxt  p_row_level_NAIVE
+    ppm   B_SINGLE   POOLED 0.000043            0.384359          0.394343                1.0           0.367720
+    ppm   B_SINGLE DECISION 0.000256            0.194676          0.202995                1.0           0.164725
+    ppm B_COMPLETE   POOLED 0.000048            0.327787          0.352745                1.0           0.344426
+    ppm B_COMPLETE DECISION 0.000263            0.191348          0.189684                1.0           0.154742
+    spm   B_SINGLE   POOLED 0.000021            0.525790          0.545757                1.0           0.517471
+    spm   B_SINGLE DECISION 0.000048            0.509151          0.490849                1.0           0.487521
+    spm B_COMPLETE   POOLED 0.000026            0.494176          0.507488                1.0           0.472546
+    spm B_COMPLETE DECISION 0.000057            0.457571          0.445923                1.0           0.452579
+
+====================================================================================================
+D. STEP 2 -- THE CHANNEL DECOMPOSITION, T01 (TIP-TIME)
+====================================================================================================
+outcome                  base  stratum     n      dr2  sign  p_correct_level  p_familywise_maxt  p_row_level_NAIVE
+    efg            B_COMPLETE DECISION  5652 0.000038   1.0         0.643927           1.000000           0.633943
+    ppm            B_COMPLETE DECISION  5673 0.004240  -1.0         0.001664           0.001664           0.001664
+    pps            B_COMPLETE DECISION  5654 0.000047  -1.0         0.595674           1.000000           0.565724
+    spm            B_COMPLETE DECISION  5673 0.007567  -1.0         0.001664           0.001664           0.001664
+     ts            B_COMPLETE DECISION  5654 0.000047  -1.0         0.595674           1.000000           0.565724
+    efg B_COMPLETE_PLUS_USAGE DECISION  5652 0.000038   1.0         0.648918           1.000000           0.627288
+    ppm B_COMPLETE_PLUS_USAGE DECISION  5673 0.004235  -1.0         0.001664           0.001664           0.001664
+    pps B_COMPLETE_PLUS_USAGE DECISION  5654 0.000046  -1.0         0.612313           1.000000           0.572379
+    spm B_COMPLETE_PLUS_USAGE DECISION  5673 0.007563  -1.0         0.001664           0.001664           0.001664
+     ts B_COMPLETE_PLUS_USAGE DECISION  5654 0.000046  -1.0         0.612313           1.000000           0.572379
+    efg              B_SINGLE DECISION  5652 0.000068   1.0         0.552413           1.000000           0.527454
+  fgapm              B_SINGLE DECISION  5673 0.007341  -1.0         0.001664           0.001664           0.001664
+  ppfga              B_SINGLE DECISION  5652 0.000090  -1.0         0.477537           1.000000           0.439268
+    ppm              B_SINGLE DECISION  5673 0.004963  -1.0         0.001664           0.001664           0.001664
+    pps              B_SINGLE DECISION  5654 0.000062  -1.0         0.557404           1.000000           0.502496
+    spm              B_SINGLE DECISION  5673 0.007987  -1.0         0.001664           0.001664           0.001664
+     ts              B_SINGLE DECISION  5654 0.000062  -1.0         0.557404           1.000000           0.502496
+    efg            B_COMPLETE   POOLED 13989 0.000144   1.0         0.189684           1.000000           0.166389
+    ppm            B_COMPLETE   POOLED 14852 0.001274  -1.0         0.001664           0.004992           0.001664
+    pps            B_COMPLETE   POOLED 14079 0.000022   1.0         0.590682           1.000000           0.600666
+    spm            B_COMPLETE   POOLED 14852 0.002213  -1.0         0.001664           0.001664           0.001664
+     ts            B_COMPLETE   POOLED 14079 0.000022   1.0         0.590682           1.000000           0.600666
+    efg B_COMPLETE_PLUS_USAGE   POOLED 13989 0.000104   1.0         0.269551           1.000000           0.246256
+    ppm B_COMPLETE_PLUS_USAGE   POOLED 14852 0.001117  -1.0         0.001664           0.009983           0.001664
+    pps B_COMPLETE_PLUS_USAGE   POOLED 14079 0.000012   1.0         0.703827           1.000000           0.700499
+    spm B_COMPLETE_PLUS_USAGE   POOLED 14852 0.001911  -1.0         0.001664           0.001664           0.001664
+     ts B_COMPLETE_PLUS_USAGE   POOLED 14079 0.000012   1.0         0.703827           1.000000           0.700499
+    efg              B_SINGLE   POOLED 13989 0.000118  -1.0         0.289517           1.000000           0.214642
+  fgapm              B_SINGLE   POOLED 14852 0.004254  -1.0         0.001664           0.001664           0.001664
+  ppfga              B_SINGLE   POOLED 13989 0.000479  -1.0         0.021631           0.587354           0.006656
+    ppm              B_SINGLE   POOLED 14852 0.003300  -1.0         0.001664           0.001664           0.001664
+    pps              B_SINGLE   POOLED 14079 0.000491  -1.0         0.023295           0.590682           0.013311
+    spm              B_SINGLE   POOLED 14852 0.003066  -1.0         0.001664           0.001664           0.001664
+     ts              B_SINGLE   POOLED 14079 0.000491  -1.0         0.023295           0.590682           0.013311
+
+  ALGEBRAIC CHECK (must hold to machine precision): dR2(pps|refB_pps) == dR2(ts|refB_ts)
+    POOLED   B_SINGLE               |dR2_pps - dR2_ts| = 4.337e-19
+    POOLED   B_COMPLETE             |dR2_pps - dR2_ts| = 0.000e+00
+    POOLED   B_COMPLETE_PLUS_USAGE  |dR2_pps - dR2_ts| = 0.000e+00
+    DECISION B_SINGLE               |dR2_pps - dR2_ts| = 2.711e-20
+    DECISION B_COMPLETE             |dR2_pps - dR2_ts| = 0.000e+00
+    DECISION B_COMPLETE_PLUS_USAGE  |dR2_pps - dR2_ts| = 0.000e+00
+
+====================================================================================================
+E. STEP 2b -- THE D087 REFERENCE-INCOMPLETENESS LADDER on y_ppm and y_spm
+====================================================================================================
+
+  --- outcome=ppm stratum=POOLED
+      T01_c04_tiptime            B_SINGLE               dR2=0.003300 p_fw=0.0017  |  B_COMPLETE             dR2=0.001274 p_fw=0.0050  |  B_COMPLETE_PLUS_USAGE  dR2=0.001117 p_fw=0.0100
+      T02_teamgame_present_usg   B_SINGLE               dR2=0.000621 p_fw=0.2679  |  B_COMPLETE             dR2=0.000969 p_fw=0.0749  |  B_COMPLETE_PLUS_USAGE  --
+      O01_own_usg_pg             B_SINGLE               dR2=0.011116 p_fw=0.0017  |  B_COMPLETE             dR2=0.001360 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      T03_absent_usg             B_SINGLE               dR2=0.000129 p_fw=1.0000  |  B_COMPLETE             dR2=0.000094 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+      T04_n_present              B_SINGLE               dR2=0.000020 p_fw=1.0000  |  B_COMPLETE             dR2=0.000087 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+
+  --- outcome=ppm stratum=DECISION
+      T01_c04_tiptime            B_SINGLE               dR2=0.004963 p_fw=0.0017  |  B_COMPLETE             dR2=0.004240 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  dR2=0.004235 p_fw=0.0017
+      T02_teamgame_present_usg   B_SINGLE               dR2=0.003374 p_fw=0.0017  |  B_COMPLETE             dR2=0.004216 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      O01_own_usg_pg             B_SINGLE               dR2=0.002482 p_fw=0.0017  |  B_COMPLETE             dR2=0.000078 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+      T03_absent_usg             B_SINGLE               dR2=0.000119 p_fw=1.0000  |  B_COMPLETE             dR2=0.000161 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+      T04_n_present              B_SINGLE               dR2=0.000001 p_fw=1.0000  |  B_COMPLETE             dR2=0.000000 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+
+  --- outcome=spm stratum=POOLED
+      T01_c04_tiptime            B_SINGLE               dR2=0.003066 p_fw=0.0017  |  B_COMPLETE             dR2=0.002213 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  dR2=0.001911 p_fw=0.0017
+      T02_teamgame_present_usg   B_SINGLE               dR2=0.001439 p_fw=0.0017  |  B_COMPLETE             dR2=0.001677 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      O01_own_usg_pg             B_SINGLE               dR2=0.003097 p_fw=0.0017  |  B_COMPLETE             dR2=0.002620 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      T03_absent_usg             B_SINGLE               dR2=0.000370 p_fw=0.5191  |  B_COMPLETE             dR2=0.000506 p_fw=0.1730  |  B_COMPLETE_PLUS_USAGE  --
+      T04_n_present              B_SINGLE               dR2=0.000045 p_fw=1.0000  |  B_COMPLETE             dR2=0.000140 p_fw=0.9967  |  B_COMPLETE_PLUS_USAGE  --
+
+  --- outcome=spm stratum=DECISION
+      T01_c04_tiptime            B_SINGLE               dR2=0.007987 p_fw=0.0017  |  B_COMPLETE             dR2=0.007567 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  dR2=0.007563 p_fw=0.0017
+      T02_teamgame_present_usg   B_SINGLE               dR2=0.007284 p_fw=0.0017  |  B_COMPLETE             dR2=0.007575 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      O01_own_usg_pg             B_SINGLE               dR2=0.000340 p_fw=1.0000  |  B_COMPLETE             dR2=0.000028 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+      T03_absent_usg             B_SINGLE               dR2=0.001900 p_fw=0.0483  |  B_COMPLETE             dR2=0.003158 p_fw=0.0017  |  B_COMPLETE_PLUS_USAGE  --
+      T04_n_present              B_SINGLE               dR2=0.000062 p_fw=1.0000  |  B_COMPLETE             dR2=0.000056 p_fw=1.0000  |  B_COMPLETE_PLUS_USAGE  --
+
+====================================================================================================
+F. STEP 3 -- TIP-TIME vs STRICTLY-PRIOR-ONLY
+====================================================================================================
+
+  --- outcome=ppm stratum=POOLED   (B_SINGLE | B_COMPLETE)
+      G01_noise                  prior      dR2=0.000043 p_fw=1.0000 sgn+1   |   dR2=0.000048 p_fw=1.0000 sgn+1
+      M01_dev_pos                TIP-TIME   dR2=0.002100 p_fw=0.0017 sgn-1   |   --
+      M02_dev_neg                TIP-TIME   dR2=0.003448 p_fw=0.0017 sgn-1   |   --
+      M03_dev_pos_playernorm     TIP-TIME   dR2=0.000425 p_fw=0.2912 sgn-1   |   --
+      M04_dev_neg_playernorm     TIP-TIME   dR2=0.000763 p_fw=0.0532 sgn-1   |   --
+      N01_news_vs_prevgame       TIP-TIME   dR2=0.000348 p_fw=0.4043 sgn-1   |   dR2=0.000386 p_fw=0.2928 sgn-1
+      N02_news_vs_avail          TIP-TIME   dR2=0.000701 p_fw=0.1331 sgn-1   |   dR2=0.000937 p_fw=0.0666 sgn-1
+      O01_own_usg_pg             prior      dR2=0.011116 p_fw=0.0017 sgn+1   |   dR2=0.001360 p_fw=0.0017 sgn+1
+      P01_c04_prevgame           prior      dR2=0.002200 p_fw=0.0017 sgn-1   |   dR2=0.000484 p_fw=0.3727 sgn-1
+      P02_c04_availweighted      prior      dR2=0.006193 p_fw=0.0017 sgn-1   |   dR2=0.000482 p_fw=0.3611 sgn-1
+      P03_c04_avail5             prior      dR2=0.002636 p_fw=0.0017 sgn-1   |   dR2=0.000232 p_fw=0.9667 sgn-1
+      P04_absent_usg_prevgame    prior      dR2=0.000000 p_fw=1.0000 sgn+1   |   dR2=0.000005 p_fw=1.0000 sgn-1
+      P05_n_present_prevgame     prior      dR2=0.000018 p_fw=1.0000 sgn-1   |   dR2=0.000004 p_fw=1.0000 sgn-1
+      P06_c04_rotstab            prior      dR2=0.001749 p_fw=0.0017 sgn-1   |   dR2=0.000119 p_fw=1.0000 sgn-1
+      T01_c04_tiptime            TIP-TIME   dR2=0.003300 p_fw=0.0017 sgn-1   |   dR2=0.001274 p_fw=0.0050 sgn-1
+      T02_teamgame_present_usg   TIP-TIME   dR2=0.000621 p_fw=0.2679 sgn-1   |   dR2=0.000969 p_fw=0.0749 sgn-1
+      T03_absent_usg             TIP-TIME   dR2=0.000129 p_fw=1.0000 sgn+1   |   dR2=0.000094 p_fw=1.0000 sgn+1
+      T04_n_present              TIP-TIME   dR2=0.000020 p_fw=1.0000 sgn+1   |   dR2=0.000087 p_fw=1.0000 sgn+1
+
+  --- outcome=ppm stratum=DECISION   (B_SINGLE | B_COMPLETE)
+      G01_noise                  prior      dR2=0.000256 p_fw=1.0000 sgn+1   |   dR2=0.000263 p_fw=1.0000 sgn+1
+      M01_dev_pos                TIP-TIME   dR2=0.001842 p_fw=0.1082 sgn-1   |   --
+      M02_dev_neg                TIP-TIME   dR2=0.003802 p_fw=0.0017 sgn-1   |   --
+      M03_dev_pos_playernorm     TIP-TIME   dR2=0.000992 p_fw=0.3028 sgn-1   |   --
+      M04_dev_neg_playernorm     TIP-TIME   dR2=0.001987 p_fw=0.0033 sgn-1   |   --
+      N01_news_vs_prevgame       TIP-TIME   dR2=0.000656 p_fw=0.8170 sgn-1   |   dR2=0.000638 p_fw=0.8453 sgn-1
+      N02_news_vs_avail          TIP-TIME   dR2=0.002244 p_fw=0.0067 sgn-1   |   dR2=0.002775 p_fw=0.0017 sgn-1
+      O01_own_usg_pg             prior      dR2=0.002482 p_fw=0.0017 sgn+1   |   dR2=0.000078 p_fw=1.0000 sgn-1
+      P01_c04_prevgame           prior      dR2=0.002911 p_fw=0.0017 sgn-1   |   dR2=0.002342 p_fw=0.0815 sgn-1
+      P02_c04_availweighted      prior      dR2=0.005120 p_fw=0.0017 sgn-1   |   dR2=0.002601 p_fw=0.1980 sgn-1
+      P03_c04_avail5             prior      dR2=0.002416 p_fw=0.0599 sgn-1   |   dR2=0.001607 p_fw=0.7354 sgn-1
+      P04_absent_usg_prevgame    prior      dR2=0.000045 p_fw=1.0000 sgn-1   |   dR2=0.000024 p_fw=1.0000 sgn-1
+      P05_n_present_prevgame     prior      dR2=0.000024 p_fw=1.0000 sgn+1   |   dR2=0.000023 p_fw=1.0000 sgn+1
+      P06_c04_rotstab            prior      dR2=0.001736 p_fw=0.0233 sgn-1   |   dR2=0.001230 p_fw=0.5075 sgn-1
+      T01_c04_tiptime            TIP-TIME   dR2=0.004963 p_fw=0.0017 sgn-1   |   dR2=0.004240 p_fw=0.0017 sgn-1
+      T02_teamgame_present_usg   TIP-TIME   dR2=0.003374 p_fw=0.0017 sgn-1   |   dR2=0.004216 p_fw=0.0017 sgn-1
+      T03_absent_usg             TIP-TIME   dR2=0.000119 p_fw=1.0000 sgn+1   |   dR2=0.000161 p_fw=1.0000 sgn+1
+      T04_n_present              TIP-TIME   dR2=0.000001 p_fw=1.0000 sgn+1   |   dR2=0.000000 p_fw=1.0000 sgn+1
+
+  --- outcome=spm stratum=POOLED   (B_SINGLE | B_COMPLETE)
+      G01_noise                  prior      dR2=0.000021 p_fw=1.0000 sgn-1   |   dR2=0.000026 p_fw=1.0000 sgn-1
+      M01_dev_pos                TIP-TIME   dR2=0.001363 p_fw=0.0017 sgn-1   |   --
+      M02_dev_neg                TIP-TIME   dR2=0.003351 p_fw=0.0017 sgn-1   |   --
+      M03_dev_pos_playernorm     TIP-TIME   dR2=0.000796 p_fw=0.0033 sgn-1   |   --
+      M04_dev_neg_playernorm     TIP-TIME   dR2=0.001278 p_fw=0.0017 sgn-1   |   --
+      N01_news_vs_prevgame       TIP-TIME   dR2=0.000686 p_fw=0.0017 sgn-1   |   dR2=0.000738 p_fw=0.0017 sgn-1
+      N02_news_vs_avail          TIP-TIME   dR2=0.001494 p_fw=0.0017 sgn-1   |   dR2=0.001860 p_fw=0.0017 sgn-1
+      O01_own_usg_pg             prior      dR2=0.003097 p_fw=0.0017 sgn+1   |   dR2=0.002620 p_fw=0.0017 sgn+1
+      P01_c04_prevgame           prior      dR2=0.001458 p_fw=0.0017 sgn-1   |   dR2=0.000776 p_fw=0.0116 sgn-1
+      P02_c04_availweighted      prior      dR2=0.002019 p_fw=0.0017 sgn-1   |   dR2=0.000414 p_fw=0.4326 sgn-1
+      P03_c04_avail5             prior      dR2=0.001538 p_fw=0.0017 sgn-1   |   dR2=0.000577 p_fw=0.1398 sgn-1
+      P04_absent_usg_prevgame    prior      dR2=0.000023 p_fw=1.0000 sgn+1   |   dR2=0.000060 p_fw=1.0000 sgn+1
+      P05_n_present_prevgame     prior      dR2=0.000005 p_fw=1.0000 sgn-1   |   dR2=0.000000 p_fw=1.0000 sgn-1
+      P06_c04_rotstab            prior      dR2=0.001057 p_fw=0.0033 sgn-1   |   dR2=0.000400 p_fw=0.3028 sgn-1
+      T01_c04_tiptime            TIP-TIME   dR2=0.003066 p_fw=0.0017 sgn-1   |   dR2=0.002213 p_fw=0.0017 sgn-1
+      T02_teamgame_present_usg   TIP-TIME   dR2=0.001439 p_fw=0.0017 sgn-1   |   dR2=0.001677 p_fw=0.0017 sgn-1
+      T03_absent_usg             TIP-TIME   dR2=0.000370 p_fw=0.5191 sgn+1   |   dR2=0.000506 p_fw=0.1730 sgn+1
+      T04_n_present              TIP-TIME   dR2=0.000045 p_fw=1.0000 sgn+1   |   dR2=0.000140 p_fw=0.9967 sgn+1
+
+  --- outcome=spm stratum=DECISION   (B_SINGLE | B_COMPLETE)
+      G01_noise                  prior      dR2=0.000048 p_fw=1.0000 sgn+1   |   dR2=0.000057 p_fw=1.0000 sgn+1
+      M01_dev_pos                TIP-TIME   dR2=0.001981 p_fw=0.0050 sgn-1   |   --
+      M02_dev_neg                TIP-TIME   dR2=0.005624 p_fw=0.0017 sgn-1   |   --
+      M03_dev_pos_playernorm     TIP-TIME   dR2=0.002252 p_fw=0.0017 sgn-1   |   --
+      M04_dev_neg_playernorm     TIP-TIME   dR2=0.004567 p_fw=0.0017 sgn-1   |   --
+      N01_news_vs_prevgame       TIP-TIME   dR2=0.001980 p_fw=0.0017 sgn-1   |   dR2=0.001985 p_fw=0.0017 sgn-1
+      N02_news_vs_avail          TIP-TIME   dR2=0.006221 p_fw=0.0017 sgn-1   |   dR2=0.006892 p_fw=0.0017 sgn-1
+      O01_own_usg_pg             prior      dR2=0.000340 p_fw=1.0000 sgn+1   |   dR2=0.000028 p_fw=1.0000 sgn-1
+      P01_c04_prevgame           prior      dR2=0.003345 p_fw=0.0083 sgn-1   |   dR2=0.003037 p_fw=0.0116 sgn-1
+      P02_c04_availweighted      prior      dR2=0.001541 p_fw=0.0133 sgn-1   |   dR2=0.000695 p_fw=0.4742 sgn-1
+      P03_c04_avail5             prior      dR2=0.002506 p_fw=0.1730 sgn-1   |   dR2=0.002126 p_fw=0.1930 sgn-1
+      P04_absent_usg_prevgame    prior      dR2=0.000327 p_fw=0.9967 sgn+1   |   dR2=0.000890 p_fw=0.4759 sgn+1
+      P05_n_present_prevgame     prior      dR2=0.000210 p_fw=0.9983 sgn+1   |   dR2=0.000226 p_fw=0.9967 sgn+1
+      P06_c04_rotstab            prior      dR2=0.002003 p_fw=0.4143 sgn-1   |   dR2=0.001941 p_fw=0.4193 sgn-1
+      T01_c04_tiptime            TIP-TIME   dR2=0.007987 p_fw=0.0017 sgn-1   |   dR2=0.007567 p_fw=0.0017 sgn-1
+      T02_teamgame_present_usg   TIP-TIME   dR2=0.007284 p_fw=0.0017 sgn-1   |   dR2=0.007575 p_fw=0.0017 sgn-1
+      T03_absent_usg             TIP-TIME   dR2=0.001900 p_fw=0.0483 sgn+1   |   dR2=0.003158 p_fw=0.0017 sgn+1
+      T04_n_present              TIP-TIME   dR2=0.000062 p_fw=1.0000 sgn-1   |   dR2=0.000056 p_fw=1.0000 sgn-1
+
+  SURVIVORS (family-wise p < 0.05 on the WORSE of the two correct-level nulls):
+               candidate outcome                  base  stratum  tip_time     n      dr2  sign  p_familywise_maxt
+          O01_own_usg_pg     ppm              B_SINGLE   POOLED     False 14807 0.011116   1.0           0.001664
+         T01_c04_tiptime     spm              B_SINGLE DECISION      True  5673 0.007987  -1.0           0.001664
+T02_teamgame_present_usg     spm            B_COMPLETE DECISION      True  5673 0.007575  -1.0           0.001664
+         T01_c04_tiptime     spm            B_COMPLETE DECISION      True  5673 0.007567  -1.0           0.001664
+         T01_c04_tiptime     spm B_COMPLETE_PLUS_USAGE DECISION      True  5673 0.007563  -1.0           0.001664
+         T01_c04_tiptime   fgapm              B_SINGLE DECISION      True  5673 0.007341  -1.0           0.001664
+T02_teamgame_present_usg     spm              B_SINGLE DECISION      True  5673 0.007284  -1.0           0.001664
+       N02_news_vs_avail     spm            B_COMPLETE DECISION      True  5673 0.006892  -1.0           0.001664
+       N02_news_vs_avail     spm              B_SINGLE DECISION      True  5673 0.006221  -1.0           0.001664
+   P02_c04_availweighted     ppm              B_SINGLE   POOLED     False 14852 0.006193  -1.0           0.001664
+             M02_dev_neg     spm              B_SINGLE DECISION      True  5673 0.005624  -1.0           0.001664
+   P02_c04_availweighted     ppm              B_SINGLE DECISION     False  5673 0.005120  -1.0           0.001664
+         T01_c04_tiptime     ppm              B_SINGLE DECISION      True  5673 0.004963  -1.0           0.001664
+  M04_dev_neg_playernorm     spm              B_SINGLE DECISION      True  5673 0.004567  -1.0           0.001664
+         T01_c04_tiptime   fgapm              B_SINGLE   POOLED      True 14852 0.004254  -1.0           0.001664
+         T01_c04_tiptime     ppm            B_COMPLETE DECISION      True  5673 0.004240  -1.0           0.001664
+         T01_c04_tiptime     ppm B_COMPLETE_PLUS_USAGE DECISION      True  5673 0.004235  -1.0           0.001664
+T02_teamgame_present_usg     ppm            B_COMPLETE DECISION      True  5673 0.004216  -1.0           0.001664
+             M02_dev_neg     ppm              B_SINGLE DECISION      True  5673 0.003802  -1.0           0.001664
+             M02_dev_neg     ppm              B_SINGLE   POOLED      True 14852 0.003448  -1.0           0.001664
+T02_teamgame_present_usg     ppm              B_SINGLE DECISION      True  5673 0.003374  -1.0           0.001664
+             M02_dev_neg     spm              B_SINGLE   POOLED      True 14852 0.003351  -1.0           0.001664
+        P01_c04_prevgame     spm              B_SINGLE DECISION     False  5673 0.003345  -1.0           0.008319
+         T01_c04_tiptime     ppm              B_SINGLE   POOLED      True 14852 0.003300  -1.0           0.001664
+          T03_absent_usg     spm            B_COMPLETE DECISION      True  5673 0.003158   1.0           0.001664
+          O01_own_usg_pg     spm              B_SINGLE   POOLED     False 14807 0.003097   1.0           0.001664
+         T01_c04_tiptime     spm              B_SINGLE   POOLED      True 14852 0.003066  -1.0           0.001664
+        P01_c04_prevgame     spm            B_COMPLETE DECISION     False  5673 0.003037  -1.0           0.011647
+        P01_c04_prevgame     ppm              B_SINGLE DECISION     False  5673 0.002911  -1.0           0.001664
+       N02_news_vs_avail     ppm            B_COMPLETE DECISION      True  5673 0.002775  -1.0           0.001664
+          P03_c04_avail5     ppm              B_SINGLE   POOLED     False 14852 0.002636  -1.0           0.001664
+          O01_own_usg_pg     spm            B_COMPLETE   POOLED     False 14807 0.002620   1.0           0.001664
+          O01_own_usg_pg     ppm              B_SINGLE DECISION     False  5670 0.002482   1.0           0.001664
+  M03_dev_pos_playernorm     spm              B_SINGLE DECISION      True  5673 0.002252  -1.0           0.001664
+       N02_news_vs_avail     ppm              B_SINGLE DECISION      True  5673 0.002244  -1.0           0.006656
+         T01_c04_tiptime     spm            B_COMPLETE   POOLED      True 14852 0.002213  -1.0           0.001664
+        P01_c04_prevgame     ppm              B_SINGLE   POOLED     False 14852 0.002200  -1.0           0.001664
+             M01_dev_pos     ppm              B_SINGLE   POOLED      True 14852 0.002100  -1.0           0.001664
+   P02_c04_availweighted     spm              B_SINGLE   POOLED     False 14852 0.002019  -1.0           0.001664
+  M04_dev_neg_playernorm     ppm              B_SINGLE DECISION      True  5673 0.001987  -1.0           0.003328
+    N01_news_vs_prevgame     spm            B_COMPLETE DECISION      True  5673 0.001985  -1.0           0.001664
+             M01_dev_pos     spm              B_SINGLE DECISION      True  5673 0.001981  -1.0           0.004992
+    N01_news_vs_prevgame     spm              B_SINGLE DECISION      True  5673 0.001980  -1.0           0.001664
+         T01_c04_tiptime     spm B_COMPLETE_PLUS_USAGE   POOLED      True 14852 0.001911  -1.0           0.001664
+          T03_absent_usg     spm              B_SINGLE DECISION      True  5673 0.001900   1.0           0.048253
+       N02_news_vs_avail     spm            B_COMPLETE   POOLED      True 14852 0.001860  -1.0           0.001664
+         P06_c04_rotstab     ppm              B_SINGLE   POOLED     False 14852 0.001749  -1.0           0.001664
+         P06_c04_rotstab     ppm              B_SINGLE DECISION     False  5673 0.001736  -1.0           0.023295
+T02_teamgame_present_usg     spm            B_COMPLETE   POOLED      True 14852 0.001677  -1.0           0.001664
+   P02_c04_availweighted     spm              B_SINGLE DECISION     False  5673 0.001541  -1.0           0.013311
+          P03_c04_avail5     spm              B_SINGLE   POOLED     False 14852 0.001538  -1.0           0.001664
+       N02_news_vs_avail     spm              B_SINGLE   POOLED      True 14852 0.001494  -1.0           0.001664
+        P01_c04_prevgame     spm              B_SINGLE   POOLED     False 14852 0.001458  -1.0           0.001664
+T02_teamgame_present_usg     spm              B_SINGLE   POOLED      True 14852 0.001439  -1.0           0.001664
+             M01_dev_pos     spm              B_SINGLE   POOLED      True 14852 0.001363  -1.0           0.001664
+          O01_own_usg_pg     ppm            B_COMPLETE   POOLED     False 14807 0.001360   1.0           0.001664
+  M04_dev_neg_playernorm     spm              B_SINGLE   POOLED      True 14852 0.001278  -1.0           0.001664
+         T01_c04_tiptime     ppm            B_COMPLETE   POOLED      True 14852 0.001274  -1.0           0.004992
+         T01_c04_tiptime     ppm B_COMPLETE_PLUS_USAGE   POOLED      True 14852 0.001117  -1.0           0.009983
+         P06_c04_rotstab     spm              B_SINGLE   POOLED     False 14852 0.001057  -1.0           0.003328
+  M03_dev_pos_playernorm     spm              B_SINGLE   POOLED      True 14852 0.000796  -1.0           0.003328
+        P01_c04_prevgame     spm            B_COMPLETE   POOLED     False 14852 0.000776  -1.0           0.011647
+    N01_news_vs_prevgame     spm            B_COMPLETE   POOLED      True 14852 0.000738  -1.0           0.001664
+    N01_news_vs_prevgame     spm              B_SINGLE   POOLED      True 14852 0.000686  -1.0           0.001664
+
+==============================================================================================================
+### run_log_s04.txt
+==============================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+
+  minutes forecast m_hat: trailing-5 prior mean minutes, cold fallback = expanding prior
+    mean=21.6439 sd=9.2380  n_from_trailing5=11933  n_from_cold_fallback=2919  n_nan=0
+    corr(m_hat, realised minutes) = 0.7970   r2_of_forecast(minutes, m_hat) = 0.6273
+
+====================================================================================================
+A. POINTS PROPAGATION -- skill against the MATCHED POINT-IN-TIME REFERENCE, same rows
+====================================================================================================
+
+  POOLED    B_SINGLE    T01_c04_tiptime        n=14852
+      R2 of the points forecast   reference +0.487855 -> with candidate +0.494860
+      PAIRED dR2 (points)         +0.007005   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   4.0689 -> 4.0437  (0.619% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.003027 p=0.0020  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (11.1764) moves ppm by 0.016877, i.e. 0.3653 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.002383   (actual per-row shift sd route: dR2 <= 0.002730)
+
+  POOLED    B_SINGLE    P01_c04_prevgame       n=14852
+      R2 of the points forecast   reference +0.487855 -> with candidate +0.490680
+      PAIRED dR2 (points)         +0.002825   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   4.0689 -> 4.0604  (0.209% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.002190 p=0.0070  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (10.3753) moves ppm by 0.013992, i.e. 0.3028 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.001638   (actual per-row shift sd route: dR2 <= 0.001931)
+
+  POOLED    B_SINGLE    P02_c04_availweighted  n=14852
+      R2 of the points forecast   reference +0.487855 -> with candidate +0.488765
+      PAIRED dR2 (points)         +0.000910   cluster p=0.5172  (row-NAIVE p=0.3418, 48 clusters)
+      D076 CONTRAST: points MAE   4.0689 -> 4.0716  (-0.066% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.002863 p=0.0615  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (6.1238) moves ppm by 0.030178, i.e. 0.6532 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.007619   (actual per-row shift sd route: dR2 <= 0.010079)
+
+  POOLED    B_SINGLE    G01_noise              n=14852
+      R2 of the points forecast   reference +0.487855 -> with candidate +0.487882
+      PAIRED dR2 (points)         +0.000027   cluster p=0.7276  (row-NAIVE p=0.7336, 48 clusters)
+      D076 CONTRAST: points MAE   4.0689 -> 4.0690  (-0.003% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000035 p=0.6282  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (0.9968) moves ppm by 0.001804, i.e. 0.0391 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000027   (actual per-row shift sd route: dR2 <= 0.000032)
+
+  POOLED    B_COMPLETE  T01_c04_tiptime        n=14852
+      R2 of the points forecast   reference +0.490872 -> with candidate +0.495404
+      PAIRED dR2 (points)         +0.004532   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   4.0623 -> 4.0451  (0.424% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.001614 p=0.0025  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (11.1764) moves ppm by 0.010790, i.e. 0.2335 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000974   (actual per-row shift sd route: dR2 <= 0.001116)
+
+  POOLED    B_COMPLETE  P01_c04_prevgame       n=14852
+      R2 of the points forecast   reference +0.490872 -> with candidate +0.492306
+      PAIRED dR2 (points)         +0.001433   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   4.0623 -> 4.0572  (0.127% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000798 p=0.0185  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (10.3753) moves ppm by 0.006825, i.e. 0.1477 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000390   (actual per-row shift sd route: dR2 <= 0.000459)
+
+  POOLED    B_COMPLETE  P02_c04_availweighted  n=14852
+      R2 of the points forecast   reference +0.490872 -> with candidate +0.491435
+      PAIRED dR2 (points)         +0.000562   cluster p=0.1024  (row-NAIVE p=0.0500, 48 clusters)
+      D076 CONTRAST: points MAE   4.0623 -> 4.0605  (0.046% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000198 p=0.6092  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (6.1238) moves ppm by 0.011825, i.e. 0.2559 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.001170   (actual per-row shift sd route: dR2 <= 0.001547)
+
+  POOLED    B_COMPLETE  G01_noise              n=14852
+      R2 of the points forecast   reference +0.490872 -> with candidate +0.490909
+      PAIRED dR2 (points)         +0.000037   cluster p=0.6612  (row-NAIVE p=0.6452, 48 clusters)
+      D076 CONTRAST: points MAE   4.0623 -> 4.0625  (-0.003% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000040 p=0.5977  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (0.9968) moves ppm by 0.001920, i.e. 0.0416 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000031   (actual per-row shift sd route: dR2 <= 0.000036)
+
+  DECISION  B_SINGLE    T01_c04_tiptime        n=5673
+      R2 of the points forecast   reference +0.289155 -> with candidate +0.300676
+      PAIRED dR2 (points)         +0.011521   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   5.0108 -> 4.9710  (0.793% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.004277 p=0.0015  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (10.2659) moves ppm by 0.016227, i.e. 0.4902 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.004278   (actual per-row shift sd route: dR2 <= 0.004348)
+
+  DECISION  B_SINGLE    P01_c04_prevgame       n=5673
+      R2 of the points forecast   reference +0.289155 -> with candidate +0.292997
+      PAIRED dR2 (points)         +0.003842   cluster p=0.0020  (row-NAIVE p=0.0015, 48 clusters)
+      D076 CONTRAST: points MAE   5.0108 -> 4.9995  (0.225% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.002168 p=0.0595  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (9.5057) moves ppm by 0.012485, i.e. 0.3772 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.002532   (actual per-row shift sd route: dR2 <= 0.002584)
+
+  DECISION  B_SINGLE    P02_c04_availweighted  n=5673
+      R2 of the points forecast   reference +0.289155 -> with candidate +0.293500
+      PAIRED dR2 (points)         +0.004345   cluster p=0.0370  (row-NAIVE p=0.0045, 48 clusters)
+      D076 CONTRAST: points MAE   5.0108 -> 4.9974  (0.267% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.002134 p=0.2509  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (4.9608) moves ppm by 0.022770, i.e. 0.6879 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.008422   (actual per-row shift sd route: dR2 <= 0.008800)
+
+  DECISION  B_SINGLE    G01_noise              n=5673
+      R2 of the points forecast   reference +0.289155 -> with candidate +0.289433
+      PAIRED dR2 (points)         +0.000277   cluster p=0.3868  (row-NAIVE p=0.3713, 48 clusters)
+      D076 CONTRAST: points MAE   5.0108 -> 5.0113  (-0.011% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000316 p=0.2709  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (0.9970) moves ppm by 0.003566, i.e. 0.1077 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000207   (actual per-row shift sd route: dR2 <= 0.000208)
+
+  DECISION  B_COMPLETE  T01_c04_tiptime        n=5673
+      R2 of the points forecast   reference +0.291315 -> with candidate +0.301837
+      PAIRED dR2 (points)         +0.010522   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   5.0034 -> 4.9664  (0.740% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.003796 p=0.0030  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (10.2659) moves ppm by 0.015070, i.e. 0.4553 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.003689   (actual per-row shift sd route: dR2 <= 0.003750)
+
+  DECISION  B_COMPLETE  P01_c04_prevgame       n=5673
+      R2 of the points forecast   reference +0.291315 -> with candidate +0.294629
+      PAIRED dR2 (points)         +0.003314   cluster p=0.0045  (row-NAIVE p=0.0030, 48 clusters)
+      D076 CONTRAST: points MAE   5.0034 -> 4.9930  (0.208% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.001773 p=0.0900  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (9.5057) moves ppm by 0.011253, i.e. 0.3400 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.002057   (actual per-row shift sd route: dR2 <= 0.002100)
+
+  DECISION  B_COMPLETE  P02_c04_availweighted  n=5673
+      R2 of the points forecast   reference +0.291315 -> with candidate +0.294520
+      PAIRED dR2 (points)         +0.003206   cluster p=0.0385  (row-NAIVE p=0.0040, 48 clusters)
+      D076 CONTRAST: points MAE   5.0034 -> 4.9933  (0.201% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.001041 p=0.4103  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (4.9608) moves ppm by 0.019707, i.e. 0.5954 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.006309   (actual per-row shift sd route: dR2 <= 0.006592)
+
+  DECISION  B_COMPLETE  G01_noise              n=5673
+      R2 of the points forecast   reference +0.291315 -> with candidate +0.291599
+      PAIRED dR2 (points)         +0.000284   cluster p=0.3828  (row-NAIVE p=0.3668, 48 clusters)
+      D076 CONTRAST: points MAE   5.0034 -> 5.0039  (-0.011% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000316 p=0.2734  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (0.9970) moves ppm by 0.003611, i.e. 0.1091 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000212   (actual per-row shift sd route: dR2 <= 0.000213)
+
+====================================================================================================
+B. THE CEILING ON THE VOLUME ROUTE -- the channel this screen actually identified
+====================================================================================================
+
+  POOLED    B_SINGLE    T01_c04_tiptime        n=14079
+      1 sd of signal (11.1002) x beta_spm (-0.000244) = 0.002703 shots/min
+      x mean m_hat 22.30 min = 0.0603 shots   x mean pts/shot 1.0250 = 0.0618 POINTS
+      against a 7.3855-point response sd  ->  dR2 <= 0.000070
+
+  POOLED    B_SINGLE    P01_c04_prevgame       n=14079
+      1 sd of signal (10.3170) x beta_spm (-0.000067) = 0.000688 shots/min
+      x mean m_hat 22.30 min = 0.0153 shots   x mean pts/shot 1.0250 = 0.0157 POINTS
+      against a 7.3855-point response sd  ->  dR2 <= 0.000005
+
+  POOLED    B_COMPLETE  T01_c04_tiptime        n=14079
+      1 sd of signal (11.1002) x beta_spm (-0.000495) = 0.005492 shots/min
+      x mean m_hat 22.30 min = 0.1225 shots   x mean pts/shot 1.0250 = 0.1255 POINTS
+      against a 7.3855-point response sd  ->  dR2 <= 0.000289
+
+  POOLED    B_COMPLETE  P01_c04_prevgame       n=14079
+      1 sd of signal (10.3170) x beta_spm (-0.000403) = 0.004160 shots/min
+      x mean m_hat 22.30 min = 0.0928 shots   x mean pts/shot 1.0250 = 0.0951 POINTS
+      against a 7.3855-point response sd  ->  dR2 <= 0.000166
+
+  DECISION  B_SINGLE    T01_c04_tiptime        n=5654
+      1 sd of signal (10.2418) x beta_spm (-0.001293) = 0.013242 shots/min
+      x mean m_hat 30.22 min = 0.4001 shots   x mean pts/shot 1.0798 = 0.4320 POINTS
+      against a 7.4682-point response sd  ->  dR2 <= 0.003346
+
+  DECISION  B_SINGLE    P01_c04_prevgame       n=5654
+      1 sd of signal (9.4890) x beta_spm (-0.000881) = 0.008361 shots/min
+      x mean m_hat 30.22 min = 0.2526 shots   x mean pts/shot 1.0798 = 0.2728 POINTS
+      against a 7.4682-point response sd  ->  dR2 <= 0.001334
+
+  DECISION  B_COMPLETE  T01_c04_tiptime        n=5654
+      1 sd of signal (10.2418) x beta_spm (-0.001266) = 0.012968 shots/min
+      x mean m_hat 30.22 min = 0.3919 shots   x mean pts/shot 1.0798 = 0.4231 POINTS
+      against a 7.4682-point response sd  ->  dR2 <= 0.003210
+
+  DECISION  B_COMPLETE  P01_c04_prevgame       n=5654
+      1 sd of signal (9.4890) x beta_spm (-0.000846) = 0.008025 shots/min
+      x mean m_hat 30.22 min = 0.2425 shots   x mean pts/shot 1.0798 = 0.2618 POINTS
+      against a 7.4682-point response sd  ->  dR2 <= 0.001229
+
+====================================================================================================
+C. THE CEILING COMPARISON THE BRIEF ASKED FOR
+====================================================================================================
+{
+  "precedents": {
+    "D079_shot_mix_channel": 0.001127,
+    "D084_conversion_channel": 0.000129
+  },
+  "this_screen_ceilings_dr2": {
+    "POOLED|B_SINGLE|TIP_TIME": 0.0023829193534549427,
+    "POOLED|B_SINGLE|PRIOR_ONLY": 0.0016379226838285372,
+    "POOLED|B_COMPLETE|TIP_TIME": 0.0009740693772050032,
+    "POOLED|B_COMPLETE|PRIOR_ONLY": 0.00038968958052663726,
+    "DECISION|B_SINGLE|TIP_TIME": 0.00427759523418222,
+    "DECISION|B_SINGLE|PRIOR_ONLY": 0.00253210578475025,
+    "DECISION|B_COMPLETE|TIP_TIME": 0.0036891086219124412,
+    "DECISION|B_COMPLETE|PRIOR_ONLY": 0.0020571993577784536
+  }
+}
+
+  LARGEST ceiling in this screen = 0.004278
+  vs D079 mix ceiling 0.001127  -> 3.80x
+  vs D084 conversion ceiling 0.000129 -> 33.16x
+
+  wrote points_propagation.csv, arithmetic_ceiling.csv, _s04.json
+
+==============================================================================================================
+### run_log_s05.txt
+==============================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+
+====================================================================================================
+1. THE CEILING PARADOX, RECONCILED -- and the ORACLE rescaling (DIAGNOSTIC ONLY)
+====================================================================================================
+  POOLED    B_SINGLE    T01_c04_tiptime        realised dR2 +0.007005 | D084-form ceiling 0.002359 | optimal rescale x1.985 | ORACLE(diagnostic) 0.009292
+  POOLED    B_SINGLE    P01_c04_prevgame       realised dR2 +0.002825 | D084-form ceiling 0.001622 | optimal rescale x1.371 | ORACLE(diagnostic) 0.003048
+  POOLED    B_SINGLE    P02_c04_availweighted  realised dR2 +0.000910 | D084-form ceiling 0.004674 | optimal rescale x0.597 | ORACLE(diagnostic) 0.001668
+  POOLED    B_SINGLE    G01_noise              realised dR2 +0.000027 | D084-form ceiling 0.000032 | optimal rescale x0.916 | ORACLE(diagnostic) 0.000027
+  POOLED    B_COMPLETE  T01_c04_tiptime        realised dR2 +0.004532 | D084-form ceiling 0.000907 | optimal rescale x2.998 | ORACLE(diagnostic) 0.008153
+  POOLED    B_COMPLETE  P01_c04_prevgame       realised dR2 +0.001433 | D084-form ceiling 0.000356 | optimal rescale x2.511 | ORACLE(diagnostic) 0.002247
+  POOLED    B_COMPLETE  P02_c04_availweighted  realised dR2 +0.000562 | D084-form ceiling 0.000398 | optimal rescale x1.207 | ORACLE(diagnostic) 0.000579
+  POOLED    B_COMPLETE  G01_noise              realised dR2 +0.000037 | D084-form ceiling 0.000036 | optimal rescale x1.004 | ORACLE(diagnostic) 0.000037
+  DECISION  B_SINGLE    T01_c04_tiptime        realised dR2 +0.011521 | D084-form ceiling 0.004070 | optimal rescale x1.915 | ORACLE(diagnostic) 0.014930
+  DECISION  B_SINGLE    P01_c04_prevgame       realised dR2 +0.003842 | D084-form ceiling 0.002394 | optimal rescale x1.303 | ORACLE(diagnostic) 0.004061
+  DECISION  B_SINGLE    P02_c04_availweighted  realised dR2 +0.004345 | D084-form ceiling 0.004157 | optimal rescale x1.023 | ORACLE(diagnostic) 0.004347
+  DECISION  B_SINGLE    G01_noise              realised dR2 +0.000277 | D084-form ceiling 0.000208 | optimal rescale x1.167 | ORACLE(diagnostic) 0.000283
+  DECISION  B_COMPLETE  T01_c04_tiptime        realised dR2 +0.010522 | D084-form ceiling 0.003484 | optimal rescale x2.010 | ORACLE(diagnostic) 0.014076
+  DECISION  B_COMPLETE  P01_c04_prevgame       realised dR2 +0.003314 | D084-form ceiling 0.001928 | optimal rescale x1.359 | ORACLE(diagnostic) 0.003563
+  DECISION  B_COMPLETE  P02_c04_availweighted  realised dR2 +0.003206 | D084-form ceiling 0.002127 | optimal rescale x1.253 | ORACLE(diagnostic) 0.003342
+  DECISION  B_COMPLETE  G01_noise              realised dR2 +0.000284 | D084-form ceiling 0.000213 | optimal rescale x1.165 | ORACLE(diagnostic) 0.000289
+
+  IDENTITY CHECK: realised = 2*c_opt*var_share - var_share, and ORACLE = c_opt^2*var_share
+  max |realised - (2*c_opt-1)*var_share| = 8.674e-19
+
+====================================================================================================
+2. WALK-FORWARD COEFFICIENTS -- fitted on seasons < s, applied to season s
+====================================================================================================
+  POOLED    B_SINGLE    T01_c04_tiptime        n=11738  R2 +0.501792 -> +0.507597   WALK-FORWARD paired dR2 +0.005805  cluster p=0.0005  (MAE 4.0412 -> 4.0204, 0.516%)
+  POOLED    B_SINGLE    P01_c04_prevgame       n=11738  R2 +0.501792 -> +0.504095   WALK-FORWARD paired dR2 +0.002303  cluster p=0.0005  (MAE 4.0412 -> 4.0351, 0.151%)
+  POOLED    B_SINGLE    P02_c04_availweighted  n=11738  R2 +0.501792 -> +0.503438   WALK-FORWARD paired dR2 +0.001646  cluster p=0.3258  (MAE 4.0412 -> 4.0412, 0.000%)
+  POOLED    B_SINGLE    G01_noise              n=11738  R2 +0.501792 -> +0.501806   WALK-FORWARD paired dR2 +0.000014  cluster p=0.9200  (MAE 4.0412 -> 4.0415, -0.007%)
+  POOLED    B_COMPLETE  T01_c04_tiptime        n=11738  R2 +0.505156 -> +0.508168   WALK-FORWARD paired dR2 +0.003012  cluster p=0.0005  (MAE 4.0321 -> 4.0210, 0.275%)
+  POOLED    B_COMPLETE  P01_c04_prevgame       n=11738  R2 +0.505156 -> +0.505787   WALK-FORWARD paired dR2 +0.000631  cluster p=0.0065  (MAE 4.0321 -> 4.0305, 0.041%)
+  POOLED    B_COMPLETE  P02_c04_availweighted  n=11738  R2 +0.505156 -> +0.505130   WALK-FORWARD paired dR2 -0.000026  cluster p=0.9405  (MAE 4.0321 -> 4.0315, 0.016%)
+  POOLED    B_COMPLETE  G01_noise              n=11738  R2 +0.505156 -> +0.505190   WALK-FORWARD paired dR2 +0.000034  cluster p=0.7921  (MAE 4.0321 -> 4.0322, -0.002%)
+  DECISION  B_SINGLE    T01_c04_tiptime        n= 4517  R2 +0.299694 -> +0.308669   WALK-FORWARD paired dR2 +0.008975  cluster p=0.0005  (MAE 5.0210 -> 4.9905, 0.609%)
+  DECISION  B_SINGLE    P01_c04_prevgame       n= 4517  R2 +0.299694 -> +0.302816   WALK-FORWARD paired dR2 +0.003123  cluster p=0.0090  (MAE 5.0210 -> 5.0126, 0.168%)
+  DECISION  B_SINGLE    P02_c04_availweighted  n= 4517  R2 +0.299694 -> +0.303933   WALK-FORWARD paired dR2 +0.004239  cluster p=0.1599  (MAE 5.0210 -> 5.0092, 0.234%)
+  DECISION  B_SINGLE    G01_noise              n= 4517  R2 +0.299694 -> +0.299956   WALK-FORWARD paired dR2 +0.000263  cluster p=0.4843  (MAE 5.0210 -> 5.0223, -0.026%)
+  DECISION  B_COMPLETE  T01_c04_tiptime        n= 4517  R2 +0.299844 -> +0.307661   WALK-FORWARD paired dR2 +0.007817  cluster p=0.0005  (MAE 5.0212 -> 4.9942, 0.537%)
+  DECISION  B_COMPLETE  P01_c04_prevgame       n= 4517  R2 +0.299844 -> +0.302193   WALK-FORWARD paired dR2 +0.002349  cluster p=0.0345  (MAE 5.0212 -> 5.0150, 0.123%)
+  DECISION  B_COMPLETE  P02_c04_availweighted  n= 4517  R2 +0.299844 -> +0.303360   WALK-FORWARD paired dR2 +0.003516  cluster p=0.1644  (MAE 5.0212 -> 5.0105, 0.213%)
+  DECISION  B_COMPLETE  G01_noise              n= 4517  R2 +0.299844 -> +0.300110   WALK-FORWARD paired dR2 +0.000266  cluster p=0.4633  (MAE 5.0212 -> 5.0224, -0.024%)
+
+====================================================================================================
+3. STEP 5 -- MECHANISM.  THE SIGN WAS PREDICTED IN ADVANCE.
+====================================================================================================
+  PREDICTION (CANDIDATES_PRESELECTED.md §6, frozen before any statistic):
+    usage redistribution -> NEGATIVE on ppm AND spm ;  shot creation -> POSITIVE
+  POOLED    ppm   T01_c04_tiptime            beta=-0.001510 sign -1   p10->p90 spread on the reference residual = -0.04062 points/min = -0.8791 points/game at 21.6 min
+  POOLED    ppm   T02_teamgame_present_usg   beta=-0.000674 sign -1   p10->p90 spread on the reference residual = -0.02322 points/min = -0.5026 points/game at 21.6 min
+  POOLED    ppm   T03_absent_usg             beta=+0.000218 sign +1   p10->p90 spread on the reference residual = +0.00747 points/min = +0.1616 points/game at 21.6 min
+  POOLED    ppm   P01_c04_prevgame           beta=-0.001349 sign -1   p10->p90 spread on the reference residual = -0.04235 points/min = -0.9167 points/game at 21.6 min
+  POOLED    spm   T01_c04_tiptime            beta=-0.001046 sign -1   p10->p90 spread on the reference residual = -0.02914 shots/min = -0.6307 shots/game at 21.6 min
+  POOLED    spm   T02_teamgame_present_usg   beta=-0.000739 sign -1   p10->p90 spread on the reference residual = -0.02765 shots/min = -0.5984 shots/game at 21.6 min
+  POOLED    spm   T03_absent_usg             beta=+0.000266 sign +1   p10->p90 spread on the reference residual = +0.00977 shots/min = +0.2114 shots/game at 21.6 min
+  POOLED    spm   P01_c04_prevgame           beta=-0.000788 sign -1   p10->p90 spread on the reference residual = -0.02694 shots/min = -0.5831 shots/game at 21.6 min
+  DECISION  ppm   T01_c04_tiptime            beta=-0.001581 sign -1   p10->p90 spread on the reference residual = -0.06224 points/min = -1.8803 points/game at 30.2 min
+  DECISION  ppm   T02_teamgame_present_usg   beta=-0.001296 sign -1   p10->p90 spread on the reference residual = -0.04419 points/min = -1.3350 points/game at 30.2 min
+  DECISION  ppm   T03_absent_usg             beta=+0.000173 sign +1   p10->p90 spread on the reference residual = -0.00199 points/min = -0.0602 points/game at 30.2 min
+  DECISION  ppm   P01_c04_prevgame           beta=-0.001313 sign -1   p10->p90 spread on the reference residual = -0.04059 points/min = -1.2262 points/game at 30.2 min
+  DECISION  spm   T01_c04_tiptime            beta=-0.001358 sign -1   p10->p90 spread on the reference residual = -0.05041 shots/min = -1.5230 shots/game at 30.2 min
+  DECISION  spm   T02_teamgame_present_usg   beta=-0.001290 sign -1   p10->p90 spread on the reference residual = -0.04416 shots/min = -1.3340 shots/game at 30.2 min
+  DECISION  spm   T03_absent_usg             beta=+0.000464 sign +1   p10->p90 spread on the reference residual = +0.01917 shots/min = +0.5790 shots/game at 30.2 min
+  DECISION  spm   P01_c04_prevgame           beta=-0.000954 sign -1   p10->p90 spread on the reference residual = -0.03088 shots/min = -0.9329 shots/game at 30.2 min
+
+====================================================================================================
+4. STEP 5b -- SYMMETRY: is absence the mirror of return?  THE KINK TEST.
+====================================================================================================
+  POOLED    ppm   team_norm    n=14852  beta(returns)=-0.001416  beta(absences)=-0.002074  ratio=0.683   KINK dR2 over the linear dev = 0.000060  p_N1=0.4343 p_N2=0.2879
+  POOLED    ppm   player_norm  n=14852  beta(returns)=-0.000638  beta(absences)=-0.000995  ratio=0.641   KINK dR2 over the linear dev = 0.000017  p_N1=0.6123 p_N2=0.5807
+  POOLED    spm   team_norm    n=14852  beta(returns)=-0.000642  beta(absences)=-0.001589  ratio=0.404   KINK dR2 over the linear dev = 0.000239  p_N1=0.0433 p_N2=0.0067
+  POOLED    spm   player_norm  n=14852  beta(returns)=-0.000664  beta(absences)=-0.000908  ratio=0.732   KINK dR2 over the linear dev = 0.000015  p_N1=0.5790 p_N2=0.5408
+  DECISION  ppm   team_norm    n= 5673  beta(returns)=-0.001414  beta(absences)=-0.001632  ratio=0.866   KINK dR2 over the linear dev = 0.000008  p_N1=0.8785 p_N2=0.7687
+  DECISION  ppm   player_norm  n= 5673  beta(returns)=-0.000754  beta(absences)=-0.001341  ratio=0.562   KINK dR2 over the linear dev = 0.000066  p_N1=0.6190 p_N2=0.4060
+  DECISION  spm   team_norm    n= 5673  beta(returns)=-0.000853  beta(absences)=-0.001411  ratio=0.605   KINK dR2 over the linear dev = 0.000116  p_N1=0.4060 p_N2=0.3045
+  DECISION  spm   player_norm  n= 5673  beta(returns)=-0.000764  beta(absences)=-0.001377  ratio=0.555   KINK dR2 over the linear dev = 0.000157  p_N1=0.1930 p_N2=0.2163
+
+  wrote ceiling_reconciliation.csv, walkforward_points.csv, mechanism_signs.csv, symmetry_kink_test.csv, _s05.json
+
+==============================================================================================================
+### run_log_s06.txt
+==============================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+
+====================================================================================================
+1. WHAT THE FEATURE NEEDS -- the churn between TODAY's box and the PREVIOUS game's box
+====================================================================================================
+{
+  "n_rows": 14852,
+  "sd_T01_tiptime": 11.176819012429341,
+  "sd_P01_prior_only": 10.37563932534629,
+  "sd_news_T01_minus_P01": 8.206205652967373,
+  "mean_abs_news": 5.151422946203995,
+  "share_rows_news_exactly_zero": 0.2881766765418799,
+  "share_rows_abs_news_gt_2_usg": 0.5789119310530568,
+  "share_rows_abs_news_gt_5_usg": 0.35995152168058175,
+  "r2_of_prevgame_roster_predicting_todays": 0.5075388898039018,
+  "share_of_T01_variance_NOT_predictable_from_prev_game": 0.4924611101960982
+}
+
+  READ THIS AS: the previous game's box membership reproduces 50.8% of the variance of
+  today's, leaving 49.2% that is SAME-DAY NEWS.  On 28.8% of rows the two rosters are
+  IDENTICAL, so on those rows the tip-time and the prior-only variants agree exactly.
+
+====================================================================================================
+2. HOW PERSISTENT IS AN ABSENCE?  *** DESCRIPTIVE DIAGNOSTIC -- READS THE NEXT GAME ***
+====================================================================================================
+  This block reads the team's NEXT game to characterise KNOWABILITY.  It produces no
+  feature, enters no base and enters no dR2.  It is here because 'is this absence the kind
+  a pre-game injury report would carry' cannot be answered without looking at persistence,
+  and the file that would answer it directly (roster_asof.csv) is FORBIDDEN.
+
+{
+  "n_newly_absent_transitions": 1241,
+  "n_newly_present_transitions": 1216,
+  "share_absences_persisting_into_the_next_game": 0.5584206285253828,
+  "share_absences_lasting_exactly_one_game": 0.44157937147461723
+}
+
+  READ THIS AS: 55.8% of newly-absent teammate-games persist into the team's NEXT game,
+  which is the profile of a multi-game unavailability -- the kind a pre-game injury report
+  plausibly carries.  The other 44.2% last exactly one game.
+  THIS IS AN UPPER BOUND ON WHAT A PERFECT PRE-GAME REPORT COULD RECOVER, NOT AN ESTIMATE
+  OF WHAT ONE WOULD RECOVER: persistence is necessary for pre-game knowability, not
+  sufficient, and this screen cannot observe the active list at all.
+
+====================================================================================================
+3. STEP 3(c) -- THE TIP-TIME LOSS LADDER
+====================================================================================================
+                                 measure  stratum       base  tip_time  prior_only  tip_time_fw_p  prior_only_fw_p  prior_only_retains_pct  lost_to_tip_time_pct
+                            dR2 on y_ppm   POOLED   B_SINGLE  0.003300    0.002200       0.001664         0.001664               66.659951             33.340049
+                            dR2 on y_spm   POOLED   B_SINGLE  0.003066    0.001458       0.001664         0.001664               47.559290             52.440710
+   paired dR2 on POINTS (in-sample coef)   POOLED   B_SINGLE  0.007005    0.002825       0.000500         0.000500               40.327692             59.672308
+paired dR2 on POINTS (WALK-FORWARD coef)   POOLED   B_SINGLE  0.005805    0.002303       0.000500         0.000500               39.678314             60.321686
+          ARITHMETIC CEILING (D084 form)   POOLED   B_SINGLE  0.002359    0.001622            NaN              NaN               68.753776             31.246224
+                            dR2 on y_ppm   POOLED B_COMPLETE  0.001274    0.000484       0.004992         0.372712               38.014851             61.985149
+                            dR2 on y_spm   POOLED B_COMPLETE  0.002213    0.000776       0.001664         0.011647               35.089296             64.910704
+   paired dR2 on POINTS (in-sample coef)   POOLED B_COMPLETE  0.004532    0.001433       0.000500         0.000500               31.625603             68.374397
+paired dR2 on POINTS (WALK-FORWARD coef)   POOLED B_COMPLETE  0.003012    0.000631       0.000500         0.006497               20.954526             79.045474
+          ARITHMETIC CEILING (D084 form)   POOLED B_COMPLETE  0.000907    0.000356            NaN              NaN               39.277124             60.722876
+                            dR2 on y_ppm DECISION   B_SINGLE  0.004963    0.002911       0.001664         0.001664               58.657443             41.342557
+                            dR2 on y_spm DECISION   B_SINGLE  0.007987    0.003345       0.001664         0.008319               41.875481             58.124519
+   paired dR2 on POINTS (in-sample coef) DECISION   B_SINGLE  0.011521    0.003842       0.000500         0.001999               33.348349             66.651651
+paired dR2 on POINTS (WALK-FORWARD coef) DECISION   B_SINGLE  0.008975    0.003123       0.000500         0.008996               34.791666             65.208334
+          ARITHMETIC CEILING (D084 form) DECISION   B_SINGLE  0.004070    0.002394            NaN              NaN               58.807241             41.192759
+                            dR2 on y_ppm DECISION B_COMPLETE  0.004240    0.002342       0.001664         0.081531               55.231429             44.768571
+                            dR2 on y_spm DECISION B_COMPLETE  0.007567    0.003037       0.001664         0.011647               40.139897             59.860103
+   paired dR2 on POINTS (in-sample coef) DECISION B_COMPLETE  0.010522    0.003314       0.000500         0.004498               31.496192             68.503808
+paired dR2 on POINTS (WALK-FORWARD coef) DECISION B_COMPLETE  0.007817    0.002349       0.000500         0.034483               30.054490             69.945510
+          ARITHMETIC CEILING (D084 form) DECISION B_COMPLETE  0.003484    0.001928            NaN              NaN               55.338242             44.661758
+
+  MEDIAN of prior_only_retains_pct across the ladder = 39.9%
+
+  wrote tiptime_loss_ladder.csv, _s06.json
+
+==============================================================================================================
+### run_log_s07.txt
+==============================================================================================================
+
+====================================================================================================
+WROTE FINDINGS.json
+====================================================================================================
+  verdict = SPLIT
+  cells = 154, candidates screened = 18
+  candidate list SHA-256 = 189C4B971912CCFC89B9546B25E485073573E965C4747116A79FC7D1F20CBF9F
+
+==============================================================================================================
+### run_log_kit_TESTS.txt
+==============================================================================================================
+================================================================================================
+screenkit TESTS -- known-answer tests, SYNTHETIC DATA ONLY, no 2025/2026 real data
+================================================================================================
+numpy 2.5.1   pandas 3.0.5   python 3.13.14
+
+================================================================================================
+TEST 1 -- r2_plain / delta_r2_plain against hand-computed arithmetic
+================================================================================================
+      hand-derived R2 = 169/175 = 0.9657142857142857
+      screenkit       =           0.9657142857142857
+    [PASS] r2_plain matches hand arithmetic (169/175)                 |diff| = 0.000e+00
+    [PASS] r2_plain == 1 on an exact linear fit                       R2 = 1.000000000000000
+    [PASS] r2_plain is invariant to shifting y by a constant          R2(y+1000) = 0.965714285714
+    [PASS] delta_r2_plain == r2_plain(full) - r2_plain(base)          dR2 = 0.0972953190, |diff| = 1.388e-17
+
+================================================================================================
+TEST 2 -- wls_r2_DEFECTIVE vs r2_weighted_standard (trap 4)
+================================================================================================
+      uniform w = 1.0      defective = 0.616518422578582  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=1 -> ratio EXACTLY 1.0000000000          ratio = 1.000000000000  (|ratio-1| = 0.000e+00)
+      uniform w = 3.7      defective = 0.616518422578582  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=3.7 -> ratio EXACTLY 1.0000000000        ratio = 1.000000000000  (|ratio-1| = 0.000e+00)
+      uniform w = 250.0    defective = 0.616518422578583  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=250 -> ratio EXACTLY 1.0000000000        ratio = 1.000000000000  (|ratio-1| = 4.441e-16)
+      construction check: sum(w*y) = 6.217e-15 (target 0)   t = T/S = 0.000689524 (target 0.000689524)
+      centered response:  standard R2 = 0.500000000000 (target 0.50)
+                          defective R2 = 0.499655000000
+                          ratio        = 0.999310000000 (target 0.99931)
+    [PASS] centered response: standard weighted R2 hits the constructed 0.5 R2_std = 0.500000000000
+    [PASS] centered response: ratio == 0.99931 (analytic target)      ratio = 0.999310000000
+    [PASS] centered response: ratio is NOT exactly 1                  ratio = 0.999310000000, 1-ratio = 6.900e-04
+    [PASS] defective R2 == closed form 1 - SSE/(S-T)                  |diff| = 1.110e-16
+      dispersed w, non-centered y:  dR2 standard  = 0.00959314
+                                    dR2 defective = 0.00812427
+                                    shortfall     = 15.3117%  (predicted 15.3117%)
+    [PASS] dR2 shortfall == closed form 1 - SST_std/SST_def           |diff| = 4.774e-15
+    [PASS] defect UNDERSTATES dR2 (defective <= standard)             def 0.00812427 <= std 0.00959314
+    [PASS] dR2 shortfall lands inside the measured 0-25.3%% band      shortfall = 15.31%
+
+================================================================================================
+TEST 3 -- detect_grouping_level must report `game`, not `row` (trap 1)
+================================================================================================
+  detect_grouping_level(game_pace): n_rows=300  dtype=float64  distinct values overall=30
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                   300         30          YES    YES 1
+    player_game           300         30          YES    YES 1
+    team_game              60         30          YES     no 1
+    game                   30         30          YES     no 1
+    team_season            24         12           no     no 3
+    season                  4          4           no     no 8
+    -> status=COARSER_LEVEL_FOUND
+    -> COARSEST CONSTANT LEVEL = 'game'  == THE CORRECT PERMUTATION LEVEL
+    [PASS] recommends the GAME level for a per-game feature           recommended = 'game'
+    [PASS] recommendation is NOT `row`                                
+    [PASS] game level is flagged constant                             
+    [PASS] team_season level is NOT constant (feature varies across a team's games) max distinct within a team-season = 3
+    [PASS] reports 30 distinct feature values across 300 rows         30 distinct / 300 rows
+    [PASS] a genuinely row-varying feature is not pushed to a coarse level (P2 contract) recommended = None  status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    [PASS] permutation_null REFUSES a None grouping level             
+    [PASS] permutation_null refuses a level where the feature is not constant 
+
+================================================================================================
+TEST 4 -- CRITICAL: row-level null over-rejects, correct-level null does not
+================================================================================================
+      120 replicate datasets, 200 permutation draws each, TRUE EFFECT = 0
+      rejection rate at alpha=0.05  --  NAIVE ROW-LEVEL null  : 0.733   (nominal 0.05)
+      rejection rate at alpha=0.05  --  CORRECT GAME-LEVEL null: 0.033   (nominal 0.05)
+      correct-level p-values: mean 0.517  median 0.530  min 0.005   (uniform => mean 0.5)
+      null sd inflation (correct/row): median 39.19x  min 25.19x  max 57.81x
+      analytic design effect DE = 1 + (50-1)*0.8 = 40.2 ; the statistic is dR2 = r^2,
+      so the expected sd inflation on the REPORTED scale is DE itself (~40.2x), and
+      sqrt(DE) = 6.34x on the correlation scale.
+    [PASS] row-level null OVER-REJECTS (rate >= 0.50 with zero true effect) row-level rejection rate = 0.733
+    [PASS] correct-level null is calibrated (rejection rate <= 0.20)  correct-level rejection rate = 0.033
+    [PASS] correct-level p-values are ~uniform (mean p in [0.30, 0.70]) mean p = 0.517
+    [PASS] row-level rejection rate strictly exceeds correct-level    0.733 > 0.033
+    [PASS] measured null-sd inflation brackets the analytic design effect 40.2 median inflation = 39.19x vs DE = 40.2
+
+================================================================================================
+TEST 5 -- noop_placebo: sd < 1e-15 on a genuine no-op, nonzero on a real shuffle
+================================================================================================
+  noop_placebo: real=0.001086910004  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+    [PASS] identity transform -> sd < 1e-15 and is_noop True          sd = 0.000e+00
+  noop_placebo: real=0.001086910004  sd=4.337e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=4.337e-19 < tol=1e-15, real reproduced)
+    [PASS] permute-the-key-and-recompute is CONFIRMED a no-op (sd < 1e-15) sd = 4.337e-19, max|draw-real| = 0.000e+00
+    [PASS] noop_placebo RETURNS the observed sd rather than rounding it to zero sd = 4.337e-19 (reported, not asserted bitwise-zero)
+  noop_placebo: real=0.001086910004  sd=6.340e-04  max|draw-real|=1.084e-03  distinct=25 -> NOT a no-op (sd=6.340e-04) -- the transform does move the statistic
+    [PASS] a real shuffle FAILS the no-op signature (sd > 0, is_noop False) sd = 6.340e-04
+
+================================================================================================
+TEST 6 -- assert_partition is VALUE-based, never textual (trap 3)
+================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+    [PASS] PASSES on clean 2021-2024 data                             
+    [PASS] RAISES PartitionViolation on a 2025 season VALUE           
+    [PASS] RAISES on a 2025 YEAR VALUE inside a date column           
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    _team_season_2025        name is season-like but VALUES are not seasons (range 2.675597852080434e-05..0.00017124660739951432) -> NOT a season column, skipped
+    skipped    dr2_draw_season_2026     name is season-like but VALUES are not seasons (range 3.634522082194045e-05..0.00017372009567027274) -> NOT a season column, skipped
+    -> PASS
+    [PASS] PASSES on a column NAMED `_team_season_2025` holding dR2 draws (trap-3 regression) violations = []
+    [PASS] the name-only column is recorded as SKIPPED, not checked   skipped = ['_team_season_2025', 'dr2_draw_season_2026']
+    [PASS] prose containing '2025' in a text column does not trigger a violation 
+    [PASS] catches year-VALUED data in an innocuously named column    
+
+================================================================================================
+TEST 7 -- check_manifest: missing manifest is UNVERIFIABLE, never a pass
+================================================================================================
+  check_manifest no_manifest.parquet -> UNVERIFIABLE (no manifest)
+    [PASS] MISSING manifest -> status UNVERIFIABLE                    status = UNVERIFIABLE
+    [PASS] MISSING manifest -> usable_at_e0_e1 is False (not a pass)  
+  check_manifest row_gran.parquet                         granularity='row'      -> USABLE_IF_FILTERED
+    [PASS] asof_granularity 'row' -> USABLE_IF_FILTERED               status = USABLE_IF_FILTERED
+    [PASS] 'row' granularity says filtering helps                     
+  check_manifest artifact_gran.parquet                    granularity='artifact' -> UNUSABLE
+    [PASS] asof_granularity 'artifact' -> UNUSABLE at E0/E1           status = UNUSABLE
+    [PASS] 'artifact' granularity says filtering does NOT help        
+  check_manifest odd_gran.parquet                         granularity=None       -> UNVERIFIABLE
+    [PASS] manifest present but granularity absent -> UNVERIFIABLE    status = UNVERIFIABLE
+
+================================================================================================
+TEST 8 -- future_leakage_probe detects a full-season leave-one-out baseline (trap 2)
+================================================================================================
+  future_leakage_probe: n=1680
+    corr(baseline_loo            , own strictly-after-date future) = +0.9504
+    corr(baseline_pregame        , own strictly-after-date future) = +0.8781
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.142440
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): 'baseline_loo' tracks the entity's UNPLAYED FUTURE more closely than 'baseline_pregame' does (|0.9504| vs |0.8781|) and adds dR2=0.1424 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) 'baseline_loo' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) 'baseline_loo' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'baseline_pregame' will correlate more with the entity's own future than 'baseline_pregame' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+    [PASS] flags the leave-one-out baseline as reading the future     
+    [PASS] LOO correlates with the unplayed future more strongly than the pregame baseline 0.9504 vs 0.8781
+    [PASS] LOO adds substantial dR2 over the pregame baseline in PREDICTING the future dR2 = 0.1424
+    [PASS] does NOT flag the pregame baseline when contrasted against the LOO one corr 0.8781 vs 0.9504, dR2 0.0102
+
+================================================================================================
+TEST 9 -- P1 REGRESSION: BOOLEAN features (pre-fix: TypeError, 0 of these ran)
+================================================================================================
+      feature dtype = bool ; is_numeric_dtype says True (which is why bool took the numeric branch)
+  detect_grouping_level(flag_bool): n_rows=48  dtype=bool  distinct values overall=2
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                    48          2          YES    YES 1
+    player_game            48          2          YES    YES 1
+    team_game              24          2          YES     no 1
+    game                   12          2          YES     no 1
+    team_season             4          1           no     no 2
+    season                  2          1           no     no 2
+    -> status=COARSER_LEVEL_FOUND
+    -> COARSEST CONSTANT LEVEL = 'game'  == THE CORRECT PERMUTATION LEVEL
+    [PASS] detect_grouping_level does not raise on a BOOLEAN feature  recommended = 'game'
+    [PASS] bool and its float twin give the IDENTICAL levels table    bool game spread = 0.0, float game spread = 0.0
+    [PASS] the bool went through the NUMERIC spread path, not the nunique fallback game spread = 0.0, season spread = 1.0
+    [PASS] the report says the feature is boolean                     feature_dtype = bool
+    [PASS] permutation_null runs on a BOOLEAN feature                 real = -0.234082  p = 0.4878  n_groups = 12
+    [PASS] stat_fn sees dtype bool on EVERY permuted frame, not float dtypes seen = ['bool']
+    [PASS] every draw is a genuine permutation: the True count never changes True counts seen = [32] (real = 32), sd = 0.307161
+    [PASS] permutation_null reports the feature as boolean            
+    [PASS] a nullable `boolean` column with pd.NA is handled, not crashed on dtype = boolean, season spread = 1.0
+    [PASS] a STRING feature still uses the distinct-count path (spread nan, no coercion) recommended = 'game'
+
+================================================================================================
+TEST 10 -- P2 REGRESSION: `row` must never be returned as a RECOMMENDATION
+================================================================================================
+  detect_grouping_level(player_minutes): n_rows=300  dtype=float64  distinct values overall=30
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                   300         30          YES    YES 1
+    player_game           300         30          YES    YES 1
+    team_game              60         27           no     no 5
+    game                   30         17           no     no 10
+    team_season            24         18           no     no 14
+    season                  4          4           no     no 29
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'player_minutes': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+    [PASS] recommended_permutation_level is None, NOT the string 'row' recommended = None
+    [PASS] status names the situation and says ANTICONSERVATIVE out loud status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    [PASS] row_null_is_anticonservative is True and a warning is carried warning is 908 chars
+    [PASS] the naive null is still reachable, but ONLY via the opt-in field 
+    [PASS] piping the recommendation into permutation_null REFUSES (cannot be misled) 
+    [PASS] piping recommended_key_cols into permutation_null also REFUSES 
+    [PASS] NO field whose name reads as a recommendation carries the value 'row' offending fields = []
+    [PASS] `player_game` uniquely identifies rows here and is flagged is_row_equivalent n_groups = 300 vs n_rows = 300
+    [PASS] a constant-but-row-equivalent key is NOT recommended       
+    [PASS] the good path is unchanged: a real coarser level is still recommended recommended = 'game'
+    [PASS] an explicitly-requested ROW_LEVEL null returns a warning field warning is 276 chars
+
+================================================================================================
+TEST 11 -- P3 REGRESSION: r2_of_forecast (scores) vs r2_plain (refits)
+================================================================================================
+      hand-derived 1 - 0.07/5.0 = 0.9860000000000000
+      screenkit                 = 0.9860000000000000
+    [PASS] r2_of_forecast matches hand arithmetic (1 - 0.07/5.0 = 0.986) |diff| = 0.000e+00
+      r2_plain(y, yhat) REFITS y ~ a + b*yhat and returns 0.9867855270057682
+    [PASS] THE COLLISION: r2_plain(y, yhat) != r2_of_forecast(y, yhat) refit 0.986786 vs scored 0.986000 (gap 0.000786)
+    [PASS] r2_plain(y, -y) == 1.0 exactly (it refits, so the sign is free) r2_plain = 1.000000000000000
+    [PASS] r2_of_forecast(y, -y) == -23.0 exactly (hand-derived; it does NOT refit) r2_of_forecast = -23.000000000000000
+    [PASS] r2_plain(y, f) >= r2_of_forecast(y, f) on 25 random forecasts 0/25 violations
+    [PASS] on OLS-FITTED values the two agree exactly, and both equal r2_plain(y, X) scored 0.413665529219 vs fitted-model 0.413665529219
+    [PASS] equals the frozen rh_base 1 - SSE/SST form recomputed inline |diff| = 0.000e+00
+    [PASS] a perfect forecast scores exactly 1.0                      R2 = 1.0
+    [PASS] passing a design matrix raises and points at r2_plain      
+
+================================================================================================
+TEST 12 -- P4 REGRESSION: within-group scheme + var_share_between
+================================================================================================
+    [PASS] var_share_between == 1.0 for a feature constant within groups share = 1.000000000000000
+    [PASS] var_share_between == 0.0 exactly when all group means are equal share = 0.0
+    [PASS] var_share_between == 0.5 on a balanced half-and-half construction share = 0.500000000000000
+    [PASS] var_share_between handles a BOOLEAN feature too (P1 path shared) share = 1.000000000000000
+    [PASS] WITHIN scheme preserves every group mean EXACTLY on every draw max |group-mean drift| over 30 draws = 6.661e-16
+    [PASS] WITHIN scheme preserves each group's multiset (within-group SS unchanged) max |draw - real| = 1.137e-13
+      within-group SS: real = 585.9354 ; BETWEEN-scheme draws max = 5.474e-29 ; WITHIN-scheme draws min = 585.9354
+    [PASS] BETWEEN scheme on a within-varying feature destroys ALL within-group variation real = 585.9354, max draw = 5.474e-29
+    [PASS] WITHIN scheme is REFUSED on a feature constant within groups (it is the identity) 
+    [PASS] WITHIN scheme is REFUSED at ROW_LEVEL                      
+    [PASS] an unrecognised scheme raises rather than falling back to a default 
+      80 replicates, 200 within-group draws each, TRUE WITHIN-GROUP EFFECT = 0
+      WITHIN-scheme rejection rate at alpha=0.05 : 0.025   mean p = 0.513 (uniform => 0.5)
+    [PASS] WITHIN-scheme null is calibrated with a group-level confounder (rej <= 0.15) rejection rate = 0.025
+    [PASS] WITHIN-scheme p-values are ~uniform (mean p in [0.30, 0.70]) mean p = 0.513
+
+================================================================================================
+TEST 13 -- P4 REGRESSION: paired forecast-vs-forecast comparison
+================================================================================================
+    [PASS] paired_forecast_comparison REFUSES a None clustering level 
+  paired_forecast_comparison(A vs B): n=1000 over 25 clusters
+    r2_of_forecast(A         ) = +0.653727
+    r2_of_forecast(B         ) = +0.092271
+    dR2 (A - B)            = +0.561455   mean paired loss diff = -1.20131
+    CLUSTER sign-flip null : sd = 0.122233   p = 0.0005
+    NAIVE row sign-flip    : sd = 0.0428295   p = 0.0005   [CONTRAST ONLY]
+    null-width inflation (cluster/row) = 2.854
+    -> A beats B by dR2 = +0.561455 (cluster sign-flip p = 0.0005 over 25 clusters). The naive independent-rows null would have given p = 0.0005; it is 2.85x TOO NARROW.
+    [PASS] dR2 == r2_of_forecast(A) - r2_of_forecast(B) exactly       |diff| = 1.110e-16
+    [PASS] the genuinely better forecast wins with a small clustered p dR2 = +0.561455, p = 0.00050
+    [PASS] identical forecasts -> dR2 == 0.0 and p == 1.0 EXACTLY     dR2 = -0.0, p = 1.0
+    [PASS] swapping A and B negates dR2 exactly and preserves the two-sided p dR2 -0.56145536 vs +0.56145536, p 0.00050 vs 0.00050
+      200 replicates, 300 sign-flip draws each, TWO EXCHANGEABLE FORECASTS (true dR2 = 0)
+      rejection rate at alpha=0.05 -- CLUSTER sign-flip : 0.045   (nominal 0.05)
+      rejection rate at alpha=0.05 -- NAIVE ROW flip    : 0.735   [CONTRAST ONLY]
+      cluster p-values: mean 0.493  median 0.490   null-width inflation median 4.91x
+    [PASS] CLUSTER sign-flip null is calibrated (rejection rate <= 0.12) cluster rejection rate = 0.045
+    [PASS] NAIVE row-wise sign flip OVER-REJECTS (rate >= 0.20 with true dR2 = 0) row-level rejection rate = 0.735
+    [PASS] cluster p-values are ~uniform (mean p in [0.30, 0.70])     mean p = 0.493
+    [PASS] the row-wise null is measurably TOO NARROW (median inflation > 2x) median sd_cluster/sd_row = 4.91x
+
+================================================================================================
+TEST 14 -- K0 REGRESSION: assert_partition raised on CLEAN data ('candi-DATE')
+================================================================================================
+      columns whose NAME contains the substring 'date':
+        game_date              dtype=datetime64[us]   <- 'date' in name
+        candidate              dtype=str              <- 'date' in name
+        mae_with_candidate     dtype=float64          <- 'date' in name
+        n_candidates           dtype=int64            <- 'date' in name
+        update_flag            dtype=int64            <- 'date' in name
+        validated              dtype=bool             <- 'date' in name
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    candidate                name is date-like but VALUES are not dates (only 0 of 4 non-null values parsed, 0% < 80%) -> NOT a date column, skipped
+    skipped    mae_with_candidate       name is date-like but VALUES are NUMERIC (dtype float64, range 0.1234..0.4567) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    skipped    n_candidates             name is date-like but VALUES are NUMERIC (dtype int64, range 44..44) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    skipped    update_flag              name is date-like but VALUES are NUMERIC (dtype int64, range 0..1) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    skipped    validated                name is date-like but VALUES are NUMERIC (dtype bool, range False..True) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    -> PASS
+    [PASS] PASSES on a clean 2021-2024 frame containing a column named `candidate` violations = []
+    [PASS] name-only 'date' match `candidate`          is SKIPPED, not checked skipped=True checked=False
+    [PASS] name-only 'date' match `mae_with_candidate` is SKIPPED, not checked skipped=True checked=False
+    [PASS] name-only 'date' match `n_candidates`       is SKIPPED, not checked skipped=True checked=False
+    [PASS] name-only 'date' match `update_flag`        is SKIPPED, not checked skipped=True checked=False
+    [PASS] name-only 'date' match `validated`          is SKIPPED, not checked skipped=True checked=False
+    [PASS] the REAL date column is still checked and its years reported checked_date_cols = {'game_date': [2021, 2022, 2023, 2024]}
+    [PASS] the epoch-nanosecond reading is refused BY NAME in the skip reason reason = name is date-like but VALUES are NUMERIC (dtype float64, range 0.1234.
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022]
+    skipped    _team_season_2025        name is season-like but VALUES are not seasons (range 0.00012..0.00034) -> NOT a season column, skipped
+    skipped    candidate_mae            name is date-like but VALUES are NUMERIC (dtype float64, range 0.11..0.22) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    -> PASS
+    [PASS] SYMMETRY: the season branch AND the date branch both skip a name-only match skipped = ['_team_season_2025', 'candidate_mae'], violations = []
+    [PASS] the two branches give the SAME 'name is X-like but VALUES are not' wording 
+    [PASS] a GENUINE 2026 date is still caught (the fix did not disable the check) 
+    [PASS] date_cols=[] NO LONGER opens a false-pass door on a datetime column (B2) 
+    [PASS] the pre-K0 behaviour is still reachable, but only by naming it explicitly checked = {}
+    [PASS] a STRING date column holding 2026 is still parsed and flagged 
+    [PASS] explicitly naming a NON-date column in date_cols raises an actionable ValueError ValueError: assert_partition: date_cols explicitly names 'mae_with_candi
+    [PASS] assert_partition emits NO warnings at all (the 'Could not infer format' noise is gone) warnings = []
+    [PASS] _is_date_valued: datetime64 accepted with NO year-range gate (2026 still checkable) 
+    [PASS] _is_date_valued: a FLOAT column is refused outright (no epoch-nanosecond reading) 
+    [PASS] _is_date_valued: an INT column is refused outright too     
+    [PASS] _is_date_valued: a string column of real dates is accepted 
+    [PASS] _is_date_valued: a string column of feature ids is refused 
+
+================================================================================================
+TEST 15 -- K1 REGRESSION: the leakage probe is a SCREEN, not a VERDICT
+================================================================================================
+    [PASS] fixture sanity: both baselines are built from shift(1) -- strictly prior games only both start NaN at each entity's first game
+  future_leakage_probe: n=3040
+    corr(refB_ppm                , own strictly-after-date future) = +0.8959
+    corr(refA_ppm                , own strictly-after-date future) = +0.8142
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.139715
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): 'refB_ppm' tracks the entity's UNPLAYED FUTURE more closely than 'refA_ppm' does (|0.8959| vs |0.8142|) and adds dR2=0.1397 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) 'refB_ppm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) 'refB_ppm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refA_ppm' will correlate more with the entity's own future than 'refA_ppm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+    [PASS] the probe FIRES on refB vs refA even though NEITHER reads the future corr 0.8959 vs 0.8142, dR2 0.1397
+    [PASS] the numbers are NOT weakened: both correlations and the dR2 are still reported 
+    [PASS] the verdict NO LONGER says 'only possible because it CONTAINS the future' verdict starts: SCREENING FLAG (NOT A VERDICT): 'refB_ppm' tracks th...
+    [PASS] the verdict names itself a SCREENING FLAG and denies being a verdict 
+    [PASS] the verdict offers the BETTER-ESTIMATOR explanation as an equal alternative 
+    [PASS] the verdict tells the caller NOT to discard a baseline on this alone 
+    [PASS] status is the ambiguity-naming constant, not a leakage finding status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    [PASS] alternative_explanation is carried as its own field        
+    [PASS] the legacy `reads_future` field is preserved with its value unchanged 
+    [PASS] the genuine leave-one-out leak is STILL flagged (no loss of sensitivity) 
+    [PASS] a NOT-flagged result names itself not-a-certificate        
+
+================================================================================================
+TEST 16 -- K2 REGRESSION: entity_swap_null (the missing between-entity scheme)
+================================================================================================
+    [PASS] the K2 shape: the feature is constant within NO candidate key constant levels = []
+    [PASS] EntitySwap groups the frame into one series per entity-season 24 groups over 2 seasons
+    [PASS] the fixture really has UNEQUAL series lengths (the proportional map is exercised) sizes 12..29
+    [PASS] EntitySwap group i holds exactly the rows of entity-season code i 
+    [PASS] EntitySwap NEVER swaps across a season block               0 cross-season assignments in 20 draws
+    [PASS] position 0 always receives the partner's position 0        
+    [PASS] the last position always receives the partner's LAST position 
+    [PASS] draws really move values between entities (not a silent identity) 9099 rows reassigned across 20 draws
+    [PASS] a season block with ONE entity yields that entity's own series back, exactly 
+    [PASS] an entity spanning more than one season RAISES rather than being silently assigned 
+    [PASS] ...and putting the season INTO entity_cols is accepted, as the message advises 
+      60 replicates, 200 entity-swap draws each, TRUE BETWEEN-ENTITY EFFECT = 0
+      entity-swap rejection rate at alpha=0.05 : 0.083   mean p = 0.451 (uniform => 0.5)
+    [PASS] entity_swap_null is calibrated with an entity-level outcome (rejection <= 0.15) rejection rate = 0.083
+    [PASS] entity-swap p-values are ~uniform (mean p in [0.30, 0.70]) mean p = 0.451
+  entity_swap_null(prior at entity_id+season): real=0.438149
+    24 entity groups across 2 season block(s); 400 draws, seed 9
+    null mean=0.0225103  sd=0.0274415  p=0.0025  (alternative=greater)
+    !! entity_swap answers the BETWEEN-ENTITY question only. It leaves the within-entity temporal shape intact by construction, so it says nothing about whether the candidate's WITHIN-entity movement carries signal. Run permutation_null(..., scheme=SCHEME_WITHIN) for that and credit the candidate only if it beats BOTH.
+    [PASS] a REAL between-entity effect is detected (p < 0.01)        real = 0.4381, null mean = 0.0225, p = 0.00249
+    [PASS] the null is NOT degenerate: the draws have real spread     sd = 0.0274415 over 400 finite draws
+    [PASS] the result labels its scheme and carries the between-only warning 
+    [PASS] p is the add-one estimator and can never be 0              
+    [PASS] entity_swap_null REFUSES a None entity level, mirroring permutation_null 
+    [PASS] a swapper built on a differently-shaped frame is REFUSED, not silently misapplied 
+    [PASS] a BOOLEAN feature is permuted and handed back to stat_fn AS BOOL dtypes seen = ['bool']
+
+================================================================================================
+TEST 17 -- K3 REGRESSION: candidate_keys must be a mapping, with a clear error
+================================================================================================
+      raised: TypeError: detect_grouping_level: candidate_keys must be a MAPPING from a level NAME to its key COL
+    [PASS] a LIST raises TypeError, not a bare AttributeError         got TypeError
+    [PASS] the message names the parameter, the type received, and the required shape message is 484 chars
+    [PASS] the message shows the caller how to fix it with their own column name 
+    [PASS] a TUPLE is rejected the same way                           
+    [PASS] a proper mapping still works unchanged                     
+    [PASS] omitting candidate_keys still uses DEFAULT_CANDIDATE_KEYS  
+
+================================================================================================
+SUMMARY
+================================================================================================
+  159 assertions: 159 PASSED, 0 FAILED
+  RESULT: ALL TESTS PASS

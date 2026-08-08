@@ -1,0 +1,210 @@
+﻿  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+
+  minutes forecast m_hat: trailing-5 prior mean minutes, cold fallback = expanding prior
+    mean=21.6439 sd=9.2380  n_from_trailing5=11933  n_from_cold_fallback=2919  n_nan=0
+    corr(m_hat, realised minutes) = 0.7970   r2_of_forecast(minutes, m_hat) = 0.6273
+
+====================================================================================================
+A. POINTS PROPAGATION -- skill against the MATCHED POINT-IN-TIME REFERENCE, same rows
+====================================================================================================
+
+  POOLED    B_SINGLE    T01_c04_tiptime        n=14852
+      R2 of the points forecast   reference +0.487855 -> with candidate +0.494860
+      PAIRED dR2 (points)         +0.007005   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   4.0689 -> 4.0437  (0.619% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.003027 p=0.0020  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (11.1764) moves ppm by 0.016877, i.e. 0.3653 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.002383   (actual per-row shift sd route: dR2 <= 0.002730)
+
+  POOLED    B_SINGLE    P01_c04_prevgame       n=14852
+      R2 of the points forecast   reference +0.487855 -> with candidate +0.490680
+      PAIRED dR2 (points)         +0.002825   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   4.0689 -> 4.0604  (0.209% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.002190 p=0.0070  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (10.3753) moves ppm by 0.013992, i.e. 0.3028 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.001638   (actual per-row shift sd route: dR2 <= 0.001931)
+
+  POOLED    B_SINGLE    P02_c04_availweighted  n=14852
+      R2 of the points forecast   reference +0.487855 -> with candidate +0.488765
+      PAIRED dR2 (points)         +0.000910   cluster p=0.5172  (row-NAIVE p=0.3418, 48 clusters)
+      D076 CONTRAST: points MAE   4.0689 -> 4.0716  (-0.066% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.002863 p=0.0615  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (6.1238) moves ppm by 0.030178, i.e. 0.6532 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.007619   (actual per-row shift sd route: dR2 <= 0.010079)
+
+  POOLED    B_SINGLE    G01_noise              n=14852
+      R2 of the points forecast   reference +0.487855 -> with candidate +0.487882
+      PAIRED dR2 (points)         +0.000027   cluster p=0.7276  (row-NAIVE p=0.7336, 48 clusters)
+      D076 CONTRAST: points MAE   4.0689 -> 4.0690  (-0.003% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000035 p=0.6282  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (0.9968) moves ppm by 0.001804, i.e. 0.0391 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000027   (actual per-row shift sd route: dR2 <= 0.000032)
+
+  POOLED    B_COMPLETE  T01_c04_tiptime        n=14852
+      R2 of the points forecast   reference +0.490872 -> with candidate +0.495404
+      PAIRED dR2 (points)         +0.004532   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   4.0623 -> 4.0451  (0.424% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.001614 p=0.0025  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (11.1764) moves ppm by 0.010790, i.e. 0.2335 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000974   (actual per-row shift sd route: dR2 <= 0.001116)
+
+  POOLED    B_COMPLETE  P01_c04_prevgame       n=14852
+      R2 of the points forecast   reference +0.490872 -> with candidate +0.492306
+      PAIRED dR2 (points)         +0.001433   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   4.0623 -> 4.0572  (0.127% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000798 p=0.0185  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (10.3753) moves ppm by 0.006825, i.e. 0.1477 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000390   (actual per-row shift sd route: dR2 <= 0.000459)
+
+  POOLED    B_COMPLETE  P02_c04_availweighted  n=14852
+      R2 of the points forecast   reference +0.490872 -> with candidate +0.491435
+      PAIRED dR2 (points)         +0.000562   cluster p=0.1024  (row-NAIVE p=0.0500, 48 clusters)
+      D076 CONTRAST: points MAE   4.0623 -> 4.0605  (0.046% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000198 p=0.6092  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (6.1238) moves ppm by 0.011825, i.e. 0.2559 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.001170   (actual per-row shift sd route: dR2 <= 0.001547)
+
+  POOLED    B_COMPLETE  G01_noise              n=14852
+      R2 of the points forecast   reference +0.490872 -> with candidate +0.490909
+      PAIRED dR2 (points)         +0.000037   cluster p=0.6612  (row-NAIVE p=0.6452, 48 clusters)
+      D076 CONTRAST: points MAE   4.0623 -> 4.0625  (-0.003% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000040 p=0.5977  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (0.9968) moves ppm by 0.001920, i.e. 0.0416 POINTS at mean m_hat 21.64, against a 7.4829-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000031   (actual per-row shift sd route: dR2 <= 0.000036)
+
+  DECISION  B_SINGLE    T01_c04_tiptime        n=5673
+      R2 of the points forecast   reference +0.289155 -> with candidate +0.300676
+      PAIRED dR2 (points)         +0.011521   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   5.0108 -> 4.9710  (0.793% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.004277 p=0.0015  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (10.2659) moves ppm by 0.016227, i.e. 0.4902 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.004278   (actual per-row shift sd route: dR2 <= 0.004348)
+
+  DECISION  B_SINGLE    P01_c04_prevgame       n=5673
+      R2 of the points forecast   reference +0.289155 -> with candidate +0.292997
+      PAIRED dR2 (points)         +0.003842   cluster p=0.0020  (row-NAIVE p=0.0015, 48 clusters)
+      D076 CONTRAST: points MAE   5.0108 -> 4.9995  (0.225% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.002168 p=0.0595  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (9.5057) moves ppm by 0.012485, i.e. 0.3772 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.002532   (actual per-row shift sd route: dR2 <= 0.002584)
+
+  DECISION  B_SINGLE    P02_c04_availweighted  n=5673
+      R2 of the points forecast   reference +0.289155 -> with candidate +0.293500
+      PAIRED dR2 (points)         +0.004345   cluster p=0.0370  (row-NAIVE p=0.0045, 48 clusters)
+      D076 CONTRAST: points MAE   5.0108 -> 4.9974  (0.267% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.002134 p=0.2509  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (4.9608) moves ppm by 0.022770, i.e. 0.6879 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.008422   (actual per-row shift sd route: dR2 <= 0.008800)
+
+  DECISION  B_SINGLE    G01_noise              n=5673
+      R2 of the points forecast   reference +0.289155 -> with candidate +0.289433
+      PAIRED dR2 (points)         +0.000277   cluster p=0.3868  (row-NAIVE p=0.3713, 48 clusters)
+      D076 CONTRAST: points MAE   5.0108 -> 5.0113  (-0.011% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000316 p=0.2709  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (0.9970) moves ppm by 0.003566, i.e. 0.1077 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000207   (actual per-row shift sd route: dR2 <= 0.000208)
+
+  DECISION  B_COMPLETE  T01_c04_tiptime        n=5673
+      R2 of the points forecast   reference +0.291315 -> with candidate +0.301837
+      PAIRED dR2 (points)         +0.010522   cluster p=0.0005  (row-NAIVE p=0.0005, 48 clusters)
+      D076 CONTRAST: points MAE   5.0034 -> 4.9664  (0.740% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.003796 p=0.0030  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (10.2659) moves ppm by 0.015070, i.e. 0.4553 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.003689   (actual per-row shift sd route: dR2 <= 0.003750)
+
+  DECISION  B_COMPLETE  P01_c04_prevgame       n=5673
+      R2 of the points forecast   reference +0.291315 -> with candidate +0.294629
+      PAIRED dR2 (points)         +0.003314   cluster p=0.0045  (row-NAIVE p=0.0030, 48 clusters)
+      D076 CONTRAST: points MAE   5.0034 -> 4.9930  (0.208% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.001773 p=0.0900  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (9.5057) moves ppm by 0.011253, i.e. 0.3400 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.002057   (actual per-row shift sd route: dR2 <= 0.002100)
+
+  DECISION  B_COMPLETE  P02_c04_availweighted  n=5673
+      R2 of the points forecast   reference +0.291315 -> with candidate +0.294520
+      PAIRED dR2 (points)         +0.003206   cluster p=0.0385  (row-NAIVE p=0.0040, 48 clusters)
+      D076 CONTRAST: points MAE   5.0034 -> 4.9933  (0.201% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.001041 p=0.4103  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (4.9608) moves ppm by 0.019707, i.e. 0.5954 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.006309   (actual per-row shift sd route: dR2 <= 0.006592)
+
+  DECISION  B_COMPLETE  G01_noise              n=5673
+      R2 of the points forecast   reference +0.291315 -> with candidate +0.291599
+      PAIRED dR2 (points)         +0.000284   cluster p=0.3828  (row-NAIVE p=0.3668, 48 clusters)
+      D076 CONTRAST: points MAE   5.0034 -> 5.0039  (-0.011% reduction) -- NOT differential skill
+      ORACLE-MINUTES DIAGNOSTIC   paired dR2 +0.000316 p=0.2734  <-- reads the response, excluded from every headline
+      ARITHMETIC CEILING: 1 sd of the signal (0.9970) moves ppm by 0.003611, i.e. 0.1091 POINTS at mean m_hat 30.21, against a 7.4956-point response sd
+      -> EVEN AS A PERFECT ORTHOGONAL PREDICTOR:  dR2 <= 0.000212   (actual per-row shift sd route: dR2 <= 0.000213)
+
+====================================================================================================
+B. THE CEILING ON THE VOLUME ROUTE -- the channel this screen actually identified
+====================================================================================================
+
+  POOLED    B_SINGLE    T01_c04_tiptime        n=14079
+      1 sd of signal (11.1002) x beta_spm (-0.000244) = 0.002703 shots/min
+      x mean m_hat 22.30 min = 0.0603 shots   x mean pts/shot 1.0250 = 0.0618 POINTS
+      against a 7.3855-point response sd  ->  dR2 <= 0.000070
+
+  POOLED    B_SINGLE    P01_c04_prevgame       n=14079
+      1 sd of signal (10.3170) x beta_spm (-0.000067) = 0.000688 shots/min
+      x mean m_hat 22.30 min = 0.0153 shots   x mean pts/shot 1.0250 = 0.0157 POINTS
+      against a 7.3855-point response sd  ->  dR2 <= 0.000005
+
+  POOLED    B_COMPLETE  T01_c04_tiptime        n=14079
+      1 sd of signal (11.1002) x beta_spm (-0.000495) = 0.005492 shots/min
+      x mean m_hat 22.30 min = 0.1225 shots   x mean pts/shot 1.0250 = 0.1255 POINTS
+      against a 7.3855-point response sd  ->  dR2 <= 0.000289
+
+  POOLED    B_COMPLETE  P01_c04_prevgame       n=14079
+      1 sd of signal (10.3170) x beta_spm (-0.000403) = 0.004160 shots/min
+      x mean m_hat 22.30 min = 0.0928 shots   x mean pts/shot 1.0250 = 0.0951 POINTS
+      against a 7.3855-point response sd  ->  dR2 <= 0.000166
+
+  DECISION  B_SINGLE    T01_c04_tiptime        n=5654
+      1 sd of signal (10.2418) x beta_spm (-0.001293) = 0.013242 shots/min
+      x mean m_hat 30.22 min = 0.4001 shots   x mean pts/shot 1.0798 = 0.4320 POINTS
+      against a 7.4682-point response sd  ->  dR2 <= 0.003346
+
+  DECISION  B_SINGLE    P01_c04_prevgame       n=5654
+      1 sd of signal (9.4890) x beta_spm (-0.000881) = 0.008361 shots/min
+      x mean m_hat 30.22 min = 0.2526 shots   x mean pts/shot 1.0798 = 0.2728 POINTS
+      against a 7.4682-point response sd  ->  dR2 <= 0.001334
+
+  DECISION  B_COMPLETE  T01_c04_tiptime        n=5654
+      1 sd of signal (10.2418) x beta_spm (-0.001266) = 0.012968 shots/min
+      x mean m_hat 30.22 min = 0.3919 shots   x mean pts/shot 1.0798 = 0.4231 POINTS
+      against a 7.4682-point response sd  ->  dR2 <= 0.003210
+
+  DECISION  B_COMPLETE  P01_c04_prevgame       n=5654
+      1 sd of signal (9.4890) x beta_spm (-0.000846) = 0.008025 shots/min
+      x mean m_hat 30.22 min = 0.2425 shots   x mean pts/shot 1.0798 = 0.2618 POINTS
+      against a 7.4682-point response sd  ->  dR2 <= 0.001229
+
+====================================================================================================
+C. THE CEILING COMPARISON THE BRIEF ASKED FOR
+====================================================================================================
+{
+  "precedents": {
+    "D079_shot_mix_channel": 0.001127,
+    "D084_conversion_channel": 0.000129
+  },
+  "this_screen_ceilings_dr2": {
+    "POOLED|B_SINGLE|TIP_TIME": 0.0023829193534549427,
+    "POOLED|B_SINGLE|PRIOR_ONLY": 0.0016379226838285372,
+    "POOLED|B_COMPLETE|TIP_TIME": 0.0009740693772050032,
+    "POOLED|B_COMPLETE|PRIOR_ONLY": 0.00038968958052663726,
+    "DECISION|B_SINGLE|TIP_TIME": 0.00427759523418222,
+    "DECISION|B_SINGLE|PRIOR_ONLY": 0.00253210578475025,
+    "DECISION|B_COMPLETE|TIP_TIME": 0.0036891086219124412,
+    "DECISION|B_COMPLETE|PRIOR_ONLY": 0.0020571993577784536
+  }
+}
+
+  LARGEST ceiling in this screen = 0.004278
+  vs D079 mix ceiling 0.001127  -> 3.80x
+  vs D084 conversion ceiling 0.000129 -> 33.16x
+
+  wrote points_propagation.csv, arithmetic_ceiling.csv, _s04.json

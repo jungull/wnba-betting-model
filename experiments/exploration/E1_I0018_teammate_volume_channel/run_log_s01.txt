@@ -1,0 +1,177 @@
+﻿
+====================================================================================================
+1. MANIFEST CHECKS -- read from disk at call time, not cited from notes
+====================================================================================================
+  check_manifest master_player.parquet                    granularity='row'      -> USABLE_IF_FILTERED
+     -> usable_at_e0_e1=True  fit_through_season=2026
+  check_manifest master_team.parquet                      granularity='row'      -> USABLE_IF_FILTERED
+     -> usable_at_e0_e1=True  fit_through_season=2026
+  check_manifest player_game_availability.csv             granularity='artifact' -> UNUSABLE
+     -> usable_at_e0_e1=False  fit_through_season=2026
+  check_manifest roster_asof.csv                          granularity='artifact' -> UNUSABLE
+     -> usable_at_e0_e1=False  fit_through_season=2026
+
+  USED:       master_player.parquet, master_team.parquet (both asof_granularity='row').
+  NOT OPENED: w1_truth/player_game_availability.csv, w1_truth/roster_asof.csv
+              -- artifact-granular, fit_through_season 2026, FILTERING DOES NOT HELP.
+              Availability is rebuilt from box membership (minutes>0), the D076 method.
+  READ-ONLY REPRODUCTION TARGET: E0_I0016/screen_frame.parquet (frozen).
+
+====================================================================================================
+2. LOAD + PARTITION FILTER (VALUE-BASED, never a byte scan)
+====================================================================================================
+  raw master_player (33712, 78)
+  after season filter: master_player (21462, 78)
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+  master_player partition ok=True
+  appeared player-game rows 2021-2024: 18212  (players=265, games=970)
+
+====================================================================================================
+3. STRICTLY-PRIOR PLAYER AGGREGATES.  .shift(1) ALWAYS PRECEDES .expanding().
+====================================================================================================
+
+====================================================================================================
+4. TEAMMATE CONTEXT -- availability REBUILT FROM BOX MEMBERSHIP (D076 method)
+====================================================================================================
+
+====================================================================================================
+5. OUTCOMES + STRICTLY-PRIOR REFERENCES (D085 REF-B construction, extended)
+====================================================================================================
+  reference fallback accounting:
+{
+  "ppm": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 4
+  },
+  "spm": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 4
+  },
+  "pps": {
+    "n_from_player_prior_B": 17513,
+    "n_still_nan_B": 4
+  },
+  "ts": {
+    "n_from_player_prior_B": 17513,
+    "n_still_nan_B": 4
+  },
+  "efg": {
+    "n_from_player_prior_B": 17504,
+    "n_still_nan_B": 4
+  },
+  "fgapm": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 4
+  },
+  "ppfga": {
+    "n_from_player_prior_B": 17504,
+    "n_still_nan_B": 4
+  },
+  "mpg": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 466
+  },
+  "own_usg_pg": {
+    "n_from_player_prior_B": 17578,
+    "n_still_nan_B": 466
+  }
+}
+
+  IDENTITY  max|y_pps - 2*y_ts|            = 0.000e+00
+  IDENTITY  max|refB_pps - 2*refB_ts|      = 0.000e+00
+  IDENTITY  max|y_ppm - y_spm*y_pps|       = 1.776e-15
+  IDENTITY  max|T01 - (T02 - O01)|         = 1.421e-14   <-- the reference-incompleteness vector
+
+====================================================================================================
+6. SCREEN FRAME: Regular Season, >= 3 prior appearances (D085's filter)
+====================================================================================================
+  screen frame: 14852 rows, 247 players, 827 games, seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    season_type              name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+
+====================================================================================================
+7. EXACT REPRODUCTION CHECK against D085's FROZEN screen_frame.parquet
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  C04        max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  C08        max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  y_ppm      max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  y_ts       max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  y_efg      max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  refB_ppm   max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  refB_ts    max|new - frozen| = 2.220446e-16     NaN-pattern mismatches = 0
+  refB_efg   max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+  n_prior    max|new - frozen| = 0.000000e+00     NaN-pattern mismatches = 0
+
+  -> D085's C04 column is REPRODUCED EXACTLY from master_player.  Row set identical.
+
+====================================================================================================
+8. LEAKAGE PROBES (trap 2).  A FLAG IS A SCREENING FLAG, NOT A VERDICT (kit K1).
+====================================================================================================
+  future_leakage_probe: n=14252
+    corr(refB_ppm                , own strictly-after-date future) = +0.6741
+    corr(refA_ppm                , own strictly-after-date future) = +0.6571
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.023511
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): 'refB_ppm' tracks the entity's UNPLAYED FUTURE more closely than 'refA_ppm' does (|0.6741| vs |0.6571|) and adds dR2=0.0235 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) 'refB_ppm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) 'refB_ppm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refA_ppm' will correlate more with the entity's own future than 'refA_ppm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+  future_leakage_probe: n=14252
+    corr(refB_spm                , own strictly-after-date future) = +0.6558
+    corr(refA_spm                , own strictly-after-date future) = +0.6391
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.021852
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): 'refB_spm' tracks the entity's UNPLAYED FUTURE more closely than 'refA_spm' does (|0.6558| vs |0.6391|) and adds dR2=0.0219 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) 'refB_spm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) 'refB_spm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refA_spm' will correlate more with the entity's own future than 'refA_spm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+  future_leakage_probe: n=14252
+    corr(_LEAKY_control_ppm      , own strictly-after-date future) = +0.8465
+    corr(refB_ppm                , own strictly-after-date future) = +0.6741
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.273145
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): '_LEAKY_control_ppm' tracks the entity's UNPLAYED FUTURE more closely than 'refB_ppm' does (|0.8465| vs |0.6741|) and adds dR2=0.2731 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) '_LEAKY_control_ppm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) '_LEAKY_control_ppm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refB_ppm' will correlate more with the entity's own future than 'refB_ppm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+
+  candidates found in frame: 18
+  ['G01_noise', 'M01_dev_pos', 'M02_dev_neg', 'M03_dev_pos_playernorm', 'M04_dev_neg_playernorm', 'N01_news_vs_prevgame', 'N02_news_vs_avail', 'O01_own_usg_pg', 'P01_c04_prevgame', 'P02_c04_availweighted', 'P03_c04_avail5', 'P04_absent_usg_prevgame', 'P05_n_present_prevgame', 'P06_c04_rotstab', 'T01_c04_tiptime', 'T02_teamgame_present_usg', 'T03_absent_usg', 'T04_n_present']
+
+  candidates the probe FLAGS (screening flag, NOT a verdict): 0
+
+====================================================================================================
+9. FAST-dR2 IDENTITY CHECK against screenkit.delta_r2_plain (kit is ground truth)
+====================================================================================================
+  max |fast dR2 - screenkit.delta_r2_plain| over 18 candidates x 2 bases = 2.854e-16
+  -> fast path VERIFIED against the kit; used for the permutation loops only.
+
+====================================================================================================
+10. WRITE
+====================================================================================================
+  wrote screen_frame.parquet (14852, 59)
+
+  candidate non-null coverage (fraction of frame rows):
+    G01_noise                      1.0000   sd=0.99688
+    M01_dev_pos                    1.0000   sd=5.66182
+    M02_dev_neg                    1.0000   sd=6.78707
+    M03_dev_pos_playernorm         1.0000   sd=5.17339
+    M04_dev_neg_playernorm         1.0000   sd=6.43067
+    N01_news_vs_prevgame           1.0000   sd=8.20621
+    N02_news_vs_avail              1.0000   sd=9.70150
+    O01_own_usg_pg                 0.9970   sd=5.59481
+    P01_c04_prevgame               1.0000   sd=10.37564
+    P02_c04_availweighted          1.0000   sd=6.12405
+    P03_c04_avail5                 1.0000   sd=8.05772
+    P04_absent_usg_prevgame        1.0000   sd=14.18971
+    P05_n_present_prevgame         1.0000   sd=1.01111
+    P06_c04_rotstab                1.0000   sd=9.31994
+    T01_c04_tiptime                1.0000   sd=11.17682
+    T02_teamgame_present_usg       1.0000   sd=10.24487
+    T03_absent_usg                 1.0000   sd=14.40787
+    T04_n_present                  1.0000   sd=1.01855

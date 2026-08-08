@@ -1,0 +1,75 @@
+﻿  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+
+====================================================================================================
+1. WHAT THE FEATURE NEEDS -- the churn between TODAY's box and the PREVIOUS game's box
+====================================================================================================
+{
+  "n_rows": 14852,
+  "sd_T01_tiptime": 11.176819012429341,
+  "sd_P01_prior_only": 10.37563932534629,
+  "sd_news_T01_minus_P01": 8.206205652967373,
+  "mean_abs_news": 5.151422946203995,
+  "share_rows_news_exactly_zero": 0.2881766765418799,
+  "share_rows_abs_news_gt_2_usg": 0.5789119310530568,
+  "share_rows_abs_news_gt_5_usg": 0.35995152168058175,
+  "r2_of_prevgame_roster_predicting_todays": 0.5075388898039018,
+  "share_of_T01_variance_NOT_predictable_from_prev_game": 0.4924611101960982
+}
+
+  READ THIS AS: the previous game's box membership reproduces 50.8% of the variance of
+  today's, leaving 49.2% that is SAME-DAY NEWS.  On 28.8% of rows the two rosters are
+  IDENTICAL, so on those rows the tip-time and the prior-only variants agree exactly.
+
+====================================================================================================
+2. HOW PERSISTENT IS AN ABSENCE?  *** DESCRIPTIVE DIAGNOSTIC -- READS THE NEXT GAME ***
+====================================================================================================
+  This block reads the team's NEXT game to characterise KNOWABILITY.  It produces no
+  feature, enters no base and enters no dR2.  It is here because 'is this absence the kind
+  a pre-game injury report would carry' cannot be answered without looking at persistence,
+  and the file that would answer it directly (roster_asof.csv) is FORBIDDEN.
+
+{
+  "n_newly_absent_transitions": 1241,
+  "n_newly_present_transitions": 1216,
+  "share_absences_persisting_into_the_next_game": 0.5584206285253828,
+  "share_absences_lasting_exactly_one_game": 0.44157937147461723
+}
+
+  READ THIS AS: 55.8% of newly-absent teammate-games persist into the team's NEXT game,
+  which is the profile of a multi-game unavailability -- the kind a pre-game injury report
+  plausibly carries.  The other 44.2% last exactly one game.
+  THIS IS AN UPPER BOUND ON WHAT A PERFECT PRE-GAME REPORT COULD RECOVER, NOT AN ESTIMATE
+  OF WHAT ONE WOULD RECOVER: persistence is necessary for pre-game knowability, not
+  sufficient, and this screen cannot observe the active list at all.
+
+====================================================================================================
+3. STEP 3(c) -- THE TIP-TIME LOSS LADDER
+====================================================================================================
+                                 measure  stratum       base  tip_time  prior_only  tip_time_fw_p  prior_only_fw_p  prior_only_retains_pct  lost_to_tip_time_pct
+                            dR2 on y_ppm   POOLED   B_SINGLE  0.003300    0.002200       0.001664         0.001664               66.659951             33.340049
+                            dR2 on y_spm   POOLED   B_SINGLE  0.003066    0.001458       0.001664         0.001664               47.559290             52.440710
+   paired dR2 on POINTS (in-sample coef)   POOLED   B_SINGLE  0.007005    0.002825       0.000500         0.000500               40.327692             59.672308
+paired dR2 on POINTS (WALK-FORWARD coef)   POOLED   B_SINGLE  0.005805    0.002303       0.000500         0.000500               39.678314             60.321686
+          ARITHMETIC CEILING (D084 form)   POOLED   B_SINGLE  0.002359    0.001622            NaN              NaN               68.753776             31.246224
+                            dR2 on y_ppm   POOLED B_COMPLETE  0.001274    0.000484       0.004992         0.372712               38.014851             61.985149
+                            dR2 on y_spm   POOLED B_COMPLETE  0.002213    0.000776       0.001664         0.011647               35.089296             64.910704
+   paired dR2 on POINTS (in-sample coef)   POOLED B_COMPLETE  0.004532    0.001433       0.000500         0.000500               31.625603             68.374397
+paired dR2 on POINTS (WALK-FORWARD coef)   POOLED B_COMPLETE  0.003012    0.000631       0.000500         0.006497               20.954526             79.045474
+          ARITHMETIC CEILING (D084 form)   POOLED B_COMPLETE  0.000907    0.000356            NaN              NaN               39.277124             60.722876
+                            dR2 on y_ppm DECISION   B_SINGLE  0.004963    0.002911       0.001664         0.001664               58.657443             41.342557
+                            dR2 on y_spm DECISION   B_SINGLE  0.007987    0.003345       0.001664         0.008319               41.875481             58.124519
+   paired dR2 on POINTS (in-sample coef) DECISION   B_SINGLE  0.011521    0.003842       0.000500         0.001999               33.348349             66.651651
+paired dR2 on POINTS (WALK-FORWARD coef) DECISION   B_SINGLE  0.008975    0.003123       0.000500         0.008996               34.791666             65.208334
+          ARITHMETIC CEILING (D084 form) DECISION   B_SINGLE  0.004070    0.002394            NaN              NaN               58.807241             41.192759
+                            dR2 on y_ppm DECISION B_COMPLETE  0.004240    0.002342       0.001664         0.081531               55.231429             44.768571
+                            dR2 on y_spm DECISION B_COMPLETE  0.007567    0.003037       0.001664         0.011647               40.139897             59.860103
+   paired dR2 on POINTS (in-sample coef) DECISION B_COMPLETE  0.010522    0.003314       0.000500         0.004498               31.496192             68.503808
+paired dR2 on POINTS (WALK-FORWARD coef) DECISION B_COMPLETE  0.007817    0.002349       0.000500         0.034483               30.054490             69.945510
+          ARITHMETIC CEILING (D084 form) DECISION B_COMPLETE  0.003484    0.001928            NaN              NaN               55.338242             44.661758
+
+  MEDIAN of prior_only_retains_pct across the ladder = 39.9%
+
+  wrote tiptime_loss_ladder.csv, _s06.json

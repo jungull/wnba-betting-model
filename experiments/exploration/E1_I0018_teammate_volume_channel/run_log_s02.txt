@@ -1,0 +1,111 @@
+﻿  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  frame (14852, 59)
+  decision stratum (>=8 prior appearances AND trailing-5 minutes >=24): 5673 of 14852 rows (38.2%)
+
+====================================================================================================
+A. GROUPING LEVEL -- chosen by screenkit.detect_grouping_level, not by assertion
+====================================================================================================
+  detect_grouping_level(feat): n_rows=14852  dtype=float64  distinct values overall=14742
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                 14852      14742          YES    YES 1
+    player_game         14852      14742          YES    YES 1
+    team_game            1632       1631           no     no 12
+    opp_team_game        1632       1631           no     no 12
+    game                  827        826           no     no 24
+    player_season         600        580           no     no 37
+    team_season            48         48           no     no 369
+    opp_team_season         48         48           no     no 351
+    season                  4          4           no     no 4075
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'feat': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+
+  status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+  -> NO coarser constant level exists for T01, which is the K2 signature: the between-entity
+     question needs entity_swap_null, and the within-entity question needs SCHEME_WITHIN.
+     Neither alone is sufficient; a candidate is credited only if it beats BOTH.
+
+====================================================================================================
+B. REPRODUCE THE FOUR HEADLINE CELLS
+====================================================================================================
+
+  --- ppm_pooled
+      n           published 14852          reproduced 14852          delta 0
+      dR2         published 0.0032997045   reproduced 0.0032997045   ABS DELTA 0.000e+00
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 0.000e+00
+      p_N2        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 0.000e+00
+      p_row(NAIVE)published 0.0016638935   reproduced 0.0016638935   ABS DELTA 0.000e+00
+      null sd N1=6.209e-05  N2=1.541e-04  row=7.813e-05   inflation N1/row=0.795 N2/row=1.972
+      var_share_between published 0.1456975908  reproduced 0.1456975908  ABS DELTA 0.000e+00
+      corr_with_ref_residual published -0.0587726586  reproduced -0.0587726586  ABS DELTA 0.000e+00
+
+  --- ts_pooled
+      n           published 14079          reproduced 14079          delta 0
+      dR2         published 0.0004907097   reproduced 0.0004907097   ABS DELTA 3.253e-19
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0116472546   reproduced 0.0116472546   ABS DELTA 0.000e+00
+      p_N2        published 0.0216306156   reproduced 0.0216306156   ABS DELTA 0.000e+00
+      p_row(NAIVE)published 0.0099833611   reproduced 0.0099833611   ABS DELTA 0.000e+00
+      null sd N1=1.074e-04  N2=1.341e-04  row=9.891e-05   inflation N1/row=1.085 N2/row=1.356
+      var_share_between published 0.1469972096  reproduced 0.1469972096  ABS DELTA 0.000e+00
+      corr_with_ref_residual published -0.0221555907  reproduced -0.0221555907  ABS DELTA 0.000e+00
+
+  --- efg_pooled
+      n           published 13989          reproduced 13989          delta 0
+      dR2         published 0.0001182488   reproduced 0.0001182488   ABS DELTA 0.000e+00
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.2445923461   reproduced 0.2445923461   ABS DELTA 0.000e+00
+      p_N2        published 0.3294509151   reproduced 0.3294509151   ABS DELTA 0.000e+00
+      p_row(NAIVE)published 0.2279534110   reproduced 0.2279534110   ABS DELTA 0.000e+00
+      null sd N1=1.090e-04  N2=1.366e-04  row=1.060e-04   inflation N1/row=1.028 N2/row=1.288
+      var_share_between published 0.1470310748  reproduced 0.1470310748  ABS DELTA 0.000e+00
+      corr_with_ref_residual published -0.0108905016  reproduced -0.0108905016  ABS DELTA 0.000e+00
+
+  --- ppm_decision
+      n           published 5673           reproduced 5673           delta 0
+      dR2         published 0.0049627746   reproduced 0.0049627746   ABS DELTA 3.601e-11
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_N2        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_row(NAIVE)published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      null sd N1=2.645e-04  N2=2.728e-04  row=2.018e-04   inflation N1/row=1.311 N2/row=1.352
+
+  --- ppm_reliability
+      n           published 11933          reproduced 11933          delta 0
+      dR2         published 0.0016436943   reproduced 0.0016436943   ABS DELTA 2.632e-12
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_N2        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_row(NAIVE)published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      null sd N1=8.125e-05  N2=1.342e-04  row=9.664e-05   inflation N1/row=0.841 N2/row=1.389
+
+  --- ppm_alt_entity_player_season
+      n           published 14852          reproduced 14852          delta 0
+      dR2         published 0.0032997045   reproduced 0.0032997045   ABS DELTA 4.020e-11
+      sign        published -1.0           reproduced -1.0
+      p_N1        published 0.0099833611   reproduced 0.0099833611   ABS DELTA 3.511e-11
+      p_N2        published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      p_row(NAIVE)published 0.0016638935   reproduced 0.0016638935   ABS DELTA 1.082e-11
+      null sd N1=5.895e-04  N2=1.076e-04  row=7.813e-05   inflation N1/row=7.545 N2/row=1.377
+
+====================================================================================================
+C. PER-SEASON dR2 (D085 reported these; sign stability is the point)
+====================================================================================================
+  2021  n= 3114  published dR2 0.0010443   reproduced 0.0010443   ABS DELTA 3.141e-11   sign -1
+  2022  n= 3607  published dR2 0.0043235   reproduced 0.0043235   ABS DELTA 3.337e-11   sign -1
+  2023  n= 4081  published dR2 0.0039319   reproduced 0.0039319   ABS DELTA 2.853e-12   sign -1
+  2024  n= 4050  published dR2 0.0043922   reproduced 0.0043922   ABS DELTA 2.554e-11   sign -1
+
+====================================================================================================
+D. VERDICT ON THE REPRODUCTION
+====================================================================================================
+  WORST absolute dR2 delta across all 10 reproduced cells = 4.020e-11
+  WORST absolute permutation-p delta across the 6 cells with nulls = 3.511e-11
+  REPRODUCED = True
+
+  wrote _s02.json and permutation_draws_s02.npz
