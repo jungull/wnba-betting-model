@@ -1,0 +1,134 @@
+﻿
+====================================================================================================
+1. MANIFEST CHECKS -- read from disk at call time, not cited from notes
+====================================================================================================
+  data\masters\master_player.parquet                       manifest=True  gran=row       fts=2026   -> USABLE_IF_FILTERED
+  data\masters\master_team.parquet                         manifest=True  gran=row       fts=2026   -> USABLE_IF_FILTERED
+  data\shotcharts\shots_2021_regular.parquet               manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2021_playoffs.parquet              manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2022_regular.parquet               manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2022_playoffs.parquet              manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2023_regular.parquet               manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2023_playoffs.parquet              manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2024_regular.parquet               manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2024_playoffs.parquet              manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\w1_truth\player_game_availability.csv               manifest=True  gran=artifact  fts=2026   -> UNUSABLE
+  data\w1_truth\roster_asof.csv                            manifest=True  gran=artifact  fts=2026   -> UNUSABLE
+
+  USED:       master_player.parquet, master_team.parquet  (asof_granularity='row')
+  USED:       data/shotcharts/shots_{2021..2024}_{regular,playoffs}.parquet
+              -- NO MANIFEST.  Reported as UNVERIFIABLE_NO_MANIFEST.  A missing manifest is
+                 never a pass.  s00b reproduced D087's row-granularity VALUE evidence at
+                 1.000000 of 132,558 rows (SHOT_DISTANCE == floor(hypot(LOC_X,LOC_Y)/10))
+                 and reconciled team-game FGA to the box at 0.9990.  That is a MITIGATION,
+                 NOT a manifest, and every rebound conclusion inherits the caveat.
+  NOT OPENED: w1_truth/player_game_availability.csv, w1_truth/roster_asof.csv, zone_maps/*
+
+====================================================================================================
+2. LOAD master_player + PARTITION FILTER (VALUE test)
+====================================================================================================
+  raw master_player (33712, 78)   seasons in file: [2021, 2022, 2023, 2024, 2025, 2026]
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  after 2021-2024 filter: (21462, 78)   max_date=2024-10-20
+  APPEARED rows (minutes>0): 18212   players=265   games=970
+
+====================================================================================================
+3. TARGETS + BOX IDENTITY ASSERT
+====================================================================================================
+  identity oreb+dreb == reb : exact on 18212 of 18212 rows (1.000000), max|diff|=0.0000
+
+  RESPONSE DISTRIBUTIONS (appeared rows, 2021-2024):
+   y_oreb   n=18212  mean= 0.8648 sd= 1.2272 var=  1.5061  P(y=0)=0.5295  med= 0.0 p90=  2.0 max=10
+   y_dreb   n=18212  mean= 2.8058 sd= 2.6161 var=  6.8441  P(y=0)=0.1938  med= 2.0 p90=  6.0 max=19
+   y_reb    n=18212  mean= 3.6705 sd= 3.2790 var= 10.7521  P(y=0)=0.1462  med= 3.0 p90=  8.0 max=22
+   y_ast    n=18212  mean= 2.1231 sd= 2.2569 var=  5.0938  P(y=0)=0.2774  med= 1.0 p90=  5.0 max=19
+   y_pts    n=18212  mean= 8.7202 sd= 7.5005 var= 56.2575  P(y=0)=0.1528  med= 7.0 p90= 19.0 max=53
+
+====================================================================================================
+4. STRICTLY-PRIOR PLAYER REFERENCES.  .shift(1) ALWAYS PRECEDES .expanding()/.rolling().
+====================================================================================================
+  y_oreb   ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  y_dreb   ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  y_reb    ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  y_ast    ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  y_pts    ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  oracle season-mean / season-rate columns built (LABELLED; ladder only, never features)
+
+====================================================================================================
+5. SHOTCHART ZONE PROFILES -> TEAM-GAME, then STRICTLY-PRIOR EXPANDING BY TEAM
+====================================================================================================
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  shot rows 2021-2024: 132558  games=970
+  team-game shot aggregates: 1940
+  team-game rows with a date: 1940 of 1940
+  strictly-prior team zone profiles built (shift(1) before expanding within season/team)
+
+====================================================================================================
+6. BOX-DERIVED OPPONENT PRIORS FROM master_team (R01, R10)
+====================================================================================================
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  master_team strictly-prior allowance priors built (1940 team-games)
+  merged team feature table: 1940 rows
+  R01_opp_allowed_miss_pg        coverage=0.9744
+  R02_opp_allowed_ra_share       coverage=0.9744
+  R03_opp_allowed_atb3_share     coverage=0.9744
+  R04_opp_allowed_mid_share      coverage=0.9744
+  R05_opp_allowed_long_miss_pg   coverage=0.9744
+  R09_opp_allowed_paint_share    coverage=0.9744
+  R10_opp_allowed_oreb_pg        coverage=0.9744
+  R06_own_atb3_share             coverage=0.9744
+  R07_own_miss_pg                coverage=0.9744
+  R08_player_ra_share            coverage=0.9611
+
+====================================================================================================
+7. TEAMMATE AVAILABILITY -- REBUILT FROM BOX MEMBERSHIP (D076 method)
+====================================================================================================
+  A01/A02/A03 reproduce D089's P01/P05/P04 (E1_I0018/s01_build_frame.py, read-only).
+  THE TIP-TIME VARIANT T01 IS NEVER BUILT.  D089 established it reads `minutes>0` in
+  TODAY's box -- a POST-GAME observation, strictly stronger than the active list and
+  impossible pre-game.  Only the PREVIOUS GAME's box is used here.
+  A01_c04_prevgame               coverage=0.9744  mean=81.2567  sd=10.3569
+  A02_n_present_prevgame         coverage=0.9744  mean=9.4349  sd=1.0345
+  A03_absent_usg_prevgame        coverage=0.9744  mean=18.1908  sd=14.2305
+  A04_teammate_prior_fgm_pg      coverage=0.9744  mean=26.8019  sd=3.9505
+  A05_teammate_prior_fgpct       coverage=0.9744  mean=0.4353  sd=0.0299
+
+====================================================================================================
+8. CONTROLS + STRATA
+====================================================================================================
+  DECISION stratum (n_prior>=8 AND trailing-5 minutes>=24): 6431 of 18212 (0.3531)
+  (D081 s06's decision-relevant rule, so figures are comparable with D081/D085/D089)
+
+====================================================================================================
+9. PARTITION RE-ASSERT AFTER ALL JOINS
+====================================================================================================
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  OK -- max date 2024-10-20
+
+====================================================================================================
+10. BRUTE-FORCE LEAKAGE PROBES (recomputation, not inspection)
+====================================================================================================
+  [PASS] player ref_mean__y_reb == mean of strictly earlier games n=400 mismatches=0
+  [PASS] n_prior == count of strictly earlier same-season games n=400 mismatches=0
+  [PASS] R02 opp RA share == opp's strictly earlier allowed shots n=244 mismatches=0
+  [PASS] A01 uses PREVIOUS game membership (tip-time variant never built) n=192 membership differs from today's box on many rows -- A01 is not a today's-box quantity
+  [PASS] ref_mean__y_ast unchanged when all FUTURE rows are deleted n=148 mismatches=0
+  [PASS] response never filtered by realised minutes          n=18212 all appeared rows retained; floor=10 applied only to rate history
+
+====================================================================================================
+11. HISTORY-FLOOR EFFECT ON THE RATE HISTORY (D093 context)
+====================================================================================================
+  floor=   0  history rows kept=1.0000  var(reb/min)=0.019335  var(ast/min)=0.008900
+  floor=   5  history rows kept=0.9125  var(reb/min)=0.014844  var(ast/min)=0.006873
+  floor=  10  history rows kept=0.8184  var(reb/min)=0.013612  var(ast/min)=0.006413
+  floor=  15  history rows kept=0.6981  var(reb/min)=0.012884  var(ast/min)=0.006142
+  floor=  20  history rows kept=0.5655  var(reb/min)=0.012350  var(ast/min)=0.006012
+  variance reduction at floor 20: reb 0.3613  ast 0.3245
+
+====================================================================================================
+12. WRITE
+====================================================================================================
+  WROTE screen_frame.parquet  shape=(18212, 78)  cols=78
+  WROTE response_distributions.csv, leakage_probes.csv, history_floor_curve.csv, _s02.json
+
+  headline rows (2022-2024): 14327

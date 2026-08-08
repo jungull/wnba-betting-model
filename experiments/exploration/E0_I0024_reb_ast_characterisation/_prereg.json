@@ -1,0 +1,791 @@
+{
+  "screen_id": "E0_I0024_reb_ast_characterisation",
+  "targets": {
+    "y_oreb": "offensive rebounds, player-game count",
+    "y_dreb": "defensive rebounds, player-game count",
+    "y_reb": "total rebounds, player-game count (oreb+dreb; identity asserted against box `reb`)",
+    "y_ast": "assists, player-game count",
+    "y_pts": "points -- CALIBRATION ANCHOR ONLY.  Already characterised by D081.  Carried through the identical ladder/ceiling machinery so the rebound and assist numbers are compared to points ON THIS FRAME rather than across frames.  No new claim is made about points."
+  },
+  "bases": {
+    "B_SINGLE": [
+      "ref_mean"
+    ],
+    "B_COMPLETE": [
+      "ref_mean",
+      "ref_ewma",
+      "ref_trail5",
+      "ref_rate_x_min",
+      "ref_mean_minutes",
+      "ref_trail5_minutes",
+      "ref_pct",
+      "ref_mean_pace",
+      "n_prior",
+      "is_home"
+    ]
+  },
+  "base_note": "D087 REFERENCE INCOMPLETENESS is the top-ranked explanation for this programme's nulls.  B_COMPLETE puts EVERY available strictly-prior measurement of the target in the base.  A candidate is only reported as alive if it survives B_COMPLETE.",
+  "candidates": [
+    {
+      "name": "R01_opp_allowed_miss_pg",
+      "desc": "opp team's strictly-prior mean MISSED field goals allowed per game (box)",
+      "level": "opp_team_season",
+      "family": "R"
+    },
+    {
+      "name": "R02_opp_allowed_ra_share",
+      "desc": "opp team's strictly-prior share of ALLOWED attempts from Restricted Area",
+      "level": "opp_team_season",
+      "family": "R"
+    },
+    {
+      "name": "R03_opp_allowed_atb3_share",
+      "desc": "opp team's strictly-prior share of ALLOWED attempts Above the Break 3",
+      "level": "opp_team_season",
+      "family": "R"
+    },
+    {
+      "name": "R04_opp_allowed_mid_share",
+      "desc": "opp team's strictly-prior share of ALLOWED attempts Mid-Range",
+      "level": "opp_team_season",
+      "family": "R"
+    },
+    {
+      "name": "R05_opp_allowed_long_miss_pg",
+      "desc": "opp team's strictly-prior MISSED 3PA allowed per game (long rebounds)",
+      "level": "opp_team_season",
+      "family": "R"
+    },
+    {
+      "name": "R06_own_atb3_share",
+      "desc": "own team's strictly-prior share of OWN attempts Above the Break 3",
+      "level": "team_season",
+      "family": "R"
+    },
+    {
+      "name": "R07_own_miss_pg",
+      "desc": "own team's strictly-prior mean MISSED field goals per game",
+      "level": "team_season",
+      "family": "R"
+    },
+    {
+      "name": "R08_player_ra_share",
+      "desc": "player's OWN strictly-prior share of own attempts from Restricted Area",
+      "level": "player_season",
+      "family": "R"
+    },
+    {
+      "name": "R09_opp_allowed_paint_share",
+      "desc": "opp team's strictly-prior share of ALLOWED attempts in the paint (RA + non-RA)",
+      "level": "opp_team_season",
+      "family": "R"
+    },
+    {
+      "name": "R10_opp_allowed_oreb_pg",
+      "desc": "opp team's strictly-prior mean OFFENSIVE rebounds ALLOWED per game (box) -- the closest prior opponent measurement of the target; also used as an EXTRA base column in the decomposition variant B_COMPLETE_PLUS_R10",
+      "level": "opp_team_season",
+      "family": "R"
+    },
+    {
+      "name": "A01_c04_prevgame",
+      "desc": "sum of strictly-prior per-game USAGE of the OTHER players who appeared in the team's PREVIOUS game box.  Construction credited to D089 E1_I0018_teammate_volume_channel/s01_build_frame.py (P01_c04_prevgame), reproduced here, READ-ONLY.  The TIP-TIME variant T01 is a POST-GAME observation and is NEVER BUILT.",
+      "level": "team_season",
+      "family": "A"
+    },
+    {
+      "name": "A02_n_present_prevgame",
+      "desc": "count of players in the team's PREVIOUS game box (D089 P05)",
+      "level": "team_season",
+      "family": "A"
+    },
+    {
+      "name": "A03_absent_usg_prevgame",
+      "desc": "strictly-prior usage of players ABSENT from the previous game box (D089 P04)",
+      "level": "team_season",
+      "family": "A"
+    },
+    {
+      "name": "A04_teammate_prior_fgm_pg",
+      "desc": "sum of strictly-prior per-game FGM of the OTHER players in the previous game box -- an assist requires a teammate to MAKE a shot, so this is the mechanism-specific form of A01",
+      "level": "team_season",
+      "family": "A"
+    },
+    {
+      "name": "A05_teammate_prior_fgpct",
+      "desc": "usage-weighted strictly-prior FG% of the OTHER players in the previous game box",
+      "level": "team_season",
+      "family": "A"
+    },
+    {
+      "name": "G01_noise",
+      "desc": "NEGATIVE CONTROL: iid gaussian, seed-fixed, independent of everything",
+      "level": "row",
+      "family": "G"
+    },
+    {
+      "name": "G02_placebo_noop",
+      "desc": "NO-OP PLACEBO: an exact affine copy of the base's first column.  Its dR2 must be ~0 by construction; its OBSERVED SD across draws is reported as the floor of resolution of this screen.",
+      "level": "row",
+      "family": "G"
+    }
+  ],
+  "cells": [
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R02_opp_allowed_ra_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R02_opp_allowed_ra_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R03_opp_allowed_atb3_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R03_opp_allowed_atb3_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R04_opp_allowed_mid_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R04_opp_allowed_mid_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R05_opp_allowed_long_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R05_opp_allowed_long_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R06_own_atb3_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R06_own_atb3_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R07_own_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R07_own_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R08_player_ra_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R08_player_ra_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R09_opp_allowed_paint_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R09_opp_allowed_paint_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "R10_opp_allowed_oreb_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "R10_opp_allowed_oreb_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R02_opp_allowed_ra_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R02_opp_allowed_ra_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R03_opp_allowed_atb3_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R03_opp_allowed_atb3_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R04_opp_allowed_mid_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R04_opp_allowed_mid_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R05_opp_allowed_long_miss_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R05_opp_allowed_long_miss_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R06_own_atb3_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R06_own_atb3_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R07_own_miss_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R07_own_miss_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R08_player_ra_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R08_player_ra_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R09_opp_allowed_paint_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R09_opp_allowed_paint_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "R10_opp_allowed_oreb_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "R10_opp_allowed_oreb_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R02_opp_allowed_ra_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R02_opp_allowed_ra_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R03_opp_allowed_atb3_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R03_opp_allowed_atb3_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R04_opp_allowed_mid_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R04_opp_allowed_mid_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R05_opp_allowed_long_miss_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R05_opp_allowed_long_miss_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R06_own_atb3_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R06_own_atb3_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R07_own_miss_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R07_own_miss_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R08_player_ra_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R08_player_ra_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R09_opp_allowed_paint_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R09_opp_allowed_paint_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "R10_opp_allowed_oreb_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "R10_opp_allowed_oreb_pg"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_SINGLE",
+      "candidate": "A01_c04_prevgame"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_COMPLETE",
+      "candidate": "A01_c04_prevgame"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_SINGLE",
+      "candidate": "A02_n_present_prevgame"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_COMPLETE",
+      "candidate": "A02_n_present_prevgame"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_SINGLE",
+      "candidate": "A03_absent_usg_prevgame"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_COMPLETE",
+      "candidate": "A03_absent_usg_prevgame"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_SINGLE",
+      "candidate": "A04_teammate_prior_fgm_pg"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_COMPLETE",
+      "candidate": "A04_teammate_prior_fgm_pg"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_SINGLE",
+      "candidate": "A05_teammate_prior_fgpct"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_COMPLETE",
+      "candidate": "A05_teammate_prior_fgpct"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "A01_c04_prevgame"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "A01_c04_prevgame"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "A01_c04_prevgame"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "A01_c04_prevgame"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "A01_c04_prevgame"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "A01_c04_prevgame"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_SINGLE",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_COMPLETE",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_SINGLE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_SINGLE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_SINGLE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_SINGLE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_COMPLETE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_SINGLE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_ast",
+      "base": "B_COMPLETE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_pts",
+      "base": "B_SINGLE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_pts",
+      "base": "B_COMPLETE",
+      "candidate": "G01_noise"
+    },
+    {
+      "target": "y_pts",
+      "base": "B_SINGLE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_pts",
+      "base": "B_COMPLETE",
+      "candidate": "G02_placebo_noop"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R02_opp_allowed_ra_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R03_opp_allowed_atb3_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R04_opp_allowed_mid_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R05_opp_allowed_long_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R06_own_atb3_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R07_own_miss_pg"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R08_player_ra_share"
+    },
+    {
+      "target": "y_oreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R09_opp_allowed_paint_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R02_opp_allowed_ra_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R03_opp_allowed_atb3_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R04_opp_allowed_mid_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R05_opp_allowed_long_miss_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R06_own_atb3_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R07_own_miss_pg"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R08_player_ra_share"
+    },
+    {
+      "target": "y_dreb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R09_opp_allowed_paint_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R01_opp_allowed_miss_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R02_opp_allowed_ra_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R03_opp_allowed_atb3_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R04_opp_allowed_mid_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R05_opp_allowed_long_miss_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R06_own_atb3_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R07_own_miss_pg"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R08_player_ra_share"
+    },
+    {
+      "target": "y_reb",
+      "base": "B_COMPLETE_PLUS_R10",
+      "candidate": "R09_opp_allowed_paint_share"
+    }
+  ],
+  "choices": {
+    "partition": "seasons 2021-2024 only; HEADLINE = 2022-2024 (matching D081's reproduction rows); 2021 reported only as a labelled power sensitivity.  2025/2026 never read.",
+    "rows": "appeared player-games only (minutes > 0), master_player.parquet",
+    "decision_stratum": "n_prior >= 8 AND trailing-5 mean minutes >= 24 -- D081 s06's decision-relevant stratum, so figures are comparable with D081/D085/D089",
+    "history_minutes_floor_primary": 10.0,
+    "history_minutes_floor_sensitivity": [
+      0.0,
+      5.0,
+      10.0,
+      15.0,
+      20.0
+    ],
+    "floor_note": "THE FLOOR IS APPLIED TO THE HISTORY ONLY -- which prior games contribute to a per-minute rate estimate.  It is NEVER applied to the response, because filtering the response conditions on an outcome (D091 ruling 3).  D093 measured a response floor removing 39.3% of per-minute variance; that is a measurement result, not a licence to filter the response here.",
+    "ewma_halflife": 5.0,
+    "r2_convention": "plain unweighted OLS R2, SST about the UNWEIGHTED mean (D069)",
+    "n_draws": 600,
+    "seed": 20260808,
+    "nulls": "N_ROW (naive, reported for INFLATION ONLY, never a verdict); N_ENTITY_SWAP at the candidate's declared level (whole entity time-series reassigned within season, preserving serial structure); N_CYCLIC (within-player cyclic shift, D093's autocorrelation trap -- a plain shuffle is anticonservative, p 0.0015 vs an honest 0.39, implementation credited to E1_I0021_heterogeneity_diagnostic/hd_base.py, READ-ONLY).  p_correct_level = MAX over the applicable entity-level nulls.",
+    "family_wise": "max-t across all cells sharing a target family, standardised by each cell's own null mean/sd",
+    "ceiling_form": "D084/D089 form: CEILING_dr2 = (|beta| * sd_candidate / sd_y)^2, i.e. the variance share reachable if 1 sd of the signal moves the target by beta*sd.  Benchmarks: 0.002057 (D089, largest measured, alive), 0.001127 (dead), 0.000129 (dead).  The base-residualised variant is reported alongside.",
+    "oracle_ladder": "REF/H honest rungs (strictly prior only) vs O1 season-mean target, O2 ACTUAL minutes x season-mean rate, O3 within-player-season OLS on ACTUAL minutes, O4 ACTUAL minutes x honest prior rate, O5 honest prior minutes x season-mean rate.  D081's ladder shape, with the champion rungs omitted BECAUSE NO CHAMPION REBOUND OR ASSIST FORECAST EXISTS (D088).",
+    "champion": "NEVER loaded, never retrained, never refitted.  D088 established the champion carries no rebound and no assist forecast, which is why this screen exists.",
+    "forbidden": [
+      "data/w1_truth/player_game_availability.csv",
+      "data/w1_truth/roster_asof.csv",
+      "data/zone_maps/*"
+    ],
+    "forbidden_note": "NOT OPENED.  Availability is rebuilt from box membership (minutes>0), the D076 method.  Zones are derived from raw per-shot SHOT_ZONE_BASIC in data/shotcharts/, which carries NO MANIFEST and is therefore reported as UNVERIFIABLE; row-granularity value evidence was reproduced in s00b at 1.000000 of 132,558 rows and is a MITIGATION, not a manifest."
+  },
+  "prereg_sha256": "ab220cd18ae33a4c0c03a3a408a6c498145d6493e06e9201a8461e5587d13736",
+  "n_cells": 125,
+  "n_candidates": 17
+}

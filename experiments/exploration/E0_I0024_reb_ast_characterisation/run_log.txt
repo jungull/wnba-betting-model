@@ -1,0 +1,1081 @@
+﻿
+====================================================================================================
+1. MANIFEST STATUS OF EVERY ARTIFACT THIS SCREEN MAY CONSUME
+====================================================================================================
+  data\masters\master_player.parquet                         manifest=True  gran=row       fts=2026   -> USABLE_IF_FILTERED
+  data\masters\master_team.parquet                           manifest=True  gran=row       fts=2026   -> USABLE_IF_FILTERED
+  data\shotcharts\shots_2021_regular.parquet                 manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2021_playoffs.parquet                manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2022_regular.parquet                 manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2022_playoffs.parquet                manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2023_regular.parquet                 manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2023_playoffs.parquet                manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2024_regular.parquet                 manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2024_playoffs.parquet                manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+
+====================================================================================================
+2. master_player.parquet COLUMNS
+====================================================================================================
+  raw shape (33712, 78)
+  columns: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'team_abbreviation', 'opp_team_id', 'is_home', 'player_id', 'player_name', 'first_name', 'family_name', 'name_i', 'position', 'starter_flag', 'dnp_reason', 'minutes', 'minutes_raw', 'minutes_source', 'fgm', 'fga', 'fg_pct', 'fg3m', 'fg3a', 'fg3_pct', 'ftm', 'fta', 'ft_pct', 'oreb', 'dreb', 'reb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'plus_minus', 'points_off_turnovers', 'points_second_chance', 'points_fast_break', 'points_paint', 'opp_points_off_turnovers', 'opp_points_second_chance', 'opp_points_fast_break', 'opp_points_paint', 'blk_misc', 'blocks_against', 'pf_misc', 'fouls_drawn', 'estimated_offensive_rating', 'offensive_rating', 'estimated_defensive_rating', 'defensive_rating', 'estimated_net_rating', 'net_rating', 'assist_percentage', 'assist_to_turnover', 'assist_ratio', 'offensive_rebound_percentage', 'defensive_rebound_percentage', 'rebound_percentage', 'turnover_ratio', 'effective_field_goal_percentage', 'true_shooting_percentage', 'usage_percentage', 'estimated_usage_percentage', 'estimated_pace', 'pace', 'pace_per40', 'possessions', 'pie', 'in_gamelog', 'in_misc', 'in_advanced', 'era', 'source', 'observed_time']
+game_id                                str
+season                               int64
+season_type                            str
+game_date                              str
+team_id                              Int64
+team_abbreviation                      str
+opp_team_id                          Int64
+is_home                              Int64
+player_id                            Int64
+player_name                            str
+first_name                             str
+family_name                            str
+name_i                                 str
+position                               str
+starter_flag                         Int64
+dnp_reason                             str
+minutes                            float64
+minutes_raw                            str
+minutes_source                         str
+fgm                                  Int64
+fga                                  Int64
+fg_pct                             float64
+fg3m                                 Int64
+fg3a                                 Int64
+fg3_pct                            float64
+ftm                                  Int64
+fta                                  Int64
+ft_pct                             float64
+oreb                                 Int64
+dreb                                 Int64
+reb                                  Int64
+ast                                  Int64
+stl                                  Int64
+blk                                  Int64
+tov                                  Int64
+pf                                   Int64
+pts                                  Int64
+plus_minus                           Int64
+points_off_turnovers                 Int64
+points_second_chance                 Int64
+points_fast_break                    Int64
+points_paint                         Int64
+opp_points_off_turnovers             Int64
+opp_points_second_chance             Int64
+opp_points_fast_break                Int64
+opp_points_paint                     Int64
+blk_misc                             Int64
+blocks_against                       Int64
+pf_misc                              Int64
+fouls_drawn                          Int64
+estimated_offensive_rating         float64
+offensive_rating                   float64
+estimated_defensive_rating         float64
+defensive_rating                   float64
+estimated_net_rating               float64
+net_rating                         float64
+assist_percentage                  float64
+assist_to_turnover                 float64
+assist_ratio                       float64
+offensive_rebound_percentage       float64
+defensive_rebound_percentage       float64
+rebound_percentage                 float64
+turnover_ratio                     float64
+effective_field_goal_percentage    float64
+true_shooting_percentage           float64
+usage_percentage                   float64
+estimated_usage_percentage         float64
+estimated_pace                     float64
+pace                               float64
+pace_per40                         float64
+possessions                        float64
+pie                                float64
+in_gamelog                           int64
+in_misc                              int64
+in_advanced                          int64
+era                                    str
+source                                 str
+observed_time                          str
+
+  seasons present in RAW file: [2021, 2022, 2023, 2024, 2025, 2026]
+
+====================================================================================================
+3. PARTITION FILTER TO 2021-2024 (VALUE test, never a byte scan)
+====================================================================================================
+  after season filter: (21462, 78)
+  date range: 2021-05-14 .. 2024-10-20
+  PARTITION OK -- no row on/after 2025-01-01, no season outside 2021-2024
+
+====================================================================================================
+4. TARGET COLUMNS: oreb / dreb / ast -- coverage and nulls
+====================================================================================================
+  minutes    present  n_nonnull=18216    null=3246    min=0.0      max=50.0     mean=21.4457
+  oreb       present  n_nonnull=18216    null=3246    min=0        max=10       mean=0.8646
+  dreb       present  n_nonnull=18216    null=3246    min=0        max=19       mean=2.8052
+  ast        present  n_nonnull=18216    null=3246    min=0        max=19       mean=2.1226
+  pts        present  n_nonnull=18216    null=3246    min=0        max=53       mean=8.7183
+  fga        present  n_nonnull=18216    null=3246    min=0        max=35       mean=7.2771
+  fta        present  n_nonnull=18216    null=3246    min=0        max=21       mean=1.9006
+  tov        present  n_nonnull=18216    null=3246    min=0        max=10       mean=1.4048
+  reb        present  n_nonnull=18216    null=3246    min=0        max=22       mean=3.6697
+
+====================================================================================================
+5. APPEARED ROWS (minutes>0) BY SEASON
+====================================================================================================
+        rows  players  games
+season                      
+2021    3885      155    209
+2022    4519      166    239
+2023    4897      156    260
+2024    4911      157    262
+
+====================================================================================================
+6. SHOTCHART FILES -- columns and ROW-GRANULARITY EVIDENCE (D087 method)
+====================================================================================================
+  shots_2023_regular shape (32809, 24)
+  columns: ['GRID_TYPE', 'GAME_ID', 'GAME_EVENT_ID', 'PLAYER_ID', 'PLAYER_NAME', 'TEAM_ID', 'TEAM_NAME', 'PERIOD', 'MINUTES_REMAINING', 'SECONDS_REMAINING', 'EVENT_TYPE', 'ACTION_TYPE', 'SHOT_TYPE', 'SHOT_ZONE_BASIC', 'SHOT_ZONE_AREA', 'SHOT_ZONE_RANGE', 'SHOT_DISTANCE', 'LOC_X', 'LOC_Y', 'SHOT_ATTEMPTED_FLAG', 'SHOT_MADE_FLAG', 'GAME_DATE', 'HTM', 'VTM']
+GRID_TYPE                str
+GAME_ID                  str
+GAME_EVENT_ID          int64
+PLAYER_ID              int64
+PLAYER_NAME              str
+TEAM_ID                int64
+TEAM_NAME                str
+PERIOD                 int64
+MINUTES_REMAINING      int64
+SECONDS_REMAINING      int64
+EVENT_TYPE               str
+ACTION_TYPE              str
+SHOT_TYPE                str
+SHOT_ZONE_BASIC          str
+SHOT_ZONE_AREA           str
+SHOT_ZONE_RANGE          str
+SHOT_DISTANCE          int64
+LOC_X                  int64
+LOC_Y                  int64
+SHOT_ATTEMPTED_FLAG    int64
+SHOT_MADE_FLAG         int64
+GAME_DATE                str
+HTM                      str
+VTM                      str
+
+  SHOT_ZONE_BASIC values:
+SHOT_ZONE_BASIC
+Restricted Area          9316
+Above the Break 3        9265
+In The Paint (Non-RA)    6998
+Mid-Range                5886
+Left Corner 3             760
+Right Corner 3            515
+Backcourt                  69
+
+  head:
+           GRID_TYPE     GAME_ID  GAME_EVENT_ID  PLAYER_ID     PLAYER_NAME     TEAM_ID        TEAM_NAME  PERIOD  MINUTES_REMAINING  SECONDS_REMAINING   EVENT_TYPE                ACTION_TYPE       SHOT_TYPE    SHOT_ZONE_BASIC         SHOT_ZONE_AREA  SHOT_ZONE_RANGE  SHOT_DISTANCE  LOC_X  LOC_Y  SHOT_ATTEMPTED_FLAG  SHOT_MADE_FLAG GAME_DATE  HTM  VTM
+0  Shot Chart Detail  1022300001              8    1628280   Brionna Jones  1611661323  Connecticut Sun       1                  9                 33    Made Shot                 Layup Shot  2PT Field Goal    Restricted Area              Center(C)  Less Than 8 ft.              0      7      4                    1               1  20230519  IND  CON
+1  Shot Chart Detail  1022300001             10     204365   Erica Wheeler  1611661325    Indiana Fever       1                  9                 10  Missed Shot           Pullup Jump shot  3PT Field Goal  Above the Break 3  Right Side Center(RC)          24+ ft.             24    173    175                    1               0  20230519  IND  CON
+2  Shot Chart Detail  1022300001             12     201886  DeWanna Bonner  1611661323  Connecticut Sun       1                  9                  1  Missed Shot  Running Pull-Up Jump Shot  3PT Field Goal  Above the Break 3   Left Side Center(LC)          24+ ft.             25   -117    221                    1               0  20230519  IND  CON
+3  Shot Chart Detail  1022300001             15    1631019   NaLyssa Smith  1611661325    Indiana Fever       1                  8                 51  Missed Shot                  Jump Shot  3PT Field Goal  Above the Break 3   Left Side Center(LC)          24+ ft.             25    -96    234                    1               0  20230519  IND  CON
+
+====================================================================================================
+7. TEAM MASTER COLUMNS (for opponent joins)
+====================================================================================================
+  raw shape (2990, 65)   columns: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'team_abbreviation', 'opp_team_id', 'opp_team_abbreviation', 'is_home', 'wl', 'minutes', 'fgm', 'fga', 'fg_pct', 'fg3m', 'fg3a', 'fg3_pct', 'ftm', 'fta', 'ft_pct', 'oreb', 'dreb', 'reb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'plus_minus', 'points_paint', 'points_fast_break', 'points_second_chance', 'points_off_turnovers', 'fouls_drawn', 'opp_fgm', 'opp_fga', 'opp_fg_pct', 'opp_fg3m', 'opp_fg3a', 'opp_fg3_pct', 'opp_ftm', 'opp_fta', 'opp_ft_pct', 'opp_oreb', 'opp_dreb', 'opp_reb', 'opp_ast', 'opp_stl', 'opp_blk', 'opp_tov', 'opp_pf', 'opp_pts', 'opp_plus_minus', 'opp_points_paint', 'opp_points_fast_break', 'opp_points_second_chance', 'opp_points_off_turnovers', 'opp_fouls_drawn', 'box_source', 'opp_box_source', 'in_misc', 'era', 'source', 'observed_time']
+
+WROTE _s00.json
+
+====================================================================================================
+1. LOAD SHOTCHARTS 2021-2024 (regular + playoffs).  2025/2026 FILES ARE NEVER OPENED.
+====================================================================================================
+  opened shots_2021_regular.parquet       rows=26269
+  opened shots_2021_playoffs.parquet      rows=2385
+  opened shots_2022_regular.parquet       rows=29374
+  opened shots_2022_playoffs.parquet      rows=3139
+  opened shots_2023_regular.parquet       rows=32809
+  opened shots_2023_playoffs.parquet      rows=2813
+  opened shots_2024_regular.parquet       rows=32759
+  opened shots_2024_playoffs.parquet      rows=3010
+  TOTAL shot rows 2021-2024: 132558
+
+====================================================================================================
+2. PARTITION CHECK ON VALUES (GAME_DATE parsed, never a byte scan)
+====================================================================================================
+  parsed dates: 132558 of 132558   range 2021-05-14 .. 2024-10-20
+  PARTITION OK
+
+====================================================================================================
+3. ROW-GRANULARITY VALUE EVIDENCE (D087 method, REPRODUCED HERE)
+====================================================================================================
+  round  rule: reproduced on 65954 of 132558 rows = 0.497548
+  floor  rule: reproduced on 132558 of 132558 rows = 1.000000
+  BEST = 1.000000
+  VERDICT: value evidence for ROW granularity; the file still has NO MANIFEST and is
+           therefore reported as UNVERIFIABLE_NO_MANIFEST + VALUE_EVIDENCE_ROW.
+
+====================================================================================================
+4. JOIN FEASIBILITY: shotchart GAME_ID vs master_team game_id
+====================================================================================================
+  master_team games 2021-24: 970   shotchart games: 970
+  shotchart games found in master_team: 970 (1.0000)
+  master_team games with shotchart:     970 (1.0000)
+
+  examples only in shotcharts: []
+  examples only in master:     []
+
+====================================================================================================
+5. TEAM_ID CONSISTENCY
+====================================================================================================
+  shot TEAM_IDs: 12   master team_ids: 12   overlap: 12
+
+====================================================================================================
+6. SHOTS PER GAME SANITY (both teams present in each game?)
+====================================================================================================
+  games with exactly 2 shooting teams: 970 of 970 (1.0000)
+
+====================================================================================================
+7. ZONE VOCABULARY ACROSS ALL 2021-2024
+====================================================================================================
+SHOT_ZONE_BASIC
+Above the Break 3        37939
+Restricted Area          37743
+In The Paint (Non-RA)    27397
+Mid-Range                24370
+Left Corner 3             2916
+Right Corner 3            1939
+Backcourt                  254
+
+  SHOT_TYPE:
+SHOT_TYPE
+2PT Field Goal    89510
+3PT Field Goal    43048
+
+====================================================================================================
+8. SHOTCHART vs BOX FGA RECONCILIATION (team-game level)
+====================================================================================================
+  matched team-games: 1940
+  FGA exact match: 0.9990   mean|diff|=0.0010
+  FGM exact match: 0.9995   mean|diff|=0.0005
+
+WROTE _s00b.json
+PREREG SHA256 = ab220cd18ae33a4c0c03a3a408a6c498145d6493e06e9201a8461e5587d13736
+candidates = 17   cells = 125
+cells by target: {'y_oreb': 35, 'y_dreb': 35, 'y_reb': 35, 'y_ast': 16, 'y_pts': 4}
+cells by base:   {'B_SINGLE': 49, 'B_COMPLETE': 49, 'B_COMPLETE_PLUS_R10': 27}
+WROTE CANDIDATES_PRESELECTED.md, _prereg.json
+
+====================================================================================================
+1. MANIFEST CHECKS -- read from disk at call time, not cited from notes
+====================================================================================================
+  data\masters\master_player.parquet                       manifest=True  gran=row       fts=2026   -> USABLE_IF_FILTERED
+  data\masters\master_team.parquet                         manifest=True  gran=row       fts=2026   -> USABLE_IF_FILTERED
+  data\shotcharts\shots_2021_regular.parquet               manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2021_playoffs.parquet              manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2022_regular.parquet               manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2022_playoffs.parquet              manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2023_regular.parquet               manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2023_playoffs.parquet              manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2024_regular.parquet               manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\shotcharts\shots_2024_playoffs.parquet              manifest=False gran=None      fts=None   -> UNVERIFIABLE_NO_MANIFEST
+  data\w1_truth\player_game_availability.csv               manifest=True  gran=artifact  fts=2026   -> UNUSABLE
+  data\w1_truth\roster_asof.csv                            manifest=True  gran=artifact  fts=2026   -> UNUSABLE
+
+  USED:       master_player.parquet, master_team.parquet  (asof_granularity='row')
+  USED:       data/shotcharts/shots_{2021..2024}_{regular,playoffs}.parquet
+              -- NO MANIFEST.  Reported as UNVERIFIABLE_NO_MANIFEST.  A missing manifest is
+                 never a pass.  s00b reproduced D087's row-granularity VALUE evidence at
+                 1.000000 of 132,558 rows (SHOT_DISTANCE == floor(hypot(LOC_X,LOC_Y)/10))
+                 and reconciled team-game FGA to the box at 0.9990.  That is a MITIGATION,
+                 NOT a manifest, and every rebound conclusion inherits the caveat.
+  NOT OPENED: w1_truth/player_game_availability.csv, w1_truth/roster_asof.csv, zone_maps/*
+
+====================================================================================================
+2. LOAD master_player + PARTITION FILTER (VALUE test)
+====================================================================================================
+  raw master_player (33712, 78)   seasons in file: [2021, 2022, 2023, 2024, 2025, 2026]
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  after 2021-2024 filter: (21462, 78)   max_date=2024-10-20
+  APPEARED rows (minutes>0): 18212   players=265   games=970
+
+====================================================================================================
+3. TARGETS + BOX IDENTITY ASSERT
+====================================================================================================
+  identity oreb+dreb == reb : exact on 18212 of 18212 rows (1.000000), max|diff|=0.0000
+
+  RESPONSE DISTRIBUTIONS (appeared rows, 2021-2024):
+   y_oreb   n=18212  mean= 0.8648 sd= 1.2272 var=  1.5061  P(y=0)=0.5295  med= 0.0 p90=  2.0 max=10
+   y_dreb   n=18212  mean= 2.8058 sd= 2.6161 var=  6.8441  P(y=0)=0.1938  med= 2.0 p90=  6.0 max=19
+   y_reb    n=18212  mean= 3.6705 sd= 3.2790 var= 10.7521  P(y=0)=0.1462  med= 3.0 p90=  8.0 max=22
+   y_ast    n=18212  mean= 2.1231 sd= 2.2569 var=  5.0938  P(y=0)=0.2774  med= 1.0 p90=  5.0 max=19
+   y_pts    n=18212  mean= 8.7202 sd= 7.5005 var= 56.2575  P(y=0)=0.1528  med= 7.0 p90= 19.0 max=53
+
+====================================================================================================
+4. STRICTLY-PRIOR PLAYER REFERENCES.  .shift(1) ALWAYS PRECEDES .expanding()/.rolling().
+====================================================================================================
+  y_oreb   ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  y_dreb   ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  y_reb    ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  y_ast    ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  y_pts    ref_mean cold=0.0348  rate cold=0.0643  ref_pct cold=0.0348
+  oracle season-mean / season-rate columns built (LABELLED; ladder only, never features)
+
+====================================================================================================
+5. SHOTCHART ZONE PROFILES -> TEAM-GAME, then STRICTLY-PRIOR EXPANDING BY TEAM
+====================================================================================================
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  shot rows 2021-2024: 132558  games=970
+  team-game shot aggregates: 1940
+  team-game rows with a date: 1940 of 1940
+  strictly-prior team zone profiles built (shift(1) before expanding within season/team)
+
+====================================================================================================
+6. BOX-DERIVED OPPONENT PRIORS FROM master_team (R01, R10)
+====================================================================================================
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  master_team strictly-prior allowance priors built (1940 team-games)
+  merged team feature table: 1940 rows
+  R01_opp_allowed_miss_pg        coverage=0.9744
+  R02_opp_allowed_ra_share       coverage=0.9744
+  R03_opp_allowed_atb3_share     coverage=0.9744
+  R04_opp_allowed_mid_share      coverage=0.9744
+  R05_opp_allowed_long_miss_pg   coverage=0.9744
+  R09_opp_allowed_paint_share    coverage=0.9744
+  R10_opp_allowed_oreb_pg        coverage=0.9744
+  R06_own_atb3_share             coverage=0.9744
+  R07_own_miss_pg                coverage=0.9744
+  R08_player_ra_share            coverage=0.9611
+
+====================================================================================================
+7. TEAMMATE AVAILABILITY -- REBUILT FROM BOX MEMBERSHIP (D076 method)
+====================================================================================================
+  A01/A02/A03 reproduce D089's P01/P05/P04 (E1_I0018/s01_build_frame.py, read-only).
+  THE TIP-TIME VARIANT T01 IS NEVER BUILT.  D089 established it reads `minutes>0` in
+  TODAY's box -- a POST-GAME observation, strictly stronger than the active list and
+  impossible pre-game.  Only the PREVIOUS GAME's box is used here.
+  A01_c04_prevgame               coverage=0.9744  mean=81.2567  sd=10.3569
+  A02_n_present_prevgame         coverage=0.9744  mean=9.4349  sd=1.0345
+  A03_absent_usg_prevgame        coverage=0.9744  mean=18.1908  sd=14.2305
+  A04_teammate_prior_fgm_pg      coverage=0.9744  mean=26.8019  sd=3.9505
+  A05_teammate_prior_fgpct       coverage=0.9744  mean=0.4353  sd=0.0299
+
+====================================================================================================
+8. CONTROLS + STRATA
+====================================================================================================
+  DECISION stratum (n_prior>=8 AND trailing-5 minutes>=24): 6431 of 18212 (0.3531)
+  (D081 s06's decision-relevant rule, so figures are comparable with D081/D085/D089)
+
+====================================================================================================
+9. PARTITION RE-ASSERT AFTER ALL JOINS
+====================================================================================================
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  OK -- max date 2024-10-20
+
+====================================================================================================
+10. BRUTE-FORCE LEAKAGE PROBES (recomputation, not inspection)
+====================================================================================================
+  [PASS] player ref_mean__y_reb == mean of strictly earlier games n=400 mismatches=0
+  [PASS] n_prior == count of strictly earlier same-season games n=400 mismatches=0
+  [PASS] R02 opp RA share == opp's strictly earlier allowed shots n=244 mismatches=0
+  [PASS] A01 uses PREVIOUS game membership (tip-time variant never built) n=192 membership differs from today's box on many rows -- A01 is not a today's-box quantity
+  [PASS] ref_mean__y_ast unchanged when all FUTURE rows are deleted n=148 mismatches=0
+  [PASS] response never filtered by realised minutes          n=18212 all appeared rows retained; floor=10 applied only to rate history
+
+====================================================================================================
+11. HISTORY-FLOOR EFFECT ON THE RATE HISTORY (D093 context)
+====================================================================================================
+  floor=   0  history rows kept=1.0000  var(reb/min)=0.019335  var(ast/min)=0.008900
+  floor=   5  history rows kept=0.9125  var(reb/min)=0.014844  var(ast/min)=0.006873
+  floor=  10  history rows kept=0.8184  var(reb/min)=0.013612  var(ast/min)=0.006413
+  floor=  15  history rows kept=0.6981  var(reb/min)=0.012884  var(ast/min)=0.006142
+  floor=  20  history rows kept=0.5655  var(reb/min)=0.012350  var(ast/min)=0.006012
+  variance reduction at floor 20: reb 0.3613  ast 0.3245
+
+====================================================================================================
+12. WRITE
+====================================================================================================
+  WROTE screen_frame.parquet  shape=(18212, 78)  cols=78
+  WROTE response_distributions.csv, leakage_probes.csv, history_floor_curve.csv, _s02.json
+
+  headline rows (2022-2024): 14327
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  frame (18212, 78)   headline seasons [2022, 2023, 2024]
+
+====================================================================================================
+0. SUPPLEMENTARY LEAKAGE PROBES P4b / P4c -- fixing DEFECT D-01
+====================================================================================================
+  DEFECT D-01: s02's probe P4 was VACUOUS (hard-coded True).  It is superseded here by a
+  brute-force recomputation (P4b) and a discrimination check against the FORBIDDEN
+  tip-time membership (P4c).  See DEFECTS.md.
+  [P4b] A01 == recomputation from the PREVIOUS game's box : mismatches=0 of 250
+  [P4c] A01 vs recomputation from TODAY's box (FORBIDDEN)  : mismatches=177 of 250
+        membership differed between prev and today on 190 of 250 sampled rows
+  [PASS] P4b  [PASS] P4c -- A01 matches the PREVIOUS box and DOES NOT match today's box
+
+====================================================================================================
+1. WALK-FORWARD H4: OLS on B_COMPLETE, fitted on STRICTLY EARLIER SEASONS ONLY
+====================================================================================================
+  Season s is scored by a model fitted on seasons < s.  2021 has no earlier season and is
+  therefore unscorable for H4; the headline is 2022-2024 in any case.  This is the only
+  fitting anywhere in this screen and it never touches the champion.
+
+====================================================================================================
+2. THE LADDER
+====================================================================================================
+
+----------------------------------------------------------------------------------------------------
+  SUBSET: ALL (2022-2024)
+----------------------------------------------------------------------------------------------------
+
+   y_oreb    n=14327  sd_y=1.2246
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    0.7711   1.0832   0.21759
+     H2   trailing-5 prior mean                     honest    0.7895   1.1233   0.15856
+     H3   prior rate(floored) x prior minutes       honest    0.7723   1.0824   0.21873
+     H4   walk-forward OLS on B_COMPLETE            honest    0.7729   1.0553   0.26335
+     O1   SEASON-MEAN target                        ORACLE    0.7238   1.0020   0.33044
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    0.6792   0.9493   0.39909
+     O3   within-player-season OLS on ACTUAL min    ORACLE    0.6691   0.9365   0.41517
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    0.7310   1.0349   0.28575
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    0.7300   1.0140   0.31436
+     REF  expanding prior mean                      honest    0.7718   1.0817   0.21983
+
+   y_dreb    n=14327  sd_y=2.6088
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.5120   2.0129   0.40464
+     H2   trailing-5 prior mean                     honest    1.5617   2.0836   0.36209
+     H3   prior rate(floored) x prior minutes       honest    1.5258   2.0251   0.39732
+     H4   walk-forward OLS on B_COMPLETE            honest    1.5031   1.9972   0.43265
+     O1   SEASON-MEAN target                        ORACLE    1.4068   1.8687   0.48688
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.2315   1.6602   0.59497
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.2121   1.6349   0.60725
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.3353   1.8105   0.51831
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.4354   1.9060   0.46617
+     REF  expanding prior mean                      honest    1.5237   2.0257   0.39703
+
+   y_reb     n=14327  sd_y=3.2777
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.8139   2.4094   0.45959
+     H2   trailing-5 prior mean                     honest    1.8695   2.4927   0.42160
+     H3   prior rate(floored) x prior minutes       honest    1.8344   2.4333   0.44876
+     H4   walk-forward OLS on B_COMPLETE            honest    1.8036   2.3908   0.48648
+     O1   SEASON-MEAN target                        ORACLE    1.6900   2.2430   0.53164
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.4250   1.9235   0.65558
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.4037   1.8944   0.66592
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.5523   2.0963   0.59088
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.7311   2.3005   0.50734
+     REF  expanding prior mean                      honest    1.8347   2.4347   0.44818
+
+   y_ast     n=14327  sd_y=2.2734
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.2402   1.6858   0.45010
+     H2   trailing-5 prior mean                     honest    1.2793   1.7437   0.41167
+     H3   prior rate(floored) x prior minutes       honest    1.2522   1.6948   0.44418
+     H4   walk-forward OLS on B_COMPLETE            honest    1.2235   1.6611   0.48119
+     O1   SEASON-MEAN target                        ORACLE    1.1580   1.5650   0.52608
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.0398   1.4335   0.60235
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.0261   1.4143   0.61295
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.1239   1.5576   0.53054
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.1768   1.5917   0.50973
+     REF  expanding prior mean                      honest    1.2492   1.6934   0.44512
+
+   y_pts     n=14327  sd_y=7.5641
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    4.1266   5.4360   0.48349
+     H2   trailing-5 prior mean                     honest    4.2525   5.6184   0.44825
+     H3   prior rate(floored) x prior minutes       honest    4.1619   5.4497   0.48083
+     H4   walk-forward OLS on B_COMPLETE            honest    4.1690   5.4586   0.50446
+     O1   SEASON-MEAN target                        ORACLE    3.8311   5.0349   0.55690
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    3.1535   4.2893   0.67842
+     O3   within-player-season OLS on ACTUAL min    ORACLE    3.0794   4.2043   0.69104
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    3.4232   4.6418   0.62335
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    3.9375   5.1647   0.53377
+     REF  expanding prior mean                      honest    4.1548   5.4594   0.47905
+
+----------------------------------------------------------------------------------------------------
+  SUBSET: DECISION (>=8 prior, >=24 trail-5 min)
+----------------------------------------------------------------------------------------------------
+
+   y_oreb    n=5111   sd_y=1.3775
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    0.8852   1.1888   0.25509
+     H2   trailing-5 prior mean                     honest    0.9256   1.2530   0.17238
+     H3   prior rate(floored) x prior minutes       honest    0.8774   1.1818   0.26379
+     H4   walk-forward OLS on B_COMPLETE            honest    0.8748   1.1634   0.30391
+     O1   SEASON-MEAN target                        ORACLE    0.8449   1.1363   0.31934
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    0.8314   1.1070   0.35400
+     O3   within-player-season OLS on ACTUAL min    ORACLE    0.7915   1.0688   0.39784
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    0.8633   1.1512   0.30137
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    0.8487   1.1422   0.31232
+     REF  expanding prior mean                      honest    0.8774   1.1818   0.26374
+
+   y_dreb    n=5111   sd_y=2.7872
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.7550   2.2539   0.34595
+     H2   trailing-5 prior mean                     honest    1.8581   2.3810   0.27008
+     H3   prior rate(floored) x prior minutes       honest    1.7466   2.2511   0.34754
+     H4   walk-forward OLS on B_COMPLETE            honest    1.7508   2.2490   0.36463
+     O1   SEASON-MEAN target                        ORACLE    1.6642   2.1487   0.40558
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.5548   2.0037   0.48311
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.4915   1.9398   0.51551
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.6267   2.0977   0.43343
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.6815   2.1677   0.39499
+     REF  expanding prior mean                      honest    1.7470   2.2522   0.34691
+
+   y_reb     n=5111   sd_y=3.4763
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    2.0566   2.6495   0.41899
+     H2   trailing-5 prior mean                     honest    2.1753   2.8032   0.34965
+     H3   prior rate(floored) x prior minutes       honest    2.0576   2.6579   0.41531
+     H4   walk-forward OLS on B_COMPLETE            honest    2.0381   2.6196   0.44923
+     O1   SEASON-MEAN target                        ORACLE    1.9602   2.5362   0.46764
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.8072   2.3280   0.55145
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.7340   2.2508   0.58072
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.8921   2.4321   0.51042
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.9873   2.5670   0.45461
+     REF  expanding prior mean                      honest    2.0583   2.6597   0.41452
+
+   y_ast     n=5111   sd_y=2.5311
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.5349   1.9851   0.38480
+     H2   trailing-5 prior mean                     honest    1.6146   2.0844   0.32168
+     H3   prior rate(floored) x prior minutes       honest    1.5291   1.9824   0.38644
+     H4   walk-forward OLS on B_COMPLETE            honest    1.5274   1.9769   0.40989
+     O1   SEASON-MEAN target                        ORACLE    1.4629   1.8973   0.43801
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.3935   1.8042   0.49177
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.3483   1.7522   0.52067
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.4520   1.8836   0.44608
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.4741   1.9095   0.43072
+     REF  expanding prior mean                      honest    1.5286   1.9819   0.38674
+
+   y_pts     n=5111   sd_y=7.5837
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    5.0028   6.3440   0.30008
+     H2   trailing-5 prior mean                     honest    5.2372   6.6354   0.23430
+     H3   prior rate(floored) x prior minutes       honest    4.9844   6.3387   0.30124
+     H4   walk-forward OLS on B_COMPLETE            honest    5.0361   6.3717   0.32224
+     O1   SEASON-MEAN target                        ORACLE    4.7661   6.0640   0.36050
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    4.2483   5.4515   0.48316
+     O3   within-player-season OLS on ACTUAL min    ORACLE    4.0968   5.2836   0.51450
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    4.4251   5.6820   0.43853
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    4.8314   6.1418   0.34398
+     REF  expanding prior mean                      honest    4.9863   6.3414   0.30066
+
+----------------------------------------------------------------------------------------------------
+  SUBSET: ALL incl 2021 (power sensitivity)
+----------------------------------------------------------------------------------------------------
+
+   y_oreb    n=18212  sd_y=1.2272
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    0.7805   1.0940   0.20525
+     H2   trailing-5 prior mean                     honest    0.7980   1.1330   0.14770
+     H3   prior rate(floored) x prior minutes       honest    0.7826   1.0940   0.20525
+     H4   walk-forward OLS on B_COMPLETE            honest    0.7805   1.0631   0.24635
+     O1   SEASON-MEAN target                        ORACLE    0.7298   1.0061   0.32794
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    0.6845   0.9532   0.39668
+     O3   within-player-season OLS on ACTUAL min    ORACLE    0.6743   0.9398   0.41353
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    0.7400   1.0458   0.27371
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    0.7371   1.0191   0.31035
+     REF  expanding prior mean                      honest    0.7815   1.0928   0.20708
+
+   y_dreb    n=18212  sd_y=2.6161
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.5365   2.0402   0.39179
+     H2   trailing-5 prior mean                     honest    1.5854   2.1118   0.34835
+     H3   prior rate(floored) x prior minutes       honest    1.5491   2.0497   0.38613
+     H4   walk-forward OLS on B_COMPLETE            honest    1.5022   1.9891   0.41858
+     O1   SEASON-MEAN target                        ORACLE    1.4226   1.8840   0.48134
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.2376   1.6653   0.59477
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.2185   1.6404   0.60679
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.3475   1.8246   0.51351
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.4535   1.9243   0.45891
+     REF  expanding prior mean                      honest    1.5459   2.0494   0.38629
+
+   y_reb     n=18212  sd_y=3.2790
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.8415   2.4399   0.44631
+     H2   trailing-5 prior mean                     honest    1.8960   2.5232   0.40785
+     H3   prior rate(floored) x prior minutes       honest    1.8607   2.4610   0.43670
+     H4   walk-forward OLS on B_COMPLETE            honest    1.8020   2.3864   0.46981
+     O1   SEASON-MEAN target                        ORACLE    1.7055   2.2578   0.52586
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.4330   1.9270   0.65462
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.4115   1.8981   0.66491
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.5686   2.1099   0.58594
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.7501   2.3201   0.49934
+     REF  expanding prior mean                      honest    1.8596   2.4608   0.43676
+
+   y_ast     n=18212  sd_y=2.2569
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.2397   1.6861   0.44183
+     H2   trailing-5 prior mean                     honest    1.2767   1.7420   0.40424
+     H3   prior rate(floored) x prior minutes       honest    1.2499   1.6920   0.43796
+     H4   walk-forward OLS on B_COMPLETE            honest    1.2329   1.6689   0.46109
+     O1   SEASON-MEAN target                        ORACLE    1.1525   1.5599   0.52226
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.0360   1.4281   0.59958
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.0216   1.4087   0.61038
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.1238   1.5559   0.52476
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.1725   1.5869   0.50561
+     REF  expanding prior mean                      honest    1.2473   1.6909   0.43866
+
+   y_pts     n=18212  sd_y=7.5005
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    4.1626   5.4721   0.46770
+     H2   trailing-5 prior mean                     honest    4.2863   5.6509   0.43234
+     H3   prior rate(floored) x prior minutes       honest    4.1963   5.4885   0.46448
+     H4   walk-forward OLS on B_COMPLETE            honest    4.1291   5.3849   0.49310
+     O1   SEASON-MEAN target                        ORACLE    3.8552   5.0538   0.54598
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    3.1752   4.2982   0.67158
+     O3   within-player-season OLS on ACTUAL min    ORACLE    3.0966   4.2098   0.68496
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    3.4490   4.6639   0.61332
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    3.9645   5.1918   0.52085
+     REF  expanding prior mean                      honest    4.1920   5.4973   0.46278
+
+====================================================================================================
+3. THE HEADLINE NUMBERS -- IRREDUCIBLE SHARE AND REACHABLE HEADROOM
+====================================================================================================
+
+  SUBSET: ALL (2022-2024)
+   target        n     sd_y    R2 REF   R2 best     R2 O2  IRREDUCIBLE    headroom
+                               honest    honest    ORACLE   even to O2  O2-besthon
+   y_oreb    14327   1.2246   0.21983   0.26335   0.39909       60.09%     0.13574
+   y_dreb    14327   2.6088   0.39703   0.43265   0.59497       40.50%     0.16232
+   y_reb     14327   3.2777   0.44818   0.48648   0.65558       34.44%     0.16909
+   y_ast     14327   2.2734   0.44512   0.48119   0.60235       39.76%     0.12116
+   y_pts     14327   7.5641   0.47905   0.50446   0.67842       32.16%     0.17396
+
+  SUBSET: DECISION (>=8 prior, >=24 trail-5 min)
+   target        n     sd_y    R2 REF   R2 best     R2 O2  IRREDUCIBLE    headroom
+                               honest    honest    ORACLE   even to O2  O2-besthon
+   y_oreb     5111   1.3775   0.26374   0.30391   0.35400       64.60%     0.05009
+   y_dreb     5111   2.7872   0.34691   0.36463   0.48311       51.69%     0.11847
+   y_reb      5111   3.4763   0.41452   0.44923   0.55145       44.85%     0.10222
+   y_ast      5111   2.5311   0.38674   0.40989   0.49177       50.82%     0.08188
+   y_pts      5111   7.5837   0.30066   0.32224   0.48316       51.68%     0.16092
+
+  SUBSET: ALL incl 2021 (power sensitivity)
+   target        n     sd_y    R2 REF   R2 best     R2 O2  IRREDUCIBLE    headroom
+                               honest    honest    ORACLE   even to O2  O2-besthon
+   y_oreb    18212   1.2272   0.20708   0.24635   0.39668       60.33%     0.15033
+   y_dreb    18212   2.6161   0.38629   0.41858   0.59477       40.52%     0.17619
+   y_reb     18212   3.2790   0.43676   0.46981   0.65462       34.54%     0.18481
+   y_ast     18212   2.2569   0.43866   0.46109   0.59958       40.04%     0.13849
+   y_pts     18212   7.5005   0.46278   0.49310   0.67158       32.84%     0.17848
+
+====================================================================================================
+4. BASELINE ACCURACY TABLE (STEP 2 deliverable)
+====================================================================================================
+  WROTE baseline_accuracy.csv (75 rows -- honest rungs only)
+
+  WROTE oracle_ladder.csv, ladder_summary.csv, baseline_accuracy.csv, _s03.json
+  prereg hash ab220cd18ae33a4c0c03a3a408a6c498145d6493e06e9201a8461e5587d13736   cells=125
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  headline frame (14327, 78) (2022-2024)
+
+====================================================================================================
+1. IDENTITY CHECK: fast dR2 == literal two-fit R2 difference (before any null)
+====================================================================================================
+  fast dR2 = 0.001790517663    literal two-fit difference = 0.001790517663    |diff| = 2.192e-16
+  IDENTITY OK -- the incremental-R2 path is verified on real data before any null is drawn.
+
+====================================================================================================
+2. RUN EVERY PREREGISTERED CELL, ON POOLED AND ON THE DECISION STRATUM
+====================================================================================================
+  POOLED stratum: 125 cells run
+  DECISION stratum: 125 cells run
+
+====================================================================================================
+3. FAMILY-WISE max-t (within stratum x target-family), on the CORRECT-LEVEL draws
+====================================================================================================
+  family A  stratum DECISION : 16 cells in the max-t family
+  family G  stratum DECISION : 20 cells in the max-t family
+  family R  stratum DECISION : 89 cells in the max-t family
+  family A  stratum POOLED   : 16 cells in the max-t family
+  family G  stratum POOLED   : 20 cells in the max-t family
+  family R  stratum POOLED   : 89 cells in the max-t family
+
+  WROTE upstream_signals.csv (250 cells), permutation_draws.npz
+
+====================================================================================================
+4. THE CONTROLS -- read these before reading any survivor
+====================================================================================================
+   stratum   target   candidate                   n        dR2    null_sd  p_correct
+   DECISION  y_ast    G01_noise                5111  1.775e-05  1.862e-04     0.6922
+   DECISION  y_ast    G02_placebo_noop         5111  0.000e+00  1.783e-04     1.0000
+   DECISION  y_ast    G01_noise                5111  1.492e-05  1.651e-04     0.7188
+   DECISION  y_ast    G02_placebo_noop         5111  0.000e+00  1.719e-04     1.0000
+   DECISION  y_dreb   G01_noise                5111  6.490e-06  1.734e-04     0.8536
+   DECISION  y_dreb   G02_placebo_noop         5111  0.000e+00  1.866e-04     1.0000
+   DECISION  y_dreb   G01_noise                5111  1.921e-07  1.680e-04     0.9817
+   DECISION  y_dreb   G02_placebo_noop         5111  0.000e+00  1.704e-04     1.0000
+   DECISION  y_oreb   G01_noise                5111  2.369e-08  1.898e-04     0.9917
+   DECISION  y_oreb   G02_placebo_noop         5111  0.000e+00  2.001e-04     1.0000
+   DECISION  y_oreb   G01_noise                5111  1.105e-06  1.825e-04     0.9101
+   DECISION  y_oreb   G02_placebo_noop         5111  0.000e+00  2.216e-04     1.0000
+   DECISION  y_pts    G01_noise                5111  4.946e-04  1.638e-04     0.0466
+   DECISION  y_pts    G02_placebo_noop         5111  0.000e+00  1.920e-04     1.0000
+   DECISION  y_pts    G01_noise                5111  4.737e-04  2.038e-04     0.0499
+   DECISION  y_pts    G02_placebo_noop         5111  0.000e+00  1.939e-04     1.0000
+   DECISION  y_reb    G01_noise                5111  8.278e-06  1.474e-04     0.7903
+   DECISION  y_reb    G02_placebo_noop         5111  0.000e+00  1.688e-04     1.0000
+   DECISION  y_reb    G01_noise                5111  1.165e-08  1.557e-04     0.9917
+   DECISION  y_reb    G02_placebo_noop         5111  0.000e+00  1.589e-04     1.0000
+   POOLED    y_ast    G01_noise               14324  2.396e-06  6.529e-05     0.7820
+   POOLED    y_ast    G02_placebo_noop        14324  0.000e+00  5.590e-05     1.0000
+   POOLED    y_ast    G01_noise               14327  2.358e-06  5.323e-05     0.8270
+   POOLED    y_ast    G02_placebo_noop        14327  0.000e+00  5.460e-05     1.0000
+   POOLED    y_dreb   G01_noise               14324  5.079e-05  5.680e-05     0.2230
+   POOLED    y_dreb   G02_placebo_noop        14324  0.000e+00  5.660e-05     1.0000
+   POOLED    y_dreb   G01_noise               14327  5.757e-05  5.590e-05     0.2180
+   POOLED    y_dreb   G02_placebo_noop        14327  0.000e+00  6.707e-05     1.0000
+   POOLED    y_oreb   G01_noise               14324  8.103e-06  7.778e-05     0.7155
+   POOLED    y_oreb   G02_placebo_noop        14324  0.000e+00  6.736e-05     1.0000
+   POOLED    y_oreb   G01_noise               14327  8.277e-06  6.818e-05     0.7188
+   POOLED    y_oreb   G02_placebo_noop        14327  0.000e+00  7.531e-05     1.0000
+   POOLED    y_pts    G01_noise               14324  3.975e-06  4.997e-05     0.7055
+   POOLED    y_pts    G02_placebo_noop        14324  0.000e+00  4.457e-05     1.0000
+   POOLED    y_pts    G01_noise               14327  4.313e-06  4.493e-05     0.7404
+   POOLED    y_pts    G02_placebo_noop        14327  0.000e+00  4.854e-05     1.0000
+   POOLED    y_reb    G01_noise               14324  5.097e-05  5.587e-05     0.2463
+   POOLED    y_reb    G02_placebo_noop        14324  0.000e+00  5.091e-05     1.0000
+   POOLED    y_reb    G01_noise               14327  5.554e-05  4.918e-05     0.2196
+   POOLED    y_reb    G02_placebo_noop        14327  0.000e+00  4.869e-05     1.0000
+
+  NO-OP PLACEBO observed SD across draws (the floor of resolution of this screen):
+    DECISION  y_ast    B_COMPLETE     dR2=0.000e+00  null sd=1.783e-04
+    DECISION  y_ast    B_SINGLE       dR2=0.000e+00  null sd=1.719e-04
+    DECISION  y_dreb   B_COMPLETE     dR2=0.000e+00  null sd=1.866e-04
+    DECISION  y_dreb   B_SINGLE       dR2=0.000e+00  null sd=1.704e-04
+    DECISION  y_oreb   B_COMPLETE     dR2=0.000e+00  null sd=2.001e-04
+    DECISION  y_oreb   B_SINGLE       dR2=0.000e+00  null sd=2.216e-04
+    DECISION  y_pts    B_COMPLETE     dR2=0.000e+00  null sd=1.920e-04
+    DECISION  y_pts    B_SINGLE       dR2=0.000e+00  null sd=1.939e-04
+    DECISION  y_reb    B_COMPLETE     dR2=0.000e+00  null sd=1.688e-04
+    DECISION  y_reb    B_SINGLE       dR2=0.000e+00  null sd=1.589e-04
+    POOLED    y_ast    B_COMPLETE     dR2=0.000e+00  null sd=5.590e-05
+    POOLED    y_ast    B_SINGLE       dR2=0.000e+00  null sd=5.460e-05
+    POOLED    y_dreb   B_COMPLETE     dR2=0.000e+00  null sd=5.660e-05
+    POOLED    y_dreb   B_SINGLE       dR2=0.000e+00  null sd=6.707e-05
+    POOLED    y_oreb   B_COMPLETE     dR2=0.000e+00  null sd=6.736e-05
+    POOLED    y_oreb   B_SINGLE       dR2=0.000e+00  null sd=7.531e-05
+    POOLED    y_pts    B_COMPLETE     dR2=0.000e+00  null sd=4.457e-05
+    POOLED    y_pts    B_SINGLE       dR2=0.000e+00  null sd=4.854e-05
+    POOLED    y_reb    B_COMPLETE     dR2=0.000e+00  null sd=5.091e-05
+    POOLED    y_reb    B_SINGLE       dR2=0.000e+00  null sd=4.869e-05
+
+====================================================================================================
+5. RESULTS AGAINST THE COMPLETE REFERENCE (the only verdict that counts)
+====================================================================================================
+
+  ---- stratum=POOLED base=B_COMPLETE ----
+   target   candidate                           n        dR2     p_row    p_swap     p_cyc    p_CORR     fw_p
+   y_ast    A04_teammate_prior_fgm_pg       13977  2.263e-03    0.0017    0.0017    0.0017    0.0017   0.0017
+   y_ast    A01_c04_prevgame                13977  1.782e-03    0.0017    0.0017    0.0017    0.0017   0.0017
+   y_ast    A05_teammate_prior_fgpct        13977  5.448e-04    0.0017    0.0017    0.0017    0.0017   0.0017
+   y_ast    A03_absent_usg_prevgame         13977  1.328e-04    0.0499    0.0433    0.0233    0.0433   0.5324
+   y_ast    A02_n_present_prevgame          13977  1.539e-05    0.4859    0.4925    0.4958    0.4958   1.0000
+   y_ast    R01_opp_allowed_miss_pg         13977  2.634e-06    0.8103    0.8136    0.8286    0.8286   1.0000
+   y_dreb   R08_player_ra_share             13784  1.945e-03    0.0017    0.0017    0.5973    0.5973   1.0000
+   y_dreb   A01_c04_prevgame                13977  1.653e-03    0.0017    0.0017    0.0017    0.0017   0.0017
+   y_dreb   R04_opp_allowed_mid_share       13977  3.184e-04    0.0067    0.0566    0.0033    0.0566   0.9767
+   y_dreb   R09_opp_allowed_paint_share     13977  1.487e-04    0.0682    0.2779    0.0033    0.2779   1.0000
+   y_dreb   R06_own_atb3_share              13977  8.202e-05    0.1431    0.1215    0.0416    0.1215   1.0000
+   y_dreb   R10_opp_allowed_oreb_pg         13977  2.864e-05    0.4143    0.4659    0.2945    0.4659   1.0000
+   y_dreb   R01_opp_allowed_miss_pg         13977  2.031e-05    0.4676    0.6073    0.7271    0.7271   1.0000
+   y_dreb   R07_own_miss_pg                 13977  1.063e-05    0.6057    0.5058    0.4676    0.5058   1.0000
+   y_dreb   R03_opp_allowed_atb3_share      13977  6.529e-06    0.6822    0.7870    0.4958    0.7870   1.0000
+   y_dreb   R05_opp_allowed_long_miss_pg    13977  3.306e-08    0.9767    0.9817    0.9900    0.9900   1.0000
+   y_dreb   R02_opp_allowed_ra_share        13977  2.750e-08    0.9717    0.9834    0.9967    0.9967   1.0000
+   y_oreb   R08_player_ra_share             13784  6.488e-03    0.0017    0.0017    0.9967    0.9967   1.0000
+   y_oreb   A01_c04_prevgame                13977  5.167e-04    0.0017    0.0050    0.0067    0.0067   0.0399
+   y_oreb   R10_opp_allowed_oreb_pg         13977  4.008e-04    0.0083    0.0216    0.9418    0.9418   1.0000
+   y_oreb   R09_opp_allowed_paint_share     13977  2.674e-04    0.0283    0.1298    0.5890    0.5890   1.0000
+   y_oreb   R07_own_miss_pg                 13977  2.457e-04    0.0333    0.0133    0.0083    0.0133   0.7438
+   y_oreb   R02_opp_allowed_ra_share        13977  2.273e-04    0.0483    0.1730    0.3710    0.3710   1.0000
+   y_oreb   R03_opp_allowed_atb3_share      13977  1.761e-04    0.0682    0.1864    0.1514    0.1864   1.0000
+   y_oreb   R04_opp_allowed_mid_share       13977  7.028e-05    0.2512    0.3478    0.9434    0.9434   1.0000
+   y_oreb   R01_opp_allowed_miss_pg         13977  3.686e-05    0.4160    0.4709    0.9301    0.9301   1.0000
+   y_oreb   R05_opp_allowed_long_miss_pg    13977  3.648e-05    0.4293    0.5474    0.1997    0.5474   1.0000
+   y_oreb   R06_own_atb3_share              13977  3.564e-05    0.4027    0.4193    0.2712    0.4193   1.0000
+   y_reb    A01_c04_prevgame                13977  1.791e-03    0.0017    0.0017    0.0017    0.0017   0.0017
+   y_reb    R08_player_ra_share             13784  1.495e-03    0.0017    0.0017    0.9667    0.9667   1.0000
+   y_reb    R04_opp_allowed_mid_share       13977  3.130e-04    0.0017    0.0416    0.0732    0.0732   1.0000
+   y_reb    R09_opp_allowed_paint_share     13977  2.542e-04    0.0033    0.1065    0.0133    0.1065   1.0000
+   y_reb    R07_own_miss_pg                 13977  1.482e-04    0.0499    0.0083    0.0067    0.0083   0.3228
+   y_reb    R06_own_atb3_share              13977  6.530e-05    0.1897    0.1697    0.0466    0.1697   1.0000
+   y_reb    R03_opp_allowed_atb3_share      13977  4.980e-05    0.2529    0.5125    0.0948    0.5125   1.0000
+   y_reb    R02_opp_allowed_ra_share        13977  3.786e-05    0.3195    0.5075    0.0233    0.5075   1.0000
+   y_reb    R01_opp_allowed_miss_pg         13977  2.813e-05    0.3977    0.5141    0.9201    0.9201   1.0000
+   y_reb    R10_opp_allowed_oreb_pg         13977  7.412e-06    0.6522    0.6223    0.9251    0.9251   1.0000
+   y_reb    R05_opp_allowed_long_miss_pg    13977  5.039e-06    0.7138    0.7754    0.6755    0.7754   1.0000
+
+  ---- stratum=POOLED base=B_COMPLETE_PLUS_R10 ----
+   target   candidate                           n        dR2     p_row    p_swap     p_cyc    p_CORR     fw_p
+   y_dreb   R08_player_ra_share             13784  1.936e-03    0.0017    0.0017    0.6223    0.6223   1.0000
+   y_dreb   R04_opp_allowed_mid_share       13977  3.218e-04    0.0067    0.0449    0.0083    0.0449   0.9651
+   y_dreb   R09_opp_allowed_paint_share     13977  1.954e-04    0.0316    0.1897    0.0017    0.1897   1.0000
+   y_dreb   R06_own_atb3_share              13977  8.154e-05    0.1498    0.1098    0.0383    0.1098   1.0000
+   y_dreb   R01_opp_allowed_miss_pg         13977  7.473e-05    0.1664    0.3028    0.4193    0.4193   1.0000
+   y_dreb   R03_opp_allowed_atb3_share      13977  1.628e-05    0.4958    0.6872    0.2679    0.6872   1.0000
+   y_dreb   R07_own_miss_pg                 13977  9.599e-06    0.6206    0.5408    0.5141    0.5408   1.0000
+   y_dreb   R02_opp_allowed_ra_share        13977  1.660e-06    0.8419    0.9035    0.8935    0.9035   1.0000
+   y_dreb   R05_opp_allowed_long_miss_pg    13977  1.365e-07    0.9517    0.9617    0.9717    0.9717   1.0000
+   y_oreb   R08_player_ra_share             13784  6.540e-03    0.0017    0.0017    0.9950    0.9950   1.0000
+   y_oreb   R07_own_miss_pg                 13977  2.642e-04    0.0233    0.0200    0.0083    0.0200   0.6722
+   y_oreb   R09_opp_allowed_paint_share     13977  1.372e-04    0.0998    0.2280    0.7837    0.7837   1.0000
+   y_oreb   R02_opp_allowed_ra_share        13977  1.257e-04    0.1231    0.2546    0.4160    0.4160   1.0000
+   y_oreb   R03_opp_allowed_atb3_share      13977  7.218e-05    0.2579    0.3527    0.2795    0.3527   1.0000
+   y_oreb   R04_opp_allowed_mid_share       13977  6.471e-05    0.2679    0.2978    0.9368    0.9368   1.0000
+   y_oreb   R05_opp_allowed_long_miss_pg    13977  4.555e-05    0.3844    0.4992    0.1431    0.4992   1.0000
+   y_oreb   R06_own_atb3_share              13977  3.731e-05    0.3894    0.4010    0.3428    0.4010   1.0000
+   y_oreb   R01_opp_allowed_miss_pg         13977  2.831e-05    0.4742    0.5574    0.7371    0.7371   1.0000
+   y_reb    R08_player_ra_share             13784  1.496e-03    0.0017    0.0017    0.9734    0.9734   1.0000
+   y_reb    R04_opp_allowed_mid_share       13977  3.115e-04    0.0033    0.0466    0.0765    0.0765   1.0000
+   y_reb    R09_opp_allowed_paint_share     13977  2.485e-04    0.0133    0.1015    0.0300    0.1015   1.0000
+   y_reb    R07_own_miss_pg                 13977  1.502e-04    0.0483    0.0183    0.0083    0.0183   0.5125
+   y_reb    R06_own_atb3_share              13977  6.557e-05    0.1780    0.1547    0.0316    0.1547   1.0000
+   y_reb    R03_opp_allowed_atb3_share      13977  4.334e-05    0.2895    0.5025    0.0782    0.5025   1.0000
+   y_reb    R02_opp_allowed_ra_share        13977  3.267e-05    0.3644    0.5657    0.0316    0.5657   1.0000
+   y_reb    R01_opp_allowed_miss_pg         13977  2.073e-05    0.4576    0.5907    0.9218    0.9218   1.0000
+   y_reb    R05_opp_allowed_long_miss_pg    13977  5.481e-06    0.6639    0.8070    0.7055    0.8070   1.0000
+
+  ---- stratum=DECISION base=B_COMPLETE ----
+   target   candidate                           n        dR2     p_row    p_swap     p_cyc    p_CORR     fw_p
+   y_ast    A04_teammate_prior_fgm_pg        5111  1.367e-03    0.0017    0.0050    0.0017    0.0050   0.0399
+   y_ast    A01_c04_prevgame                 5111  1.267e-03    0.0033    0.0033    0.0017    0.0033   0.0433
+   y_ast    A02_n_present_prevgame           5111  1.798e-04    0.2146    0.1531    0.2546    0.2546   0.9900
+   y_ast    A05_teammate_prior_fgpct         5111  1.509e-04    0.2712    0.2596    0.1664    0.2596   0.9917
+   y_ast    A03_absent_usg_prevgame          5111  8.016e-05    0.3977    0.3777    0.2679    0.3777   1.0000
+   y_ast    R01_opp_allowed_miss_pg          5111  4.273e-05    0.5241    0.6223    0.2030    0.6223   1.0000
+   y_dreb   A01_c04_prevgame                 5111  1.230e-03    0.0017    0.0017    0.0050    0.0050   0.0466
+   y_dreb   R08_player_ra_share              5111  7.590e-04    0.0150    0.0150    0.8453    0.8453   1.0000
+   y_dreb   R02_opp_allowed_ra_share         5111  7.302e-04    0.0100    0.0333    0.7854    0.7854   1.0000
+   y_dreb   R10_opp_allowed_oreb_pg          5111  3.377e-04    0.0948    0.1514    0.2080    0.2080   1.0000
+   y_dreb   R07_own_miss_pg                  5111  1.767e-04    0.2496    0.2213    0.0832    0.2213   1.0000
+   y_dreb   R05_opp_allowed_long_miss_pg     5111  1.670e-04    0.2313    0.3694    0.7870    0.7870   1.0000
+   y_dreb   R09_opp_allowed_paint_share      5111  1.161e-04    0.3261    0.4592    0.8735    0.8735   1.0000
+   y_dreb   R03_opp_allowed_atb3_share       5111  1.069e-04    0.3328    0.4459    0.7038    0.7038   1.0000
+   y_dreb   R01_opp_allowed_miss_pg          5111  7.245e-05    0.3910    0.5541    0.8835    0.8835   1.0000
+   y_dreb   R06_own_atb3_share               5111  2.726e-05    0.6256    0.6922    0.1581    0.6922   1.0000
+   y_dreb   R04_opp_allowed_mid_share        5111  4.136e-07    0.9651    0.9551    0.9151    0.9551   1.0000
+   y_oreb   R08_player_ra_share              5111  1.146e-03    0.0083    0.0017    0.7404    0.7404   1.0000
+   y_oreb   R10_opp_allowed_oreb_pg          5111  5.010e-04    0.0483    0.1331    1.0000    1.0000   1.0000
+   y_oreb   R01_opp_allowed_miss_pg          5111  3.067e-04    0.1714    0.2912    0.9884    0.9884   1.0000
+   y_oreb   A01_c04_prevgame                 5111  2.298e-04    0.2296    0.2180    0.2346    0.2346   0.9900
+   y_oreb   R04_opp_allowed_mid_share        5111  9.937e-05    0.4077    0.4725    0.3178    0.4725   1.0000
+   y_oreb   R02_opp_allowed_ra_share         5111  4.877e-05    0.5458    0.6938    0.0416    0.6938   1.0000
+   y_oreb   R05_opp_allowed_long_miss_pg     5111  3.425e-05    0.6156    0.7072    0.9584    0.9584   1.0000
+   y_oreb   R09_opp_allowed_paint_share      5111  8.925e-06    0.7887    0.8286    0.7438    0.8286   1.0000
+   y_oreb   R06_own_atb3_share               5111  6.553e-06    0.8436    0.8336    0.5042    0.8336   1.0000
+   y_oreb   R03_opp_allowed_atb3_share       5111  2.942e-07    0.9700    0.9634    0.9301    0.9634   1.0000
+   y_oreb   R07_own_miss_pg                  5111  9.479e-08    0.9750    0.9867    0.9967    0.9967   1.0000
+   y_reb    A01_c04_prevgame                 5111  1.230e-03    0.0033    0.0033    0.0067    0.0067   0.0882
+   y_reb    R02_opp_allowed_ra_share         5111  5.630e-04    0.0200    0.0832    0.4659    0.4659   1.0000
+   y_reb    R08_player_ra_share              5111  3.020e-04    0.1032    0.1181    0.9118    0.9118   1.0000
+   y_reb    R07_own_miss_pg                  5111  2.378e-04    0.1364    0.1730    0.0067    0.1730   1.0000
+   y_reb    R01_opp_allowed_miss_pg          5111  1.817e-04    0.1880    0.3012    0.9651    0.9651   1.0000
+   y_reb    R05_opp_allowed_long_miss_pg     5111  1.700e-04    0.2180    0.3478    0.9201    0.9201   1.0000
+   y_reb    R03_opp_allowed_atb3_share       5111  7.097e-05    0.4443    0.5674    0.5108    0.5674   1.0000
+   y_reb    R09_opp_allowed_paint_share      5111  4.692e-05    0.4925    0.6539    0.7687    0.7687   1.0000
+   y_reb    R10_opp_allowed_oreb_pg          5111  3.709e-05    0.5607    0.5840    0.5907    0.5907   1.0000
+   y_reb    R04_opp_allowed_mid_share        5111  2.072e-05    0.6872    0.6789    0.2130    0.6789   1.0000
+   y_reb    R06_own_atb3_share               5111  7.596e-07    0.9334    0.9384    0.6572    0.9384   1.0000
+
+  ---- stratum=DECISION base=B_COMPLETE_PLUS_R10 ----
+   target   candidate                           n        dR2     p_row    p_swap     p_cyc    p_CORR     fw_p
+   y_dreb   R08_player_ra_share              5111  7.340e-04    0.0150    0.0183    0.8719    0.8719   1.0000
+   y_dreb   R02_opp_allowed_ra_share         5111  5.268e-04    0.0316    0.0765    0.8403    0.8403   1.0000
+   y_dreb   R01_opp_allowed_miss_pg          5111  3.754e-04    0.0782    0.1514    0.7038    0.7038   1.0000
+   y_dreb   R05_opp_allowed_long_miss_pg     5111  1.802e-04    0.2313    0.3860    0.8053    0.8053   1.0000
+   y_dreb   R07_own_miss_pg                  5111  1.685e-04    0.2712    0.2496    0.0882    0.2496   1.0000
+   y_dreb   R09_opp_allowed_paint_share      5111  4.635e-05    0.5341    0.6406    0.9318    0.9318   1.0000
+   y_dreb   R03_opp_allowed_atb3_share       5111  3.761e-05    0.5724    0.6872    0.7937    0.7937   1.0000
+   y_dreb   R06_own_atb3_share               5111  2.089e-05    0.7055    0.7604    0.1065    0.7604   1.0000
+   y_dreb   R04_opp_allowed_mid_share        5111  6.322e-08    0.9784    0.9900    0.9517    0.9900   1.0000
+   y_oreb   R08_player_ra_share              5111  1.179e-03    0.0067    0.0017    0.7072    0.7072   1.0000
+   y_oreb   R02_opp_allowed_ra_share         5111  1.810e-04    0.2413    0.4260    0.0083    0.4260   1.0000
+   y_oreb   R04_opp_allowed_mid_share        5111  7.838e-05    0.4626    0.4509    0.2596    0.4509   1.0000
+   y_oreb   R01_opp_allowed_miss_pg          5111  6.349e-05    0.5108    0.5874    0.9983    0.9983   1.0000
+   y_oreb   R03_opp_allowed_atb3_share       5111  3.675e-05    0.6040    0.6955    0.1531    0.6955   1.0000
+   y_oreb   R05_opp_allowed_long_miss_pg     5111  2.746e-05    0.6256    0.7088    0.9567    0.9567   1.0000
+   y_oreb   R09_opp_allowed_paint_share      5111  4.536e-06    0.8952    0.8902    0.5125    0.8902   1.0000
+   y_oreb   R06_own_atb3_share               5111  3.151e-06    0.8752    0.9035    0.5774    0.9035   1.0000
+   y_oreb   R07_own_miss_pg                  5111  4.806e-07    0.9667    0.9700    0.9967    0.9967   1.0000
+   y_reb    R02_opp_allowed_ra_share         5111  5.260e-04    0.0300    0.0849    0.4526    0.4526   1.0000
+   y_reb    R01_opp_allowed_miss_pg          5111  3.415e-04    0.0799    0.1714    0.9301    0.9301   1.0000
+   y_reb    R08_player_ra_share              5111  2.969e-04    0.0832    0.1398    0.9218    0.9218   1.0000
+   y_reb    R07_own_miss_pg                  5111  2.354e-04    0.1564    0.1780    0.0017    0.1780   1.0000
+   y_reb    R05_opp_allowed_long_miss_pg     5111  1.745e-04    0.1980    0.3577    0.9218    0.9218   1.0000
+   y_reb    R03_opp_allowed_atb3_share       5111  5.153e-05    0.4975    0.6373    0.5291    0.6373   1.0000
+   y_reb    R09_opp_allowed_paint_share      5111  3.160e-05    0.5907    0.7072    0.7604    0.7604   1.0000
+   y_reb    R04_opp_allowed_mid_share        5111  2.358e-05    0.6572    0.7088    0.2280    0.7088   1.0000
+   y_reb    R06_own_atb3_share               5111  4.235e-07    0.9601    0.9651    0.8053    0.9651   1.0000
+
+====================================================================================================
+6. LEVEL INFLATION -- how wrong the row-level null would have been
+====================================================================================================
+  correct-level null SD / row-level null SD, by candidate level:
+                inflation_swap_over_row                     inflation_cyclic_over_row                    
+                                 median       min       max                    median       min       max
+level                                                                                                    
+opp_team_season                1.643085  0.904728  3.079109                  0.731463  0.072755  4.274700
+player_season                  1.228062  0.781774  2.201121                  2.288358  0.505485  8.339836
+team_season                    1.154848  0.503902  3.157032                  0.654561  0.032305  2.774470
+
+  count of cells that the ROW-LEVEL null would have called significant at 0.05
+  but the CORRECT-LEVEL null does not: 41 of 210
+
+  WROTE _s04.json
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+
+====================================================================================================
+1. THE SIGN AND THE SPECIFICITY, STATED PLAINLY
+====================================================================================================
+   stratum   target   candidate                           dR2       beta    ceiling      fw_p
+   DECISION  y_ast    A01_c04_prevgame              1.267e-03   -0.01023  1.446e-03    0.0433
+   DECISION  y_dreb   A01_c04_prevgame              1.230e-03   -0.01098  1.374e-03    0.0466
+   DECISION  y_oreb   A01_c04_prevgame              2.298e-04   -0.00235  2.580e-04    0.9900
+   DECISION  y_reb    A01_c04_prevgame              1.230e-03   -0.01368  1.372e-03    0.0882
+   DECISION  y_ast    A04_teammate_prior_fgm_pg     1.367e-03   -0.02958  1.710e-03    0.0399
+   DECISION  y_ast    A05_teammate_prior_fgpct      1.509e-04   -1.39508  1.995e-04    0.9917
+   POOLED    y_ast    A01_c04_prevgame              1.782e-03   -0.01068  2.345e-03    0.0017
+   POOLED    y_dreb   A01_c04_prevgame              1.653e-03   -0.01179  2.173e-03    0.0017
+   POOLED    y_oreb   A01_c04_prevgame              5.167e-04   -0.00309  6.817e-04    0.0399
+   POOLED    y_reb    A01_c04_prevgame              1.791e-03   -0.01540  2.351e-03    0.0017
+   POOLED    y_ast    A04_teammate_prior_fgm_pg     2.263e-03   -0.03094  2.884e-03    0.0017
+   POOLED    y_ast    A05_teammate_prior_fgpct      5.448e-04   -1.92775  6.184e-04    0.0017
+
+  EVERY beta is NEGATIVE, on ASSISTS and on ALL THREE REBOUND TARGETS alike.
+  The directive's proposed mechanism ('an assist requires a teammate to MAKE a shot')
+  predicts a POSITIVE sign.  The observed sign is the opposite, and the effect is not
+  assist-specific.  That is a CROWDING-OUT / OPPORTUNITY channel, not a playmaking one.
+
+====================================================================================================
+2. POST-HOC: A01/A04 ON POINTS (declared addition to the preregistered list)
+====================================================================================================
+  If the channel is general opportunity, it must fire on POINTS too.  Points was
+  preregistered only as a calibration anchor with controls; adding the two teammate
+  candidates to it is a POST-HOC ADDITION and is counted against the hash.
+   POOLED    y_pts    A01_c04_prevgame             n=13977 dR2=3.175e-03 beta=-0.04879 p_corr=0.0017 ceiling=4.422e-03
+   DECISION  y_pts    A01_c04_prevgame             n= 5111 dR2=4.055e-03 beta=-0.05623 p_corr=0.0017 ceiling=4.870e-03
+   POOLED    y_pts    A04_teammate_prior_fgm_pg    n=13977 dR2=2.611e-03 beta=-0.11160 p_corr=0.0017 ceiling=3.392e-03
+   DECISION  y_pts    A04_teammate_prior_fgm_pg    n= 5111 dR2=2.549e-03 beta=-0.11757 p_corr=0.0017 ceiling=3.010e-03
+
+  It fires on POINTS as well, same negative sign.  The channel is GENERAL, not assist-specific.
+
+====================================================================================================
+3. M1 -- CONDITION ON REALISED MINUTES (ORACLE-CONDITIONED MECHANISM TEST)
+====================================================================================================
+  LABELLED ORACLE DIAGNOSTIC.  Realised minutes are an OUTCOME (DEFECTS.md D-03).  This is
+  a mechanism test and is NEVER a forecast.  If the teammate channel is minutes/opportunity,
+  conditioning on realised minutes should extinguish it.
+   POOLED    y_ast   A01_c04_prevgame             dR2 1.782e-03 (p=0.0017)  ->  +ACTUAL MIN  9.491e-05 (p=0.1481)  killed 94.7%
+   DECISION  y_ast   A01_c04_prevgame             dR2 1.267e-03 (p=0.0050)  ->  +ACTUAL MIN  1.907e-04 (p=0.3245)  killed 85.0%
+   POOLED    y_reb   A01_c04_prevgame             dR2 1.791e-03 (p=0.0017)  ->  +ACTUAL MIN  6.182e-07 (p=0.8652)  killed 100.0%
+   DECISION  y_reb   A01_c04_prevgame             dR2 1.230e-03 (p=0.0100)  ->  +ACTUAL MIN  8.447e-05 (p=0.3910)  killed 93.1%
+   POOLED    y_pts   A01_c04_prevgame             dR2 3.175e-03 (p=0.0017)  ->  +ACTUAL MIN  2.628e-04 (p=0.0033)  killed 91.7%
+   DECISION  y_pts   A01_c04_prevgame             dR2 4.055e-03 (p=0.0017)  ->  +ACTUAL MIN  1.105e-03 (p=0.0116)  killed 72.7%
+   POOLED    y_ast   A04_teammate_prior_fgm_pg    dR2 2.263e-03 (p=0.0017)  ->  +ACTUAL MIN  2.773e-04 (p=0.0050)  killed 87.7%
+   DECISION  y_ast   A04_teammate_prior_fgm_pg    dR2 1.367e-03 (p=0.0067)  ->  +ACTUAL MIN  3.422e-04 (p=0.1681)  killed 75.0%
+   POOLED    y_reb   A04_teammate_prior_fgm_pg    dR2 1.512e-03 (p=0.0017)  ->  +ACTUAL MIN  4.717e-07 (p=0.9018)  killed 100.0%
+   DECISION  y_reb   A04_teammate_prior_fgm_pg    dR2 7.454e-04 (p=0.0150)  ->  +ACTUAL MIN  5.197e-05 (p=0.4343)  killed 93.0%
+   POOLED    y_pts   A04_teammate_prior_fgm_pg    dR2 2.611e-03 (p=0.0017)  ->  +ACTUAL MIN  1.903e-04 (p=0.0050)  killed 92.7%
+   DECISION  y_pts   A04_teammate_prior_fgm_pg    dR2 2.549e-03 (p=0.0017)  ->  +ACTUAL MIN  7.728e-04 (p=0.0083)  killed 69.7%
+
+====================================================================================================
+4. M2 -- THE PER-MINUTE TARGET (minutes channel divided out by construction)
+====================================================================================================
+   POOLED    y_ast/min            A01_c04_prevgame             n=13977 dR2=1.529e-05 beta=+0.000042 p_corr=0.6173
+   DECISION  y_ast/min            A01_c04_prevgame             n= 5111 dR2=1.328e-04 beta=-0.000105 p_corr=0.4942
+   POOLED    y_ast/min            A04_teammate_prior_fgm_pg    n=13977 dR2=1.391e-06 beta=+0.000032 p_corr=0.9002
+   DECISION  y_ast/min            A04_teammate_prior_fgm_pg    n= 5111 dR2=1.092e-04 beta=-0.000265 p_corr=0.5092
+   POOLED    y_reb/min            A01_c04_prevgame             n=13977 dR2=8.284e-06 beta=+0.000045 p_corr=0.7155
+   DECISION  y_reb/min            A01_c04_prevgame             n= 5111 dR2=2.489e-05 beta=-0.000062 p_corr=0.6057
+   POOLED    y_reb/min            A04_teammate_prior_fgm_pg    n=13977 dR2=1.888e-07 beta=-0.000017 p_corr=0.9634
+   DECISION  y_reb/min            A04_teammate_prior_fgm_pg    n= 5111 dR2=1.329e-05 beta=-0.000121 p_corr=0.7121
+
+====================================================================================================
+5. PER-SEASON SIGN CONSISTENCY (is it one season or all three?)
+====================================================================================================
+                candidate target  season    n      dr2      beta
+         A01_c04_prevgame  y_ast    2022 4406 0.003150 -0.014342
+         A01_c04_prevgame  y_ast    2023 4776 0.000231 -0.004108
+         A01_c04_prevgame  y_ast    2024 4795 0.002951 -0.013165
+         A01_c04_prevgame  y_reb    2022 4406 0.001823 -0.015615
+         A01_c04_prevgame  y_reb    2023 4776 0.001110 -0.012677
+         A01_c04_prevgame  y_reb    2024 4795 0.002596 -0.018150
+A04_teammate_prior_fgm_pg  y_ast    2022 4406 0.005106 -0.044901
+A04_teammate_prior_fgm_pg  y_ast    2023 4776 0.000558 -0.016345
+A04_teammate_prior_fgm_pg  y_ast    2024 4795 0.002365 -0.031960
+A04_teammate_prior_fgm_pg  y_reb    2022 4406 0.001299 -0.031807
+A04_teammate_prior_fgm_pg  y_reb    2023 4776 0.000815 -0.027468
+A04_teammate_prior_fgm_pg  y_reb    2024 4795 0.002840 -0.051067
+
+  seasons with a NEGATIVE beta (of 3):
+candidate                  target
+A01_c04_prevgame           y_ast     3
+                           y_reb     3
+A04_teammate_prior_fgm_pg  y_ast     3
+                           y_reb     3
+
+====================================================================================================
+6. P -- DOES IT PROPAGATE?  WALK-FORWARD, AGAINST A REFERENCE FACING THE SAME ROWS
+====================================================================================================
+  CONSTRAINT 7: skill is measured against a reference facing the SAME ROWS, and the model
+  is fitted on STRICTLY EARLIER SEASONS ONLY.  An in-sample dR2 is not a forecast.
+  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+   POOLED    y_ast   A01_c04_prevgame             n=13977  MAE 1.2221 -> 1.2214  (skill +0.065%)  OOS dR2 +1.811e-03
+   DECISION  y_ast   A01_c04_prevgame             n= 5111  MAE 1.5248 -> 1.5238  (skill +0.066%)  OOS dR2 +1.309e-03
+   POOLED    y_ast   A04_teammate_prior_fgm_pg    n=13977  MAE 1.2221 -> 1.2223  (skill -0.016%)  OOS dR2 +2.035e-03
+   DECISION  y_ast   A04_teammate_prior_fgm_pg    n= 5111  MAE 1.5248 -> 1.5242  (skill +0.039%)  OOS dR2 +1.434e-03
+   POOLED    y_reb   A01_c04_prevgame             n=13977  MAE 1.7827 -> 1.7818  (skill +0.052%)  OOS dR2 +1.194e-03
+   DECISION  y_reb   A01_c04_prevgame             n= 5111  MAE 2.0452 -> 2.0452  (skill -0.000%)  OOS dR2 +9.256e-04
+   POOLED    y_reb   A04_teammate_prior_fgm_pg    n=13977  MAE 1.7827 -> 1.7819  (skill +0.046%)  OOS dR2 +7.676e-04
+   DECISION  y_reb   A04_teammate_prior_fgm_pg    n= 5111  MAE 2.0452 -> 2.0451  (skill +0.009%)  OOS dR2 +2.485e-04
+   POOLED    y_pts   A01_c04_prevgame             n=13977  MAE 4.0818 -> 4.0701  (skill +0.286%)  OOS dR2 +3.455e-03
+   DECISION  y_pts   A01_c04_prevgame             n= 5111  MAE 4.9904 -> 4.9812  (skill +0.186%)  OOS dR2 +4.305e-03
+   POOLED    y_pts   A04_teammate_prior_fgm_pg    n=13977  MAE 4.0818 -> 4.0726  (skill +0.225%)  OOS dR2 +2.344e-03
+   DECISION  y_pts   A04_teammate_prior_fgm_pg    n= 5111  MAE 4.9904 -> 4.9858  (skill +0.092%)  OOS dR2 +2.527e-03
+
+====================================================================================================
+7. THE ARITHMETIC CEILING TABLE, AGAINST THE THREE BENCHMARKS
+====================================================================================================
+  BENCHMARKS: {'D089 teammate->shots-per-min (LARGEST MEASURED, alive)': 0.002057, 'dead lead #1': 0.001127, 'dead lead #2': 0.000129}
+
+  Every cell that SURVIVES family-wise at the correct level, by ceiling:
+   stratum   target   candidate                       ceiling    d_y/1sd   vs largest      fw_p
+   POOLED    y_ast    A04_teammate_prior_fgm_pg     2.884e-03     0.1223        1.40x    0.0017
+   POOLED    y_reb    A01_c04_prevgame              2.351e-03     0.1590        1.14x    0.0017
+   POOLED    y_ast    A01_c04_prevgame              2.345e-03     0.1103        1.14x    0.0017
+   POOLED    y_dreb   A01_c04_prevgame              2.173e-03     0.1217        1.06x    0.0017
+   DECISION  y_ast    A04_teammate_prior_fgm_pg     1.710e-03     0.1047        0.83x    0.0399
+   DECISION  y_ast    A01_c04_prevgame              1.446e-03     0.0962        0.70x    0.0433
+   DECISION  y_dreb   A01_c04_prevgame              1.374e-03     0.1033        0.67x    0.0466
+   POOLED    y_oreb   A01_c04_prevgame              6.817e-04     0.0319        0.33x    0.0399
+   POOLED    y_ast    A05_teammate_prior_fgpct      6.184e-04     0.0566        0.30x    0.0017
+
+  Largest ceiling among NON-survivors (context for how little the dead ones could move):
+ stratum target           candidate  CEILING_dr2_D089form  fw_p
+  POOLED y_oreb R08_player_ra_share              0.010598   1.0
+DECISION y_oreb R08_player_ra_share              0.002575   1.0
+  POOLED y_dreb R08_player_ra_share              0.002371   1.0
+  POOLED  y_reb R08_player_ra_share              0.002189   1.0
+
+====================================================================================================
+8. PREREG ACCOUNTING
+====================================================================================================
+  prereg hash        : ab220cd18ae33a4c0c03a3a408a6c498145d6493e06e9201a8461e5587d13736
+  cells preregistered: 125
+  cells run          : 250 (125 x 2 strata)
+  ADDED post-hoc     : 4  -> ['POOLED|y_pts|B_COMPLETE|A01_c04_prevgame', 'DECISION|y_pts|B_COMPLETE|A01_c04_prevgame', 'POOLED|y_pts|B_COMPLETE|A04_teammate_prior_fgm_pg', 'DECISION|y_pts|B_COMPLETE|A04_teammate_prior_fgm_pg']
+  DROPPED            : 0
+
+  WROTE arithmetic_ceiling.csv, mechanism_minutes_conditioning.csv,
+        mechanism_per_minute.csv, per_season_consistency.csv,
+        propagation_walkforward.csv, _s05.json
+
+====================================================================================================
+FINDINGS.json WRITTEN
+====================================================================================================
+Rebounds and assists are NOT more tractable than points: on the decision stratum 51.7% of defensive-rebound variance, 50.8% of assist variance and 64.6% of offensive-rebound variance is irreducible even to an oracle that knows the player's whole season AND their realised minutes -- statistically indistinguishable from the 51.7% this frame reproduces for points -- and the reachable headroom above the best honest prior-history baseline is SMALLER for both new targets (assists 0.082, total rebounds 0.102 R2) than for points (0.161 R2); the shot-location channel is DEAD on rebounds (no candidate survives family-wise at the correct level on either stratum, and the one candidate that looked strongest, the player's own restricted-area share, is killed specifically by the cyclic-shift null that D093 warned about), and the teammate-availability channel does survive on assists but the MECHANISM TEST disqualifies it as an assist signal: the sign is NEGATIVE where the proposed mechanism predicts positive, it fires just as hard on rebounds and HARDER on points, 85-100% of it is extinguished by conditioning on realised minutes, and it is completely dead on the per-minute target -- it is D089's minutes/opportunity channel rediscovered, not a playmaking channel.
+
+BOTH TARGETS ARE ABOUT AS UNPREDICTABLE AS POINTS AND THE CEILINGS ARE NOT WIDER. The last gated frontier closes with a null. D051 can now be marked DISCHARGED for all five targets rather than BLOCKED for two.
+
+  rebound cells tested=116  surviving=0  best fw_p=0.3228
+  surviving cells overall=9 (all teammate-availability, all disqualified by mechanism)

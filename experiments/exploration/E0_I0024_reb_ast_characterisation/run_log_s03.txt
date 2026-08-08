@@ -1,0 +1,269 @@
+﻿  assert_partition ok=True  {'season': [2021, 2022, 2023, 2024], 'game_date': [2021, 2022, 2023, 2024]}
+  frame (18212, 78)   headline seasons [2022, 2023, 2024]
+
+====================================================================================================
+0. SUPPLEMENTARY LEAKAGE PROBES P4b / P4c -- fixing DEFECT D-01
+====================================================================================================
+  DEFECT D-01: s02's probe P4 was VACUOUS (hard-coded True).  It is superseded here by a
+  brute-force recomputation (P4b) and a discrimination check against the FORBIDDEN
+  tip-time membership (P4c).  See DEFECTS.md.
+  [P4b] A01 == recomputation from the PREVIOUS game's box : mismatches=0 of 250
+  [P4c] A01 vs recomputation from TODAY's box (FORBIDDEN)  : mismatches=177 of 250
+        membership differed between prev and today on 190 of 250 sampled rows
+  [PASS] P4b  [PASS] P4c -- A01 matches the PREVIOUS box and DOES NOT match today's box
+
+====================================================================================================
+1. WALK-FORWARD H4: OLS on B_COMPLETE, fitted on STRICTLY EARLIER SEASONS ONLY
+====================================================================================================
+  Season s is scored by a model fitted on seasons < s.  2021 has no earlier season and is
+  therefore unscorable for H4; the headline is 2022-2024 in any case.  This is the only
+  fitting anywhere in this screen and it never touches the champion.
+
+====================================================================================================
+2. THE LADDER
+====================================================================================================
+
+----------------------------------------------------------------------------------------------------
+  SUBSET: ALL (2022-2024)
+----------------------------------------------------------------------------------------------------
+
+   y_oreb    n=14327  sd_y=1.2246
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    0.7711   1.0832   0.21759
+     H2   trailing-5 prior mean                     honest    0.7895   1.1233   0.15856
+     H3   prior rate(floored) x prior minutes       honest    0.7723   1.0824   0.21873
+     H4   walk-forward OLS on B_COMPLETE            honest    0.7729   1.0553   0.26335
+     O1   SEASON-MEAN target                        ORACLE    0.7238   1.0020   0.33044
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    0.6792   0.9493   0.39909
+     O3   within-player-season OLS on ACTUAL min    ORACLE    0.6691   0.9365   0.41517
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    0.7310   1.0349   0.28575
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    0.7300   1.0140   0.31436
+     REF  expanding prior mean                      honest    0.7718   1.0817   0.21983
+
+   y_dreb    n=14327  sd_y=2.6088
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.5120   2.0129   0.40464
+     H2   trailing-5 prior mean                     honest    1.5617   2.0836   0.36209
+     H3   prior rate(floored) x prior minutes       honest    1.5258   2.0251   0.39732
+     H4   walk-forward OLS on B_COMPLETE            honest    1.5031   1.9972   0.43265
+     O1   SEASON-MEAN target                        ORACLE    1.4068   1.8687   0.48688
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.2315   1.6602   0.59497
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.2121   1.6349   0.60725
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.3353   1.8105   0.51831
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.4354   1.9060   0.46617
+     REF  expanding prior mean                      honest    1.5237   2.0257   0.39703
+
+   y_reb     n=14327  sd_y=3.2777
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.8139   2.4094   0.45959
+     H2   trailing-5 prior mean                     honest    1.8695   2.4927   0.42160
+     H3   prior rate(floored) x prior minutes       honest    1.8344   2.4333   0.44876
+     H4   walk-forward OLS on B_COMPLETE            honest    1.8036   2.3908   0.48648
+     O1   SEASON-MEAN target                        ORACLE    1.6900   2.2430   0.53164
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.4250   1.9235   0.65558
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.4037   1.8944   0.66592
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.5523   2.0963   0.59088
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.7311   2.3005   0.50734
+     REF  expanding prior mean                      honest    1.8347   2.4347   0.44818
+
+   y_ast     n=14327  sd_y=2.2734
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.2402   1.6858   0.45010
+     H2   trailing-5 prior mean                     honest    1.2793   1.7437   0.41167
+     H3   prior rate(floored) x prior minutes       honest    1.2522   1.6948   0.44418
+     H4   walk-forward OLS on B_COMPLETE            honest    1.2235   1.6611   0.48119
+     O1   SEASON-MEAN target                        ORACLE    1.1580   1.5650   0.52608
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.0398   1.4335   0.60235
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.0261   1.4143   0.61295
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.1239   1.5576   0.53054
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.1768   1.5917   0.50973
+     REF  expanding prior mean                      honest    1.2492   1.6934   0.44512
+
+   y_pts     n=14327  sd_y=7.5641
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    4.1266   5.4360   0.48349
+     H2   trailing-5 prior mean                     honest    4.2525   5.6184   0.44825
+     H3   prior rate(floored) x prior minutes       honest    4.1619   5.4497   0.48083
+     H4   walk-forward OLS on B_COMPLETE            honest    4.1690   5.4586   0.50446
+     O1   SEASON-MEAN target                        ORACLE    3.8311   5.0349   0.55690
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    3.1535   4.2893   0.67842
+     O3   within-player-season OLS on ACTUAL min    ORACLE    3.0794   4.2043   0.69104
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    3.4232   4.6418   0.62335
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    3.9375   5.1647   0.53377
+     REF  expanding prior mean                      honest    4.1548   5.4594   0.47905
+
+----------------------------------------------------------------------------------------------------
+  SUBSET: DECISION (>=8 prior, >=24 trail-5 min)
+----------------------------------------------------------------------------------------------------
+
+   y_oreb    n=5111   sd_y=1.3775
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    0.8852   1.1888   0.25509
+     H2   trailing-5 prior mean                     honest    0.9256   1.2530   0.17238
+     H3   prior rate(floored) x prior minutes       honest    0.8774   1.1818   0.26379
+     H4   walk-forward OLS on B_COMPLETE            honest    0.8748   1.1634   0.30391
+     O1   SEASON-MEAN target                        ORACLE    0.8449   1.1363   0.31934
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    0.8314   1.1070   0.35400
+     O3   within-player-season OLS on ACTUAL min    ORACLE    0.7915   1.0688   0.39784
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    0.8633   1.1512   0.30137
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    0.8487   1.1422   0.31232
+     REF  expanding prior mean                      honest    0.8774   1.1818   0.26374
+
+   y_dreb    n=5111   sd_y=2.7872
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.7550   2.2539   0.34595
+     H2   trailing-5 prior mean                     honest    1.8581   2.3810   0.27008
+     H3   prior rate(floored) x prior minutes       honest    1.7466   2.2511   0.34754
+     H4   walk-forward OLS on B_COMPLETE            honest    1.7508   2.2490   0.36463
+     O1   SEASON-MEAN target                        ORACLE    1.6642   2.1487   0.40558
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.5548   2.0037   0.48311
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.4915   1.9398   0.51551
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.6267   2.0977   0.43343
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.6815   2.1677   0.39499
+     REF  expanding prior mean                      honest    1.7470   2.2522   0.34691
+
+   y_reb     n=5111   sd_y=3.4763
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    2.0566   2.6495   0.41899
+     H2   trailing-5 prior mean                     honest    2.1753   2.8032   0.34965
+     H3   prior rate(floored) x prior minutes       honest    2.0576   2.6579   0.41531
+     H4   walk-forward OLS on B_COMPLETE            honest    2.0381   2.6196   0.44923
+     O1   SEASON-MEAN target                        ORACLE    1.9602   2.5362   0.46764
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.8072   2.3280   0.55145
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.7340   2.2508   0.58072
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.8921   2.4321   0.51042
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.9873   2.5670   0.45461
+     REF  expanding prior mean                      honest    2.0583   2.6597   0.41452
+
+   y_ast     n=5111   sd_y=2.5311
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.5349   1.9851   0.38480
+     H2   trailing-5 prior mean                     honest    1.6146   2.0844   0.32168
+     H3   prior rate(floored) x prior minutes       honest    1.5291   1.9824   0.38644
+     H4   walk-forward OLS on B_COMPLETE            honest    1.5274   1.9769   0.40989
+     O1   SEASON-MEAN target                        ORACLE    1.4629   1.8973   0.43801
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.3935   1.8042   0.49177
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.3483   1.7522   0.52067
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.4520   1.8836   0.44608
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.4741   1.9095   0.43072
+     REF  expanding prior mean                      honest    1.5286   1.9819   0.38674
+
+   y_pts     n=5111   sd_y=7.5837
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    5.0028   6.3440   0.30008
+     H2   trailing-5 prior mean                     honest    5.2372   6.6354   0.23430
+     H3   prior rate(floored) x prior minutes       honest    4.9844   6.3387   0.30124
+     H4   walk-forward OLS on B_COMPLETE            honest    5.0361   6.3717   0.32224
+     O1   SEASON-MEAN target                        ORACLE    4.7661   6.0640   0.36050
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    4.2483   5.4515   0.48316
+     O3   within-player-season OLS on ACTUAL min    ORACLE    4.0968   5.2836   0.51450
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    4.4251   5.6820   0.43853
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    4.8314   6.1418   0.34398
+     REF  expanding prior mean                      honest    4.9863   6.3414   0.30066
+
+----------------------------------------------------------------------------------------------------
+  SUBSET: ALL incl 2021 (power sensitivity)
+----------------------------------------------------------------------------------------------------
+
+   y_oreb    n=18212  sd_y=1.2272
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    0.7805   1.0940   0.20525
+     H2   trailing-5 prior mean                     honest    0.7980   1.1330   0.14770
+     H3   prior rate(floored) x prior minutes       honest    0.7826   1.0940   0.20525
+     H4   walk-forward OLS on B_COMPLETE            honest    0.7805   1.0631   0.24635
+     O1   SEASON-MEAN target                        ORACLE    0.7298   1.0061   0.32794
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    0.6845   0.9532   0.39668
+     O3   within-player-season OLS on ACTUAL min    ORACLE    0.6743   0.9398   0.41353
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    0.7400   1.0458   0.27371
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    0.7371   1.0191   0.31035
+     REF  expanding prior mean                      honest    0.7815   1.0928   0.20708
+
+   y_dreb    n=18212  sd_y=2.6161
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.5365   2.0402   0.39179
+     H2   trailing-5 prior mean                     honest    1.5854   2.1118   0.34835
+     H3   prior rate(floored) x prior minutes       honest    1.5491   2.0497   0.38613
+     H4   walk-forward OLS on B_COMPLETE            honest    1.5022   1.9891   0.41858
+     O1   SEASON-MEAN target                        ORACLE    1.4226   1.8840   0.48134
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.2376   1.6653   0.59477
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.2185   1.6404   0.60679
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.3475   1.8246   0.51351
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.4535   1.9243   0.45891
+     REF  expanding prior mean                      honest    1.5459   2.0494   0.38629
+
+   y_reb     n=18212  sd_y=3.2790
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.8415   2.4399   0.44631
+     H2   trailing-5 prior mean                     honest    1.8960   2.5232   0.40785
+     H3   prior rate(floored) x prior minutes       honest    1.8607   2.4610   0.43670
+     H4   walk-forward OLS on B_COMPLETE            honest    1.8020   2.3864   0.46981
+     O1   SEASON-MEAN target                        ORACLE    1.7055   2.2578   0.52586
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.4330   1.9270   0.65462
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.4115   1.8981   0.66491
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.5686   2.1099   0.58594
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.7501   2.3201   0.49934
+     REF  expanding prior mean                      honest    1.8596   2.4608   0.43676
+
+   y_ast     n=18212  sd_y=2.2569
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    1.2397   1.6861   0.44183
+     H2   trailing-5 prior mean                     honest    1.2767   1.7420   0.40424
+     H3   prior rate(floored) x prior minutes       honest    1.2499   1.6920   0.43796
+     H4   walk-forward OLS on B_COMPLETE            honest    1.2329   1.6689   0.46109
+     O1   SEASON-MEAN target                        ORACLE    1.1525   1.5599   0.52226
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    1.0360   1.4281   0.59958
+     O3   within-player-season OLS on ACTUAL min    ORACLE    1.0216   1.4087   0.61038
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    1.1238   1.5559   0.52476
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    1.1725   1.5869   0.50561
+     REF  expanding prior mean                      honest    1.2473   1.6909   0.43866
+
+   y_pts     n=18212  sd_y=7.5005
+     rung                                           kind         MAE     RMSE        R2
+     H1   EWMA prior (hl=5)                         honest    4.1626   5.4721   0.46770
+     H2   trailing-5 prior mean                     honest    4.2863   5.6509   0.43234
+     H3   prior rate(floored) x prior minutes       honest    4.1963   5.4885   0.46448
+     H4   walk-forward OLS on B_COMPLETE            honest    4.1291   5.3849   0.49310
+     O1   SEASON-MEAN target                        ORACLE    3.8552   5.0538   0.54598
+     O2   ACTUAL minutes x SEASON-MEAN rate         ORACLE    3.1752   4.2982   0.67158
+     O3   within-player-season OLS on ACTUAL min    ORACLE    3.0966   4.2098   0.68496
+     O4   ACTUAL minutes x prior rate(floored)      ORACLE    3.4490   4.6639   0.61332
+     O5   prior minutes x SEASON-MEAN rate          ORACLE    3.9645   5.1918   0.52085
+     REF  expanding prior mean                      honest    4.1920   5.4973   0.46278
+
+====================================================================================================
+3. THE HEADLINE NUMBERS -- IRREDUCIBLE SHARE AND REACHABLE HEADROOM
+====================================================================================================
+
+  SUBSET: ALL (2022-2024)
+   target        n     sd_y    R2 REF   R2 best     R2 O2  IRREDUCIBLE    headroom
+                               honest    honest    ORACLE   even to O2  O2-besthon
+   y_oreb    14327   1.2246   0.21983   0.26335   0.39909       60.09%     0.13574
+   y_dreb    14327   2.6088   0.39703   0.43265   0.59497       40.50%     0.16232
+   y_reb     14327   3.2777   0.44818   0.48648   0.65558       34.44%     0.16909
+   y_ast     14327   2.2734   0.44512   0.48119   0.60235       39.76%     0.12116
+   y_pts     14327   7.5641   0.47905   0.50446   0.67842       32.16%     0.17396
+
+  SUBSET: DECISION (>=8 prior, >=24 trail-5 min)
+   target        n     sd_y    R2 REF   R2 best     R2 O2  IRREDUCIBLE    headroom
+                               honest    honest    ORACLE   even to O2  O2-besthon
+   y_oreb     5111   1.3775   0.26374   0.30391   0.35400       64.60%     0.05009
+   y_dreb     5111   2.7872   0.34691   0.36463   0.48311       51.69%     0.11847
+   y_reb      5111   3.4763   0.41452   0.44923   0.55145       44.85%     0.10222
+   y_ast      5111   2.5311   0.38674   0.40989   0.49177       50.82%     0.08188
+   y_pts      5111   7.5837   0.30066   0.32224   0.48316       51.68%     0.16092
+
+  SUBSET: ALL incl 2021 (power sensitivity)
+   target        n     sd_y    R2 REF   R2 best     R2 O2  IRREDUCIBLE    headroom
+                               honest    honest    ORACLE   even to O2  O2-besthon
+   y_oreb    18212   1.2272   0.20708   0.24635   0.39668       60.33%     0.15033
+   y_dreb    18212   2.6161   0.38629   0.41858   0.59477       40.52%     0.17619
+   y_reb     18212   3.2790   0.43676   0.46981   0.65462       34.54%     0.18481
+   y_ast     18212   2.2569   0.43866   0.46109   0.59958       40.04%     0.13849
+   y_pts     18212   7.5005   0.46278   0.49310   0.67158       32.84%     0.17848
+
+====================================================================================================
+4. BASELINE ACCURACY TABLE (STEP 2 deliverable)
+====================================================================================================
+  WROTE baseline_accuracy.csv (75 rows -- honest rungs only)
+
+  WROTE oracle_ladder.csv, ladder_summary.csv, baseline_accuracy.csv, _s03.json

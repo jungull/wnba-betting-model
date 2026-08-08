@@ -1,0 +1,74 @@
+﻿
+====================================================================================================
+1. LOAD SHOTCHARTS 2021-2024 (regular + playoffs).  2025/2026 FILES ARE NEVER OPENED.
+====================================================================================================
+  opened shots_2021_regular.parquet       rows=26269
+  opened shots_2021_playoffs.parquet      rows=2385
+  opened shots_2022_regular.parquet       rows=29374
+  opened shots_2022_playoffs.parquet      rows=3139
+  opened shots_2023_regular.parquet       rows=32809
+  opened shots_2023_playoffs.parquet      rows=2813
+  opened shots_2024_regular.parquet       rows=32759
+  opened shots_2024_playoffs.parquet      rows=3010
+  TOTAL shot rows 2021-2024: 132558
+
+====================================================================================================
+2. PARTITION CHECK ON VALUES (GAME_DATE parsed, never a byte scan)
+====================================================================================================
+  parsed dates: 132558 of 132558   range 2021-05-14 .. 2024-10-20
+  PARTITION OK
+
+====================================================================================================
+3. ROW-GRANULARITY VALUE EVIDENCE (D087 method, REPRODUCED HERE)
+====================================================================================================
+  round  rule: reproduced on 65954 of 132558 rows = 0.497548
+  floor  rule: reproduced on 132558 of 132558 rows = 1.000000
+  BEST = 1.000000
+  VERDICT: value evidence for ROW granularity; the file still has NO MANIFEST and is
+           therefore reported as UNVERIFIABLE_NO_MANIFEST + VALUE_EVIDENCE_ROW.
+
+====================================================================================================
+4. JOIN FEASIBILITY: shotchart GAME_ID vs master_team game_id
+====================================================================================================
+  master_team games 2021-24: 970   shotchart games: 970
+  shotchart games found in master_team: 970 (1.0000)
+  master_team games with shotchart:     970 (1.0000)
+
+  examples only in shotcharts: []
+  examples only in master:     []
+
+====================================================================================================
+5. TEAM_ID CONSISTENCY
+====================================================================================================
+  shot TEAM_IDs: 12   master team_ids: 12   overlap: 12
+
+====================================================================================================
+6. SHOTS PER GAME SANITY (both teams present in each game?)
+====================================================================================================
+  games with exactly 2 shooting teams: 970 of 970 (1.0000)
+
+====================================================================================================
+7. ZONE VOCABULARY ACROSS ALL 2021-2024
+====================================================================================================
+SHOT_ZONE_BASIC
+Above the Break 3        37939
+Restricted Area          37743
+In The Paint (Non-RA)    27397
+Mid-Range                24370
+Left Corner 3             2916
+Right Corner 3            1939
+Backcourt                  254
+
+  SHOT_TYPE:
+SHOT_TYPE
+2PT Field Goal    89510
+3PT Field Goal    43048
+
+====================================================================================================
+8. SHOTCHART vs BOX FGA RECONCILIATION (team-game level)
+====================================================================================================
+  matched team-games: 1940
+  FGA exact match: 0.9990   mean|diff|=0.0010
+  FGM exact match: 0.9995   mean|diff|=0.0005
+
+WROTE _s00b.json
