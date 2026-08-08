@@ -1,0 +1,2671 @@
+{
+  "screen": "E1_I0022_optimal_simple_estimator",
+  "question_from_the_user": "so at this point a player's average score to date with a ewma is the best predictor of their score and any nuance just muddies the water?",
+  "one_line_answer": "Almost. An EWMA of the player's own prior games -- properly tuned -- beats the reference this programme has been scoring against, and beats the CHAMPION outright on the pooled rows for all four targets. But the champion's pooled loss is entirely the 7.33% of rows on which it emits a literal constant; on the 92.67% of rows where it actually models, the champion BEATS the best tuned simple estimator on points (+1.07%, p=0.0002) and FGA (+0.88%, p=0.0012), ties on minutes, and slightly loses on points-per-minute. The nuance is not muddying the water -- it is being swamped by a cold-start fallback.",
+  "partition": {
+    "seasons_present": [
+      2022,
+      2023,
+      2024
+    ],
+    "policy": "exploration partition 2021-2024; the 2021 fold is degenerate (n_train_rows=0) and is absent from the frozen frame",
+    "season_calendar_ranges": {
+      "2022": [
+        "2022-05-08",
+        "2022-09-18"
+      ],
+      "2023": [
+        "2023-05-21",
+        "2023-10-18"
+      ],
+      "2024": [
+        "2024-05-16",
+        "2024-10-20"
+      ]
+    },
+    "no_2025_or_2026_row_was_read_joined_plotted_or_described": true
+  },
+  "step1_reproduction": {
+    "source": "E0_I0015_points_skill_decomposition/decomp_frame.parquet + component_skill.csv (D081)",
+    "verdict": "EXACT -- all nine published numbers reproduced at |delta| = 0.000e+00",
+    "max_abs_delta_skill": 0.0,
+    "max_abs_delta_mae": 0.0,
+    "reproduced_with": "this screen's own local metric code (ose_base), NOT by importing psd_base and NOT by importing the shared screen kit",
+    "table": [
+      {
+        "component": "minutes",
+        "kind": "LEVEL",
+        "reference": "ref_minutes",
+        "n": 13879,
+        "published_n": 13879,
+        "model_mae": 5.079670829517938,
+        "published_model_mae": 5.079670829517938,
+        "abs_delta_model_mae": 0.0,
+        "ref_mae": 5.266906514137652,
+        "published_ref_mae": 5.266906514137652,
+        "abs_delta_ref_mae": 0.0,
+        "skill": 0.035549460412317546,
+        "published_skill": 0.035549460412317546,
+        "abs_delta_skill": 0.0
+      },
+      {
+        "component": "fga",
+        "kind": "LEVEL",
+        "reference": "ref_fga",
+        "n": 13879,
+        "published_n": 13879,
+        "model_mae": 2.6375697656574264,
+        "published_model_mae": 2.6375697656574264,
+        "abs_delta_model_mae": 0.0,
+        "ref_mae": 2.640610728352467,
+        "published_ref_mae": 2.640610728352467,
+        "abs_delta_ref_mae": 0.0,
+        "skill": 0.0011516133985177701,
+        "published_skill": 0.0011516133985177701,
+        "abs_delta_skill": 0.0
+      },
+      {
+        "component": "pts",
+        "kind": "LEVEL",
+        "reference": "ref_pts",
+        "n": 13879,
+        "published_n": 13879,
+        "model_mae": 4.190919667572693,
+        "published_model_mae": 4.190919667572693,
+        "abs_delta_model_mae": 0.0,
+        "ref_mae": 4.181628792249526,
+        "published_ref_mae": 4.181628792249526,
+        "abs_delta_ref_mae": 0.0,
+        "skill": -0.0022218316796525084,
+        "published_skill": -0.0022218316796525084,
+        "abs_delta_skill": 0.0
+      },
+      {
+        "component": "pts_per_min",
+        "kind": "RATE",
+        "reference": "refA_ppm",
+        "n": 13879,
+        "published_n": 13879,
+        "model_mae": 0.18174283099586136,
+        "published_model_mae": 0.18174283099586136,
+        "abs_delta_model_mae": 0.0,
+        "ref_mae": 0.18276462664132767,
+        "published_ref_mae": 0.18276462664132767,
+        "abs_delta_ref_mae": 0.0,
+        "skill": 0.005590773577162533,
+        "published_skill": 0.005590773577162533,
+        "abs_delta_skill": 0.0
+      },
+      {
+        "component": "pts_per_min",
+        "kind": "RATE",
+        "reference": "refB_ppm",
+        "n": 13879,
+        "published_n": 13879,
+        "model_mae": 0.18174283099586136,
+        "published_model_mae": 0.18174283099586136,
+        "abs_delta_model_mae": 0.0,
+        "ref_mae": 0.18350234471241633,
+        "published_ref_mae": 0.18350234471241633,
+        "abs_delta_ref_mae": 0.0,
+        "skill": 0.009588508088615777,
+        "published_skill": 0.009588508088615777,
+        "abs_delta_skill": 0.0
+      },
+      {
+        "component": "pts_per_fga",
+        "kind": "RATE",
+        "reference": "refA_ppf",
+        "n": 12976,
+        "published_n": 12976,
+        "model_mae": 0.5065778966660669,
+        "published_model_mae": 0.5065778966660669,
+        "abs_delta_model_mae": 0.0,
+        "ref_mae": 0.5175857623294488,
+        "published_ref_mae": 0.5175857623294488,
+        "abs_delta_ref_mae": 0.0,
+        "skill": 0.02126771341978151,
+        "published_skill": 0.02126771341978151,
+        "abs_delta_skill": 0.0
+      },
+      {
+        "component": "pts_per_fga",
+        "kind": "RATE",
+        "reference": "refB_ppf",
+        "n": 12976,
+        "published_n": 12976,
+        "model_mae": 0.5065778966660669,
+        "published_model_mae": 0.5065778966660669,
+        "abs_delta_model_mae": 0.0,
+        "ref_mae": 0.5118171255878924,
+        "published_ref_mae": 0.5118171255878924,
+        "abs_delta_ref_mae": 0.0,
+        "skill": 0.010236525235077898,
+        "published_skill": 0.010236525235077898,
+        "abs_delta_skill": 0.0
+      },
+      {
+        "component": "fga_per_min",
+        "kind": "RATE",
+        "reference": "refA_fpm",
+        "n": 13879,
+        "published_n": 13879,
+        "model_mae": 0.11033798411000435,
+        "published_model_mae": 0.11033798411000435,
+        "abs_delta_model_mae": 0.0,
+        "ref_mae": 0.1118426915806147,
+        "published_ref_mae": 0.1118426915806147,
+        "abs_delta_ref_mae": 0.0,
+        "skill": 0.013453784501652244,
+        "published_skill": 0.013453784501652244,
+        "abs_delta_skill": 0.0
+      },
+      {
+        "component": "fga_per_min",
+        "kind": "RATE",
+        "reference": "refB_fpm",
+        "n": 13879,
+        "published_n": 13879,
+        "model_mae": 0.11033798411000435,
+        "published_model_mae": 0.11033798411000435,
+        "abs_delta_model_mae": 0.0,
+        "ref_mae": 0.11111056544847446,
+        "published_ref_mae": 0.11111056544847446,
+        "abs_delta_ref_mae": 0.0,
+        "skill": 0.006953266193469032,
+        "published_skill": 0.006953266193469032,
+        "abs_delta_skill": 0.0
+      }
+    ],
+    "independent_reference_rebuild": [
+      {
+        "column": "ref_pts",
+        "max_abs_diff_vs_independent_rebuild": 0.0
+      },
+      {
+        "column": "ref_minutes",
+        "max_abs_diff_vs_independent_rebuild": 6.750155989720952e-14
+      },
+      {
+        "column": "ref_fga",
+        "max_abs_diff_vs_independent_rebuild": 0.0
+      }
+    ],
+    "leak_probe_corr_with_players_strictly_future_mean_pts": {
+      "RETROSPECTIVE CONTROL full-season mean": 0.9479810572796885,
+      "our/D076 prior-appearance mean ref_pts": 0.845257416282032
+    }
+  },
+  "step2_preregistration": {
+    "file": "ESTIMATOR_GRID.md",
+    "grid_sha256": "5ddbd754cc3f0c9eb9b7e29f8a6e77b37e0b078b647785629ad42167ac6cf4db",
+    "spec_sha256": "df9ef234eba9b1069d0c38d7c02cafa358c18a3c6311d4616f2fb563bbb40300",
+    "n_cells": 15048,
+    "added_after_prereg": 0,
+    "dropped_after_prereg": 0,
+    "dimensions": {
+      "targets": [
+        "pts",
+        "minutes",
+        "fga",
+        "ppm"
+      ],
+      "modes": {
+        "pts": [
+          "equal",
+          "minutes_weighted",
+          "composite"
+        ],
+        "minutes": [
+          "equal",
+          "minutes_weighted"
+        ],
+        "fga": [
+          "equal",
+          "minutes_weighted"
+        ],
+        "ppm": [
+          "ratio_of_prior_sums",
+          "mean_of_prior_ratios"
+        ]
+      },
+      "memory_settings": 19,
+      "shrink_settings": 22,
+      "history_minutes_floors": [
+        0.0,
+        5.0,
+        10.0,
+        15.0
+      ]
+    },
+    "hash_written_before_any_skill_number_for_any_cell": true
+  },
+  "step2_surface_shape": {
+    "winner_per_target_tuned_on_2022_2023": {
+      "pts": {
+        "mode": "composite",
+        "memory_kind": "ewma",
+        "memory_param": "8.0",
+        "shrink_target": "prior_season",
+        "shrink_k": "0.5",
+        "floor": "0.0"
+      },
+      "minutes": {
+        "mode": "equal",
+        "memory_kind": "ewma",
+        "memory_param": "2.0",
+        "shrink_target": "none",
+        "shrink_k": "0.0",
+        "floor": "0.0"
+      },
+      "fga": {
+        "mode": "equal",
+        "memory_kind": "ewma",
+        "memory_param": "5.0",
+        "shrink_target": "prior_season",
+        "shrink_k": "0.5",
+        "floor": "0.0"
+      },
+      "ppm": {
+        "mode": "mean_of_prior_ratios",
+        "memory_kind": "ewma",
+        "memory_param": "40.0",
+        "shrink_target": "prior_season",
+        "shrink_k": "2.0",
+        "floor": "0.0"
+      }
+    },
+    "FORM": "EWMA beats SMA beats expanding for ALL FOUR targets. For points the COMPOSITE (minutes-estimate x points-per-minute-estimate) edges the direct points estimate (4.10855 vs 4.11323 tuning MAE). Minutes-weighting the history HURTS every level target (pts 4.10855 -> 4.30762).",
+    "MEMORY": {
+      "points": "EWMA half-life 8 games",
+      "minutes": "EWMA half-life 2 games",
+      "fga": "EWMA half-life 5 games",
+      "ppm": "EWMA half-life 40 games (~expanding)",
+      "comment": "the optimal memory differs by a factor of 20 ACROSS TARGETS: minutes is a short-memory quantity (role changes fast), points-per-minute is a long-memory quantity (true shooting talent), points sits in between. A single half-life for all three is the wrong object."
+    },
+    "SHRINKAGE": {
+      "points": "k=0.5 toward the player's own PRIOR-SEASON value",
+      "minutes": "NONE (k=0) -- shrinkage strictly hurts minutes",
+      "fga": "k=0.5 toward prior season",
+      "ppm": "k=2 toward prior season",
+      "comment": "shrinkage is weak everywhere and the best target is always the player's own prior season, never the league mean; the league mean was the worst of the three shrinkage targets for every quantity."
+    },
+    "RATIO_OF_PRIOR_SUMS_vs_MEAN_OF_PRIOR_RATIOS": {
+      "winner_for_ppm": "mean_of_prior_ratios at EVERY history floor",
+      "by_floor": [
+        {
+          "floor": 0.0,
+          "mean_of_prior_ratios": 0.1800731239798929,
+          "ratio_of_prior_sums": 0.1813039788795414,
+          "winner": "mean_of_prior_ratios",
+          "gap_ros_minus_mor": 0.001230854899648498
+        },
+        {
+          "floor": 5.0,
+          "mean_of_prior_ratios": 0.1812461851516288,
+          "ratio_of_prior_sums": 0.1824247175719752,
+          "winner": "mean_of_prior_ratios",
+          "gap_ros_minus_mor": 0.0011785324203464065
+        },
+        {
+          "floor": 10.0,
+          "mean_of_prior_ratios": 0.1823684656893514,
+          "ratio_of_prior_sums": 0.1839818794978553,
+          "winner": "mean_of_prior_ratios",
+          "gap_ros_minus_mor": 0.0016134138085039107
+        },
+        {
+          "floor": 15.0,
+          "mean_of_prior_ratios": 0.1833135028803561,
+          "ratio_of_prior_sums": 0.1856722576792924,
+          "winner": "mean_of_prior_ratios",
+          "gap_ros_minus_mor": 0.0023587547989362967
+        }
+      ],
+      "comment": "D093 found the ordering FLIPPED under a minutes floor. It does NOT flip here: mean-of-prior-ratios wins at floors 0/5/10/15 and its margin WIDENS with the floor (0.00123 -> 0.00236). The difference is that D093's floor filtered the rows being SCORED; this grid's floor filters the HISTORY. Both were run."
+    },
+    "HISTORY_MINUTES_FLOOR": "floor = 0 wins for every target, monotonically. Every positive floor degrades the estimator (points 4.109 -> 4.209 -> 4.379 -> 4.617 at floors 0/5/10/15). Discarding low-minute prior games throws away more information than it removes noise.",
+    "marginal_best_by_dimension_tuning_rows": {
+      "pts": {
+        "marginal_best_tuneB": {
+          "mode": {
+            "composite": 4.108554287711756,
+            "equal": 4.1132313613776885,
+            "minutes_weighted": 4.3076178901918105
+          },
+          "memory_kind": {
+            "ewma": 4.108554287711756,
+            "expanding": 4.133594269972374,
+            "sma": 4.128526259294557
+          },
+          "shrink_target": {
+            "league": 4.13712183974219,
+            "none": 4.141638401288266,
+            "prior_season": 4.108554287711756,
+            "role": 4.115156265611113
+          },
+          "floor": {
+            "0.0": 4.108554287711756,
+            "5.0": 4.2092143832288755,
+            "10.0": 4.379048094062569,
+            "15.0": 4.616587951316376
+          },
+          "shrink_k": {
+            "0.0": 4.141638401288266,
+            "0.5": 4.108554287711756,
+            "1.0": 4.118416734089432,
+            "2.0": 4.159223053476929,
+            "4.0": 4.235540728898305,
+            "8.0": 4.3603679757654925,
+            "16.0": 4.542554799788532,
+            "32.0": 4.764923347387261
+          }
+        }
+      },
+      "minutes": {
+        "marginal_best_tuneB": {
+          "mode": {
+            "equal": 4.870316110888342,
+            "minutes_weighted": 5.115270654391015
+          },
+          "memory_kind": {
+            "ewma": 4.870316110888342,
+            "expanding": 5.194660927790034,
+            "sma": 4.9873244995041155
+          },
+          "shrink_target": {
+            "league": 5.004534768613763,
+            "none": 4.870316110888342,
+            "prior_season": 4.921685477010173,
+            "role": 4.92136768564071
+          },
+          "floor": {
+            "0.0": 4.870316110888342,
+            "5.0": 5.128822041009055,
+            "10.0": 5.6453038565963345,
+            "15.0": 6.293867566562794
+          },
+          "shrink_k": {
+            "0.0": 4.870316110888342,
+            "0.5": 4.92136768564071,
+            "1.0": 5.0654771400919225,
+            "2.0": 5.260897056644253,
+            "4.0": 5.525531751872056,
+            "8.0": 5.879944084871988,
+            "16.0": 6.313364519601638,
+            "32.0": 6.786263255853599
+          }
+        }
+      },
+      "fga": {
+        "marginal_best_tuneB": {
+          "mode": {
+            "equal": 2.5643814749940756,
+            "minutes_weighted": 2.7036582019634086
+          },
+          "memory_kind": {
+            "ewma": 2.5643814749940756,
+            "expanding": 2.6109590949647945,
+            "sma": 2.588328871593525
+          },
+          "shrink_target": {
+            "league": 2.593867434002253,
+            "none": 2.5819319696950163,
+            "prior_season": 2.5643814749940756,
+            "role": 2.5695011278033952
+          },
+          "floor": {
+            "0.0": 2.5643814749940756,
+            "5.0": 2.6487232639259006,
+            "10.0": 2.7927059367690896,
+            "15.0": 2.9838785910151824
+          },
+          "shrink_k": {
+            "0.0": 2.5819319696950163,
+            "0.5": 2.5643814749940756,
+            "1.0": 2.5871599419769584,
+            "2.0": 2.6402311974594217,
+            "4.0": 2.7206087845547575,
+            "8.0": 2.8429926559974357,
+            "16.0": 3.007684501916125,
+            "32.0": 3.1950441628132293
+          }
+        }
+      },
+      "ppm": {
+        "marginal_best_tuneB": {
+          "mode": {
+            "mean_of_prior_ratios": 0.18007312397989295,
+            "ratio_of_prior_sums": 0.18130397887954147
+          },
+          "memory_kind": {
+            "ewma": 0.18007312397989295,
+            "expanding": 0.18011636906188816,
+            "sma": 0.18009825526155865
+          },
+          "shrink_target": {
+            "league": 0.18069890364437313,
+            "none": 0.18350072275740623,
+            "prior_season": 0.18007312397989295,
+            "role": 0.18020072573700727
+          },
+          "floor": {
+            "0.0": 0.18007312397989295,
+            "5.0": 0.18124618515162888,
+            "10.0": 0.18236846568935147,
+            "15.0": 0.18331350288035614
+          },
+          "shrink_k": {
+            "0.0": 0.18350072275740623,
+            "0.5": 0.18144727716868086,
+            "1.0": 0.18061435016552896,
+            "2.0": 0.18007312397989295,
+            "4.0": 0.18009825526155865,
+            "8.0": 0.18105745865722753,
+            "16.0": 0.18318657190489712,
+            "32.0": 0.18610977100411533
+          }
+        }
+      }
+    }
+  },
+  "step2_depth_adaptation": {
+    "does_the_optimum_vary_with_depth": "YES in the selected cell, NO in walk-forward payoff",
+    "walkforward_gain_from_adapting_pct": {
+      "pts": -0.06078155753060921,
+      "minutes": -0.18484668798678383,
+      "fga": -0.2077347098915494,
+      "ppm": 0.07379213153462238
+    },
+    "comment": "Selected cells differ sharply by tier -- e.g. minutes picks EWMA half-life 12 with shrinkage at 1-2 priors and half-life 2 unshrunk at 25+; ppm picks a 1-game window heavily shrunk at 1-2 priors and a 30-game window at 25+. But the walk-forward gain from adapting is -0.06% to -0.21% (a gain) for pts/minutes/fga and +0.07% (a LOSS) for ppm. The depth-dependence is real and the payoff from exploiting it is within noise. One global setting is very nearly good enough.",
+    "per_tier": [
+      {
+        "target": "pts",
+        "tier": "0",
+        "n_wf": 47,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 5.682825167487695,
+        "mae_wf_depth_adaptive": 5.682825167487696,
+        "gain_from_adapting": -8.881784197001252e-16
+      },
+      {
+        "target": "pts",
+        "tier": "1-2",
+        "n_wf": 610,
+        "cellA": "{\"mode\": \"composite\", \"memory_kind\": \"ewma\", \"memory_param\": \"1.0\", \"shrink_target\": \"league\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"composite\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"1.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 4.573324873259771,
+        "mae_wf_depth_adaptive": 4.593004188510488,
+        "gain_from_adapting": -0.019679315250717
+      },
+      {
+        "target": "pts",
+        "tier": "3-7",
+        "n_wf": 1474,
+        "cellA": "{\"mode\": \"composite\", \"memory_kind\": \"ewma\", \"memory_param\": \"8.0\", \"shrink_target\": \"league\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"composite\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 3.878598902757237,
+        "mae_wf_depth_adaptive": 3.878370160267171,
+        "gain_from_adapting": 0.0002287424900662
+      },
+      {
+        "target": "pts",
+        "tier": "8-14",
+        "n_wf": 1912,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"sma\", \"memory_param\": \"10.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"8.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 4.048409523671656,
+        "mae_wf_depth_adaptive": 4.046215786039455,
+        "gain_from_adapting": 0.0021937376322007
+      },
+      {
+        "target": "pts",
+        "tier": "15-24",
+        "n_wf": 2403,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"composite\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 4.076923914849031,
+        "mae_wf_depth_adaptive": 4.079914355396263,
+        "gain_from_adapting": -0.002990440547232
+      },
+      {
+        "target": "pts",
+        "tier": "25+",
+        "n_wf": 3071,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"8.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 4.285667740898921,
+        "mae_wf_depth_adaptive": 4.273081983779053,
+        "gain_from_adapting": 0.0125857571198677
+      },
+      {
+        "target": "minutes",
+        "tier": "0",
+        "n_wf": 47,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"role\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 12.022355133709192,
+        "mae_wf_depth_adaptive": 10.221090071309938,
+        "gain_from_adapting": 1.8012650623992543
+      },
+      {
+        "target": "minutes",
+        "tier": "1-2",
+        "n_wf": 610,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"league\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"12.0\", \"shrink_target\": \"role\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 7.037971586838761,
+        "mae_wf_depth_adaptive": 6.982490815686493,
+        "gain_from_adapting": 0.0554807711522684
+      },
+      {
+        "target": "minutes",
+        "tier": "3-7",
+        "n_wf": 1474,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"1.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 4.602926758100417,
+        "mae_wf_depth_adaptive": 4.617874066866096,
+        "gain_from_adapting": -0.014947308765679
+      },
+      {
+        "target": "minutes",
+        "tier": "8-14",
+        "n_wf": 1912,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"3.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 4.702637623094993,
+        "mae_wf_depth_adaptive": 4.708151464321313,
+        "gain_from_adapting": -0.0055138412263202
+      },
+      {
+        "target": "minutes",
+        "tier": "15-24",
+        "n_wf": 2403,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 4.805095676645248,
+        "mae_wf_depth_adaptive": 4.805095676645248,
+        "gain_from_adapting": 0.0
+      },
+      {
+        "target": "minutes",
+        "tier": "25+",
+        "n_wf": 3071,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 4.658104309400864,
+        "mae_wf_depth_adaptive": 4.658104309400864,
+        "gain_from_adapting": 0.0
+      },
+      {
+        "target": "fga",
+        "tier": "0",
+        "n_wf": 47,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 4.187397628884782,
+        "mae_wf_depth_adaptive": 4.187397628884782,
+        "gain_from_adapting": 0.0
+      },
+      {
+        "target": "fga",
+        "tier": "1-2",
+        "n_wf": 610,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"league\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 3.168577820301468,
+        "mae_wf_depth_adaptive": 3.149075313040375,
+        "gain_from_adapting": 0.0195025072610928
+      },
+      {
+        "target": "fga",
+        "tier": "3-7",
+        "n_wf": 1474,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"league\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 2.358641292800145,
+        "mae_wf_depth_adaptive": 2.386690414305618,
+        "gain_from_adapting": -0.028049121505473
+      },
+      {
+        "target": "fga",
+        "tier": "8-14",
+        "n_wf": 1912,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 2.3837304279765488,
+        "mae_wf_depth_adaptive": 2.38869367143603,
+        "gain_from_adapting": -0.004963243459481
+      },
+      {
+        "target": "fga",
+        "tier": "15-24",
+        "n_wf": 2403,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"3.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"3.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 2.57300645447042,
+        "mae_wf_depth_adaptive": 2.5548930474173144,
+        "gain_from_adapting": 0.0181134070531054
+      },
+      {
+        "target": "fga",
+        "tier": "25+",
+        "n_wf": 3071,
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 2.606817880713637,
+        "mae_wf_depth_adaptive": 2.591839191289193,
+        "gain_from_adapting": 0.0149786894244439
+      },
+      {
+        "target": "ppm",
+        "tier": "0",
+        "n_wf": 47,
+        "cellA": "{\"mode\": \"ratio_of_prior_sums\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 0.2063662429132728,
+        "mae_wf_depth_adaptive": 0.2176415454291998,
+        "gain_from_adapting": -0.0112753025159269
+      },
+      {
+        "target": "ppm",
+        "tier": "1-2",
+        "n_wf": 610,
+        "cellA": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"ewma\", \"memory_param\": \"0.5\", \"shrink_target\": \"league\", \"shrink_k\": \"2.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"sma\", \"memory_param\": \"1.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"2.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 0.2016448046986865,
+        "mae_wf_depth_adaptive": 0.201047636243282,
+        "gain_from_adapting": 0.0005971684554045
+      },
+      {
+        "target": "ppm",
+        "tier": "3-7",
+        "n_wf": 1474,
+        "cellA": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"ewma\", \"memory_param\": \"3.0\", \"shrink_target\": \"league\", \"shrink_k\": \"2.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"4.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 0.1954681829066293,
+        "mae_wf_depth_adaptive": 0.1954563178166971,
+        "gain_from_adapting": 1.1865089932228123e-05
+      },
+      {
+        "target": "ppm",
+        "tier": "8-14",
+        "n_wf": 1912,
+        "cellA": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"league\", \"shrink_k\": \"1.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"role\", \"shrink_k\": \"2.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 0.1862973764105242,
+        "mae_wf_depth_adaptive": 0.1863661421219672,
+        "gain_from_adapting": -6.876571144301402e-05
+      },
+      {
+        "target": "ppm",
+        "tier": "15-24",
+        "n_wf": 2403,
+        "cellA": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"sma\", \"memory_param\": \"15.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"ewma\", \"memory_param\": \"12.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 0.1750130074385558,
+        "mae_wf_depth_adaptive": 0.1753469224202749,
+        "gain_from_adapting": -0.000333914981719
+      },
+      {
+        "target": "ppm",
+        "tier": "25+",
+        "n_wf": 3071,
+        "cellA": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"league\", \"shrink_k\": \"4.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"sma\", \"memory_param\": \"30.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"4.0\", \"floor\": \"0.0\"}",
+        "mae_wf_global_cell": 0.1687623449875532,
+        "mae_wf_depth_adaptive": 0.1688222949165548,
+        "gain_from_adapting": -5.99499290015737e-05
+      }
+    ]
+  },
+  "step2_tuning_honesty": {
+    "protocol": "split A: hyperparameters selected on season 2022, scored on 2023. split B: selected on 2022+2023, scored on 2024. WALK-FORWARD EVALUATION ROWS = 2023 union 2024 (n=9,517). Selection criterion = lowest MAE on the TUNING rows only.",
+    "in_sample_versus_walkforward_gap": [
+      {
+        "target": "pts",
+        "cellA": "{\"mode\": \"composite\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"league\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"composite\", \"memory_kind\": \"ewma\", \"memory_param\": \"8.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "cell_insample": "{\"mode\": \"composite\", \"memory_kind\": \"ewma\", \"memory_param\": \"8.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_walkforward": 4.147585220885528,
+        "mae_insample_selected": 4.115465436703608,
+        "optimism_gap_mae": 0.03211978418192,
+        "optimism_gap_pct": 0.7804654097070207,
+        "same_cell_A_B": false,
+        "insample_cell_equals_wf": true
+      },
+      {
+        "target": "minutes",
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cell_insample": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"2.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_walkforward": 4.884528084606725,
+        "mae_insample_selected": 4.882010588632061,
+        "optimism_gap_mae": 0.0025174959746641,
+        "optimism_gap_pct": 0.0515667864491309,
+        "same_cell_A_B": true,
+        "insample_cell_equals_wf": false
+      },
+      {
+        "target": "fga",
+        "cellA": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"3.0\", \"shrink_target\": \"none\", \"shrink_k\": \"0.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "cell_insample": "{\"mode\": \"equal\", \"memory_kind\": \"ewma\", \"memory_param\": \"5.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"0.5\", \"floor\": \"0.0\"}",
+        "mae_walkforward": 2.558836001322271,
+        "mae_insample_selected": 2.5384876848329143,
+        "optimism_gap_mae": 0.0203483164893567,
+        "optimism_gap_pct": 0.8015920900831919,
+        "same_cell_A_B": false,
+        "insample_cell_equals_wf": true
+      },
+      {
+        "target": "ppm",
+        "cellA": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"expanding\", \"memory_param\": \"0.0\", \"shrink_target\": \"league\", \"shrink_k\": \"2.0\", \"floor\": \"0.0\"}",
+        "cellB": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"ewma\", \"memory_param\": \"40.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"2.0\", \"floor\": \"0.0\"}",
+        "cell_insample": "{\"mode\": \"mean_of_prior_ratios\", \"memory_kind\": \"sma\", \"memory_param\": \"30.0\", \"shrink_target\": \"prior_season\", \"shrink_k\": \"4.0\", \"floor\": \"0.0\"}",
+        "mae_walkforward": 0.1802930175387246,
+        "mae_insample_selected": 0.1793977710825386,
+        "optimism_gap_mae": 0.0008952464561859,
+        "optimism_gap_pct": 0.49902875090575,
+        "same_cell_A_B": false,
+        "insample_cell_equals_wf": false
+      }
+    ],
+    "optimism_gap_pct": {
+      "pts": 0.7804654097070207,
+      "minutes": 0.0515667864491309,
+      "fga": 0.8015920900831919,
+      "ppm": 0.49902875090575
+    },
+    "why_it_matters": "The largest optimism gap is +0.80% (points). The champion's pooled deficit is -1.93% to -4.41%. The verdict therefore survives even if the estimator's hyperparameters had been chosen with full hindsight -- the deficit is 2.4x to 85x the entire tuning optimism."
+  },
+  "step3_THE_DECISIVE_COMPARISON": {
+    "definition": "champion_skill = 1 - MAE_champion / MAE_best_tuned_simple_estimator, identical walk-forward rows. POSITIVE = the champion is better.",
+    "n_walkforward_rows": 9517,
+    "HEADLINE_ONE_NUMBER_PER_TARGET_POOLED": {
+      "pts": {
+        "champion_skill_vs_best_simple_pct": -1.9282718399704801,
+        "champion_mae": 4.227561938738641,
+        "best_simple_mae": 4.147585220885528,
+        "p_two_sided_blockflip": 0.000249937515621,
+        "verdict": "CHAMPION LOSES"
+      },
+      "minutes": {
+        "champion_skill_vs_best_simple_pct": -4.41121202662575,
+        "champion_mae": 5.099994974918809,
+        "best_simple_mae": 4.884528084606725,
+        "p_two_sided_blockflip": 0.000249937515621,
+        "verdict": "CHAMPION LOSES"
+      },
+      "fga": {
+        "champion_skill_vs_best_simple_pct": -3.1319600518893598,
+        "champion_mae": 2.638977722677048,
+        "best_simple_mae": 2.558836001322271,
+        "p_two_sided_blockflip": 0.000249937515621,
+        "verdict": "CHAMPION LOSES"
+      },
+      "ppm": {
+        "champion_skill_vs_best_simple_pct": -1.33080820015045,
+        "champion_mae": 0.1826923718004286,
+        "best_simple_mae": 0.1802930175387246,
+        "p_two_sided_blockflip": 0.000249937515621,
+        "verdict": "CHAMPION LOSES"
+      }
+    },
+    "on_D081_decision_stratum": {
+      "pts": {
+        "n": 3549,
+        "champion_skill_vs_best_simple_pct": -0.57558501961598,
+        "p_two_sided_blockflip": 0.0319920019995001
+      },
+      "minutes": {
+        "n": 3549,
+        "champion_skill_vs_best_simple_pct": -0.05058188929691,
+        "p_two_sided_blockflip": 0.6628342914271432
+      },
+      "fga": {
+        "n": 3549,
+        "champion_skill_vs_best_simple_pct": -0.13770443451339,
+        "p_two_sided_blockflip": 0.6863284178955261
+      },
+      "ppm": {
+        "n": 3549,
+        "champion_skill_vs_best_simple_pct": -0.58339920314931,
+        "p_two_sided_blockflip": 0.002749312671832
+      }
+    },
+    "by_prior_appearance_tier": [
+      {
+        "target": "pts",
+        "slice": "tier_0",
+        "n": 47,
+        "champ_mae": 6.450803970454484,
+        "best_simple_mae": 5.682825167487695,
+        "best_simple_adaptive_mae": 5.682825167487696,
+        "d081_ref_mae": 6.5186523046052285,
+        "champ_skill_vs_best_simple": -0.1351403184740771,
+        "champ_skill_vs_best_simple_adaptive": -0.1351403184740771,
+        "champ_skill_vs_d081_ref": 0.0104083376410201,
+        "best_simple_skill_vs_d081_ref": 0.128220849657382
+      },
+      {
+        "target": "pts",
+        "slice": "tier_1-2",
+        "n": 610,
+        "champ_mae": 6.314021833368278,
+        "best_simple_mae": 4.573324873259771,
+        "best_simple_adaptive_mae": 4.593004188510488,
+        "d081_ref_mae": 5.042285299604719,
+        "champ_skill_vs_best_simple": -0.380619572925239,
+        "champ_skill_vs_best_simple_adaptive": -0.3747041313750503,
+        "champ_skill_vs_d081_ref": -0.2522143151763456,
+        "best_simple_skill_vs_d081_ref": 0.0930055319126252
+      },
+      {
+        "target": "pts",
+        "slice": "tier_3-7",
+        "n": 1474,
+        "champ_mae": 3.839456836819488,
+        "best_simple_mae": 3.878598902757237,
+        "best_simple_adaptive_mae": 3.878370160267171,
+        "d081_ref_mae": 3.922984105446792,
+        "champ_skill_vs_best_simple": 0.0100918055512067,
+        "champ_skill_vs_best_simple_adaptive": 0.0100334217312054,
+        "champ_skill_vs_d081_ref": 0.021291768302434,
+        "best_simple_skill_vs_d081_ref": 0.0113141428811626
+      },
+      {
+        "target": "pts",
+        "slice": "tier_8-14",
+        "n": 1912,
+        "champ_mae": 4.026388609787978,
+        "best_simple_mae": 4.048409523671656,
+        "best_simple_adaptive_mae": 4.046215786039455,
+        "d081_ref_mae": 4.050772201125233,
+        "champ_skill_vs_best_simple": 0.0054393987947409,
+        "champ_skill_vs_best_simple_adaptive": 0.0049001776721562,
+        "champ_skill_vs_d081_ref": 0.0060194921181896,
+        "best_simple_skill_vs_d081_ref": 0.0005832659394969
+      },
+      {
+        "target": "pts",
+        "slice": "tier_15-24",
+        "n": 2403,
+        "champ_mae": 4.023168089662859,
+        "best_simple_mae": 4.076923914849031,
+        "best_simple_adaptive_mae": 4.079914355396263,
+        "d081_ref_mae": 4.1034852197896905,
+        "champ_skill_vs_best_simple": 0.0131853883734207,
+        "champ_skill_vs_best_simple_adaptive": 0.0139086904259029,
+        "champ_skill_vs_d081_ref": 0.0195729059140969,
+        "best_simple_skill_vs_d081_ref": 0.0064728647766448
+      },
+      {
+        "target": "pts",
+        "slice": "tier_25+",
+        "n": 3071,
+        "champ_mae": 4.2505628613361255,
+        "best_simple_mae": 4.285667740898921,
+        "best_simple_adaptive_mae": 4.273081983779053,
+        "d081_ref_mae": 4.310167116275234,
+        "champ_skill_vs_best_simple": 0.0081912275251259,
+        "champ_skill_vs_best_simple_adaptive": 0.0052699954104349,
+        "champ_skill_vs_d081_ref": 0.0138287572920413,
+        "best_simple_skill_vs_d081_ref": 0.0056840894367652
+      },
+      {
+        "target": "minutes",
+        "slice": "tier_0",
+        "n": 47,
+        "champ_mae": 12.369931938720248,
+        "best_simple_mae": 12.022355133709192,
+        "best_simple_adaptive_mae": 10.221090071309938,
+        "d081_ref_mae": 12.24272872856148,
+        "champ_skill_vs_best_simple": -0.0289108748781254,
+        "champ_skill_vs_best_simple_adaptive": -0.2102360758410686,
+        "champ_skill_vs_d081_ref": -0.0103901028095159,
+        "best_simple_skill_vs_d081_ref": 0.0180003657467447
+      },
+      {
+        "target": "minutes",
+        "slice": "tier_1-2",
+        "n": 610,
+        "champ_mae": 10.144001639534096,
+        "best_simple_mae": 7.037971586838761,
+        "best_simple_adaptive_mae": 6.982490815686493,
+        "d081_ref_mae": 7.077995486606366,
+        "champ_skill_vs_best_simple": -0.4413246081447264,
+        "champ_skill_vs_best_simple_adaptive": -0.4527769398199739,
+        "champ_skill_vs_d081_ref": -0.4331743582952982,
+        "best_simple_skill_vs_d081_ref": 0.00565469416353
+      },
+      {
+        "target": "minutes",
+        "slice": "tier_3-7",
+        "n": 1474,
+        "champ_mae": 4.693912613128662,
+        "best_simple_mae": 4.602926758100417,
+        "best_simple_adaptive_mae": 4.617874066866096,
+        "d081_ref_mae": 4.746028596196508,
+        "champ_skill_vs_best_simple": -0.01976695694063,
+        "champ_skill_vs_best_simple_adaptive": -0.016466136832997,
+        "champ_skill_vs_d081_ref": 0.0109809669308803,
+        "best_simple_skill_vs_d081_ref": 0.0301519123190225
+      },
+      {
+        "target": "minutes",
+        "slice": "tier_8-14",
+        "n": 1912,
+        "champ_mae": 4.701842987977362,
+        "best_simple_mae": 4.702637623094993,
+        "best_simple_adaptive_mae": 4.708151464321313,
+        "d081_ref_mae": 4.91426987606381,
+        "champ_skill_vs_best_simple": 0.0001689764726348,
+        "champ_skill_vs_best_simple_adaptive": 0.0013399051393645,
+        "champ_skill_vs_d081_ref": 0.0432265409600572,
+        "best_simple_skill_vs_d081_ref": 0.0430648414324222
+      },
+      {
+        "target": "minutes",
+        "slice": "tier_15-24",
+        "n": 2403,
+        "champ_mae": 4.803659355231518,
+        "best_simple_mae": 4.805095676645248,
+        "best_simple_adaptive_mae": 4.805095676645248,
+        "d081_ref_mae": 5.443560290553517,
+        "champ_skill_vs_best_simple": 0.0002989162985268,
+        "champ_skill_vs_best_simple_adaptive": 0.0002989162985268,
+        "champ_skill_vs_d081_ref": 0.1175519147702748,
+        "best_simple_skill_vs_d081_ref": 0.1172880577838421
+      },
+      {
+        "target": "minutes",
+        "slice": "tier_25+",
+        "n": 3071,
+        "champ_mae": 4.661504382833267,
+        "best_simple_mae": 4.658104309400864,
+        "best_simple_adaptive_mae": 4.658104309400864,
+        "d081_ref_mae": 5.22406122293883,
+        "champ_skill_vs_best_simple": -0.0007299264264093,
+        "champ_skill_vs_best_simple_adaptive": -0.0007299264264093,
+        "champ_skill_vs_d081_ref": 0.1076857288033643,
+        "best_simple_skill_vs_d081_ref": 0.1083365774989105
+      },
+      {
+        "target": "fga",
+        "slice": "tier_0",
+        "n": 47,
+        "champ_mae": 4.788626844003946,
+        "best_simple_mae": 4.187397628884782,
+        "best_simple_adaptive_mae": 4.187397628884782,
+        "d081_ref_mae": 4.768478747456209,
+        "champ_skill_vs_best_simple": -0.1435806360905083,
+        "champ_skill_vs_best_simple_adaptive": -0.1435806360905083,
+        "champ_skill_vs_d081_ref": -0.0042252671375508,
+        "best_simple_skill_vs_d081_ref": 0.1218588043160326
+      },
+      {
+        "target": "fga",
+        "slice": "tier_1-2",
+        "n": 610,
+        "champ_mae": 4.583437905658392,
+        "best_simple_mae": 3.168577820301468,
+        "best_simple_adaptive_mae": 3.149075313040375,
+        "d081_ref_mae": 3.51319480015981,
+        "champ_skill_vs_best_simple": -0.4465284318698885,
+        "champ_skill_vs_best_simple_adaptive": -0.4554869128338394,
+        "champ_skill_vs_d081_ref": -0.304635286790786,
+        "best_simple_skill_vs_d081_ref": 0.09809219228113
+      },
+      {
+        "target": "fga",
+        "slice": "tier_3-7",
+        "n": 1474,
+        "champ_mae": 2.382075959452426,
+        "best_simple_mae": 2.358641292800145,
+        "best_simple_adaptive_mae": 2.386690414305618,
+        "d081_ref_mae": 2.371229889513472,
+        "champ_skill_vs_best_simple": -0.0099356636907088,
+        "champ_skill_vs_best_simple_adaptive": 0.0019334115667174,
+        "champ_skill_vs_d081_ref": -0.0045740271691578,
+        "best_simple_skill_vs_d081_ref": 0.005308889184047
+      },
+      {
+        "target": "fga",
+        "slice": "tier_8-14",
+        "n": 1912,
+        "champ_mae": 2.3893047695900003,
+        "best_simple_mae": 2.3837304279765488,
+        "best_simple_adaptive_mae": 2.38869367143603,
+        "d081_ref_mae": 2.4121511014554957,
+        "champ_skill_vs_best_simple": -0.0023384949690739,
+        "champ_skill_vs_best_simple_adaptive": -0.0002558294356778,
+        "champ_skill_vs_d081_ref": 0.0094713518782921,
+        "best_simple_skill_vs_d081_ref": 0.0117822940120946
+      },
+      {
+        "target": "fga",
+        "slice": "tier_15-24",
+        "n": 2403,
+        "champ_mae": 2.526166275989097,
+        "best_simple_mae": 2.57300645447042,
+        "best_simple_adaptive_mae": 2.5548930474173144,
+        "d081_ref_mae": 2.652674926022642,
+        "champ_skill_vs_best_simple": 0.0182044543261605,
+        "champ_skill_vs_best_simple_adaptive": 0.0112438254342023,
+        "champ_skill_vs_d081_ref": 0.0476909736630372,
+        "best_simple_skill_vs_d081_ref": 0.0300332584180131
+      },
+      {
+        "target": "fga",
+        "slice": "tier_25+",
+        "n": 3071,
+        "champ_mae": 2.586870777501435,
+        "best_simple_mae": 2.606817880713637,
+        "best_simple_adaptive_mae": 2.591839191289193,
+        "d081_ref_mae": 2.69189675530866,
+        "champ_skill_vs_best_simple": 0.0076518974953253,
+        "champ_skill_vs_best_simple_adaptive": 0.0019169452350501,
+        "champ_skill_vs_d081_ref": 0.0390156039974803,
+        "best_simple_skill_vs_d081_ref": 0.0316055489227956
+      },
+      {
+        "target": "ppm",
+        "slice": "tier_0",
+        "n": 47,
+        "champ_mae": 0.2318580116718753,
+        "best_simple_mae": 0.2063662429132728,
+        "best_simple_adaptive_mae": 0.2176415454291998,
+        "d081_ref_mae": 0.2191732601659168,
+        "champ_skill_vs_best_simple": -0.1235268346156577,
+        "champ_skill_vs_best_simple_adaptive": -0.0653205536408039,
+        "champ_skill_vs_d081_ref": -0.0578754520344131,
+        "best_simple_skill_vs_d081_ref": 0.0584333017766351
+      },
+      {
+        "target": "ppm",
+        "slice": "tier_1-2",
+        "n": 610,
+        "champ_mae": 0.2267198321577668,
+        "best_simple_mae": 0.2016448046986865,
+        "best_simple_adaptive_mae": 0.201047636243282,
+        "d081_ref_mae": 0.2251674660294566,
+        "champ_skill_vs_best_simple": -0.1243524597449923,
+        "champ_skill_vs_best_simple_adaptive": -0.1276921051855568,
+        "champ_skill_vs_d081_ref": -0.0068942736518917,
+        "best_simple_skill_vs_d081_ref": 0.1044674070617859
+      },
+      {
+        "target": "ppm",
+        "slice": "tier_3-7",
+        "n": 1474,
+        "champ_mae": 0.1976980439900341,
+        "best_simple_mae": 0.1954681829066293,
+        "best_simple_adaptive_mae": 0.1954563178166971,
+        "d081_ref_mae": 0.2051538903540548,
+        "champ_skill_vs_best_simple": -0.0114077956332661,
+        "champ_skill_vs_best_simple_adaptive": -0.0114691926993082,
+        "champ_skill_vs_d081_ref": 0.036342700356076,
+        "best_simple_skill_vs_d081_ref": 0.0472119121441461
+      },
+      {
+        "target": "ppm",
+        "slice": "tier_8-14",
+        "n": 1912,
+        "champ_mae": 0.1870854728151287,
+        "best_simple_mae": 0.1862973764105242,
+        "best_simple_adaptive_mae": 0.1863661421219672,
+        "d081_ref_mae": 0.1879838476086664,
+        "champ_skill_vs_best_simple": -0.0042303140269022,
+        "champ_skill_vs_best_simple_adaptive": -0.0038597713349173,
+        "champ_skill_vs_d081_ref": 0.004778999924546,
+        "best_simple_skill_vs_d081_ref": 0.0089713622717895
+      },
+      {
+        "target": "ppm",
+        "slice": "tier_15-24",
+        "n": 2403,
+        "champ_mae": 0.1749966561304789,
+        "best_simple_mae": 0.1750130074385558,
+        "best_simple_adaptive_mae": 0.1753469224202749,
+        "d081_ref_mae": 0.1764935071443867,
+        "champ_skill_vs_best_simple": 9.3429101734821e-05,
+        "champ_skill_vs_best_simple_adaptive": 0.0019975616621112,
+        "champ_skill_vs_d081_ref": 0.0084810542785758,
+        "best_simple_skill_vs_d081_ref": 0.0083884088983493
+      },
+      {
+        "target": "ppm",
+        "slice": "tier_25+",
+        "n": 3071,
+        "champ_mae": 0.1692789230590967,
+        "best_simple_mae": 0.1687623449875532,
+        "best_simple_adaptive_mae": 0.1688222949165548,
+        "d081_ref_mae": 0.1701365995198352,
+        "champ_skill_vs_best_simple": -0.0030609794594977,
+        "champ_skill_vs_best_simple_adaptive": -0.0027047857794357,
+        "champ_skill_vs_d081_ref": 0.0050411049895143,
+        "best_simple_skill_vs_d081_ref": 0.0080773598165266
+      }
+    ],
+    "how_much_of_the_reference_was_the_problem": {
+      "pts": {
+        "best_simple_beats_D081_reference_by_pct": 1.33565720360945,
+        "champion_vs_D081_reference_pct": -0.56685953462529,
+        "champion_vs_best_simple_pct": -1.9282718399704801
+      },
+      "minutes": {
+        "best_simple_beats_D081_reference_by_pct": 7.781653926687721,
+        "champion_vs_D081_reference_pct": 3.7137071539464097,
+        "champion_vs_best_simple_pct": -4.41121202662575
+      },
+      "fga": {
+        "best_simple_beats_D081_reference_by_pct": 3.03852617394184,
+        "champion_vs_D081_reference_pct": 0.0017315479865498418,
+        "champion_vs_best_simple_pct": -3.1319600518893598
+      },
+      "ppm": {
+        "best_simple_beats_D081_reference_by_pct": 2.29089941649455,
+        "champion_vs_D081_reference_pct": 0.9905786936359999,
+        "champion_vs_best_simple_pct": -1.33080820015045
+      }
+    },
+    "reference_dependence_measured": "Swapping the reference from D081's frozen prior-appearance mean to the best tuned simple estimator moves the champion's MINUTES skill from +3.71% to -4.41% on IDENTICAL rows -- an 8.12-point swing from the comparison alone, with the champion's forecasts untouched. FGA moves from +0.00% to -3.13%, points from -0.57% to -1.93%, ppm from +0.99% to -1.33%. This is D090's factor-of-six phenomenon reproduced on four new targets, and it confirms reference dependence as the leading explanation for the programme's nulls (D091, D093).",
+    "r2_walkforward_no_refit": [
+      {
+        "target": "pts",
+        "forecast": "champion",
+        "r2_forecast_as_is": 0.4833186851594708,
+        "mae": 4.227561938738641
+      },
+      {
+        "target": "pts",
+        "forecast": "best_simple_walkforward",
+        "r2_forecast_as_is": 0.5117875386153183,
+        "mae": 4.147585220885528
+      },
+      {
+        "target": "pts",
+        "forecast": "d081_frozen_reference",
+        "r2_forecast_as_is": 0.491911881693609,
+        "mae": 4.203732679236231
+      },
+      {
+        "target": "minutes",
+        "forecast": "champion",
+        "r2_forecast_as_is": 0.6312349527816257,
+        "mae": 5.09999497491881
+      },
+      {
+        "target": "minutes",
+        "forecast": "best_simple_walkforward",
+        "r2_forecast_as_is": 0.6629114512102121,
+        "mae": 4.884528084606726
+      },
+      {
+        "target": "minutes",
+        "forecast": "d081_frozen_reference",
+        "r2_forecast_as_is": 0.6092650629261674,
+        "mae": 5.296698859382702
+      },
+      {
+        "target": "fga",
+        "forecast": "champion",
+        "r2_forecast_as_is": 0.6077056769622257,
+        "mae": 2.638977722677048
+      },
+      {
+        "target": "fga",
+        "forecast": "best_simple_walkforward",
+        "r2_forecast_as_is": 0.6365699287787419,
+        "mae": 2.558836001322271
+      },
+      {
+        "target": "fga",
+        "forecast": "d081_frozen_reference",
+        "r2_forecast_as_is": 0.610863987791354,
+        "mae": 2.639023418633918
+      },
+      {
+        "target": "ppm",
+        "forecast": "champion",
+        "r2_forecast_as_is": 0.1491058236103668,
+        "mae": 0.1826923718004286
+      },
+      {
+        "target": "ppm",
+        "forecast": "best_simple_walkforward",
+        "r2_forecast_as_is": 0.1803889778882105,
+        "mae": 0.1802930175387246
+      },
+      {
+        "target": "ppm",
+        "forecast": "d081_frozen_reference",
+        "r2_forecast_as_is": 0.1345897140554216,
+        "mae": 0.1845201894829031
+      }
+    ]
+  },
+  "step4_WHERE_THE_ADVANTAGE_LIVES": {
+    "the_single_dominant_split": "the champion's own pre-game `<target>__is_fallback` flag",
+    "fallback_rows_wf": 698,
+    "fallback_share_wf": 0.07334243984448881,
+    "fallback_levels": {
+      "0": 8819,
+      "2": 632,
+      "3": 66
+    },
+    "on_fallback_rows_the_champion_emits": "TWO distinct point values across all 698 rows (points sd 0.0156, minutes sd 0.0474, fga sd 0.0177) -- it is a literal constant. This extends D092, which found a constant below 3 appearances: the constant region is exactly the fallback region (all 657 rows with <3 priors, plus 41 rows in the 3-7 tier).",
+    "champion_vs_best_simple_on_FALLBACK_rows": {
+      "pts": {
+        "n": 698,
+        "skill_pct": -35.209974435647155,
+        "p": 0.000249937515621
+      },
+      "minutes": {
+        "n": 698,
+        "skill_pct": -40.583833687946466,
+        "p": 0.000249937515621
+      },
+      "fga": {
+        "n": 698,
+        "skill_pct": -42.886331219215165,
+        "p": 0.000249937515621
+      },
+      "ppm": {
+        "n": 698,
+        "skill_pct": -11.747153664821191,
+        "p": 0.000249937515621
+      }
+    },
+    "champion_vs_best_simple_on_MODELLED_rows": {
+      "pts": {
+        "n": 8819,
+        "skill_pct": 1.0652665595906698,
+        "p": 0.000249937515621
+      },
+      "minutes": {
+        "n": 8819,
+        "skill_pct": 0.0291945427743,
+        "p": 0.7743064233941515
+      },
+      "fga": {
+        "n": 8819,
+        "skill_pct": 0.88187527897489,
+        "p": 0.0012496875781054
+      },
+      "ppm": {
+        "n": 8819,
+        "skill_pct": -0.39154868309380997,
+        "p": 0.0722319420144963
+      }
+    },
+    "THE_NEAR_CANCELLATION": "Exactly the failure mode D081 warned about. Pooled points is -1.93%; that is 610 rows at -38.06% cancelling 8,860 rows at +0.92%. The 1-2-prior tier alone contributes +139.5% of the pooled excess error for points and +92.4% for minutes.",
+    "pooled_decomposition_by_tier": [
+      {
+        "target": "pts",
+        "tier": "0",
+        "n": 47,
+        "excess_abs_err_sum": 36.09500373943905,
+        "share_of_pooled_total": 0.0474223907378771
+      },
+      {
+        "target": "pts",
+        "tier": "1-2",
+        "n": 610,
+        "excess_abs_err_sum": 1061.8251456661892,
+        "share_of_pooled_total": 1.3950486697987483
+      },
+      {
+        "target": "pts",
+        "tier": "3-7",
+        "n": 1474,
+        "excess_abs_err_sum": -57.695405192247904,
+        "share_of_pooled_total": -0.0758014618465709
+      },
+      {
+        "target": "pts",
+        "tier": "8-14",
+        "n": 1912,
+        "excess_abs_err_sum": -42.10398734559041,
+        "share_of_pooled_total": -0.0553171223900876
+      },
+      {
+        "target": "pts",
+        "tier": "15-24",
+        "n": 2403,
+        "excess_abs_err_sum": -129.17524792236745,
+        "share_of_pooled_total": -0.1697132136308197
+      },
+      {
+        "target": "pts",
+        "tier": "25+",
+        "n": 3071,
+        "excess_abs_err_sum": -107.80708513733452,
+        "share_of_pooled_total": -0.1416392626691472
+      },
+      {
+        "target": "minutes",
+        "tier": "0",
+        "n": 47,
+        "excess_abs_err_sum": 16.336109835519576,
+        "share_of_pooled_total": 0.0079665086418455
+      },
+      {
+        "target": "minutes",
+        "tier": "1-2",
+        "n": 610,
+        "excess_abs_err_sum": 1894.678332144157,
+        "share_of_pooled_total": 0.9239636277251926
+      },
+      {
+        "target": "minutes",
+        "tier": "3-7",
+        "n": 1474,
+        "excess_abs_err_sum": 134.11315031162684,
+        "share_of_pooled_total": 0.0654019580977382
+      },
+      {
+        "target": "minutes",
+        "tier": "8-14",
+        "n": 1912,
+        "excess_abs_err_sum": -1.5193423449101786,
+        "share_of_pooled_total": -0.0007409263308411
+      },
+      {
+        "target": "minutes",
+        "tier": "15-24",
+        "n": 2403,
+        "excess_abs_err_sum": -3.4514803571917447,
+        "share_of_pooled_total": -0.00168315764093
+      },
+      {
+        "target": "minutes",
+        "tier": "25+",
+        "n": 3071,
+        "excess_abs_err_sum": 10.44162551091059,
+        "share_of_pooled_total": 0.005091989506995
+      },
+      {
+        "target": "fga",
+        "tier": "0",
+        "n": 47,
+        "excess_abs_err_sum": 28.257773110600727,
+        "share_of_pooled_total": 0.037049230995537
+      },
+      {
+        "target": "fga",
+        "tier": "1-2",
+        "n": 610,
+        "excess_abs_err_sum": 863.0646520677205,
+        "share_of_pooled_total": 1.1315782575430264
+      },
+      {
+        "target": "fga",
+        "tier": "3-7",
+        "n": 1474,
+        "excess_abs_err_sum": 34.542698645458586,
+        "share_of_pooled_total": 0.0452895002134728
+      },
+      {
+        "target": "fga",
+        "tier": "8-14",
+        "n": 1912,
+        "excess_abs_err_sum": 10.658141164921211,
+        "share_of_pooled_total": 0.0139740641435779
+      },
+      {
+        "target": "fga",
+        "tier": "15-24",
+        "n": 2403,
+        "excess_abs_err_sum": -112.5569488906192,
+        "share_of_pooled_total": -0.1475752665745978
+      },
+      {
+        "target": "fga",
+        "tier": "25+",
+        "n": 3071,
+        "excess_abs_err_sum": -61.25755396467385,
+        "share_of_pooled_total": -0.0803157863210165
+      },
+      {
+        "target": "ppm",
+        "tier": "0",
+        "n": 47,
+        "excess_abs_err_sum": 1.1981131316543152,
+        "share_of_pooled_total": 0.0524690720063718
+      },
+      {
+        "target": "ppm",
+        "tier": "1-2",
+        "n": 610,
+        "excess_abs_err_sum": 15.295766750038934,
+        "share_of_pooled_total": 0.6698488363050652
+      },
+      {
+        "target": "ppm",
+        "tier": "3-7",
+        "n": 1474,
+        "excess_abs_err_sum": 3.2868152369388093,
+        "share_of_pooled_total": 0.1439397839671956
+      },
+      {
+        "target": "ppm",
+        "tier": "8-14",
+        "n": 1912,
+        "excess_abs_err_sum": 1.506840325603882,
+        "share_of_pooled_total": 0.0659891887146315
+      },
+      {
+        "target": "ppm",
+        "tier": "15-24",
+        "n": 2403,
+        "excess_abs_err_sum": -0.0392921933089756,
+        "share_of_pooled_total": -0.0017207264201923
+      },
+      {
+        "target": "ppm",
+        "tier": "25+",
+        "n": 3071,
+        "excess_abs_err_sum": 1.5864112577103775,
+        "share_of_pooled_total": 0.0694738454269281
+      }
+    ],
+    "other_conditional_slices": [
+      {
+        "target": "pts",
+        "slice": "champion_NOT_cold_start",
+        "n": 9451,
+        "champ_mae": 4.212968272860264,
+        "best_simple_mae": 4.1365364055806495,
+        "d081_ref_mae": 4.187496505756297,
+        "champ_skill_vs_best_simple": -0.0184772620824755,
+        "champ_skill_vs_d081_ref": -0.006082815130461,
+        "best_simple_skill_vs_d081_ref": 0.0121695863162143
+      },
+      {
+        "target": "pts",
+        "slice": "champion_fallback",
+        "n": 698,
+        "champ_mae": 6.3099108410083815,
+        "best_simple_mae": 4.6667495259468215,
+        "d081_ref_mae": 5.124886376898744,
+        "champ_skill_vs_best_simple": -0.3520997443564715,
+        "champ_skill_vs_d081_ref": -0.2312294121195206,
+        "best_simple_skill_vs_d081_ref": 0.0893945381925048
+      },
+      {
+        "target": "pts",
+        "slice": "champion_NOT_fallback",
+        "n": 8819,
+        "champ_mae": 4.062749654603901,
+        "best_simple_mae": 4.106494770161774,
+        "d081_ref_mae": 4.130825855223481,
+        "champ_skill_vs_best_simple": 0.0106526655959067,
+        "champ_skill_vs_d081_ref": 0.0164800461228586,
+        "best_simple_skill_vs_d081_ref": 0.0058901260702965
+      },
+      {
+        "target": "pts",
+        "slice": "role_no_prior_season",
+        "n": 2147,
+        "champ_mae": 3.619367601882365,
+        "best_simple_mae": 3.5301556439124373,
+        "d081_ref_mae": 3.5505605434001115,
+        "champ_skill_vs_best_simple": -0.0252713950796386,
+        "champ_skill_vs_d081_ref": -0.0193792100264713,
+        "best_simple_skill_vs_d081_ref": 0.0057469515695496
+      },
+      {
+        "target": "pts",
+        "slice": "role_low_mpg_tercile",
+        "n": 1074,
+        "champ_mae": 3.5874283924812653,
+        "best_simple_mae": 3.4931453718532754,
+        "d081_ref_mae": 3.549989350008377,
+        "champ_skill_vs_best_simple": -0.0269908665661882,
+        "champ_skill_vs_d081_ref": -0.0105462407859899,
+        "best_simple_skill_vs_d081_ref": 0.0160124362499756
+      },
+      {
+        "target": "pts",
+        "slice": "role_mid_mpg_tercile",
+        "n": 2804,
+        "champ_mae": 3.8145268375094568,
+        "best_simple_mae": 3.795603589889432,
+        "d081_ref_mae": 3.867446955679032,
+        "champ_skill_vs_best_simple": -0.0049855700606964,
+        "champ_skill_vs_d081_ref": 0.0136834761474532,
+        "best_simple_skill_vs_d081_ref": 0.0185764321044153
+      },
+      {
+        "target": "pts",
+        "slice": "role_high_mpg_tercile",
+        "n": 3492,
+        "champ_mae": 5.130038196973888,
+        "best_simple_mae": 5.011115058495753,
+        "d081_ref_mae": 5.076420560131206,
+        "champ_skill_vs_best_simple": -0.0237318714677114,
+        "champ_skill_vs_d081_ref": -0.0105620951234379,
+        "best_simple_skill_vs_d081_ref": 0.0128644782011057
+      },
+      {
+        "target": "pts",
+        "slice": "trailing5_minutes_sd_q1[0.11,3.10)",
+        "n": 2215,
+        "champ_mae": 4.101245331582968,
+        "best_simple_mae": 4.114610950565466,
+        "d081_ref_mae": 4.14695209689886,
+        "champ_skill_vs_best_simple": 0.0032483311649821,
+        "champ_skill_vs_d081_ref": 0.0110217731596351,
+        "best_simple_skill_vs_d081_ref": 0.0077987749985294
+      },
+      {
+        "target": "pts",
+        "slice": "trailing5_minutes_sd_q2[3.10,4.46)",
+        "n": 2215,
+        "champ_mae": 4.232215218834815,
+        "best_simple_mae": 4.286728028687748,
+        "d081_ref_mae": 4.282351329803325,
+        "champ_skill_vs_best_simple": 0.012716647636174,
+        "champ_skill_vs_d081_ref": 0.0117076127359248,
+        "best_simple_skill_vs_d081_ref": -0.0010220317174733
+      },
+      {
+        "target": "pts",
+        "slice": "trailing5_minutes_sd_q3[4.46,6.10)",
+        "n": 2215,
+        "champ_mae": 3.906592525502824,
+        "best_simple_mae": 3.95322622774402,
+        "d081_ref_mae": 3.998389935947857,
+        "champ_skill_vs_best_simple": 0.0117963656908672,
+        "champ_skill_vs_d081_ref": 0.0229585938129047,
+        "best_simple_skill_vs_d081_ref": 0.0112954736599821
+      },
+      {
+        "target": "pts",
+        "slice": "trailing5_minutes_sd_q4[6.10,17.44)",
+        "n": 2215,
+        "champ_mae": 4.048419098350111,
+        "best_simple_mae": 4.085952893051154,
+        "d081_ref_mae": 4.107183936318757,
+        "champ_skill_vs_best_simple": 0.0091860566392909,
+        "champ_skill_vs_d081_ref": 0.0143078174437242,
+        "best_simple_skill_vs_d081_ref": 0.0051692457890337
+      },
+      {
+        "target": "pts",
+        "slice": "trailing5_mean_minutes_q1[0.62,13.39)",
+        "n": 2214,
+        "champ_mae": 2.6460594641567803,
+        "best_simple_mae": 2.766663736280565,
+        "d081_ref_mae": 2.7632612315535323,
+        "champ_skill_vs_best_simple": 0.0435919517584461,
+        "champ_skill_vs_d081_ref": 0.0424142915112155,
+        "best_simple_skill_vs_d081_ref": -0.0012313366134839
+      },
+      {
+        "target": "pts",
+        "slice": "trailing5_mean_minutes_q2[13.39,22.66)",
+        "n": 2216,
+        "champ_mae": 3.550697428046879,
+        "best_simple_mae": 3.633786533794472,
+        "d081_ref_mae": 3.677635472348421,
+        "champ_skill_vs_best_simple": 0.0228657090819337,
+        "champ_skill_vs_d081_ref": 0.0345162116408681,
+        "best_simple_skill_vs_d081_ref": 0.0119231334599754
+      },
+      {
+        "target": "pts",
+        "slice": "trailing5_mean_minutes_q3[22.66,30.39)",
+        "n": 2215,
+        "champ_mae": 4.671938916146125,
+        "best_simple_mae": 4.678381688048575,
+        "d081_ref_mae": 4.697584542488522,
+        "champ_skill_vs_best_simple": 0.0013771368674146,
+        "champ_skill_vs_d081_ref": 0.0054593219367183,
+        "best_simple_skill_vs_d081_ref": 0.0040878145494268
+      },
+      {
+        "target": "pts",
+        "slice": "trailing5_mean_minutes_q4[30.39,41.13)",
+        "n": 2215,
+        "champ_mae": 5.419367951490283,
+        "best_simple_mae": 5.361294664363824,
+        "d081_ref_mae": 5.395983242537331,
+        "champ_skill_vs_best_simple": -0.0108319521238906,
+        "champ_skill_vs_d081_ref": -0.0043337252733861,
+        "best_simple_skill_vs_d081_ref": 0.0064285926427738
+      },
+      {
+        "target": "pts",
+        "slice": "dnp_frac5_q4[0.00,1.00)",
+        "n": 8964,
+        "champ_mae": 4.113125172870078,
+        "best_simple_mae": 4.116487803501131,
+        "d081_ref_mae": 4.139810965330325,
+        "champ_skill_vs_best_simple": 0.0008168688434331,
+        "champ_skill_vs_d081_ref": 0.006446137923623,
+        "best_simple_skill_vs_d081_ref": 0.0056338712140526
+      },
+      {
+        "target": "pts",
+        "slice": "rest_days_q1[1.00,2.00)",
+        "n": 292,
+        "champ_mae": 4.483023528861664,
+        "best_simple_mae": 4.126671275214766,
+        "d081_ref_mae": 4.199871336806396,
+        "champ_skill_vs_best_simple": -0.0863534383722757,
+        "champ_skill_vs_d081_ref": -0.0674192539123301,
+        "best_simple_skill_vs_d081_ref": 0.0174291200185413
+      },
+      {
+        "target": "pts",
+        "slice": "rest_days_q2[2.00,3.00)",
+        "n": 4433,
+        "champ_mae": 4.209843970941355,
+        "best_simple_mae": 4.19293219259213,
+        "d081_ref_mae": 4.245348682405142,
+        "champ_skill_vs_best_simple": -0.004033401345985,
+        "champ_skill_vs_d081_ref": 0.008363202676599,
+        "best_simple_skill_vs_d081_ref": 0.012346804405078
+      },
+      {
+        "target": "pts",
+        "slice": "rest_days_q4[3.00,93.00)",
+        "n": 4745,
+        "champ_mae": 4.206372600791076,
+        "best_simple_mae": 4.0913001774862,
+        "d081_ref_mae": 4.142161034884151,
+        "champ_skill_vs_best_simple": -0.0281261257577976,
+        "champ_skill_vs_d081_ref": -0.0155019482260956,
+        "best_simple_skill_vs_d081_ref": 0.01227882184435
+      },
+      {
+        "target": "minutes",
+        "slice": "champion_NOT_cold_start",
+        "n": 9451,
+        "champ_mae": 5.057260529586592,
+        "best_simple_mae": 4.842422797353262,
+        "d081_ref_mae": 5.256115745719491,
+        "champ_skill_vs_best_simple": -0.0443657526870133,
+        "champ_skill_vs_d081_ref": 0.0378331120837367,
+        "best_simple_skill_vs_d081_ref": 0.0787069707707892
+      },
+      {
+        "target": "minutes",
+        "slice": "champion_fallback",
+        "n": 698,
+        "champ_mae": 10.236700649149348,
+        "best_simple_mae": 7.281563164561098,
+        "d081_ref_mae": 7.338517904115006,
+        "champ_skill_vs_best_simple": -0.4058383368794647,
+        "champ_skill_vs_d081_ref": -0.3949275293597378,
+        "best_simple_skill_vs_d081_ref": 0.0077610684198196
+      },
+      {
+        "target": "minutes",
+        "slice": "champion_NOT_fallback",
+        "n": 8819,
+        "champ_mae": 4.693438612449946,
+        "best_simple_mae": 4.694809240541848,
+        "d081_ref_mae": 5.135094403863578,
+        "champ_skill_vs_best_simple": 0.000291945427743,
+        "champ_skill_vs_d081_ref": 0.0860073363171931,
+        "best_simple_skill_vs_d081_ref": 0.0857404224137466
+      },
+      {
+        "target": "minutes",
+        "slice": "role_no_prior_season",
+        "n": 2147,
+        "champ_mae": 5.663187512359826,
+        "best_simple_mae": 5.2571438800665895,
+        "d081_ref_mae": 5.808666956010457,
+        "champ_skill_vs_best_simple": -0.0772365454620378,
+        "champ_skill_vs_d081_ref": 0.0250452375308068,
+        "best_simple_skill_vs_d081_ref": 0.0949483039948063
+      },
+      {
+        "target": "minutes",
+        "slice": "role_low_mpg_tercile",
+        "n": 1074,
+        "champ_mae": 5.688122352334503,
+        "best_simple_mae": 5.305856537262307,
+        "d081_ref_mae": 5.756920882014909,
+        "champ_skill_vs_best_simple": -0.0720460141331744,
+        "champ_skill_vs_d081_ref": 0.0119505775900687,
+        "best_simple_skill_vs_d081_ref": 0.0783516664545042
+      },
+      {
+        "target": "minutes",
+        "slice": "role_mid_mpg_tercile",
+        "n": 2804,
+        "champ_mae": 5.334839592317508,
+        "best_simple_mae": 5.209346003073176,
+        "d081_ref_mae": 5.881177096091265,
+        "champ_skill_vs_best_simple": -0.0240900852372443,
+        "champ_skill_vs_d081_ref": 0.092895944952391,
+        "best_simple_skill_vs_d081_ref": 0.114234120490029
+      },
+      {
+        "target": "minutes",
+        "slice": "role_high_mpg_tercile",
+        "n": 3492,
+        "champ_mae": 4.38426545360831,
+        "best_simple_mae": 4.2650257036260975,
+        "d081_ref_mae": 4.371054262733908,
+        "champ_skill_vs_best_simple": -0.0279575689030047,
+        "champ_skill_vs_d081_ref": -0.0030224266459093,
+        "best_simple_skill_vs_d081_ref": 0.0242569761743232
+      },
+      {
+        "target": "minutes",
+        "slice": "trailing5_minutes_sd_q1[0.11,3.10)",
+        "n": 2215,
+        "champ_mae": 3.912025167584841,
+        "best_simple_mae": 3.882827625770641,
+        "d081_ref_mae": 4.225001445393341,
+        "champ_skill_vs_best_simple": -0.0075196595440945,
+        "champ_skill_vs_d081_ref": 0.0740772001746291,
+        "best_simple_skill_vs_d081_ref": 0.0809878585948847
+      },
+      {
+        "target": "minutes",
+        "slice": "trailing5_minutes_sd_q2[3.10,4.46)",
+        "n": 2215,
+        "champ_mae": 4.482664757265194,
+        "best_simple_mae": 4.477313692604879,
+        "d081_ref_mae": 4.810532779848762,
+        "champ_skill_vs_best_simple": -0.0011951507148479,
+        "champ_skill_vs_d081_ref": 0.0681562807257027,
+        "best_simple_skill_vs_d081_ref": 0.0692686449699983
+      },
+      {
+        "target": "minutes",
+        "slice": "trailing5_minutes_sd_q3[4.46,6.10)",
+        "n": 2215,
+        "champ_mae": 4.875188030071732,
+        "best_simple_mae": 4.865523996096473,
+        "d081_ref_mae": 5.280800080168153,
+        "champ_skill_vs_best_simple": -0.0019862267626287,
+        "champ_skill_vs_d081_ref": 0.076808825166414,
+        "best_simple_skill_vs_d081_ref": 0.0786388573260392
+      },
+      {
+        "target": "minutes",
+        "slice": "trailing5_minutes_sd_q4[6.10,17.44)",
+        "n": 2215,
+        "champ_mae": 5.586747045108328,
+        "best_simple_mae": 5.567942099499215,
+        "d081_ref_mae": 6.232513345909337,
+        "champ_skill_vs_best_simple": -0.0033773601221185,
+        "champ_skill_vs_d081_ref": 0.1036125018849503,
+        "best_simple_skill_vs_d081_ref": 0.1066297349922738
+      },
+      {
+        "target": "minutes",
+        "slice": "trailing5_mean_minutes_q1[0.62,13.39)",
+        "n": 2214,
+        "champ_mae": 4.864737777345007,
+        "best_simple_mae": 4.821673054778551,
+        "d081_ref_mae": 5.323161504771623,
+        "champ_skill_vs_best_simple": -0.0089314895633116,
+        "champ_skill_vs_d081_ref": 0.0861186960071924,
+        "best_simple_skill_vs_d081_ref": 0.0942087610048171
+      },
+      {
+        "target": "minutes",
+        "slice": "trailing5_mean_minutes_q2[13.39,22.66)",
+        "n": 2216,
+        "champ_mae": 5.2326822692549575,
+        "best_simple_mae": 5.243882475713688,
+        "d081_ref_mae": 5.909065386806733,
+        "champ_skill_vs_best_simple": 0.0021358614558206,
+        "champ_skill_vs_d081_ref": 0.1144653296715835,
+        "best_simple_skill_vs_d081_ref": 0.1125699019303814
+      },
+      {
+        "target": "minutes",
+        "slice": "trailing5_mean_minutes_q3[22.66,30.39)",
+        "n": 2215,
+        "champ_mae": 4.914267158969888,
+        "best_simple_mae": 4.87506100438092,
+        "d081_ref_mae": 5.303509777539094,
+        "champ_skill_vs_best_simple": -0.0080421874831382,
+        "champ_skill_vs_d081_ref": 0.0733934007659773,
+        "best_simple_skill_vs_d081_ref": 0.0807858929520027
+      },
+      {
+        "target": "minutes",
+        "slice": "trailing5_mean_minutes_q4[30.39,41.13)",
+        "n": 2215,
+        "champ_mae": 3.8447716795654734,
+        "best_simple_mae": 3.852800265363992,
+        "d081_ref_mae": 4.012846465776844,
+        "champ_skill_vs_best_simple": 0.0020838313033491,
+        "champ_skill_vs_d081_ref": 0.0418841806295802,
+        "best_simple_skill_vs_d081_ref": 0.0398834597280984
+      },
+      {
+        "target": "minutes",
+        "slice": "dnp_frac5_q4[0.00,1.00)",
+        "n": 8964,
+        "champ_mae": 4.830506244730676,
+        "best_simple_mae": 4.725734391298475,
+        "d081_ref_mae": 5.159257944761681,
+        "champ_skill_vs_best_simple": -0.0221704913473592,
+        "champ_skill_vs_d081_ref": 0.0637207333982583,
+        "best_simple_skill_vs_d081_ref": 0.0840282765670541
+      },
+      {
+        "target": "minutes",
+        "slice": "rest_days_q1[1.00,2.00)",
+        "n": 292,
+        "champ_mae": 5.11267721475253,
+        "best_simple_mae": 4.417545541454557,
+        "d081_ref_mae": 4.913777655233864,
+        "champ_skill_vs_best_simple": -0.1573569908391001,
+        "champ_skill_vs_d081_ref": -0.0404779323514588,
+        "best_simple_skill_vs_d081_ref": 0.1009879055579061
+      },
+      {
+        "target": "minutes",
+        "slice": "rest_days_q2[2.00,3.00)",
+        "n": 4433,
+        "champ_mae": 5.0275512261387085,
+        "best_simple_mae": 4.911742143361942,
+        "d081_ref_mae": 5.356740588655815,
+        "champ_skill_vs_best_simple": -0.0235780053994241,
+        "champ_skill_vs_d081_ref": 0.0614532955383809,
+        "best_simple_skill_vs_d081_ref": 0.0830726143872383
+      },
+      {
+        "target": "minutes",
+        "slice": "rest_days_q4[3.00,93.00)",
+        "n": 4745,
+        "champ_mae": 5.094884940569407,
+        "best_simple_mae": 4.817139487943025,
+        "d081_ref_mae": 5.1953679008774,
+        "champ_skill_vs_best_simple": -0.0576577558780599,
+        "champ_skill_vs_d081_ref": 0.0193408748379539,
+        "best_simple_skill_vs_d081_ref": 0.0728010836095938
+      },
+      {
+        "target": "fga",
+        "slice": "champion_NOT_cold_start",
+        "n": 9451,
+        "champ_mae": 2.6249251219948246,
+        "best_simple_mae": 2.5480149227350632,
+        "d081_ref_mae": 2.624837664372613,
+        "champ_skill_vs_best_simple": -0.0301843598220394,
+        "champ_skill_vs_d081_ref": -3.3319249947982854e-05,
+        "best_simple_skill_vs_d081_ref": 0.0292676163102496
+      },
+      {
+        "target": "fga",
+        "slice": "champion_fallback",
+        "n": 698,
+        "champ_mae": 4.57170906615421,
+        "best_simple_mae": 3.1995426204486472,
+        "d081_ref_mae": 3.5496666607849945,
+        "champ_skill_vs_best_simple": -0.4288633121921517,
+        "champ_skill_vs_d081_ref": -0.287926304928924,
+        "best_simple_skill_vs_d081_ref": 0.0986357519719665
+      },
+      {
+        "target": "fga",
+        "slice": "champion_NOT_fallback",
+        "n": 8819,
+        "champ_mae": 2.486007263696772,
+        "best_simple_mae": 2.508125805137873,
+        "d081_ref_mae": 2.5669484687505464,
+        "champ_skill_vs_best_simple": 0.0088187527897489,
+        "champ_skill_vs_d081_ref": 0.0315320724350857,
+        "best_simple_skill_vs_d081_ref": 0.022915404936549
+      },
+      {
+        "target": "fga",
+        "slice": "role_no_prior_season",
+        "n": 2147,
+        "champ_mae": 2.43251538725453,
+        "best_simple_mae": 2.338816233707285,
+        "d081_ref_mae": 2.39805582820432,
+        "champ_skill_vs_best_simple": -0.0400626403207067,
+        "champ_skill_vs_d081_ref": -0.014369790162898,
+        "best_simple_skill_vs_d081_ref": 0.0247031757143841
+      },
+      {
+        "target": "fga",
+        "slice": "role_low_mpg_tercile",
+        "n": 1074,
+        "champ_mae": 2.359689748309901,
+        "best_simple_mae": 2.19915451842247,
+        "d081_ref_mae": 2.330123141516,
+        "champ_skill_vs_best_simple": -0.0729986131227327,
+        "champ_skill_vs_d081_ref": -0.0126888602010386,
+        "best_simple_skill_vs_d081_ref": 0.0562067389315402
+      },
+      {
+        "target": "fga",
+        "slice": "role_mid_mpg_tercile",
+        "n": 2804,
+        "champ_mae": 2.446542083317896,
+        "best_simple_mae": 2.40718922311338,
+        "d081_ref_mae": 2.51238758062454,
+        "champ_skill_vs_best_simple": -0.0163480543310254,
+        "champ_skill_vs_d081_ref": 0.0262083357736848,
+        "best_simple_skill_vs_d081_ref": 0.0418718665553224
+      },
+      {
+        "target": "fga",
+        "slice": "role_high_mpg_tercile",
+        "n": 3492,
+        "champ_mae": 3.00633724483785,
+        "best_simple_mae": 2.926504363235643,
+        "d081_ref_mae": 2.9838696970002654,
+        "champ_skill_vs_best_simple": -0.0272792627973192,
+        "champ_skill_vs_d081_ref": -0.007529667887365,
+        "best_simple_skill_vs_d081_ref": 0.0192251470706957
+      },
+      {
+        "target": "fga",
+        "slice": "trailing5_minutes_sd_q1[0.11,3.10)",
+        "n": 2215,
+        "champ_mae": 2.4461167163474875,
+        "best_simple_mae": 2.4649946470035835,
+        "d081_ref_mae": 2.502552115490781,
+        "champ_skill_vs_best_simple": 0.0076584063495001,
+        "champ_skill_vs_d081_ref": 0.0225511384134456,
+        "best_simple_skill_vs_d081_ref": 0.0150076668752341
+      },
+      {
+        "target": "fga",
+        "slice": "trailing5_minutes_sd_q2[3.10,4.46)",
+        "n": 2215,
+        "champ_mae": 2.523720330022835,
+        "best_simple_mae": 2.5466291520885584,
+        "d081_ref_mae": 2.598057807449329,
+        "champ_skill_vs_best_simple": 0.0089957432737842,
+        "champ_skill_vs_d081_ref": 0.0286127110849299,
+        "best_simple_skill_vs_d081_ref": 0.0197950388991772
+      },
+      {
+        "target": "fga",
+        "slice": "trailing5_minutes_sd_q3[4.46,6.10)",
+        "n": 2215,
+        "champ_mae": 2.5047050645899693,
+        "best_simple_mae": 2.508373249494761,
+        "d081_ref_mae": 2.570180343201529,
+        "champ_skill_vs_best_simple": 0.0014623760261879,
+        "champ_skill_vs_d081_ref": 0.0254749744642436,
+        "best_simple_skill_vs_d081_ref": 0.0240477653135335
+      },
+      {
+        "target": "fga",
+        "slice": "trailing5_minutes_sd_q4[6.10,17.44)",
+        "n": 2215,
+        "champ_mae": 2.5002607796029874,
+        "best_simple_mae": 2.5128707011388647,
+        "d081_ref_mae": 2.599376120274193,
+        "champ_skill_vs_best_simple": 0.0050181338539074,
+        "champ_skill_vs_d081_ref": 0.0381304344139126,
+        "best_simple_skill_vs_d081_ref": 0.0332793005447028
+      },
+      {
+        "target": "fga",
+        "slice": "trailing5_mean_minutes_q1[0.62,13.39)",
+        "n": 2214,
+        "champ_mae": 1.8454929410082583,
+        "best_simple_mae": 1.880570910900037,
+        "d081_ref_mae": 1.9420796372922893,
+        "champ_skill_vs_best_simple": 0.0186528302062218,
+        "champ_skill_vs_d081_ref": 0.0497336434764823,
+        "best_simple_skill_vs_d081_ref": 0.0316715778339604
+      },
+      {
+        "target": "fga",
+        "slice": "trailing5_mean_minutes_q2[13.39,22.66)",
+        "n": 2216,
+        "champ_mae": 2.3154132211690266,
+        "best_simple_mae": 2.355714390177256,
+        "d081_ref_mae": 2.4369574673882743,
+        "champ_skill_vs_best_simple": 0.0171078332654734,
+        "champ_skill_vs_d081_ref": 0.0498754072837834,
+        "best_simple_skill_vs_d081_ref": 0.0333379134836062
+      },
+      {
+        "target": "fga",
+        "slice": "trailing5_mean_minutes_q3[22.66,30.39)",
+        "n": 2215,
+        "champ_mae": 2.74100849464586,
+        "best_simple_mae": 2.745776086810342,
+        "d081_ref_mae": 2.786133794715082,
+        "champ_skill_vs_best_simple": 0.0017363368365626,
+        "champ_skill_vs_d081_ref": 0.0161963866038373,
+        "best_simple_skill_vs_d081_ref": 0.0144852009552783
+      },
+      {
+        "target": "fga",
+        "slice": "trailing5_mean_minutes_q4[30.39,41.13)",
+        "n": 2215,
+        "champ_mae": 3.0726760801147788,
+        "best_simple_mae": 3.05059185010934,
+        "d081_ref_mae": 3.104772065877931,
+        "champ_skill_vs_best_simple": -0.0072393263637178,
+        "champ_skill_vs_d081_ref": 0.0103376302936675,
+        "best_simple_skill_vs_d081_ref": 0.0174506258813789
+      },
+      {
+        "target": "fga",
+        "slice": "dnp_frac5_q4[0.00,1.00)",
+        "n": 8964,
+        "champ_mae": 2.5314750730809537,
+        "best_simple_mae": 2.515660997410267,
+        "d081_ref_mae": 2.574295080179054,
+        "champ_skill_vs_best_simple": -0.0062862506859893,
+        "champ_skill_vs_d081_ref": 0.0166336825283921,
+        "best_simple_skill_vs_d081_ref": 0.02277675283624
+      },
+      {
+        "target": "fga",
+        "slice": "rest_days_q1[1.00,2.00)",
+        "n": 292,
+        "champ_mae": 2.755938420161483,
+        "best_simple_mae": 2.5412522551661247,
+        "d081_ref_mae": 2.652933421047751,
+        "champ_skill_vs_best_simple": -0.0844804621654231,
+        "champ_skill_vs_d081_ref": -0.0388268315731237,
+        "best_simple_skill_vs_d081_ref": 0.0420972365893445
+      },
+      {
+        "target": "fga",
+        "slice": "rest_days_q2[2.00,3.00)",
+        "n": 4433,
+        "champ_mae": 2.611723360576063,
+        "best_simple_mae": 2.568382971052013,
+        "d081_ref_mae": 2.651143056302396,
+        "champ_skill_vs_best_simple": -0.0168745821836286,
+        "champ_skill_vs_d081_ref": 0.0148689432781166,
+        "best_simple_skill_vs_d081_ref": 0.0312167557513135
+      },
+      {
+        "target": "fga",
+        "slice": "rest_days_q4[3.00,93.00)",
+        "n": 4745,
+        "champ_mae": 2.63594981010083,
+        "best_simple_mae": 2.534867685320209,
+        "d081_ref_mae": 2.6057520856636645,
+        "champ_skill_vs_best_simple": -0.0398766868053912,
+        "champ_skill_vs_d081_ref": -0.0115888708689162,
+        "best_simple_skill_vs_d081_ref": 0.0272030484916226
+      },
+      {
+        "target": "ppm",
+        "slice": "champion_NOT_cold_start",
+        "n": 9451,
+        "champ_mae": 0.1823735670440785,
+        "best_simple_mae": 0.1801228389246619,
+        "d081_ref_mae": 0.184267420019857,
+        "champ_skill_vs_best_simple": -0.0124955176858942,
+        "champ_skill_vs_d081_ref": 0.0102777418578627,
+        "best_simple_skill_vs_d081_ref": 0.0224922077638491
+      },
+      {
+        "target": "ppm",
+        "slice": "champion_fallback",
+        "n": 698,
+        "champ_mae": 0.2272141383341392,
+        "best_simple_mae": 0.2033287926202167,
+        "d081_ref_mae": 0.2261682282553204,
+        "champ_skill_vs_best_simple": -0.1174715366482119,
+        "champ_skill_vs_d081_ref": -0.0046244783667763,
+        "best_simple_skill_vs_d081_ref": 0.1009842797606402
+      },
+      {
+        "target": "ppm",
+        "slice": "champion_NOT_fallback",
+        "n": 8819,
+        "champ_mae": 0.1791685943834278,
+        "best_simple_mae": 0.178469798238704,
+        "d081_ref_mae": 0.1812238598465331,
+        "champ_skill_vs_best_simple": -0.0039154868309381,
+        "champ_skill_vs_d081_ref": 0.0113410312794671,
+        "best_simple_skill_vs_d081_ref": 0.01519701440065
+      },
+      {
+        "target": "ppm",
+        "slice": "role_no_prior_season",
+        "n": 2147,
+        "champ_mae": 0.2001565381599941,
+        "best_simple_mae": 0.1995723097758082,
+        "d081_ref_mae": 0.2001075662387621,
+        "champ_skill_vs_best_simple": -0.0029274020270757,
+        "champ_skill_vs_d081_ref": -0.000244727983816,
+        "best_simple_skill_vs_d081_ref": 0.002674843700389
+      },
+      {
+        "target": "ppm",
+        "slice": "role_low_mpg_tercile",
+        "n": 1074,
+        "champ_mae": 0.2250477756039769,
+        "best_simple_mae": 0.2222439839329936,
+        "d081_ref_mae": 0.2285022097325158,
+        "champ_skill_vs_best_simple": -0.0126158270805145,
+        "champ_skill_vs_d081_ref": 0.01511772745035,
+        "best_simple_skill_vs_d081_ref": 0.0273880318568824
+      },
+      {
+        "target": "ppm",
+        "slice": "role_mid_mpg_tercile",
+        "n": 2804,
+        "champ_mae": 0.1767099063056126,
+        "best_simple_mae": 0.1739420651607965,
+        "d081_ref_mae": 0.1795002017812526,
+        "champ_skill_vs_best_simple": -0.015912431200914,
+        "champ_skill_vs_d081_ref": 0.0155448041169357,
+        "best_simple_skill_vs_d081_ref": 0.030964514609457
+      },
+      {
+        "target": "ppm",
+        "slice": "role_high_mpg_tercile",
+        "n": 3492,
+        "champ_mae": 0.1637317659552012,
+        "best_simple_mae": 0.1606366865327815,
+        "d081_ref_mae": 0.1654403664223404,
+        "champ_skill_vs_best_simple": -0.0192675751051933,
+        "champ_skill_vs_d081_ref": 0.0103275911682724,
+        "best_simple_skill_vs_d081_ref": 0.0290357183886785
+      },
+      {
+        "target": "ppm",
+        "slice": "trailing5_minutes_sd_q1[0.11,3.10)",
+        "n": 2215,
+        "champ_mae": 0.1811737856899145,
+        "best_simple_mae": 0.1810759606837912,
+        "d081_ref_mae": 0.1837890791104928,
+        "champ_skill_vs_best_simple": -0.0005402429221081,
+        "champ_skill_vs_d081_ref": 0.0142298630214364,
+        "best_simple_skill_vs_d081_ref": 0.0147621308068609
+      },
+      {
+        "target": "ppm",
+        "slice": "trailing5_minutes_sd_q2[3.10,4.46)",
+        "n": 2215,
+        "champ_mae": 0.1872970776396863,
+        "best_simple_mae": 0.1861093149930923,
+        "d081_ref_mae": 0.1879248254544121,
+        "champ_skill_vs_best_simple": -0.0063820698423293,
+        "champ_skill_vs_d081_ref": 0.0033404198365378,
+        "best_simple_skill_vs_d081_ref": 0.0096608335643246
+      },
+      {
+        "target": "ppm",
+        "slice": "trailing5_minutes_sd_q3[4.46,6.10)",
+        "n": 2215,
+        "champ_mae": 0.1718002782202217,
+        "best_simple_mae": 0.1715768205073589,
+        "d081_ref_mae": 0.1740950891328111,
+        "champ_skill_vs_best_simple": -0.001302377047214,
+        "champ_skill_vs_d081_ref": 0.0131813649886401,
+        "best_simple_skill_vs_d081_ref": 0.014464903277835
+      },
+      {
+        "target": "ppm",
+        "slice": "trailing5_minutes_sd_q4[6.10,17.44)",
+        "n": 2215,
+        "champ_mae": 0.1773301578902963,
+        "best_simple_mae": 0.1759765510540958,
+        "d081_ref_mae": 0.1803424039560187,
+        "champ_skill_vs_best_simple": -0.0076919727548496,
+        "champ_skill_vs_d081_ref": 0.0167029273185079,
+        "best_simple_skill_vs_d081_ref": 0.0242086875086107
+      },
+      {
+        "target": "ppm",
+        "slice": "trailing5_mean_minutes_q1[0.62,13.39)",
+        "n": 2214,
+        "champ_mae": 0.2368897645178708,
+        "best_simple_mae": 0.2380951222671639,
+        "d081_ref_mae": 0.2421643591908781,
+        "champ_skill_vs_best_simple": 0.0050625050098279,
+        "champ_skill_vs_d081_ref": 0.0217810527140775,
+        "best_simple_skill_vs_d081_ref": 0.0168036160949133
+      },
+      {
+        "target": "ppm",
+        "slice": "trailing5_mean_minutes_q2[13.39,22.66)",
+        "n": 2216,
+        "champ_mae": 0.1748217527921961,
+        "best_simple_mae": 0.1738569565352291,
+        "d081_ref_mae": 0.1765291767659724,
+        "champ_skill_vs_best_simple": -0.005549368148358,
+        "champ_skill_vs_d081_ref": 0.0096721913343528,
+        "best_simple_skill_vs_d081_ref": 0.0151375556137439
+      },
+      {
+        "target": "ppm",
+        "slice": "trailing5_mean_minutes_q3[22.66,30.39)",
+        "n": 2215,
+        "champ_mae": 0.1537470837973175,
+        "best_simple_mae": 0.1529319177447063,
+        "d081_ref_mae": 0.1546898085931324,
+        "champ_skill_vs_best_simple": -0.0053302545644653,
+        "champ_skill_vs_d081_ref": 0.0060942915657392,
+        "best_simple_skill_vs_d081_ref": 0.0113639732598658
+      },
+      {
+        "target": "ppm",
+        "slice": "trailing5_mean_minutes_q4[30.39,41.13)",
+        "n": 2215,
+        "champ_mae": 0.1521707200084571,
+        "best_simple_mae": 0.1498836521204633,
+        "d081_ref_mae": 0.1527976852402867,
+        "champ_skill_vs_best_simple": -0.015258954900269,
+        "champ_skill_vs_d081_ref": 0.0041032377607271,
+        "best_simple_skill_vs_d081_ref": 0.0190711862895098
+      },
+      {
+        "target": "ppm",
+        "slice": "dnp_frac5_q4[0.00,1.00)",
+        "n": 8964,
+        "champ_mae": 0.1807571930041816,
+        "best_simple_mae": 0.1796960739393735,
+        "d081_ref_mae": 0.1829166843229211,
+        "champ_skill_vs_best_simple": -0.0059050765080492,
+        "champ_skill_vs_d081_ref": 0.0118058739514824,
+        "best_simple_skill_vs_d081_ref": 0.0176069798961692
+      },
+      {
+        "target": "ppm",
+        "slice": "rest_days_q1[1.00,2.00)",
+        "n": 292,
+        "champ_mae": 0.1783662660256038,
+        "best_simple_mae": 0.1717260721947525,
+        "d081_ref_mae": 0.1743464697130119,
+        "champ_skill_vs_best_simple": -0.0386673598597233,
+        "champ_skill_vs_d081_ref": -0.0230563676982324,
+        "best_simple_skill_vs_d081_ref": 0.0150298283789329
+      },
+      {
+        "target": "ppm",
+        "slice": "rest_days_q2[2.00,3.00)",
+        "n": 4433,
+        "champ_mae": 0.1763294564593469,
+        "best_simple_mae": 0.174836086251333,
+        "d081_ref_mae": 0.1785237654477745,
+        "champ_skill_vs_best_simple": -0.0085415444833689,
+        "champ_skill_vs_d081_ref": 0.0122914110786529,
+        "best_simple_skill_vs_d081_ref": 0.0206565170031678
+      },
+      {
+        "target": "ppm",
+        "slice": "rest_days_q4[3.00,93.00)",
+        "n": 4745,
+        "champ_mae": 0.1884161318677218,
+        "best_simple_mae": 0.1856600739865313,
+        "d081_ref_mae": 0.1904051588397907,
+        "champ_skill_vs_best_simple": -0.014844644957916,
+        "champ_skill_vs_d081_ref": 0.0104462871919481,
+        "best_simple_skill_vs_d081_ref": 0.0249209889173854
+      }
+    ],
+    "where_the_champion_WINS": "points on modelled rows (+1.07%, p=0.0002); FGA on modelled rows (+0.88%, p=0.0012); points in every tier with >=3 priors (+0.54% to +1.32%); FGA at 15-24 priors (+1.82%, p=0.0007) and 25+ (+0.77%, p=0.047); and it wins MORE on LOW-minute players (points +4.36% in the bottom trailing-5-minutes quartile) than on high-minute ones (-1.08% in the top quartile).",
+    "where_the_champion_LOSES": "every fallback row, catastrophically (-35% to -43%); minutes everywhere (it never beats the estimator on any tier by more than +0.03%, all p>0.86); points-per-minute in every tier except a dead heat at 15-24 priors; and on short rest (points -8.64% at 1-2 rest days) and long layoffs (-2.81% at 3+ days).",
+    "post_hoc_hybrid_DECLARED_POST_HOC": [
+      {
+        "target": "pts",
+        "n": 9517,
+        "champ_mae": 4.227561938738641,
+        "best_simple_mae": 4.147585220885528,
+        "hybrid_mae": 4.107048478833947,
+        "n_switched": 698,
+        "hybrid_skill_vs_champ": 0.0285066101102827,
+        "hybrid_skill_vs_best_simple": 0.0097735766458647,
+        "champ_skill_vs_best_simple": -0.0192827183997048
+      },
+      {
+        "target": "minutes",
+        "n": 9517,
+        "champ_mae": 5.09999497491881,
+        "best_simple_mae": 4.884528084606726,
+        "hybrid_mae": 4.883257981723203,
+        "n_switched": 698,
+        "hybrid_skill_vs_champ": 0.0424974915194025,
+        "hybrid_skill_vs_best_simple": 0.0002600257100631,
+        "champ_skill_vs_best_simple": -0.0441121202662575
+      },
+      {
+        "target": "fga",
+        "n": 9517,
+        "champ_mae": 2.638977722677048,
+        "best_simple_mae": 2.558836001322271,
+        "hybrid_mae": 2.5383396876762614,
+        "n_switched": 698,
+        "hybrid_skill_vs_champ": 0.0381352347676116,
+        "hybrid_skill_vs_best_simple": 0.0080100145673338,
+        "champ_skill_vs_best_simple": -0.0313196005188936
+      },
+      {
+        "target": "ppm",
+        "n": 9517,
+        "champ_mae": 0.1826923718004286,
+        "best_simple_mae": 0.1802930175387246,
+        "hybrid_mae": 0.1809405622692404,
+        "n_switched": 698,
+        "hybrid_skill_vs_champ": 0.0095888488059141,
+        "hybrid_skill_vs_best_simple": -0.0035916240093809,
+        "champ_skill_vs_best_simple": -0.0133080820015043
+      }
+    ]
+  },
+  "controls_and_traps": {
+    "cyclic_shift_control": {
+      "construction": "within-player CYCLIC SHIFT of the champion's forecast series, credited to E1_I0021_heterogeneity_diagnostic/hd_base.py cyclic_shift_within_groups (D093)",
+      "verified_to_perturb": true,
+      "measured": [
+        {
+          "target": "pts",
+          "real_champ_skill": -0.0192827183997048,
+          "cyclic_mean": -0.0312453909525244,
+          "cyclic_sd": 0.0060486268786128,
+          "shuffle_mean": -0.0313256608753251,
+          "shuffle_sd": 0.0044992960139357,
+          "cyclic_perturbs": true
+        },
+        {
+          "target": "minutes",
+          "real_champ_skill": -0.0441121202662575,
+          "cyclic_mean": -0.1971691337676832,
+          "cyclic_sd": 0.0144773178030684,
+          "shuffle_mean": -0.1967560759833776,
+          "shuffle_sd": 0.0067699291707236,
+          "cyclic_perturbs": true
+        },
+        {
+          "target": "fga",
+          "real_champ_skill": -0.0313196005188936,
+          "cyclic_mean": -0.0823688106500427,
+          "cyclic_sd": 0.0082650783695017,
+          "shuffle_mean": -0.0818058881323119,
+          "shuffle_sd": 0.0048109712651938,
+          "cyclic_perturbs": true
+        },
+        {
+          "target": "ppm",
+          "real_champ_skill": -0.0133080820015043,
+          "cyclic_mean": 0.0089633646567131,
+          "cyclic_sd": 0.0038864312191072,
+          "shuffle_mean": 0.0092238446478952,
+          "shuffle_sd": 0.0031739811555368,
+          "cyclic_perturbs": true
+        }
+      ],
+      "reproduces_D093s_warning": "the plain within-player SHUFFLE null is 1.34x to 2.14x NARROWER than the honest cyclic-shift null for every target (minutes: sd 0.00677 vs 0.01448). A test built on the shuffle would have been anticonservative here too."
+    },
+    "vacuous_control_check": "every control in this screen was checked for a nonzero measured sd before being read as evidence; the cyclic shift moves the statistic by sd 3.9e-03 to 1.4e-02, not 5.2e-17",
+    "paired_inference": "(season, player_id) BLOCK SIGN-FLIP on paired absolute-error differences, 4,000 draws, never row-level",
+    "nothing_was_fitted_on_the_champion": true,
+    "evaluation_row_minutes_floor_robustness": [
+      {
+        "target": "pts",
+        "eval_row_minutes_floor": 0,
+        "n": 9517,
+        "champ_mae": 4.227561938738641,
+        "best_simple_mae": 4.147585220885528,
+        "champ_skill_vs_best_simple": -0.0192827183997048
+      },
+      {
+        "target": "pts",
+        "eval_row_minutes_floor": 5,
+        "n": 8592,
+        "champ_mae": 4.3977720875744994,
+        "best_simple_mae": 4.305909515934567,
+        "champ_skill_vs_best_simple": -0.0213340692134804
+      },
+      {
+        "target": "pts",
+        "eval_row_minutes_floor": 10,
+        "n": 7683,
+        "champ_mae": 4.559542412030955,
+        "best_simple_mae": 4.4483143586056295,
+        "champ_skill_vs_best_simple": -0.0250045398005978
+      },
+      {
+        "target": "pts",
+        "eval_row_minutes_floor": 15,
+        "n": 6518,
+        "champ_mae": 4.793023579578967,
+        "best_simple_mae": 4.6643773463449145,
+        "champ_skill_vs_best_simple": -0.0275805801464286
+      },
+      {
+        "target": "pts",
+        "eval_row_minutes_floor": 20,
+        "n": 5364,
+        "champ_mae": 5.02995801113923,
+        "best_simple_mae": 4.900891626927986,
+        "champ_skill_vs_best_simple": -0.0263352863185319
+      },
+      {
+        "target": "pts",
+        "eval_row_minutes_floor": 24,
+        "n": 4396,
+        "champ_mae": 5.208671778430737,
+        "best_simple_mae": 5.066805266531408,
+        "champ_skill_vs_best_simple": -0.0279992035289815
+      },
+      {
+        "target": "minutes",
+        "eval_row_minutes_floor": 0,
+        "n": 9517,
+        "champ_mae": 5.09999497491881,
+        "best_simple_mae": 4.884528084606726,
+        "champ_skill_vs_best_simple": -0.0441121202662575
+      },
+      {
+        "target": "minutes",
+        "eval_row_minutes_floor": 5,
+        "n": 8592,
+        "champ_mae": 4.910104386517743,
+        "best_simple_mae": 4.778673672572524,
+        "champ_skill_vs_best_simple": -0.0275035968033499
+      },
+      {
+        "target": "minutes",
+        "eval_row_minutes_floor": 10,
+        "n": 7683,
+        "champ_mae": 4.777055689123413,
+        "best_simple_mae": 4.697637806184685,
+        "champ_skill_vs_best_simple": -0.0169059187224205
+      },
+      {
+        "target": "minutes",
+        "eval_row_minutes_floor": 15,
+        "n": 6518,
+        "champ_mae": 4.715425715261825,
+        "best_simple_mae": 4.65032311372873,
+        "champ_skill_vs_best_simple": -0.0139995866826754
+      },
+      {
+        "target": "minutes",
+        "eval_row_minutes_floor": 20,
+        "n": 5364,
+        "champ_mae": 4.701498752509054,
+        "best_simple_mae": 4.632122550526203,
+        "champ_skill_vs_best_simple": -0.0149771948445038
+      },
+      {
+        "target": "minutes",
+        "eval_row_minutes_floor": 24,
+        "n": 4396,
+        "champ_mae": 4.692615658393958,
+        "best_simple_mae": 4.564731428845597,
+        "champ_skill_vs_best_simple": -0.0280157182392442
+      },
+      {
+        "target": "fga",
+        "eval_row_minutes_floor": 0,
+        "n": 9517,
+        "champ_mae": 2.638977722677048,
+        "best_simple_mae": 2.558836001322271,
+        "champ_skill_vs_best_simple": -0.0313196005188936
+      },
+      {
+        "target": "fga",
+        "eval_row_minutes_floor": 5,
+        "n": 8592,
+        "champ_mae": 2.6826380395813887,
+        "best_simple_mae": 2.616617871726828,
+        "champ_skill_vs_best_simple": -0.0252311078999818
+      },
+      {
+        "target": "fga",
+        "eval_row_minutes_floor": 10,
+        "n": 7683,
+        "champ_mae": 2.733264224893241,
+        "best_simple_mae": 2.675774288177981,
+        "champ_skill_vs_best_simple": -0.0214853461180415
+      },
+      {
+        "target": "fga",
+        "eval_row_minutes_floor": 15,
+        "n": 6518,
+        "champ_mae": 2.837405260868078,
+        "best_simple_mae": 2.7873885279283583,
+        "champ_skill_vs_best_simple": -0.0179439401570953
+      },
+      {
+        "target": "fga",
+        "eval_row_minutes_floor": 20,
+        "n": 5364,
+        "champ_mae": 2.946771596272292,
+        "best_simple_mae": 2.89512374547526,
+        "champ_skill_vs_best_simple": -0.0178396004239032
+      },
+      {
+        "target": "fga",
+        "eval_row_minutes_floor": 24,
+        "n": 4396,
+        "champ_mae": 3.023814873817432,
+        "best_simple_mae": 2.9619073135198466,
+        "champ_skill_vs_best_simple": -0.0209012483324524
+      },
+      {
+        "target": "ppm",
+        "eval_row_minutes_floor": 0,
+        "n": 9517,
+        "champ_mae": 0.1826923718004286,
+        "best_simple_mae": 0.1802930175387246,
+        "champ_skill_vs_best_simple": -0.0133080820015043
+      },
+      {
+        "target": "ppm",
+        "eval_row_minutes_floor": 5,
+        "n": 8592,
+        "champ_mae": 0.168073164060227,
+        "best_simple_mae": 0.1650663597245959,
+        "champ_skill_vs_best_simple": -0.0182157305743446
+      },
+      {
+        "target": "ppm",
+        "eval_row_minutes_floor": 10,
+        "n": 7683,
+        "champ_mae": 0.1601258327865677,
+        "best_simple_mae": 0.1569528529349949,
+        "champ_skill_vs_best_simple": -0.0202161336492998
+      },
+      {
+        "target": "ppm",
+        "eval_row_minutes_floor": 15,
+        "n": 6518,
+        "champ_mae": 0.1551738500096083,
+        "best_simple_mae": 0.1519407045529599,
+        "champ_skill_vs_best_simple": -0.0212789947641813
+      },
+      {
+        "target": "ppm",
+        "eval_row_minutes_floor": 20,
+        "n": 5364,
+        "champ_mae": 0.1517954822181773,
+        "best_simple_mae": 0.1490358288278255,
+        "champ_skill_vs_best_simple": -0.018516711129509
+      },
+      {
+        "target": "ppm",
+        "eval_row_minutes_floor": 24,
+        "n": 4396,
+        "champ_mae": 0.1489287014725061,
+        "best_simple_mae": 0.146277403459765,
+        "champ_skill_vs_best_simple": -0.0181251372394668
+      }
+    ],
+    "robustness_verdict": "the champion loses at EVERY evaluation-row minutes floor from 0 to 24 for all four targets; the pooled verdict does not depend on garbage time"
+  },
+  "self_identified_defects_and_where_i_could_have_cheated": {
+    "1_GRAND_fallback_touches_the_whole_frame": {
+      "what": "the shrinkage-target fallback chain ends in a whole-frame value",
+      "rows_affected": 56,
+      "seasons_affected": [
+        2022
+      ],
+      "why_it_is_bounded": "it fires only on rows whose season has no strictly-earlier game AND no predecessor season in the frame -- i.e. the opening date of 2022. 2023 and 2024 opening-date rows fall back to the previous season, which is calendar-disjoint and therefore strictly prior. Every WALK-FORWARD EVALUATION row is in 2023 or 2024, so no evaluation row ever reaches it. It can only have contaminated 56 of 4,362 tuning rows in split A (1.28%).",
+      "asserted_in_code": "s03_sweep.py asserts the GRAND-fallback rows are 2022-only and the assertion is live (it FIRED on a first draft that claimed the wrong thing, which is how the 135-vs-56 distinction was found)"
+    },
+    "2_post_hoc_fallback_split": "the fallback/modelled split in s06 was chosen AFTER seeing the tier table. It is labelled post hoc everywhere. Nothing was re-selected on it and no hyperparameter depends on it, but the hybrid MAE in hybrid_postocc.csv must be read as descriptive.",
+    "3_no_hyperparameter_was_chosen_after_seeing_an_evaluation_number": "the grid was hashed in s02 before any cell's skill was computed; s03 computed the whole surface with no selection in it; s04 selected only on tuning-row MAE. The in-sample selection is computed and published SOLELY as the optimism gap and is never the headline.",
+    "4_conditional_slices_in_s05_are_descriptive": "the slice list was written before the numbers but is not multiplicity-corrected; treat individual slice p-values as descriptive.",
+    "5_ppm_is_scored_as_a_ratio": "points-per-minute MAE is on the ratio scale, so its skill numbers are not commensurable with the level targets'.",
+    "6_only_236_players_and_475_player_seasons": "block-level inference has 475 blocks pooled and as few as ~150 in thin tiers; tier-0 (n=47) numbers are reported but should not be leaned on."
+  },
+  "artefacts": [
+    "ANSWER.md",
+    "ESTIMATOR_GRID.md",
+    "FINDINGS.json",
+    "NOTES.md",
+    "__pycache__",
+    "_prereg.json",
+    "_s01.json",
+    "_s03.json",
+    "_s04.json",
+    "_s05.json",
+    "_s06.json",
+    "best_simple_forecasts.npz",
+    "champion_vs_best.csv",
+    "cyclic_shift_control.csv",
+    "depth_adaptive_selection.csv",
+    "estimator_surface.csv",
+    "eval_row_floor_robustness.csv",
+    "fallback_by_tier.csv",
+    "fallback_split.csv",
+    "hybrid_postocc.csv",
+    "ose_base.py",
+    "paired_inference.csv",
+    "pooled_decomposition.csv",
+    "r2_walkforward.csv",
+    "reproduction.csv",
+    "ros_vs_mor_by_floor.csv",
+    "run_log_s00.txt",
+    "run_log_s01.txt",
+    "run_log_s02.txt",
+    "run_log_s03.txt",
+    "run_log_s04.txt",
+    "run_log_s05.txt",
+    "run_log_s06.txt",
+    "run_log_s07.txt",
+    "s00_inspect.py",
+    "s01_reproduce.py",
+    "s02_prereg.py",
+    "s03_sweep.py",
+    "s04_select_and_compare.py",
+    "s05_inference_and_where.py",
+    "s06_fallback_anatomy.py",
+    "s07_findings.py",
+    "selected_cells.npz",
+    "selection_and_optimism.csv",
+    "surface_keys.parquet",
+    "surface_sae.npz",
+    "where_the_advantage_lives.csv"
+  ]
+}

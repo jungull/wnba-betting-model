@@ -1,0 +1,65 @@
+﻿  loaded D081 decomp_frame.parquet  shape=(13879, 121)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+  partition check: season-valued cols=['season']  date cols=['gdate']  violations=[]
+
+====================================================================================================
+STEP 6a -- WHO ARE THE FALLBACK ROWS?
+====================================================================================================
+champion_state         FALLBACK  modelled
+prior_appearance_tier                    
+0                            47         0
+1-2                         610         0
+3-7                          41      1433
+8-14                          0      1912
+15-24                         0      2403
+25+                           0      3071
+
+  fallback LEVEL distribution on WF rows: {0: 8819, 2: 632, 3: 66}
+  WF rows: 9517   fallback: 698 (7.33%)
+
+  On fallback rows the champion emits how many DISTINCT point forecasts?
+    pts      n=698  distinct values=2  sd=0.0156   |  on modelled rows: distinct=8503 sd=6.2706
+    minutes  n=698  distinct values=2  sd=0.0474   |  on modelled rows: distinct=8552 sd=9.7011
+    fga      n=698  distinct values=2  sd=0.0177   |  on modelled rows: distinct=8546 sd=4.7183
+
+====================================================================================================
+STEP 6b -- THE DEFICIT SPLIT: fallback rows vs modelled rows
+====================================================================================================
+  target   slice                           n   champ MAE best simple   CHAMP SKILL          p
+  pts      pooled_wf                    9517     4.22756     4.14759      -1.9283%     0.0002
+  pts      champion_FALLBACK_rows        698     6.30991     4.66675     -35.2100%     0.0002
+  pts      champion_MODELLED_rows       8819     4.06275     4.10649      +1.0653%     0.0002
+  pts      modelled AND decision stratum   3549     5.07701     5.04796      -0.5756%     0.0320
+  pts      modelled AND >=3 priors      8819     4.06275     4.10649      +1.0653%     0.0002
+
+  minutes  pooled_wf                    9517     5.09999     4.88453      -4.4112%     0.0002
+  minutes  champion_FALLBACK_rows        698    10.23670     7.28156     -40.5838%     0.0002
+  minutes  champion_MODELLED_rows       8819     4.69344     4.69481      +0.0292%     0.7743
+  minutes  modelled AND decision stratum   3549     4.32578     4.32359      -0.0506%     0.6628
+  minutes  modelled AND >=3 priors      8819     4.69344     4.69481      +0.0292%     0.7743
+
+  fga      pooled_wf                    9517     2.63898     2.55884      -3.1320%     0.0002
+  fga      champion_FALLBACK_rows        698     4.57171     3.19954     -42.8863%     0.0002
+  fga      champion_MODELLED_rows       8819     2.48601     2.50813      +0.8819%     0.0012
+  fga      modelled AND decision stratum   3549     2.93257     2.92853      -0.1377%     0.6863
+  fga      modelled AND >=3 priors      8819     2.48601     2.50813      +0.8819%     0.0012
+
+  ppm      pooled_wf                    9517     0.18269     0.18029      -1.3308%     0.0002
+  ppm      champion_FALLBACK_rows        698     0.22721     0.20333     -11.7472%     0.0002
+  ppm      champion_MODELLED_rows       8819     0.17917     0.17847      -0.3915%     0.0722
+  ppm      modelled AND decision stratum   3549     0.15204     0.15115      -0.5834%     0.0027
+  ppm      modelled AND >=3 priors      8819     0.17917     0.17847      -0.3915%     0.0722
+
+
+====================================================================================================
+STEP 6c -- POST HOC (declared): hybrid = champion where it models, estimator where it falls back
+====================================================================================================
+  The switch is the champion's OWN pre-game `<target>__is_fallback` flag, so this is
+  implementable.  But the split was chosen after seeing the tier table -- DESCRIPTIVE ONLY.
+
+  target     champ MAE best simple  hybrid MAE hybrid vs champ hybrid vs est
+  pts          4.22756     4.14759     4.10705      +2.8507%      +0.9774%
+  minutes      5.09999     4.88453     4.88326      +4.2497%      +0.0260%
+  fga          2.63898     2.55884     2.53834      +3.8135%      +0.8010%
+  ppm          0.18269     0.18029     0.18094      +0.9589%      -0.3592%
+
+DONE s06

@@ -1,0 +1,44 @@
+﻿
+====================================================================================================
+STEP 1a -- LOAD D081's FROZEN decomp_frame.parquet (READ ONLY) + VALUE-BASED PARTITION
+====================================================================================================
+  loaded D081 decomp_frame.parquet  shape=(13879, 121)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+  partition check: season-valued cols=['season']  date cols=['gdate']  violations=[]
+  season calendar ranges (disjoint, ascending):
+    2022  2022-05-08 .. 2022-09-18
+    2023  2023-05-21 .. 2023-10-18
+    2024  2024-05-16 .. 2024-10-20
+
+====================================================================================================
+STEP 1b -- REPRODUCE THE PER-COMPONENT SKILL TABLE
+====================================================================================================
+
+  component    reference       n    model MAE      ref MAE          skill    |d skill|
+  minutes      ref_minutes  13879     5.079671     5.266907   +0.035549460    0.000e+00
+  fga          ref_fga     13879     2.637570     2.640611   +0.001151613    0.000e+00
+  pts          ref_pts     13879     4.190920     4.181629   -0.002221832    0.000e+00
+  pts_per_min  refA_ppm    13879     0.181743     0.182765   +0.005590774    0.000e+00
+  pts_per_min  refB_ppm    13879     0.181743     0.183502   +0.009588508    0.000e+00
+  pts_per_fga  refA_ppf    12976     0.506578     0.517586   +0.021267713    0.000e+00
+  pts_per_fga  refB_ppf    12976     0.506578     0.511817   +0.010236525    0.000e+00
+  fga_per_min  refA_fpm    13879     0.110338     0.111843   +0.013453785    0.000e+00
+  fga_per_min  refB_fpm    13879     0.110338     0.111111   +0.006953266    0.000e+00
+
+  MAX |delta skill| = 0.000e+00     MAX |delta MAE| = 0.000e+00     REPRODUCED = True
+
+====================================================================================================
+STEP 1c -- INDEPENDENT REBUILD OF D081's OWN REFERENCES (is the frozen column what it says?)
+====================================================================================================
+  ref_pts       max|rebuild - frozen| = 0.000e+00
+  ref_minutes   max|rebuild - frozen| = 6.750e-14
+  ref_fga       max|rebuild - frozen| = 0.000e+00
+
+====================================================================================================
+STEP 1d -- LEAK PROBE: does a KNOWN-retrospective baseline get flagged and ours not?
+====================================================================================================
+  corr(RETROSPECTIVE CONTROL full-season mean, player's STRICTLY FUTURE mean pts) = +0.9480
+  corr(our/D076 prior-appearance mean ref_pts, player's STRICTLY FUTURE mean pts) = +0.8453
+  -> the retrospective control is the more future-correlated of the two; the prior-only
+     reference is not.  (D081 measured +0.9480 vs +0.8453 with the same construction.)
+
+DONE s01
