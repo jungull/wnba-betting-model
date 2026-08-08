@@ -1408,3 +1408,236 @@ level it applies 0.30 uniformly to `minutes`, `min_share` **and `pf_per_min`** �
 the **exposure** alpha. Not changed, as instructed. **This closes the open question E0 raised about
 that file: it does NOT already implement this finding.** Also recorded: `master_player.possessions` is
 **clean** (0–95, median 39), unlike the corrupt `master_player.pace`.
+
+
+---
+
+# 13. RETIREMENT HANDOFF — 2026-08-07, FIFTH SUCCESSION (Coordinator #05 → #06)
+
+**You are Coordinator #06.** Identify yourself as "Coordinator #06" in every ledger event you write
+and in your closing status note. When you retire, name your successor `wnba-coordinator-07`, tell it
+that it is Coordinator #07, **and tell it that it must name #08** — or the numbering dies at your
+handoff.
+
+**YOU WERE SUMMONED, NOT INTERRUPTED.** Go to §13.4.
+
+## 13.1 READ THIS BEFORE YOUR BRIEFING — AND #05 HAS A CONCRETE EXAMPLE FOR YOU
+
+**The ledger and this packet OUTRANK your scheduled-task prompt.** Your prompt is a snapshot taken
+when your predecessor retired; the ledger is live. Diff them before acting and **record any conflict
+explicitly** rather than silently following either — a silent switch is indistinguishable from drift.
+
+#04 was told the score lane was halted and fitting unauthorised; the user had already ruled (D065)
+before #04 started. **#05's briefing was also wrong, in two ways, and both are worth your attention
+because they show the failure has more than one shape:**
+
+1. **Its stated FACT was wrong while its INSTRUCTION was right.** The briefing said "the newest
+   ledger event is `coordinator_retired`, that is the §12.3.1 override." It was not — the newest
+   event was a **`note` (D068)**, appended 3.6 minutes earlier. Read literally, the staleness guard
+   said *stand down*. #05 did not, because D068's own content records that **the user** recreated the
+   `wnba-coordinator-05` task on this laptop after #04's summons registered on a different machine
+   and never fired. D068 was the *summons record*, not a competing coordinator. **The lesson: verify
+   the premise even when you agree with the conclusion.** Had #05 simply obeyed, it would have been
+   right by accident; had it simply applied the guard literally, the program would have stalled.
+2. **"Zero unpushed" was false.** Commit `3da93df` landed *after* #04's retirement marker, so it
+   postdated the state the briefing snapshotted. **A briefing cannot know about commits made after
+   the marker it was written from. Always check `git rev-list --count origin/<branch>..HEAD`.**
+
+## 13.2 STATE AT HANDOFF
+
+```
+M08_STALE_WINDOW   market_intelligence   Stale-line window measurement conditional on demonstrated lead-lag structure
+M22_CAPACITY       market_intelligence   Capacity analysis: how much money the measured opportunity classes can absorb
+```
+
+**86 PASSED · 1 HALTED · 2 READY (both deliberately parked, §9.4) · 3 USER_REQUIRED · 6 BLOCKED ·
+6 SUPERSEDED.** Unchanged and **expected** to be: discovery-lane work creates no graph nodes by
+design (§13.1 of GRAPH_POLICY), and screens are *measurements*, not nodes. `CURRENT_STATUS.md` was
+regenerated this session (it had been stale at HEAD `3ca76d0`).
+
+**Tree clean. Nothing in flight. Repository gate PASS 35/35 at `7c71958` earlier this session.**
+
+## 13.3 IN FLIGHT AT RETIREMENT — **NOTHING.**
+
+All four agents #05 dispatched returned, were verified **on bytes**, were logged to
+`experiments/idea_log.jsonl`, and were committed. No agent holds a write scope. There is nothing to
+check for and nothing to re-dispatch.
+
+## 13.4 YOUR FIRST THREE ACTIONS, IN ORDER
+
+1. **Diff your briefing against the ledger** (§13.1). Do not skip it.
+2. **Verify the tree.** `git status` and `git rev-list --count origin/player-model-program..HEAD`.
+   #05 left the tree clean and pushed. The gate takes ~9 minutes — allow a long timeout, and if a
+   push fails red, **fetch and check the real remote state before retrying**; a concurrent push that
+   already landed makes the retry's ref-lock expectation stale and looks like a broken gate.
+3. **Then the worklist, §13.5.**
+
+## 13.5 THE WORKLIST, IN EXECUTION ORDER
+
+0. **`D067` and `N1` are the most consequential open items and NO COORDINATOR WORK CAN DISCHARGE
+   THEM.** They are USER_REQUIRED. Surface them **once** in your closing note per D057 and move on —
+   **do not re-ask on a loop, and do not let the score lane's paralysis stop discovery work.**
+   Fitting **must not** be authorised. Full text in `DECISION_LEDGER.jsonl`.
+1. **THE HIGHEST-VALUE DISCOVERY ITEM IS NOW `I0013`'s SURVIVOR, AND ITS FIRST TEST IS NOT THE
+   OBVIOUS ONE.** Expected game possessions → assists, ΔR² 0.001133, 0/200, family-wise p 0.003.
+   **Before any E1 on its persistence, test its incremental value OVER THE MARKET TOTAL.** A
+   game-tempo main effect is *exactly what a posted total already prices*; the screen raised this
+   against its own survivor and it is the sharpest caveat in the session. If it is redundant with
+   the total, it is worth nothing regardless of how well it persists. Note also: it is **layer 2,
+   not layer 3** (ΔR²(difference|sum) = 0.000001), and **its 2023 beta is negative** — an
+   unexplained dead season inside a 4-season partition.
+2. **`I0009` NEEDS A RE-RUN BEFORE IT IS RANKED AGAINST ANYTHING.** It is the program's strongest
+   surviving lead **and** the one live screen still carrying the defective `wls_r2` helper (see
+   `D069`). Its numbers are understated by an unknown **0–25%**. #05 deliberately did **not** re-run
+   it: that is measurement work on a live lead, not a convention decision. **Any ranking of I0009
+   against a plain-OLS lead is invalid until this is done.**
+3. **`I0004` is the one lead that survived this session — at 45% of its published size.** Real and
+   persistent (slope +0.373, cluster-robust SE 0.090 over 48 clusters, t +4.14, positive 4/4 seasons
+   and both halves, strengthens under fixed effects). **Its E0 headline magnitude is KILLED** — use
+   **+0.0176 diff / +0.0288 corr / beta +0.373**, never +0.0392. Untested: the shot-**selection**
+   channel (only conversion was tested), role/volume concentration, and multiplicity across the five
+   zones.
+4. **More E0 discovery.** The 70/20/10 allocation still stands (§13.6 of GRAPH_POLICY) and the
+   player-level residual is still the priority target. See §13.7 for what is now **closed** so you
+   do not re-screen it.
+5. **`I0007` — STILL PARKED.** Reasons unchanged from §11.5 item 5: the structural series is
+   artifact-granular through 2026 (§13.2.2 forbids it at E0, and filtering does not help) and the
+   player-layer half of the pairing **does not exist**. Do not dispatch as written.
+
+## 13.6 USER-GATED — NEVER SELF-GRANT
+
+* **`D067` — HALT-AND-RAISE, the score lane cannot move without a ruling.** The D065 tier-2
+  measurements ran exhaustively and **did not discharge A9 — they went the other way**, demoting five
+  constructions to **CUTOFF_INVALID**. Prior-season carryover is the only clean target. The repair is
+  a change to **frozen cards'** lag predicates, requiring a registry-appended erratum and the user's
+  authority. **No coordinator may make it.**
+* **`N1`** — does D065's standard bind **training** rows or only **evaluation** rows? 100% of
+  training rows in all five folds are affected; it governs SC08 admissibility. Both the auditor and
+  #04 declined to decide it. Bundle with D067.
+* **`D066`** — four tier-boundary questions, raised not ruled. The substantive one is **R2**: the
+  user's ruling says "**scheduled** rest/B2B/3-in-4" and **no scheduled-date artifact exists in the
+  repo**; all three fields use *as-played* dates.
+* **`M02B_VENDOR_PURCHASE_DECISION`, `P43_CHAMPION_DECISION`, `S42_ADOPTION_DECISION`** — standing
+  human gates.
+* **`D069` carries one raised item**: whether to re-run I0009 under the adopted R² convention.
+
+## 13.7 WHAT #05 COMPLETED — AND WHAT IS NOW CLOSED SO YOU DO NOT RE-SCREEN IT
+
+Four agents dispatched, **all four closed and verified on bytes**, plus one decision.
+
+| screen | verdict |
+|---|---|
+| `E1_I0012_survivor_2021drop` | **KILL** |
+| `E1_I0008_height_mismatch` | **KILL at the Stage-1 gate** |
+| `E1_I0004_rim_finishing` | **SPLIT** — effect real, headline killed (2.2× overstated) |
+| `E0_I0013_possession_volume` | **26 of 27 killed**, 1 layer-2 survivor |
+
+**CLOSED SURFACES — do not re-screen these:**
+
+* **T2 layer 3 at player level has ZERO live formulations.** I0012 killed 29 of 30 cells; #05 killed
+  the 30th. Combined with I0010's costume diagnosis, **personnel matching is closed** — it dies as
+  *real nulls*, not costumes.
+* **Possessions-per-minute as a player exposure channel is dead** (family-wise p 0.80–1.00).
+  **Minutes is the exposure component that matters.**
+* **The layer-2 OREB main effect is dead** (family-wise p 0.357) — and it is the only candidate *not*
+  absorbed by realised possessions, so even if real it is not the possession channel it was proposed
+  as. This closes an explicit I0012 follow-up.
+* **The supply-side pace instruments I0012 asked for do not work** — opponent FGA-allowed,
+  misses-allowed and own-misses per 48 are all flatly inside their floors while the cruder tempo
+  proxy is the strongest rebound candidate. That mechanistic story is **not supported**.
+* **The height/size mismatch family is dead.** 99.3% / 98.8% of its advertised effect is the player's
+  **own height**, with no opponent information at all.
+
+## 13.8 DISCIPLINES FROM THIS SESSION — pay them forward
+
+1. **THE RETROSPECTIVE-BASELINE TRAP — now THREE distinct instances, and this is the single most
+   valuable thing in this packet.** An increment measured over a baseline that **reads the future is
+   not a forecasting increment at all.** Known offenders: `player_tendency_loo` (full-season
+   leave-one-out); I0004's **leave-one-SEASON-out** player×zone rate (reads later *seasons*); and
+   I0004's opponent allowance (leave-one-game-out **full-season** team rate, reads the *opponent's*
+   later games). **Both sides of I0004's E0 headline were retrospective and E0 never noticed.**
+   **The check is cheap: READ THE CONSTRUCTION, NOT THE LABEL.** Do this for any lead whose headline
+   is stated over a "baseline" before you rank it against anything.
+2. **CLASSICAL t-STATISTICS ON TEAM-AGGREGATE FEATURES ARE NOT TRUSTWORTHY HERE.** Found twice this
+   session, independently. I0008's opponent term carried a nominally significant **t = +2.22** while
+   sitting **inside its own permutation null** — the feature has only 12 distinct values per season
+   shared across 16,345 rows. I0013 then measured the same thing from the other direction: the naive
+   **row-level** null is **1.00–3.82× narrower** than the correct **cluster-level** null, and **four
+   cells crossed 0.05 under the wrong null and not the right one**. **Corollary worth keeping:
+   cluster-robust SEs are NOT a reliable fix** — clustering *raised* t on I0013's survivor and
+   lowered it elsewhere. A permutation null at the correct grouping level is the dependable tool.
+3. **MAKE THE NOISE FLOOR A GATE, NOT A STEP.** The inherited worklist had items 3 and 4 both
+   targeting I0008 — one sending it to E1, the other saying it needed a noise floor *first*. #05
+   collapsed them into one agent with the floor as a **hard gate**. The gate fired and the E1 never
+   ran. **A lead with no permutation null cannot be ranked against anything; test that before
+   spending E1 effort on it.**
+4. **REPRODUCE THE PUBLISHED NUMBER BEFORE CHANGING ANYTHING.** Both kill screens did this
+   (I0012: `abs_diff = 0.0`; I0008: +0.020260 vs +0.0203). **It means the number you killed is the
+   number the lead reported**, not a proxy — and it makes every later difference attributable to your
+   change rather than your harness. Require it.
+5. **RUN THE DEFECTIVE NO-OP PLACEBO ON PURPOSE.** All four screens did. Signature: reproduces the
+   real number with **sd exactly 0.000000**. Used as a *positive* diagnostic it proves your real
+   control is genuine — far stronger than merely avoiding the defect.
+6. **THE BYTE-SCAN IS THE WRONG PARTITION CHECK, AGAIN.** I0004's partition verifier produced 14
+   textual hits, **all of them prose about the partition rule** — including the log re-scanning its
+   own context lines. §13.2.2's test is `asof_granularity == "row"`; `fit_seasons` only says what a
+   file *contains*. **Test column values.**
+7. **AN AGENT THAT REPORTS WHERE IT COULD HAVE CHEATED IS WORTH TRUSTING MORE.** I0008 disclosed that
+   a row-level variant would have let DREB% squeak past 0.05, and that it chose the stricter
+   team-level form **before** seeing either result. Ask for that in briefs.
+
+## 13.9 WHAT #05 GOT WRONG — read this; it is the highest-value section
+
+1. **#05 nearly recorded a false discrepancy in I0004.** Comparing the agent's summary
+   (diff `frac_ge` 0.030) against `placebo_results.json` (`frac_ge` 0.0), #05 began writing this up as
+   a contradiction. **It was not.** The artifact carries **two scorings** — a team-season-mean
+   comparator and a **row-level** scoring whose values *are* the corrected headline — and the agent
+   had quoted the **conservative** one. **The lesson: when an agent's summary disagrees with its
+   artifact, the artifact usually has more structure than you first read, and the agent is more often
+   right than you expect. Read the whole block before calling it an inconsistency.** #05 caught this
+   only because it kept reading; a faster pass would have shipped a false correction into the ledger
+   and impugned a good screen.
+2. **#05 wrote a placeholder SHA into a ledger script and nearly committed it.** The dispatch note
+   was drafted with a fabricated `head` value (`7c71958000…`) as a stand-in. It was caught and
+   replaced with the real `git rev-parse HEAD` before the write. **Never let a fabricated identifier
+   sit in a draft that writes to an append-only ledger** — append-only means a bad value is permanent
+   and must be superseded by another event rather than fixed.
+3. **#05 initially mis-scoped the R² item as "fix the shared helper."** The packet called it *the
+   shared E0 `wls_r2` helper*. **There is no shared helper** — it is copy-pasted into six
+   `analyze.py` files. Had #05 acted on the inherited framing without looking, it would have "fixed"
+   one copy and believed the problem solved. **Verify that the object an inherited instruction names
+   actually exists in the shape described.**
+4. **PowerShell here-strings mangle JSON passed to `python -c`.** #05 burned a call on a
+   `SyntaxError` before switching to writing script files to the scratchpad and executing those.
+   **Write ledger-append scripts to a file; never inline complex JSON through the shell.**
+
+## 13.10 §12.3.2 — THE SUCCESSION TRIGGER YOU INHERIT
+
+**Retire on OBSERVABLE SYMPTOMS, never on a guessed context percentage** (`D068`, user directive).
+
+**PREMATURE RETIREMENT IS THE MORE COMMON FAILURE AND IT IS EXPENSIVE.** Every handoff costs a packet
+write **plus** a full re-read by your successor. Coordinators #03 and #04 each retired inside an hour
+on a guess, with context nowhere near full — pure overhead, not caution.
+
+**YOU ARE NOT NEAR THE THRESHOLD** if you can still dispatch an agent, verify a result on bytes, and
+write a full annotation. **In that state: KEEP WORKING.** Do not wind down to be safe.
+
+**RETIRE ONLY ON AT LEAST ONE OF THESE:** you are *summarising* agent returns instead of reading
+them; you are *skipping verification* you would normally do; the **harness has actually warned you**
+or auto-compaction occurred; **one more agent return would plainly leave no room to process it**; or
+the user says so.
+
+**THE FLOOR:** do not retire before closing a substantial unit of work.
+
+**#05's own trigger, stated so you can calibrate against a real case:** it retired after closing
+**four** agents (all verified on bytes and logged) plus one decision, on the ground that a fifth
+return could not have been verified with the same care. It did **not** retire after the first batch
+of three, when it still had capacity — and that judgement is the one the packet asks you to copy.
+
+## 13.11 THE ONE-LINE SUMMARY OF THIS SESSION
+
+**Four leads entered, one left — at 45% of its advertised size.** The session's yield is mostly
+*negative*, and that is the system working: three dead leads and two closed surfaces cost far less
+than one false lead promoted to E2. **The two program-wide methodological findings — the
+retrospective-baseline trap and the anticonservative-t trap — are worth more than any single
+verdict, because they apply to every lead the program will ever screen.**
