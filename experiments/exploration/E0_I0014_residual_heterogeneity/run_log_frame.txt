@@ -1,0 +1,71 @@
+﻿
+====================================================================================================
+STEP 1a -- PROVENANCE OF THE RESIDUAL SET (fold receipts)
+====================================================================================================
+  season 2021  train_seasons=[]                 n_train=0      n_test=4997  fitted=False degenerate=True
+  season 2022  train_seasons=[2021]             n_train=4850   n_test=6333  fitted=True  degenerate=False
+  season 2023  train_seasons=[2021, 2022]       n_train=10413  n_test=7418  fitted=True  degenerate=False
+  season 2024  train_seasons=[2021, 2022, 2023] n_train=16563  n_test=7866  fitted=True  degenerate=False
+  -> 2021 fold is DEGENERATE (no model fitted). EXCLUDED. Screen seasons = [2022, 2023, 2024]
+
+====================================================================================================
+STEP 1b -- MANIFEST CHECKS
+====================================================================================================
+  manifest master_player.parquet                                                  asof_granularity=row       fit_through_season=2026
+  guard ok  master_player after load                       n=21462   seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  manifest player_game.parquet                                                    asof_granularity=row       fit_through_season=2026
+  guard ok  contract_v4 player_game after load             n=22659   seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  data/w1_truth/player_game_availability.csv:
+     asof_granularity=artifact fit_through_season=2026 -> UNUSABLE, NOT OPENED
+  data/w1_truth/roster_asof.csv:
+     asof_granularity=artifact fit_through_season=2026 -> UNUSABLE, NOT OPENED
+  experiments/minutes_baselines/test_predictions.csv: NO SIBLING MANIFEST -> NOT USED
+
+====================================================================================================
+STEP 1c -- LOAD OOF PREDICTIONS (per-season, each bounded at its own season)
+====================================================================================================
+  oof player_scoring_distribution        season=2022 asof_granularity=artifact  fit_through_season=2022 fit_seasons=[2021]
+  oof player_scoring_distribution        season=2023 asof_granularity=artifact  fit_through_season=2023 fit_seasons=[2021, 2022]
+  oof player_scoring_distribution        season=2024 asof_granularity=artifact  fit_through_season=2024 fit_seasons=[2021, 2022, 2023]
+  oof e_minutes_given_active             season=2022 asof_granularity=artifact  fit_through_season=2022 fit_seasons=[2021]
+  oof e_minutes_given_active             season=2023 asof_granularity=artifact  fit_through_season=2023 fit_seasons=[2021, 2022]
+  oof e_minutes_given_active             season=2024 asof_granularity=artifact  fit_through_season=2024 fit_seasons=[2021, 2022, 2023]
+  oof attempts_usage                     season=2022 asof_granularity=artifact  fit_through_season=2022 fit_seasons=[2021]
+  oof attempts_usage                     season=2023 asof_granularity=artifact  fit_through_season=2023 fit_seasons=[2021, 2022]
+  oof attempts_usage                     season=2024 asof_granularity=artifact  fit_through_season=2024 fit_seasons=[2021, 2022, 2023]
+  pts      rows=21617 seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+  minutes  rows=21617 seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+  fga      rows=21617 seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+STEP 1d -- EMPIRICAL LEAK PROBES ON THE FORECASTS
+====================================================================================================
+  probe1 cold-start distinct pred_point per season, pts     : {2022: np.int64(1), 2023: np.int64(1), 2024: np.int64(1)}
+  probe1 cold-start distinct pred_point per season, minutes : {2022: np.int64(1), 2023: np.int64(1), 2024: np.int64(1)}
+  probe1 cold-start distinct pred_point per season, fga     : {2022: np.int64(1), 2023: np.int64(1), 2024: np.int64(1)}
+  probe2 pts      corr(pred, PRIOR-mean)=+0.9467   corr(pred, FUTURE-mean)=+0.8540  (n=12937)  [a point-in-time forecast should track PRIOR at least as tightly]
+  probe2 minutes  corr(pred, PRIOR-mean)=+0.9220   corr(pred, FUTURE-mean)=+0.8299  (n=12937)  [a point-in-time forecast should track PRIOR at least as tightly]
+  probe2 fga      corr(pred, PRIOR-mean)=+0.9486   corr(pred, FUTURE-mean)=+0.8785  (n=12937)  [a point-in-time forecast should track PRIOR at least as tightly]
+
+====================================================================================================
+STEP 2a -- BUILD PRE-GAME CANDIDATES (strictly prior windows)
+====================================================================================================
+  player pre-game cols: ['pl_games_prior', 'pl_minutes_prior', 'pl_career_games_prior', 'pl_prior_season_games', 'pl_is_rookie_window', 'pl_min_sd5', 'pl_min_mean5', 'pl_fga_sd5', 'pl_fga_mean5', 'pl_pts_sd5', 'pl_pts_mean5', 'pl_usg_sd5', 'pl_usg_mean5', 'pl_min_cv5', 'pl_min_rng5', 'pl_min_trend5', 'pl_abs_min_trend5', 'pl_start_frac5', 'pl_start_switch5', 'pl_rest_days']
+  team pre-game cols  : ['tm_game_idx', 'tm_rest_days', 'tm_b2b', 'tm_3in4', 'tm_games_prior7d', 'tm_poss_mean_prior', 'tm_roster_churn_prior', 'tm_newfaces_prior', 'tm_five_tenure_prior', 'tm_five_changed_prior', 'tm_season_progress', 'tm_prior_meetings', 'tm_first_meeting', 'opp_team_id', 'tm_is_home', 'opp_poss_mean_prior', 'opp_rest_days', 'opp_game_idx', 'tm_rest_diff']
+  player-team cols    : ['pl_teamgames_since_appear', 'pl_dnp_frac5']
+
+====================================================================================================
+STEP 2b -- ASSEMBLE ANALYSIS FRAME
+====================================================================================================
+  scoreable+appeared rows: 13879
+  guard ok  analysis frame                                 n=13879   seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+  wrote analysis_frame.parquet  shape=(13879, 101)
+
+====================================================================================================
+BASELINE ERROR LEVELS (pooled, 2022-2024, appeared rows)
+====================================================================================================
+  pts      n=13879  model MAE=4.1909  RMSE=5.5212  prior-mean-ref MAE=4.1816  skill=-0.0022  plain-unweighted-R2=0.4694
+  minutes  n=13879  model MAE=5.0797  RMSE=6.6401  prior-mean-ref MAE=5.2669  skill=+0.0355  plain-unweighted-R2=0.6194
+  fga      n=13879  model MAE=2.6376  RMSE=3.4344  prior-mean-ref MAE=2.6406  skill=+0.0012  plain-unweighted-R2=0.5893
+
+DONE
