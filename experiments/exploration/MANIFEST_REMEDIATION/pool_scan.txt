@@ -1,0 +1,227 @@
+
+#### experiments/prediction_contract_v5/player_game_enriched.parquet
+     producer: prediction_contract_v5_enrich.py  (416 lines)
+     AS-OF markers (0):
+     POOL candidates (3)  << READ THESE:
+        prediction_contract_v5_enrich.py:358  "by_season": {str(int(s)): int(n) for s, n in g.groupby("season").size().items()},
+        prediction_contract_v5_enrich.py:384  "by_season": {str(int(s)): int(n) for s, n in tc.groupby("season").size().items()}
+        prediction_contract_v5_enrich.py:389  "n_rows_by_season": {str(int(s)): int(n) for s, n in df.groupby("season").size().items()},
+
+#### experiments/prediction_contract_v5/player_game.parquet
+     producer: prediction_contract_v5.py  (810 lines)
+     AS-OF markers (0):
+     POOL candidates (3)  << READ THESE:
+        prediction_contract_v5.py:142  s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+        prediction_contract_v5.py:219  return d.normalize() - pd.Timedelta(hours=6)
+        prediction_contract_v5.py:673  for s, g in cand2.groupby("season"):
+
+#### experiments/prediction_contract_v5/candidacy_exclusions.parquet
+     producer: prediction_contract_v5_enrich.py  (416 lines)
+     AS-OF markers (0):
+     POOL candidates (3)  << READ THESE:
+        prediction_contract_v5_enrich.py:358  "by_season": {str(int(s)): int(n) for s, n in g.groupby("season").size().items()},
+        prediction_contract_v5_enrich.py:384  "by_season": {str(int(s)): int(n) for s, n in tc.groupby("season").size().items()}
+        prediction_contract_v5_enrich.py:389  "n_rows_by_season": {str(int(s)): int(n) for s, n in df.groupby("season").size().items()},
+
+#### experiments/player_program/event_contract_v1/canonical_player_events_v1.parquet
+     producer: experiments/player_program/build_canonical_events.py  (458 lines)
+     AS-OF markers (0):
+     POOL candidates (5)  << READ THESE:
+        experiments/player_program/build_canonical_events.py:4  Normalises the legacy PlayByPlayV2 store and the modern CDN store into one event contract over
+        experiments/player_program/build_canonical_events.py:150  def normalise_legacy(game_id: str, path: Path) -> pd.DataFrame:
+        experiments/player_program/build_canonical_events.py:214  def normalise_cdn(game_id: str, path: Path) -> pd.DataFrame:
+        experiments/player_program/build_canonical_events.py:295  """Normalise ONE game and apply keying, ordering and provenance.
+        experiments/player_program/build_canonical_events.py:300  df = normalise_legacy(game_id, path) if source == "legacy" else normalise_cdn(game_id, path)
+
+#### experiments/player_program/turnover_p1_v1/turnover_p1_predictions_intrinsic.parquet
+     producer: experiments/player_program/run_turnover_p1.py  (231 lines)
+     AS-OF markers (0):
+     POOL candidates (1)  << READ THESE:
+        experiments/player_program/run_turnover_p1.py:175  for s, sub in d.groupby("season"):
+
+#### experiments/player_program/turnover_p1_v1/turnover_p1_predictions_operational_corrected.parquet
+     producer: experiments/player_program/run_turnover_p1_universe_fix.py  (312 lines)
+     AS-OF markers (0):
+     POOL candidates (3)  << READ THESE:
+        experiments/player_program/run_turnover_p1_universe_fix.py:6  universe. Rates, K, alpha, shrinkage, taxonomy, exposure artifact, companion and metrics are all
+        experiments/player_program/run_turnover_p1_universe_fix.py:185  for s, gg in g.merge(C[["game_id", "season"]], on="game_id").groupby("season")}
+        experiments/player_program/run_turnover_p1_universe_fix.py:256  "unchanged": ["rates", "K=200", "alpha=0.10", "shrinkage formulas", "target taxonomy",
+
+#### experiments/player_program/turnover_p2_v1/turnover_role_context_features_v1.parquet
+     producer: experiments/player_program/run_turnover_p2.py  (292 lines)
+     AS-OF markers (0):
+     POOL candidates (9)  << READ THESE:
+        experiments/player_program/run_turnover_p2.py:15  from register_turnover_p2 import RIDGE_LAMBDA, INVOLVE_ALPHA, INVOLVE_SHRINK_K, MIN_TRAIN_ROWS  # noqa: E402
+        experiments/player_program/run_turnover_p2.py:42  """IRLS Poisson ridge with step-halving; intercept unpenalised.
+        experiments/player_program/run_turnover_p2.py:115  F["proj_rotation_rank"] = g["projected_minutes"].rank(ascending=False, method="first")
+        experiments/player_program/run_turnover_p2.py:146  F["trailing_rotation_rank"] = F.groupby(["game_id", "team_id"])["trailing_minutes_share"].rank(
+        experiments/player_program/run_turnover_p2.py:168  "mean": float(F[c].mean()), "std": float(F[c].std())} for c in FEAT}
+        experiments/player_program/run_turnover_p2.py:206  mu_tr, sd_tr = tr[feats].mean(), tr[feats].std().replace(0, 1.0)
+        experiments/player_program/run_turnover_p2.py:211  b, conv = poisson_ridge(Xtr, tr["turnovers"].to_numpy(float), otr, RIDGE_LAMBDA)
+        experiments/player_program/run_turnover_p2.py:254  for s, sub in gs.groupby("season"):
+        experiments/player_program/run_turnover_p2.py:269  "hyperparameters": {"ridge_lambda": RIDGE_LAMBDA, "involve_alpha": INVOLVE_ALPHA,
+
+#### experiments/player_program/fits_v1/p3_coefficients_v1.parquet
+     producer: experiments/player_program/fit_rate_and_p3.py  (486 lines)
+     AS-OF markers (0):
+     POOL candidates (14)  << READ THESE:
+        experiments/player_program/fit_rate_and_p3.py:76  A dense 238k x 768 design would be 1.5 GB and is unnecessary: ridge needs only the normal
+        experiments/player_program/fit_rate_and_p3.py:116  def ridge_solve(D, lam_off, lam_def):
+        experiments/player_program/fit_rate_and_p3.py:156  b = ridge_solve(Di, lo, ld)
+        experiments/player_program/fit_rate_and_p3.py:164  beta = ridge_solve(D, lo, ld)
+        experiments/player_program/fit_rate_and_p3.py:208  b = ridge_solve(D, lo, lo)
+        experiments/player_program/fit_rate_and_p3.py:225  "shrinkage_dominated_players": {
+        experiments/player_program/fit_rate_and_p3.py:240  "ridge_sensitivity": corr,
+        experiments/player_program/fit_rate_and_p3.py:245  "is rank-deficient; ridge resolves this numerically by shrinking toward zero, which "
+        experiments/player_program/fit_rate_and_p3.py:306  pp = tr.groupby("player_id")[den].mean()
+        experiments/player_program/fit_rate_and_p3.py:391  "model": "pooled empirical-Bayes shrinkage; player effect shrunk toward the league "
+        experiments/player_program/fit_rate_and_p3.py:399  "uncertainty": "per-season fold spread; shrinkage weight reported",
+        experiments/player_program/fit_rate_and_p3.py:420  "primary_penalty_policy": "SEPARATE offensive and defensive ridge penalties",
+        experiments/player_program/fit_rate_and_p3.py:429  "ridge RAPM (primary)", "competitive-possession ridge RAPM"],
+        experiments/player_program/fit_rate_and_p3.py:431  "uncertainty": "ridge-sensitivity spread and effective-df shrinkage diagnostic",
+
+#### experiments/market_program/SCORE_BASELINES/score_baseline_rows.parquet
+     producer: experiments/market_program/SCORE_BASELINES/build_score_baselines.py  (820 lines)
+     AS-OF markers (5):
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:285  # incumbent pace prior's d < game_date convention)
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:348  cum_n = by_date["n"].cumsum().shift(1)
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:349  lag_total = by_date["total_sum"].cumsum().shift(1) / cum_n
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:350  lag_margin = by_date["margin_sum"].cumsum().shift(1) / cum_n
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:351  lag_winrate = by_date["win_sum"].cumsum().shift(1) / cum_n
+     POOL candidates (8)  << READ THESE:
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:60  # for K=200-style shrinkage OR a simple span; we
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:61  # picked the simple span, no shrinkage). BASELINE,
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:173  def fit_logistic_1d(margins, ys, max_iter=200, tol=1e-10, ridge=1e-9):
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:175  Deterministic; tiny ridge for numerical stability only. Known-answer
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:184  grad = X.T @ (y - p) - ridge * beta
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:185  H = (X * w[:, None]).T @ X + ridge * np.eye(2)
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:687  "shrinkage": ("NONE -- the picked convention is the simple span, not "
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:688  "K=200-style shrinkage (D043 offered either; one was "
+
+#### experiments/market_program/SCORE_BASELINES/market_paired_rows.parquet
+     producer: experiments/market_program/SCORE_BASELINES/build_score_baselines.py  (820 lines)
+     AS-OF markers (5):
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:285  # incumbent pace prior's d < game_date convention)
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:348  cum_n = by_date["n"].cumsum().shift(1)
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:349  lag_total = by_date["total_sum"].cumsum().shift(1) / cum_n
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:350  lag_margin = by_date["margin_sum"].cumsum().shift(1) / cum_n
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:351  lag_winrate = by_date["win_sum"].cumsum().shift(1) / cum_n
+     POOL candidates (8)  << READ THESE:
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:60  # for K=200-style shrinkage OR a simple span; we
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:61  # picked the simple span, no shrinkage). BASELINE,
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:173  def fit_logistic_1d(margins, ys, max_iter=200, tol=1e-10, ridge=1e-9):
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:175  Deterministic; tiny ridge for numerical stability only. Known-answer
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:184  grad = X.T @ (y - p) - ridge * beta
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:185  H = (X * w[:, None]).T @ X + ridge * np.eye(2)
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:687  "shrinkage": ("NONE -- the picked convention is the simple span, not "
+        experiments/market_program/SCORE_BASELINES/build_score_baselines.py:688  "K=200-style shrinkage (D043 offered either; one was "
+
+#### experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/translation_rows.parquet
+     producer: experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/build_translation.py  (717 lines)
+     AS-OF markers (0):
+     POOL candidates (4)  << READ THESE:
+        experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/build_translation.py:390  q = pd.qcut(fp["pred_point"], 10, duplicates="drop")
+        experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/build_translation.py:401  r_pred = pd.Series(fp["pred_point"]).rank().to_numpy()
+        experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/build_translation.py:402  r_abs = pd.Series(fp["residual"].abs()).rank().to_numpy()
+        experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/build_translation.py:405  # heteroscedastic normal: |residual| ~ a + b*pred_point (closed-form OLS), a
+
+#### experiments/player_program/data_lane/D12_COACHING_HISTORY/team_season_coverage_v1.csv
+     producer: experiments/player_program/data_lane/D12_COACHING_HISTORY/build_coaching_history.py  (586 lines)
+     AS-OF markers (0):
+     POOL candidates (4)  << READ THESE:
+        experiments/player_program/data_lane/D12_COACHING_HISTORY/build_coaching_history.py:306  tg.groupby(["season", "offense_team_id"])
+        experiments/player_program/data_lane/D12_COACHING_HISTORY/build_coaching_history.py:459  "median": float(ld["days"].median()),
+        experiments/player_program/data_lane/D12_COACHING_HISTORY/build_coaching_history.py:466  season_open = ts.groupby("season")["first_game_date"].min().to_dict()
+        experiments/player_program/data_lane/D12_COACHING_HISTORY/build_coaching_history.py:546  for k, v in cv.groupby("season")
+
+#### experiments/exploration/E0_I0005_turnover_interaction/player_game_analysis.csv
+     producer: experiments/exploration/E0_I0005_turnover_interaction/build_data.py  (112 lines)
+     AS-OF markers (0):
+     POOL candidates (8)  << READ THESE:
+        experiments/exploration/E0_I0005_turnover_interaction/build_data.py:60  game_def["loo_def_poss"] = game_def["season_def_poss"] - game_def["def_poss"]
+        experiments/exploration/E0_I0005_turnover_interaction/build_data.py:61  game_def["loo_def_tov"] = game_def["season_def_tov"] - game_def["def_tov"]
+        experiments/exploration/E0_I0005_turnover_interaction/build_data.py:62  game_def["opp_pressure_loo"] = np.where(game_def["loo_def_poss"] > 0,
+        experiments/exploration/E0_I0005_turnover_interaction/build_data.py:63  100.0 * game_def["loo_def_tov"] / game_def["loo_def_poss"],
+        experiments/exploration/E0_I0005_turnover_interaction/build_data.py:74  tov["loo_poss"] = tov["season_poss"] - tov["realised_off_possessions"]
+        experiments/exploration/E0_I0005_turnover_interaction/build_data.py:75  tov["loo_tov"] = tov["season_tov"] - tov["turnovers"]
+        experiments/exploration/E0_I0005_turnover_interaction/build_data.py:76  tov["player_tendency_loo"] = np.where(tov["loo_poss"] > 0,
+        experiments/exploration/E0_I0005_turnover_interaction/build_data.py:77  100.0 * tov["loo_tov"] / tov["loo_poss"],
+
+#### experiments/exploration/E0_I0009_additive_pressure/player_game_analysis.csv
+     producer: experiments/exploration/E0_I0009_additive_pressure/build_data.py  (162 lines)
+     AS-OF markers (0):
+     POOL candidates (11)  << READ THESE:
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:24  from pressure_lib import PregamePressure, EXPLORATION_SEASONS, SHRINK_K
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:79  loo_poss = team_game["s_poss"] - team_game["def_poss"]
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:80  team_game["pressure_loo"] = np.where(loo_poss > 0,
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:81  100.0 * (team_game["s_tov"] - team_game["def_tov"]) / loo_poss,
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:83  team_game["defrtg_loo"] = np.where(loo_poss > 0,
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:84  100.0 * (team_game["s_pts"] - team_game["def_pts_allowed"]) / loo_poss,
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:102  print("shrinkage pseudo-count K (def possessions):", SHRINK_K)
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:113  tov["loo_poss"] = tov["season_poss"] - tov["realised_off_possessions"]
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:114  tov["loo_tov"] = tov["season_tov"] - tov["turnovers"]
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:115  tov["player_tendency_loo"] = np.where(tov["loo_poss"] > 0,
+        experiments/exploration/E0_I0009_additive_pressure/build_data.py:116  100.0 * tov["loo_tov"] / tov["loo_poss"], np.nan)
+
+#### experiments/exploration/E1_I0009_additive_pressure/player_game_analysis.csv
+     producer: experiments/exploration/E1_I0009_additive_pressure/build_data.py  (242 lines)
+     AS-OF markers (0):
+     POOL candidates (11)  << READ THESE:
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:31  PregameTeamPressure, SHRINK_K_PLAYER, SHRINK_K_TEAM, _ns)
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:120  loo_poss = team_game["s_poss"] - team_game["def_poss"]
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:121  team_game["pressure_loo"] = np.where(loo_poss > 0,
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:122  100.0 * (team_game["s_tov"] - team_game["def_tov"]) / loo_poss,
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:124  team_game["defrtg_loo"] = np.where(loo_poss > 0,
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:125  100.0 * (team_game["s_pts"] - team_game["def_pts_allowed"]) / loo_poss,
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:147  print("shrinkage: K_team =", SHRINK_K_TEAM, " K_player =", SHRINK_K_PLAYER)
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:167  tov["loo_poss"] = tov["season_poss"] - tov["realised_off_possessions"]
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:168  tov["loo_tov"] = tov["season_tov"] - tov["turnovers"]
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:169  tov["player_tendency_loo"] = np.where(tov["loo_poss"] > 0,
+        experiments/exploration/E1_I0009_additive_pressure/build_data.py:170  100.0 * tov["loo_tov"] / tov["loo_poss"], np.nan)
+
+#### data/reference/player_bios.csv
+     producer: data/reference/collect_bios.py  (464 lines)
+     AS-OF markers (0):
+     POOL candidates (2)  << READ THESE:
+        data/reference/collect_bios.py:286  cov = tips.groupby("season").size()
+        data/reference/collect_bios.py:287  tot = mt[mt["is_home"] == 1].groupby("season").size()
+
+#### data/reference/team_cities.csv
+     producer: data/reference/collect_bios.py  (464 lines)
+     AS-OF markers (0):
+     POOL candidates (2)  << READ THESE:
+        data/reference/collect_bios.py:286  cov = tips.groupby("season").size()
+        data/reference/collect_bios.py:287  tot = mt[mt["is_home"] == 1].groupby("season").size()
+
+#### data/possessions/possessions.parquet
+     producer: experiments/player_program/possession_artifact_v1.py  (572 lines)
+     AS-OF markers (0):
+     POOL candidates (8)  << READ THESE:
+        experiments/player_program/possession_artifact_v1.py:4  **NOTHING IS FITTED.** No RAPM, no rate model, no ridge penalty, no player ranking, no offensive
+        experiments/player_program/possession_artifact_v1.py:197  for s, g in d.groupby("season"):
+        experiments/player_program/possession_artifact_v1.py:225  missing.groupby("season").size().items()},
+        experiments/player_program/possession_artifact_v1.py:364  "min": int(cnt.min()), "p10": int(cnt.quantile(.10)),
+        experiments/player_program/possession_artifact_v1.py:365  "median": int(cnt.median()), "p90": int(cnt.quantile(.90)),
+        experiments/player_program/possession_artifact_v1.py:395  "a ridge penalty selected CHRONOLOGICALLY, never on the evaluation fold",
+        experiments/player_program/possession_artifact_v1.py:485  "model, no ridge penalty, no ranking, no impact figure."),
+        experiments/player_program/possession_artifact_v1.py:546  for s, g in d.groupby("season")},
+
+#### experiments/player_program/possessions_v1/possessions_raw_v1.parquet
+     producer: experiments/player_program/possession_artifact_v1.py  (572 lines)
+     AS-OF markers (0):
+     POOL candidates (8)  << READ THESE:
+        experiments/player_program/possession_artifact_v1.py:4  **NOTHING IS FITTED.** No RAPM, no rate model, no ridge penalty, no player ranking, no offensive
+        experiments/player_program/possession_artifact_v1.py:197  for s, g in d.groupby("season"):
+        experiments/player_program/possession_artifact_v1.py:225  missing.groupby("season").size().items()},
+        experiments/player_program/possession_artifact_v1.py:364  "min": int(cnt.min()), "p10": int(cnt.quantile(.10)),
+        experiments/player_program/possession_artifact_v1.py:365  "median": int(cnt.median()), "p90": int(cnt.quantile(.90)),
+        experiments/player_program/possession_artifact_v1.py:395  "a ridge penalty selected CHRONOLOGICALLY, never on the evaluation fold",
+        experiments/player_program/possession_artifact_v1.py:485  "model, no ridge penalty, no ranking, no impact figure."),
+        experiments/player_program/possession_artifact_v1.py:546  for s, g in d.groupby("season")},
+
+#### experiments/player_program/possessions_v2/possessions_raw_v2.parquet
+     producer: experiments/player_program/possession_artifact_v2.py  (302 lines)
+     AS-OF markers (1):
+        experiments/player_program/possession_artifact_v2.py:116  prev_end = pos.groupby("game_id")["end_sec"].shift(1)
+     POOL candidates (1)  << READ THESE:
+        experiments/player_program/possession_artifact_v2.py:4  **NOTHING IS FITTED.** No RAPM, no rate model, no ridge penalty, no ranking, no impact figure.

@@ -1,0 +1,2533 @@
+{
+ "schema": "manifest_remediation_plan/1",
+ "produced_by": "MANIFEST_REMEDIATION infrastructure-analysis agent",
+ "input": "experiments/exploration/AUDIT_baseline_provenance/MISSING_MANIFESTS.json",
+ "scope": "the 68 shared/upstream artifacts with no sibling manifest",
+ "NO_MANIFEST_WAS_WRITTEN": true,
+ "policy": "GRAPH_POLICY 13.2.2. 'row' = each row bounded by its own date, filtering to 2021-2024 is sufficient. 'artifact' = the whole file is bounded by its latest input, filtering does NOT help.",
+ "method": "Producers located by scanning 762 .py files; classification made by READING the build code and quoting the construction line. Regex was used only to LOCATE candidate lines. Lineage traced through inputs, so inherited granularity is captured.",
+ "holdout_risk_vocabulary": {
+  "NONE": "build hard-filters to 2021-2024 before any aggregation, or every row is capture-timestamped",
+  "PARTITION_ONLY_LOOKAHEAD": "pools across rows, but only within 2021-2024 -- a within-season look-ahead, NOT confirmation-holdout contamination",
+  "SPANS_HOLDOUT": "the file contains or embeds values derived from 2025/2026 inputs",
+  "UNKNOWN": "not established"
+ },
+ "groups": {
+  "1": "LIVE CONTAMINATION - needs a re-run or a scope decision, not just paperwork",
+  "2": "SAFE / HONESTLY-BOUNDED - needs only a manifest",
+  "3": "UNDETERMINED - needs a human decision",
+  "4": "DEAD or UNUSED - ignorable"
+ },
+ "counts": {
+  "total": 68,
+  "by_group": {
+   "LIVE CONTAMINATION - needs a re-run or a scope decision, not just paperwork": 6,
+   "SAFE / HONESTLY-BOUNDED - needs only a manifest": 34,
+   "UNDETERMINED - needs a human decision": 15,
+   "DEAD or UNUSED - ignorable": 13
+  },
+  "by_granularity": {
+   "ARTIFACT": 30,
+   "ROW": 25,
+   "UNDETERMINED": 13
+  },
+  "by_confidence": {
+   "HIGH": 36,
+   "MEDIUM": 19,
+   "NONE": 13
+  },
+  "by_holdout_risk": {
+   "PARTITION_ONLY_LOOKAHEAD": 10,
+   "NONE": 25,
+   "SPANS_HOLDOUT": 6,
+   "UNKNOWN": 27
+  },
+  "consumed_by_a_passed_node": 12
+ },
+ "artifacts": [
+  {
+   "artifact": "experiments\\exploration\\E0_I0011_tendency_estimator\\frame.parquet",
+   "exists": true,
+   "size_mb": 0.87,
+   "consumer_count": 11,
+   "consumers": [
+    "experiments\\exploration\\E0_I0011_tendency_estimator\\boundary_check.py",
+    "experiments\\exploration\\E0_I0011_tendency_estimator\\score.py",
+    "experiments\\exploration\\E1_I0004_rim_finishing\\_validate_sandbox\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\make_findings.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_addendum.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_noise_floor.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_position_null.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\grid.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\i0009_baseline_delta.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\placebo.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE: feeds exploration lead I0011 -- LIVE (keep-as-lead x3)",
+   "priority_score": 44,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "experiments/exploration/E0_I0011_tendency_estimator/build_frame.py",
+     "line": 109,
+     "quote": "h = sel.loc[sel[\"is_home\"] == 1, s].mean()   # HOME_MULT pooled over ALL of 2021-2022"
+    },
+    {
+     "file": "experiments/exploration/E0_I0011_tendency_estimator/build_frame.py",
+     "line": 115,
+     "quote": "MEAN_POSS = float(sel[\"game_poss\"].mean())   # single pooled constant"
+    },
+    {
+     "file": "experiments/exploration/E0_I0011_tendency_estimator/build_frame.py",
+     "line": 161,
+     "quote": "df[\"prior_\" + s] = df[\"prior_\" + s].fillna(float(sel[s].mean()))  # pooled fallback"
+    },
+    {
+     "file": "experiments/exploration/E0_I0011_tendency_estimator/build_frame.py",
+     "line": 154,
+     "quote": "prior[\"season\"] = prior[\"season\"] + 1   # LEGITIMATE season offset: full-season mean of S applied to S+1"
+    },
+    {
+     "file": "experiments/exploration/E0_I0011_tendency_estimator/build_frame.py",
+     "line": 33,
+     "quote": "tm = tm[tm[\"season\"].isin(PARTITION)].copy()   # FILTER-POINT before any pooling"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "Pooled HOME_MULT/MEAN_POSS/fallback means are estimated on the SELECTION seasons 2021-2022 and frozen. That is a genuine pooled step, so the file is NOT row-granular. It is also filtered to the partition BEFORE any pooling, so no 2025/2026 value can reach a row. The prior-season merge at line 152-154 uses the season+1 offset and is legitimate.",
+   "exploration_lead": "I0011",
+   "program": "exploration",
+   "priority_rank": 1
+  },
+  {
+   "artifact": "experiments\\exploration\\E1_I0004_rim_finishing\\_validate_sandbox\\frame.parquet",
+   "exists": true,
+   "size_mb": 0.46,
+   "consumer_count": 11,
+   "consumers": [
+    "experiments\\exploration\\E0_I0011_tendency_estimator\\boundary_check.py",
+    "experiments\\exploration\\E0_I0011_tendency_estimator\\score.py",
+    "experiments\\exploration\\E1_I0004_rim_finishing\\_validate_sandbox\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\make_findings.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_addendum.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_noise_floor.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_position_null.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\grid.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\i0009_baseline_delta.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\placebo.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE: feeds exploration lead I0004 -- LIVE (SCREENED_LEAD_REFRAMED)",
+   "priority_score": 44,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "(sha256 comparison)",
+     "line": 0,
+     "quote": "BYTE-IDENTICAL to E1_I0011_split_alpha/frame.parquet, sha256 311BFDA27F6D97EF..."
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "2 min",
+   "group": 2,
+   "note": "Not an independently built artifact: a byte-identical copy of the E1_I0011 frame placed in the rim-finishing baseline-validation sandbox. Inherits that file's classification exactly.",
+   "exploration_lead": "I0004",
+   "program": "exploration",
+   "priority_rank": 2
+  },
+  {
+   "artifact": "experiments\\exploration\\E1_I0011_split_alpha\\frame.parquet",
+   "exists": true,
+   "size_mb": 0.46,
+   "consumer_count": 11,
+   "consumers": [
+    "experiments\\exploration\\E0_I0011_tendency_estimator\\boundary_check.py",
+    "experiments\\exploration\\E0_I0011_tendency_estimator\\score.py",
+    "experiments\\exploration\\E1_I0004_rim_finishing\\_validate_sandbox\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\make_findings.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_addendum.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_noise_floor.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_position_null.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\grid.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\i0009_baseline_delta.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\placebo.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE: feeds exploration lead I0011 -- LIVE (keep-as-lead x3)",
+   "priority_score": 44,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "experiments/exploration/E1_I0011_split_alpha/build_frame.py",
+     "line": 83,
+     "quote": "med = mp.groupby(\"season\")[\"game_date\"].transform(\"median\")  # season-pooled split point"
+    },
+    {
+     "file": "experiments/exploration/E1_I0011_split_alpha/build_frame.py",
+     "line": 55,
+     "quote": "mp = mp[mp[\"season\"].isin(PARTITION)].copy()   # FILTER-POINT (immediately after load)"
+    },
+    {
+     "file": "experiments/exploration/E1_I0011_split_alpha/build_frame.py",
+     "line": 76,
+     "quote": "mp[\"std_minutes\"] = (g[\"minutes\"].shift(1)... expanding(1).mean())  # strictly prior, clean"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "Every predictor column is strictly-prior (shift(1)+expanding, cumcount). The ONLY pooled step is the `half` column: a within-season game_date median over the whole season. That is a within-partition look-ahead, not holdout contamination -- the file is filtered to 2021-2024 at line 55 before the median is taken. Declaring 'row' would be false because of `half`.",
+   "exploration_lead": "I0011",
+   "program": "exploration",
+   "priority_rank": 3
+  },
+  {
+   "artifact": "experiments\\exploration\\E0_I0009_additive_pressure\\player_game_analysis.csv",
+   "exists": true,
+   "size_mb": 3.62,
+   "consumer_count": 9,
+   "consumers": [
+    "experiments\\exploration\\E0_I0005_turnover_interaction\\analyze.py",
+    "experiments\\exploration\\E0_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E0_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E1_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step1_audit.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step23_reproduce_and_rerun.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step4_verdict_and_nulls.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step5_baseline_audit_and_gate.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE: feeds exploration lead I0009 -- LIVE (SCREENED_LEAD_MAGNITUDE_CORRECTED; strongest surviving lead)",
+   "priority_score": 36,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/build_data.py",
+     "line": 163,
+     "quote": "# 4a. E0-comparable LOO tendency (hindsight; NOT pregame-observable)"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/build_data.py",
+     "line": 167,
+     "quote": "tov[\"loo_poss\"] = tov[\"season_poss\"] - tov[\"realised_off_possessions\"]"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/build_data.py",
+     "line": 116,
+     "quote": "tot = (team_game.groupby([\"team_id\",\"season\"]).agg(s_poss=(\"def_poss\",\"sum\"), ...))"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 39,
+     "quote": "lg = team_game.groupby(\"season\").agg(p=(\"def_poss\",\"sum\"), t=(\"def_tov\",\"sum\"), ...)"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 55,
+     "quote": "self.anchor[(team, season)] = self.league_mean[season]   # CURRENT season full-season mean"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 97,
+     "quote": "anchor = self.league_pts_mean[season]   # defrtg always shrunk to the current season league mean"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 2,
+   "note": "TWO independent season-pooling steps. (1) The `*_loo` columns are whole-season-minus-this-game leave-one-out -- they read LATER games in the same season; the script labels them 'hindsight; NOT pregame-observable'. (2) The `*_pregame` columns, despite the name, are shrunk toward an anchor that is the CURRENT season's full-season league mean whenever no prior season exists, and ALWAYS for defrtg. Both are confined to 2021-2024 by hard column-value asserts, so this is within-partition look-ahead, not holdout contamination. The file must not be manifested 'row'.",
+   "exploration_lead": "I0009",
+   "program": "exploration",
+   "priority_rank": 4
+  },
+  {
+   "artifact": "experiments\\exploration\\E1_I0009_additive_pressure\\player_game_analysis.csv",
+   "exists": true,
+   "size_mb": 4.69,
+   "consumer_count": 9,
+   "consumers": [
+    "experiments\\exploration\\E0_I0005_turnover_interaction\\analyze.py",
+    "experiments\\exploration\\E0_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E0_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E1_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step1_audit.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step23_reproduce_and_rerun.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step4_verdict_and_nulls.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step5_baseline_audit_and_gate.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE: feeds exploration lead I0009 -- LIVE (SCREENED_LEAD_MAGNITUDE_CORRECTED; strongest surviving lead)",
+   "priority_score": 36,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "experiments/exploration/E1_I0009_additive_pressure/build_data.py",
+     "line": 163,
+     "quote": "# 4a. E0-comparable LOO tendency (hindsight; NOT pregame-observable)"
+    },
+    {
+     "file": "experiments/exploration/E1_I0009_additive_pressure/build_data.py",
+     "line": 167,
+     "quote": "tov[\"loo_poss\"] = tov[\"season_poss\"] - tov[\"realised_off_possessions\"]"
+    },
+    {
+     "file": "experiments/exploration/E1_I0009_additive_pressure/build_data.py",
+     "line": 116,
+     "quote": "tot = (team_game.groupby([\"team_id\",\"season\"]).agg(s_poss=(\"def_poss\",\"sum\"), ...))"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 39,
+     "quote": "lg = team_game.groupby(\"season\").agg(p=(\"def_poss\",\"sum\"), t=(\"def_tov\",\"sum\"), ...)"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 55,
+     "quote": "self.anchor[(team, season)] = self.league_mean[season]   # CURRENT season full-season mean"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 97,
+     "quote": "anchor = self.league_pts_mean[season]   # defrtg always shrunk to the current season league mean"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 2,
+   "note": "TWO independent season-pooling steps. (1) The `*_loo` columns are whole-season-minus-this-game leave-one-out -- they read LATER games in the same season; the script labels them 'hindsight; NOT pregame-observable'. (2) The `*_pregame` columns, despite the name, are shrunk toward an anchor that is the CURRENT season's full-season league mean whenever no prior season exists, and ALWAYS for defrtg. Both are confined to 2021-2024 by hard column-value asserts, so this is within-partition look-ahead, not holdout contamination. The file must not be manifested 'row'.",
+   "exploration_lead": "I0009",
+   "program": "exploration",
+   "priority_rank": 5
+  },
+  {
+   "artifact": "experiments\\exploration\\E0_I0009_additive_pressure\\team_game_defense.csv",
+   "exists": true,
+   "size_mb": 0.28,
+   "consumer_count": 8,
+   "consumers": [
+    "experiments\\exploration\\E0_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E0_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E1_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step1_audit.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step23_reproduce_and_rerun.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step4_verdict_and_nulls.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step5_baseline_audit_and_gate.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE: feeds exploration lead I0009 -- LIVE (SCREENED_LEAD_MAGNITUDE_CORRECTED; strongest surviving lead)",
+   "priority_score": 32,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/build_data.py",
+     "line": 116,
+     "quote": "tot = (team_game.groupby([\"team_id\",\"season\"]).agg(s_poss=(\"def_poss\",\"sum\"), ...))"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/build_data.py",
+     "line": 120,
+     "quote": "loo_poss = team_game[\"s_poss\"] - team_game[\"def_poss\"]"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 97,
+     "quote": "anchor = self.league_pts_mean[season]"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/build_data.py",
+     "line": 109,
+     "quote": "assert set(team_game[\"season\"].unique()).issubset(set(EXPLORATION_SEASONS))"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 2,
+   "note": "Same two pooling steps as its player-level sibling: season LOO columns plus a current-season full-season league anchor in the shrinkage. Partition-asserted on column values.",
+   "exploration_lead": "I0009",
+   "program": "exploration",
+   "priority_rank": 6
+  },
+  {
+   "artifact": "experiments\\exploration\\E1_I0009_additive_pressure\\team_game_defense.csv",
+   "exists": true,
+   "size_mb": 0.38,
+   "consumer_count": 8,
+   "consumers": [
+    "experiments\\exploration\\E0_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E0_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E1_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step1_audit.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step23_reproduce_and_rerun.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step4_verdict_and_nulls.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step5_baseline_audit_and_gate.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE: feeds exploration lead I0009 -- LIVE (SCREENED_LEAD_MAGNITUDE_CORRECTED; strongest surviving lead)",
+   "priority_score": 32,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "experiments/exploration/E1_I0009_additive_pressure/build_data.py",
+     "line": 116,
+     "quote": "tot = (team_game.groupby([\"team_id\",\"season\"]).agg(s_poss=(\"def_poss\",\"sum\"), ...))"
+    },
+    {
+     "file": "experiments/exploration/E1_I0009_additive_pressure/build_data.py",
+     "line": 120,
+     "quote": "loo_poss = team_game[\"s_poss\"] - team_game[\"def_poss\"]"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 97,
+     "quote": "anchor = self.league_pts_mean[season]"
+    },
+    {
+     "file": "experiments/exploration/E1_I0009_additive_pressure/build_data.py",
+     "line": 109,
+     "quote": "assert set(team_game[\"season\"].unique()).issubset(set(EXPLORATION_SEASONS))"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 2,
+   "note": "Same two pooling steps as its player-level sibling: season LOO columns plus a current-season full-season league anchor in the shrinkage. Partition-asserted on column values.",
+   "exploration_lead": "I0009",
+   "program": "exploration",
+   "priority_rank": 7
+  },
+  {
+   "artifact": "experiments\\player_program\\projected_exposure_v1\\team_possession_prior_v1.parquet",
+   "exists": true,
+   "size_mb": 0.04,
+   "consumer_count": 7,
+   "consumers": [
+    "experiments\\player_program\\data_lane\\R14_D10_COACHING_CORRECTION\\cross_check_vs_d12.py",
+    "experiments\\player_program\\receipt_integrity.py",
+    "experiments\\player_program\\run_turnover_p1.py",
+    "experiments\\player_program\\run_turnover_p1_universe_fix.py",
+    "experiments\\player_program\\stage2b\\P24_INJURY_REGIME_LEDGER\\TESTS.py",
+    "experiments\\player_program\\stage3_score\\S36_IMPLEMENT_ARMS\\arms\\sc08_sigma_margin_map.py",
+    "experiments\\player_program\\validate_projected_exposure.py"
+   ],
+   "passed_node_consumers": [
+    "P24_INJURY_REGIME_LEDGER",
+    "R14_D10_COACHING_CORRECTION",
+    "S36_IMPLEMENT_ARMS"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) P24_INJURY_REGIME_LEDGER, R14_D10_COACHING_CORRECTION, S36_IMPLEMENT_ARMS",
+   "priority_score": 28,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/player_program/build_projected_exposure.py",
+     "line": 296,
+     "quote": "same = [v for (d, s, v) in h if d < r.game_date and s == r.season]"
+    },
+    {
+     "file": "experiments/player_program/build_projected_exposure.py",
+     "line": 297,
+     "quote": "prev = [v for (d, s, v) in h if d < r.game_date and s == r.season - 1]"
+    },
+    {
+     "file": "experiments/player_program/build_projected_exposure.py",
+     "line": 280,
+     "quote": "league_prior_mean = (by_date[\"sum\"].cumsum().shift(1) / by_date[\"count\"].cumsum().shift(1))"
+    },
+    {
+     "file": "experiments/player_program/build_projected_exposure.py",
+     "line": 268,
+     "quote": "sched = base[[\"game_id\",\"team_id\",\"game_date\",\"season\"]]  # identity columns ONLY from base"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "CLEAN. Every pace estimate uses a strict d < r.game_date cutoff; the league fallback is a cumsum().shift(1) by date. Crucially it does NOT inherit the cbs_v15 prediction contamination: build_pace() takes only game_id/team_id/game_date/season from `base`, never a predicted value. Its other input, possessions_raw_v2, is per-game derived. This is the highest-priority item in the sweep (3 PASSED nodes) and it is safe.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 8
+  },
+  {
+   "artifact": "data\\reference\\team_cities.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 6,
+   "consumers": [
+    "experiments\\exploration\\E0_I0012_layer3_noncollinear\\f34_style_rest.py",
+    "experiments\\player_program\\stage2b\\P24_INJURY_REGIME_LEDGER\\TESTS.py",
+    "experiments\\player_program\\stage3_score\\S36_IMPLEMENT_ARMS\\arms\\sc06_sched_fatigue_diff.py",
+    "experiments\\player_program\\stage3_score\\S36_IMPLEMENT_ARMS\\tests\\synthetic_fixture.py",
+    "experiments\\player_program\\stage3_score\\S37_IMPLEMENTATION_AUDIT\\measurements\\m2_sc06.py",
+    "interactions_lab.py"
+   ],
+   "passed_node_consumers": [
+    "P24_INJURY_REGIME_LEDGER",
+    "S36_IMPLEMENT_ARMS"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) P24_INJURY_REGIME_LEDGER, S36_IMPLEMENT_ARMS",
+   "priority_score": 24,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "data/reference/collect_bios.py",
+     "line": 203,
+     "quote": "df = pd.DataFrame(CITY_ROWS, columns=[...])   # a hardcoded offline constant"
+    },
+    {
+     "file": "data/reference/collect_bios.py",
+     "line": 213,
+     "quote": "chk = master_keys.merge(df, ...)   # join-VERIFY only; no value is derived from the master"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "A 16-row static geography dimension (city, arena, lat/lon, elevation, timezone) built from a hardcoded literal. No time-varying value, no fit, no data-derived field. The master is read only to VERIFY that every key joins. Highest consumer count among the reference files (6, two PASSED nodes) and completely inert.",
+   "exploration_lead": null,
+   "program": "reference",
+   "priority_rank": 9
+  },
+  {
+   "artifact": "experiments\\exploration\\E1_I0008_height_mismatch\\frame.parquet",
+   "exists": true,
+   "size_mb": 0.58,
+   "consumer_count": 11,
+   "consumers": [
+    "experiments\\exploration\\E0_I0011_tendency_estimator\\boundary_check.py",
+    "experiments\\exploration\\E0_I0011_tendency_estimator\\score.py",
+    "experiments\\exploration\\E1_I0004_rim_finishing\\_validate_sandbox\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\make_findings.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_addendum.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_noise_floor.py",
+    "experiments\\exploration\\E1_I0008_height_mismatch\\stage1_position_null.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\grid.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\i0009_baseline_delta.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\placebo.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD: lead I0008 -- DEAD (KILL at Stage-1 noise-floor gate)",
+   "priority_score": 22,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "experiments/exploration/E1_I0008_height_mismatch/build_frame.py",
+     "line": 117,
+     "quote": "What DOES apply: the minutes WEIGHTS are full-season, so the aggregate is not strictly pregame-observable at game t.   [the script says so itself]"
+    },
+    {
+     "file": "experiments/exploration/E1_I0008_height_mismatch/build_frame.py",
+     "line": 133,
+     "quote": "season_minutes.groupby([\"team_id\",\"season\"])[\"minutes\"].rank(...)  # top-8 by TOTAL SEASON minutes"
+    },
+    {
+     "file": "experiments/exploration/E1_I0008_height_mismatch/build_frame.py",
+     "line": 90,
+     "quote": "mp = mp[mp[\"season\"].isin(EXPLORATION_SEASONS)].copy()  # FILTER-POINT"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "Opponent roster/rotation height aggregates use full-season minutes weights and a top-8 rank on total season minutes -- both read later games in the same season. The script documents this itself at line 114-118. Lead I0008 is KILLED, so this is housekeeping.",
+   "exploration_lead": "I0008",
+   "program": "exploration",
+   "priority_rank": 10
+  },
+  {
+   "artifact": "experiments\\player_program\\turnover_targets_v1\\player_turnover_targets_v1.parquet",
+   "exists": true,
+   "size_mb": 0.26,
+   "consumer_count": 7,
+   "consumers": [
+    "experiments\\exploration\\E0_I0005_turnover_interaction\\build_data.py",
+    "experiments\\exploration\\E0_I0009_additive_pressure\\build_data.py",
+    "experiments\\player_program\\discovery_wave_1\\retrospective_gate_audit.py",
+    "experiments\\player_program\\receipt_integrity.py",
+    "experiments\\player_program\\run_turnover_p1.py",
+    "experiments\\player_program\\run_turnover_p1_universe_fix.py",
+    "experiments\\player_program\\validate_turnover_targets.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 21,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/player_program/build_turnover_targets.py",
+     "line": 108,
+     "quote": "expo = long.groupby([\"game_id\",\"offense_team_id\",\"player_id\"]).size()  # keyed on game_id"
+    },
+    {
+     "file": "experiments/player_program/build_turnover_targets.py",
+     "line": 128,
+     "quote": "tot = pa.groupby([\"game_id\",\"turnover_team_id\",\"attributed_player_id\"]).size()"
+    },
+    {
+     "file": "experiments/player_program/build_turnover_targets.py",
+     "line": 150,
+     "quote": "players[\"turnovers_per_100_off_poss\"] = 100.0 * turnovers / realised_off_possessions"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "CLEAN. A realised-OUTCOME target artifact. EVERY aggregation is keyed on game_id -- there is no cross-game, cross-season or population-level step anywhere in the file. Each row's value is that player-game's own realised turnovers over its own realised possessions, bounded by its own date.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 11
+  },
+  {
+   "artifact": "data\\props_capture\\historical\\master_props_historical.csv",
+   "exists": true,
+   "size_mb": 7.83,
+   "consumer_count": 5,
+   "consumers": [
+    "M13_PLAYER_VALUE_TRANSLATION",
+    "M14_MODEL_MARKET_RESIDUAL",
+    "MODEL_VS_MARKET",
+    "calibrated_prob_edge.py",
+    "props_edge.py"
+   ],
+   "passed_node_consumers": [
+    "M13_PLAYER_VALUE_TRANSLATION",
+    "M14_MODEL_MARKET_RESIDUAL"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) M13_PLAYER_VALUE_TRANSLATION, M14_MODEL_MARKET_RESIDUAL",
+   "priority_score": 20,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> snapshot_requested_utc, snapshot_returned_utc, last_update"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: M13 + M14 PASSED",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 12
+  },
+  {
+   "artifact": "experiments\\exploration\\E0_I0005_turnover_interaction\\player_game_analysis.csv",
+   "exists": true,
+   "size_mb": 2.36,
+   "consumer_count": 9,
+   "consumers": [
+    "experiments\\exploration\\E0_I0005_turnover_interaction\\analyze.py",
+    "experiments\\exploration\\E0_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_additive_pressure\\analyze.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E0_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\src\\E1_analyze_original.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step1_audit.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step23_reproduce_and_rerun.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step4_verdict_and_nulls.py",
+    "experiments\\exploration\\E1_I0009_r2_rerun\\step5_baseline_audit_and_gate.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD: lead I0005 -- superseded by I0009",
+   "priority_score": 18,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "experiments/exploration/E0_I0005_turnover_interaction/build_data.py",
+     "line": 163,
+     "quote": "# 4a. E0-comparable LOO tendency (hindsight; NOT pregame-observable)"
+    },
+    {
+     "file": "experiments/exploration/E0_I0005_turnover_interaction/build_data.py",
+     "line": 167,
+     "quote": "tov[\"loo_poss\"] = tov[\"season_poss\"] - tov[\"realised_off_possessions\"]"
+    },
+    {
+     "file": "experiments/exploration/E0_I0005_turnover_interaction/build_data.py",
+     "line": 116,
+     "quote": "tot = (team_game.groupby([\"team_id\",\"season\"]).agg(s_poss=(\"def_poss\",\"sum\"), ...))"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 39,
+     "quote": "lg = team_game.groupby(\"season\").agg(p=(\"def_poss\",\"sum\"), t=(\"def_tov\",\"sum\"), ...)"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 55,
+     "quote": "self.anchor[(team, season)] = self.league_mean[season]   # CURRENT season full-season mean"
+    },
+    {
+     "file": "experiments/exploration/E0_I0009_additive_pressure/pressure_lib.py",
+     "line": 97,
+     "quote": "anchor = self.league_pts_mean[season]   # defrtg always shrunk to the current season league mean"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 2,
+   "note": "TWO independent season-pooling steps. (1) The `*_loo` columns are whole-season-minus-this-game leave-one-out -- they read LATER games in the same season; the script labels them 'hindsight; NOT pregame-observable'. (2) The `*_pregame` columns, despite the name, are shrunk toward an anchor that is the CURRENT season's full-season league mean whenever no prior season exists, and ALWAYS for defrtg. Both are confined to 2021-2024 by hard column-value asserts, so this is within-partition look-ahead, not holdout contamination. The file must not be manifested 'row'.",
+   "exploration_lead": "I0005",
+   "program": "exploration",
+   "priority_rank": 13
+  },
+  {
+   "artifact": "experiments\\player_program\\turnover_targets_v1\\team_turnover_reconciliation_v1.parquet",
+   "exists": true,
+   "size_mb": 0.03,
+   "consumer_count": 6,
+   "consumers": [
+    "experiments\\player_program\\discovery_wave_1\\retrospective_gate_audit.py",
+    "experiments\\player_program\\receipt_integrity.py",
+    "experiments\\player_program\\run_turnover_p1.py",
+    "experiments\\player_program\\run_turnover_p1_universe_fix.py",
+    "experiments\\player_program\\run_turnover_p2.py",
+    "experiments\\player_program\\validate_turnover_targets.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 18,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/player_program/build_turnover_targets.py",
+     "line": 162,
+     "quote": "team_tot = T_team.groupby([\"game_id\",\"turnover_team_id\"]).size()"
+    },
+    {
+     "file": "experiments/player_program/build_turnover_targets.py",
+     "line": 189,
+     "quote": "players.groupby([\"game_id\",\"team_id\"])[\"turnovers\"].sum()"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "CLEAN, same reasoning: strictly game-keyed reconciliation of realised team turnovers.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 14
+  },
+  {
+   "artifact": "experiments\\prediction_contract_v5\\player_game_enriched.parquet",
+   "exists": true,
+   "size_mb": 3.29,
+   "consumer_count": 6,
+   "consumers": [
+    "experiments\\player_program\\discovery_wave_1\\retrospective_gate_audit.py",
+    "experiments\\player_program\\prescore_receipt_v15.py",
+    "experiments\\player_program\\run_turnover_p1.py",
+    "experiments\\player_program\\run_turnover_p1_universe_fix.py",
+    "experiments\\player_program\\run_turnover_p2.py",
+    "experiments\\player_program\\stage15_receipts.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 18,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "prediction_contract_v5_enrich.py",
+     "line": 13,
+     "quote": "1. pre-cutoff CANDIDATE and FEATURE information  -- Stage 1 frozen output"
+    },
+    {
+     "file": "prediction_contract_v5_enrich.py",
+     "line": 15,
+     "quote": "3. PREDICTION OBLIGATIONS -- derived from tier, never from outcomes"
+    },
+    {
+     "file": "experiments/idea_log.jsonl",
+     "line": 0,
+     "quote": "H1 correction record, notable_row_granular_and_therefore_SAFE: \"experiments/prediction_contract_v*/**.parquet\""
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "The v5 contract adds per-row outcome LABELS and obligation declarations to a frozen per-row candidate universe. No fit, no pooled statistic, no cross-row aggregation -- the module's whole discipline is that each row's cutoff bounds its own evidence. Independently corroborated by the H1 correction record, which already names prediction_contract_v* as row-granular.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 15
+  },
+  {
+   "artifact": "experiments\\exploration\\E1_I0004_rim_finishing\\_validate_sandbox\\grid_metrics.parquet",
+   "exists": true,
+   "size_mb": 1.05,
+   "consumer_count": 4,
+   "consumers": [
+    "experiments\\exploration\\E1_I0004_rim_finishing\\_validate_sandbox\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\baseline\\validate_baseline.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\folds.py",
+    "experiments\\exploration\\E1_I0011_split_alpha\\role_conditional.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE: feeds exploration lead I0011 -- LIVE (keep-as-lead x3)",
+   "priority_score": 16,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "PARTITION_ONLY_LOOKAHEAD",
+   "evidence": [
+    {
+     "file": "experiments/exploration/E1_I0011_split_alpha/grid.py",
+     "line": 157,
+     "quote": "met.to_parquet(HERE + r\"\\grid_metrics.parquet\", index=False)"
+    },
+    {
+     "file": "(lineage)",
+     "line": 0,
+     "quote": "built from E1_I0011 frame.parquet, which is artifact-granular; grid metrics are themselves aggregates over the whole evaluation set"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "A grid of evaluation METRICS, each computed by pooling over the whole evaluation set. Artifact-granular by construction as well as by inheritance. The two paths are byte-identical (sha256 D6580165...).",
+   "exploration_lead": "I0011",
+   "program": "exploration",
+   "priority_rank": 16
+  },
+  {
+   "artifact": "data\\possessions\\possessions.parquet",
+   "exists": true,
+   "size_mb": 2.81,
+   "consumer_count": 5,
+   "consumers": [
+    "experiments\\exploration\\E0_I0003_rebound_interaction\\aggregate_and_test.py",
+    "experiments\\exploration\\E0_I0003_rebound_interaction\\build_events.py",
+    "experiments\\player_program\\event_inventory.py",
+    "experiments\\player_program\\possession_artifact_v2.py",
+    "experiments\\player_program\\validate_canonical_events.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 15,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "MEDIUM",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/player_program/possession_artifact_v1.py",
+     "line": 4,
+     "quote": "**NOTHING IS FITTED.** ...  [same producer family as possessions_raw_v1]"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "The repo-level possession store, same per-game non-fitted construction. MEDIUM: producer identified and its no-fit contract read, full body not traced.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 17
+  },
+  {
+   "artifact": "data\\reference\\player_bios.csv",
+   "exists": true,
+   "size_mb": 0.15,
+   "consumer_count": 4,
+   "consumers": [
+    "experiments\\exploration\\E0_I0006_usage_redistribution\\analyze_clean.py",
+    "experiments\\exploration\\E0_I0006_usage_redistribution\\position_check.py",
+    "experiments\\exploration\\E0_I0008_height_differential\\build.py",
+    "experiments\\exploration\\E0_I0008_height_differential\\build_rung1_rung2.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 12,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "MEDIUM",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "data/reference/collect_bios.py",
+     "line": 438,
+     "quote": "out = REF / \"player_bios.csv\"   # keyed (player_id, season)"
+    },
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s11_bios_probe.py",
+     "line": 0,
+     "quote": "probe on 2021-2024 rows only: age varies across seasons for 182/184 multi-season players; weight_lbs for 44/184; position_raw/college/country for 0/184"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "15 min",
+   "group": 2,
+   "note": "Biographical attributes keyed (player_id, season). The probe settles the question the brief would otherwise leave open: the values are NOT one current-state pull replicated across a player's seasons -- age and weight genuinely vary season to season, so each row is a per-season fact. position_raw/college/country are constant because they are genuinely time-invariant. MEDIUM not HIGH for one reason: spot-checking `age` against `birthdate` suggests it may be off by about a year (Taurasi shows 40 in 2021). That is a DATA-QUALITY question, not a granularity one, but it deserves a five-minute check before the manifest is written.",
+   "exploration_lead": null,
+   "program": "reference",
+   "priority_rank": 18
+  },
+  {
+   "artifact": "experiments\\market_program\\SCORE_BASELINES\\score_baseline_rows.parquet",
+   "exists": true,
+   "size_mb": 0.19,
+   "consumer_count": 3,
+   "consumers": [
+    "experiments\\player_program\\stage3_score\\S36_IMPLEMENT_ARMS\\runner\\universe.py",
+    "experiments\\player_program\\stage3_score\\S36_IMPLEMENT_ARMS\\tests\\TESTS.py",
+    "experiments\\player_program\\stage3_score\\S37_IMPLEMENTATION_AUDIT\\measurements\\m1_universe.py"
+   ],
+   "passed_node_consumers": [
+    "S36_IMPLEMENT_ARMS"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) S36_IMPLEMENT_ARMS",
+   "priority_score": 12,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/market_program/SCORE_BASELINES/build_score_baselines.py",
+     "line": 348,
+     "quote": "cum_n = by_date[\"n\"].cumsum().shift(1)"
+    },
+    {
+     "file": "experiments/market_program/SCORE_BASELINES/build_score_baselines.py",
+     "line": 386,
+     "quote": "h = [(p, o) for (d, p, o) in hist.get((team_id, season), []) if d < date]"
+    },
+    {
+     "file": "experiments/market_program/SCORE_BASELINES/build_score_baselines.py",
+     "line": 425,
+     "quote": "train = d[d[\"season\"] < s]   # walk-forward calibration, strictly prior seasons only"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "CLEAN. Three independent as-of constructions and no pooled one: strictly-lagged league expanding means by date, team season-to-date with an explicit d < date filter, and a win-probability logistic calibrated walk-forward on strictly prior seasons. The `ridge=1e-9` in fit_logistic_1d is numerical conditioning, not shrinkage toward a population prior.",
+   "exploration_lead": null,
+   "program": "market_program",
+   "priority_rank": 19
+  },
+  {
+   "artifact": "experiments\\player_program\\possessions_v2\\possessions_raw_v2.parquet",
+   "exists": true,
+   "size_mb": 4.47,
+   "consumer_count": 4,
+   "consumers": [
+    "experiments\\exploration\\E0_I0005_turnover_interaction\\build_data.py",
+    "experiments\\exploration\\E0_I0008_height_differential\\build.py",
+    "experiments\\exploration\\E0_I0009_additive_pressure\\build_data.py",
+    "experiments\\player_program\\validate_canonical_events.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 12,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/player_program/possession_artifact_v2.py",
+     "line": 4,
+     "quote": "**NOTHING IS FITTED.** No RAPM, no rate model, no ridge penalty, no player ranking ..."
+    },
+    {
+     "file": "experiments/player_program/possession_artifact_v2.py",
+     "line": 116,
+     "quote": "prev_end = pos.groupby(\"game_id\")[\"end_sec\"].shift(1)   # within-game only"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "A derived EVENT artifact: possessions reconstructed per game from the play-by-play. The only ordering operation is a within-game shift(1). Nothing is fitted (the module header says so and the code bears it out). Each possession row is bounded by its own game's date.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 20
+  },
+  {
+   "artifact": "experiments\\player_program\\projected_exposure_v1\\projected_player_possessions_v1.parquet",
+   "exists": true,
+   "size_mb": 5.34,
+   "consumer_count": 4,
+   "consumers": [
+    "experiments\\player_program\\run_turnover_p1.py",
+    "experiments\\player_program\\run_turnover_p1_universe_fix.py",
+    "experiments\\player_program\\run_turnover_p2.py",
+    "experiments\\player_program\\validate_projected_exposure.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 12,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "SPANS_HOLDOUT",
+   "evidence": [
+    {
+     "file": "experiments/player_program/build_projected_exposure.py",
+     "line": 190,
+     "quote": "for f in sorted(PRED_DIR.glob(\"predictions__p_active__*.parquet\"))  # ALL seasons incl. 2025/2026"
+    },
+    {
+     "file": "experiments/player_program/build_projected_exposure.py",
+     "line": 238,
+     "quote": "base[\"raw_expected_minutes\"] = base[\"p_active\"] * base[\"e_minutes_given_active\"]"
+    },
+    {
+     "file": "experiments/cbs_v15_player_oof_v5/attempt_001/predictions__p_active__2021.parquet.manifest.json",
+     "line": 4,
+     "quote": "\"asof_granularity\": \"artifact\"   [the INPUT declares artifact granularity]"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "15 min",
+   "group": 1,
+   "note": "INHERITANCE. Every allocated minute is a function of raw_expected_minutes = p_active x e_minutes_given_active, both read from cbs_v15_player_oof_v5 prediction files whose OWN manifests declare asof_granularity='artifact'. The glob concatenates all seasons 2021-2026 into one file. Weakest-link rule: this artifact is artifact-granular. MITIGATING (do not lose this): each per-season prediction file was fit only on STRICTLY PRIOR seasons (the 2024 file's manifest says fit_seasons [2021,2022,2023]), so a 2021 row did not see 2026. The binary row/artifact vocabulary cannot express that; see the convention decision in group 3.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 21
+  },
+  {
+   "artifact": "experiments\\player_program\\turnover_p1_v1\\turnover_p1_predictions_intrinsic.parquet",
+   "exists": true,
+   "size_mb": 2.29,
+   "consumer_count": 3,
+   "consumers": [
+    "experiments\\player_program\\discovery_wave_1\\retrospective_gate_audit.py",
+    "experiments\\player_program\\run_turnover_p1_universe_fix.py",
+    "experiments\\player_program\\run_turnover_p2.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 9,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "SPANS_HOLDOUT",
+   "evidence": [
+    {
+     "file": "experiments/player_program/run_turnover_p1.py",
+     "line": 77,
+     "quote": "# advance history AFTER predicting the whole day   [arms A-D are strictly prior: CLEAN]"
+    },
+    {
+     "file": "experiments/player_program/run_turnover_p1.py",
+     "line": 71,
+     "quote": "out[\"B_career_shrunk\"] = (cx + EB_PRIOR_K * r_lg) / (cn + EB_PRIOR_K)  # r_lg = running prior-day league mean"
+    },
+    {
+     "file": "experiments/player_program/run_turnover_p1.py",
+     "line": 108,
+     "quote": "R = R.merge(PX, on=[\"game_id\",\"team_id\",\"player_id\"], how=\"left\")  # <-- PX = projected_player_possessions_v1"
+    },
+    {
+     "file": "experiments/player_program/run_turnover_p1.py",
+     "line": 113,
+     "quote": "df = R if name == \"intrinsic\" else both   # the intrinsic frame STILL carries the merged projected column"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 1,
+   "note": "MIXED, and the mix is the finding. The four rate arms A-D are genuinely row-clean: a strict day-by-day chronological pass that advances history only AFTER predicting the whole day, with a preregistered (not learned) EB_PRIOR_K. BUT line 108 merges projected_off_possessions from the artifact-granular projected exposure artifact, and that column is still present in the written 'intrinsic' frame. Weakest link makes the FILE artifact-granular even though its headline estimator is clean. Worth stating on the manifest so the clean part is not lost.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 22
+  },
+  {
+   "artifact": "experiments\\market_program\\INJURY_OFFICIAL\\live\\capture_log.csv",
+   "exists": true,
+   "size_mb": 0.02,
+   "consumer_count": 2,
+   "consumers": [
+    "experiments\\market_program\\M06_INJURY_REACTION_STUDY\\analyze_feasibility.py",
+    "experiments\\player_program\\stage2b\\P2B_MARKET_ODDS_ELIGIBILITY\\run_measurements.py"
+   ],
+   "passed_node_consumers": [
+    "M06_INJURY_REACTION_STUDY",
+    "P2B_MARKET_ODDS_ELIGIBILITY"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) M06_INJURY_REACTION_STUDY, P2B_MARKET_ODDS_ELIGIBILITY",
+   "priority_score": 8,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> attempted_ts_utc, retrieval_ts_utc"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: M06 + P2B PASSED",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 23
+  },
+  {
+   "artifact": "experiments\\player_program\\data_lane\\D12_COACHING_HISTORY\\team_season_coverage_v1.csv",
+   "exists": true,
+   "size_mb": 0.01,
+   "consumer_count": 2,
+   "consumers": [
+    "experiments\\player_program\\data_lane\\D12_COACHING_HISTORY\\TESTS.py",
+    "experiments\\player_program\\data_lane\\R14_D10_COACHING_CORRECTION\\cross_check_vs_d12.py"
+   ],
+   "passed_node_consumers": [
+    "D12_COACHING_HISTORY",
+    "R14_D10_COACHING_CORRECTION"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) D12_COACHING_HISTORY, R14_D10_COACHING_CORRECTION",
+   "priority_score": 8,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "MEDIUM",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/player_program/data_lane/D12_COACHING_HISTORY/build_coaching_history.py",
+     "line": 466,
+     "quote": "season_open = ts.groupby(\"season\")[\"first_game_date\"].min().to_dict()"
+    },
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header: season, team_id, franchise, first_game_date, ... seasons_carried_forward, cutoff_status"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "10 min",
+   "group": 3,
+   "note": "76 rows, one per team-season. Each row's fields are computed from its OWN season plus carried-forward PRIOR seasons -- never a later one. So filtering by season IS sufficient and the policy's purpose is met. The reason this needs a human is a VOCABULARY question, not a safety one: 'row' is defined as bounded by the row's own DATE, and this row's bound is its own SEASON. See the convention decision in group 3.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 24
+  },
+  {
+   "artifact": "experiments\\player_program\\event_contract_v1\\canonical_player_events_v1.parquet",
+   "exists": true,
+   "size_mb": 22.86,
+   "consumer_count": 2,
+   "consumers": [
+    "experiments\\exploration\\E0_I0008_height_differential\\build.py",
+    "experiments\\player_program\\validate_canonical_events.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 6,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/player_program/build_canonical_events.py",
+     "line": 295,
+     "quote": "\"\"\"Normalise ONE game and apply keying, ordering and provenance."
+    },
+    {
+     "file": "experiments/player_program/build_canonical_events.py",
+     "line": 300,
+     "quote": "df = normalise_legacy(game_id, path) if source == \"legacy\" else normalise_cdn(game_id, path)"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "A schema-normalisation artifact built one game at a time from two raw play-by-play stores. 'Normalise' here means schema harmonisation, not statistical normalisation -- this is exactly the kind of regex false-positive the brief warns about, and reading the function confirms it is per-game. Each event row is bounded by its own game.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 25
+  },
+  {
+   "artifact": "experiments\\player_program\\fits_v1\\p3_coefficients_v1.parquet",
+   "exists": true,
+   "size_mb": 0.06,
+   "consumer_count": 2,
+   "consumers": [
+    "fit_rate_and_p3.py",
+    "run_p3_downstream.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 6,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "SPANS_HOLDOUT",
+   "evidence": [
+    {
+     "file": "experiments/player_program/fit_rate_and_p3.py",
+     "line": 391,
+     "quote": "\"model\": \"pooled empirical-Bayes shrinkage; player effect shrunk toward the league ...\""
+    },
+    {
+     "file": "experiments/player_program/fit_rate_and_p3.py",
+     "line": 164,
+     "quote": "beta = ridge_solve(D, lo, ld)   # a single global ridge fit over the whole training window"
+    },
+    {
+     "file": "experiments/player_program/fit_rate_and_p3.py",
+     "line": 144,
+     "quote": "tr = d[d[\"season\"] < test_s]   # WALK-FORWARD: train strictly earlier seasons"
+    },
+    {
+     "file": "experiments/player_program/fit_rate_and_p3.py",
+     "line": 182,
+     "quote": "\"training_cutoff_season\": int(test_s) - 1, \"player_id\": int(p),   # per-ROW declared cutoff"
+    },
+    {
+     "file": "experiments/player_program/fit_rate_and_p3.py",
+     "line": 35,
+     "quote": "TEST_SEASONS = (2022, 2023, 2024, 2025, 2026)   # so rows exist whose training window includes 2025"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "15 min",
+   "group": 1,
+   "note": "A FIT artifact, and the most interesting case in the sweep. Granularity is unambiguously ARTIFACT: a coefficient is one number pooled over every possession in its training window, with empirical-Bayes shrinkage toward a league prior. But the fit is WALK-FORWARD (train strictly earlier seasons) and -- unusually -- EVERY ROW CARRIES ITS OWN `training_cutoff_season`. So the file is self-describing: rows with cutoff <= 2024 saw only exploration-partition data, and rows with cutoff 2025 did not. Because TEST_SEASONS runs to 2026, the file DOES contain rows fit through 2025, so the file as a whole spans the holdout -- but a consumer can filter on `training_cutoff_season` and know exactly what it has. That column is the strongest existing argument for the convention decision in group 3.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 26
+  },
+  {
+   "artifact": "experiments\\player_program\\projected_exposure_v1\\projected_team_rotations_v1.parquet",
+   "exists": true,
+   "size_mb": 0.37,
+   "consumer_count": 2,
+   "consumers": [
+    "experiments\\player_program\\run_turnover_p1_universe_fix.py",
+    "experiments\\player_program\\validate_projected_exposure.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 6,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "SPANS_HOLDOUT",
+   "evidence": [
+    {
+     "file": "experiments/player_program/build_projected_exposure.py",
+     "line": 627,
+     "quote": "teams.to_parquet(OUT / \"projected_team_rotations_v1.parquet\", index=False)"
+    },
+    {
+     "file": "experiments/player_program/build_projected_exposure.py",
+     "line": 238,
+     "quote": "base[\"raw_expected_minutes\"] = base[\"p_active\"] * base[\"e_minutes_given_active\"]"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 1,
+   "note": "Team-level roll-up of the same allocation; identical inheritance from the cbs_v15 predictions.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 27
+  },
+  {
+   "artifact": "data\\injury_capture\\injury_log.csv",
+   "exists": true,
+   "size_mb": 0.06,
+   "consumer_count": 1,
+   "consumers": [
+    "experiments\\player_program\\ops_lane\\O14_OPS_ENTITY_RESOLUTION\\repro_entity_resolution.py"
+   ],
+   "passed_node_consumers": [
+    "O14_OPS_ENTITY_RESOLUTION"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) O14_OPS_ENTITY_RESOLUTION",
+   "priority_score": 4,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> capture_utc, report_date, game_date"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: O14 PASSED",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 28
+  },
+  {
+   "artifact": "data\\injury_history\\injury_history.csv",
+   "exists": true,
+   "size_mb": 0.92,
+   "consumer_count": 1,
+   "consumers": [
+    "experiments\\player_program\\stage2b\\P24_INJURY_REGIME_LEDGER\\TESTS.py"
+   ],
+   "passed_node_consumers": [
+    "P24_INJURY_REGIME_LEDGER"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) P24_INJURY_REGIME_LEDGER",
+   "priority_score": 4,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> date"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: P24 PASSED",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 29
+  },
+  {
+   "artifact": "data\\ref_assignments\\assignments_log.csv",
+   "exists": true,
+   "size_mb": 0.01,
+   "consumer_count": 1,
+   "consumers": [
+    "experiments\\player_program\\ops_lane\\O11_OBLIGATION_DISCOVERY_LEAD_WINDOW\\measure_discovery_lag.py"
+   ],
+   "passed_node_consumers": [
+    "O11_OBLIGATION_DISCOVERY_LEAD_WINDOW"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) O11_OBLIGATION_DISCOVERY_LEAD_WINDOW",
+   "priority_score": 4,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> capture_utc, game_date"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: O11 PASSED",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 30
+  },
+  {
+   "artifact": "experiments\\market_program\\INJURY_OFFICIAL\\live\\injury_snapshots.csv",
+   "exists": true,
+   "size_mb": 0.63,
+   "consumer_count": 1,
+   "consumers": [
+    "experiments\\market_program\\M06_INJURY_REACTION_STUDY\\analyze_feasibility.py"
+   ],
+   "passed_node_consumers": [
+    "M06_INJURY_REACTION_STUDY"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) M06_INJURY_REACTION_STUDY",
+   "priority_score": 4,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> retrieval_ts_utc, ingestion_ts_utc, provider_publication_ts_*, url_slot_ts_*"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: M06 PASSED",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 31
+  },
+  {
+   "artifact": "experiments\\market_program\\INJURY_OFFICIAL\\live\\status_transitions.csv",
+   "exists": true,
+   "size_mb": 0.01,
+   "consumer_count": 1,
+   "consumers": [
+    "experiments\\market_program\\M06_INJURY_REACTION_STUDY\\analyze_feasibility.py"
+   ],
+   "passed_node_consumers": [
+    "M06_INJURY_REACTION_STUDY"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) M06_INJURY_REACTION_STUDY",
+   "priority_score": 4,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> t_lower_utc_bound, t_upper_utc_bound"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: M06 PASSED",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 32
+  },
+  {
+   "artifact": "experiments\\market_program\\M13_PLAYER_VALUE_TRANSLATION\\translation_rows.parquet",
+   "exists": true,
+   "size_mb": 0.53,
+   "consumer_count": 1,
+   "consumers": [
+    "M14_MODEL_MARKET_RESIDUAL\\build_residual.py:66"
+   ],
+   "passed_node_consumers": [
+    "M13_PLAYER_VALUE_TRANSLATION",
+    "M14_MODEL_MARKET_RESIDUAL"
+   ],
+   "consumer_liveness": "LIVE: consumed by PASSED graph node(s) M13_PLAYER_VALUE_TRANSLATION, M14_MODEL_MARKET_RESIDUAL",
+   "priority_score": 4,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/build_translation.py",
+     "line": 390,
+     "quote": "q = pd.qcut(fp[\"pred_point\"], 10, duplicates=\"drop\")   # deciles over the WHOLE population"
+    },
+    {
+     "file": "experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/build_translation.py",
+     "line": 401,
+     "quote": "r_pred = pd.Series(fp[\"pred_point\"]).rank().to_numpy()   # full-population rank"
+    },
+    {
+     "file": "experiments/market_program/M13_PLAYER_VALUE_TRANSLATION/build_translation.py",
+     "line": 405,
+     "quote": "# heteroscedastic normal: |residual| ~ a + b*pred_point (closed-form OLS)"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "already in flight",
+   "group": 3,
+   "note": "Full-population qcut deciles, full-population ranks and a closed-form OLS variance model -- all pooled steps. DO NOT ACT ON THIS ONE HERE: a concurrent agent (MEASURE_F1_m13_fitpool) is measuring exactly this fit pool, and D075 records the M13 finding as HALT-AND-RAISED and USER_REQUIRED because it touches PASSED nodes. Listed for completeness only.",
+   "exploration_lead": null,
+   "program": "market_program",
+   "priority_rank": 33
+  },
+  {
+   "artifact": "data\\masters\\master_player.csv",
+   "exists": true,
+   "size_mb": 15.21,
+   "consumer_count": 1,
+   "consumers": [
+    "audit_completeness.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 3,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> game_date, observed_time"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: -",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 34
+  },
+  {
+   "artifact": "data\\props_capture\\master_props.csv",
+   "exists": true,
+   "size_mb": 0.43,
+   "consumer_count": 1,
+   "consumers": [
+    "props_edge.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 3,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> snapshot_utc, last_update"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: -",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 35
+  },
+  {
+   "artifact": "data\\reference\\tip_times.csv",
+   "exists": true,
+   "size_mb": 0.16,
+   "consumer_count": 1,
+   "consumers": [
+    "historical_props_backfill.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 3,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/exploration/MANIFEST_REMEDIATION/s10_capture_headers.py",
+     "line": 0,
+     "quote": "header inspection: per-row as-of columns present -> game_date, tip_utc"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "An append-only CAPTURE or per-game record. Every row carries its own observation/capture timestamp, so each row is bounded by its own as-of time by construction. Nothing is fitted and nothing is aggregated across rows. Consumed by: -",
+   "exploration_lead": null,
+   "program": "capture",
+   "priority_rank": 36
+  },
+  {
+   "artifact": "experiments\\market_program\\SCORE_BASELINES\\market_paired_rows.parquet",
+   "exists": true,
+   "size_mb": 0.07,
+   "consumer_count": 1,
+   "consumers": [
+    "emitted for downstream leaderboard reuse"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 3,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "MEDIUM",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/market_program/SCORE_BASELINES/build_score_baselines.py",
+     "line": 804,
+     "quote": "paired_rows.to_parquet(OUT_DIR / \"market_paired_rows.parquet\", index=False)"
+    },
+    {
+     "file": "experiments/market_program/SCORE_BASELINES/build_score_baselines.py",
+     "line": 348,
+     "quote": "cum_n = by_date[\"n\"].cumsum().shift(1)   [same producer, same as-of discipline]"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 2,
+   "note": "Same producer as score_baseline_rows; pairs baseline rows against captured market lines, each carrying its own snapshot timestamp. MEDIUM: the pairing block itself was not read line by line.",
+   "exploration_lead": null,
+   "program": "market_program",
+   "priority_rank": 37
+  },
+  {
+   "artifact": "experiments\\player_program\\possessions_v1\\possessions_raw_v1.parquet",
+   "exists": true,
+   "size_mb": 4.4,
+   "consumer_count": 1,
+   "consumers": [
+    "experiments\\player_program\\possession_artifact_v2.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 3,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "MEDIUM",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "experiments/player_program/possession_artifact_v1.py",
+     "line": 4,
+     "quote": "**NOTHING IS FITTED.** No RAPM, no rate model, no ridge penalty, no player ranking, no offensive ..."
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "Superseded v1 of the possession artifact; same non-fitting per-game construction as v2. MEDIUM rather than HIGH because only the module contract header was read, not the full body.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 38
+  },
+  {
+   "artifact": "experiments\\player_program\\turnover_p1_v1\\turnover_p1_predictions_operational_corrected.parquet",
+   "exists": true,
+   "size_mb": 2.82,
+   "consumer_count": 1,
+   "consumers": [
+    "experiments\\player_program\\run_turnover_p2.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 3,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "SPANS_HOLDOUT",
+   "evidence": [
+    {
+     "file": "experiments/player_program/run_turnover_p1_universe_fix.py",
+     "line": 291,
+     "quote": "O.to_parquet(OUT / \"turnover_p1_predictions_operational_corrected.parquet\", index=False)"
+    },
+    {
+     "file": "experiments/player_program/run_turnover_p1.py",
+     "line": 112,
+     "quote": "(\"operational\", \"projected_off_possessions\")  # exposure IS the projected artifact"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 1,
+   "note": "The operational track multiplies each rate by projected_off_possessions, so it inherits the cbs_v15 chain directly and unambiguously.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 39
+  },
+  {
+   "artifact": "experiments\\player_program\\turnover_p2_v1\\turnover_role_context_features_v1.parquet",
+   "exists": true,
+   "size_mb": 2.5,
+   "consumer_count": 1,
+   "consumers": [
+    "experiments\\player_program\\discovery_wave_1\\retrospective_gate_audit.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 3,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "HIGH",
+   "holdout_risk": "SPANS_HOLDOUT",
+   "evidence": [
+    {
+     "file": "experiments/player_program/run_turnover_p2.py",
+     "line": 113,
+     "quote": "F[\"proj_minutes_share\"] = F[\"projected_minutes\"] / g[\"projected_minutes\"].transform(\"sum\")"
+    },
+    {
+     "file": "experiments/player_program/run_turnover_p2.py",
+     "line": 100,
+     "quote": "columns=[... \"projected_minutes\", \"projected_off_possessions\", \"p_active\"]  # from projected_exposure_v1"
+    },
+    {
+     "file": "experiments/player_program/run_turnover_p2.py",
+     "line": 126,
+     "quote": "snap_min = dict(ewm_min); snap_fga = dict(ewm_fga)   # trailing features ARE strictly prior: clean"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "10 min",
+   "group": 1,
+   "note": "Feature group 1 (proj_minutes_share, proj_off_poss_share, proj_rotation_rank, proj_top5_concentration) is derived from projected_player_possessions_v1 and inherits its artifact granularity. Feature groups 2-3 (trailing EWMA) are strictly prior and clean -- the day loop snapshots state BEFORE applying the day's updates. Mixed file, artifact-granular overall.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 40
+  },
+  {
+   "artifact": "experiments\\prediction_contract_v5\\candidacy_exclusions.parquet",
+   "exists": true,
+   "size_mb": 0.01,
+   "consumer_count": 1,
+   "consumers": [
+    "experiments\\player_program\\stage15_receipts.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 3,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "prediction_contract_v5_enrich.py",
+     "line": 13,
+     "quote": "1. pre-cutoff CANDIDATE and FEATURE information  -- Stage 1 frozen output"
+    },
+    {
+     "file": "prediction_contract_v5_enrich.py",
+     "line": 15,
+     "quote": "3. PREDICTION OBLIGATIONS -- derived from tier, never from outcomes"
+    },
+    {
+     "file": "experiments/idea_log.jsonl",
+     "line": 0,
+     "quote": "H1 correction record, notable_row_granular_and_therefore_SAFE: \"experiments/prediction_contract_v*/**.parquet\""
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "The v5 contract adds per-row outcome LABELS and obligation declarations to a frozen per-row candidate universe. No fit, no pooled statistic, no cross-row aggregation -- the module's whole discipline is that each row's cutoff bounds its own evidence. Independently corroborated by the H1 correction record, which already names prediction_contract_v* as row-granular.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 41
+  },
+  {
+   "artifact": "experiments\\prediction_contract_v5\\player_game.parquet",
+   "exists": true,
+   "size_mb": 2.95,
+   "consumer_count": 1,
+   "consumers": [
+    "prediction_contract_v5_enrich.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "LIVE-ADJACENT: in the player/market program lineage, no PASSED node names it",
+   "priority_score": 3,
+   "proposed_asof_granularity": "ROW",
+   "confidence": "HIGH",
+   "holdout_risk": "NONE",
+   "evidence": [
+    {
+     "file": "prediction_contract_v5.py",
+     "line": 13,
+     "quote": "1. pre-cutoff CANDIDATE and FEATURE information  -- Stage 1 frozen output"
+    },
+    {
+     "file": "prediction_contract_v5.py",
+     "line": 15,
+     "quote": "3. PREDICTION OBLIGATIONS -- derived from tier, never from outcomes"
+    },
+    {
+     "file": "experiments/idea_log.jsonl",
+     "line": 0,
+     "quote": "H1 correction record, notable_row_granular_and_therefore_SAFE: \"experiments/prediction_contract_v*/**.parquet\""
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min",
+   "group": 2,
+   "note": "The v5 contract adds per-row outcome LABELS and obligation declarations to a frozen per-row candidate universe. No fit, no pooled statistic, no cross-row aggregation -- the module's whole discipline is that each row's cutoff bounds its own evidence. Independently corroborated by the H1 correction record, which already names prediction_contract_v* as row-granular.",
+   "exploration_lead": null,
+   "program": "player_program",
+   "priority_rank": 42
+  },
+  {
+   "artifact": "experiments\\props_edge\\bet_universe_best_line.csv",
+   "exists": true,
+   "size_mb": 1.52,
+   "consumer_count": 3,
+   "consumers": [
+    "calibrated_prob_edge.py",
+    "conditional_edge.py",
+    "prob_edge_ablation.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 3,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "props_edge",
+   "priority_rank": 43
+  },
+  {
+   "artifact": "experiments\\props_edge\\bet_universe_per_book.csv",
+   "exists": true,
+   "size_mb": 8.29,
+   "consumer_count": 3,
+   "consumers": [
+    "calibrated_prob_edge.py",
+    "conditional_edge.py",
+    "prob_edge_ablation.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 3,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "props_edge",
+   "priority_rank": 44
+  },
+  {
+   "artifact": "experiments\\channel_reval\\channel_base_v2.csv",
+   "exists": true,
+   "size_mb": 0.44,
+   "consumer_count": 2,
+   "consumers": [
+    "bottomup_3pt.py",
+    "w4_refs.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "channel_reval",
+   "priority_rank": 45
+  },
+  {
+   "artifact": "experiments\\channel_reval\\channel_results_v2.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 2,
+   "consumers": [
+    "bottomup_3pt.py",
+    "w4_refs.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "channel_reval",
+   "priority_rank": 46
+  },
+  {
+   "artifact": "experiments\\clv_transfer\\bet_log.csv",
+   "exists": true,
+   "size_mb": 0.17,
+   "consumer_count": 2,
+   "consumers": [
+    "conditional_edge.py:55",
+    "pocket_mining.py:95"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "clv_transfer",
+   "priority_rank": 47
+  },
+  {
+   "artifact": "experiments\\clv_transfer\\flat_stake_sim.csv",
+   "exists": true,
+   "size_mb": 0.01,
+   "consumer_count": 2,
+   "consumers": [
+    "conditional_edge.py",
+    "pocket_mining.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "clv_transfer",
+   "priority_rank": 48
+  },
+  {
+   "artifact": "experiments\\exploration\\E0_I0014_residual_heterogeneity\\screen_results.csv",
+   "exists": true,
+   "size_mb": 0.16,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 49
+  },
+  {
+   "artifact": "experiments\\feature_archetypes\\survivor_summary.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 50
+  },
+  {
+   "artifact": "experiments\\feature_interactions\\survivor_summary.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 51
+  },
+  {
+   "artifact": "experiments\\feature_screen\\screen_results.csv",
+   "exists": true,
+   "size_mb": 0.05,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 52
+  },
+  {
+   "artifact": "experiments\\feature_screen\\survivor_summary.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 53
+  },
+  {
+   "artifact": "experiments\\feature_screen_crossseason\\screen_results.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 54
+  },
+  {
+   "artifact": "experiments\\feature_screen_crossseason\\survivor_summary.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 55
+  },
+  {
+   "artifact": "experiments\\feature_screen_rebaselined\\screen_results.csv",
+   "exists": true,
+   "size_mb": 0.09,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 56
+  },
+  {
+   "artifact": "experiments\\feature_screen_rebaselined\\survivor_summary.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 57
+  },
+  {
+   "artifact": "experiments\\feature_screen_run2\\screen_results.csv",
+   "exists": true,
+   "size_mb": 0.01,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 58
+  },
+  {
+   "artifact": "experiments\\feature_screen_run2\\survivor_summary.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 59
+  },
+  {
+   "artifact": "experiments\\totals_groundwork\\bookie_totals_per_game.csv",
+   "exists": true,
+   "size_mb": 0.04,
+   "consumer_count": 2,
+   "consumers": [
+    "totals_head.py:419",
+    "totals_online.py:384"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "totals_groundwork",
+   "priority_rank": 60
+  },
+  {
+   "artifact": "experiments\\volume_heterogeneity\\screen_results.csv",
+   "exists": true,
+   "size_mb": 0.52,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 61
+  },
+  {
+   "artifact": "experiments\\volume_heterogeneity\\survivor_summary.csv",
+   "exists": true,
+   "size_mb": 0.0,
+   "consumer_count": 2,
+   "consumers": [
+    "interactions_lab.py",
+    "volume_heterogeneity.py"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 2,
+   "proposed_asof_granularity": "ARTIFACT",
+   "confidence": "MEDIUM",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(structural)",
+     "line": 0,
+     "quote": "one row per screened FEATURE, not per game: columns are dR2 / p-value / survivor flags, each of which is a statistic pooled over the whole screened population"
+    }
+   ],
+   "remedy": "manifest-only",
+   "estimated_cost": "5 min each",
+   "group": 4,
+   "note": "A SCREEN RESULT table, not a feature table. Every cell is a statistic computed over the whole screened population, so there is no per-row date bound that could exist. Artifact-granular by construction. MEDIUM because the classification is structural (from the artifact's shape and its consumers) rather than from reading each of the six screen producers line by line. These feed only interactions_lab.py / volume_heterogeneity.py, both legacy game-model screens; AUDIT_SCREEN_INTEGRITY already covers this family.",
+   "exploration_lead": null,
+   "program": "legacy_screen",
+   "priority_rank": 62
+  },
+  {
+   "artifact": "experiments\\dist_margin_cover\\game_level_dist.csv",
+   "exists": true,
+   "size_mb": 0.34,
+   "consumer_count": 1,
+   "consumers": [
+    "pocket_mining.py:90"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 1,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "dist_margin_cover",
+   "priority_rank": 63
+  },
+  {
+   "artifact": "experiments\\minutes_twostage\\test_predictions_m1.csv",
+   "exists": true,
+   "size_mb": 2.63,
+   "consumer_count": 1,
+   "consumers": [
+    "oracle_bracket.py:54"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 1,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "minutes_twostage",
+   "priority_rank": 64
+  },
+  {
+   "artifact": "experiments\\minutes_twostage\\test_predictions_m2.csv",
+   "exists": true,
+   "size_mb": 3.12,
+   "consumer_count": 1,
+   "consumers": [
+    "oracle_bracket.py:55"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 1,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "minutes_twostage",
+   "priority_rank": 65
+  },
+  {
+   "artifact": "experiments\\oracle_bracket\\game_level_margins.csv",
+   "exists": true,
+   "size_mb": 0.18,
+   "consumer_count": 1,
+   "consumers": [
+    "clv_transfer.py:78"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 1,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "oracle_bracket",
+   "priority_rank": 66
+  },
+  {
+   "artifact": "experiments\\totals_groundwork\\exploratory_bias_fix_per_game.csv",
+   "exists": true,
+   "size_mb": 0.05,
+   "consumer_count": 1,
+   "consumers": [
+    "totals_online.py:424"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 1,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "totals_groundwork",
+   "priority_rank": 67
+  },
+  {
+   "artifact": "experiments\\w2_integration\\game_level_predictions.csv",
+   "exists": true,
+   "size_mb": 0.48,
+   "consumer_count": 1,
+   "consumers": [
+    "joint_differential.py:101"
+   ],
+   "passed_node_consumers": [],
+   "consumer_liveness": "DEAD/LEGACY: game-and-betting program only; no player-program consumer",
+   "priority_score": 1,
+   "proposed_asof_granularity": "UNDETERMINED",
+   "confidence": "NONE",
+   "holdout_risk": "UNKNOWN",
+   "evidence": [
+    {
+     "file": "(not traced)",
+     "line": 0,
+     "quote": "producer located but build code NOT read in this sweep"
+    }
+   ],
+   "remedy": "human-decision",
+   "estimated_cost": "20-40 min each",
+   "group": 3,
+   "note": "NOT CLASSIFIED. The producer script was located (see producer_candidates.json) but its build code was not read, so no granularity is proposed. Stating UNDETERMINED rather than guessing: these are model/backtest outputs from the game-and-betting program, where a train/test split fit through 2026 is the norm -- the H1 hazard already lists two siblings of this family (channel_reval/predictions_v2.csv, w2_integration/calibration_params.json) as contaminated, so the prior leans ARTIFACT, but a prior is not evidence. None of these is read by any player-program graph node or any live exploration lead.",
+   "exploration_lead": null,
+   "program": "w2_integration",
+   "priority_rank": 68
+  }
+ ]
+}

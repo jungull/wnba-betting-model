@@ -1,0 +1,87 @@
+MANIFEST_REMEDIATION run log
+============================
+Agent: infrastructure analysis, player-model-program worktree.
+Scope: experiments/exploration/MANIFEST_REMEDIATION/ ONLY. Read-only elsewhere. NO manifests written.
+Input: experiments/exploration/AUDIT_baseline_provenance/MISSING_MANIFESTS.json (68 shared/upstream, no manifest)
+
+[STEP 1] INVENTORY
+- s01_inventory.py -> inventory_shared68.json. 68 artifacts, all 68 exist on disk.
+- Consumer counts merged from UNVERIFIABLE_no_manifest (104 refs) keyed on resolved path.
+- Max blast radius among the 68: 11 consumers (exploration frame.parquet x4).
+- Also noted: 24 screen-local intermediates and 21 unresolved references (out of the 68 scope).
+
+[STEP 1b] LIVENESS
+- s05_liveness_full.py: mapped consumers + artifacts to PROGRAM_GRAPH.json nodes
+  (input_artifacts / expected_outputs / owned_files / allowed_write_paths / path-component id)
+  and node status from GRAPH_STATE.json (104 nodes: 86 PASSED, 6 SUPERSEDED, 6 BLOCKED,
+  3 USER_REQUIRED, 2 READY, 1 HALTED).
+- 12 artifacts consumed by a PASSED node.
+- 56 artifacts not named by any graph node -> liveness resolved instead from
+  experiments/idea_log.jsonl (exploration leads) and program membership.
+- idea_log lead status: I0004 SCREENED_LEAD_REFRAMED (LIVE), I0009 SCREENED_LEAD_MAGNITUDE_CORRECTED
+  (LIVE), I0011 keep-as-lead x3 (LIVE), I0014 SCREENED_LEAD (LIVE);
+  I0008 KILL, I0010 SCREENED_KILLED, I0012 KILL, I0013 SCREENED_KILLED (DEAD);
+  I0001/I0002/I0007 PROPOSED_NOT_SCREENED.
+- idea_log hazard H1_HOLDOUT_CONTAMINATED_ARTIFACTS + its correction record read;
+  the correction confirms asof_granularity (not fit_seasons) is the governing criterion.
+
+[STEP 1c] DEDUPLICATION FINDING
+- SHA256: E1_I0004_rim_finishing/_validate_sandbox/frame.parquet is BYTE-IDENTICAL to
+  E1_I0011_split_alpha/frame.parquet (311BFDA2...). Same for grid_metrics.parquet (D6580165...).
+  => the sandbox pair are copies, not independent artifacts. 68 distinct paths, 66 distinct contents.
+
+[STEP 2] BUILD-CODE CLASSIFICATION (in priority order)
+- s08_find_producers.py -> producer_candidates.json + producers_report.txt (762 py files scanned;
+  concurrent-agent dirs excluded from the walk).
+Build code READ and classified (evidence line quoted in the plan for each):
+  * E0_I0011_tendency_estimator/build_frame.py   -> ARTIFACT (pooled HOME_MULT/MEAN_POSS on 2021-22).
+      Also contains the LEGITIMATE `prior["season"] = prior["season"] + 1` offset at line 154 -
+      a full-season mean of S applied to S+1. The brief predicted a real instance existed; this is it.
+  * E1_I0011_split_alpha/build_frame.py          -> ARTIFACT (season-median `half` column only;
+      every predictor column is strictly-prior)
+  * E1_I0008_height_mismatch/build_frame.py      -> ARTIFACT (full-season minutes weights; the script
+      documents this itself at lines 114-118)
+  * E1_I0009 + E0_I0009 + E0_I0005 build_data.py -> ARTIFACT. TWO pooling steps: season LOO
+      (`season_poss - realised_off_possessions`) AND, in pressure_lib.py:55/97, shrinkage toward the
+      CURRENT season's full-season league mean. The `*_pregame` columns are not fully pregame.
+  * build_projected_exposure.py                  -> team_possession_prior_v1 = ROW (strict d < game_date);
+      projected_player_possessions_v1 / projected_team_rotations_v1 = ARTIFACT by INHERITANCE
+  * build_turnover_targets.py                    -> both outputs ROW (every groupby keyed on game_id)
+  * run_turnover_p1.py                           -> arms A-D row-clean, but line 108 merges the
+      projected exposure column into the written frame -> ARTIFACT by weakest link
+  * run_turnover_p2.py                           -> ARTIFACT (feature group 1 from projected exposure)
+  * fit_rate_and_p3.py                           -> ARTIFACT, walk-forward, per-row training_cutoff_season
+  * build_score_baselines.py                     -> ROW (cumsum().shift(1), d < date, walk-forward calib)
+  * prediction_contract_v5_enrich.py / _v5.py    -> ROW (labels only; corroborated by the H1 correction)
+  * possession_artifact_v1.py / v2.py            -> ROW (nothing fitted; within-game shift only)
+  * build_canonical_events.py                    -> ROW ("normalise" = schema harmonisation, per game;
+      this was a regex false-positive candidate that reading disproved)
+  * collect_bios.py                              -> team_cities STATIC; player_bios per-season
+
+[STEP 2b] CRITICAL INHERITANCE FINDING
+- build_projected_exposure.py:190 globs predictions__*__*.parquet for ALL seasons 2021-2026 from
+  experiments/cbs_v15_player_oof_v5/attempt_001/. Those files' OWN manifests declare
+  asof_granularity="artifact" (verified by reading two of them directly).
+- Six of the 68 inherit from this single source. That is the entire SPANS_HOLDOUT set.
+- MITIGATION recorded: each per-season prediction file was fit on STRICTLY PRIOR seasons
+  (2024 file: fit_seasons [2021,2022,2023]), so a 2021 row did NOT see 2026.
+
+[STEP 2c] PROBE (only numerical probe run; partition-restricted)
+- s11_bios_probe.py, filtered to season in [2021,2022,2023,2024] on column values before comparison.
+  Result: age varies across seasons for 182/184 multi-season players, weight for 44/184,
+  position_raw/college/country for 0/184. So player_bios.csv is NOT a single current-state pull
+  replicated across seasons -> ROW. No 2025/2026 data was loaded into any analysis.
+
+[STEP 3/4] OUTPUT
+- REMEDIATION_PLAN.json + REMEDIATION_PLAN.md written. NO MANIFEST WAS WRITTEN ANYWHERE.
+- Counts: 6 live contamination / 34 manifest-only / 15 human decision / 13 dead.
+- 30 ARTIFACT, 25 ROW, 13 UNDETERMINED. 36 HIGH, 19 MEDIUM, 13 NONE confidence.
+- Holdout risk: 25 NONE, 10 PARTITION_ONLY_LOOKAHEAD, 6 SPANS_HOLDOUT, 27 UNKNOWN.
+
+NOT COVERED (declared, not hidden):
+- 13 legacy game-and-betting artifacts: producers located, build code NOT read -> UNDETERMINED.
+- The audit's other buckets (24 screen-local intermediates, 21 unresolved refs) were out of scope.
+- possession_features_v1 and validation_v1 (2 of the 7 zero-manifest dirs) have no artifact in the
+  68-item list, so nothing in them was classified.
+- translation_rows.parquet classified but not pursued: concurrent MEASURE_F1_m13_fitpool agent owns it.
+- Excluded from every scan as instructed: E1_I0004_fga_forecast, MEASURE_F1_m13_fitpool, _screen_kit.
