@@ -1,0 +1,119 @@
+﻿
+====================================================================================================
+S02.1 -- champion frame (D081's frozen decomp_frame; NOTHING refitted)
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+  rows=13879  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+S02.2 -- raw shots for the champion seasons only (2022-2024)
+====================================================================================================
+  shots_2022_regular.parquet                           rows=  29374  seasons=[np.int64(2022)]
+  shots_2022_playoffs.parquet                          rows=   3139  seasons=[np.int64(2022)]
+  shots_2023_regular.parquet                           rows=  32809  seasons=[np.int64(2023)]
+  shots_2023_playoffs.parquet                          rows=   2813  seasons=[np.int64(2023)]
+  shots_2024_regular.parquet                           rows=  32759  seasons=[np.int64(2024)]
+  shots_2024_playoffs.parquet                          rows=   3010  seasons=[np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col GAME_DATE                YEARS  = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    -> PASS
+  shots with resolved opponent = 103904 over 761 games; seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+S02.3 -- *** THE CENTRING *** OCc_z = OC_z - league prior zone gap (both strictly prior)
+====================================================================================================
+                 zone  n_opp_game_rows_with_OCc   mean_OC    sd_OC  mean_lg_gap  mean_OCc   sd_OCc  corr_OC_OCc  corr_OCc_OCcxs
+      Restricted Area                      1466  0.188578 0.037986     0.186279  0.002299 0.037946     0.989284        0.939227
+In The Paint (Non-RA)                      1453 -0.047314 0.033892    -0.046771 -0.000543 0.033474     0.986700        0.937769
+            Mid-Range                      1443 -0.069455 0.034042    -0.068800 -0.000655 0.033285     0.977255        0.949108
+             Corner 3                      1216 -0.075270 0.058990    -0.076302  0.001032 0.056048     0.947305        0.951924
+    Above the Break 3                      1469 -0.096056 0.028491    -0.095444 -0.000612 0.027773     0.976492        0.939834
+
+  WHAT WAS CENTRED, AND HOW.  OC_z is the opponent's prior zone conversion rate MINUS its own prior
+  POOLED rate, so it inherits a large ZONE-SPECIFIC common level (RA about +0.18).  The centring
+  subtracts the LEAGUE's own prior zone-minus-pooled gap on that calendar date in that season --
+  a date-indexed scalar shared by every opponent, so the cross-sectional ORDERING of opponents is
+  untouched while the additive LEVEL is removed.  `mean_OCc` is ~0 by construction; `sd_OCc` is
+  essentially `sd_OC`, which is the point: the centring removes a level and keeps the signal.
+
+====================================================================================================
+S02.4 -- player prior zone mix w_z (player's own strictly prior same-season FGA shares)
+====================================================================================================
+  w_z rows=66910   sum_z w_z over complete player-games: min=1.000000 max=1.000000 mean=1.000000
+  (sums to <=1; the residual is Backcourt attempts, which have no conversion transfer.)
+
+====================================================================================================
+S02.5 -- assemble S = sum_z w_z * PV_z * beta_z * OCc_z   (points per attempt)
+====================================================================================================
+
+  signal column                       n_valid         mean           sd       max|.|
+  S_SPEC_RA                             11267    +0.000529     0.009278     0.093068
+  S_SPEC_RA_UNCENTRED                   11267    +0.041581     0.025391     0.191353
+  S_SPEC_RA_XSCENTRED                   10156    -0.000027     0.008759     0.068326
+  S_SPEC_ALL5_GLOBAL                     9962    +0.000256     0.011915     0.063472
+  S_SPEC_ALL5_GLOBAL_UNCENTRED           9962    -0.009345     0.043754     0.150960
+  S_SPEC_ALL5_GLOBAL_XSCENTRED           8994    -0.000035     0.011520     0.056725
+  S_SPEC_ALL5_PERZONE                    9962    +0.000462     0.009865     0.070042
+  S_SPEC_ALL5_PERZONE_UNCENTRED          9962    +0.049176     0.026896     0.174933
+  S_SPEC_ALL5_PERZONE_XSCENTRED          8994    +0.000071     0.009497     0.062514
+
+  COMPARE THE `mean` COLUMN, CENTRED vs _UNCENTRED.  The uncentred signal has a mean that dwarfs
+  its own sd -- it is a CONSTANT added to every forecast.  That is the defect the predecessor died
+  reporting, and it is why every headline below uses the centred column.
+
+====================================================================================================
+S02.6 -- baseline and candidate forecasts (NOTHING FITTED)
+====================================================================================================
+  identity check  max| ppm_cand * minutes_pred - pts_cand |  = 3.553e-15
+
+====================================================================================================
+S02.7 -- COVERAGE: which rows can be scored at all
+====================================================================================================
+                  stratum  n_rows  n_signal_RA  n_signal_ALL5  n_ppf_scoreable  n_ppm_scoreable
+                 all rows   13879        11267           9962            11267            11267
+decision-relevant stratum    5107         5086           4938             5086             5086
+              OFF stratum    8772         6181           5024             6181             6181
+
+  NOTE.  The RA spec needs only the RA zone's pieces; the ALL5 specs need all five and so cover
+  slightly fewer rows.  Rows drop where the player has <20 strictly-prior same-season FGA or the
+  opponent has faced <20 prior attempts in the zone -- i.e. EARLY-SEASON rows.  Coverage is
+  therefore HIGHER on the decision-relevant stratum than off it, which is the right direction:
+  the signal is available exactly where the champion fails.
+
+====================================================================================================
+S02.8 -- GROUPING LEVEL of the allowance (screenkit.detect_grouping_level; never assumed)
+====================================================================================================
+  detect_grouping_level(RA_OCc): n_rows=13693  dtype=float64  distinct values overall=1466
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    opponent_team_season         36         36           no     no 51
+    opponent_team_season_game       1466       1466          YES     no 1
+    game                  737        737           no     no 2
+    player_season         474        153           no     no 51
+    season                  3          3           no     no 505
+    opponent_team          12         12           no     no 137
+    -> status=COARSER_LEVEL_FOUND
+    -> COARSEST CONSTANT LEVEL = 'opponent_team_season_game'  == THE CORRECT PERMUTATION LEVEL
+  detect_grouping_level(S_SPEC_RA): n_rows=11267  dtype=float64  distinct values overall=11210
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    opponent_team_season         36         36           no     no 384
+    opponent_team_season_game       1450       1447           no     no 12
+    game                  728        727           no     no 22
+    player_season         413        401           no     no 50
+    season                  3          3           no     no 3841
+    opponent_team          12         12           no     no 1069
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'S_SPEC_RA': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+
+  var_share_between(RA_OCc, opp_team_season) = 0.6815144463939637
+
+  wrote eff_frame_v2.parquet  shape=(13879, 70)
+DONE s02

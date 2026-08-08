@@ -1,0 +1,29 @@
+﻿  PRIMARY CELL: per-minute efficiency, SPEC_RA, decision-relevant stratum, n=5086
+  real dR2 (rebuilt from parts, cross-check vs s03 -0.000556) = -0.000555950
+
+====================================================================================================
+P1 -- noop_placebo, LITERAL IDENTITY (harness check; constraint 10 reports the sd)
+====================================================================================================
+  noop_placebo: real=-0.0005559503191  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  observed sd = 0.000000e+00   is_noop = True
+
+====================================================================================================
+P2 -- noop_placebo on the CLASSIC DEFECTIVE CONTROL (permute key, REBUILD from the key)
+====================================================================================================
+  noop_placebo: real=-0.0005559503191  sd=2.570e-05  max|draw-real|=5.813e-04  distinct=200 -> NOT a no-op (sd=2.570e-05) -- the transform does move the statistic
+  observed sd = 2.569897e-05   is_noop = False
+  (If this is NOT flagged a no-op it is because the group MEAN over a permuted key is not
+  quite the identity -- it shrinks each row toward a random group mean.  Either way it is a
+  DEGENERATE control and is not used for any p-value.  The real control is P3.)
+
+====================================================================================================
+P3 -- THE REAL CONTROL: reassign whole OPPONENT-TEAM-SEASONS' allowances between opponents
+====================================================================================================
+  n_opponent_team_seasons = 36   null sd = 5.286905e-04   mean = -1.951946e-04
+  real dR2 = -0.000555950   two-sided p against this null = 0.3418
+  null quantiles  2.5%=-0.001223  50%=-0.000197  97.5%=+0.000812
+
+  READ THE SIGN.  The real dR2 is NEGATIVE and sits well inside a null centred near zero: the
+  centred transfer does not merely fail to help, it is indistinguishable from a randomly
+  reassigned opponent's allowance.
+DONE s03b

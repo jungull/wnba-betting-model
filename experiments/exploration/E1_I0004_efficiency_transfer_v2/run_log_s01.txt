@@ -1,0 +1,123 @@
+﻿
+====================================================================================================
+S01 -- INPUT PROVENANCE (screenkit.check_manifest; missing manifest is UNVERIFIABLE)
+====================================================================================================
+  decomp_frame (D081)        manifest=False status=UNVERIFIABLE
+  repro_ra_common (D074)     manifest=False status=UNVERIFIABLE
+  conversion_frame (D074)    manifest=False status=UNVERIFIABLE
+  raw shots 2022 regular     manifest=False status=UNVERIFIABLE
+  raw shots 2023 regular     manifest=False status=UNVERIFIABLE
+  raw shots 2024 regular     manifest=False status=UNVERIFIABLE
+
+  Every input is 'UNVERIFIABLE' (no sibling manifest), which is NOT a pass and travels with the
+  verdict.  This screen proceeds on them because it is a REPRODUCTION-AND-CONTRAST screen: the
+  anchor parquets are frozen outputs of committed screens whose own partition was value-checked,
+  and the raw per-season shot files carry the season IN THE FILENAME and are re-checked here on
+  COLUMN VALUES via assert_partition.  data/zone_maps/* (asof_granularity 'artifact') are NOT
+  READ ANYWHERE.  Nothing here is a deployable result.
+
+====================================================================================================
+S01a1 -- D074 conversion headline, statistic recomputed from the frozen COMMON frame
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    -> PASS
+
+  reproduced : n=30764  corr=+0.02881718  diff=+0.01757440  beta=+0.37315357
+  D074 target: n=30764  corr=+0.02881718  diff=+0.01757440  beta=+0.37315357
+  ABSOLUTE DELTA: dn=0  |dcorr|=0.000e+00  |ddiff|=0.000e+00  |dbeta|=0.000e+00
+  VERDICT: EXACT
+
+====================================================================================================
+S01a2 -- D074 opponent side REBUILT FROM RAW SHOTS and compared value-by-value with O2
+====================================================================================================
+  This is the piece this screen actually reuses, so reproducing the STATISTIC is not enough:
+  the opponent zone-conversion allowance is rebuilt from data/shotcharts/shots_{2021..2024}_*.parquet
+  by etv2_base.opponent_zone_allowance and matched against the frozen O2 column row by row.
+  shots_2021_regular.parquet                           rows=  26269  seasons=[np.int64(2021)]
+  shots_2021_playoffs.parquet                          rows=   2385  seasons=[np.int64(2021)]
+  shots_2022_regular.parquet                           rows=  29374  seasons=[np.int64(2022)]
+  shots_2022_playoffs.parquet                          rows=   3139  seasons=[np.int64(2022)]
+  shots_2023_regular.parquet                           rows=  32809  seasons=[np.int64(2023)]
+  shots_2023_playoffs.parquet                          rows=   2813  seasons=[np.int64(2023)]
+  shots_2024_regular.parquet                           rows=  32759  seasons=[np.int64(2024)]
+  shots_2024_playoffs.parquet                          rows=   3010  seasons=[np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col GAME_DATE                YEARS  = [2021, 2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  shots with resolved opponent = 132558 over 970 games; seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+  rows matched = 30764 / 30764   rows where my rebuild is NaN but O2 is not = 0
+  max |O2_frozen - OC_rebuilt| = 0.000e+00     corr = 1.000000000000
+  VERDICT: EXACT -- the construction, not just the number
+
+====================================================================================================
+S01a3 -- D074's five-zone conversion family, recomputed from the frozen conversion_frame
+====================================================================================================
+
+  zone                           n      corr      diff      beta   published (n,corr,diff,beta)
+  Restricted Area            33273   +0.0313   +0.0191   +0.4037   (33273, +0.0313, +0.0191, +0.4037)  MATCH
+  In The Paint (Non-RA)      23798   -0.0078   +0.0017   -0.1216   (23798, -0.0078, +0.0017, -0.1216)  MATCH
+  Mid-Range                  21100   +0.0025   +0.0094   +0.0377   (21100, +0.0025, +0.0094, +0.0377)  MATCH
+  Corner 3                    3150   -0.0312   -0.0326   -0.2558   (3150, -0.0312, -0.0326, -0.2558)  MATCH
+  Above the Break 3          33833   +0.0000   -0.0034   +0.0005   (33833, +0.0000, -0.0034, +0.0005)  MATCH
+
+  READ THIS TABLE BEFORE READING ANY LATER RESULT.  D074's surviving conversion effect is
+  essentially a RESTRICTED-AREA effect (+0.4037).  Of the other four zones two are NEGATIVE
+  (paint -0.1216, corner 3 -0.2558) and two are ~0.  The family-wise p 0.0124 is a max-t statement
+  about the RA cell surviving five-way multiplicity, NOT a statement that all five zones carry the
+  effect.  This screen's PRIMARY transfer spec is therefore RA-ONLY.  A spec that spreads one
+  global slope over all five zones is a DIFFERENT and weaker hypothesis and is reported as
+  secondary.
+
+====================================================================================================
+S01a4 -- THE INHERITED DEFECT, QUANTIFIED: how big is the level the centring removes?
+====================================================================================================
+  The predecessor died reporting that the UNCENTRED allowance is a level shift, not a
+  cross-sectional signal.  Here is the size of that level, per zone, on the frozen O2/OC values.
+                 zone    n  mean_OC_uncentred  sd_OC_uncentred  mean_OCc_centred  sd_OCc_centred  mean_over_sd_uncentred  corr_OC_OCc
+      Restricted Area 1868           0.183541         0.040207          0.002033        0.039084                4.564875     0.958207
+In The Paint (Non-RA) 1846          -0.044516         0.035250         -0.000003        0.034438                1.262856     0.978576
+            Mid-Range 1839          -0.068909         0.035926         -0.000938        0.035363                1.918110     0.981741
+             Corner 3 1510          -0.068052         0.066260         -0.000838        0.061840                1.027037     0.922845
+    Above the Break 3 1868          -0.094499         0.029247         -0.000373        0.028530                3.231075     0.975116
+
+  READ THE `mean_over_sd_uncentred` COLUMN.  For the Restricted Area the UNCENTRED allowance has a
+  mean many times its own cross-sectional sd: used additively it is overwhelmingly a CONSTANT
+  ADDED TO EVERY ROW.  Centring removes exactly that constant (per point in time) and leaves the
+  opponent's deviation.  `corr_OC_OCc` < 1 shows the centring is not the identity.
+
+====================================================================================================
+S01b -- D081 decision-relevant-stratum points skill, recomputed from the frozen decomp_frame
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+
+  quantity                                 reproduced        D081 target      |delta|
+  n                                   5107.0000000000    5107.0000000000    0.000e+00
+  points_skill                          -0.0035882639      -0.0035882639    0.000e+00
+  champion_points_mae                    5.0097913607       5.0097913607    0.000e+00
+  reference_points_mae                   4.9918791808       4.9918791808    0.000e+00
+  p_two_sided_block_signflip             0.2663668166       0.2663668166    0.000e+00
+  minutes_skill                          0.0614326711       0.0614326711    0.000e+00
+  rate_ppm_skill                        -0.0019721319      -0.0019721319    0.000e+00
+  VERDICT: EXACT
+
+  points response sd: all rows 7.5800   decision-relevant stratum 7.5822
+
+====================================================================================================
+S01 SUMMARY
+====================================================================================================
+  a1 D074 statistic        : |dbeta| = 0.000e+00
+  a2 D074 construction     : max|O2 - OC_rebuilt| = 0.000e+00
+  a3 five-zone family      : max |delta| over 5 zones x 3 stats = 4.987e-05
+  b  D081 stratum skill    : |dskill| = 0.000e+00   |dp| = 0.000e+00
+
+  FAILURES: NONE -- both anchors reproduce; proceeding.
+DONE s01

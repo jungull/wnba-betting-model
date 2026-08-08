@@ -1,0 +1,589 @@
+﻿
+####################################################################################################
+### run_log_s00.txt
+####################################################################################################
+
+====================================================================================================
+S00 -- decomp_frame keys
+====================================================================================================
+  shape=(13879, 121)  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+  game_id dtype=str  sample=['1022200008', '1022200014', '1022200018']
+  player_id dtype=int64  team_id dtype=int64
+  gdate range 2022-05-08 .. 2024-10-20
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+
+====================================================================================================
+S00 -- raw shots keys
+====================================================================================================
+  shots_2022_regular.parquet                           rows=  29374  seasons=[np.int64(2022)]
+  shots_2022_playoffs.parquet                          rows=   3139  seasons=[np.int64(2022)]
+  shots_2023_regular.parquet                           rows=  32809  seasons=[np.int64(2023)]
+  shots_2023_playoffs.parquet                          rows=   2813  seasons=[np.int64(2023)]
+  shots_2024_regular.parquet                           rows=  32759  seasons=[np.int64(2024)]
+  shots_2024_playoffs.parquet                          rows=   3010  seasons=[np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col GAME_DATE                YEARS  = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    -> PASS
+  shots with resolved opponent = 103904 over 761 games; seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+  GAME_ID dtype=str  sample=['1022200001', '1022200001', '1022200001']
+  PLAYER_ID dtype=int64  TEAM_ID dtype=int64
+  zones present: ['Above the Break 3', 'Backcourt', 'Corner 3', 'In The Paint (Non-RA)', 'Mid-Range', 'Restricted Area']
+  columns: ['GRID_TYPE', 'GAME_ID', 'GAME_EVENT_ID', 'PLAYER_ID', 'PLAYER_NAME', 'TEAM_ID', 'TEAM_NAME', 'PERIOD', 'MINUTES_REMAINING', 'SECONDS_REMAINING', 'EVENT_TYPE', 'ACTION_TYPE', 'SHOT_TYPE', 'SHOT_ZONE_BASIC', 'SHOT_ZONE_AREA', 'SHOT_ZONE_RANGE', 'SHOT_DISTANCE', 'LOC_X', 'LOC_Y', 'SHOT_ATTEMPTED_FLAG', 'SHOT_MADE_FLAG', 'GAME_DATE', 'HTM', 'VTM', 'season', 'game_date', 'zone', 'made', 'OPP_TEAM_ID']
+
+====================================================================================================
+S00 -- key overlap
+====================================================================================================
+  decomp games=743  shot games=761  intersection=743
+  decomp (game,player)=13879  shot (game,player)=13388  intersection=12982
+  decomp rows with NO shot record (fga==0 rows expected): 897
+  fga==0 rows in decomp: 897
+
+====================================================================================================
+S00 -- opponent resolution from schedule (two team ids per game)
+====================================================================================================
+  games with exactly 2 teams: 761 / 761
+  decomp rows with resolved opponent: 13879 / 13879
+
+====================================================================================================
+S00 -- stratum sizes
+====================================================================================================
+  decision-relevant stratum n=5107 (36.8% of 13879)
+DONE s00
+
+####################################################################################################
+### run_log_s01.txt
+####################################################################################################
+
+====================================================================================================
+S01 -- INPUT PROVENANCE (screenkit.check_manifest; missing manifest is UNVERIFIABLE)
+====================================================================================================
+  decomp_frame (D081)        manifest=False status=UNVERIFIABLE
+  repro_ra_common (D074)     manifest=False status=UNVERIFIABLE
+  conversion_frame (D074)    manifest=False status=UNVERIFIABLE
+  raw shots 2022 regular     manifest=False status=UNVERIFIABLE
+  raw shots 2023 regular     manifest=False status=UNVERIFIABLE
+  raw shots 2024 regular     manifest=False status=UNVERIFIABLE
+
+  Every input is 'UNVERIFIABLE' (no sibling manifest), which is NOT a pass and travels with the
+  verdict.  This screen proceeds on them because it is a REPRODUCTION-AND-CONTRAST screen: the
+  anchor parquets are frozen outputs of committed screens whose own partition was value-checked,
+  and the raw per-season shot files carry the season IN THE FILENAME and are re-checked here on
+  COLUMN VALUES via assert_partition.  data/zone_maps/* (asof_granularity 'artifact') are NOT
+  READ ANYWHERE.  Nothing here is a deployable result.
+
+====================================================================================================
+S01a1 -- D074 conversion headline, statistic recomputed from the frozen COMMON frame
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    -> PASS
+
+  reproduced : n=30764  corr=+0.02881718  diff=+0.01757440  beta=+0.37315357
+  D074 target: n=30764  corr=+0.02881718  diff=+0.01757440  beta=+0.37315357
+  ABSOLUTE DELTA: dn=0  |dcorr|=0.000e+00  |ddiff|=0.000e+00  |dbeta|=0.000e+00
+  VERDICT: EXACT
+
+====================================================================================================
+S01a2 -- D074 opponent side REBUILT FROM RAW SHOTS and compared value-by-value with O2
+====================================================================================================
+  This is the piece this screen actually reuses, so reproducing the STATISTIC is not enough:
+  the opponent zone-conversion allowance is rebuilt from data/shotcharts/shots_{2021..2024}_*.parquet
+  by etv2_base.opponent_zone_allowance and matched against the frozen O2 column row by row.
+  shots_2021_regular.parquet                           rows=  26269  seasons=[np.int64(2021)]
+  shots_2021_playoffs.parquet                          rows=   2385  seasons=[np.int64(2021)]
+  shots_2022_regular.parquet                           rows=  29374  seasons=[np.int64(2022)]
+  shots_2022_playoffs.parquet                          rows=   3139  seasons=[np.int64(2022)]
+  shots_2023_regular.parquet                           rows=  32809  seasons=[np.int64(2023)]
+  shots_2023_playoffs.parquet                          rows=   2813  seasons=[np.int64(2023)]
+  shots_2024_regular.parquet                           rows=  32759  seasons=[np.int64(2024)]
+  shots_2024_playoffs.parquet                          rows=   3010  seasons=[np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col GAME_DATE                YEARS  = [2021, 2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+  shots with resolved opponent = 132558 over 970 games; seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+
+  rows matched = 30764 / 30764   rows where my rebuild is NaN but O2 is not = 0
+  max |O2_frozen - OC_rebuilt| = 0.000e+00     corr = 1.000000000000
+  VERDICT: EXACT -- the construction, not just the number
+
+====================================================================================================
+S01a3 -- D074's five-zone conversion family, recomputed from the frozen conversion_frame
+====================================================================================================
+
+  zone                           n      corr      diff      beta   published (n,corr,diff,beta)
+  Restricted Area            33273   +0.0313   +0.0191   +0.4037   (33273, +0.0313, +0.0191, +0.4037)  MATCH
+  In The Paint (Non-RA)      23798   -0.0078   +0.0017   -0.1216   (23798, -0.0078, +0.0017, -0.1216)  MATCH
+  Mid-Range                  21100   +0.0025   +0.0094   +0.0377   (21100, +0.0025, +0.0094, +0.0377)  MATCH
+  Corner 3                    3150   -0.0312   -0.0326   -0.2558   (3150, -0.0312, -0.0326, -0.2558)  MATCH
+  Above the Break 3          33833   +0.0000   -0.0034   +0.0005   (33833, +0.0000, -0.0034, +0.0005)  MATCH
+
+  READ THIS TABLE BEFORE READING ANY LATER RESULT.  D074's surviving conversion effect is
+  essentially a RESTRICTED-AREA effect (+0.4037).  Of the other four zones two are NEGATIVE
+  (paint -0.1216, corner 3 -0.2558) and two are ~0.  The family-wise p 0.0124 is a max-t statement
+  about the RA cell surviving five-way multiplicity, NOT a statement that all five zones carry the
+  effect.  This screen's PRIMARY transfer spec is therefore RA-ONLY.  A spec that spreads one
+  global slope over all five zones is a DIFFERENT and weaker hypothesis and is reported as
+  secondary.
+
+====================================================================================================
+S01a4 -- THE INHERITED DEFECT, QUANTIFIED: how big is the level the centring removes?
+====================================================================================================
+  The predecessor died reporting that the UNCENTRED allowance is a level shift, not a
+  cross-sectional signal.  Here is the size of that level, per zone, on the frozen O2/OC values.
+                 zone    n  mean_OC_uncentred  sd_OC_uncentred  mean_OCc_centred  sd_OCc_centred  mean_over_sd_uncentred  corr_OC_OCc
+      Restricted Area 1868           0.183541         0.040207          0.002033        0.039084                4.564875     0.958207
+In The Paint (Non-RA) 1846          -0.044516         0.035250         -0.000003        0.034438                1.262856     0.978576
+            Mid-Range 1839          -0.068909         0.035926         -0.000938        0.035363                1.918110     0.981741
+             Corner 3 1510          -0.068052         0.066260         -0.000838        0.061840                1.027037     0.922845
+    Above the Break 3 1868          -0.094499         0.029247         -0.000373        0.028530                3.231075     0.975116
+
+  READ THE `mean_over_sd_uncentred` COLUMN.  For the Restricted Area the UNCENTRED allowance has a
+  mean many times its own cross-sectional sd: used additively it is overwhelmingly a CONSTANT
+  ADDED TO EVERY ROW.  Centring removes exactly that constant (per point in time) and leaves the
+  opponent's deviation.  `corr_OC_OCc` < 1 shows the centring is not the identity.
+
+====================================================================================================
+S01b -- D081 decision-relevant-stratum points skill, recomputed from the frozen decomp_frame
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+
+  quantity                                 reproduced        D081 target      |delta|
+  n                                   5107.0000000000    5107.0000000000    0.000e+00
+  points_skill                          -0.0035882639      -0.0035882639    0.000e+00
+  champion_points_mae                    5.0097913607       5.0097913607    0.000e+00
+  reference_points_mae                   4.9918791808       4.9918791808    0.000e+00
+  p_two_sided_block_signflip             0.2663668166       0.2663668166    0.000e+00
+  minutes_skill                          0.0614326711       0.0614326711    0.000e+00
+  rate_ppm_skill                        -0.0019721319      -0.0019721319    0.000e+00
+  VERDICT: EXACT
+
+  points response sd: all rows 7.5800   decision-relevant stratum 7.5822
+
+====================================================================================================
+S01 SUMMARY
+====================================================================================================
+  a1 D074 statistic        : |dbeta| = 0.000e+00
+  a2 D074 construction     : max|O2 - OC_rebuilt| = 0.000e+00
+  a3 five-zone family      : max |delta| over 5 zones x 3 stats = 4.987e-05
+  b  D081 stratum skill    : |dskill| = 0.000e+00   |dp| = 0.000e+00
+
+  FAILURES: NONE -- both anchors reproduce; proceeding.
+DONE s01
+
+####################################################################################################
+### run_log_s02.txt
+####################################################################################################
+
+====================================================================================================
+S02.1 -- champion frame (D081's frozen decomp_frame; NOTHING refitted)
+====================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    pl_prior_season_games    name is season-like but VALUES are not seasons (range 0.0..132.0) -> NOT a season column, skipped
+    skipped    tm_season_progress       name is season-like but VALUES are not seasons (range 0.025..1.275) -> NOT a season column, skipped
+    -> PASS
+  rows=13879  seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+S02.2 -- raw shots for the champion seasons only (2022-2024)
+====================================================================================================
+  shots_2022_regular.parquet                           rows=  29374  seasons=[np.int64(2022)]
+  shots_2022_playoffs.parquet                          rows=   3139  seasons=[np.int64(2022)]
+  shots_2023_regular.parquet                           rows=  32809  seasons=[np.int64(2023)]
+  shots_2023_playoffs.parquet                          rows=   2813  seasons=[np.int64(2023)]
+  shots_2024_regular.parquet                           rows=  32759  seasons=[np.int64(2024)]
+  shots_2024_playoffs.parquet                          rows=   3010  seasons=[np.int64(2024)]
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col GAME_DATE                YEARS  = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    -> PASS
+  shots with resolved opponent = 103904 over 761 games; seasons=[np.int64(2022), np.int64(2023), np.int64(2024)]
+
+====================================================================================================
+S02.3 -- *** THE CENTRING *** OCc_z = OC_z - league prior zone gap (both strictly prior)
+====================================================================================================
+                 zone  n_opp_game_rows_with_OCc   mean_OC    sd_OC  mean_lg_gap  mean_OCc   sd_OCc  corr_OC_OCc  corr_OCc_OCcxs
+      Restricted Area                      1466  0.188578 0.037986     0.186279  0.002299 0.037946     0.989284        0.939227
+In The Paint (Non-RA)                      1453 -0.047314 0.033892    -0.046771 -0.000543 0.033474     0.986700        0.937769
+            Mid-Range                      1443 -0.069455 0.034042    -0.068800 -0.000655 0.033285     0.977255        0.949108
+             Corner 3                      1216 -0.075270 0.058990    -0.076302  0.001032 0.056048     0.947305        0.951924
+    Above the Break 3                      1469 -0.096056 0.028491    -0.095444 -0.000612 0.027773     0.976492        0.939834
+
+  WHAT WAS CENTRED, AND HOW.  OC_z is the opponent's prior zone conversion rate MINUS its own prior
+  POOLED rate, so it inherits a large ZONE-SPECIFIC common level (RA about +0.18).  The centring
+  subtracts the LEAGUE's own prior zone-minus-pooled gap on that calendar date in that season --
+  a date-indexed scalar shared by every opponent, so the cross-sectional ORDERING of opponents is
+  untouched while the additive LEVEL is removed.  `mean_OCc` is ~0 by construction; `sd_OCc` is
+  essentially `sd_OC`, which is the point: the centring removes a level and keeps the signal.
+
+====================================================================================================
+S02.4 -- player prior zone mix w_z (player's own strictly prior same-season FGA shares)
+====================================================================================================
+  w_z rows=66910   sum_z w_z over complete player-games: min=1.000000 max=1.000000 mean=1.000000
+  (sums to <=1; the residual is Backcourt attempts, which have no conversion transfer.)
+
+====================================================================================================
+S02.5 -- assemble S = sum_z w_z * PV_z * beta_z * OCc_z   (points per attempt)
+====================================================================================================
+
+  signal column                       n_valid         mean           sd       max|.|
+  S_SPEC_RA                             11267    +0.000529     0.009278     0.093068
+  S_SPEC_RA_UNCENTRED                   11267    +0.041581     0.025391     0.191353
+  S_SPEC_RA_XSCENTRED                   10156    -0.000027     0.008759     0.068326
+  S_SPEC_ALL5_GLOBAL                     9962    +0.000256     0.011915     0.063472
+  S_SPEC_ALL5_GLOBAL_UNCENTRED           9962    -0.009345     0.043754     0.150960
+  S_SPEC_ALL5_GLOBAL_XSCENTRED           8994    -0.000035     0.011520     0.056725
+  S_SPEC_ALL5_PERZONE                    9962    +0.000462     0.009865     0.070042
+  S_SPEC_ALL5_PERZONE_UNCENTRED          9962    +0.049176     0.026896     0.174933
+  S_SPEC_ALL5_PERZONE_XSCENTRED          8994    +0.000071     0.009497     0.062514
+
+  COMPARE THE `mean` COLUMN, CENTRED vs _UNCENTRED.  The uncentred signal has a mean that dwarfs
+  its own sd -- it is a CONSTANT added to every forecast.  That is the defect the predecessor died
+  reporting, and it is why every headline below uses the centred column.
+
+====================================================================================================
+S02.6 -- baseline and candidate forecasts (NOTHING FITTED)
+====================================================================================================
+  identity check  max| ppm_cand * minutes_pred - pts_cand |  = 3.553e-15
+
+====================================================================================================
+S02.7 -- COVERAGE: which rows can be scored at all
+====================================================================================================
+                  stratum  n_rows  n_signal_RA  n_signal_ALL5  n_ppf_scoreable  n_ppm_scoreable
+                 all rows   13879        11267           9962            11267            11267
+decision-relevant stratum    5107         5086           4938             5086             5086
+              OFF stratum    8772         6181           5024             6181             6181
+
+  NOTE.  The RA spec needs only the RA zone's pieces; the ALL5 specs need all five and so cover
+  slightly fewer rows.  Rows drop where the player has <20 strictly-prior same-season FGA or the
+  opponent has faced <20 prior attempts in the zone -- i.e. EARLY-SEASON rows.  Coverage is
+  therefore HIGHER on the decision-relevant stratum than off it, which is the right direction:
+  the signal is available exactly where the champion fails.
+
+====================================================================================================
+S02.8 -- GROUPING LEVEL of the allowance (screenkit.detect_grouping_level; never assumed)
+====================================================================================================
+  detect_grouping_level(RA_OCc): n_rows=13693  dtype=float64  distinct values overall=1466
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    opponent_team_season         36         36           no     no 51
+    opponent_team_season_game       1466       1466          YES     no 1
+    game                  737        737           no     no 2
+    player_season         474        153           no     no 51
+    season                  3          3           no     no 505
+    opponent_team          12         12           no     no 137
+    -> status=COARSER_LEVEL_FOUND
+    -> COARSEST CONSTANT LEVEL = 'opponent_team_season_game'  == THE CORRECT PERMUTATION LEVEL
+  detect_grouping_level(S_SPEC_RA): n_rows=11267  dtype=float64  distinct values overall=11210
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    opponent_team_season         36         36           no     no 384
+    opponent_team_season_game       1450       1447           no     no 12
+    game                  728        727           no     no 22
+    player_season         413        401           no     no 50
+    season                  3          3           no     no 3841
+    opponent_team          12         12           no     no 1069
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'S_SPEC_RA': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+
+  var_share_between(RA_OCc, opp_team_season) = 0.6815144463939637
+
+  wrote eff_frame_v2.parquet  shape=(13879, 70)
+DONE s02
+
+####################################################################################################
+### run_log_s03.txt
+####################################################################################################
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2022, 2023, 2024]
+    date   col gdate                    YEARS  = [2022, 2023, 2024]
+    skipped    opp_team_season          name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    skipped    opp_team_season_game     name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    skipped    player_season            name is season-like but VALUES are not seasons (range nan..nan) -> NOT a season column, skipped
+    -> PASS
+
+====================================================================================================
+S03 -- EFFICIENCY CONTRAST (paired, clustered).  CENTRED specs are the only headlines.
+====================================================================================================
+
+====================================================================================================
+S03.1 -- HEADLINE: per-minute efficiency, SPEC_RA (the D074 cell that actually survived)
+====================================================================================================
+    stratum     n  r2_baseline  r2_candidate  dR2_cand_minus_base  p_cluster_opp_team_season  n_clusters  p_row_level_NAIVE  inflation_cluster_over_row  skill_base_vs_refA  skill_cand_vs_refA  d_skill_vs_refA
+        all 11267     0.158422      0.157839            -0.000583                   0.128974          36           0.005599                    1.834733            0.001256            0.000892        -0.000364
+ on_stratum  5086     0.235681      0.235125            -0.000556                   0.253549          36           0.080384                    1.526408           -0.001855           -0.002221        -0.000366
+off_stratum  6181     0.054746      0.054108            -0.000639                   0.256349          36           0.034793                    1.762644            0.003348            0.002986        -0.000362
+
+====================================================================================================
+S03.2 -- the same contrast for points-per-FGA, SPEC_RA
+====================================================================================================
+    stratum     n  r2_baseline  r2_candidate  dR2_cand_minus_base  p_cluster_opp_team_season  n_clusters  p_row_level_NAIVE  inflation_cluster_over_row  skill_base_vs_refA  skill_cand_vs_refA  d_skill_vs_refA
+        all 11267    -0.021271     -0.021365            -0.000095                   0.813037          36           0.721056                    1.458436            0.008022            0.007770        -0.000252
+ on_stratum  5086    -0.012580     -0.011979             0.000601                   0.396721          36           0.237952                    1.354043            0.001291            0.001013        -0.000278
+off_stratum  6181    -0.033356     -0.033701            -0.000345                   0.370126          36           0.288142                    1.158053            0.011582            0.011343        -0.000239
+
+====================================================================================================
+S03.3 -- ALL specs x strata, dR2 and the cluster p (CENTRED rows are the only headlines)
+====================================================================================================
+             response                        spec  centred     stratum     n  dR2_cand_minus_base  p_cluster_opp_team_season  d_skill_vs_refA
+ppm_points_per_minute                     SPEC_RA     True         all 11267            -0.000583                   0.128974        -0.000364
+ppm_points_per_minute                     SPEC_RA     True  on_stratum  5086            -0.000556                   0.253549        -0.000366
+ppm_points_per_minute                     SPEC_RA     True off_stratum  6181            -0.000639                   0.256349        -0.000362
+ppm_points_per_minute            SPEC_ALL5_GLOBAL     True         all  9962            -0.000620                   0.201160        -0.000719
+ppm_points_per_minute            SPEC_ALL5_GLOBAL     True  on_stratum  4938            -0.000219                   0.769646        -0.000514
+ppm_points_per_minute            SPEC_ALL5_GLOBAL     True off_stratum  5024            -0.000970                   0.085983        -0.000881
+ppm_points_per_minute           SPEC_ALL5_PERZONE     True         all  9962            -0.000474                   0.207958        -0.000197
+ppm_points_per_minute           SPEC_ALL5_PERZONE     True  on_stratum  4938            -0.000444                   0.427914        -0.000214
+ppm_points_per_minute           SPEC_ALL5_PERZONE     True off_stratum  5024            -0.000539                   0.256349        -0.000183
+ppm_points_per_minute           SPEC_RA_UNCENTRED    False         all 11267            -0.003758                   0.077584        -0.007988
+ppm_points_per_minute           SPEC_RA_UNCENTRED    False  on_stratum  5086            -0.009234                   0.008998        -0.012441
+ppm_points_per_minute           SPEC_RA_UNCENTRED    False off_stratum  6181            -0.000570                   0.798640        -0.004991
+ppm_points_per_minute  SPEC_ALL5_GLOBAL_UNCENTRED    False         all  9962            -0.004100                   0.009398        -0.000806
+ppm_points_per_minute  SPEC_ALL5_GLOBAL_UNCENTRED    False  on_stratum  4938            -0.003927                   0.098780        -0.001441
+ppm_points_per_minute  SPEC_ALL5_GLOBAL_UNCENTRED    False off_stratum  5024            -0.004605                   0.006599        -0.000303
+ppm_points_per_minute SPEC_ALL5_PERZONE_UNCENTRED    False         all  9962            -0.004173                   0.078384        -0.009436
+ppm_points_per_minute SPEC_ALL5_PERZONE_UNCENTRED    False  on_stratum  4938            -0.011487                   0.005399        -0.014918
+ppm_points_per_minute SPEC_ALL5_PERZONE_UNCENTRED    False off_stratum  5024             0.000761                   0.737053        -0.005088
+ppm_points_per_minute           SPEC_RA_XSCENTRED     True         all 10156            -0.000670                   0.071586        -0.000387
+ppm_points_per_minute           SPEC_RA_XSCENTRED     True  on_stratum  4553            -0.000433                   0.326735        -0.000355
+ppm_points_per_minute           SPEC_RA_XSCENTRED     True off_stratum  5603            -0.000866                   0.106179        -0.000408
+ppm_points_per_minute  SPEC_ALL5_GLOBAL_XSCENTRED     True         all  8994            -0.000716                   0.155569        -0.000740
+ppm_points_per_minute  SPEC_ALL5_GLOBAL_XSCENTRED     True  on_stratum  4431             0.000061                   0.920616        -0.000419
+ppm_points_per_minute  SPEC_ALL5_GLOBAL_XSCENTRED     True off_stratum  4563            -0.001362                   0.031194        -0.000994
+ppm_points_per_minute SPEC_ALL5_PERZONE_XSCENTRED     True         all  8994            -0.000521                   0.176565        -0.000231
+ppm_points_per_minute SPEC_ALL5_PERZONE_XSCENTRED     True  on_stratum  4431            -0.000364                   0.484303        -0.000264
+ppm_points_per_minute SPEC_ALL5_PERZONE_XSCENTRED     True off_stratum  4563            -0.000685                   0.180364        -0.000204
+   ppf_points_per_FGA                     SPEC_RA     True         all 11267            -0.000095                   0.813037        -0.000252
+   ppf_points_per_FGA                     SPEC_RA     True  on_stratum  5086             0.000601                   0.396721        -0.000278
+   ppf_points_per_FGA                     SPEC_RA     True off_stratum  6181            -0.000345                   0.370126        -0.000239
+   ppf_points_per_FGA            SPEC_ALL5_GLOBAL     True         all  9962            -0.001033                   0.043791        -0.000801
+   ppf_points_per_FGA            SPEC_ALL5_GLOBAL     True  on_stratum  4938            -0.000484                   0.616677        -0.000538
+   ppf_points_per_FGA            SPEC_ALL5_GLOBAL     True off_stratum  5024            -0.001260                   0.006599        -0.000961
+   ppf_points_per_FGA           SPEC_ALL5_PERZONE     True         all  9962            -0.000197                   0.673665        -0.000342
+   ppf_points_per_FGA           SPEC_ALL5_PERZONE     True  on_stratum  4938             0.000691                   0.398520        -0.000233
+   ppf_points_per_FGA           SPEC_ALL5_PERZONE     True off_stratum  5024            -0.000546                   0.203759        -0.000408
+   ppf_points_per_FGA           SPEC_RA_UNCENTRED    False         all 11267            -0.000355                   0.873625        -0.005006
+   ppf_points_per_FGA           SPEC_RA_UNCENTRED    False  on_stratum  5086            -0.007624                   0.092781        -0.009850
+   ppf_points_per_FGA           SPEC_RA_UNCENTRED    False off_stratum  6181             0.002245                   0.245351        -0.002444
+   ppf_points_per_FGA  SPEC_ALL5_GLOBAL_UNCENTRED    False         all  9962            -0.004316                   0.012198        -0.002978
+   ppf_points_per_FGA  SPEC_ALL5_GLOBAL_UNCENTRED    False  on_stratum  4938            -0.005682                   0.049990        -0.003405
+   ppf_points_per_FGA  SPEC_ALL5_GLOBAL_UNCENTRED    False off_stratum  5024            -0.003829                   0.039592        -0.002721
+   ppf_points_per_FGA SPEC_ALL5_PERZONE_UNCENTRED    False         all  9962            -0.000921                   0.721256        -0.006257
+   ppf_points_per_FGA SPEC_ALL5_PERZONE_UNCENTRED    False  on_stratum  4938            -0.009986                   0.058988        -0.012396
+   ppf_points_per_FGA SPEC_ALL5_PERZONE_UNCENTRED    False off_stratum  5024             0.002614                   0.274545        -0.002546
+   ppf_points_per_FGA           SPEC_RA_XSCENTRED     True         all 10156            -0.000266                   0.486703        -0.000227
+   ppf_points_per_FGA           SPEC_RA_XSCENTRED     True  on_stratum  4553             0.000747                   0.277145        -0.000235
+   ppf_points_per_FGA           SPEC_RA_XSCENTRED     True off_stratum  5603            -0.000630                   0.091182        -0.000222
+   ppf_points_per_FGA  SPEC_ALL5_GLOBAL_XSCENTRED     True         all  8994            -0.001203                   0.008398        -0.000814
+   ppf_points_per_FGA  SPEC_ALL5_GLOBAL_XSCENTRED     True  on_stratum  4431            -0.000154                   0.851430        -0.000427
+   ppf_points_per_FGA  SPEC_ALL5_GLOBAL_XSCENTRED     True off_stratum  4563            -0.001625                   0.000600        -0.001046
+   ppf_points_per_FGA SPEC_ALL5_PERZONE_XSCENTRED     True         all  8994            -0.000282                   0.530294        -0.000264
+   ppf_points_per_FGA SPEC_ALL5_PERZONE_XSCENTRED     True  on_stratum  4431             0.000817                   0.307139        -0.000161
+   ppf_points_per_FGA SPEC_ALL5_PERZONE_XSCENTRED     True off_stratum  4563            -0.000714                   0.111378        -0.000325
+
+====================================================================================================
+S03.4 -- p AT EVERY CLUSTER LEVEL, primary cell only (constraint 6: inflation visible)
+====================================================================================================
+    stratum     n  dR2_cand_minus_base  p_cluster_opp_team_season  p_row_level_NAIVE  p_opponent_team_season  nclust_opponent_team_season  p_opponent_team_season_game  nclust_opponent_team_season_game   p_game  nclust_game  p_player_season  nclust_player_season
+        all 11267            -0.000583                   0.128974           0.005599                0.128974                           36                     0.005799                              1450 0.004599          728         0.007998                   413
+ on_stratum  5086            -0.000556                   0.253549           0.080384                0.253549                           36                     0.051590                              1230 0.040192          625         0.087782                   257
+off_stratum  6181            -0.000639                   0.256349           0.034793                0.256349                           36                     0.049790                              1447 0.041792          728         0.044391                   413
+
+====================================================================================================
+S03.5 -- screenkit.noop_placebo (constraint 10): is the control vacuous?
+====================================================================================================
+  noop_placebo: real=-0.0005559503191  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  noop_placebo: real=-0.0005559503191  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  noop_placebo[identity]: real=-5.5595031914e-04  observed sd=0.000000e+00  n_distinct=None  is_noop=True
+  noop_placebo[relabel_key_and_recompute]: real=-5.5595031914e-04  observed sd=0.000000e+00  n_distinct=None  is_noop=True
+
+  wrote permutation_draws_paired_cluster.csv  (5000 draws x 3 primary cells)
+DONE s03
+
+####################################################################################################
+### run_log_s03b.txt
+####################################################################################################
+  PRIMARY CELL: per-minute efficiency, SPEC_RA, decision-relevant stratum, n=5086
+  real dR2 (rebuilt from parts, cross-check vs s03 -0.000556) = -0.000555950
+
+====================================================================================================
+P1 -- noop_placebo, LITERAL IDENTITY (harness check; constraint 10 reports the sd)
+====================================================================================================
+  noop_placebo: real=-0.0005559503191  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+  observed sd = 0.000000e+00   is_noop = True
+
+====================================================================================================
+P2 -- noop_placebo on the CLASSIC DEFECTIVE CONTROL (permute key, REBUILD from the key)
+====================================================================================================
+  noop_placebo: real=-0.0005559503191  sd=2.570e-05  max|draw-real|=5.813e-04  distinct=200 -> NOT a no-op (sd=2.570e-05) -- the transform does move the statistic
+  observed sd = 2.569897e-05   is_noop = False
+  (If this is NOT flagged a no-op it is because the group MEAN over a permuted key is not
+  quite the identity -- it shrinks each row toward a random group mean.  Either way it is a
+  DEGENERATE control and is not used for any p-value.  The real control is P3.)
+
+====================================================================================================
+P3 -- THE REAL CONTROL: reassign whole OPPONENT-TEAM-SEASONS' allowances between opponents
+====================================================================================================
+  n_opponent_team_seasons = 36   null sd = 5.286905e-04   mean = -1.951946e-04
+  real dR2 = -0.000555950   two-sided p against this null = 0.3418
+  null quantiles  2.5%=-0.001223  50%=-0.000197  97.5%=+0.000812
+
+  READ THE SIGN.  The real dR2 is NEGATIVE and sits well inside a null centred near zero: the
+  centred transfer does not merely fail to help, it is indistinguishable from a randomly
+  reassigned opponent's allowance.
+DONE s03b
+
+####################################################################################################
+### run_log_s04.txt
+####################################################################################################
+
+====================================================================================================
+S04.1 -- POINTS: candidate = champion points + fga_forecast * S  (== ppm_cand x minutes)
+====================================================================================================
+             spec  centred     stratum     n  r2_champion  r2_candidate  dR2_cand_minus_champ  p_cluster_opp_team_season  p_row_level_NAIVE  points_skill_champion  points_skill_candidate  d_points_skill
+          SPEC_RA     True         all 11267     0.437851      0.437581             -0.000270                   0.237153           0.087383               0.005557                0.005314       -0.000243
+          SPEC_RA     True  on_stratum  5086     0.296560      0.296272             -0.000288                   0.476305           0.291342              -0.003380               -0.003513       -0.000133
+          SPEC_RA     True off_stratum  6181     0.317621      0.317230             -0.000391                   0.336733           0.175365               0.015133                0.014772       -0.000360
+ SPEC_ALL5_GLOBAL     True         all  9962     0.457759      0.457546             -0.000213                   0.538092           0.343731               0.008623                0.008127       -0.000496
+ SPEC_ALL5_GLOBAL     True  on_stratum  4938     0.296918      0.297007              0.000089                   0.885023           0.832234              -0.003719               -0.004085       -0.000366
+ SPEC_ALL5_GLOBAL     True off_stratum  5024     0.228718      0.227695             -0.001023                   0.015797           0.004399               0.025376                0.024704       -0.000672
+SPEC_ALL5_PERZONE     True         all  9962     0.457759      0.457539             -0.000220                   0.365727           0.203559               0.008623                0.008555       -0.000068
+SPEC_ALL5_PERZONE     True  on_stratum  4938     0.296918      0.296734             -0.000185                   0.690662           0.546291              -0.003719               -0.003672        0.000047
+SPEC_ALL5_PERZONE     True off_stratum  5024     0.228718      0.228206             -0.000512                   0.183763           0.100780               0.025376                0.025151       -0.000225
+SPEC_RA_UNCENTRED    False         all 11267     0.437851      0.434470             -0.003381                   0.032993           0.000200               0.005557               -0.002209       -0.007765
+SPEC_RA_UNCENTRED    False  on_stratum  5086     0.296560      0.288497             -0.008063                   0.004199           0.000200              -0.003380               -0.013929       -0.010549
+SPEC_RA_UNCENTRED    False off_stratum  6181     0.317621      0.318327              0.000706                   0.666867           0.574685               0.015133                0.010350       -0.004783
+
+====================================================================================================
+S04.2 -- THE ARITHMETIC CEILING (D079's form) FOR THE CONVERSION CHANNEL
+====================================================================================================
+             spec     stratum     n  sd_y_points_this_frame  points_moved_by_1sd_of_signal  CEILING_A_perfect_orthogonal_dR2  CEILING_A_vs_D079_5p82_sd  DIAGNOSTIC_corr_resid_vs_move  DIAGNOSTIC_ORACLE_best_scaling_dR2  D079_mix_ceiling_for_comparison
+          SPEC_RA         all 11267                7.555190                       0.079532                          0.000111                   0.000187                      -0.013165                        9.719177e-05                         0.001127
+          SPEC_RA  on_stratum  5086                7.550492                       0.085891                          0.000129                   0.000218                      -0.007420                        3.872590e-05                         0.001127
+          SPEC_RA off_stratum  6181                6.112826                       0.073894                          0.000146                   0.000161                      -0.019285                        2.503449e-04                         0.001127
+ SPEC_ALL5_GLOBAL         all  9962                7.532537                       0.099823                          0.000176                   0.000294                      -0.002981                        4.807982e-06                         0.001127
+ SPEC_ALL5_GLOBAL  on_stratum  4938                7.531578                       0.124592                          0.000274                   0.000458                       0.013513                        1.283495e-04                         0.001127
+ SPEC_ALL5_GLOBAL off_stratum  5024                5.317992                       0.067080                          0.000159                   0.000133                      -0.041161                        1.285264e-03                         0.001127
+SPEC_ALL5_PERZONE         all  9962                7.532537                       0.080734                          0.000115                   0.000192                      -0.008984                        4.367611e-05                         0.001127
+SPEC_ALL5_PERZONE  on_stratum  4938                7.531578                       0.098090                          0.000170                   0.000284                       0.000273                        5.234535e-08                         0.001127
+SPEC_ALL5_PERZONE off_stratum  5024                5.317992                       0.058830                          0.000122                   0.000102                      -0.024839                        4.680406e-04                         0.001127
+
+  HOW TO READ THIS.  `points_moved_by_1sd_of_signal` is how many POINTS one standard deviation of
+  the CENTRED conversion signal moves the champion's points forecast.  CEILING-A is the dR2 that
+  movement could buy IF the signal were a perfect, orthogonal predictor -- pure arithmetic, no
+  fitting, exactly D079's calculation.  CEILING-B (the ORACLE column) is the dR2 obtainable if the
+  transfer coefficient were rescaled WITH HINDSIGHT on these very rows; it USES THE REALISED
+  RESPONSE, is an UPPER BOUND, and is never a screened result.  D079's shot-mix ceiling of
+  0.001127 is printed beside it.
+
+====================================================================================================
+S04.3 -- THE SAME CEILING ON THE EFFICIENCY RESPONSE ITSELF (points per minute)
+====================================================================================================
+             spec     stratum     n  sd_y_ppm  ppm_moved_by_1sd_of_signal  CEILING_A_perfect_orthogonal_dR2  DIAGNOSTIC_corr_resid_vs_move  DIAGNOSTIC_ORACLE_best_scaling_dR2
+          SPEC_RA         all 11267  0.244276                    0.003115                          0.000163                      -0.019700                            0.000326
+          SPEC_RA  on_stratum  5086  0.221343                    0.002845                          0.000165                      -0.016453                            0.000207
+          SPEC_RA off_stratum  6181  0.253479                    0.003320                          0.000172                      -0.021553                            0.000438
+ SPEC_ALL5_GLOBAL         all  9962  0.245752                    0.003906                          0.000253                      -0.013363                            0.000149
+ SPEC_ALL5_GLOBAL  on_stratum  4938  0.220687                    0.004075                          0.000341                       0.004289                            0.000014
+ SPEC_ALL5_GLOBAL off_stratum  5024  0.256497                    0.003732                          0.000212                      -0.027441                            0.000721
+SPEC_ALL5_PERZONE         all  9962  0.245752                    0.003201                          0.000170                      -0.014291                            0.000170
+SPEC_ALL5_PERZONE  on_stratum  4938  0.220687                    0.003249                          0.000217                      -0.007843                            0.000047
+SPEC_ALL5_PERZONE off_stratum  5024  0.256497                    0.003153                          0.000151                      -0.018420                            0.000325
+
+====================================================================================================
+S04.4 -- WHAT WOULD THE SIGNAL HAVE TO BE WORTH TO MATTER?
+====================================================================================================
+  On the decision-relevant stratum the champion's points skill is -0.36% against the
+  point-in-time reference (D081, reproduced exactly in s01).  One sd of the centred RA conversion
+  signal moves the points forecast by 0.0859 points against a 7.5505-point response sd.  Even as a
+  PERFECT ORTHOGONAL predictor that is dR2 <= 0.000129 -- 0.1x D079's already-fatal shot-mix ceiling
+  of 0.001127 in the SAME units.  Rescaled with hindsight it is dR2 <= 0.000039.  Measured as built,
+  it is dR2 = -0.000288: NEGATIVE.
+DONE s04
+
+####################################################################################################
+### run_log_s06.txt
+####################################################################################################
+
+====================================================================================================
+S06.1 -- arithmetic ceiling on the points-per-FGA response
+====================================================================================================
+                       spec     stratum     n  sd_y_ppf  ppf_moved_by_1sd  CEILING_A_perfect_orthogonal_dR2  DIAGNOSTIC_corr_resid_vs_move  DIAGNOSTIC_ORACLE_dR2
+                    SPEC_RA         all 11267  0.639852          0.009278                          0.000210                       0.002121           4.588667e-06
+                    SPEC_RA  on_stratum  5086  0.487485          0.008210                          0.000284                       0.026213           6.957514e-04
+                    SPEC_RA off_stratum  6181  0.738928          0.010073                          0.000186                      -0.008533           7.504071e-05
+          SPEC_ALL5_PERZONE         all  9962  0.651041          0.009865                          0.000230                      -0.000508           2.621457e-07
+          SPEC_ALL5_PERZONE  on_stratum  4938  0.488418          0.009413                          0.000371                       0.027458           7.624996e-04
+          SPEC_ALL5_PERZONE off_stratum  5024  0.774240          0.010291                          0.000177                      -0.015808           2.561814e-04
+          SPEC_RA_XSCENTRED         all 10156  0.642282          0.008759                          0.000186                      -0.002803           8.011049e-06
+          SPEC_RA_XSCENTRED  on_stratum  4553  0.490446          0.007880                          0.000258                       0.030964           9.741034e-04
+          SPEC_RA_XSCENTRED off_stratum  5603  0.740216          0.009410                          0.000162                      -0.017110           3.008518e-04
+SPEC_ALL5_PERZONE_XSCENTRED         all  8994  0.653442          0.009497                          0.000211                      -0.002704           7.410407e-06
+SPEC_ALL5_PERZONE_XSCENTRED  on_stratum  4431  0.491649          0.009015                          0.000336                       0.031084           9.798920e-04
+SPEC_ALL5_PERZONE_XSCENTRED off_stratum  4563  0.775163          0.009941                          0.000164                      -0.020517           4.303515e-04
+
+  NOTE.  The points-per-FGA BASELINE ITSELF has a NEGATIVE R2 (-0.0126 on the stratum): the
+  champion's implied points-per-attempt is worse than the sample mean of realised points-per-
+  attempt.  A positive dR2 against a baseline that is already worse than a constant is a weak
+  claim, which is why points-per-minute is the primary response and points is the response that
+  decides.
+
+====================================================================================================
+S06.2 -- do the two largest positive centred cells PROPAGATE TO POINTS?
+====================================================================================================
+                       spec    n  ppf_dR2_on_stratum    ppf_p  points_dR2_on_stratum  points_p_cluster
+SPEC_ALL5_PERZONE_XSCENTRED 4431            0.000817 0.307139               0.000019          0.965807
+          SPEC_RA_XSCENTRED 4553            0.000747 0.277145              -0.000054          0.883023
+          SPEC_ALL5_PERZONE 4938            0.000691 0.398520              -0.000185          0.690662
+                    SPEC_RA 5086            0.000601 0.396721              -0.000288          0.476305
+
+  VERDICT ON THE POSITIVE CELLS.  Every one of them is NON-SIGNIFICANT at the cluster level on
+  points-per-FGA, and every one of them turns NEGATIVE or stays negligible once propagated to
+  POINTS, which is the response the program actually cares about.  Nothing survives.
+DONE s06
+
+####################################################################################################
+### run_log_s05.txt
+####################################################################################################
+
+====================================================================================================
+S05 -- LEVER DECOMPOSITION on the decision-relevant stratum
+====================================================================================================
+  n                                              5086
+  sd_RA_OCc_centred_allowance                    +0.032426
+  mean_RA_w_player_prior_rim_share               +0.290478
+  point_value_RA                                 +2.000000
+  lambda_D074_transfer_slope                     +0.373154
+  mean_fga_forecast                              +11.105026
+  sd_points_response                             +7.550492
+  implied_points_per_attempt_per_1sd             +0.007029
+  implied_points_per_game_per_1sd                +0.078062
+  measured_points_per_game_per_1sd               +0.085891
+  as_fraction_of_response_sd                     +0.010339
+
+  THE WHOLE LEAD IN ONE LINE.  A one-standard-deviation better/worse rim-conversion opponent is
+  0.0324 in centred allowance.  Multiplied by D074's transfer slope (0.3732), the 2 points a rim
+  make is worth, and the share of the player's prior attempts that are at the rim (0.290), that is
+  0.00703 points PER ATTEMPT -- and over a typical 11.11-attempt game, 0.0781 POINTS.  The points
+  response sd is 7.55.  The lever is 1.03% of a response sd.
+
+  wrote FINDINGS.json  (131800 bytes)
+  VERDICT: KILL
+  NO. The centred opponent zone-conversion-allowance signal does NOT improve a point-in-time forecast of player efficiency on the decision-relevant stratum: paired dR2 = -0.000556 (candidate minus champion) at cluster-level p = 0.2535 (opponent-team-season, 36 clusters), and the sign is NEGATIVE. It also fails off the stratum (-0.000639, p=0.2563), so there is no cold-start-only consolation either. The channel is closed on ARITHMETIC, not on power: one sd of the centred signal moves the points forecast by only 0.0859 points against a 7.5505-point response sd, so even a PERFECT ORTHOGONAL predictor is capped at dR2 <= 0.000129 -- roughly 8.7x SMALLER than the dR2 <= 0.001127 ceiling on which D079 already killed the SHOT-MIX channel.
+DONE s05
