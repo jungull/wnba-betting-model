@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `3ca76d021b0353dc237686b5a1a506b755d3fbf8` |
-| working tree | clean |
+| HEAD | `da00908c6cc3eeafdbb2ac3a5adf136c16f709c6` |
+| working tree | DIRTY |
 | nodes | 104 |
-| events | 453 |
+| events | 459 |
 
 ## Counts by status
 
