@@ -18,6 +18,7 @@ import os
 import shutil
 import sys
 import traceback
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -1059,6 +1060,507 @@ def test_paired_forecast_comparison_p4():
 
 
 # ===========================================================================================
+# REGRESSION TESTS FOR THE THREE DEFECTS + ONE USAGE NIT FOUND BY THE KIT'S SECOND AND THIRD
+# REAL USERS (E0_I0016_efficiency_predictors and the screen alongside it).
+#
+# Each of TEST 14-17 FAILS against the pre-fix screenkit.py (git 56dc793).  The 100-assertion
+# suite passed while `assert_partition` RAISED ON CLEAN DATA for any frame with a column named
+# `candidate`, because no fixture ever contained one.  Same lesson as P1: close the blind spot.
+# ===========================================================================================
+
+def test_date_branch_value_gate_k0():
+    """K0 REGRESSION -- THE PRIORITY, AND THE FOURTH NAME-BASED FALSE HIT IN THIS PROGRAM.
+
+    Pre-fix, `assert_partition` auto-detected date columns by `"date" in name.lower()`, and THE
+    WORD "candi-DATE" CONTAINS "date".  `pd.to_datetime` on a float column does not raise -- it
+    reads the values as epoch nanoseconds and returns 1970-01-01 -- and 1970 is outside every real
+    partition, so a frame whose every value sat inside 2021-2024 raised `PartitionViolation`.
+
+    The defect is an ASYMMETRY: the SEASON branch already had `_is_season_valued` (with the
+    `_team_season_2025` regression test in TEST 6); the DATE branch had no equivalent.  These
+    assertions pin the symmetry, and they pin that the obvious workaround (`date_cols=[]`) did not
+    become the fix.
+    """
+    section("TEST 14 -- K0 REGRESSION: assert_partition raised on CLEAN data ('candi-DATE')")
+
+    # ---- the reporter's frame, verbatim in shape.  Every value is inside 2021-2024. ----------
+    clean = pd.DataFrame({
+        "season": [2021, 2022, 2023, 2024],
+        "game_date": pd.to_datetime(["2021-06-01", "2022-06-01", "2023-06-01", "2024-06-01"]),
+        "candidate": ["A01_opp_efg_allowed", "B05_matchup_fouldraw",
+                      "C07_pl_usage_rank", "G01_noise"],
+        "mae_with_candidate": [0.1234, 0.2345, 0.3456, 0.4567],
+        "n_candidates": [44, 44, 44, 44],
+        "update_flag": [0, 1, 0, 1],
+        "validated": [True, True, False, True],
+    })
+    print("      columns whose NAME contains the substring 'date':")
+    for c in clean.columns:
+        if "date" in str(c).lower():
+            print("        %-22s dtype=%-16s <- 'date' in name" % (c, clean[c].dtype))
+
+    err = None
+    rep = None
+    try:
+        rep = sk.assert_partition(clean, verbose=True)
+    except Exception as exc:                                # noqa: BLE001
+        err = exc
+    check("PASSES on a clean 2021-2024 frame containing a column named `candidate`",
+          err is None and rep is not None and rep["ok"] is True,
+          "raised %s" % type(err).__name__ if err is not None
+          else "violations = %s" % rep["violations"])
+
+    if rep is not None:
+        for col in ("candidate", "mae_with_candidate", "n_candidates", "update_flag", "validated"):
+            check("name-only 'date' match %-20s is SKIPPED, not checked" % ("`%s`" % col),
+                  col in rep["skipped_name_only"] and col not in rep["checked_date_cols"],
+                  "skipped=%s checked=%s" % (col in rep["skipped_name_only"],
+                                             col in rep["checked_date_cols"]))
+        check("the REAL date column is still checked and its years reported",
+              rep["checked_date_cols"].get("game_date") == [2021, 2022, 2023, 2024],
+              "checked_date_cols = %s" % rep["checked_date_cols"])
+        check("the epoch-nanosecond reading is refused BY NAME in the skip reason",
+              "NUMERIC" in rep["skipped_name_only"].get("mae_with_candidate", "")
+              and "epoch" in rep["skipped_name_only"].get("mae_with_candidate", "").lower(),
+              "reason = %s" % rep["skipped_name_only"].get("mae_with_candidate", "")[:70])
+
+    # ---- THE ASYMMETRY, stated side by side (the reporter's REPRO 3) -------------------------
+    asym = pd.DataFrame({
+        "season": [2021, 2022],
+        "_team_season_2025": [1.2e-4, 3.4e-4],      # name season-like, values are dR2 draws
+        "candidate_mae": [0.11, 0.22],              # name date-like (candi-DATE), values are MAEs
+    })
+    rep_a = sk.assert_partition(asym, raise_on_violation=False, verbose=True)
+    check("SYMMETRY: the season branch AND the date branch both skip a name-only match",
+          "_team_season_2025" in rep_a["skipped_name_only"]
+          and "candidate_mae" in rep_a["skipped_name_only"]
+          and rep_a["ok"] is True,
+          "skipped = %s, violations = %s" % (sorted(rep_a["skipped_name_only"]),
+                                             rep_a["violations"]))
+    check("the two branches give the SAME 'name is X-like but VALUES are not' wording",
+          "VALUES are" in rep_a["skipped_name_only"].get("_team_season_2025", "")
+          and "VALUES are" in rep_a["skipped_name_only"].get("candidate_mae", ""))
+
+    # ---- REQUIREMENT: THE TRUE CHECK MUST STAY LIVE -----------------------------------------
+    real_violation = pd.DataFrame({
+        "season": [2021, 2022],
+        "game_date": pd.to_datetime(["2021-06-01", "2026-06-01"]),   # a GENUINE 2026 violation
+        "candidate": ["A01", "B05"],
+        "mae_with_candidate": [0.11, 0.22],
+    })
+    caught = False
+    try:
+        sk.assert_partition(real_violation)
+    except sk.PartitionViolation as exc:
+        caught = "2026" in str(exc)
+    check("a GENUINE 2026 date is still caught (the fix did not disable the check)", caught)
+
+    # ...AND THE WORKAROUND MUST NOT BE THE FIX.  `date_cols=[]` used to silence the true alarm
+    # too; datetime-dtype columns are now checked regardless of `date_cols` (declared break B2).
+    caught_off = False
+    try:
+        sk.assert_partition(real_violation, date_cols=[])
+    except sk.PartitionViolation as exc:
+        caught_off = "2026" in str(exc)
+    check("date_cols=[] NO LONGER opens a false-pass door on a datetime column (B2)", caught_off)
+    rep_optout = sk.assert_partition(real_violation, date_cols=[], raise_on_violation=False,
+                                     include_datetime_dtype_cols=False)
+    check("the pre-K0 behaviour is still reachable, but only by naming it explicitly",
+          rep_optout["ok"] is True and rep_optout["checked_date_cols"] == {},
+          "checked = %s" % rep_optout["checked_date_cols"])
+
+    # A date column stored as STRINGS must still be parsed and checked.
+    str_dates = pd.DataFrame({
+        "season": [2021, 2026],
+        "game_date": ["2021-06-01", "2026-06-01"],
+        "candidate": ["A01", "B05"],
+    })
+    caught_str = False
+    try:
+        sk.assert_partition(str_dates)
+    except sk.PartitionViolation as exc:
+        caught_str = "2026" in str(exc)
+    check("a STRING date column holding 2026 is still parsed and flagged", caught_str)
+
+    # An EXPLICIT date_cols entry that is not date-valued must be LOUD, never silently skipped.
+    err2 = None
+    try:
+        sk.assert_partition(clean, date_cols=["mae_with_candidate"])
+    except Exception as exc:                                # noqa: BLE001
+        err2 = exc
+    check("explicitly naming a NON-date column in date_cols raises an actionable ValueError",
+          isinstance(err2, ValueError) and not isinstance(err2, sk.PartitionViolation)
+          and "pd.to_datetime" in str(err2),
+          "%s: %s" % (type(err2).__name__, str(err2)[:60]))
+
+    # ---- THE REPORTED NOISE: no UserWarning on a frame with an object column ------------------
+    with warnings.catch_warnings(record=True) as caught_w:
+        warnings.simplefilter("always")
+        sk.assert_partition(clean)
+        sk.assert_partition(asym, raise_on_violation=False)
+    msgs = [str(x.message) for x in caught_w]
+    check("assert_partition emits NO warnings at all (the 'Could not infer format' noise is gone)",
+          msgs == [], "warnings = %s" % [m[:60] for m in msgs])
+
+    # ---- the unit-level guard itself ---------------------------------------------------------
+    ok_dt, yrs_dt, _ = sk._is_date_valued(pd.to_datetime(pd.Series(["2026-01-01"])))
+    ok_f, _, why_f = sk._is_date_valued(pd.Series([0.1234, 0.2345]))
+    ok_i, _, _ = sk._is_date_valued(pd.Series([1, 2, 3]))
+    ok_s, yrs_s, _ = sk._is_date_valued(pd.Series(["2021-06-01", "2022-07-04"]))
+    ok_j, _, _ = sk._is_date_valued(pd.Series(["A01_opp_efg", "B05_matchup"]))
+    check("_is_date_valued: datetime64 accepted with NO year-range gate (2026 still checkable)",
+          ok_dt is True and yrs_dt == {2026})
+    check("_is_date_valued: a FLOAT column is refused outright (no epoch-nanosecond reading)",
+          ok_f is False and "1970" in why_f)
+    check("_is_date_valued: an INT column is refused outright too", ok_i is False)
+    check("_is_date_valued: a string column of real dates is accepted",
+          ok_s is True and yrs_s == {2021, 2022})
+    check("_is_date_valued: a string column of feature ids is refused", ok_j is False)
+
+
+# ===========================================================================================
+def _persistence_frame(n_entities=80, n_games=40, seed=13):
+    """Entities with a PERSISTENT true level, observed with noise.  Two baselines, BOTH strictly
+    prior-games-only: a rolling-3 mean (noisy) and an expanding mean (better).  NEITHER reads the
+    future -- both are built from `shift(1)` alone."""
+    rng = np.random.default_rng(seed)
+    rows = []
+    for e in range(n_entities):
+        mu = rng.normal(0.0, 1.0)
+        for gi in range(n_games):
+            rows.append({"entity_id": e, "season": 2023,
+                         "game_date": pd.Timestamp("2023-05-01") + pd.Timedelta(days=2 * gi),
+                         "game_id": gi, "y": mu + rng.normal(0.0, 1.0)})
+    df = pd.DataFrame(rows)
+    g = df.groupby(["entity_id", "season"], sort=False)["y"]
+    df["refA_ppm"] = g.transform(lambda s: s.shift(1).rolling(3, min_periods=1).mean())
+    df["refB_ppm"] = g.transform(lambda s: s.shift(1).expanding().mean())
+    return df
+
+
+def test_leakage_probe_states_only_what_it_licenses_k1():
+    """K1 REGRESSION.  The probe used to assert, in its own verdict string, "That is only possible
+    because it CONTAINS the future."  IT FIRED ON TWO STRICTLY PRIOR-GAMES-ONLY BASELINES that
+    differ only as ESTIMATORS.  A caller trusting that wording would discard a clean baseline.
+
+    Pre-fix this test fails on both halves: the false sentence is present, and the neutral fields
+    (`screening_flag`, `status`, `alternative_explanation`) do not exist.
+    """
+    section("TEST 15 -- K1 REGRESSION: the leakage probe is a SCREEN, not a VERDICT")
+    df = _persistence_frame()
+
+    # Both baselines use shift(1) only.  Proof by construction: neither can see row i or later.
+    g = df.groupby(["entity_id", "season"], sort=False)
+    lag_ok = bool((g["game_id"].transform("max") >= df["game_id"]).all())
+    check("fixture sanity: both baselines are built from shift(1) -- strictly prior games only",
+          lag_ok and df["refA_ppm"].isna().sum() == df["refB_ppm"].isna().sum(),
+          "both start NaN at each entity's first game")
+
+    res = sk.future_leakage_probe(df, "refB_ppm", "refA_ppm",
+                                  ["entity_id", "season"], "game_date", "y", verbose=True)
+
+    # THE EMPIRICAL POINT: the probe FIRES on a pair where NOTHING reads the future.
+    check("the probe FIRES on refB vs refA even though NEITHER reads the future",
+          res["screening_flag"] is True,
+          "corr %.4f vs %.4f, dR2 %.4f" % (res["corr_suspect_with_future"],
+                                           res["corr_clean_with_future"],
+                                           res["dr2_suspect_over_clean_predicting_future"]))
+    check("the numbers are NOT weakened: both correlations and the dR2 are still reported",
+          np.isfinite(res["corr_suspect_with_future"])
+          and np.isfinite(res["corr_clean_with_future"])
+          and res["dr2_suspect_over_clean_predicting_future"] > 0.01)
+
+    # THE CLAIM ATTACHED TO THEM.
+    check("the verdict NO LONGER says 'only possible because it CONTAINS the future'",
+          "only possible because it" not in res["verdict"]
+          and "CONTAINS the future" not in res["verdict"],
+          "verdict starts: %s..." % res["verdict"][:52])
+    check("the verdict names itself a SCREENING FLAG and denies being a verdict",
+          "SCREENING FLAG" in res["verdict"] and "NOT A VERDICT" in res["verdict"])
+    check("the verdict offers the BETTER-ESTIMATOR explanation as an equal alternative",
+          "BETTER ESTIMATOR" in res["verdict"] and "persist" in res["verdict"].lower()
+          and "CANNOT TELL THEM APART" in res["verdict"])
+    check("the verdict tells the caller NOT to discard a baseline on this alone",
+          "not" in res["verdict"].lower() and "discard a baseline" in res["verdict"])
+    check("status is the ambiguity-naming constant, not a leakage finding",
+          res["status"] == sk.SCREEN_FLAG_AMBIGUOUS
+          and "ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR" in res["status"],
+          "status = %s" % res["status"])
+    check("alternative_explanation is carried as its own field",
+          isinstance(res["alternative_explanation"], str)
+          and "PERSISTS" in res["alternative_explanation"].upper())
+    check("the legacy `reads_future` field is preserved with its value unchanged",
+          res["reads_future"] == res["screening_flag"])
+
+    # THE TRUE POSITIVE MUST STILL FIRE, and its verdict must still be strong about what to check.
+    rng = np.random.default_rng(19)
+    rows = []
+    for p in range(60):
+        mu = rng.normal(0.0, 1.0)
+        for gi in range(30):
+            rows.append({"player_id": p, "season": 2023,
+                         "game_date": pd.Timestamp("2023-05-01") + pd.Timedelta(days=2 * gi),
+                         "y": mu + rng.normal(0.0, 1.0)})
+    leaky = pd.DataFrame(rows)
+    gl = leaky.groupby(["player_id", "season"], sort=False)["y"]
+    tot, cnt = gl.transform("sum"), gl.transform("count")
+    leaky["baseline_loo"] = (tot - leaky["y"]) / (cnt - 1)        # READS THE FUTURE
+    leaky["baseline_pregame"] = gl.transform(lambda s: s.shift(1).expanding().mean())
+    res_leak = sk.future_leakage_probe(leaky, "baseline_loo", "baseline_pregame",
+                                       ["player_id", "season"], "game_date", "y")
+    check("the genuine leave-one-out leak is STILL flagged (no loss of sensitivity)",
+          res_leak["screening_flag"] is True and res_leak["status"] == sk.SCREEN_FLAG_AMBIGUOUS)
+    check("a NOT-flagged result names itself not-a-certificate",
+          sk.future_leakage_probe(leaky, "baseline_pregame", "baseline_loo",
+                                  ["player_id", "season"], "game_date", "y")["status"]
+          == sk.SCREEN_NOT_FLAGGED)
+
+
+# ===========================================================================================
+def _entity_series_frame(n_entities=24, seed=29, n_seasons=2):
+    """Entity-seasons of UNEQUAL length whose feature is an EXPANDING PRIOR -- so it varies WITHIN
+    the entity-season AND carries its signal at the entity level.  This is the shape for which the
+    kit had no valid scheme (K2)."""
+    rng = np.random.default_rng(seed)
+    rows = []
+    for e in range(n_entities):
+        season = 2021 + (e % n_seasons)
+        n_g = int(rng.integers(12, 30))                  # UNEQUAL series lengths
+        level = rng.normal(0.0, 1.0)
+        for gi in range(n_g):
+            rows.append({"entity_id": e, "season": season,
+                         "game_id": gi,
+                         "game_date": pd.Timestamp("2021-05-01") + pd.Timedelta(days=3 * gi),
+                         "obs": level + rng.normal(0.0, 1.0)})
+    df = pd.DataFrame(rows)
+    g = df.groupby(["entity_id", "season"], sort=False)["obs"]
+    df["prior"] = g.transform(lambda s: s.shift(1).expanding().mean()).fillna(0.0)
+    return df
+
+
+def test_entity_swap_null_k2():
+    """K2 REGRESSION.  Pre-fix, `sk.EntitySwap` and `sk.entity_swap_null` do not exist and this
+    whole test raises `AttributeError`.  The gap was real, not misuse: for a within-varying feature
+    `SCHEME_BETWEEN` requires constancy and `SCHEME_WITHIN` answers a different question, so the
+    between-entity question had NO valid scheme.
+    """
+    section("TEST 16 -- K2 REGRESSION: entity_swap_null (the missing between-entity scheme)")
+    df = _entity_series_frame()
+
+    # ---- the gap, reproduced: NO candidate key is constant-within (the reporter's 132 cells) --
+    lvl = sk.detect_grouping_level(
+        df, "prior",
+        candidate_keys={"entity_season": ["entity_id", "season"], "game": ["game_id"],
+                        "season": ["season"]})
+    check("the K2 shape: the feature is constant within NO candidate key",
+          lvl["constant_levels"] == [] and lvl["status"] == sk.STATUS_NO_COARSER_LEVEL,
+          "constant levels = %s" % lvl["constant_levels"])
+
+    swapper = sk.EntitySwap(df, ["entity_id", "season"], date_col="game_date",
+                            season_col="season", tiebreak_col="game_id")
+    check("EntitySwap groups the frame into one series per entity-season",
+          swapper.n_groups == df.groupby(["entity_id", "season"], sort=False).ngroups
+          and swapper.n_seasons == df["season"].nunique(),
+          "%d groups over %d seasons" % (swapper.n_groups, swapper.n_seasons))
+    check("the fixture really has UNEQUAL series lengths (the proportional map is exercised)",
+          len(set(swapper.group_sizes.tolist())) > 1,
+          "sizes %d..%d" % (swapper.group_sizes.min(), swapper.group_sizes.max()))
+
+    # ---- STRUCTURAL GUARANTEES, checked with a value that ENCODES its own provenance ----------
+    # Each row carries `entity_code * 1000 + position_in_series`, so a draw can be decoded exactly.
+    # `_group_codes` is the same helper EntitySwap uses, and EntitySwap orders its groups by code,
+    # so the code IS the group index.  (Asserted immediately below rather than assumed.)
+    ecodes = sk._group_codes(df, ["entity_id", "season"])
+    check("EntitySwap group i holds exactly the rows of entity-season code i",
+          all(set(np.flatnonzero(ecodes == gi)) == set(idx.tolist())
+              for gi, idx in enumerate(swapper.groups)))
+    pos = np.empty(len(df), dtype=float)
+    for gi, idx in enumerate(swapper.groups):
+        pos[idx] = np.arange(len(idx))
+    tag = ecodes * 1000.0 + pos
+    season_of_code = {int(c): int(s) for c, s in zip(ecodes, df["season"].to_numpy())}
+
+    rng = np.random.default_rng(4)
+    n_bad_season, n_first, n_last, n_moved = 0, 0, 0, 0
+    for _ in range(20):
+        d = swapper.draw(tag, rng)
+        src_code = (d // 1000).astype(int)
+        src_pos = (d % 1000).astype(int)
+        # (a) never crosses a season
+        for i in range(len(d)):
+            if season_of_code[src_code[i]] != int(df["season"].iloc[i]):
+                n_bad_season += 1
+        # (b) endpoints map to endpoints
+        for gi, idx in enumerate(swapper.groups):
+            partner = src_code[idx[0]]
+            n_first += int(src_pos[idx[0]] != 0)
+            n_last += int(src_pos[idx[-1]] != swapper.group_sizes[partner] - 1)
+        n_moved += int((src_code != ecodes).sum())
+    check("EntitySwap NEVER swaps across a season block", n_bad_season == 0,
+          "%d cross-season assignments in 20 draws" % n_bad_season)
+    check("position 0 always receives the partner's position 0", n_first == 0)
+    check("the last position always receives the partner's LAST position", n_last == 0)
+    check("draws really move values between entities (not a silent identity)", n_moved > 0,
+          "%d rows reassigned across 20 draws" % n_moved)
+
+    # a single-entity season block returns that entity's own values back, exactly
+    solo = df[(df["entity_id"] == df["entity_id"].iloc[0]) & (df["season"] == 2021)].copy()
+    solo_swap = sk.EntitySwap(solo, ["entity_id", "season"], date_col="game_date",
+                              season_col="season", tiebreak_col="game_id")
+    solo_vals = solo["prior"].to_numpy(float)
+    check("a season block with ONE entity yields that entity's own series back, exactly",
+          np.array_equal(solo_swap.draw(solo_vals, np.random.default_rng(0)), solo_vals))
+
+    # an entity that spans seasons is refused rather than silently assigned to one
+    spanning = pd.DataFrame({
+        "entity_id": [1, 1, 2, 2],
+        "season": [2021, 2022, 2021, 2022],           # entity 1 appears in BOTH seasons
+        "game_date": pd.to_datetime(["2021-06-01", "2022-06-01", "2021-06-02", "2022-06-02"]),
+        "v": [0.1, 0.2, 0.3, 0.4],
+    })
+    refused = False
+    try:
+        sk.EntitySwap(spanning, ["entity_id"], date_col="game_date", season_col="season")
+    except ValueError as exc:
+        refused = "spans more than one" in str(exc)
+    check("an entity spanning more than one season RAISES rather than being silently assigned",
+          refused)
+    ok_spanning = sk.EntitySwap(spanning, ["entity_id", "season"], date_col="game_date",
+                                season_col="season")
+    check("...and putting the season INTO entity_cols is accepted, as the message advises",
+          ok_spanning.n_groups == 4 and ok_spanning.n_seasons == 2)
+
+    # ---- the driver: calibration under a TRUE BETWEEN-ENTITY EFFECT OF ZERO ------------------
+    n_rep, n_dr, alpha = 60, 200, 0.05
+    ps = []
+    for r in range(n_rep):
+        rg = np.random.default_rng(6100 + r)
+        d = df.copy()
+        # outcome carries an entity level, but one INDEPENDENT of the candidate -> true effect 0
+        ent_u = rg.normal(0.0, 1.5, swapper.n_groups)
+        yv = np.empty(len(d))
+        for gi, idx in enumerate(swapper.groups):
+            yv[idx] = ent_u[gi]
+        d["y"] = yv + rg.normal(0.0, 1.0, len(d))
+
+        def stat(dd):
+            return sk.r2_plain(dd["y"].to_numpy(float), dd["prior"].to_numpy(float))
+
+        ps.append(sk.entity_swap_null(stat, d, ["entity_id", "season"], n_dr, 800 + r,
+                                      feature_col="prior", date_col="game_date",
+                                      season_col="season", tiebreak_col="game_id",
+                                      swapper=swapper, alternative="greater")["p"])
+    ps = np.array(ps)
+    rej = float((ps <= alpha).mean())
+    print("      %d replicates, %d entity-swap draws each, TRUE BETWEEN-ENTITY EFFECT = 0"
+          % (n_rep, n_dr))
+    print("      entity-swap rejection rate at alpha=0.05 : %.3f   mean p = %.3f (uniform => 0.5)"
+          % (rej, ps.mean()))
+    check("entity_swap_null is calibrated with an entity-level outcome (rejection <= 0.15)",
+          rej <= 0.15, "rejection rate = %.3f" % rej)
+    check("entity-swap p-values are ~uniform (mean p in [0.30, 0.70])",
+          0.30 <= float(ps.mean()) <= 0.70, "mean p = %.3f" % ps.mean())
+
+    # ---- power: a REAL between-entity effect is detected -------------------------------------
+    rg = np.random.default_rng(77)
+    d2 = df.copy()
+    lvl_by_group = np.empty(len(d2))
+    for gi, idx in enumerate(swapper.groups):
+        lvl_by_group[idx] = d2["prior"].to_numpy(float)[idx].mean()
+    d2["y"] = 1.2 * lvl_by_group + rg.normal(0.0, 1.0, len(d2))
+
+    def stat2(dd):
+        return sk.r2_plain(dd["y"].to_numpy(float), dd["prior"].to_numpy(float))
+
+    hit = sk.entity_swap_null(stat2, d2, ["entity_id", "season"], 400, 9,
+                              feature_col="prior", date_col="game_date", season_col="season",
+                              tiebreak_col="game_id", swapper=swapper, verbose=True)
+    check("a REAL between-entity effect is detected (p < 0.01)", hit["p"] < 0.01,
+          "real = %.4f, null mean = %.4f, p = %.5f" % (hit["real"], hit["mean"], hit["p"]))
+    check("the null is NOT degenerate: the draws have real spread",
+          hit["sd"] > 1e-6 and hit["n_finite_draws"] == 400,
+          "sd = %.6g over %d finite draws" % (hit["sd"], hit["n_finite_draws"]))
+    check("the result labels its scheme and carries the between-only warning",
+          hit["scheme"] == sk.SCHEME_ENTITY_SWAP and hit["is_row_level_naive"] is False
+          and "BETWEEN-ENTITY question only" in hit["warning"])
+    check("p is the add-one estimator and can never be 0", hit["p"] >= 1.0 / (400 + 1.0))
+
+    # ---- refusal + reuse contracts -----------------------------------------------------------
+    ref = False
+    try:
+        sk.entity_swap_null(stat2, d2, None, 5, 1, feature_col="prior", date_col="game_date")
+    except ValueError as exc:
+        ref = "REFUSES" in str(exc)
+    check("entity_swap_null REFUSES a None entity level, mirroring permutation_null", ref)
+
+    ref2 = False
+    try:
+        sk.entity_swap_null(stat2, d2.iloc[:50], ["entity_id", "season"], 5, 1,
+                            feature_col="prior", date_col="game_date", swapper=swapper)
+    except ValueError as exc:
+        ref2 = "cannot be reused" in str(exc)
+    check("a swapper built on a differently-shaped frame is REFUSED, not silently misapplied", ref2)
+
+    # ---- a BOOLEAN feature is handed back as bool, matching permutation_null -----------------
+    d3 = df.copy()
+    d3["flag"] = d3["prior"] > 0
+    seen = []
+
+    def stat_bool(dd):
+        seen.append(str(dd["flag"].dtype))
+        return float(dd.loc[dd["flag"], "prior"].mean() - dd.loc[~dd["flag"], "prior"].mean())
+
+    rb = sk.entity_swap_null(stat_bool, d3, ["entity_id", "season"], 15, 2,
+                             feature_col="flag", date_col="game_date", season_col="season",
+                             tiebreak_col="game_id")
+    check("a BOOLEAN feature is permuted and handed back to stat_fn AS BOOL",
+          set(seen) == {"bool"} and rb["feature_is_boolean"] is True and np.isfinite(rb["real"]),
+          "dtypes seen = %s" % sorted(set(seen)))
+
+
+# ===========================================================================================
+def test_candidate_keys_must_be_a_mapping_k3():
+    """K3 REGRESSION (the reported usage nit).  Pre-fix, a list reached `.items()` and died with
+    `AttributeError: 'list' object has no attribute 'items'` -- which names neither the parameter
+    nor the required shape.  An AttributeError is not a TypeError, so this check fails pre-fix.
+    """
+    section("TEST 17 -- K3 REGRESSION: candidate_keys must be a mapping, with a clear error")
+    df = _game_frame()
+
+    err = None
+    try:
+        sk.detect_grouping_level(df, "game_pace", candidate_keys=["game_id"])
+    except Exception as exc:                                # noqa: BLE001
+        err = exc
+    print("      raised: %s: %s" % (type(err).__name__, str(err)[:88]))
+    check("a LIST raises TypeError, not a bare AttributeError",
+          isinstance(err, TypeError), "got %s" % type(err).__name__)
+    check("the message names the parameter, the type received, and the required shape",
+          err is not None and "candidate_keys" in str(err) and "list" in str(err)
+          and "MAPPING" in str(err).upper() and "{" in str(err),
+          "message is %d chars" % len(str(err) if err else ""))
+    check("the message shows the caller how to fix it with their own column name",
+          err is not None and "'game_id'" in str(err).replace('"', "'"))
+
+    err2 = None
+    try:
+        sk.detect_grouping_level(df, "game_pace", candidate_keys=("game_id", "team_id"))
+    except Exception as exc:                                # noqa: BLE001
+        err2 = exc
+    check("a TUPLE is rejected the same way", isinstance(err2, TypeError))
+
+    # POSITIVE CONTROLS: a proper mapping still works, and the default still works.
+    ok = sk.detect_grouping_level(df, "game_pace", candidate_keys={"game": ["game_id"]})
+    check("a proper mapping still works unchanged",
+          ok["recommended_permutation_level"] == "game"
+          and ok["levels"]["game"]["constant_within"] is True)
+    check("omitting candidate_keys still uses DEFAULT_CANDIDATE_KEYS",
+          set(sk.detect_grouping_level(df, "game_pace")["levels"])
+          | set(sk.detect_grouping_level(df, "game_pace")["skipped"])
+          == set(sk.DEFAULT_CANDIDATE_KEYS))
+
+
+# ===========================================================================================
 def main():
     print("=" * 96)
     print("screenkit TESTS -- known-answer tests, SYNTHETIC DATA ONLY, no 2025/2026 real data")
@@ -1081,6 +1583,12 @@ def main():
         test_r2_of_forecast_p3,
         test_within_scheme_and_var_share_p4,
         test_paired_forecast_comparison_p4,
+        # regression tests for the three defects + one usage nit found by the kit's SECOND and
+        # THIRD users (E0_I0016_efficiency_predictors and the screen alongside it)
+        test_date_branch_value_gate_k0,
+        test_leakage_probe_states_only_what_it_licenses_k1,
+        test_entity_swap_null_k2,
+        test_candidate_keys_must_be_a_mapping_k3,
     ]
 
     # Optional name filter, e.g. `python TESTS.py p1 p2` -- used to demonstrate that each new

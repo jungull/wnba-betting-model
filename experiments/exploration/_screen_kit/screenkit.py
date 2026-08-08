@@ -64,6 +64,11 @@ Adapted, not reinvented, from these FROZEN screens (read-only):
                                              r2_plain(y, yhat)  -- SAME NAME, DIFFERENT FUNCTION
                                              from this module's `r2_plain(y, X)`.  See the
                                              NAME COLLISION note on both.
+  * `EntitySwap`, `entity_swap_null`      <- E0_I0016_efficiency_predictors/ep_base.py ::
+                                             EntitySwap / entity_swap_null (read-only), which the
+                                             kit's third user had to build itself because NO valid
+                                             permutation scheme existed for the between-entity
+                                             question on a within-varying feature.
 
 REVISION HISTORY -- FOUND BY THE KIT'S FIRST REAL USER
 ------------------------------------------------------
@@ -99,6 +104,100 @@ that FAILS against the pre-fix code:
       `paired_forecast_comparison` are added, adapted from E0_I0014's rh_base.py (frozen, read
       only), which had to reimplement all three itself.
 
+REVISION HISTORY -- FOUND BY THE KIT'S SECOND AND THIRD REAL USERS
+------------------------------------------------------------------
+`E0_I0016_efficiency_predictors` (and a second reporter alongside it) found THREE more defects plus
+one usage nit.  Each is closed below with a regression test in TESTS.py that FAILS against the
+pre-fix code (git 56dc793).
+
+  K0  `assert_partition` RAISED ON CLEAN DATA -- and it is TRAP 3 IN A NEW SHAPE, INSIDE THE GUARD
+      BUILT TO STOP TRAP 3.  The date branch auto-detected date columns by
+      `"date" in name.lower()`.  *** THE WORD "candi-DATE" CONTAINS "date". ***  So `candidate`,
+      `n_candidates`, `mae_with_candidate`, `update_flag` and `validated` were all parsed as dates,
+      and `pd.to_datetime` on a FLOAT column DOES NOT RAISE -- it reads the values as epoch
+      nanoseconds and returns 1970-01-01.  Year 1970 is outside every real partition, so a frame
+      whose every value sits inside 2021-2024 raised `PartitionViolation`.
+      THE REAL DEFECT WAS AN ASYMMETRY.  The SEASON branch already had `_is_season_valued`, added
+      precisely to stop name-based false hits, with a regression test (`_team_season_2025`).  The
+      DATE branch had no equivalent.  `_is_date_valued` is now that equivalent: a name-matched
+      column is treated as a date only if its VALUES are dates -- datetime64 dtype outright, or a
+      string column that parses at a high rate into years inside [1990, 2100].  A NUMERIC column is
+      REFUSED OUTRIGHT: the epoch-nanosecond reading is never used to manufacture a year.
+      The obvious workaround was deliberately NOT made the fix: `date_cols=[]` used to silence the
+      true check as well as the false one (a real 2026 date passed clean under it).  Datetime-dtype
+      columns are therefore ALWAYS checked regardless of `date_cols`.  *** BEHAVIOURAL CHANGE ***,
+      see the two declared breaks below.
+      The `UserWarning: Could not infer format ...` that the kit emitted on every call with an
+      object column is gone: parsing now passes `format="mixed"`, which is also strictly more
+      capable (`07/04/2022` now parses; it used to become NaT).
+  K1  `future_leakage_probe` STATED A FALSE CONCLUSION IN ITS VERDICT TEXT.  It asserted "That is
+      only possible because it CONTAINS the future."  THAT IS NOT TRUE IN GENERAL.  It fired on
+      `refB_ppm` versus `refA_ppm` -- BOTH STRICTLY PRIOR-GAMES-ONLY, differing only as estimators.
+      A better (less noisy) estimator of a persistent quantity naturally correlates more with the
+      entity's future WITHOUT containing any of it.  A caller who trusted that wording would
+      discard a clean baseline.  The NUMBERS ARE UNCHANGED; only the claim attached to them is
+      fixed.  The probe now says what it actually licenses: a screening flag, consistent with
+      leakage AND consistent with a better estimator, which it cannot distinguish.  New neutral
+      fields `screening_flag`, `status` and `alternative_explanation` are added; `reads_future` is
+      kept for compatibility with its value unchanged, but ITS NAME OVERSTATES -- read `status`.
+  K2  A GENUINE CAPABILITY GAP, NOT MISUSE.  No valid permutation scheme existed for the
+      BETWEEN-ENTITY question on a WITHIN-VARYING feature.  `scheme=SCHEME_BETWEEN` requires
+      constancy within groups (and forcing it with `allow_nonconstant=True` is what this module
+      itself calls a p "manufactured rather than measured"); `scheme=SCHEME_WITHIN` is the identity
+      when the feature IS constant.  Every expanding-prior candidate is neither: the reporter
+      verified with `detect_grouping_level` that NO candidate was constant within its entity-season
+      in ANY of 132 cells.  `EntitySwap` / `entity_swap_null` are ported in from
+      E0_I0016_efficiency_predictors/ep_base.py (read-only), which had to build them itself.
+  K3  USAGE NIT.  `detect_grouping_level`'s `candidate_keys` must be a MAPPING; passing a list gave
+      a bare `AttributeError: 'list' object has no attribute 'items'`.  It now raises a `TypeError`
+      that names the parameter, the type received, and the shape required.
+
+*** TWO DECLARED BEHAVIOURAL BREAKS IN `assert_partition` (K0) ***  (as D082 declared its one)
+  B1  A NUMERIC column whose NAME contains "date" is no longer parsed as a date.  Before: parsed as
+      epoch nanoseconds and almost always flagged as a year-1970 violation.  After: recorded in
+      `skipped_name_only` and never flagged.  A caller who genuinely stores dates as epoch integers
+      must convert the column with `pd.to_datetime(..., unit=...)` FIRST -- the kit will not guess
+      an encoding, exactly as `_feature_to_float` refuses to guess one.
+  B2  `date_cols` is now ADDITIVE, not exhaustive: datetime64-dtype columns are checked even when
+      `date_cols` is given (including `date_cols=[]`).  Before: `date_cols=[]` disabled the date
+      check entirely, which is a FALSE-PASS DOOR -- the reporter showed a genuine 2026 date passing
+      clean under it.  Pass `include_datetime_dtype_cols=False` for the old behaviour, and say in
+      FINDINGS.json why you turned the check off.
+      Additionally, a column named EXPLICITLY in `date_cols` whose values are not dates now raises
+      `ValueError` rather than being silently skipped: an explicit request that cannot be honoured
+      must be loud, never silent.
+
+AUDIT: EVERY NAME-BASED DETECTION IN THIS MODULE  (prompted by K0)
+------------------------------------------------------------------
+K0 is the FOURTH instance in this program of a name-based false hit, and the FIRST one inside the
+guard built to prevent them.  A defect class that recurs four times is a design smell, not bad
+luck, so the whole module was swept.  There are exactly TWO substring matches on column names:
+
+  1. `_SEASONISH_TOKENS = ("season", "year")` in `assert_partition`.  GUARDED by
+     `_is_season_valued` since the kit shipped.  (False hits it stops: `_team_season_2025`
+     holding dR2 draws.  False hits it would otherwise take: `years_pro`, `seasonality_index`.)
+  2. `_DATEISH_TOKENS = ("date",)` in `assert_partition`.  GUARDED by `_is_date_valued` AS OF K0,
+     and unguarded before it.  (`candidate`, `n_candidates`, `mae_with_candidate`, `update_flag`,
+     `validated`, `mandate`, `consolidated` -- all contain "date".)
+
+BOTH are now value-gated, and the invariant is: A SUBSTRING MATCH ON A COLUMN NAME MAY ONLY EVER
+NOMINATE A COLUMN FOR A VALUE TEST.  IT MAY NEVER, BY ITSELF, CAUSE A VIOLATION.  Any future
+name-based detection added here must ship with its value gate in the same commit.
+
+TWO RESIDUAL NAME-SHAPED RISKS, REPORTED AND DELIBERATELY NOT CHANGED:
+  a. `DEFAULT_CANDIDATE_KEYS` selects grouping levels by EXACT column name (`game_id`, `team_id`,
+     `player_id`, `season`).  Exact matching cannot produce the substring false hit that bit K0
+     four times, and `detect_grouping_level` reports every level's measured group count so a
+     mismatched key is visible in the output rather than silent.  It does NOT check that a column
+     named `season` holds seasons.  Left alone: the caller names the keys, and inventing a value
+     test for an arbitrary user-supplied key column is guesswork of the kind this kit refuses.
+  b. `assert_partition`'s final sweep flags any numeric column whose values are ALL whole numbers
+     inside [2020, 2030] and intersect the holdout.  That is VALUE-based, not name-based, so it is
+     not the K0 defect class -- but it can still false-alarm on a count or rating column that
+     happens to live entirely in that decade.  It is deliberately kept: its whole purpose is to
+     catch a year-valued column with an innocuous name (the `fit_through` case in TESTS.py), and
+     its failure direction is a false ALARM, never a false PASS.
+
 DEPENDENCIES: standard library + numpy + pandas only.  scipy is NOT installed in this environment.
 """
 
@@ -113,14 +212,16 @@ import pandas as pd
 
 __all__ = [
     "EXPLORATION_SEASONS", "HOLDOUT_SEASONS", "ROW_LEVEL", "DEFAULT_CANDIDATE_KEYS",
-    "SCHEME_BETWEEN", "SCHEME_WITHIN",
+    "SCHEME_BETWEEN", "SCHEME_WITHIN", "SCHEME_ENTITY_SWAP",
     "STATUS_COARSER_LEVEL_FOUND", "STATUS_NO_COARSER_LEVEL",
+    "SCREEN_FLAG_AMBIGUOUS", "SCREEN_NOT_FLAGGED",
     "PartitionViolation",
     "r2_plain", "delta_r2_plain",
     "r2_of_forecast",
     "r2_weighted_standard", "delta_r2_weighted",
     "wls_r2_DEFECTIVE",
     "detect_grouping_level", "permutation_null", "null_width_comparison",
+    "EntitySwap", "entity_swap_null",
     "var_share_between", "paired_forecast_comparison",
     "noop_placebo",
     "assert_partition", "check_manifest", "future_leakage_probe",
@@ -137,9 +238,21 @@ ROW_LEVEL = "row"
 SCHEME_BETWEEN = "between"      #: reassign whole groups' values BETWEEN groups (group level dies)
 SCHEME_WITHIN = "within"        #: shuffle values INSIDE each group (group level SURVIVES)
 
+#: The third scheme (K2).  NOT a `permutation_null` option -- it has its own entry point,
+#: `entity_swap_null`, because it swaps whole SERIES rather than individual values.  It is the only
+#: valid null here for the BETWEEN-ENTITY question on a feature that varies WITHIN its entity.
+SCHEME_ENTITY_SWAP = "entity_swap"
+
 #: `detect_grouping_level` status values.  READ THE STATUS, NOT JUST THE LEVEL.
 STATUS_COARSER_LEVEL_FOUND = "COARSER_LEVEL_FOUND"
 STATUS_NO_COARSER_LEVEL = "NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE"
+
+#: `future_leakage_probe` status values (K1).  THE PROBE IS A SCREEN, NOT A VERDICT: a flag is
+#: consistent with leakage AND consistent with the suspect merely being a better estimator of a
+#: persistent quantity, and the probe cannot distinguish them.  The status value says so out loud
+#: so that no caller can read a flag as a finding of leakage.
+SCREEN_FLAG_AMBIGUOUS = "FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR"
+SCREEN_NOT_FLAGGED = "NOT_FLAGGED__NOT_A_CERTIFICATE_OF_CLEANLINESS"
 
 #: Standard candidate grouping levels, finest to coarsest by construction.  `detect_grouping_level`
 #: drops any level whose key columns are absent from the frame, and orders by MEASURED group count
@@ -536,7 +649,8 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
     ----------
     df : pandas.DataFrame
     feature_col : str
-    candidate_keys : dict[str, list[str] | None], default DEFAULT_CANDIDATE_KEYS
+    candidate_keys : dict[str, list[str] | None], default DEFAULT_CANDIDATE_KEYS.  MUST be a
+                     mapping LEVEL NAME -> KEY COLUMNS.  A bare list raises TypeError (K3).
     tol : float -- max within-group spread still counted as constant (numeric and BOOLEAN features)
     verbose : bool -- print the table
 
@@ -557,6 +671,19 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
     """
     if candidate_keys is None:
         candidate_keys = DEFAULT_CANDIDATE_KEYS
+    # K3: a list here used to reach `.items()` and die with a bare
+    # `AttributeError: 'list' object has no attribute 'items'`, which names neither the parameter
+    # nor the required shape.  Reported as a usage nit by the kit's second user.
+    if not hasattr(candidate_keys, "items"):
+        raise TypeError(
+            "detect_grouping_level: candidate_keys must be a MAPPING from a level NAME to its key "
+            "COLUMNS, e.g. {'game': ['game_id'], 'team_season': ['team_id', 'season']}; got %s. "
+            "A bare list of column names is not enough -- the level name is what appears in "
+            "`levels`, in `recommended_permutation_level` and in your FINDINGS.json, so the kit "
+            "will not invent one for you. If you meant one level, pass {'my_level': %r}. Omit the "
+            "argument entirely to use screenkit.DEFAULT_CANDIDATE_KEYS."
+            % (type(candidate_keys).__name__,
+               list(candidate_keys) if isinstance(candidate_keys, (list, tuple)) else ["col_a"]))
     if feature_col not in df.columns:
         raise KeyError("feature_col %r not in frame" % feature_col)
 
@@ -797,6 +924,11 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
       report both nulls when the share is not near 0 or 1.
       The WITHIN scheme is REFUSED when the feature is constant within groups, because it is then
       the literal identity -- the same vacuous control `noop_placebo` exists to catch.
+      NEITHER SCHEME ANSWERS THE BETWEEN-ENTITY QUESTION FOR A WITHIN-VARYING FEATURE (K2).  If
+      `detect_grouping_level` finds NO constant level and your question is nonetheless "does WHICH
+      ENTITY this row belongs to matter", use `entity_swap_null`, which swaps whole entity-season
+      SERIES.  Do NOT reach for `allow_nonconstant=True` for that question -- it broadcasts one
+      value per group and the resulting p is manufactured rather than measured.
 
     DOES *NOT*
       * choose the level for you, verify that the level is right, or look at the outcome's
@@ -992,6 +1124,261 @@ def null_width_comparison(stat_fn, data, group_col, n_draws, seed, *,
         print("    NAIVE row level %-20s sd=%.6g  p=%.4f  [CONTRAST ONLY]"
               % ("row", naive["sd"], naive["p"]))
         print("    INFLATION FACTOR sd_correct/sd_row = %.3f -> %s" % (infl, res["verdict"]))
+    return res
+
+
+# ===========================================================================================
+# ENTITY-SWAP NULL -- THE BETWEEN-ENTITY QUESTION ON A WITHIN-VARYING FEATURE  (trap 1 / K2)
+# ===========================================================================================
+
+class EntitySwap:
+    """Reassign whole entity-season SERIES to other entity-seasons inside the same season.
+
+    *** THIS CLOSES A GENUINE CAPABILITY GAP (K2), NOT A MISUSE. ***
+    Before this existed, the kit shipped exactly two schemes and NEITHER answered the
+    between-entity question for a feature that varies WITHIN its entity:
+
+      `SCHEME_BETWEEN` REQUIRES the feature to be constant within groups, and forcing it on with
+        `allow_nonconstant=True` broadcasts one representative value per group -- annihilating 100%
+        of the within-group variation the real statistic keeps.  This module's own docstrings call
+        the resulting p "manufactured rather than measured".
+      `SCHEME_WITHIN` is the LITERAL IDENTITY when the feature IS constant within groups, which is
+        why `permutation_null` refuses that combination.
+
+    Every expanding-prior candidate is neither: it varies within its entity-season AND carries most
+    of its signal at the entity-season level.  The kit's third user
+    (`E0_I0016_efficiency_predictors`) verified with `detect_grouping_level` that NO candidate was
+    constant within its entity-season in ANY OF 132 CELLS, declared the gap, and built this itself.
+    Ported from `E0_I0016_efficiency_predictors/ep_base.py :: EntitySwap` (read-only), generalised
+    only in that the date tiebreak column is a parameter rather than hard-coded to `game_id` and
+    the season blocking may be switched off.
+
+    EXCHANGEABILITY TESTED: THE ENTITY LABELS.  Under H0 that WHICH ENTITY a row is attached to
+    carries no information about the outcome beyond the reference model, relabelling entities
+    leaves the joint distribution unchanged.
+
+    CONSTRUCTION.  Rows are grouped by `entity_cols` and ordered by `date_col` within each group.
+    Per draw, entity groups are permuted INSIDE each season; an entity of length n_a receives its
+    partner's values at PROPORTIONAL positions `round(k/(n_a-1) * (n_b-1))`, so position 0 maps to
+    position 0 and the last position maps to the last.  SERIES LENGTH AND WITHIN-SEASON TEMPORAL
+    SHAPE ARE PRESERVED -- which matters, because an early-season expanding prior is mechanically
+    noisier than a late-season one and a null that scrambled that would not be comparing like with
+    like.
+
+    GUARANTEES
+      * Every row keeps its own position in its own entity's series; only WHICH ENTITY's values
+        land there changes.
+      * Swaps never cross a season (with `season_col=None`, the whole frame is one block).
+      * An entity that spans more than one season raises rather than being silently assigned to
+        one of them -- put the season in `entity_cols`, or pass `season_col=None` deliberately.
+      * A season block holding a single entity yields that entity's own values back, exactly.
+
+    DOES *NOT*
+      * preserve the exact marginal distribution when partners differ in length (values are
+        resampled with repetition under the proportional map).
+      * preserve cross-entity correlation structure.
+      * bootstrap anything.  It randomises LABELS, so it says nothing about the sampling
+        variability of the effect size.
+      * test the WITHIN-entity question.  For that use `permutation_null(..., scheme=SCHEME_WITHIN)`
+        at the entity level, and credit a candidate only if it beats BOTH -- as E0_I0014 did.
+
+    Parameters
+    ----------
+    df          : pandas.DataFrame
+    entity_cols : str | list[str] -- e.g. ["opp_team_id", "season"]
+    date_col    : str (keyword-only, required) -- within-entity ordering
+    season_col  : str | None (keyword-only, default "season") -- swaps stay inside a season;
+                  None means the whole frame is one block
+    tiebreak_col: str | None (keyword-only) -- secondary sort inside a date (e.g. "game_id");
+                  None uses the row's original position, which is a stable tiebreak
+    """
+
+    def __init__(self, df, entity_cols, *, date_col, season_col="season", tiebreak_col=None):
+        ent = [entity_cols] if isinstance(entity_cols, str) else list(entity_cols)
+        need = list(ent) + [date_col] + ([season_col] if season_col else []) + \
+            ([tiebreak_col] if tiebreak_col else [])
+        missing = [c for c in need if c not in df.columns]
+        if missing:
+            raise KeyError("EntitySwap: columns missing from frame: %s" % missing)
+
+        codes = _group_codes(df, ent)
+        tie = (df[tiebreak_col].to_numpy() if tiebreak_col is not None
+               else np.arange(len(df)))
+        order = np.lexsort((tie, df[date_col].to_numpy(), codes))
+
+        self.n = int(len(df))
+        self.entity_cols = ent
+        self.date_col = date_col
+        self.season_col = season_col
+        self.groups = []                                  # list of row-index arrays, date-ordered
+        oc = codes[order]
+        starts = np.flatnonzero(np.r_[True, oc[1:] != oc[:-1]]) if len(oc) else np.array([], int)
+        ends = np.r_[starts[1:], len(oc)] if len(starts) else np.array([], int)
+
+        if season_col is None:
+            season_codes = np.zeros(len(df), dtype=np.int64)
+            season_labels = np.array(["ALL_ROWS_ONE_BLOCK"], dtype=object)
+        else:
+            sc, season_labels = pd.factorize(df[season_col], sort=True)
+            season_codes = np.asarray(sc, dtype=np.int64)
+            season_labels = np.asarray(season_labels, dtype=object)
+
+        group_season = []
+        for s, e in zip(starts, ends):
+            idx = order[s:e]
+            ssn = np.unique(season_codes[idx])
+            if len(ssn) > 1:
+                raise ValueError(
+                    "EntitySwap: entity %s spans more than one %r (%s). An entity that changes "
+                    "season is not exchangeable with a single-season entity. Put the season inside "
+                    "entity_cols (e.g. %s), or pass season_col=None if you really intend swaps "
+                    "across seasons and will declare that in FINDINGS.json."
+                    % (ent, season_col, [season_labels[i] for i in ssn], ent + [season_col]))
+            self.groups.append(idx)
+            group_season.append(int(ssn[0]))
+
+        self.by_season = {}
+        for gi, sc_i in enumerate(group_season):
+            self.by_season.setdefault(sc_i, []).append(gi)
+        self.season_labels = {k: season_labels[k] for k in self.by_season}
+        self.n_groups = len(self.groups)
+        self.n_seasons = len(self.by_season)
+        self.group_sizes = np.array([len(g) for g in self.groups], dtype=np.int64)
+
+    def draw(self, values, rng):
+        """One draw: every entity receives some same-season entity's series, proportionally mapped.
+
+        `values` is a float array in the ORIGINAL row order; the return is the same.
+        """
+        x = np.asarray(values, dtype=float)
+        if len(x) != self.n:
+            raise ValueError("EntitySwap.draw: expected %d values, got %d" % (self.n, len(x)))
+        out = np.empty(self.n, dtype=float)
+        for gis in self.by_season.values():
+            partners = [gis[p] for p in rng.permutation(len(gis))]
+            for a, b in zip(gis, partners):
+                ia, ib = self.groups[a], self.groups[b]
+                na, nb = len(ia), len(ib)
+                if na == 1 or nb == 1:
+                    src = np.zeros(na, dtype=np.int64)
+                else:
+                    src = np.rint(np.arange(na) / (na - 1) * (nb - 1)).astype(np.int64)
+                out[ia] = x[ib[src]]
+        return out
+
+
+def entity_swap_null(stat_fn, data, entity_cols, n_draws, seed, *, feature_col,
+                     date_col, season_col="season", tiebreak_col=None,
+                     alternative="greater", swapper=None, verbose=False):
+    """Permutation null from `EntitySwap`: the BETWEEN-ENTITY question, WITHIN-varying feature ok.
+
+    Ported from `E0_I0016_efficiency_predictors/ep_base.py :: entity_swap_null` (read-only) and
+    given this module's `stat_fn(DataFrame) -> float` calling convention, so it composes with
+    everything else here.  Read `EntitySwap`'s docstring for what is and is not exchanged.
+
+    WHEN THIS IS THE RIGHT NULL
+      Your question is "does WHICH ENTITY this row belongs to matter", your feature varies WITHIN
+      the entity (so `SCHEME_BETWEEN` is invalid and `SCHEME_WITHIN` answers a different question),
+      and the within-entity temporal shape is meaningful and must be preserved.  Run
+      `detect_grouping_level` first: if NO level is constant-within, that is the signature of this
+      case, and it is exactly what the reporter observed across 132 candidate-by-cell combinations.
+
+    GUARANTEES
+      * `entity_cols` has NO DEFAULT.  There is no accidental row-level null here either.
+      * p is the add-one estimator, (1 + #{draw at least as extreme}) / (n_finite + 1), never 0.
+      * A BOOLEAN feature is permuted as 0.0/1.0 and handed back to `stat_fn` AS BOOL, matching
+        `permutation_null`, so `stat_fn` sees one dtype on the real frame and on every draw.
+      * `stat_fn` receives a DataFrame whose `feature_col` has been replaced.  One working copy is
+        reused across draws for speed; `stat_fn` MUST NOT mutate it.
+      * Passing a prebuilt `swapper` reuses the (comparatively expensive) grouping across many
+        candidates; it is validated against `data`'s length.
+
+    DOES *NOT*
+      * substitute for the within-entity null.  A candidate that beats only one of the two has not
+        been shown to beat a null; report both.
+      * make the entity-level question well posed if your OUTCOME is clustered at a level coarser
+        than the entity.  That is a separate problem this does not detect.
+      * preserve the marginal distribution exactly when entity series differ in length -- see the
+        DOES NOT list on `EntitySwap`.
+
+    Returns
+    -------
+    dict: real, draws, n_draws, n_finite_draws, mean, sd, p, alternative, level, key_cols,
+          n_groups, n_seasons, season_col, scheme, feature_is_boolean, seed, is_row_level_naive,
+          warning
+    """
+    if entity_cols is None:
+        raise ValueError(
+            "entity_swap_null REFUSES to run without explicit entity columns. The whole point of "
+            "this null is WHICH ENTITY a row belongs to; there is no default entity.")
+    if feature_col not in data.columns:
+        raise KeyError("feature_col %r not in frame" % feature_col)
+    if alternative not in ("greater", "less", "two_sided"):
+        raise ValueError("alternative must be greater|less|two_sided")
+
+    if swapper is None:
+        swapper = EntitySwap(data, entity_cols, date_col=date_col, season_col=season_col,
+                             tiebreak_col=tiebreak_col)
+    elif swapper.n != len(data):
+        raise ValueError("entity_swap_null: the supplied swapper was built on %d rows but `data` "
+                         "has %d. A swapper holds row POSITIONS and cannot be reused across "
+                         "differently-shaped frames." % (swapper.n, len(data)))
+
+    feature_series = data[feature_col]
+    feature_is_boolean = bool(pd.api.types.is_bool_dtype(feature_series))
+    values, _restore_dtype = _feature_to_float(feature_series, feature_col)
+
+    rng = np.random.default_rng(seed)
+    work = data.copy()
+    draws = np.empty(int(n_draws), dtype=float)
+    for i in range(int(n_draws)):
+        work[feature_col] = _restore_dtype(swapper.draw(values, rng))
+        draws[i] = float(stat_fn(work))
+
+    real = float(stat_fn(data))
+    finite = draws[np.isfinite(draws)]
+    if alternative == "greater":
+        n_ext = int((finite >= real).sum())
+    elif alternative == "less":
+        n_ext = int((finite <= real).sum())
+    else:
+        c = float(np.median(finite)) if len(finite) else 0.0
+        n_ext = int((np.abs(finite - c) >= abs(real - c)).sum())
+    p = (1.0 + n_ext) / (len(finite) + 1.0)
+
+    ent = [entity_cols] if isinstance(entity_cols, str) else list(entity_cols)
+    res = {
+        "real": real,
+        "draws": draws,
+        "n_draws": int(n_draws),
+        "n_finite_draws": int(len(finite)),
+        "mean": float(finite.mean()) if len(finite) else float("nan"),
+        "sd": float(finite.std(ddof=1)) if len(finite) > 1 else float("nan"),
+        "p": float(p),
+        "alternative": alternative,
+        "level": "+".join(str(c) for c in ent),
+        "key_cols": ent,
+        "n_groups": int(swapper.n_groups),
+        "n_seasons": int(swapper.n_seasons),
+        "season_col": season_col,
+        "scheme": SCHEME_ENTITY_SWAP,
+        "feature_is_boolean": feature_is_boolean,
+        "seed": int(seed),
+        "is_row_level_naive": False,
+        "warning": (
+            "entity_swap answers the BETWEEN-ENTITY question only. It leaves the within-entity "
+            "temporal shape intact by construction, so it says nothing about whether the "
+            "candidate's WITHIN-entity movement carries signal. Run "
+            "permutation_null(..., scheme=SCHEME_WITHIN) for that and credit the candidate only if "
+            "it beats BOTH."),
+    }
+    if verbose:
+        print("  entity_swap_null(%s at %s): real=%.6g" % (feature_col, res["level"], real))
+        print("    %d entity groups across %d season block(s); %d draws, seed %d"
+              % (res["n_groups"], res["n_seasons"], res["n_draws"], res["seed"]))
+        print("    null mean=%.6g  sd=%.6g  p=%.4f  (alternative=%s)"
+              % (res["mean"], res["sd"], res["p"], alternative))
+        print("    !! %s" % res["warning"])
     return res
 
 
@@ -1326,6 +1713,105 @@ def noop_placebo(stat_fn, data, n_draws, transform=None, tol=1e-15, verbose=Fals
 # ===========================================================================================
 
 _SEASONISH_TOKENS = ("season", "year")
+_DATEISH_TOKENS = ("date",)
+
+#: Years a PARSED STRING must fall inside before the kit will believe the column holds dates.
+#: 1970 (the epoch, i.e. what a float column parses to) is deliberately OUTSIDE this window.
+_PLAUSIBLE_DATE_YEARS = (1990, 2100)
+
+#: Fraction of non-null values in a string column that must parse as dates before the column is
+#: treated as a date column.  A candidate-name column of feature ids parses at 0.0.
+_DATE_PARSE_MIN_RATE = 0.8
+
+
+def _parse_datetimes(s):
+    """`pd.to_datetime(s, errors='coerce')` WITHOUT the "Could not infer format" UserWarning.
+
+    Reported by the kit's second user: the kit emitted that warning on every `assert_partition`
+    call that saw an object column, because a column of feature ids parses as nothing.  Passing
+    `format="mixed"` asks for exactly the per-element parsing the warning was recommending against
+    guessing, so the warning is no longer appropriate -- and `format="mixed"` is strictly MORE
+    capable than the default here (`07/04/2022` parses; under the default it became NaT).
+
+    The `warnings` filter is belt and braces for a pandas that does not accept `format="mixed"`.
+    """
+    try:
+        return pd.to_datetime(s, errors="coerce", format="mixed")
+    except (TypeError, ValueError):
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Could not infer format",
+                                    category=UserWarning)
+            return pd.to_datetime(s, errors="coerce")
+
+
+def _is_date_valued(s):
+    """A column is date-VALUED only if its VALUES are dates.  *** THIS IS THE K0 FIX. ***
+
+    THE ASYMMETRY THIS CLOSES.  `_is_season_valued` below was added because a name is not a value:
+    columns NAMED `<rung>_team_season` hold dR2 draws near 1e-4, and flagging them is the
+    name/text false positive this program has now been burned by FOUR times.  The DATE branch never
+    got the same guard.  It matched `"date" in name.lower()`, *** AND THE WORD "candi-DATE"
+    CONTAINS "date" ***, so `candidate`, `n_candidates` and `mae_with_candidate` -- the single most
+    common column names in this program's exploration screens -- were all parsed as dates.
+
+    WHY THAT WAS NOT MERELY COSMETIC.  `pd.to_datetime` on a FLOAT column DOES NOT RAISE.  It reads
+    the floats as NANOSECONDS SINCE THE EPOCH and returns 1970-01-01.  Year 1970 is outside every
+    real partition, so `assert_partition` raised `PartitionViolation` on a frame whose every value
+    was inside 2021-2024.  A guard that cries wolf on the program's most common column name trains
+    callers to switch it off -- and the natural way to switch it off, `date_cols=[]`, is a
+    FALSE-PASS door.
+
+    THE RULE, in the order it is applied:
+      1. datetime64 dtype (tz-aware included) -> ACCEPT OUTRIGHT.  The dtype IS the proof; no year
+         range is imposed, so a genuine 2026 column is still checked and still flagged.
+      2. NUMERIC dtype (int, float, bool) -> REFUSE OUTRIGHT.  *** THE EPOCH-NANOSECOND READING IS
+         NEVER USED. ***  There is no threshold, no heuristic and no rescue here: a float is not a
+         date, and inferring a year from one is precisely how the false positive was manufactured.
+      3. anything else (string/object) -> parse it, and require BOTH a parse-success rate of at
+         least `_DATE_PARSE_MIN_RATE` over the non-null values AND every parsed year inside
+         `_PLAUSIBLE_DATE_YEARS` = (1990, 2100).  The year window is a second, independent line of
+         defence: even if some future dtype slipped an epoch reading past rule 2, 1970 is outside
+         it.  The window is deliberately WIDER than any partition, so it can never mask a real
+         violation -- 2025 and 2026 are inside it and remain checkable.
+
+    Returns (is_date_valued, years:set[int], reason:str).  `reason` is empty when accepted.
+    """
+    if pd.api.types.is_datetime64_any_dtype(s):
+        d = pd.to_datetime(s, errors="coerce")
+        yrs = set(int(y) for y in d.dt.year.dropna().unique())
+        if not yrs:
+            return False, set(), "dtype is datetime64 but every value is NaT -> nothing to check"
+        return True, yrs, ""
+
+    if pd.api.types.is_numeric_dtype(s):
+        num = pd.to_numeric(s, errors="coerce")
+        return False, set(), (
+            "name is date-like but VALUES are NUMERIC (dtype %s, range %s..%s) -> NOT a date "
+            "column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return "
+            "1970, which is a FALSE partition violation, so the kit refuses that reading. If this "
+            "really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) "
+            "before calling -- the kit will not guess an encoding for you."
+            % (s.dtype, num.min(), num.max()))
+
+    nn = s.notna()
+    n_nonnull = int(nn.sum())
+    if n_nonnull == 0:
+        return False, set(), "name is date-like but the column is entirely null -> skipped"
+    d = _parse_datetimes(s)
+    n_parsed = int(d.notna().sum())
+    rate = n_parsed / float(n_nonnull)
+    if rate < _DATE_PARSE_MIN_RATE:
+        return False, set(), (
+            "name is date-like but VALUES are not dates (only %d of %d non-null values parsed, "
+            "%.0f%% < %.0f%%) -> NOT a date column, skipped"
+            % (n_parsed, n_nonnull, 100 * rate, 100 * _DATE_PARSE_MIN_RATE))
+    yrs = set(int(y) for y in d.dt.year.dropna().unique())
+    lo, hi = _PLAUSIBLE_DATE_YEARS
+    if not yrs or min(yrs) < lo or max(yrs) > hi:
+        return False, set(), (
+            "name is date-like and the values parse, but the resulting YEARS %s fall outside the "
+            "plausible window %d-%d -> these are not dates, skipped" % (sorted(yrs), lo, hi))
+    return True, yrs, ""
 
 
 def _is_season_valued(s):
@@ -1346,7 +1832,8 @@ def _is_season_valued(s):
 
 
 def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_SEASONS,
-                     raise_on_violation=True, verbose=False):
+                     raise_on_violation=True, verbose=False, *,
+                     include_datetime_dtype_cols=True):
     """VALUE-BASED verification that a frame lies inside the exploration partition (2021-2024).
 
     *** A TEXTUAL / REGEX / BYTE SCAN IS THE WRONG CHECK. ***
@@ -1357,15 +1844,30 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
         permutation draws.
     A name is not a value.  This function therefore parses COLUMN VALUES: season columns must hold
     whole numbers in a plausible season range and those numbers must be inside `allowed`; date
-    columns are parsed with `pd.to_datetime` and their YEAR VALUES checked.
+    columns must be DATE-VALUED (see `_is_date_valued`) and then have their YEAR VALUES checked.
+
+    *** THE FOURTH INSTANCE OF THAT SAME FALSE HIT WAS INSIDE THIS FUNCTION (K0). ***
+    The date branch used to match `"date" in name.lower()` with NO value guard, and the word
+    "candi-DATE" contains "date", so `candidate`, `n_candidates` and `mae_with_candidate` were
+    parsed as dates; `pd.to_datetime` reads a float column as epoch nanoseconds and returns 1970;
+    1970 is outside every partition; so THIS FUNCTION RAISED ON CLEAN 2021-2024 DATA.  The season
+    branch had been hardened against exactly this and the date branch had not.  `_is_date_valued`
+    is now the missing half of that symmetry.
 
     GUARANTEES
       * Never inspects file text, source code, prose, or logs.  Only column values.
       * A column whose NAME looks season-like but whose VALUES are not season-valued (e.g. dR2
         draws in a column named `_team_season_2025`) is SKIPPED, recorded under
-        `skipped_name_only`, and can never cause a failure.  This is the regression guard.
+        `skipped_name_only`, and can never cause a failure.
+      * SYMMETRICALLY (K0): a column whose NAME looks date-like but whose VALUES are not dates
+        (e.g. MAE floats in a column named `mae_with_candidate`) is SKIPPED the same way, with the
+        same wording, and can never cause a failure.  A NUMERIC column is never read as epoch time.
+      * Every datetime64-dtype column is checked whether or not it is named in `date_cols`, so the
+        date check CANNOT be switched off by accident.  (B2 -- see the module header.)
       * Additionally sweeps every numeric column for all-whole-number values inside [2020, 2030]
         that intersect the holdout seasons -- catching a year-valued column with an innocuous name.
+      * Emits NO warnings.  Parsing goes through `_parse_datetimes`, which does not trip pandas'
+        "Could not infer format" UserWarning.
       * Raises `PartitionViolation` on any violation when `raise_on_violation=True`.
 
     DOES *NOT*
@@ -1374,16 +1876,24 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
       * detect leakage from the future WITHIN the partition (a 2024 row reading later 2024 games).
         That is `future_leakage_probe`'s job.
       * check anything about files on disk.  Pass the loaded frame.
+      * accept dates stored as epoch integers/floats.  Convert them yourself with
+        `pd.to_datetime(col, unit=...)`; the kit will not guess an encoding.
 
     Parameters
     ----------
     df : pandas.DataFrame
-    date_cols   : list[str] | None -- None auto-detects columns with "date" in the name plus any
-                  datetime dtype column
+    date_cols   : list[str] | None -- None auto-detects columns with "date" in the name.  When
+                  given, it is ADDITIVE, not exhaustive (B2): datetime64 columns are still checked
+                  unless `include_datetime_dtype_cols=False`.  A column named here whose values are
+                  NOT dates raises ValueError rather than being silently skipped.
     season_cols : list[str] | None -- None auto-detects columns whose name contains "season"/"year"
     allowed     : iterable[int]
     raise_on_violation : bool
     verbose     : bool
+    include_datetime_dtype_cols : bool (keyword-only, default True) -- check every datetime64-dtype
+                  column regardless of name and regardless of `date_cols`.  Setting this False
+                  restores the pre-K0 behaviour in which `date_cols=[]` disabled the date check
+                  entirely; that is a false-pass door, so declare it in FINDINGS.json if you use it.
 
     Returns
     -------
@@ -1405,12 +1915,20 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
     else:
         cand_season = list(season_cols)
 
+    # ---- date candidates -------------------------------------------------------------------
+    # `explicit` are columns the CALLER named: a failure to honour those must be LOUD (B2).
+    # Name-matched and dtype-matched columns are advisory: a name-only match is skipped quietly and
+    # recorded, exactly as the season branch does.
     if date_cols is None:
-        cand_date = [c for c in df.columns if "date" in str(c).lower()]
+        explicit_date = []
+        cand_date = [c for c in df.columns
+                     if any(t in str(c).lower() for t in _DATEISH_TOKENS)]
+    else:
+        explicit_date = [c for c in date_cols]
+        cand_date = list(explicit_date)
+    if include_datetime_dtype_cols:
         cand_date += [c for c in df.columns
                       if c not in cand_date and pd.api.types.is_datetime64_any_dtype(df[c])]
-    else:
-        cand_date = list(date_cols)
 
     for c in cand_season:
         if c not in df.columns:
@@ -1429,11 +1947,23 @@ def assert_partition(df, date_cols=None, season_cols=None, allowed=EXPLORATION_S
 
     for c in cand_date:
         if c not in df.columns:
+            if c in explicit_date:
+                raise KeyError("assert_partition: date_cols names %r, which is not in the frame "
+                               "(columns: %s)" % (c, list(df.columns)))
             continue
-        d = pd.to_datetime(df[c], errors="coerce")
-        yrs = set(int(y) for y in d.dt.year.dropna().unique())
-        if not yrs:
-            rep["skipped_name_only"][str(c)] = "name is date-like but no value parsed as a date"
+        # *** K0: the value gate the date branch never had.  Mirrors _is_season_valued. ***
+        is_date, yrs, why = _is_date_valued(df[c])
+        if not is_date:
+            if c in explicit_date:
+                # The caller ASKED for this column to be checked as a date and it cannot be. Being
+                # silent here would turn an explicit request into a silent no-check -- the exact
+                # false-pass shape B2 exists to close.  Fail loudly instead.
+                raise ValueError(
+                    "assert_partition: date_cols explicitly names %r, but %s Convert the column "
+                    "yourself (e.g. pd.to_datetime(df[%r], unit='ns')) and pass the converted "
+                    "frame; the kit refuses to invent a date from values that are not dates."
+                    % (c, why, c))
+            rep["skipped_name_only"][str(c)] = why
             continue
         rep["checked_date_cols"][str(c)] = sorted(yrs)
         bad = sorted(yrs - allowed_set)
@@ -1573,12 +2103,35 @@ def future_leakage_probe(df, baseline_col, clean_col, entity_col, date_col, outc
                          weight_col=None, verbose=False):
     """Cheap empirical probe: does a baseline predict the entity's OWN UNPLAYED FUTURE?
 
+    *** THIS IS A SCREENING FLAG, NOT A VERDICT.  READ THE NEXT PARAGRAPH BEFORE ACTING ON IT. ***
+
+    WHAT A FLAG DOES AND DOES NOT LICENSE  (K1, fixed 2026-08-08)
+      This function used to conclude, in its own `verdict` string, "That is only possible because it
+      CONTAINS the future."  *** THAT IS FALSE IN GENERAL, AND IT WAS FIXED BECAUSE IT MISLED A
+      REAL CALLER. ***  The probe fired on `refB_ppm` versus `refA_ppm` -- BOTH STRICTLY
+      PRIOR-GAMES-ONLY, differing only as ESTIMATORS of the same persistent quantity.  A better
+      (less noisy) estimator of a quantity that persists over time correlates MORE with the
+      entity's future WITHOUT reading a single future row.  A caller who trusted the old wording
+      would have discarded a clean baseline.
+
+      A flag therefore means exactly this and no more:
+
+        the suspect tracks the entity's own unplayed future MORE CLOSELY than the contrast does,
+        which is CONSISTENT WITH (a) the suspect containing future information, and EQUALLY
+        CONSISTENT WITH (b) the suspect simply being a better estimator of a persistent quantity.
+
+      THIS PROBE CANNOT DISTINGUISH (a) FROM (b), and no amount of extra correlation can.  Treat a
+      flag as a REQUEST FOR AN AUDIT of the construction -- what time window does every input read?
+      -- not as a finding of leakage.  The numbers it reports are unchanged and remain worth
+      reading; only the claim attached to them was wrong.
+
     Adapted from E1_I0009_r2_rerun/step5_baseline_audit_and_gate.py section (a) -- the probe that
     caught the fourth retrospective-baseline instance.  It measured
     corr(player_tendency_loo, the player's own strictly-after-date future rate) = +0.6455 versus
     +0.3647 for a legitimately pregame baseline, and a dR2 of the suspect over the clean one IN
-    PREDICTING THAT FUTURE of 0.3319.  A baseline that predicts the unplayed future substantially
-    better than a pregame one does so because it CONTAINS it.
+    PREDICTING THAT FUTURE of 0.3319.  In THAT case the audit confirmed leakage -- the construction
+    was a full-season leave-one-out.  The confirmation came from reading the construction, not from
+    the correlation gap.
 
     WHY YOU CANNOT SKIP THIS: names lie systematically.  "leave-one-out", "expected", "pregame",
     "prior" and "baseline" have ALL appeared in this program on quantities that read the future.
@@ -1598,6 +2151,9 @@ def future_leakage_probe(df, baseline_col, clean_col, entity_col, date_col, outc
         convention, with the FUTURE as the target.
 
     DOES *NOT*
+      * prove that a FLAGGED baseline reads the future.  A strictly prior-games-only estimator that
+        is merely BETTER than the contrast flags too, and that is not a defect in the estimator.
+        See the screening-flag paragraph above; this is the K1 fix.
       * prove cleanliness when the numbers come out similar.  A baseline can read the future without
         being more correlated with it than a pregame one (e.g. it reads a different season).  This
         probe is a cheap POSITIVE detector, not a certificate.  Read the construction as well.
@@ -1621,7 +2177,9 @@ def future_leakage_probe(df, baseline_col, clean_col, entity_col, date_col, outc
     Returns
     -------
     dict: n_rows_with_future, corr_suspect_with_future, corr_clean_with_future,
-          dr2_suspect_over_clean_predicting_future, verdict
+          dr2_suspect_over_clean_predicting_future, screening_flag, status,
+          alternative_explanation, reads_future (LEGACY -- its NAME overstates what the value
+          means; read `status`), verdict
     """
     ent = [entity_col] if isinstance(entity_col, str) else list(entity_col)
     needed = ent + [date_col, outcome_col, baseline_col, clean_col] + \
@@ -1668,7 +2226,8 @@ def future_leakage_probe(df, baseline_col, clean_col, entity_col, date_col, outc
     dr2 = float(delta_r2_plain(fut[m], cln[m][:, None],
                                np.column_stack([cln[m], sus[m]])))
 
-    leaks = (abs(corr_sus) > abs(corr_cln)) and dr2 > 0.01
+    # The FLAG rule and its inputs are UNCHANGED by K1.  Only the claim attached to them is fixed.
+    flag = (abs(corr_sus) > abs(corr_cln)) and dr2 > 0.01
     res = {
         "n_rows_with_future": int(m.sum()),
         "baseline_col": baseline_col,
@@ -1676,14 +2235,33 @@ def future_leakage_probe(df, baseline_col, clean_col, entity_col, date_col, outc
         "corr_suspect_with_future": corr_sus,
         "corr_clean_with_future": corr_cln,
         "dr2_suspect_over_clean_predicting_future": dr2,
-        "reads_future": bool(leaks),
+        #: THE NEUTRAL NAME.  Prefer this and `status` over `reads_future`.
+        "screening_flag": bool(flag),
+        "status": (SCREEN_FLAG_AMBIGUOUS if flag else SCREEN_NOT_FLAGGED),
+        "alternative_explanation": (
+            "A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than %r will "
+            "correlate more with the entity's own future than %r does, because the underlying "
+            "quantity PERSISTS -- with no future information anywhere in its construction. This "
+            "probe cannot separate that from genuine leakage. Rule it out by reading the "
+            "construction, not by looking harder at these numbers." % (clean_col, clean_col)
+            if flag else None),
+        #: *** LEGACY FIELD. Value unchanged; the NAME overstates what it means (K1). ***
+        #: `reads_future=True` means FLAGGED, not PROVEN TO READ THE FUTURE.  Read `status`.
+        "reads_future": bool(flag),
         "verdict": (
-            "%r predicts the entity's UNPLAYED FUTURE better than %r (|%.4f| vs |%.4f|) and adds "
-            "dR2=%.4f on top of it in predicting that future. That is only possible because it "
-            "CONTAINS the future. Any increment measured over this baseline is NOT a forecasting "
-            "increment." % (baseline_col, clean_col, corr_sus, corr_cln, dr2)) if leaks else (
-            "%r does not out-predict %r on the unplayed future (|%.4f| vs |%.4f|, dR2=%.4f). This "
-            "probe found no leakage; it is NOT a certificate -- also read the construction."
+            "SCREENING FLAG (NOT A VERDICT): %r tracks the entity's UNPLAYED FUTURE more closely "
+            "than %r does (|%.4f| vs |%.4f|) and adds dR2=%.4f over it in predicting that future. "
+            "TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) %r CONTAINS future information, "
+            "in which case an increment measured over it is NOT a forecasting increment; or (b) %r "
+            "is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but "
+            "prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not "
+            "discard a baseline on this output alone -- audit the construction and establish the "
+            "time window of every input."
+            % (baseline_col, clean_col, corr_sus, corr_cln, dr2, baseline_col, baseline_col))
+            if flag else (
+            "NOT FLAGGED: %r does not out-predict %r on the unplayed future (|%.4f| vs |%.4f|, "
+            "dR2=%.4f). This probe found nothing; it is NOT a certificate -- a baseline can read "
+            "the future without out-predicting a pregame one. Also read the construction."
             % (baseline_col, clean_col, corr_sus, corr_cln, dr2)),
     }
     if verbose:
@@ -1691,5 +2269,8 @@ def future_leakage_probe(df, baseline_col, clean_col, entity_col, date_col, outc
         print("    corr(%-24s, own strictly-after-date future) = %+.4f" % (baseline_col, corr_sus))
         print("    corr(%-24s, own strictly-after-date future) = %+.4f" % (clean_col, corr_cln))
         print("    dR2 of suspect over clean, TARGET = the FUTURE          = %.6f" % dr2)
+        print("    status = %s" % res["status"])
         print("    -> %s" % res["verdict"])
+        if res["alternative_explanation"]:
+            print("    !! %s" % res["alternative_explanation"])
     return res

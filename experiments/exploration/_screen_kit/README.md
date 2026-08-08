@@ -46,6 +46,15 @@ sk.paired_forecast_comparison(y, yhat_a, yhat_b, groups=df["game_id"],
                               n_draws=2000, seed=1, verbose=True)   # clustered paired sign-flip
 ```
 
+Feature varies **inside** its entity, but the question is **between** entities (an expanding prior
+against an opponent-defence family, say)? Neither `scheme` is a null there — use `entity_swap_null`:
+
+```python
+sk.entity_swap_null(stat_fn, df, ["opp_team_id", "season"], 2000, seed=1,
+                    feature_col="my_prior", date_col="game_date",
+                    season_col="season", tiebreak_col="game_id", verbose=True)
+```
+
 Then copy `SCREEN_TEMPLATE.py` into your screen directory and replace the DEMO DATA block.
 The template runs end-to-end on synthetic data as shipped, so you can watch the whole pipeline
 work before touching real data.
@@ -138,6 +147,11 @@ A name is not a value.
 `_team_season_2025` whose values are dR2 draws, plus a text column containing the sentence
 "seasons 2025 and 2026 are the holdout", and requires the check to **pass**.
 
+> **Trap 3 recurred a fourth time — inside this guard.** The date branch of `assert_partition` had
+> no value gate, and the word **"candi-DATE" contains "date"**. See **K0** below. The invariant now
+> stated in the module header is: *a substring match on a column name may only ever nominate a
+> column for a value test; it may never, by itself, cause a violation.*
+
 ### Trap 4 — the weighted-R2 defect
 
 A `wls_r2` helper computing
@@ -185,10 +199,12 @@ Read them; the "does not" halves are where the remaining sharp edges live.
 | `null_width_comparison(...)` | Runs both nulls with the same seed and statistic and reports `sd_correct / sd_row`. |
 | `var_share_between(data, feature_col, group_col)` | Fraction of a feature's variance living **between** groups — tells you which `scheme` is actually a null. Exactly `1.0` for a constant-within feature, exactly `0.0` when all group means are equal. |
 | `paired_forecast_comparison(y, yhat_a, yhat_b, groups, ...)` | **Forecast vs forecast on the same rows.** Paired loss difference, null by sign-flipping whole **clusters**; refuses a `None` clustering level exactly as `permutation_null` does. |
+| `entity_swap_null(stat_fn, data, entity_cols, ...)` | **The between-entity question for a feature that varies *within* the entity.** Swaps whole entity-season series inside a season, preserving series length and temporal shape. The only valid scheme when `detect_grouping_level` finds no constant level. |
+| `EntitySwap(df, entity_cols, date_col=...)` | The swapper itself, exposed so one grouping can be reused across many candidates. |
 | `noop_placebo(stat_fn, data, n_draws, transform=None)` | Detects a placebo that is secretly the identity; asserts `sd < 1e-15` and **returns the observed sd**. |
-| `assert_partition(df, ...)` | Value-based 2021–2024 check on parsed dates and season-valued columns; never reads text. |
+| `assert_partition(df, ...)` | Value-based 2021–2024 check on parsed dates and season-valued columns; never reads text, and **never treats a name match as a violation** — a date-named column must be *date-valued* too. |
 | `check_manifest(artifact_path)` | `row` → usable if filtered; `artifact` → **unusable, filtering does not help**; missing → **`UNVERIFIABLE`, never a pass**. |
-| `future_leakage_probe(...)` | Correlates each baseline with the entity's **own strictly-after-date future** and reports the dR2 of the suspect over the clean one in predicting it. |
+| `future_leakage_probe(...)` | Correlates each baseline with the entity's **own strictly-after-date future** and reports the dR2 of the suspect over the clean one in predicting it. **A screening flag, not a verdict** — read `status`. |
 
 ### Two API details worth knowing
 
@@ -214,6 +230,11 @@ in between → **run both and credit the candidate only if it beats both**, whic
 `allow_nonconstant=True`) annihilates **100 %** of the within-group variation — a test proves the
 draws collapse to `5e-29` against a real value of `586` — so any p taken there is manufactured
 rather than measured.
+
+**If `detect_grouping_level` finds *no* constant level and your question is still "does which
+*entity* this row belongs to matter", neither scheme applies** — that is the K2 gap, and the answer
+is `entity_swap_null`, which swaps whole entity-season **series** rather than individual values.
+Do **not** reach for `allow_nonconstant=True` to force `scheme="between"` onto that question.
 
 ---
 
@@ -346,24 +367,177 @@ narrow**. Compare the original trap-1 numbers below — 0.733 vs 0.033. It is th
 
 ---
 
+## Three more defects found by the kit's **second and third** real users
+
+**This provenance is the point.** The kit was adopted at **D077** with 49 assertions. Its **first**
+user found four defects (P1–P4 above), which took it to 100. Its **second and third** users —
+`E0_I0016_efficiency_predictors` and the screen alongside it — then found **three more, plus a
+usage nit**, in code that had already been repaired once and that had 100 passing assertions
+behind it.
+
+That is not a sign the kit is failing. **It is the kit working as intended.** Every real user
+exercises paths the tests do not, and the only remedy for a blind spot is a user who walks into it.
+All three are closed below, each with a regression test that **fails against the pre-fix code**.
+
+### K0 — `assert_partition` **raised on clean data** (the priority)
+
+`assert_partition` auto-detected date columns by `"date" in name.lower()`.
+
+> **The word "candi‑DATE" contains "date".**
+
+So `candidate`, `n_candidates`, `mae_with_candidate`, `update_flag` and `validated` were all treated
+as date columns — and `pd.to_datetime` on a **float** column *does not raise*. It reads the values
+as **nanoseconds since the epoch** and returns `1970-01-01`. Year 1970 is outside every real
+partition, so **`assert_partition` raised `PartitionViolation` on a frame whose every value sat
+inside 2021–2024**.
+
+`candidate` is not an unlucky word. It is the vocabulary of every exploration screen here.
+
+**The real defect was an asymmetry.** The **season** branch already had `_is_season_valued`, added
+precisely to stop name-based false hits, with the `_team_season_2025` regression test. The **date**
+branch had no equivalent. The reporter's reproduction shows both behaviours side by side:
+
+| column | name matches | values are | pre-fix outcome |
+|---|---|---|---|
+| `_team_season_2025` | `season` | dR2 draws ~`1e-4` | **skipped** — *"name is season-like but VALUES are not seasons"* |
+| `candidate_mae` | `date` (candi‑**date**) | MAE floats | **checked, and flagged as year 1970** |
+
+**Fix:** `_is_date_valued`, the missing half of that symmetry.
+
+1. **datetime64 dtype → accepted outright.** The dtype is the proof; no year range is imposed, so a
+   genuine 2026 column is still checked and still flagged.
+2. **Numeric dtype (int/float/bool) → refused outright.** *The epoch-nanosecond reading is never
+   used.* No threshold, no heuristic, no rescue: a float is not a date, and inferring a year from
+   one is exactly how the false positive was manufactured.
+3. **String/object → parsed**, and required to reach an 80 % parse rate *and* land every year inside
+   **1990–2100**. That window is a second, independent line of defence (1970 is outside it) and is
+   deliberately far wider than any partition, so it can never mask a real violation.
+
+**The obvious workaround was deliberately not made the fix.** Passing `date_cols=[]` silences the
+false positive *and disables the true check* — the reporter demonstrated a genuine 2026 date passing
+clean under it. That is a **false-pass door**, and a guard that cries wolf on the program's most
+common column name is a guard that trains callers to open it.
+
+**Two declared behavioural breaks** (as D082 declared its one):
+
+| # | change | before | after |
+|---|---|---|---|
+| **B1** | a **numeric** column whose name contains `date` | parsed as epoch ns, flagged as year 1970 | recorded in `skipped_name_only`, never flagged. Convert epoch columns yourself with `pd.to_datetime(col, unit=...)` — the kit will not guess an encoding |
+| **B2** | `date_cols` | **exhaustive** — `date_cols=[]` disabled the date check entirely | **additive** — datetime64 columns are checked regardless. Pass `include_datetime_dtype_cols=False` for the old behaviour and say why in `FINDINGS.json`. A column named explicitly in `date_cols` whose values are not dates now **raises `ValueError`** rather than being silently skipped |
+
+The reported `UserWarning: Could not infer format …` noise is also gone: parsing goes through
+`_parse_datetimes`, which passes `format="mixed"` — which is strictly *more* capable here
+(`07/04/2022` now parses; under the default it became `NaT`).
+
+**K0 was the fourth instance of a name-based false hit in this program, and the first one inside
+the guard built to prevent them.** The whole module was therefore swept; the audit is in the module
+header. There are exactly two substring matches on column names (`season`/`year`, and `date`), both
+now value-gated, under a stated invariant: **a substring match on a column name may only ever
+nominate a column for a value test; it may never, by itself, cause a violation.**
+
+### K1 — `future_leakage_probe` stated a **false conclusion** in its verdict
+
+The verdict text asserted:
+
+> *"That is only possible because it CONTAINS the future."*
+
+**That is not true in general.** The probe fired on `refB_ppm` versus `refA_ppm` — **both strictly
+prior-games-only**, differing only as *estimators*. A better (less noisy) estimator of a quantity
+that **persists over time** correlates more with the entity's own future *without reading a single
+future row*. **A caller trusting that wording would discard a clean baseline.**
+
+**The numbers are unchanged.** Only the claim attached to them is fixed. A flag now means exactly:
+
+> the suspect tracks the entity's own unplayed future more closely than the contrast does, which is
+> **consistent with** the suspect containing future information and **equally consistent with** the
+> suspect simply being a better estimator of a persistent quantity — and **this probe cannot tell
+> them apart**.
+
+The probe is a **screening flag, not a verdict**, and now says so in its verdict string, in a new
+`status` field (`FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR`), and in
+a new `alternative_explanation` field. Treat a flag as a **request for an audit of the
+construction**, not a finding of leakage. The legacy `reads_future` field is kept with its value
+unchanged for compatibility, but — applying the **P2** lesson about field names carrying claims —
+**its name overstates what it means; read `status`.**
+
+The regression test builds two baselines from `shift(1)` alone, so **neither can read the future by
+construction**, and requires the probe to fire on them — which it does, at
+corr **+0.8959** vs **+0.8142** and dR2 **0.1397**. Sensitivity is unchanged: the genuine
+leave-one-out leak is still flagged.
+
+### K2 — a genuine capability gap, not misuse
+
+**No valid permutation scheme existed for the between-entity question on a within-varying feature.**
+
+- `scheme="between"` **requires** the feature to be constant within groups, and forcing it with
+  `allow_nonconstant=True` is what this kit itself calls a p *"manufactured rather than measured"*.
+- `scheme="within"` is the **literal identity** when the feature *is* constant — `permutation_null`
+  refuses it.
+
+Every expanding-prior candidate is neither. The reporter verified with `detect_grouping_level` that
+**no candidate was constant within its entity-season in any of 132 cells**, declared the gap
+explicitly rather than papering over it, and built `EntitySwap` / `entity_swap_null` itself.
+
+**Fix:** both are ported into the kit, crediting
+`E0_I0016_efficiency_predictors/ep_base.py` (read-only) in the source comments. Generalised only in
+that the intra-date tiebreak column is a parameter rather than hard-coded to `game_id`, and season
+blocking can be switched off.
+
+**What it exchanges: the entity labels.** Entity-seasons are permuted *inside each season*; an
+entity of length `n_a` receives its partner's values at proportional positions
+`round(k/(n_a−1)·(n_b−1))`, so **position 0 maps to position 0 and the last to the last**. Series
+length and within-season temporal shape are preserved — which matters, because an early-season
+expanding prior is mechanically noisier than a late-season one, and a null that scrambled that would
+not be comparing like with like.
+
+It answers the **between**-entity question *only*, and the returned `warning` says so: run
+`scheme=SCHEME_WITHIN` for the other half and credit a candidate only if it beats **both**.
+
+### K3 — the reported usage nit
+
+`detect_grouping_level`'s `candidate_keys` must be a **mapping** from a level *name* to its key
+*columns*. Passing a list reached `.items()` and died with a bare
+`AttributeError: 'list' object has no attribute 'items'` — naming neither the parameter nor the
+required shape. It now raises a `TypeError` that names the parameter, the type received, the
+required shape, and shows the fix using the caller's own column name.
+
+---
+
 ## What `TESTS.py` proves
 
-`python TESTS.py` → **100 assertions, all passing, exit code 0** (~92 s wall clock; the critical
-test does 48,000 permutation fits). Full captured output for both runs is in `run_log.txt`.
+`python TESTS.py` → **159 assertions, all passing, exit code 0** (~95–105 s wall clock; the critical
+test does 48,000 permutation fits). Full captured output for all three runs is in `run_log.txt`.
 
-> **49 → 100.** The original 49 are unchanged apart from **one rewritten assertion** in TEST 3 that
-> had encoded the P2 defect. All the hard-won numbers are bit-identical after the fixes: the
-> 73.3 %-vs-3.3 % over-rejection demonstration, the 39.19x median null-sd inflation, the
-> exactly-`1.0000000000` uniform-weight identity, the `0.99931` centered-response ratio, the
-> 15.3117 % dR2 shortfall, and the `_team_season_2025` trap-3 partition regression.
+> **49 → 100 → 159.** The original 49 are unchanged apart from **one rewritten assertion** in TEST 3
+> that had encoded the P2 defect; the 100 are unchanged outright. All the hard-won numbers are
+> bit-identical after every repair: the 73.3 %-vs-3.3 % over-rejection demonstration, the 39.19x
+> median null-sd inflation, the exactly-`1.0000000000` uniform-weight identity, the `0.999310`
+> centered-response ratio, the 15.3117 % dR2 shortfall, the `_team_season_2025` trap-3 partition
+> regression, the P2 `None`-not-`"row"` contract, and the 0.735-vs-0.045 paired demonstration.
 >
-> **Every one of the 51 new assertions was verified to fail against the pre-fix module** (git
-> `374fce9`), by running this same `TESTS.py` against a copy of it: TEST 9 → the `numpy boolean
-> subtract` `TypeError` at `screenkit.py:302`; TEST 10 → `recommended = 'row'`; TESTS 11–13 →
-> `AttributeError` for each function that did not yet exist. A fix without a failing-first test is
-> not accepted here — the suite's blind spot is what let P1 ship.
+> **Every one of the 51 P-fix assertions was verified to fail against the pre-D082 module** (git
+> `374fce9`): TEST 9 → the `numpy boolean subtract` `TypeError`; TEST 10 → `recommended = 'row'`;
+> TESTS 11–13 → `AttributeError` for each function that did not yet exist.
 >
-> `python TESTS.py p1 p2` runs a name-filtered subset, which is how that check was performed.
+> **Every one of the 59 K-fix assertions was likewise verified against the pre-K module** (git
+> `56dc793`), by running this same `TESTS.py` against a copy of it extracted with `git show`.
+> Pre-fix, the run reaches only **116 of the 159** assertions and **11 of the 16 it reaches inside
+> TESTS 14–17 fail**; the remaining 43 are unreachable because three of the four test functions
+> abort. The five that *do* pass pre-fix are positive controls and fixture-sanity checks
+> (*"a genuine 2026 date is still caught"*, *"a proper mapping still works"*, …) — **not one
+> assertion that encodes a fix passes against the pre-fix code**. Causes:
+>
+> | test | pre-fix cause |
+> |---|---|
+> | **14 (K0)** | `PartitionViolation: date column 'mae_with_candidate' has out-of-partition YEAR VALUES [1970]` — raised on clean 2021–2024 data; then `TypeError: assert_partition() got an unexpected keyword argument 'include_datetime_dtype_cols'` |
+> | **15 (K1)** | verdict contains *"That is only possible because it CONTAINS the future"*; then `KeyError: 'screening_flag'` |
+> | **16 (K2)** | `AttributeError: module 'screenkit' has no attribute 'EntitySwap'` |
+> | **17 (K3)** | `AttributeError: 'list' object has no attribute 'items'` (38 chars, naming neither the parameter nor the shape) |
+>
+> A fix without a failing-first test is not accepted here — **the suite's blind spots are what let
+> all seven defects ship**.
+>
+> `python TESTS.py k0 k1 k2 k3` runs a name-filtered subset, which is how that check was performed.
 
 A shared library that is subtly wrong is *worse* than copy-paste, because it propagates one error
 into every future screen with the authority of a shared helper. Every assertion is against a value
@@ -424,6 +598,29 @@ Highlights:
   within null is calibrated under a group-level confounder (rejection 0.025, mean p 0.513);
   identical forecasts give `dR2 = 0` and `p = 1.0` **exactly**; swapping A and B negates dR2 exactly
   and preserves the two-sided p; and the paired cluster/row rejection rates land at 0.045 vs 0.735.
+- **K0 (the date value gate)** — 21 assertions. The reporter's frame passes; all five
+  `candi-DATE`-named columns (`str`, `float64`, `int64`, `int64`, `bool`) are skipped with the same
+  *"name is X-like but VALUES are not"* wording the season branch uses; the real `game_date` is
+  still checked and reports `[2021, 2022, 2023, 2024]`; a genuine 2026 date is caught **both** by
+  default **and** under `date_cols=[]`; a 2026 date stored as a **string** is caught; naming a
+  non-date column in `date_cols` raises an actionable `ValueError`; the whole call emits **zero
+  warnings**; and `_is_date_valued` is unit-tested on datetime64 / float / int / date-string /
+  feature-id columns.
+- **K1 (screening flag, not verdict)** — 12 assertions. Two baselines built from `shift(1)` alone —
+  so **neither can read the future by construction** — and the probe fires on them anyway
+  (**+0.8959** vs **+0.8142**, dR2 **0.1397**). The verdict is required *not* to contain the old
+  sentence, and required to offer the better-estimator explanation as an equal alternative. The
+  genuine leave-one-out leak is still flagged, so no sensitivity was traded away.
+- **K2 (`entity_swap_null`)** — 20 assertions. Decoding draws through a provenance-encoding value
+  (`entity_code·1000 + position`) proves, over 20 draws, that swaps **never cross a season**, that
+  **position 0 always receives the partner's position 0** and the last always the partner's last,
+  and that values really do move (9,099 rows reassigned). A single-entity season block returns its
+  own series **exactly**; an entity spanning two seasons **raises**. Calibrated under a true
+  between-entity effect of zero (rejection **0.083**, mean p **0.451** over 60 replicates), and a
+  real effect is detected at `real = 0.4381` against a null mean of `0.0225`, **p = 0.0025**.
+- **K3 (`candidate_keys`)** — 6 assertions: list and tuple both raise `TypeError`, the message is
+  484 chars naming the parameter, the type and the shape and echoing the caller's own column name,
+  and both the mapping path and the default path are confirmed unchanged.
 
 ---
 
@@ -446,6 +643,7 @@ screens were read **read-only**:
 | `scheme="within"` (P4) | `E0_I0014_residual_heterogeneity/rh_base.py :: within_block_index()` |
 | `var_share_between` (P4) | `E0_I0014_residual_heterogeneity/rh_base.py :: var_share_between()` |
 | `r2_of_forecast` (P3) | `E0_I0014_residual_heterogeneity/rh_base.py :: r2_plain(y, yhat)` — the colliding name |
+| `EntitySwap`, `entity_swap_null` (K2) | `E0_I0016_efficiency_predictors/ep_base.py :: EntitySwap` / `entity_swap_null` — built there because the kit had no valid scheme for it |
 
 ---
 

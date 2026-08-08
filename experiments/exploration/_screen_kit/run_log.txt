@@ -453,3 +453,481 @@ SUMMARY
 PROCESS EXIT CODE: 0
 wall clock: 89.4 s
 ================================================================================================
+
+
+================================================================================================
+THIRD ENTRY -- after the three defects + one usage nit reported by the kit's
+               SECOND AND THIRD REAL USERS were closed
+================================================================================================
+host: Windows 11 / PowerShell 5.1
+command: python TESTS.py
+run at: 2026-08-08
+numpy 2.5.1   pandas 3.0.5   python 3.13.14
+
+WHAT CHANGED SINCE THE SECOND ENTRY ABOVE (100 assertions):
+
+  K0  assert_partition RAISED ON CLEAN 2021-2024 DATA.  The date branch auto-detected date
+      columns by `"date" in name.lower()`, and THE WORD "candi-DATE" CONTAINS "date", so
+      `candidate`, `n_candidates`, `mae_with_candidate`, `update_flag` and `validated` were all
+      parsed as dates.  pd.to_datetime on a FLOAT column does not raise -- it reads the values as
+      epoch NANOSECONDS and returns 1970-01-01 -- and 1970 is outside every real partition.
+      THE DEFECT WAS AN ASYMMETRY: the SEASON branch already had `_is_season_valued` (added to
+      stop exactly this class of name-based false hit, with the `_team_season_2025` regression
+      test); the DATE branch had no equivalent.  `_is_date_valued` is now that equivalent:
+        - datetime64 dtype        -> accepted outright, with NO year-range gate, so a genuine
+                                     2026 column is still checked and still flagged;
+        - numeric dtype           -> REFUSED OUTRIGHT.  The epoch-nanosecond reading is never
+                                     used to manufacture a year;
+        - string/object          -> must reach an 80% parse rate AND land every parsed year
+                                     inside [1990, 2100], a window deliberately far wider than
+                                     any partition so it can never mask a real violation.
+      THE OBVIOUS WORKAROUND WAS DELIBERATELY NOT MADE THE FIX: `date_cols=[]` silenced the false
+      positive AND the true check (a genuine 2026 date passed clean under it).
+      -> TEST 14, 21 new assertions.
+      *** TWO DECLARED BEHAVIOURAL BREAKS ***
+        B1  a NUMERIC column whose name contains "date" is no longer parsed as a date; it is
+            recorded in `skipped_name_only` and can never be flagged.  Convert epoch columns
+            yourself with pd.to_datetime(col, unit=...); the kit will not guess an encoding.
+        B2  `date_cols` is now ADDITIVE, not exhaustive: datetime64 columns are checked even when
+            `date_cols` is given, including `date_cols=[]`.  Pass
+            include_datetime_dtype_cols=False for the old behaviour and declare it in
+            FINDINGS.json.  A column named EXPLICITLY in `date_cols` whose values are not dates
+            now raises ValueError rather than being silently skipped.
+      Also fixed: the `UserWarning: Could not infer format ...` the kit emitted on every call
+      that saw an object column.  Parsing now goes through `_parse_datetimes` (format="mixed"),
+      which is also strictly more capable ("07/04/2022" now parses; it used to become NaT).
+
+  K1  future_leakage_probe STATED A FALSE CONCLUSION IN ITS VERDICT TEXT: "That is only possible
+      because it CONTAINS the future."  It fired on refB_ppm vs refA_ppm -- BOTH STRICTLY
+      PRIOR-GAMES-ONLY, differing only as ESTIMATORS.  A better (less noisy) estimator of a
+      persistent quantity correlates more with the entity's future without containing any of it,
+      and a caller trusting that wording would discard a clean baseline.  THE NUMBERS ARE
+      UNCHANGED; only the claim attached to them is fixed.  The probe now names itself a
+      SCREENING FLAG, not a verdict, and offers the better-estimator reading as an EQUAL
+      alternative it cannot rule out.  New fields: `screening_flag`, `status`
+      (SCREEN_FLAG_AMBIGUOUS / SCREEN_NOT_FLAGGED) and `alternative_explanation`.  `reads_future`
+      is kept with its value unchanged for compatibility, but ITS NAME OVERSTATES -- read
+      `status`.  -> TEST 15, 12 new assertions.
+
+  K2  A GENUINE CAPABILITY GAP, NOT MISUSE.  No valid permutation scheme existed for the
+      BETWEEN-ENTITY question on a WITHIN-VARYING feature: scheme=SCHEME_BETWEEN requires
+      constancy within groups, and scheme=SCHEME_WITHIN is the identity when the feature is
+      constant.  The reporter verified with detect_grouping_level that NO candidate was constant
+      within its entity-season in ANY of 132 cells, declared the gap, and built EntitySwap /
+      entity_swap_null itself.  Both are ported in from
+      E0_I0016_efficiency_predictors/ep_base.py (read-only, credited in the source comments),
+      generalised only in that the intra-date tiebreak column is a parameter rather than
+      hard-coded to `game_id` and season blocking can be switched off.
+      -> TEST 16, 20 new assertions.
+
+  K3  USAGE NIT.  detect_grouping_level's `candidate_keys` must be a MAPPING; a list gave a bare
+      `AttributeError: 'list' object has no attribute 'items'`.  It now raises a TypeError naming
+      the parameter, the type received and the required shape.  -> TEST 17, 6 new assertions.
+
+  100 -> 159 assertions.  ALL 100 PREVIOUS ASSERTIONS ARE UNCHANGED AND STILL PASS WITH IDENTICAL
+  NUMBERS: the 0.733-vs-0.033 over-rejection demonstration, the 39.19x median null-sd inflation,
+  the exactly-1.0000000000 uniform-weight identity, the 0.999310 centered-response ratio, the
+  15.3117% dR2 shortfall, the `_team_season_2025` trap-3 regression, the P2 None-not-"row"
+  contract, and the 0.735-vs-0.045 paired-comparison demonstration.
+  wls_r2_DEFECTIVE is byte-for-byte unchanged.
+
+EACH NEW TEST WAS VERIFIED TO FAIL AGAINST THE PRE-FIX screenkit.py (git 56dc793), extracted
+with `git show` into a scratch directory and run with this same TESTS.py:
+  pre-fix full run: 116 of 159 assertions reached, 105 PASSED, 11 FAILED, exit code 1.
+  The 43 unreached assertions are unreachable because three of the four new test functions abort
+  with an uncaught exception.  Causes:
+  TEST 14 -> screenkit.PartitionViolation: date column 'mae_with_candidate' has out-of-partition
+             YEAR VALUES [1970]  -- RAISED ON A FRAME WHOSE EVERY VALUE IS INSIDE 2021-2024.
+             Also: date column 'n_candidates' [1970], date column 'update_flag' [1970]; and
+             `candidate_mae` CHECKED while `_team_season_2025` was SKIPPED (the asymmetry, shown
+             side by side); then TypeError: assert_partition() got an unexpected keyword argument
+             'include_datetime_dtype_cols'.
+  TEST 15 -> verdict contained "That is only possible because it CONTAINS the future.";
+             then KeyError: 'screening_flag'
+  TEST 16 -> AttributeError: module 'screenkit' has no attribute 'EntitySwap'
+  TEST 17 -> AttributeError: 'list' object has no attribute 'items'  (38 characters; it names
+             neither the parameter nor the required shape)
+  The only 5 new assertions that PASS pre-fix are positive controls and fixture-sanity checks
+  ("a GENUINE 2026 date is still caught", "a proper mapping still works unchanged", "omitting
+  candidate_keys still uses DEFAULT_CANDIDATE_KEYS", "fixture sanity: both baselines are built
+  from shift(1)", "the K2 shape: the feature is constant within NO candidate key").
+  NOT ONE ASSERTION THAT ENCODES A FIX PASSES AGAINST THE PRE-FIX CODE.
+
+NOTE ON E0_I0016_efficiency_predictors/KIT_BUG_REPRO.py: that file is a runnable reproduction of
+K0 and its assertions REQUIRE the defect to be present.  It therefore FAILS against this repaired
+module, by design, at REPRO 1 ("assert raised, expected the false positive").  It is a frozen
+screen artifact under D069 and was NOT modified.
+
+================================================================================================
+================================================================================================
+screenkit TESTS -- known-answer tests, SYNTHETIC DATA ONLY, no 2025/2026 real data
+================================================================================================
+numpy 2.5.1   pandas 3.0.5   python 3.13.14
+
+================================================================================================
+TEST 1 -- r2_plain / delta_r2_plain against hand-computed arithmetic
+================================================================================================
+      hand-derived R2 = 169/175 = 0.9657142857142857
+      screenkit       =           0.9657142857142857
+    [PASS] r2_plain matches hand arithmetic (169/175)                 |diff| = 0.000e+00
+    [PASS] r2_plain == 1 on an exact linear fit                       R2 = 1.000000000000000
+    [PASS] r2_plain is invariant to shifting y by a constant          R2(y+1000) = 0.965714285714
+    [PASS] delta_r2_plain == r2_plain(full) - r2_plain(base)          dR2 = 0.0972953190, |diff| = 1.388e-17
+
+================================================================================================
+TEST 2 -- wls_r2_DEFECTIVE vs r2_weighted_standard (trap 4)
+================================================================================================
+      uniform w = 1.0      defective = 0.616518422578582  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=1 -> ratio EXACTLY 1.0000000000          ratio = 1.000000000000  (|ratio-1| = 0.000e+00)
+      uniform w = 3.7      defective = 0.616518422578582  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=3.7 -> ratio EXACTLY 1.0000000000        ratio = 1.000000000000  (|ratio-1| = 0.000e+00)
+      uniform w = 250.0    defective = 0.616518422578583  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=250 -> ratio EXACTLY 1.0000000000        ratio = 1.000000000000  (|ratio-1| = 4.441e-16)
+      construction check: sum(w*y) = 6.217e-15 (target 0)   t = T/S = 0.000689524 (target 0.000689524)
+      centered response:  standard R2 = 0.500000000000 (target 0.50)
+                          defective R2 = 0.499655000000
+                          ratio        = 0.999310000000 (target 0.99931)
+    [PASS] centered response: standard weighted R2 hits the constructed 0.5 R2_std = 0.500000000000
+    [PASS] centered response: ratio == 0.99931 (analytic target)      ratio = 0.999310000000
+    [PASS] centered response: ratio is NOT exactly 1                  ratio = 0.999310000000, 1-ratio = 6.900e-04
+    [PASS] defective R2 == closed form 1 - SSE/(S-T)                  |diff| = 1.110e-16
+      dispersed w, non-centered y:  dR2 standard  = 0.00959314
+                                    dR2 defective = 0.00812427
+                                    shortfall     = 15.3117%  (predicted 15.3117%)
+    [PASS] dR2 shortfall == closed form 1 - SST_std/SST_def           |diff| = 4.774e-15
+    [PASS] defect UNDERSTATES dR2 (defective <= standard)             def 0.00812427 <= std 0.00959314
+    [PASS] dR2 shortfall lands inside the measured 0-25.3%% band      shortfall = 15.31%
+
+================================================================================================
+TEST 3 -- detect_grouping_level must report `game`, not `row` (trap 1)
+================================================================================================
+  detect_grouping_level(game_pace): n_rows=300  dtype=float64  distinct values overall=30
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                   300         30          YES    YES 1
+    player_game           300         30          YES    YES 1
+    team_game              60         30          YES     no 1
+    game                   30         30          YES     no 1
+    team_season            24         12           no     no 3
+    season                  4          4           no     no 8
+    -> status=COARSER_LEVEL_FOUND
+    -> COARSEST CONSTANT LEVEL = 'game'  == THE CORRECT PERMUTATION LEVEL
+    [PASS] recommends the GAME level for a per-game feature           recommended = 'game'
+    [PASS] recommendation is NOT `row`                                
+    [PASS] game level is flagged constant                             
+    [PASS] team_season level is NOT constant (feature varies across a team's games) max distinct within a team-season = 3
+    [PASS] reports 30 distinct feature values across 300 rows         30 distinct / 300 rows
+    [PASS] a genuinely row-varying feature is not pushed to a coarse level (P2 contract) recommended = None  status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    [PASS] permutation_null REFUSES a None grouping level             
+    [PASS] permutation_null refuses a level where the feature is not constant 
+
+================================================================================================
+TEST 4 -- CRITICAL: row-level null over-rejects, correct-level null does not
+================================================================================================
+      120 replicate datasets, 200 permutation draws each, TRUE EFFECT = 0
+      rejection rate at alpha=0.05  --  NAIVE ROW-LEVEL null  : 0.733   (nominal 0.05)
+      rejection rate at alpha=0.05  --  CORRECT GAME-LEVEL null: 0.033   (nominal 0.05)
+      correct-level p-values: mean 0.517  median 0.530  min 0.005   (uniform => mean 0.5)
+      null sd inflation (correct/row): median 39.19x  min 25.19x  max 57.81x
+      analytic design effect DE = 1 + (50-1)*0.8 = 40.2 ; the statistic is dR2 = r^2,
+      so the expected sd inflation on the REPORTED scale is DE itself (~40.2x), and
+      sqrt(DE) = 6.34x on the correlation scale.
+    [PASS] row-level null OVER-REJECTS (rate >= 0.50 with zero true effect) row-level rejection rate = 0.733
+    [PASS] correct-level null is calibrated (rejection rate <= 0.20)  correct-level rejection rate = 0.033
+    [PASS] correct-level p-values are ~uniform (mean p in [0.30, 0.70]) mean p = 0.517
+    [PASS] row-level rejection rate strictly exceeds correct-level    0.733 > 0.033
+    [PASS] measured null-sd inflation brackets the analytic design effect 40.2 median inflation = 39.19x vs DE = 40.2
+
+================================================================================================
+TEST 5 -- noop_placebo: sd < 1e-15 on a genuine no-op, nonzero on a real shuffle
+================================================================================================
+  noop_placebo: real=0.001086910004  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+    [PASS] identity transform -> sd < 1e-15 and is_noop True          sd = 0.000e+00
+  noop_placebo: real=0.001086910004  sd=4.337e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=4.337e-19 < tol=1e-15, real reproduced)
+    [PASS] permute-the-key-and-recompute is CONFIRMED a no-op (sd < 1e-15) sd = 4.337e-19, max|draw-real| = 0.000e+00
+    [PASS] noop_placebo RETURNS the observed sd rather than rounding it to zero sd = 4.337e-19 (reported, not asserted bitwise-zero)
+  noop_placebo: real=0.001086910004  sd=6.340e-04  max|draw-real|=1.084e-03  distinct=25 -> NOT a no-op (sd=6.340e-04) -- the transform does move the statistic
+    [PASS] a real shuffle FAILS the no-op signature (sd > 0, is_noop False) sd = 6.340e-04
+
+================================================================================================
+TEST 6 -- assert_partition is VALUE-based, never textual (trap 3)
+================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+    [PASS] PASSES on clean 2021-2024 data                             
+    [PASS] RAISES PartitionViolation on a 2025 season VALUE           
+    [PASS] RAISES on a 2025 YEAR VALUE inside a date column           
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    _team_season_2025        name is season-like but VALUES are not seasons (range 2.675597852080434e-05..0.00017124660739951432) -> NOT a season column, skipped
+    skipped    dr2_draw_season_2026     name is season-like but VALUES are not seasons (range 3.634522082194045e-05..0.00017372009567027274) -> NOT a season column, skipped
+    -> PASS
+    [PASS] PASSES on a column NAMED `_team_season_2025` holding dR2 draws (trap-3 regression) violations = []
+    [PASS] the name-only column is recorded as SKIPPED, not checked   skipped = ['_team_season_2025', 'dr2_draw_season_2026']
+    [PASS] prose containing '2025' in a text column does not trigger a violation 
+    [PASS] catches year-VALUED data in an innocuously named column    
+
+================================================================================================
+TEST 7 -- check_manifest: missing manifest is UNVERIFIABLE, never a pass
+================================================================================================
+  check_manifest no_manifest.parquet -> UNVERIFIABLE (no manifest)
+    [PASS] MISSING manifest -> status UNVERIFIABLE                    status = UNVERIFIABLE
+    [PASS] MISSING manifest -> usable_at_e0_e1 is False (not a pass)  
+  check_manifest row_gran.parquet                         granularity='row'      -> USABLE_IF_FILTERED
+    [PASS] asof_granularity 'row' -> USABLE_IF_FILTERED               status = USABLE_IF_FILTERED
+    [PASS] 'row' granularity says filtering helps                     
+  check_manifest artifact_gran.parquet                    granularity='artifact' -> UNUSABLE
+    [PASS] asof_granularity 'artifact' -> UNUSABLE at E0/E1           status = UNUSABLE
+    [PASS] 'artifact' granularity says filtering does NOT help        
+  check_manifest odd_gran.parquet                         granularity=None       -> UNVERIFIABLE
+    [PASS] manifest present but granularity absent -> UNVERIFIABLE    status = UNVERIFIABLE
+
+================================================================================================
+TEST 8 -- future_leakage_probe detects a full-season leave-one-out baseline (trap 2)
+================================================================================================
+  future_leakage_probe: n=1680
+    corr(baseline_loo            , own strictly-after-date future) = +0.9504
+    corr(baseline_pregame        , own strictly-after-date future) = +0.8781
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.142440
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): 'baseline_loo' tracks the entity's UNPLAYED FUTURE more closely than 'baseline_pregame' does (|0.9504| vs |0.8781|) and adds dR2=0.1424 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) 'baseline_loo' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) 'baseline_loo' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'baseline_pregame' will correlate more with the entity's own future than 'baseline_pregame' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+    [PASS] flags the leave-one-out baseline as reading the future     
+    [PASS] LOO correlates with the unplayed future more strongly than the pregame baseline 0.9504 vs 0.8781
+    [PASS] LOO adds substantial dR2 over the pregame baseline in PREDICTING the future dR2 = 0.1424
+    [PASS] does NOT flag the pregame baseline when contrasted against the LOO one corr 0.8781 vs 0.9504, dR2 0.0102
+
+================================================================================================
+TEST 9 -- P1 REGRESSION: BOOLEAN features (pre-fix: TypeError, 0 of these ran)
+================================================================================================
+      feature dtype = bool ; is_numeric_dtype says True (which is why bool took the numeric branch)
+  detect_grouping_level(flag_bool): n_rows=48  dtype=bool  distinct values overall=2
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                    48          2          YES    YES 1
+    player_game            48          2          YES    YES 1
+    team_game              24          2          YES     no 1
+    game                   12          2          YES     no 1
+    team_season             4          1           no     no 2
+    season                  2          1           no     no 2
+    -> status=COARSER_LEVEL_FOUND
+    -> COARSEST CONSTANT LEVEL = 'game'  == THE CORRECT PERMUTATION LEVEL
+    [PASS] detect_grouping_level does not raise on a BOOLEAN feature  recommended = 'game'
+    [PASS] bool and its float twin give the IDENTICAL levels table    bool game spread = 0.0, float game spread = 0.0
+    [PASS] the bool went through the NUMERIC spread path, not the nunique fallback game spread = 0.0, season spread = 1.0
+    [PASS] the report says the feature is boolean                     feature_dtype = bool
+    [PASS] permutation_null runs on a BOOLEAN feature                 real = -0.234082  p = 0.4878  n_groups = 12
+    [PASS] stat_fn sees dtype bool on EVERY permuted frame, not float dtypes seen = ['bool']
+    [PASS] every draw is a genuine permutation: the True count never changes True counts seen = [32] (real = 32), sd = 0.307161
+    [PASS] permutation_null reports the feature as boolean            
+    [PASS] a nullable `boolean` column with pd.NA is handled, not crashed on dtype = boolean, season spread = 1.0
+    [PASS] a STRING feature still uses the distinct-count path (spread nan, no coercion) recommended = 'game'
+
+================================================================================================
+TEST 10 -- P2 REGRESSION: `row` must never be returned as a RECOMMENDATION
+================================================================================================
+  detect_grouping_level(player_minutes): n_rows=300  dtype=float64  distinct values overall=30
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                   300         30          YES    YES 1
+    player_game           300         30          YES    YES 1
+    team_game              60         27           no     no 5
+    game                   30         17           no     no 10
+    team_season            24         18           no     no 14
+    season                  4          4           no     no 29
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'player_minutes': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+    [PASS] recommended_permutation_level is None, NOT the string 'row' recommended = None
+    [PASS] status names the situation and says ANTICONSERVATIVE out loud status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    [PASS] row_null_is_anticonservative is True and a warning is carried warning is 908 chars
+    [PASS] the naive null is still reachable, but ONLY via the opt-in field 
+    [PASS] piping the recommendation into permutation_null REFUSES (cannot be misled) 
+    [PASS] piping recommended_key_cols into permutation_null also REFUSES 
+    [PASS] NO field whose name reads as a recommendation carries the value 'row' offending fields = []
+    [PASS] `player_game` uniquely identifies rows here and is flagged is_row_equivalent n_groups = 300 vs n_rows = 300
+    [PASS] a constant-but-row-equivalent key is NOT recommended       
+    [PASS] the good path is unchanged: a real coarser level is still recommended recommended = 'game'
+    [PASS] an explicitly-requested ROW_LEVEL null returns a warning field warning is 276 chars
+
+================================================================================================
+TEST 11 -- P3 REGRESSION: r2_of_forecast (scores) vs r2_plain (refits)
+================================================================================================
+      hand-derived 1 - 0.07/5.0 = 0.9860000000000000
+      screenkit                 = 0.9860000000000000
+    [PASS] r2_of_forecast matches hand arithmetic (1 - 0.07/5.0 = 0.986) |diff| = 0.000e+00
+      r2_plain(y, yhat) REFITS y ~ a + b*yhat and returns 0.9867855270057682
+    [PASS] THE COLLISION: r2_plain(y, yhat) != r2_of_forecast(y, yhat) refit 0.986786 vs scored 0.986000 (gap 0.000786)
+    [PASS] r2_plain(y, -y) == 1.0 exactly (it refits, so the sign is free) r2_plain = 1.000000000000000
+    [PASS] r2_of_forecast(y, -y) == -23.0 exactly (hand-derived; it does NOT refit) r2_of_forecast = -23.000000000000000
+    [PASS] r2_plain(y, f) >= r2_of_forecast(y, f) on 25 random forecasts 0/25 violations
+    [PASS] on OLS-FITTED values the two agree exactly, and both equal r2_plain(y, X) scored 0.413665529219 vs fitted-model 0.413665529219
+    [PASS] equals the frozen rh_base 1 - SSE/SST form recomputed inline |diff| = 0.000e+00
+    [PASS] a perfect forecast scores exactly 1.0                      R2 = 1.0
+    [PASS] passing a design matrix raises and points at r2_plain      
+
+================================================================================================
+TEST 12 -- P4 REGRESSION: within-group scheme + var_share_between
+================================================================================================
+    [PASS] var_share_between == 1.0 for a feature constant within groups share = 1.000000000000000
+    [PASS] var_share_between == 0.0 exactly when all group means are equal share = 0.0
+    [PASS] var_share_between == 0.5 on a balanced half-and-half construction share = 0.500000000000000
+    [PASS] var_share_between handles a BOOLEAN feature too (P1 path shared) share = 1.000000000000000
+    [PASS] WITHIN scheme preserves every group mean EXACTLY on every draw max |group-mean drift| over 30 draws = 6.661e-16
+    [PASS] WITHIN scheme preserves each group's multiset (within-group SS unchanged) max |draw - real| = 1.137e-13
+      within-group SS: real = 585.9354 ; BETWEEN-scheme draws max = 5.474e-29 ; WITHIN-scheme draws min = 585.9354
+    [PASS] BETWEEN scheme on a within-varying feature destroys ALL within-group variation real = 585.9354, max draw = 5.474e-29
+    [PASS] WITHIN scheme is REFUSED on a feature constant within groups (it is the identity) 
+    [PASS] WITHIN scheme is REFUSED at ROW_LEVEL                      
+    [PASS] an unrecognised scheme raises rather than falling back to a default 
+      80 replicates, 200 within-group draws each, TRUE WITHIN-GROUP EFFECT = 0
+      WITHIN-scheme rejection rate at alpha=0.05 : 0.025   mean p = 0.513 (uniform => 0.5)
+    [PASS] WITHIN-scheme null is calibrated with a group-level confounder (rej <= 0.15) rejection rate = 0.025
+    [PASS] WITHIN-scheme p-values are ~uniform (mean p in [0.30, 0.70]) mean p = 0.513
+
+================================================================================================
+TEST 13 -- P4 REGRESSION: paired forecast-vs-forecast comparison
+================================================================================================
+    [PASS] paired_forecast_comparison REFUSES a None clustering level 
+  paired_forecast_comparison(A vs B): n=1000 over 25 clusters
+    r2_of_forecast(A         ) = +0.653727
+    r2_of_forecast(B         ) = +0.092271
+    dR2 (A - B)            = +0.561455   mean paired loss diff = -1.20131
+    CLUSTER sign-flip null : sd = 0.122233   p = 0.0005
+    NAIVE row sign-flip    : sd = 0.0428295   p = 0.0005   [CONTRAST ONLY]
+    null-width inflation (cluster/row) = 2.854
+    -> A beats B by dR2 = +0.561455 (cluster sign-flip p = 0.0005 over 25 clusters). The naive independent-rows null would have given p = 0.0005; it is 2.85x TOO NARROW.
+    [PASS] dR2 == r2_of_forecast(A) - r2_of_forecast(B) exactly       |diff| = 1.110e-16
+    [PASS] the genuinely better forecast wins with a small clustered p dR2 = +0.561455, p = 0.00050
+    [PASS] identical forecasts -> dR2 == 0.0 and p == 1.0 EXACTLY     dR2 = -0.0, p = 1.0
+    [PASS] swapping A and B negates dR2 exactly and preserves the two-sided p dR2 -0.56145536 vs +0.56145536, p 0.00050 vs 0.00050
+      200 replicates, 300 sign-flip draws each, TWO EXCHANGEABLE FORECASTS (true dR2 = 0)
+      rejection rate at alpha=0.05 -- CLUSTER sign-flip : 0.045   (nominal 0.05)
+      rejection rate at alpha=0.05 -- NAIVE ROW flip    : 0.735   [CONTRAST ONLY]
+      cluster p-values: mean 0.493  median 0.490   null-width inflation median 4.91x
+    [PASS] CLUSTER sign-flip null is calibrated (rejection rate <= 0.12) cluster rejection rate = 0.045
+    [PASS] NAIVE row-wise sign flip OVER-REJECTS (rate >= 0.20 with true dR2 = 0) row-level rejection rate = 0.735
+    [PASS] cluster p-values are ~uniform (mean p in [0.30, 0.70])     mean p = 0.493
+    [PASS] the row-wise null is measurably TOO NARROW (median inflation > 2x) median sd_cluster/sd_row = 4.91x
+
+================================================================================================
+TEST 14 -- K0 REGRESSION: assert_partition raised on CLEAN data ('candi-DATE')
+================================================================================================
+      columns whose NAME contains the substring 'date':
+        game_date              dtype=datetime64[us]   <- 'date' in name
+        candidate              dtype=str              <- 'date' in name
+        mae_with_candidate     dtype=float64          <- 'date' in name
+        n_candidates           dtype=int64            <- 'date' in name
+        update_flag            dtype=int64            <- 'date' in name
+        validated              dtype=bool             <- 'date' in name
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    candidate                name is date-like but VALUES are not dates (only 0 of 4 non-null values parsed, 0% < 80%) -> NOT a date column, skipped
+    skipped    mae_with_candidate       name is date-like but VALUES are NUMERIC (dtype float64, range 0.1234..0.4567) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    skipped    n_candidates             name is date-like but VALUES are NUMERIC (dtype int64, range 44..44) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    skipped    update_flag              name is date-like but VALUES are NUMERIC (dtype int64, range 0..1) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    skipped    validated                name is date-like but VALUES are NUMERIC (dtype bool, range False..True) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    -> PASS
+    [PASS] PASSES on a clean 2021-2024 frame containing a column named `candidate` violations = []
+    [PASS] name-only 'date' match `candidate`          is SKIPPED, not checked skipped=True checked=False
+    [PASS] name-only 'date' match `mae_with_candidate` is SKIPPED, not checked skipped=True checked=False
+    [PASS] name-only 'date' match `n_candidates`       is SKIPPED, not checked skipped=True checked=False
+    [PASS] name-only 'date' match `update_flag`        is SKIPPED, not checked skipped=True checked=False
+    [PASS] name-only 'date' match `validated`          is SKIPPED, not checked skipped=True checked=False
+    [PASS] the REAL date column is still checked and its years reported checked_date_cols = {'game_date': [2021, 2022, 2023, 2024]}
+    [PASS] the epoch-nanosecond reading is refused BY NAME in the skip reason reason = name is date-like but VALUES are NUMERIC (dtype float64, range 0.1234.
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022]
+    skipped    _team_season_2025        name is season-like but VALUES are not seasons (range 0.00012..0.00034) -> NOT a season column, skipped
+    skipped    candidate_mae            name is date-like but VALUES are NUMERIC (dtype float64, range 0.11..0.22) -> NOT a date column, skipped. pd.to_datetime would read these as epoch NANOSECONDS and return 1970, which is a FALSE partition violation, so the kit refuses that reading. If this really is an epoch column, convert it yourself with pd.to_datetime(col, unit=...) before calling -- the kit will not guess an encoding for you.
+    -> PASS
+    [PASS] SYMMETRY: the season branch AND the date branch both skip a name-only match skipped = ['_team_season_2025', 'candidate_mae'], violations = []
+    [PASS] the two branches give the SAME 'name is X-like but VALUES are not' wording 
+    [PASS] a GENUINE 2026 date is still caught (the fix did not disable the check) 
+    [PASS] date_cols=[] NO LONGER opens a false-pass door on a datetime column (B2) 
+    [PASS] the pre-K0 behaviour is still reachable, but only by naming it explicitly checked = {}
+    [PASS] a STRING date column holding 2026 is still parsed and flagged 
+    [PASS] explicitly naming a NON-date column in date_cols raises an actionable ValueError ValueError: assert_partition: date_cols explicitly names 'mae_with_candi
+    [PASS] assert_partition emits NO warnings at all (the 'Could not infer format' noise is gone) warnings = []
+    [PASS] _is_date_valued: datetime64 accepted with NO year-range gate (2026 still checkable) 
+    [PASS] _is_date_valued: a FLOAT column is refused outright (no epoch-nanosecond reading) 
+    [PASS] _is_date_valued: an INT column is refused outright too     
+    [PASS] _is_date_valued: a string column of real dates is accepted 
+    [PASS] _is_date_valued: a string column of feature ids is refused 
+
+================================================================================================
+TEST 15 -- K1 REGRESSION: the leakage probe is a SCREEN, not a VERDICT
+================================================================================================
+    [PASS] fixture sanity: both baselines are built from shift(1) -- strictly prior games only both start NaN at each entity's first game
+  future_leakage_probe: n=3040
+    corr(refB_ppm                , own strictly-after-date future) = +0.8959
+    corr(refA_ppm                , own strictly-after-date future) = +0.8142
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.139715
+    status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    -> SCREENING FLAG (NOT A VERDICT): 'refB_ppm' tracks the entity's UNPLAYED FUTURE more closely than 'refA_ppm' does (|0.8959| vs |0.8142|) and adds dR2=0.1397 over it in predicting that future. TWO EXPLANATIONS FIT THESE NUMBERS EQUALLY WELL: (a) 'refB_ppm' CONTAINS future information, in which case an increment measured over it is NOT a forecasting increment; or (b) 'refB_ppm' is simply a BETTER ESTIMATOR of a quantity that persists over time, reads nothing but prior games, and is perfectly clean. THIS PROBE CANNOT TELL THEM APART. Do not discard a baseline on this output alone -- audit the construction and establish the time window of every input.
+    !! A STRICTLY PRIOR-GAMES-ONLY estimator that is simply BETTER (less noisy) than 'refA_ppm' will correlate more with the entity's own future than 'refA_ppm' does, because the underlying quantity PERSISTS -- with no future information anywhere in its construction. This probe cannot separate that from genuine leakage. Rule it out by reading the construction, not by looking harder at these numbers.
+    [PASS] the probe FIRES on refB vs refA even though NEITHER reads the future corr 0.8959 vs 0.8142, dR2 0.1397
+    [PASS] the numbers are NOT weakened: both correlations and the dR2 are still reported 
+    [PASS] the verdict NO LONGER says 'only possible because it CONTAINS the future' verdict starts: SCREENING FLAG (NOT A VERDICT): 'refB_ppm' tracks th...
+    [PASS] the verdict names itself a SCREENING FLAG and denies being a verdict 
+    [PASS] the verdict offers the BETTER-ESTIMATOR explanation as an equal alternative 
+    [PASS] the verdict tells the caller NOT to discard a baseline on this alone 
+    [PASS] status is the ambiguity-naming constant, not a leakage finding status = FLAGGED__CONSISTENT_WITH_LEAKAGE__ALSO_CONSISTENT_WITH_A_BETTER_ESTIMATOR
+    [PASS] alternative_explanation is carried as its own field        
+    [PASS] the legacy `reads_future` field is preserved with its value unchanged 
+    [PASS] the genuine leave-one-out leak is STILL flagged (no loss of sensitivity) 
+    [PASS] a NOT-flagged result names itself not-a-certificate        
+
+================================================================================================
+TEST 16 -- K2 REGRESSION: entity_swap_null (the missing between-entity scheme)
+================================================================================================
+    [PASS] the K2 shape: the feature is constant within NO candidate key constant levels = []
+    [PASS] EntitySwap groups the frame into one series per entity-season 24 groups over 2 seasons
+    [PASS] the fixture really has UNEQUAL series lengths (the proportional map is exercised) sizes 12..29
+    [PASS] EntitySwap group i holds exactly the rows of entity-season code i 
+    [PASS] EntitySwap NEVER swaps across a season block               0 cross-season assignments in 20 draws
+    [PASS] position 0 always receives the partner's position 0        
+    [PASS] the last position always receives the partner's LAST position 
+    [PASS] draws really move values between entities (not a silent identity) 9099 rows reassigned across 20 draws
+    [PASS] a season block with ONE entity yields that entity's own series back, exactly 
+    [PASS] an entity spanning more than one season RAISES rather than being silently assigned 
+    [PASS] ...and putting the season INTO entity_cols is accepted, as the message advises 
+      60 replicates, 200 entity-swap draws each, TRUE BETWEEN-ENTITY EFFECT = 0
+      entity-swap rejection rate at alpha=0.05 : 0.083   mean p = 0.451 (uniform => 0.5)
+    [PASS] entity_swap_null is calibrated with an entity-level outcome (rejection <= 0.15) rejection rate = 0.083
+    [PASS] entity-swap p-values are ~uniform (mean p in [0.30, 0.70]) mean p = 0.451
+  entity_swap_null(prior at entity_id+season): real=0.438149
+    24 entity groups across 2 season block(s); 400 draws, seed 9
+    null mean=0.0225103  sd=0.0274415  p=0.0025  (alternative=greater)
+    !! entity_swap answers the BETWEEN-ENTITY question only. It leaves the within-entity temporal shape intact by construction, so it says nothing about whether the candidate's WITHIN-entity movement carries signal. Run permutation_null(..., scheme=SCHEME_WITHIN) for that and credit the candidate only if it beats BOTH.
+    [PASS] a REAL between-entity effect is detected (p < 0.01)        real = 0.4381, null mean = 0.0225, p = 0.00249
+    [PASS] the null is NOT degenerate: the draws have real spread     sd = 0.0274415 over 400 finite draws
+    [PASS] the result labels its scheme and carries the between-only warning 
+    [PASS] p is the add-one estimator and can never be 0              
+    [PASS] entity_swap_null REFUSES a None entity level, mirroring permutation_null 
+    [PASS] a swapper built on a differently-shaped frame is REFUSED, not silently misapplied 
+    [PASS] a BOOLEAN feature is permuted and handed back to stat_fn AS BOOL dtypes seen = ['bool']
+
+================================================================================================
+TEST 17 -- K3 REGRESSION: candidate_keys must be a mapping, with a clear error
+================================================================================================
+      raised: TypeError: detect_grouping_level: candidate_keys must be a MAPPING from a level NAME to its key COL
+    [PASS] a LIST raises TypeError, not a bare AttributeError         got TypeError
+    [PASS] the message names the parameter, the type received, and the required shape message is 484 chars
+    [PASS] the message shows the caller how to fix it with their own column name 
+    [PASS] a TUPLE is rejected the same way                           
+    [PASS] a proper mapping still works unchanged                     
+    [PASS] omitting candidate_keys still uses DEFAULT_CANDIDATE_KEYS  
+
+================================================================================================
+SUMMARY
+================================================================================================
+  159 assertions: 159 PASSED, 0 FAILED
+  RESULT: ALL TESTS PASS
+
+================================================================================================
+PROCESS EXIT CODE: 0
+wall clock: 104.2 s
+================================================================================================
