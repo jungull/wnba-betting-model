@@ -1,0 +1,82 @@
+﻿
+========================================================================================
+REBUILD FRAMES (identical to run_screen.py; R2_base is asserted to reproduce)
+========================================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 19642 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  manifest master_team.parquet                        asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_team:   raw 2990 -> partition+RS 1776 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] player frame target=pts                        seasons=[2021, 2022, 2023, 2024]  n=16711
+  [PARTITION] analysis frame target=pts                      seasons=[2021, 2022, 2023, 2024]  n=10167
+  pts  n=10167  R2_base=0.3937574265  (reproduces run_screen.py exactly)
+  [PARTITION] player frame target=reb                        seasons=[2021, 2022, 2023, 2024]  n=16711
+  [PARTITION] analysis frame target=reb                      seasons=[2021, 2022, 2023, 2024]  n=10167
+  reb  n=10167  R2_base=0.4229812028  (reproduces run_screen.py exactly)
+  [PARTITION] player frame target=ast                        seasons=[2021, 2022, 2023, 2024]  n=16711
+  [PARTITION] analysis frame target=ast                      seasons=[2021, 2022, 2023, 2024]  n=10167
+  ast  n=10167  R2_base=0.4164862810  (reproduces run_screen.py exactly)
+
+========================================================================================
+A. FAMILY-WISE max-T RANDOMIZATION NULL over all 27 cells (400 draws)
+========================================================================================
+  max-T null: mean=2.89 sd=1.49 p50=2.64 p95=5.69 p99=6.79 max=8.28
+
+  tgt   candidate          dR2_M        z    nominal familywise_p  family-wise verdict
+  ast   exp_gposs       0.001133     8.04      0.000        0.003  SURVIVES family-wise
+  pts   exp_gposs       0.000736     4.20      0.015        0.185  killed on multiplicity
+  reb   exp_gposs       0.000616     3.27      0.025        0.357  killed on multiplicity
+  reb   opp_pace48      0.000579     4.30      0.000        0.168  killed on multiplicity
+  ast   opp_pace48      0.000533     3.31      0.020        0.350  killed on multiplicity
+  pts   opp_fgaA48      0.000529     5.01      0.000        0.098  killed on multiplicity
+  ast   own_pace48      0.000476     3.48      0.015        0.320  killed on multiplicity
+  pts   opp_missA48     0.000471     2.71      0.015        0.480  killed on multiplicity
+  pts   opp_pace48      0.000453     3.59      0.010        0.300  killed on multiplicity
+  pts   opp_orebA100    0.000433     3.29      0.015        0.357  killed on multiplicity
+  pts   ppm             0.000406     1.49      0.085        0.833  killed on multiplicity
+  ast   ppm             0.000376     1.61      0.065        0.795  killed on multiplicity
+  ast   opp_fgaA48      0.000350     2.50      0.025        0.542  killed on multiplicity
+  pts   own_pace48      0.000229     0.81      0.185        0.955  killed on multiplicity
+  ast   opp_missO48     0.000206     1.02      0.145        0.925  killed on multiplicity
+  ast   opp_orebA100    0.000189     0.79      0.145        0.958  killed on multiplicity
+  ast   own_orebR100    0.000176     1.18      0.145        0.902  killed on multiplicity
+  reb   own_pace48      0.000082    -0.32      0.425        1.000  killed on multiplicity
+  pts   opp_missO48     0.000082     0.12      0.295        1.000  killed on multiplicity
+  ast   opp_missA48     0.000077    -0.12      0.365        1.000  killed on multiplicity
+  reb   ppm             0.000019    -0.64      0.700        1.000  killed on multiplicity
+  reb   opp_fgaA48      0.000016    -0.67      0.675        1.000  killed on multiplicity
+  reb   own_orebR100    0.000008    -0.72      0.835        1.000  killed on multiplicity
+  reb   opp_missO48     0.000007    -0.62      0.665        1.000  killed on multiplicity
+  reb   opp_orebA100    0.000003    -0.63      0.840        1.000  killed on multiplicity
+  reb   opp_missA48     0.000001    -0.87      0.935        1.000  killed on multiplicity
+  pts   own_orebR100    0.000000    -0.74      0.985        1.000  killed on multiplicity
+
+========================================================================================
+B. MECHANISM ROBUSTNESS
+========================================================================================
+  R1 = + ACTUAL MINUTES (post-hoc control, mechanism diagnostic only, NOT pregame)
+  R2 = + ACTUAL PLAYER POSSESSIONS (post-hoc mediator, mechanism diagnostic only)
+
+  tgt   candidate       dR2_base     dR2_R1    keep%     dR2_R2    keep%
+  ast   exp_gposs       0.001133   0.001090      96%   0.000186      16%
+  pts   exp_gposs       0.000736   0.000580      79%   0.000041       6%
+  reb   exp_gposs       0.000616   0.000732     119%   0.000010       2%
+  reb   opp_pace48      0.000579   0.000700     121%   0.000117      20%
+  pts   opp_fgaA48      0.000529   0.000393      74%   0.000039       7%
+  ast   opp_pace48      0.000533   0.000624     117%   0.000148      28%
+  pts   opp_orebA100    0.000433   0.000320      74%   0.000285      66%
+  pts   ppm             0.000406   0.000922     227%   0.000091      22%
+  ast   ppm             0.000376   0.000632     168%   0.000129      34%
+
+========================================================================================
+B2. SUM vs DIFFERENCE (the estimable reparameterisation; avoids I0012's void rank-deficient rung)
+========================================================================================
+  exp_gposs = 0.5*(opp_pace48 + own_pace48).  {sum, diff} spans the same 2-d space as
+  {opp, own} and is FULL RANK, so both increments below are estimable.
+
+  tgt      dR2_sum dR2_joint2 dR2_diff|sum  beta_diff   reading
+  pts     0.000736   0.000754   0.000018     0.0313   symmetric game tempo (difference dead) -> NOT an opponent matchup
+  reb     0.000616   0.000717   0.000101     0.0334   asymmetric -> opponent-specific component present
+  ast     0.001133   0.001133   0.000001     0.0018   symmetric game tempo (difference dead) -> NOT an opponent matchup
+
+  wrote maxt_robust_results.json  (23.3s)

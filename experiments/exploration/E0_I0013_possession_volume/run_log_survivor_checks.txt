@@ -1,0 +1,42 @@
+﻿
+========================================================================================
+REBUILD
+========================================================================================
+  manifest master_player.parquet                      asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_player: raw 33712 -> partition+RS 19642 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)] | max date 2024-09-19
+  manifest master_team.parquet                        asof_granularity='row'  fit_seasons=[2021, 2022, 2023, 2024, 2025, 2026]
+  master_team:   raw 2990 -> partition+RS 1776 rows | seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  [PARTITION] team pregame table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  [PARTITION] player frame target=ast                        seasons=[2021, 2022, 2023, 2024]  n=16711
+  [PARTITION] analysis frame target=ast                      seasons=[2021, 2022, 2023, 2024]  n=10167
+  n=10167  R2_base=0.416486  dR2(exp_gposs)=0.001133
+
+========================================================================================
+S1  SPLIT-HALF RELIABILITY OF THE PACE INSTRUMENT
+========================================================================================
+  [PARTITION] team possessions frame                         seasons=[2021, 2022, 2023, 2024]  n=1776
+  odd/even split-half of team possessions-per-48 within (season, team)
+  r_half = 0.6795   Spearman-Brown = 0.8092   n_units = 48 (team-seasons)
+  -> the instrument is measured well; this is NOT an I0012-F1-style measurability kill.
+
+========================================================================================
+S2  CONFOUND LADDER (all rungs pregame-observable, all strictly prior in-season)
+========================================================================================
+  [PARTITION] team control table                             seasons=[2021, 2022, 2023, 2024]  n=1776
+  rung                                R2_rung  dR2(cand) retained
+  L0 base only                       0.416486   0.001133     100%
+  L1 + home                          0.416589   0.001132     100%
+  L2 + both nets/100                 0.416926   0.001048      93%
+  L3 + both win rates                0.416854   0.001050      93%
+  L4 + home + nets + win rates       0.417031   0.001051      93%
+
+========================================================================================
+S3  RECENCY SLICES, each against its OWN cluster placebo recomputed at that n
+========================================================================================
+  slice                      n        dR2       beta   plc_mean    plc_sd    frac>=
+  2021-2024 (pooled)     10167   0.001133     0.0790   0.000086  0.000114     0.000
+  2022-2024               8039   0.000698     0.0700   0.000117  0.000158     0.005
+  2023-2024               5555   0.000676     0.0696   0.000204  0.000243     0.060
+  2024 alone              2771   0.002574     0.1315   0.000769  0.000906     0.065
+
+  wrote survivor_checks.json  (2.3s)

@@ -1,0 +1,3621 @@
+{
+ "screen_id": "E0_I0013_possession_volume",
+ "stage": "E0",
+ "idea": "Possession volume as a driver of player production at the player level: a counting stat is a rate times an exposure, and exposure has two components -- minutes (well studied here) and possessions per minute (essentially unstudied).",
+ "claiming": {
+  "non_claiming": true,
+  "statement": "THIS IS A NON-CLAIMING E0 EXPLORATION SCREEN. Nothing in this file is a result, a claim, or a recommendation. Every entry is a LEAD or a KILL. There is no registry entry, no preregistration, no leaderboard row, no promotion threshold and no REPORT.md associated with this screen. The single keep_as_lead below is a pointer for further cheap work, not a finding.",
+  "relationship_to_prior_work": "Layer-3 PERSONNEL MATCHING is CLOSED and was not rebuilt: E0_I0012 killed 29 of 30 cells and E1_I0012_survivor_2021drop killed the last one. This screen takes the surface I0012's own conclusion named -- possession volume -- plus its unrun layer-2 OREB and supply-side-instrument follow-ups, as NEW work rather than as a rescue of the dead lead."
+ },
+ "partition": {
+  "seasons": [
+   2021,
+   2022,
+   2023,
+   2024
+  ],
+  "holdout_touched": false,
+  "holdout_statement": "The 2025/2026 confirmation holdout was never read, joined, filtered against, counted, plotted or described anywhere in this screen.",
+  "filter_points": [
+   "base.load_player(): mp[mp.season.isin(2021-2024)] immediately after read_parquet, with an assert; # FILTER-POINT",
+   "base.load_team(): same, immediately after read_parquet, with an assert; # FILTER-POINT",
+   "pv_base.guard() called on the team pregame table, on each per-target player frame, on each per-target analysis frame, on the team possessions frame and on the team control table. Each call prints sorted(season.unique()) into the run log and asserts both (a) subset of 2021-2024 and (b) empty intersection with {2025, 2026}.",
+   "pv_base.safe_write() re-asserts the partition before any CSV write.",
+   "verify_partition.py re-parses every file this directory wrote and tests season/date column VALUES afterwards."
+  ],
+  "artifact_manifest_check": {
+   "test": "GRAPH_POLICY 13.2.2 -> asof_granularity == 'row' (NOT fit_seasons / fit_through_season, which only describe what a file contains)",
+   "artifacts": [
+    {
+     "path": "data/masters/master_player.parquet",
+     "asof_granularity": "row",
+     "fit_seasons": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+     ],
+     "usable_at_E0": true,
+     "reasoning": "Row granularity means the row filter to 2021-2024 bounds it. The fit_seasons list includes holdout seasons but that is NOT the contamination test."
+    },
+    {
+     "path": "data/masters/master_team.parquet",
+     "asof_granularity": "row",
+     "fit_seasons": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+     ],
+     "usable_at_E0": true,
+     "reasoning": "As above."
+    }
+   ],
+   "byte_scan": "NOT RUN, deliberately. A raw byte-scan for '2025'/'2026' has produced a FALSE partition violation in this program twice, by matching row counts and digit runs inside floats and by matching prose about the partition rule. Season and date COLUMN VALUES are tested instead."
+  },
+  "max_game_date_read": "2024-09-19"
+ },
+ "r2_convention": {
+  "rule": "plain unweighted OLS R2 = 1 - SSE/SST, with SST taken about the UNWEIGHTED mean (program decision D069)",
+  "implementation": "pv_base.ols / pv_base.r2, and the algebraically identical QR-based incremental form run_screen.incr used inside the placebo loops",
+  "weighting": "NONE. No weighted regression appears anywhere in this screen.",
+  "wls_r2_helper": "NOT imported and NOT used. The defective helper in several older screen analyze.py files uses the SST of the sqrt-weight-transformed response about its own mean, which biases dR2 downward by 0-25%."
+ },
+ "base_model": {
+  "formula": "y_count ~ O + D + O*D + Mexp + O*Mexp",
+  "y": "RAW counting stat (pts / reb / ast). I0012 modelled a per-100-possession RATE, which divides possession volume out of the outcome by construction; that is why volume could only ever appear there as an interaction.",
+  "O": "player's pregame expanding per-100-possession rate of the target stat",
+  "D": "opponent's pregame expanding OVERALL allowance of the target stat per 100 possessions, computed EXCLUDING this player's own prior contribution to it",
+  "Mexp": "player's pregame expanding minutes per game",
+  "O_times_Mexp": "rate x exposure, i.e. the naive counting-stat prediction, so every candidate is asked for an increment OVER the naive prediction",
+  "analysis_rows": "minutes >= 10, all nine candidates non-null, shared across the three targets so the 27 cells are directly comparable (n = 10167 per target)"
+ },
+ "traps_addressed": {
+  "trap_1_costume": {
+   "handled": "D and O*D are IN the base model, so every reported increment is orthogonal to overall opponent defensive allowance by construction. Each candidate is additionally centred within season and explicitly residualised on [D, O*D]. Within-season |r| against overall opponent defence is reported for all 27 cells.",
+   "observed_range": "|r| from 0.00 to 0.45 across the 27 cells, against I0010's disqualifying +0.57/+0.59. The single surviving cell sits at -0.06.",
+   "bit_this_screen": false,
+   "note": "Worth recording plainly: because D and O*D are already in the base span, the explicit residualisation does not change the main-effect dR2 by even one ulp. It is kept because it does change the interaction terms and the reported beta scale. The costume control is enforced either way."
+  },
+  "trap_2_retrospective_baseline": {
+   "handled": "Every quantity on both the player side and the opponent side is built with base.prior_expanding: aggregate to date level, then strict cumulative-minus-self within (season, key). A value serving a target game comes only from rows strictly before that game's date, in the same season. Shrinkage priors use the PREVIOUS season's totals, which is prior information, never later information.",
+   "explicitly_absent": [
+    "leave-one-out over a full season",
+    "leave-one-season-out",
+    "leave-one-game-out over a full season",
+    "any baseline whose name was trusted instead of its construction"
+   ],
+   "bit_this_screen": false
+  },
+  "trap_3_anticonservative_t": {
+   "handled": "No verdict uses a classical t anywhere. Seven of nine candidates are team-season aggregates with only 12 distinct values per season shared across every row facing that team; there are 48 team-season clusters over the partition. Every cell gets a cluster-level permutation null, a cluster-robust sandwich SE with the cluster count printed, and a joint family-wise max-T null.",
+   "n_clusters_team_candidates": 48,
+   "n_clusters_player_candidate": 493,
+   "bit_this_screen": true,
+   "evidence": "The naive row-level permutation null is 1.00x to 3.82x narrower than the correct cluster-level null across the 27 cells (median 1.62x). On FOUR cells the naive null crosses 0.05 while the correct null does not, i.e. the wrong null would have manufactured four leads that do not exist: pts x own_pace48 (naive 0.025 -> cluster 0.185), pts x ppm (0.010 -> 0.085), ast x ppm (0.030 -> 0.065), ast x opp_missO48 (0.050 -> 0.145). Two more sit just outside: ast x opp_orebA100 (0.060 -> 0.145) and ast x own_orebR100 (0.065 -> 0.145).",
+   "second_observation": "Cluster-robust t is NOT uniformly larger or smaller than classical t here -- for ast x exp_gposs it goes 4.44 -> 4.62, for pts x own_pace48 it goes 1.96 -> 1.47. That is why the permutation null, not the SE, is what the verdicts rest on."
+  },
+  "trap_4_noop_placebo": {
+   "defective_form_run_on_purpose": true,
+   "cell": "opp_pace48 x pts",
+   "description": "The team grouping key was permuted consistently in master_team AND in the player frame, and the pregame aggregate was then RECOMPUTED from the permuted key. The permuted cell is the same row set under a bijection, so every row still receives its own true value.",
+   "real_dR2": 0.00045319937473439493,
+   "noop_mean": 0.0004531993747343947,
+   "noop_sd": 5.434614424249294e-20,
+   "noop_n_draws": 200,
+   "max_abs_deviation_from_real": 2.710505431213761e-19,
+   "signature_confirmed": "sd is EXACTLY 0.000000 and the largest deviation of any of the 200 draws from the real number is 2.7e-19, i.e. floating-point noise. This is the defect signature.",
+   "real_control_contrast": {
+    "mean": 8.08743880521455e-05,
+    "sd": 0.00010377994009461261,
+    "frac_ge_real": 0.01,
+    "statement": "The real cluster-level control for the SAME cell has sd 1.04e-04, which is non-degenerate, so it does not have the defect."
+   },
+   "min_placebo_sd_observed_across_all_cells": 7.793246218377255e-05,
+   "deterministic_diagnostics_labelled": "The split-half reliability figure in survivor_checks.json is deterministic -- sd 0 BY CONSTRUCTION -- and is labelled as such so it can never be confused with the no-op defect."
+  }
+ },
+ "placebo_discipline": {
+  "correct_form": "Every real control permutes the ASSIGNMENT of an ALREADY-COMPUTED value to rows. For team candidates a season-level team relabelling decides which team's pregame series a row is assigned; for the player-level candidate whole player-season blocks of computed values are reassigned to other player-seasons. No grouping key is permuted and no aggregate is ever recomputed from a permuted key.",
+  "n_draws_per_cell": 200,
+  "n_draws_familywise": 400,
+  "n_placebo_distributions": 59,
+  "min_sd_observed": 7.793246218377255e-05,
+  "degenerate_distributions_found": 0
+ },
+ "n_formulation_target_cells": 27,
+ "formulations": [
+  {
+   "formulation": "opp_pace48",
+   "target": "pts",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "Opponent's pregame expanding possessions per 48 min, built from master_team via base.team_possessions (symmetrised FGA-OREB+TOV+0.44*FTA), strictly prior in-season games only, >=300 prior possessions required. master_player.pace is corrupt and is NOT read.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.3937574264819299,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.14609046802066428,
+    "per_season": {
+     "2021": 0.09198641845132828,
+     "2022": 0.29760583268254126,
+     "2023": -0.27512438954734825,
+     "2024": 0.3897710641105811
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.00045319937473439493,
+    "beta_main": 0.15659275190150956,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0024395247684142465,
+      "beta_M": 0.26392575985431704
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 3.4796483260065453e-06,
+      "beta_M": -0.01505328472758058
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 4.87265667251736e-09,
+      "beta_M": 0.0006111327647239122
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0002916247181821503,
+      "beta_M": 0.15393436234860045
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 2.7569613599759784,
+    "t_cluster_robust": 2.5799870869408488,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 8.08743880521455e-05,
+    "sd": 0.00010377994009461261,
+    "frac_ge_real": 0.01,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.123766414741923e-05,
+    "sd": 0.0001023680277889102,
+    "frac_ge_real": 0.015,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.013792512527582,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 3.587639252275666,
+    "familywise_p": 0.3,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00036806665210209477,
+    "beta_OxM": 0.15008697748715388,
+    "dR2_XxM": 0.00013958000155545047,
+    "beta_XxM": 0.10028261343221367,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.010 but is killed on MULTIPLICITY: family-wise p = 0.300 (z = 3.59 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts.",
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 8.015917100665716e-05,
+      "beta_M": 0.04494017461416233
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.0003000925474404256,
+      "beta_M": 0.1103143997693393
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.0018124061555533407,
+      "beta_M": 0.3168053112173427
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 3.8759167125716965e-05,
+      "beta_M": -0.03158904819767602
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.0004275353208451841,
+      "beta_M": 0.12301141365166482
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.0022512406382712794,
+      "beta_M": 0.36524690897631273
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "own_pace48",
+   "target": "pts",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "Player's OWN team's pregame expanding possessions per 48 min, identical construction, strictly prior in-season games only.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.3937574264819299,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.06016307002372393,
+    "per_season": {
+     "2021": -0.048998228686006576,
+     "2022": -0.02887316966779142,
+     "2023": -0.04726145548197402,
+     "2024": -0.1078513665802072
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.00022877942915398793,
+    "beta_main": 0.11122626716296545,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.00020489913264592544,
+      "beta_M": 0.07924866011533133
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0009521196915240212,
+      "beta_M": 0.23777597268012624
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 4.165639970917155e-05,
+      "beta_M": -0.054949030921013955
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0005265176112319263,
+      "beta_M": 0.19286985027069614
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "team_id x season",
+    "t_classical": 1.9584572008672902,
+    "t_cluster_robust": 1.4712674766548128,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 0.0001115354256054414,
+    "sd": 0.00014407471617904373,
+    "frac_ge_real": 0.185,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 4.803301232176789e-05,
+    "sd": 6.584833511261997e-05,
+    "frac_ge_real": 0.025,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 2.187978115659776,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 0.8137722333101508,
+    "familywise_p": 0.955,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00042662666649406766,
+    "beta_OxM": 0.15706525609076738,
+    "dR2_XxM": 9.72149694078439e-10,
+    "beta_XxM": -0.00025969801058201014,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.185 over 200 draws (real 0.000229 vs placebo mean 0.000112, sd 0.000144). No noise-floor separation, so there is nothing to correct for multiplicity. TRAP 3 BIT HERE: the NAIVE row-level permutation would have called this significant (frac_ge_real = 0.025) because it is 2.19x narrower than the correct cluster-level null."
+  },
+  {
+   "formulation": "exp_gposs",
+   "target": "pts",
+   "direction": "D2 expected game possessions",
+   "construction": "Expected game possessions = mean of the two teams' pregame expanding possessions-per-48. Both components strictly prior in-season.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.3937574264819299,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.06453270140867542,
+    "per_season": {
+     "2021": 0.032517889277059675,
+     "2022": 0.20885117707109926,
+     "2023": -0.24473566352275894,
+     "2024": 0.20768914611499711
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0007355444299089235,
+    "beta_main": 0.19944045281208458,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.002204082364242807,
+      "beta_M": 0.25043718932959713
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0005432383013042592,
+      "beta_M": 0.19253719208021072
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 2.4894702984109617e-05,
+      "beta_M": -0.044394847986755345
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0008358558843141819,
+      "beta_M": 0.24239388551964733
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 3.513109730097658,
+    "t_cluster_robust": 4.89195764646969,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 0.00010389625578121692,
+    "sd": 0.00015028564697321936,
+    "frac_ge_real": 0.015,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.6203123928382425e-05,
+    "sd": 6.890811398894804e-05,
+    "frac_ge_real": 0.0,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 2.180957194639273,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 4.202984029740812,
+    "familywise_p": 0.185,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.0008797979565940972,
+    "beta_OxM": 0.22738357735172154,
+    "dR2_XxM": 6.722027302785705e-05,
+    "beta_XxM": 0.06810191492604786,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.015 but is killed on MULTIPLICITY: family-wise p = 0.185 (z = 4.20 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts.",
+   "mechanism_diagnostics": {
+    "dR2_given_actual_minutes": 0.0005804596112144616,
+    "retained_vs_actual_minutes": 0.7891564229319705,
+    "dR2_given_actual_possessions": 4.0784909513742614e-05,
+    "retained_vs_actual_possessions": 0.055448600866697714,
+    "note": "ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two rungs are mediation diagnostics only and are NOT forecasting models. A genuine possession-VOLUME channel should survive the minutes rung and be largely ABSORBED by the realised-possessions rung."
+   },
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 2.7263799228613835e-05,
+      "beta_M": 0.026774650357898888
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.001663338123707762,
+      "beta_M": 0.271645128028333
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.002617220887944515,
+      "beta_M": 0.3614022568429457
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.00027420344020455287,
+      "beta_M": -0.08441575769108366
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.0008172685058997081,
+      "beta_M": 0.17697846603471967
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.004315582333106262,
+      "beta_M": 0.4860893298930331
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "ppm",
+   "target": "pts",
+   "direction": "D3 possessions-per-minute as an exposure channel distinct from minutes",
+   "construction": "Player's pregame expanding POSSESSIONS PER MINUTE = prior possessions / prior minutes, shrunk by 30 minutes toward the strictly-prior expanding league mean (previous-season fallback). The second exposure component, distinct from minutes, which is already in the base model as Mexp.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.3937574264819299,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.018302982268236064,
+    "per_season": {
+     "2021": -0.012257004533263694,
+     "2022": 0.018432377597650207,
+     "2023": 0.000800343747030949,
+     "2024": -0.0677330485348208
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.000406233062332175,
+    "beta_main": 0.15460529901279937,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0006721250336010054,
+      "beta_M": 0.1566080706880053
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0007577724131602467,
+      "beta_M": 0.2165636704525117
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.0002011580724051646,
+      "beta_M": 0.12043568224366756
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.00020810404762931314,
+      "beta_M": 0.12923627953825084
+     }
+    ],
+    "beta_same_sign_all_4_seasons": true
+   },
+   "standard_errors": {
+    "n_clusters": 493,
+    "cluster_key": "player_id x season",
+    "t_classical": 2.610098079371632,
+    "t_cluster_robust": 2.0120490830730864,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 0.0001301038546168239,
+    "sd": 0.0001848792566451321,
+    "frac_ge_real": 0.085,
+    "n_draws": 200,
+    "label": "cluster permutation: player-season blocks reassigned within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.56960681895491e-05,
+    "sd": 9.022901610044119e-05,
+    "frac_ge_real": 0.01,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 2.0490000294287607,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 1.4935651123120284,
+    "familywise_p": 0.8325,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.000392739719823898,
+    "beta_OxM": 0.1505212154338719,
+    "dR2_XxM": 0.00011046920755541922,
+    "beta_XxM": 0.07852663241990587,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.085 over 200 draws (real 0.000406 vs placebo mean 0.000130, sd 0.000185). No noise-floor separation, so there is nothing to correct for multiplicity. TRAP 3 BIT HERE: the NAIVE row-level permutation would have called this significant (frac_ge_real = 0.010) because it is 2.05x narrower than the correct cluster-level null.",
+   "mechanism_diagnostics": {
+    "dR2_given_actual_minutes": 0.0009215929845054292,
+    "retained_vs_actual_minutes": 2.2686311626497964,
+    "dR2_given_actual_possessions": 9.071767371438584e-05,
+    "retained_vs_actual_possessions": 0.2233143535722516,
+    "note": "ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two rungs are mediation diagnostics only and are NOT forecasting models. A genuine possession-VOLUME channel should survive the minutes rung and be largely ABSORBED by the realised-possessions rung."
+   },
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 3.4114538722164028e-06,
+      "beta_M": 0.009653316343722462
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.0013079176870131114,
+      "beta_M": 0.257017555694497
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.0011103993850832543,
+      "beta_M": 0.2462914906180107
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.0004504105839122822,
+      "beta_M": -0.11364399975516545
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.00140230425156066,
+      "beta_M": 0.24347807334198424
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.0018060532784680908,
+      "beta_M": 0.32865634855643916
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "opp_orebA100",
+   "target": "pts",
+   "direction": "D4 layer-2 OREB main effect (possession generation)",
+   "construction": "OREB the opponent ALLOWS per 100 possessions, pregame expanding, strictly prior in-season. The layer-2 offensive-rebound main effect I0012 flagged as a possession-generating channel worth a layer-2 look.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.3937574264819299,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.09781434583802147,
+    "per_season": {
+     "2021": -0.007096433643174182,
+     "2022": 0.18486576883288694,
+     "2023": 0.20636569692240042,
+     "2024": 0.0620033582949569
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0004331992711265398,
+    "beta_main": 0.15283851808044704,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.002114756438940044,
+      "beta_M": 0.25770312791274813
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 1.0124180963083685e-05,
+      "beta_M": -0.027495858592851374
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.00017990167238716008,
+      "beta_M": 0.11577584575165238
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0006013294306711608,
+      "beta_M": 0.17965997059500535
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 2.6953968590545854,
+    "t_cluster_robust": 2.199281683790765,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 7.278934006096642e-05,
+    "sd": 0.00010968204849955616,
+    "frac_ge_real": 0.015,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.0123108473198435e-05,
+    "sd": 6.577203401707877e-05,
+    "frac_ge_real": 0.0,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.667609191941296,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 3.2859518580839766,
+    "familywise_p": 0.3575,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00028913588339063434,
+    "beta_OxM": 0.13213266851271502,
+    "dR2_XxM": 6.929673173916573e-05,
+    "beta_XxM": 0.07065836635102837,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.015 but is killed on MULTIPLICITY: family-wise p = 0.357 (z = 3.29 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts.",
+   "mechanism_diagnostics": {
+    "dR2_given_actual_minutes": 0.00032031735252459163,
+    "retained_vs_actual_minutes": 0.739422648823029,
+    "dR2_given_actual_possessions": 0.000285326768320615,
+    "retained_vs_actual_possessions": 0.6586501578791195,
+    "note": "ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two rungs are mediation diagnostics only and are NOT forecasting models. A genuine possession-VOLUME channel should survive the minutes rung and be largely ABSORBED by the realised-possessions rung."
+   },
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 1.3210731711352296e-05,
+      "beta_M": 0.018679876383553326
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.0002929181775099521,
+      "beta_M": 0.10818472442737832
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.0020991662858444306,
+      "beta_M": 0.33405143103965573
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 7.094055236401581e-06,
+      "beta_M": -0.013648049079803645
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.0013818688452405497,
+      "beta_M": 0.22117798903194927
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.0009430251644560142,
+      "beta_M": 0.2330285955526973
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "own_orebR100",
+   "target": "pts",
+   "direction": "D4 layer-2 OREB main effect (possession generation)",
+   "construction": "Player's OWN team's OREB per 100 possessions, pregame expanding, strictly prior in-season. Own-side second-chance possession generation.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.3937574264819299,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.04078458001170747,
+    "per_season": {
+     "2021": -0.04697927627608344,
+     "2022": -0.08901366773903487,
+     "2023": -0.06117559013740044,
+     "2024": 0.007726147797053034
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 4.894386298881528e-08,
+    "beta_main": -0.0016250698912083363,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 6.3818838696999e-05,
+      "beta_M": -0.05389039419776191
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0004011475576785713,
+      "beta_M": -0.15339516722283655
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.0002981024923182238,
+      "beta_M": -0.13371514610282248
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0010934200588984051,
+      "beta_M": 0.24274168758918027
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "team_id x season",
+    "t_classical": -0.028639984440299377,
+    "t_cluster_robust": -0.0191672928850616,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 0.00011852072551460108,
+    "sd": 0.00015949157511121112,
+    "frac_ge_real": 0.985,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.0038796016522835e-05,
+    "sd": 9.532185389149578e-05,
+    "frac_ge_real": 0.98,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.6731900251621135,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": -0.7428090265520523,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 7.88827563336092e-06,
+    "beta_OxM": 0.019507488195713393,
+    "dR2_XxM": 4.613522734731035e-06,
+    "beta_XxM": -0.01458544807779921,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.985 over 200 draws (real 0.000000 vs placebo mean 0.000119, sd 0.000159). No noise-floor separation, so there is nothing to correct for multiplicity."
+  },
+  {
+   "formulation": "opp_fgaA48",
+   "target": "pts",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "FGA the opponent ALLOWS per 48 min, pregame expanding, strictly prior in-season. Supply-side pace instrument (shot supply) -- the cleaner instrument I0012's NOTES asked for instead of the tempo proxy.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.3937574264819299,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.19248513645203288,
+    "per_season": {
+     "2021": 0.022396344218918868,
+     "2022": 0.2619362239986445,
+     "2023": 0.02572969545059971,
+     "2024": 0.4127840377245061
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0005290673251856846,
+    "beta_main": 0.16893371864601053,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0013622843587307771,
+      "beta_M": 0.1816172211799545
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.00010716024961845694,
+      "beta_M": 0.08590736393347594
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.00010543652497602746,
+      "beta_M": 0.09952547031396547
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0003276319112846837,
+      "beta_M": 0.1547091452264396
+     }
+    ],
+    "beta_same_sign_all_4_seasons": true
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 2.9789875999475557,
+    "t_cluster_robust": 3.7277457045904523,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 7.234502085863737e-05,
+    "sd": 9.123287225776037e-05,
+    "frac_ge_real": 0.0,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.12770079792768e-05,
+    "sd": 9.047680781178738e-05,
+    "frac_ge_real": 0.005,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.0083564447537294,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 5.006115592159249,
+    "familywise_p": 0.0975,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 7.135133885094458e-05,
+    "beta_OxM": 0.06728084861885651,
+    "dR2_XxM": 2.4092424588229022e-05,
+    "beta_XxM": 0.04219701006278842,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.000 but is killed on MULTIPLICITY: family-wise p = 0.098 (z = 5.01 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts.",
+   "mechanism_diagnostics": {
+    "dR2_given_actual_minutes": 0.0003932362012322956,
+    "retained_vs_actual_minutes": 0.7432630640992297,
+    "dR2_given_actual_possessions": 3.8696258744854254e-05,
+    "retained_vs_actual_possessions": 0.07314051899023093,
+    "note": "ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two rungs are mediation diagnostics only and are NOT forecasting models. A genuine possession-VOLUME channel should survive the minutes rung and be largely ABSORBED by the realised-possessions rung."
+   }
+  },
+  {
+   "formulation": "opp_missA48",
+   "target": "pts",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "Missed FG the opponent ALLOWS per 48 min (opp_fga - opp_fgm in the opponent's own master_team row), pregame expanding, strictly prior in-season. The OREB supply the player's side generates against them.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.3937574264819299,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.2992018785136478,
+    "per_season": {
+     "2021": -0.36590770829868685,
+     "2022": -0.33016076858276666,
+     "2023": -0.3574336800642644,
+     "2024": -0.21067863708494788
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0004714033065129111,
+    "beta_main": 0.15950361471420516,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0009354897285664778,
+      "beta_M": 0.16380807997441424
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.00012186367840056296,
+      "beta_M": 0.08909160578021173
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.00027335379938671844,
+      "beta_M": 0.15104502712159396
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.00023511305620132827,
+      "beta_M": 0.12202157611175762
+     }
+    ],
+    "beta_same_sign_all_4_seasons": true
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 2.8118287419370844,
+    "t_cluster_robust": 3.6305277199501527,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 9.07741644290819e-05,
+    "sd": 0.0001403204809812868,
+    "frac_ge_real": 0.015,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.285571422649309e-05,
+    "sd": 8.662487569879447e-05,
+    "frac_ge_real": 0.005,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.619863576707442,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 2.7125701068156265,
+    "familywise_p": 0.48,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00010195151045255813,
+    "beta_OxM": 0.0784505021123516,
+    "dR2_XxM": 1.7597233984756322e-05,
+    "beta_XxM": 0.03522052402175063,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.015 but is killed on MULTIPLICITY: family-wise p = 0.480 (z = 2.71 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts."
+  },
+  {
+   "formulation": "opp_missO48",
+   "target": "pts",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "The opponent's OWN missed FG per 48 min, pregame expanding, strictly prior in-season. The DREB supply available to the player.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.3937574264819299,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.2107140635687074,
+    "per_season": {
+     "2021": 0.5138034851302739,
+     "2022": 0.15246910773035646,
+     "2023": 0.10659778699214757,
+     "2024": 0.12653016501459016
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 8.168198691374243e-05,
+    "beta_main": 0.06644393715076324,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0003896600369243287,
+      "beta_M": 0.13517868704906305
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 4.199970660868983e-05,
+      "beta_M": -0.047304352842068166
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.0006313117466246507,
+      "beta_M": 0.17149813923012105
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 6.976593340129699e-05,
+      "beta_M": 0.08189703589172335
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 1.170081315057803,
+    "t_cluster_robust": 1.0209447246031034,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 7.043720302610696e-05,
+    "sd": 9.175701042400679e-05,
+    "frac_ge_real": 0.295,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.760600785906288e-05,
+    "sd": 8.887332423654217e-05,
+    "frac_ge_real": 0.295,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.0324471511810394,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 0.12254958869816718,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00012437720724678414,
+    "beta_OxM": 0.08224907948349319,
+    "dR2_XxM": 0.0002756442409076465,
+    "beta_XxM": 0.13574328737356572,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.295 over 200 draws (real 0.000082 vs placebo mean 0.000070, sd 0.000092). No noise-floor separation, so there is nothing to correct for multiplicity.",
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 3.296219032100768e-05,
+      "beta_M": 0.029649235069967916
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.00010810925483030244,
+      "beta_M": 0.0665863314944464
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.00019285337968874788,
+      "beta_M": 0.10030225393609819
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.00024878209551724403,
+      "beta_M": 0.0795100731758623
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.00021469247260516878,
+      "beta_M": 0.08964048123259107
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 3.12861610348296e-05,
+      "beta_M": 0.04216502879541137
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "opp_pace48",
+   "target": "reb",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "Opponent's pregame expanding possessions per 48 min, built from master_team via base.team_possessions (symmetrised FGA-OREB+TOV+0.44*FTA), strictly prior in-season games only, >=300 prior possessions required. master_player.pace is corrupt and is NOT read.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4229812027906217,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.10778478726630328,
+    "per_season": {
+     "2021": 0.3254499070012393,
+     "2022": -0.11472103250462308,
+     "2023": -0.05968496160574651,
+     "2024": 0.17475214798972727
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0005792296124972207,
+    "beta_main": 0.07975228492035717,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0018803362767864085,
+      "beta_M": 0.11715671084570509
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0001592500054138153,
+      "beta_M": 0.043921421438251354
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 4.6818918101952615e-05,
+      "beta_M": 0.024662646208998266
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0004420864887596385,
+      "beta_M": 0.08208839711885456
+     }
+    ],
+    "beta_same_sign_all_4_seasons": true
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 3.195180083201649,
+    "t_cluster_robust": 3.32212459510611,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 8.576081804987711e-05,
+    "sd": 0.0001147707905080316,
+    "frac_ge_real": 0.0,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 4.858130968123214e-05,
+    "sd": 6.486920931666687e-05,
+    "frac_ge_real": 0.0,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.7692645203638009,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 4.299602645089482,
+    "familywise_p": 0.1675,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.0011984661889714587,
+    "beta_OxM": 0.1230106275854353,
+    "dR2_XxM": 7.449463352626751e-06,
+    "beta_XxM": 0.010028808513997789,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.000 but is killed on MULTIPLICITY: family-wise p = 0.168 (z = 4.30 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts.",
+   "mechanism_diagnostics": {
+    "dR2_given_actual_minutes": 0.0006996817750461563,
+    "retained_vs_actual_minutes": 1.2079523559398708,
+    "dR2_given_actual_possessions": 0.00011742858150343707,
+    "retained_vs_actual_possessions": 0.20273235167858497,
+    "note": "ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two rungs are mediation diagnostics only and are NOT forecasting models. A genuine possession-VOLUME channel should survive the minutes rung and be largely ABSORBED by the realised-possessions rung."
+   },
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 0.0010852816858481192,
+      "beta_M": 0.08802018096033803
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.00035978488078666505,
+      "beta_M": 0.060916665708804524
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.0007813800379364612,
+      "beta_M": 0.10107513662631737
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.0013294392273944361,
+      "beta_M": 0.10315347876130164
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.0001778381678271055,
+      "beta_M": 0.042163253552012614
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.0007398241299173137,
+      "beta_M": 0.09878672098040972
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "own_pace48",
+   "target": "reb",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "Player's OWN team's pregame expanding possessions per 48 min, identical construction, strictly prior in-season games only.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4229812027906217,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.01264517418071517,
+    "per_season": {
+     "2021": -0.038610597621217706,
+     "2022": 0.007759979323669724,
+     "2023": 0.04410342759110999,
+     "2024": -0.049242613468258846
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 8.244079404276923e-05,
+    "beta_main": 0.03018503228250754,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0021795454352927994,
+      "beta_M": 0.12288411275614507
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 7.550198664909234e-06,
+      "beta_M": 0.00946925827535697
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.0005869295453335077,
+      "beta_M": -0.08769648141482808
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.00032705728148748383,
+      "beta_M": 0.07006765257301177
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "team_id x season",
+    "t_classical": 1.2049082646864022,
+    "t_cluster_robust": 0.9005828699603537,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 0.00014543566221688893,
+    "sd": 0.00019968485706793588,
+    "frac_ge_real": 0.425,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.447296856906515e-05,
+    "sd": 8.243769022595687e-05,
+    "frac_ge_real": 0.21,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 2.422251964127226,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": -0.3154714338338028,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00022503678064456079,
+    "beta_OxM": -0.051513538180438134,
+    "dR2_XxM": 4.3137513816238204e-05,
+    "beta_XxM": -0.022542970638113502,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.425 over 200 draws (real 0.000082 vs placebo mean 0.000145, sd 0.000200). No noise-floor separation, so there is nothing to correct for multiplicity."
+  },
+  {
+   "formulation": "exp_gposs",
+   "target": "reb",
+   "direction": "D2 expected game possessions",
+   "construction": "Expected game possessions = mean of the two teams' pregame expanding possessions-per-48. Both components strictly prior in-season.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4229812027906217,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.07133067384739857,
+    "per_season": {
+     "2021": 0.2125032203616574,
+     "2022": -0.08315562375588209,
+     "2023": -0.011291290770569121,
+     "2024": 0.09246644435316319
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0006156446768151358,
+    "beta_main": 0.08240325171113434,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.004290720255686001,
+      "beta_M": 0.1697614904943442
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.00014301337661413554,
+      "beta_M": 0.043262833185807946
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.00017566118140699332,
+      "beta_M": -0.04885856504151653
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0008168958055502009,
+      "beta_M": 0.10863876634101029
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 3.2941907593096724,
+    "t_cluster_robust": 3.229368526988184,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 0.00011759727598359498,
+    "sd": 0.0001523478833439656,
+    "frac_ge_real": 0.025,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.256556097740692e-05,
+    "sd": 8.089284491862952e-05,
+    "frac_ge_real": 0.0,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.8833295268229597,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 3.269145523387858,
+    "familywise_p": 0.3575,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.0001919690131422236,
+    "beta_OxM": 0.04852680416766875,
+    "dR2_XxM": 7.688806527905712e-06,
+    "beta_XxM": -0.00982264917719844,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.025 but is killed on MULTIPLICITY: family-wise p = 0.357 (z = 3.27 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts.",
+   "mechanism_diagnostics": {
+    "dR2_given_actual_minutes": 0.0007320004910555003,
+    "retained_vs_actual_minutes": 1.1889983274805502,
+    "dR2_given_actual_possessions": 1.0310244519586241e-05,
+    "retained_vs_actual_possessions": 0.016747070035468162,
+    "note": "ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two rungs are mediation diagnostics only and are NOT forecasting models. A genuine possession-VOLUME channel should survive the minutes rung and be largely ABSORBED by the realised-possessions rung."
+   },
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 0.0011280078071242432,
+      "beta_M": 0.09236536933826996
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.0012933135270303405,
+      "beta_M": 0.12084876686982812
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.0002537618728797243,
+      "beta_M": 0.05482587726345797
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.0007004675713813056,
+      "beta_M": 0.0758122619416328
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.00047771427788159963,
+      "beta_M": 0.07172537415491909
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.0009356211173488135,
+      "beta_M": 0.10704101538833258
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "ppm",
+   "target": "reb",
+   "direction": "D3 possessions-per-minute as an exposure channel distinct from minutes",
+   "construction": "Player's pregame expanding POSSESSIONS PER MINUTE = prior possessions / prior minutes, shrunk by 30 minutes toward the strictly-prior expanding league mean (previous-season fallback). The second exposure component, distinct from minutes, which is already in the base model as Mexp.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4229812027906217,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.016819830652089213,
+    "per_season": {
+     "2021": -0.04168867760802702,
+     "2022": -0.01325100715761923,
+     "2023": 0.03140322501601261,
+     "2024": -0.028573455279628387
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 1.9167729036624416e-05,
+    "beta_main": 0.015061780260522519,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.001707595144824821,
+      "beta_M": 0.11756923616617927
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 4.54734448327589e-05,
+      "beta_M": -0.023799591558275185
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.00015303939287030516,
+      "beta_M": -0.0436460952987534
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 2.843371628717642e-05,
+      "beta_M": -0.021616870204069567
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 493,
+    "cluster_key": "player_id x season",
+    "t_classical": 0.5809575733409539,
+    "t_cluster_robust": 0.3702316453847534,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 0.00010916843037494188,
+    "sd": 0.0001402511149321488,
+    "frac_ge_real": 0.7,
+    "n_draws": 200,
+    "label": "cluster permutation: player-season blocks reassigned within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.110702892904469e-05,
+    "sd": 7.114840734650153e-05,
+    "frac_ge_real": 0.52,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.971247427213775,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": -0.6417111292260196,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00028590531824368437,
+    "beta_OxM": -0.05774155215394994,
+    "dR2_XxM": 1.2933181355534451e-05,
+    "beta_XxM": 0.011620330875222518,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.700 over 200 draws (real 0.000019 vs placebo mean 0.000109, sd 0.000140). No noise-floor separation, so there is nothing to correct for multiplicity.",
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 9.31047404878959e-05,
+      "beta_M": -0.027037613177885444
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.0003040089852137003,
+      "beta_M": 0.06237458168977228
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 5.6662950134490315e-06,
+      "beta_M": -0.008505389509926298
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.00030489327395184513,
+      "beta_M": -0.05225495359404353
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.00017497431615060455,
+      "beta_M": 0.04552772780896519
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 1.6887972931831057e-05,
+      "beta_M": 0.015065771483012316
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "opp_orebA100",
+   "target": "reb",
+   "direction": "D4 layer-2 OREB main effect (possession generation)",
+   "construction": "OREB the opponent ALLOWS per 100 possessions, pregame expanding, strictly prior in-season. The layer-2 offensive-rebound main effect I0012 flagged as a possession-generating channel worth a layer-2 look.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4229812027906217,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.44653701282517755,
+    "per_season": {
+     "2021": 0.6689496200637668,
+     "2022": 0.60841390819425,
+     "2023": 0.10667491695210365,
+     "2024": 0.2540502496301841
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 2.928973472064786e-06,
+    "beta_main": -0.005668694103968868,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0003104805784734347,
+      "beta_M": 0.05706908830557066
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0005262902866729512,
+      "beta_M": -0.09865663625823644
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.0004944401413347025,
+      "beta_M": -0.07229183378939244
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 1.7890779916165646e-05,
+      "beta_M": 0.01328024294296204
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": -0.227096632733434,
+    "t_cluster_robust": -0.223560391318707,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 6.363242316064634e-05,
+    "sd": 9.618207271570357e-05,
+    "frac_ge_real": 0.84,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.958619538749288e-05,
+    "sd": 7.162423335068512e-05,
+    "frac_ge_real": 0.82,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.3428705371934504,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": -0.6311306044319686,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 6.550894909362892e-05,
+    "beta_OxM": -0.027228516750315346,
+    "dR2_XxM": 1.238080749033088e-10,
+    "beta_XxM": -3.890412065030158e-05,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.840 over 200 draws (real 0.000003 vs placebo mean 0.000064, sd 0.000096). No noise-floor separation, so there is nothing to correct for multiplicity.",
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 3.001778105933766e-05,
+      "beta_M": 0.015428573138975835
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 7.185536334127719e-05,
+      "beta_M": 0.026892958212589448
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.00015675422738721507,
+      "beta_M": -0.043621672019553956
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.00041043088682428256,
+      "beta_M": -0.0584731106601631
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.0003650305519936215,
+      "beta_M": 0.06062881428110242
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 2.368900187983685e-05,
+      "beta_M": -0.01725869916557104
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "own_orebR100",
+   "target": "reb",
+   "direction": "D4 layer-2 OREB main effect (possession generation)",
+   "construction": "Player's OWN team's OREB per 100 possessions, pregame expanding, strictly prior in-season. Own-side second-chance possession generation.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4229812027906217,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.040775875452280744,
+    "per_season": {
+     "2021": 0.013429326226684822,
+     "2022": 0.08455335841646085,
+     "2023": 0.026484047502076172,
+     "2024": 0.04202759131131749
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 7.613051089617682e-06,
+    "beta_main": -0.009165190306098647,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.001210950440976647,
+      "beta_M": -0.11246829036507047
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0007928346171676693,
+      "beta_M": -0.0963004931215654
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 1.417051830366351e-05,
+      "beta_M": -0.012391579191650695
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0017029053053329024,
+      "beta_M": 0.13983266315725945
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "team_id x season",
+    "t_classical": -0.36612898407475547,
+    "t_cluster_robust": -0.15364713997616442,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 0.00015724381898273818,
+    "sd": 0.00020851779638761216,
+    "frac_ge_real": 0.835,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 4.1559023873829135e-05,
+    "sd": 5.452603279579014e-05,
+    "frac_ge_real": 0.67,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 3.824187928150743,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": -0.7175923133916733,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00019668051671561937,
+    "beta_OxM": 0.04362162532515579,
+    "dR2_XxM": 8.42242411536187e-06,
+    "beta_XxM": 0.009068582606940323,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.835 over 200 draws (real 0.000008 vs placebo mean 0.000157, sd 0.000209). No noise-floor separation, so there is nothing to correct for multiplicity."
+  },
+  {
+   "formulation": "opp_fgaA48",
+   "target": "reb",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "FGA the opponent ALLOWS per 48 min, pregame expanding, strictly prior in-season. Supply-side pace instrument (shot supply) -- the cleaner instrument I0012's NOTES asked for instead of the tempo proxy.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4229812027906217,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.13646952094233106,
+    "per_season": {
+     "2021": 0.06335189262498511,
+     "2022": 0.3697183335081418,
+     "2023": -0.2340914505452271,
+     "2024": 0.28189224475918
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 1.578058405126214e-05,
+    "beta_main": 0.013153831627218452,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 3.145119974099225e-05,
+      "beta_M": 0.013334321183326153
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 3.9198143196031414e-05,
+      "beta_M": -0.02434732427789977
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 3.5584746019517595e-05,
+      "beta_M": -0.025556706338912872
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.00035912529102597916,
+      "beta_M": 0.07168574778792895
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 0.5271319602624452,
+    "t_cluster_robust": 0.48188908043674067,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 7.130768395309602e-05,
+    "sd": 8.331190947906963e-05,
+    "frac_ge_real": 0.675,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.913737359292085e-05,
+    "sd": 8.355748517218987e-05,
+    "frac_ge_real": 0.6,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 0.997060997077471,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": -0.6664965459204113,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.0002447400698202262,
+    "beta_OxM": 0.05599721327375329,
+    "dR2_XxM": 6.698596891474562e-05,
+    "beta_XxM": 0.03037686025238262,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.675 over 200 draws (real 0.000016 vs placebo mean 0.000071, sd 0.000083). No noise-floor separation, so there is nothing to correct for multiplicity."
+  },
+  {
+   "formulation": "opp_missA48",
+   "target": "reb",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "Missed FG the opponent ALLOWS per 48 min (opp_fga - opp_fgm in the opponent's own master_team row), pregame expanding, strictly prior in-season. The OREB supply the player's side generates against them.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4229812027906217,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.09908225392934043,
+    "per_season": {
+     "2021": -0.03291778503168553,
+     "2022": 0.26366799491789944,
+     "2023": -0.24639180186890522,
+     "2024": 0.45011584423920115
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 1.2068597699788127e-06,
+    "beta_main": -0.0036394841370825763,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 1.5013265382910025e-06,
+      "beta_M": -0.00304375118280204
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 1.882190769433181e-05,
+      "beta_M": -0.015967359005575343
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.00010674566509240233,
+      "beta_M": -0.04044947430771869
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.00026516475971240705,
+      "beta_M": 0.06842885478216022
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": -0.1457742221991389,
+    "t_cluster_robust": -0.12442296685361291,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 7.703093842908124e-05,
+    "sd": 8.696248903771789e-05,
+    "frac_ge_real": 0.935,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.1834307965645504e-05,
+    "sd": 7.548999358512128e-05,
+    "frac_ge_real": 0.875,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.1519737240361587,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": -0.871917070200412,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 6.034298590562592e-05,
+    "beta_OxM": 0.027441021115285902,
+    "dR2_XxM": 8.171566146208953e-05,
+    "beta_XxM": 0.03327964599700818,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.935 over 200 draws (real 0.000001 vs placebo mean 0.000077, sd 0.000087). No noise-floor separation, so there is nothing to correct for multiplicity."
+  },
+  {
+   "formulation": "opp_missO48",
+   "target": "reb",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "The opponent's OWN missed FG per 48 min, pregame expanding, strictly prior in-season. The DREB supply available to the player.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4229812027906217,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.2809616815559055,
+    "per_season": {
+     "2021": 0.43088402241908946,
+     "2022": 0.29647590978406724,
+     "2023": 0.15006097405545693,
+     "2024": 0.1838763306449745
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 6.579212312893216e-06,
+    "beta_main": 0.00849785588852986,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0003830380691746045,
+      "beta_M": 0.05970302775079778
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 2.3842679242686965e-06,
+      "beta_M": -0.005114682713714158
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 6.002455555459938e-06,
+      "beta_M": 0.007020766592097737
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.00028980057842465474,
+      "beta_M": -0.07636820945354648
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 0.3403621826870885,
+    "t_cluster_robust": 0.39856933615312046,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 5.465678162027433e-05,
+    "sd": 7.793246218377255e-05,
+    "frac_ge_real": 0.665,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.523130789175873e-05,
+    "sd": 7.298877527125469e-05,
+    "frac_ge_real": 0.73,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.0677321532543216,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": -0.6169132600226256,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 2.6698187605145307e-07,
+    "beta_OxM": -0.0017575541975138886,
+    "dR2_XxM": 5.885607421785011e-05,
+    "beta_XxM": -0.027096089087463165,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.665 over 200 draws (real 0.000007 vs placebo mean 0.000055, sd 0.000078). No noise-floor separation, so there is nothing to correct for multiplicity.",
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 8.64773637882119e-05,
+      "beta_M": -0.02549328334854918
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 1.6135289285118423e-05,
+      "beta_M": 0.013018475873787662
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.00012712472451813366,
+      "beta_M": 0.03949494451314478
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.0002968928790203338,
+      "beta_M": 0.04844827440004587
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 4.911131198654501e-05,
+      "beta_M": -0.02272068264462257
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 3.3486609161487206e-07,
+      "beta_M": 0.0020611205475035074
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "opp_pace48",
+   "target": "ast",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "Opponent's pregame expanding possessions per 48 min, built from master_team via base.team_possessions (symmetrised FGA-OREB+TOV+0.44*FTA), strictly prior in-season games only, >=300 prior possessions required. master_player.pace is corrupt and is NOT read.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4164862809883014,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.0441218425758266,
+    "per_season": {
+     "2021": 0.0070447880542819355,
+     "2022": 0.0429780806220318,
+     "2023": -0.4540036066962265,
+     "2024": 0.1700171895723449
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0005327345831089266,
+    "beta_main": 0.05413769696896272,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0016828396977840753,
+      "beta_M": 0.07150004157181353
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0004329429348309191,
+      "beta_M": 0.05246233946744328
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.00015928259015427095,
+      "beta_M": -0.038012630806600896
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0009723796977196991,
+      "beta_M": 0.08343836867248607
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 3.047018594866562,
+    "t_cluster_robust": 2.4812756938551472,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 9.578100804664643e-05,
+    "sd": 0.00013190861201410397,
+    "frac_ge_real": 0.02,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.053935746595744e-05,
+    "sd": 7.432876987065469e-05,
+    "frac_ge_real": 0.005,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.774664268541622,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 3.3125477433994988,
+    "familywise_p": 0.35,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 3.308058175566231e-05,
+    "beta_OxM": 0.014060362509062757,
+    "dR2_XxM": 0.00010909313887674799,
+    "beta_XxM": -0.027970451748816523,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.020 but is killed on MULTIPLICITY: family-wise p = 0.350 (z = 3.31 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts.",
+   "mechanism_diagnostics": {
+    "dR2_given_actual_minutes": 0.0006235305617657795,
+    "retained_vs_actual_minutes": 1.1704337986225468,
+    "dR2_given_actual_possessions": 0.0001481168654573371,
+    "retained_vs_actual_possessions": 0.2780312563771596,
+    "note": "ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two rungs are mediation diagnostics only and are NOT forecasting models. A genuine possession-VOLUME channel should survive the minutes rung and be largely ABSORBED by the realised-possessions rung."
+   },
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 1.6766614452945124e-05,
+      "beta_M": -0.006635796752472389
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.0025114670892669813,
+      "beta_M": 0.10562397181551819
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.0006789207207790481,
+      "beta_M": 0.06939092467978024
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.0005656559092104907,
+      "beta_M": 0.045020227472800635
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.0003940073000639979,
+      "beta_M": 0.05088842670769877
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.0008425366303010425,
+      "beta_M": 0.0682702862780058
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "own_pace48",
+   "target": "ast",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "Player's OWN team's pregame expanding possessions per 48 min, identical construction, strictly prior in-season games only.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4164862809883014,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.033374345725584474,
+    "per_season": {
+     "2021": -0.03178375906082916,
+     "2022": 0.020821526970154106,
+     "2023": -0.013315307498119865,
+     "2024": -0.10509297458425766
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.00047646623111058655,
+    "beta_main": 0.05122175229974932,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0007706894751114689,
+      "beta_M": 0.04940957167889741
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.00018850998889462765,
+      "beta_M": 0.034278957351158004
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 4.829875380082365e-05,
+      "beta_M": 0.018385806839877717
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0014806878458389762,
+      "beta_M": 0.10220204664825434
+     }
+    ],
+    "beta_same_sign_all_4_seasons": true
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "team_id x season",
+    "t_classical": 2.8814743945406627,
+    "t_cluster_robust": 2.4273111261943994,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 8.59846192461468e-05,
+    "sd": 0.00011223916737537439,
+    "frac_ge_real": 0.015,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.13550978881641e-05,
+    "sd": 7.824713735276275e-05,
+    "frac_ge_real": 0.0,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.4344188320828257,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 3.479013797015324,
+    "familywise_p": 0.32,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.0002464355489999459,
+    "beta_OxM": 0.03839365170540199,
+    "dR2_XxM": 7.047856808906072e-05,
+    "beta_XxM": 0.020725175109345382,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.015 but is killed on MULTIPLICITY: family-wise p = 0.320 (z = 3.48 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts."
+  },
+  {
+   "formulation": "exp_gposs",
+   "target": "ast",
+   "direction": "D2 expected game possessions",
+   "construction": "Expected game possessions = mean of the two teams' pregame expanding possessions-per-48. Both components strictly prior in-season.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4164862809883014,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.058005019645937884,
+    "per_season": {
+     "2021": -0.017783003153670023,
+     "2022": 0.049795407320377016,
+     "2023": -0.35412076239953444,
+     "2024": 0.04809469613231435
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.00113253840808295,
+    "beta_main": 0.07899534684911667,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.00252620522645201,
+      "beta_M": 0.08617065887100962
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0007280776412907835,
+      "beta_M": 0.07067543343842918
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 1.1716543746580064e-05,
+      "beta_M": -0.00995146492969824
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0025740513545162865,
+      "beta_M": 0.13149348446877898
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 4.444978425325553,
+    "t_cluster_robust": 4.622471400807948,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 8.784136194676402e-05,
+    "sd": 0.00012989111422823408,
+    "frac_ge_real": 0.0,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.458478261585121e-05,
+    "sd": 7.322813599269085e-05,
+    "frac_ge_real": 0.0,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.773786980474267,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 8.042867692246674,
+    "familywise_p": 0.0025,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.0002678146480404875,
+    "beta_OxM": 0.040239458857385516,
+    "dR2_XxM": 8.294585635004736e-07,
+    "beta_XxM": -0.0023607767608242528,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "keep_as_lead",
+   "verdict_reasoning": "Clears its own cluster-level permutation floor (0/200 draws at or above it) AND clears the family-wise max-T null across all 27 cells at p=0.003 (z=8.04 against a null whose p95 is 5.69). Not a costume: |r| with overall opponent defensive allowance is 0.06, and D and O*D are in the base model, so the increment is over-and-above overall opponent strength by construction.",
+   "mechanism_diagnostics": {
+    "dR2_given_actual_minutes": 0.0010903071557922305,
+    "retained_vs_actual_minutes": 0.9627109756372809,
+    "dR2_given_actual_possessions": 0.00018572817315469967,
+    "retained_vs_actual_possessions": 0.16399282516968408,
+    "note": "ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two rungs are mediation diagnostics only and are NOT forecasting models. A genuine possession-VOLUME channel should survive the minutes rung and be largely ABSORBED by the realised-possessions rung."
+   },
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 9.889572723281103e-06,
+      "beta_M": -0.005225939938173302
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.0025581653323224563,
+      "beta_M": 0.11123781109346079
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.0027841941897170986,
+      "beta_M": 0.1332249108082426
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 0.0002249600938746356,
+      "beta_M": 0.028625317776883034
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.0014141964982015028,
+      "beta_M": 0.0998962612499879
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.0022510275014806977,
+      "beta_M": 0.10762009214800719
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "ppm",
+   "target": "ast",
+   "direction": "D3 possessions-per-minute as an exposure channel distinct from minutes",
+   "construction": "Player's pregame expanding POSSESSIONS PER MINUTE = prior possessions / prior minutes, shrunk by 30 minutes toward the strictly-prior expanding league mean (previous-season fallback). The second exposure component, distinct from minutes, which is already in the base model as Mexp.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4164862809883014,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.0013981486999225677,
+    "per_season": {
+     "2021": -0.003972191876552935,
+     "2022": 0.046885759957684216,
+     "2023": 0.021288794357601153,
+     "2024": -0.05540344336653418
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.00037567609350521797,
+    "beta_main": 0.047104441971060944,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0003833383615758185,
+      "beta_M": 0.03763104919320014
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 9.440809620851611e-05,
+      "beta_M": 0.02468569873564076
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 9.346590422404972e-05,
+      "beta_M": 0.025216182306909068
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0016225611605591027,
+      "beta_M": 0.11141219738180738
+     }
+    ],
+    "beta_same_sign_all_4_seasons": true
+   },
+   "standard_errors": {
+    "n_clusters": 493,
+    "cluster_key": "player_id x season",
+    "t_classical": 2.558397052736625,
+    "t_cluster_robust": 2.1085329843772382,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 0.00011493584579973636,
+    "sd": 0.00016198414468568143,
+    "frac_ge_real": 0.065,
+    "n_draws": 200,
+    "label": "cluster permutation: player-season blocks reassigned within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.949324681710043e-05,
+    "sd": 0.00011438727406096366,
+    "frac_ge_real": 0.03,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.416102848987822,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 1.6096652435423808,
+    "familywise_p": 0.795,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.0001530166138720146,
+    "beta_OxM": 0.03041559962597662,
+    "dR2_XxM": 0.0001570876224188389,
+    "beta_XxM": 0.029344519169258843,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.065 over 200 draws (real 0.000376 vs placebo mean 0.000115, sd 0.000162). No noise-floor separation, so there is nothing to correct for multiplicity. TRAP 3 BIT HERE: the NAIVE row-level permutation would have called this significant (frac_ge_real = 0.030) because it is 1.42x narrower than the correct cluster-level null.",
+   "mechanism_diagnostics": {
+    "dR2_given_actual_minutes": 0.0006317067343743676,
+    "retained_vs_actual_minutes": 1.6815196529549552,
+    "dR2_given_actual_possessions": 0.00012930492682532038,
+    "retained_vs_actual_possessions": 0.34419258787230855,
+    "note": "ACTUAL minutes and ACTUAL possessions are NOT pregame-observable. These two rungs are mediation diagnostics only and are NOT forecasting models. A genuine possession-VOLUME channel should survive the minutes rung and be largely ABSORBED by the realised-possessions rung."
+   },
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 6.91628680554939e-07,
+      "beta_M": -0.001416928859902189
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 3.913592219838901e-05,
+      "beta_M": 0.014703487274881466
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.0018754973672076253,
+      "beta_M": 0.11233415005176195
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 1.2102728081900044e-05,
+      "beta_M": -0.006930036547713875
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.001235073075067357,
+      "beta_M": 0.09770977741790854
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.0005243153798081771,
+      "beta_M": 0.053994423098466714
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "opp_orebA100",
+   "target": "ast",
+   "direction": "D4 layer-2 OREB main effect (possession generation)",
+   "construction": "OREB the opponent ALLOWS per 100 possessions, pregame expanding, strictly prior in-season. The layer-2 offensive-rebound main effect I0012 flagged as a possession-generating channel worth a layer-2 look.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4164862809883014,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.12869394355729066,
+    "per_season": {
+     "2021": -0.4953818148825868,
+     "2022": 0.0800648644529597,
+     "2023": -0.0588234423645588,
+     "2024": 0.017203366572550286
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.00018867927996808767,
+    "beta_main": 0.032197997864171816,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0003515401126554917,
+      "beta_M": 0.03911632860879133
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 3.859037376860551e-05,
+      "beta_M": 0.017082377671917396
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 8.966313797009882e-05,
+      "beta_M": 0.025238482742719587
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0005125597419682545,
+      "beta_M": 0.05198053278392725
+     }
+    ],
+    "beta_same_sign_all_4_seasons": true
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 1.8128156819447563,
+    "t_cluster_robust": 1.2475088573279838,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 9.026491117476013e-05,
+    "sd": 0.00012404127541824453,
+    "frac_ge_real": 0.145,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 4.8339355535887195e-05,
+    "sd": 7.257635608260148e-05,
+    "frac_ge_real": 0.06,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.7091141263288168,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 0.7934001683027868,
+    "familywise_p": 0.9575,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00010410578158592809,
+    "beta_OxM": 0.024489375627168887,
+    "dR2_XxM": 0.00033347412966300283,
+    "beta_XxM": 0.047813918769116386,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.145 over 200 draws (real 0.000189 vs placebo mean 0.000090, sd 0.000124). No noise-floor separation, so there is nothing to correct for multiplicity.",
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 1.3520113994123785e-05,
+      "beta_M": 0.006124388190429476
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 1.0323862298404624e-07,
+      "beta_M": 0.0006716226569327965
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 0.0011661136923006026,
+      "beta_M": 0.08895981365516599
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 2.036092761540544e-05,
+      "beta_M": 0.008662555446683828
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.00012091038801259552,
+      "beta_M": 0.028165488535787327
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.0006257008367129095,
+      "beta_M": 0.057941335225931145
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  },
+  {
+   "formulation": "own_orebR100",
+   "target": "ast",
+   "direction": "D4 layer-2 OREB main effect (possession generation)",
+   "construction": "Player's OWN team's OREB per 100 possessions, pregame expanding, strictly prior in-season. Own-side second-chance possession generation.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4164862809883014,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.04673094614095431,
+    "per_season": {
+     "2021": -0.007146978243085909,
+     "2022": -0.08479522985041775,
+     "2023": -0.05423186539346909,
+     "2024": -0.04147324721701425
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0001755826192578474,
+    "beta_main": 0.031136687407532313,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.00010096808526447717,
+      "beta_M": -0.021979545076989928
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.00018680907166884417,
+      "beta_M": 0.034138124040820776
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.00030983271088028255,
+      "beta_M": 0.0430691565880031
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0005205947126987312,
+      "beta_M": 0.05259876779581652
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "team_id x season",
+    "t_classical": 1.7487488049541753,
+    "t_cluster_robust": 1.4347992619347918,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 7.300518364920901e-05,
+    "sd": 8.675302251240473e-05,
+    "frac_ge_real": 0.145,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.608016795404325e-05,
+    "sd": 6.849667894419213e-05,
+    "frac_ge_real": 0.065,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.2665288865039284,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 1.1824076284370488,
+    "familywise_p": 0.9025,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00010242990167530497,
+    "beta_OxM": 0.026463984839429577,
+    "dR2_XxM": 0.00011347684351814546,
+    "beta_XxM": 0.027683956199062332,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.145 over 200 draws (real 0.000176 vs placebo mean 0.000073, sd 0.000087). No noise-floor separation, so there is nothing to correct for multiplicity."
+  },
+  {
+   "formulation": "opp_fgaA48",
+   "target": "ast",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "FGA the opponent ALLOWS per 48 min, pregame expanding, strictly prior in-season. Supply-side pace instrument (shot supply) -- the cleaner instrument I0012's NOTES asked for instead of the tempo proxy.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4164862809883014,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.10375417028848456,
+    "per_season": {
+     "2021": -0.09138266355304889,
+     "2022": 0.3051466837298633,
+     "2023": -0.17432525794014683,
+     "2024": 0.37118070213747967
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0003501497888589838,
+    "beta_main": 0.04386489951240888,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.0005261212536579571,
+      "beta_M": 0.0372473506118133
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.0006103419502475033,
+      "beta_M": 0.06822767554939996
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 1.2192092666951623e-05,
+      "beta_M": 0.011013527254306169
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0003629313175896343,
+      "beta_M": 0.051020923905524616
+     }
+    ],
+    "beta_same_sign_all_4_seasons": true
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 2.46989559563514,
+    "t_cluster_robust": 1.974239613274106,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 8.297696576189366e-05,
+    "sd": 0.00010670136450358433,
+    "frac_ge_real": 0.025,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 6.347162594697804e-05,
+    "sd": 7.377208337150127e-05,
+    "frac_ge_real": 0.005,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.446365069646439,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 2.5039307073539367,
+    "familywise_p": 0.5425,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.00041178169812572385,
+    "beta_OxM": 0.05171069659256793,
+    "dR2_XxM": 0.0001809724828206738,
+    "beta_XxM": 0.037321432334912634,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Cleared its OWN floor at nominal frac_ge_real = 0.025 but is killed on MULTIPLICITY: family-wise p = 0.542 (z = 2.50 against a 27-cell max-T randomization null whose p95 is 5.69 and whose max draw is 8.28). This is exactly the false positive a 27-test sweep predicts."
+  },
+  {
+   "formulation": "opp_missA48",
+   "target": "ast",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "Missed FG the opponent ALLOWS per 48 min (opp_fga - opp_fgm in the opponent's own master_team row), pregame expanding, strictly prior in-season. The OREB supply the player's side generates against them.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4164862809883014,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": -0.32883487650151827,
+    "per_season": {
+     "2021": -0.4393339318151514,
+     "2022": -0.2051468977306645,
+     "2023": -0.5213891844504153,
+     "2024": -0.17020490990792378
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 7.701882903575286e-05,
+    "beta_main": 0.02058078853803569,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.00027139178124768086,
+      "beta_M": 0.02933694140568729
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 0.00011903193671955878,
+      "beta_M": 0.02723134530286228
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 3.669980372785232e-08,
+      "beta_M": -0.000599896596472004
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 2.590763912578297e-05,
+      "beta_M": 0.01252970097985969
+     }
+    ],
+    "beta_same_sign_all_4_seasons": false
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 1.1581063358438368,
+    "t_cluster_robust": 1.0111258177071711,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 9.015351709058518e-05,
+    "sd": 0.0001111065938660658,
+    "frac_ge_real": 0.365,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.6519182776393635e-05,
+    "sd": 7.984846819129995e-05,
+    "frac_ge_real": 0.25,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.3914680692418298,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": -0.11821699862985288,
+    "familywise_p": 1.0,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 0.0003206246282687619,
+    "beta_OxM": 0.04461500191368431,
+    "dR2_XxM": 0.0003422734924546367,
+    "beta_XxM": 0.05006625701305312,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.365 over 200 draws (real 0.000077 vs placebo mean 0.000090, sd 0.000111). No noise-floor separation, so there is nothing to correct for multiplicity."
+  },
+  {
+   "formulation": "opp_missO48",
+   "target": "ast",
+   "direction": "D1 opponent / own-team pace as MAIN effects (incl. supply-side instruments)",
+   "construction": "The opponent's OWN missed FG per 48 min, pregame expanding, strictly prior in-season. The DREB supply available to the player.",
+   "pregame_observable": true,
+   "pregame_justification": "Built only from base.prior_expanding, i.e. a strict cumulative-minus-self over the unit's games STRICTLY BEFORE the target game's date, within the same season, aggregated to date level so same-day games cannot see each other. No leave-one-out, no leave-one-season-out, no full-season baseline (trap 2).",
+   "n": 10167,
+   "R2_base": 0.4164862809883014,
+   "r2_convention_note": "plain unweighted OLS (D069)",
+   "collinearity_vs_overall_opponent_defence": {
+    "within_season_r": 0.18239373712985915,
+    "per_season": {
+     "2021": 0.4151600777509392,
+     "2022": 0.08669610945609084,
+     "2023": 0.13980639620515495,
+     "2024": 0.075878067381276
+    },
+    "note": "The base model already contains D (opponent OVERALL pregame allowance of the target stat, excluding this player's own prior contribution) and O*D, so every reported increment is orthogonal to overall opponent strength by construction. The correlation above is the I0010 costume test; compare to I0010's +0.57/+0.59."
+   },
+   "effect_size": {
+    "dR2_main": 0.0002061799151483244,
+    "beta_main": 0.03368890607353165,
+    "beta_units": "target counting stat per 1 sd of the residualised candidate",
+    "per_season": [
+     {
+      "season": 2021,
+      "n": 2128,
+      "dR2_M": 0.00010354148357872797,
+      "beta_M": 0.021432147334008146
+     },
+     {
+      "season": 2022,
+      "n": 2484,
+      "dR2_M": 4.8656286477828584e-05,
+      "beta_M": 0.0164521670068967
+     },
+     {
+      "season": 2023,
+      "n": 2784,
+      "dR2_M": 0.00027145062157657473,
+      "beta_M": 0.03590975117004409
+     },
+     {
+      "season": 2024,
+      "n": 2771,
+      "dR2_M": 0.0005067930157005241,
+      "beta_M": 0.06958807591304529
+     }
+    ],
+    "beta_same_sign_all_4_seasons": true
+   },
+   "standard_errors": {
+    "n_clusters": 48,
+    "cluster_key": "opp_team_id x season",
+    "t_classical": 1.8950524625010245,
+    "t_cluster_robust": 1.805170652240911,
+    "note": "Classical t is reported ONLY to be distrusted (trap 3). No verdict uses it. For the seven team-aggregate candidates there are 48 opponent/own-team-season clusters, so tens of thousands of rows are not independent."
+   },
+   "placebo": {
+    "kind": "cluster-level permutation at the grouping level of the feature",
+    "mean": 8.788927316304231e-05,
+    "sd": 0.00011602750404040444,
+    "frac_ge_real": 0.145,
+    "n_draws": 200,
+    "label": "cluster permutation: team-season -> row assignment permuted within season"
+   },
+   "placebo_naive_row_level": {
+    "mean": 5.61757627198249e-05,
+    "sd": 8.465244997360992e-05,
+    "frac_ge_real": 0.05,
+    "n_draws": 200,
+    "width_ratio_correct_over_naive": 1.3706337392074959,
+    "note": "Reported ONLY as evidence of trap 3. Never used for a verdict."
+   },
+   "familywise": {
+    "z": 1.0195051851161907,
+    "familywise_p": 0.925,
+    "null_p95": 5.687718580924161,
+    "null_max": 8.277894653266207,
+    "n_draws": 400,
+    "note": "Joint max-T: one opponent-side and one own-side team relabelling per season is applied to every candidate and every target in the same draw, so the null preserves the real correlation between cells."
+   },
+   "secondary_interactions": {
+    "dR2_OxM": 7.103469012004204e-06,
+    "beta_OxM": -0.006227967302508686,
+    "dR2_XxM": 0.00016729555580596855,
+    "beta_XxM": -0.033154398976964664,
+    "note": "REPORTED ONLY, NEVER PLACEBOED. These have NO noise floor and therefore cannot be leads and are not ranked against anything. The primary test in every cell is the main effect."
+   },
+   "verdict": "kill",
+   "verdict_reasoning": "Inside its own cluster-level permutation floor: frac_ge_real = 0.145 over 200 draws (real 0.000206 vs placebo mean 0.000088, sd 0.000116). No noise-floor separation, so there is nothing to correct for multiplicity. TRAP 3 BIT HERE: the NAIVE row-level permutation would have called this significant (frac_ge_real = 0.050) because it is 1.37x narrower than the correct cluster-level null.",
+   "volume_heterogeneity": {
+    "by_pregame_minutes_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 17.06611267612883,
+      "dR2_M": 1.3793605169316409e-05,
+      "beta_M": 0.006218938479078152
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 25.503362584579914,
+      "dR2_M": 0.002252930369574938,
+      "beta_M": 0.10007695087585297
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 30.933014275567377,
+      "dR2_M": 3.918665490861975e-07,
+      "beta_M": -0.0016182147149879575
+     }
+    ],
+    "by_pregame_usage_tercile": [
+     {
+      "tercile": 0,
+      "n": 3390,
+      "mean_split": 15.546654072037033,
+      "dR2_M": 6.603843757077635e-05,
+      "beta_M": 0.015341195315906796
+     },
+     {
+      "tercile": 1,
+      "n": 3388,
+      "mean_split": 21.677759554182792,
+      "dR2_M": 0.00028956905069894596,
+      "beta_M": 0.044626466400511475
+     },
+     {
+      "tercile": 2,
+      "n": 3389,
+      "mean_split": 27.89849331078291,
+      "dR2_M": 0.00031994391106891546,
+      "beta_M": 0.04120860626246201
+     }
+    ],
+    "note": "DESCRIPTIVE ONLY. No permutation null was computed for the tercile splits, so no heterogeneity result here is a lead or is ranked against anything."
+   }
+  }
+ ],
+ "survivor": {
+  "cell": "exp_gposs x ast",
+  "what_it_is": "Expected game possessions -- the mean of the two teams' strictly-prior pregame expanding possessions-per-48 -- predicting a player's raw assist count, over and above the player's own pregame rate, the opponent's overall pregame assist allowance, their interaction, the player's pregame minutes, and rate x minutes.",
+  "reliability": {
+   "r_half": 0.6795339349767647,
+   "spearman_brown": 0.8091934563812975,
+   "n_team_seasons": 48,
+   "note": "deterministic diagnostic, sd 0 by construction (not a placebo)"
+  },
+  "confound_ladder": [
+   {
+    "rung": "L0 base only",
+    "R2_rung": 0.4164862809883014,
+    "dR2_cand": 0.0011325384080829507,
+    "retained_frac": 1.0
+   },
+   {
+    "rung": "L1 + home",
+    "R2_rung": 0.4165887852346294,
+    "dR2_cand": 0.0011318403195377503,
+    "retained_frac": 0.99938360717816
+   },
+   {
+    "rung": "L2 + both nets/100",
+    "R2_rung": 0.4169262090708019,
+    "dR2_cand": 0.001048150407245209,
+    "retained_frac": 0.9254877360136639
+   },
+   {
+    "rung": "L3 + both win rates",
+    "R2_rung": 0.4168542583406686,
+    "dR2_cand": 0.0010496131666136385,
+    "retained_frac": 0.9267793119619847
+   },
+   {
+    "rung": "L4 + home + nets + win rates",
+    "R2_rung": 0.41703074855986355,
+    "dR2_cand": 0.001050738370177491,
+    "retained_frac": 0.927772835497983
+   }
+  ],
+  "recency": [
+   {
+    "slice": "2021-2024 (pooled)",
+    "seasons": [
+     2021,
+     2022,
+     2023,
+     2024
+    ],
+    "n": 10167,
+    "dR2": 0.0011325384080829507,
+    "beta": 0.07899534684911667,
+    "placebo_mean": 8.576206325813806e-05,
+    "placebo_sd": 0.00011424895077201636,
+    "frac_ge_real": 0.0,
+    "n_draws": 200
+   },
+   {
+    "slice": "2022-2024",
+    "seasons": [
+     2022,
+     2023,
+     2024
+    ],
+    "n": 8039,
+    "dR2": 0.0006978967702953358,
+    "beta": 0.0699782169507896,
+    "placebo_mean": 0.00011749233538745383,
+    "placebo_sd": 0.00015767137906729374,
+    "frac_ge_real": 0.005,
+    "n_draws": 200
+   },
+   {
+    "slice": "2023-2024",
+    "seasons": [
+     2023,
+     2024
+    ],
+    "n": 5555,
+    "dR2": 0.000675786170454997,
+    "beta": 0.06955125786971257,
+    "placebo_mean": 0.00020370636963014613,
+    "placebo_sd": 0.00024253247783254158,
+    "frac_ge_real": 0.06,
+    "n_draws": 200
+   },
+   {
+    "slice": "2024 alone",
+    "seasons": [
+     2024
+    ],
+    "n": 2771,
+    "dR2": 0.0025740513545162865,
+    "beta": 0.13149348446877898,
+    "placebo_mean": 0.0007685254344879452,
+    "placebo_sd": 0.0009062602099174916,
+    "frac_ge_real": 0.065,
+    "n_draws": 200
+   }
+  ],
+  "sum_vs_difference": [
+   {
+    "target": "pts",
+    "dR2_sum": 0.0007355444299088632,
+    "dR2_joint_2df": 0.0007536055992481971,
+    "dR2_diff_given_sum": 1.8061169339333993e-05,
+    "beta_diff": 0.031260219744523504,
+    "reading": "symmetric game tempo (difference dead) -> NOT an opponent matchup"
+   },
+   {
+    "target": "reb",
+    "dR2_sum": 0.0006156446768151858,
+    "dR2_joint_2df": 0.000716933918136653,
+    "dR2_diff_given_sum": 0.00010128924132146722,
+    "beta_diff": 0.03338831625582957,
+    "reading": "asymmetric -> opponent-specific component present"
+   },
+   {
+    "target": "ast",
+    "dR2_sum": 0.001132538408082917,
+    "dR2_joint_2df": 0.00113315358871946,
+    "dR2_diff_given_sum": 6.151806365428669e-07,
+    "beta_diff": 0.0018393117409080243,
+    "reading": "symmetric game tempo (difference dead) -> NOT an opponent matchup"
+   }
+  ],
+  "classification": "LAYER 2, NOT LAYER 3. The estimable {sum, difference} reparameterisation shows the difference between the two teams' pace carries dR2 0.000001 against the sum's 0.001133 for assists. The effect is SYMMETRIC GAME TEMPO, i.e. a game-level possession-volume main effect, and is explicitly NOT an opponent matchup. This is the mirror image of I0012's survivor, which was asymmetric and therefore a matchup.",
+  "contrast_with_I0012_survivor": "I0012's survivor decayed monotonically (+0.356 -> +0.335 -> +0.167 -> +0.064) and in 2024 sat BELOW its own placebo mean. This one does not decay: its 2024-alone point estimate is the LARGEST of the four seasons and sits ABOVE its own placebo mean. The two recent slices do not individually clear 0.05, but their floors are wide at n = 5555 and 2771 and the sign of the failure is opposite.",
+  "why_it_is_still_only_a_lead": [
+   "dR2 = 0.001133 is small -- roughly the same size as I0012's now-dead survivor and about 6x under I0009's existing 0.006-0.007 lead.",
+   "2023 is a dead season for it (dR2 0.000012, beta -0.0100). The per-season pattern is noisy rather than monotone, which is better than a decay but is not stability.",
+   "Neither recent slice clears 0.05 on its own floor (2023-2024 frac 0.060; 2024 alone frac 0.065).",
+   "It is a game-level tempo main effect, so it will be correlated with whatever the market already prices into totals. Nothing here tests incremental value over a price."
+  ]
+ },
+ "multiplicity": {
+  "n_tests": 27,
+  "primary_test_per_cell": "the MAIN effect dR2 of the candidate over the base model",
+  "secondary_tests_not_counted": "the two interaction terms per cell are reported without a noise floor and are explicitly excluded from any verdict",
+  "familywise_null": "joint max-T randomization over all 27 cells, 400 draws; one opponent-side and one own-side team relabelling per season applied to every candidate and every target within the same draw, so the null preserves the real correlation between cells",
+  "null_p50": 2.6369677719253537,
+  "null_p95": 5.687718580924161,
+  "null_max": 8.277894653266207,
+  "n_cells_clearing_own_nominal_floor": 11,
+  "n_cells_surviving_familywise": 1,
+  "statement": "11 of 27 cells cleared their own cluster-level floor at nominal frac_ge_real <= 0.05. Exactly 1 survives the family-wise max-T null. The other 10 are the false positives a 27-test sweep predicts and are killed on multiplicity, not kept."
+ },
+ "summary": {
+  "n_cells_screened": 27,
+  "n_killed": 26,
+  "n_kept_as_lead": 1,
+  "headline": "Possession volume is a REAL but SMALL and GAME-LEVEL channel in player counting stats, and almost none of the ways of instrumenting it survive contact with a correct noise floor. 26 of 27 formulation-target cells die. The single survivor -- expected game possessions predicting assists -- is not a costume (r = -0.06 with overall opponent defence), is measured reliably (Spearman-Brown 0.809), keeps 93% of its increment after home advantage and both teams' pregame net rating and win rate, keeps 96% given ACTUAL minutes played but loses 84% given ACTUAL possessions -- which is exactly the mediation signature a possession-VOLUME story predicts -- and does NOT decay toward the holdout. But it is SYMMETRIC between the two teams, so it is a layer-2 game-tempo main effect, not a layer-3 matchup, and at dR2 0.001133 it is small.",
+  "what_this_settles": [
+   "The layer-2 OREB main effect that I0012 sent to the backlog is SCREENED AND DEAD as a main effect on player counting stats. Opponent OREB allowed reaches nominal 0.015 on points but dies family-wise, and it is the ONE candidate that is NOT absorbed by realised possessions (66% retained), so even if it were real it would not be the possession-volume mechanism it was proposed as. Own-team OREB rate is dead outright (dR2 0.000000 on points).",
+   "POSSESSIONS-PER-MINUTE as a player-specific exposure channel is DEAD. It reaches nominal 0.085 / 0.065 / 0.700 on pts / ast / reb and family-wise p 0.83 / 0.80 / 1.00. Minutes remains the exposure component that matters; the per-minute component adds nothing measurable at this precision.",
+   "The SUPPLY-SIDE instruments I0012 asked for (opponent FGA allowed per 48, opponent misses allowed per 48, opponent's own misses per 48) do NOT beat the tempo proxy. On rebounds -- the target where the supply story was sharpest -- all three are flatly inside their floors (frac 0.675 / 0.935 / 0.665) while the tempo proxy is the strongest rebound candidate. The mechanistic story that misses are the real rebound supply is NOT supported.",
+   "Neither team's pace ALONE survives; only their SUM does. That is a mildly useful structural fact: the live quantity is total expected game possessions, not an opponent-specific tempo matchup.",
+   "Trap 3 is real and it bit. Had this screen used the row-level permutation null that reads natural for a 10,167-row regression, it would have reported at least three extra leads that do not exist."
+  ],
+  "what_was_not_established": [
+   "No OREB/DREB split of the rebound target. I0012's follow-up 3 remains unrun; the rebound cells here all died before the split would have mattered, but the split itself was not performed.",
+   "No noise floor on any interaction term. The 54 secondary interaction increments are reported and are not leads.",
+   "No noise floor on the volume-heterogeneity terciles. The gradient is clean and monotone in pregame minutes and pregame usage for the survivor, but it is DESCRIPTIVE and is not ranked against anything.",
+   "No test of incremental value over a market price, and no test against rest, travel, injury or lineup information.",
+   "No sensitivity analysis on the minutes >= 10 analysis cut or on the shrinkage constants.",
+   "The survivor's 2023 collapse is unexplained."
+  ]
+ },
+ "files": {
+  "pv_base.py": "shared base; imports E0_I0012/base.py READ-ONLY and re-points its OUT into this directory; partition guard, team pregame table, player exposure quantities, OLS/cluster-SE machinery",
+  "run_screen_defs.py": "the candidate registry, single source of truth for both run stages",
+  "run_screen.py": "27 cells, cluster + naive placebos, the deliberate no-op diagnostic, volume heterogeneity",
+  "run_maxt_robust.py": "family-wise max-T over all 27 cells; actual-minutes and actual-possessions mediation rungs; sum-vs-difference reparameterisation",
+  "run_survivor_checks.py": "reliability, confound ladder, recency slices for the one survivor",
+  "make_findings.py": "assembles this file by reading the result JSONs; retypes no number",
+  "verify_partition.py": "re-parses every file this directory wrote and tests season/date column VALUES",
+  "run_log_*.txt": "full stdout of every run, including every printed season list"
+ }
+}
