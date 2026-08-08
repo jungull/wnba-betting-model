@@ -1,0 +1,153 @@
+﻿=== I0009 R2-CONVENTION RE-RUN  (E1 re-measurement, NON-CLAIMING) ===
+run started: 2026-08-07T21:46:10
+python: Python 3.13.14  numpy/pandas: 2.5.1 3.0.5
+
+################ step1_audit.py ################
+  E1_player_game_analysis    rows= 18165 seasons=[2021, 2022, 2023, 2024] date_years=[2021, 2022, 2023, 2024]
+  E1_team_game_defense       rows=  1940 seasons=[2021, 2022, 2023, 2024] date_years=[2021, 2022, 2023, 2024]
+  E0_player_game_analysis    rows= 18165 seasons=[2021, 2022, 2023, 2024] date_years=[2021, 2022, 2023, 2024]
+  E0_team_game_defense       rows=  1940 seasons=[2021, 2022, 2023, 2024] date_years=[2021, 2022, 2023, 2024]
+PARTITION VERIFIED on column values only (2021-2024).
+
+(b) WEIGHT DISPERSION
+  weights [E1] var=realised_off_possessions n=18165 min=1.0000 max=95.0000 mean=42.6718 sd=21.2052 cv=0.4969 max/min=95.00
+  weights [E0] var=realised_off_possessions n=18165 min=1.0000 max=95.0000 mean=42.6718 sd=21.2052 cv=0.4969 max/min=95.00
+
+(c) RESPONSE CENTERING
+  response [E1] mean=3.39572 sd=3.98839 mean/sd=0.85140 wmean=3.30098 centered=False
+  response [E0] mean=3.39572 sd=3.98839 mean/sd=0.85140 wmean=3.30098 centered=False
+  corr(y, sqrt(w)) E1 = -0.04963
+
+(a/analytic) E1: SST_defective=6.993577e+06  SST_standard_w=6.466571e+06  ratio(std/def)=0.924644  -> reported dR2 is 7.54% BELOW standard
+
+(a/analytic) E0: SST_defective=6.993577e+06  SST_standard_w=6.466571e+06  ratio(std/def)=0.924644  -> reported dR2 is 7.54% BELOW standard
+
+  MECHANISM CHECKS (E1 frame):
+    uniform weights (w=1)        -> ratio = 1.0000000000
+    centered response (mean 0)   -> ratio = 0.9993107651
+    actual w, actual y           -> ratio = 0.9246442070
+
+wrote step1_audit.json
+
+################ step23_reproduce_and_rerun.py ################
+====================================================================================================
+STEP 2/3  E0 SCREEN  (published numbers ARE defective-convention)
+====================================================================================================
+quantity                                 published  repro(def)    |delta|     std wtd   plain OLS    bias%
+E0_rung1_pooled_dR2                       0.008424    0.008424   1.67e-07    0.009111    0.005079   -7.54%
+E0_rung2_pooled_dR2                       0.006505    0.006505   3.93e-07    0.007035    0.004046   -7.54%
+E0_rung2_2021_dR2                         0.015038    0.015038   2.83e-07    0.015959    0.012866   -5.77%
+E0_rung2_2022_dR2                         0.005329    0.005329   3.52e-07    0.005624    0.002995   -5.24%
+E0_rung2_2023_dR2                         0.002279    0.002279   3.23e-07    0.002499    0.000973   -8.78%
+E0_rung2_2024_dR2                         0.006121    0.006121   2.39e-07    0.006783    0.003304   -9.76%
+E0_rung1_dR2_defrtg_controlled            0.007529    0.007529   0.00e+00    0.008142    0.004920   -7.54%
+E0_rung2_dR2_defrtg_controlled            0.005696    0.005696   0.00e+00    0.006161    0.003747   -7.54%
+
+  MAX |reproduction delta| over E0 published figures = 3.927e-07
+
+====================================================================================================
+STEP 2/3  E1 SCREEN IN-SAMPLE  (published numbers are ALREADY standard weighted)
+====================================================================================================
+quantity                             published  repro(std)    |delta|   defective   plain OLS    bias%
+M_A_E0_replication                    0.007035    0.007035   2.86e-07    0.006505    0.004046   -7.54%
+M_B_plus_venue                        0.007045    0.007045   2.11e-07    0.006514    0.004056   -7.54%
+M_C_plus_schedule_balance             0.007013    0.007013   5.09e-08    0.006484    0.004027   -7.54%
+M_D_plus_opp_defrtg                   0.005999    0.005999   5.48e-09    0.005547    0.003681   -7.54%
+M_E_pregame_baseline                  0.006765    0.006765   4.23e-07    0.006256    0.003970   -7.54%
+M_F_pregame_full_control              0.005649    0.005649   3.69e-07    0.005224    0.003566   -7.54%
+
+====================================================================================================
+STEP 2/3  E1 OUT-OF-SAMPLE  (HEADLINE +0.004003 = M_B walk-forward mean)
+====================================================================================================
+quantity                                       published  repro(std)    |delta|   defective   plain OLS    bias%
+E1_oos_loso_mean_M_B_plus_venue                 0.007071    0.007071   3.27e-07    0.006587    0.003949   -6.84%
+E1_oos_wf_mean_M_B_plus_venue                   0.004003    0.004003   9.03e-08    0.003668    0.000850   -8.37%
+E1_oos_loso_mean_M_D_plus_opp_defrtg            0.006297    0.006297   1.02e-07    0.005885    0.003729   -6.54%
+E1_oos_wf_mean_M_D_plus_opp_defrtg              0.003270    0.003270   4.30e-07    0.003022    0.000767   -7.59%
+E1_oos_loso_mean_M_E_pregame_baseline           0.006731    0.006731   4.75e-07    0.006272    0.003808   -6.81%
+E1_oos_wf_mean_M_E_pregame_baseline             0.003479    0.003479   4.20e-08    0.003181    0.000453   -8.57%
+E1_oos_loso_mean_M_F_pregame_full_control       0.005908    0.005908   3.79e-08    0.005526    0.003581   -6.46%
+E1_oos_wf_mean_M_F_pregame_full_control         0.002795    0.002795   1.13e-07    0.002584    0.000413   -7.56%
+
+  MAX |reproduction delta| over E1 published figures = 4.746e-07
+wrote step23_results.json
+
+################ step4_verdict_and_nulls.py ################
+lookup matrix reproduces real pregame pressure: max abs err = 3.553e-15
+
+REAL statistics under PLAIN UNWEIGHTED OLS:
+  insample_M_A     +0.004046
+  insample_M_B     +0.004056
+  insample_M_F     +0.003566
+  wf_mean_M_B      +0.000850
+  wf_mean_M_F      +0.000413
+  loso_mean_M_B    +0.003949
+  loso_mean_M_F    +0.003581
+
+PERMUTATION NULLS (plain unweighted OLS, 200 draws each)
+  team_identity_derangement_CORRECT_LEVEL      insample_M_A   real=+0.004046 null mean=+0.000203 sd=0.000257 max=+0.001508 ge_real=0/200
+  team_identity_derangement_CORRECT_LEVEL      insample_M_B   real=+0.004056 null mean=+0.000204 sd=0.000257 max=+0.001504 ge_real=0/200
+  team_identity_derangement_CORRECT_LEVEL      insample_M_F   real=+0.003566 null mean=+0.000212 sd=0.000256 max=+0.001419 ge_real=0/200
+  team_identity_derangement_CORRECT_LEVEL      wf_mean_M_B    real=+0.000850 null mean=-0.000481 sd=0.000654 max=+0.000810 ge_real=0/200
+  team_identity_derangement_CORRECT_LEVEL      wf_mean_M_F    real=+0.000413 null mean=-0.000542 sd=0.000712 max=+0.000822 ge_real=7/200
+  team_identity_derangement_CORRECT_LEVEL      loso_mean_M_B  real=+0.003949 null mean=-0.000161 sd=0.000440 max=+0.001006 ge_real=0/200
+  team_identity_derangement_CORRECT_LEVEL      loso_mean_M_F  real=+0.003581 null mean=-0.000139 sd=0.000435 max=+0.001105 ge_real=0/200
+  row_shuffle_WRONG_LEVEL                      insample_M_A   real=+0.004046 null mean=+0.000043 sd=0.000073 max=+0.000531 ge_real=0/200
+  row_shuffle_WRONG_LEVEL                      insample_M_B   real=+0.004056 null mean=+0.000043 sd=0.000073 max=+0.000539 ge_real=0/200
+  row_shuffle_WRONG_LEVEL                      insample_M_F   real=+0.003566 null mean=+0.000043 sd=0.000077 max=+0.000572 ge_real=0/200
+  row_shuffle_WRONG_LEVEL                      wf_mean_M_B    real=+0.000850 null mean=-0.000132 sd=0.000207 max=+0.000408 ge_real=0/200
+  row_shuffle_WRONG_LEVEL                      wf_mean_M_F    real=+0.000413 null mean=-0.000133 sd=0.000207 max=+0.000488 ge_real=2/200
+  row_shuffle_WRONG_LEVEL                      loso_mean_M_B  real=+0.003949 null mean=-0.000098 sd=0.000143 max=+0.000549 ge_real=0/200
+  row_shuffle_WRONG_LEVEL                      loso_mean_M_F  real=+0.003581 null mean=-0.000101 sd=0.000148 max=+0.000605 ge_real=0/200
+  noop_defective_placebo_POSITIVE_DIAGNOSTIC   insample_M_A   real=+0.004046 null mean=+0.004046 sd=0.000000 max=+0.004046 ge_real=25/25  <<< DEGENERATE (sd~0)
+  noop_defective_placebo_POSITIVE_DIAGNOSTIC   insample_M_B   real=+0.004056 null mean=+0.004056 sd=0.000000 max=+0.004056 ge_real=25/25  <<< DEGENERATE (sd~0)
+  noop_defective_placebo_POSITIVE_DIAGNOSTIC   insample_M_F   real=+0.003566 null mean=+0.003566 sd=0.000000 max=+0.003566 ge_real=25/25  <<< DEGENERATE (sd~0)
+  noop_defective_placebo_POSITIVE_DIAGNOSTIC   wf_mean_M_B    real=+0.000850 null mean=+0.000850 sd=0.000000 max=+0.000850 ge_real=25/25  <<< DEGENERATE (sd~0)
+  noop_defective_placebo_POSITIVE_DIAGNOSTIC   wf_mean_M_F    real=+0.000413 null mean=+0.000413 sd=0.000000 max=+0.000413 ge_real=25/25  <<< DEGENERATE (sd~0)
+  noop_defective_placebo_POSITIVE_DIAGNOSTIC   loso_mean_M_B  real=+0.003949 null mean=+0.003949 sd=0.000000 max=+0.003949 ge_real=25/25  <<< DEGENERATE (sd~0)
+  noop_defective_placebo_POSITIVE_DIAGNOSTIC   loso_mean_M_F  real=+0.003581 null mean=+0.003581 sd=0.000000 max=+0.003581 ge_real=25/25  <<< DEGENERATE (sd~0)
+wrote permutation_draws_plain_ols.csv
+
+NO-OP PLACEBO DIAGNOSTIC PASSED: sd exactly 0 and mean == real for all 7 statistics.
+  -> the two real nulls have non-zero sd, so they genuinely shuffle.
+  M_A_E0_replication         beta=+0.13013  t_iid=+8.74  t_cluster(opp team-game, 1940 clusters)=+8.95
+  M_B_plus_venue             beta=+0.13030  t_iid=+8.75  t_cluster(opp team-game, 1940 clusters)=+8.97
+  M_F_pregame_full_control   beta=+0.13369  t_iid=+8.18  t_cluster(opp team-game, 1940 clusters)=+8.29
+
+wrote step4_results.json
+
+################ step5_baseline_audit_and_gate.py ################
+==========================================================================================
+(a) BASELINE CONSTRUCTION AUDIT -- read the construction, not the label
+==========================================================================================
+  player_tendency_loo   construction: build_data.py lines 164-170 -- season TOTAL over ALL
+                        games in the season, minus this game. RETROSPECTIVE.
+  player_tendency_pregame construction: pressure_lib_e1.py _PrefixIndex.prefix, searchsorted(side='left') -> STRICTLY BEFORE date. PRIOR-GAMES-ONLY.
+  corr(loo baseline, player's OWN FUTURE season rate)     = +0.6455
+  corr(pregame baseline, player's OWN FUTURE season rate) = +0.3647
+  dR2 of adding loo on top of pregame, TARGET = the FUTURE rate = 0.331880
+    -> the LOO baseline demonstrably carries information about games that had not been played yet.
+
+==========================================================================================
+(b) WALK-FORWARD PERMUTATION NULL under the AS-PUBLISHED standard-weighted convention
+==========================================================================================
+  M_B_plus_venue             real=+0.004003 null mean=-0.000619 sd=0.000905 max=+0.001359 ge_real=0/200 p_emp=0.000
+  M_F_pregame_full_control   real=+0.002795 null mean=-0.000630 sd=0.000868 max=+0.001343 ge_real=0/200 p_emp=0.000
+
+==========================================================================================
+(c) FROZEN E1 VERDICT GATE, re-evaluated under PLAIN UNWEIGHTED OLS
+==========================================================================================
+  gate_1_retained_after_home_away_control: {'threshold': '>0.5', 'as_published': 1.001492153837414, 'adopted_convention': 1.0025478298501014, 'passes_as_published': True, 'passes_adopted': True}
+  gate_2_loso_all_positive_M_B: {'as_published': True, 'adopted': True}
+  gate_3_loso_all_positive_M_F: {'as_published': True, 'adopted': True}
+  gate_4_placebo_draws_ge_real_loso_M_B: {'as_published_frozen_screen': 0, 'adopted': 0}
+  gate_5_placebo_draws_ge_real_loso_M_F: {'as_published_frozen_screen': 0, 'adopted': 0}
+  gate_6_instrument_split_half_mean_r: {'value': 0.5725, 'threshold': '>0.3', 'passes': True, 'note': 'a correlation of team forced-TO rates; unaffected by the R2 convention'}
+  verdict_under_adopted_convention: keep-as-lead
+
+wrote step5_results.json
+
+################ step6_build_findings.py ################
+wrote FINDINGS.json
+
+run finished: 2026-08-07T21:46:32

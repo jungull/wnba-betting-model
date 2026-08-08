@@ -1,0 +1,110 @@
+{
+  "baseline_audit": {
+    "predictor_under_test": {
+      "name": "opponent_pressure_pregame",
+      "construction": "pressure_lib_e1.PregameTeamPressure.lookup -> _PrefixIndex.prefix with np.searchsorted(dates, date_ns, side='left'), i.e. expanding over the opponent's games STRICTLY BEFORE this game's date, shrunk (K=200 poss) toward the prior-season team rate or the season league mean",
+      "reads_future": false,
+      "verdict": "PRIOR-GAMES-ONLY -- clean"
+    },
+    "other_controls": {
+      "opp_prior_home_share": {
+        "construction": "cumsum of def_is_home MINUS own row / cumcount",
+        "reads_future": false
+      },
+      "opponent_defrtg_pregame": {
+        "construction": "same PregameTeamPressure machinery on def_pts_allowed",
+        "reads_future": false
+      },
+      "player_is_home": {
+        "construction": "schedule fact, known pregame",
+        "reads_future": false
+      }
+    },
+    "baselines": {
+      "player_tendency_loo": {
+        "construction": "build_data.py 164-170: season_tov/season_poss over ALL games in the season, minus this game's own tallies (full-season leave-one-out)",
+        "reads_future": true,
+        "verdict": "RETROSPECTIVE -- named in constraint 3 as a known offender; confirmed by reading",
+        "used_by": [
+          "M_A_E0_replication",
+          "M_B_plus_venue",
+          "M_C_plus_schedule_balance",
+          "M_D_plus_opp_defrtg",
+          "E0 rung-1 and rung-2 (ALL E0 published numbers)"
+        ],
+        "carries_headline": true,
+        "headline_note": "the +0.004003 walk-forward figure is M_B, whose baseline is player_tendency_loo"
+      },
+      "player_tendency_pregame": {
+        "construction": "pressure_lib_e1.PregamePlayerTendency: expanding strictly-before-date, shrunk (K=100 poss) toward prior-season player rate or season league mean",
+        "reads_future": false,
+        "verdict": "PRIOR-GAMES-ONLY -- clean",
+        "used_by": [
+          "M_E_pregame_baseline",
+          "M_F_pregame_full_control"
+        ]
+      }
+    },
+    "empirical_probe": {
+      "probe": "correlate each baseline with the player's OWN strictly-after-date season rate",
+      "n_rows_with_future": 17544,
+      "corr_loo_with_future": 0.6455271556174542,
+      "corr_pregame_with_future": 0.3647336854631414,
+      "dr2_of_loo_over_pregame_predicting_the_future": 0.33187982919127434,
+      "conclusion": "player_tendency_loo predicts the player's unplayed future far better than the pregame baseline does, which is only possible because it contains it."
+    },
+    "overall": "The PREDICTOR under test is clean (prior games only). The BASELINE that carries the headline is retrospective. E1 anticipated this and shipped a fully-pregame variant (M_E/M_F); those, not M_A/M_B, are the forecasting-honest numbers. The headline +0.004003 is NOT a forecasting increment because its baseline reads the future."
+  },
+  "wf_null_standard_weighted_correct_level": {
+    "standard_weighted__wf_mean_M_B_plus_venue": {
+      "real": 0.0040030902585571505,
+      "mean": -0.0006191587174289887,
+      "sd": 0.0009052585280859735,
+      "p95": 0.0004187646570260921,
+      "max": 0.0013586914744449826,
+      "n_draws_ge_real": 0,
+      "p_empirical": 0.0
+    },
+    "standard_weighted__wf_mean_M_F_pregame_full_control": {
+      "real": 0.0027948873121937793,
+      "mean": -0.0006302275831305586,
+      "sd": 0.0008682111811139413,
+      "p95": 0.0004890225302771958,
+      "max": 0.0013431158462405906,
+      "n_draws_ge_real": 0,
+      "p_empirical": 0.0
+    }
+  },
+  "verdict_gate": {
+    "gate_1_retained_after_home_away_control": {
+      "threshold": ">0.5",
+      "as_published": 1.001492153837414,
+      "adopted_convention": 1.0025478298501014,
+      "passes_as_published": true,
+      "passes_adopted": true
+    },
+    "gate_2_loso_all_positive_M_B": {
+      "as_published": true,
+      "adopted": true
+    },
+    "gate_3_loso_all_positive_M_F": {
+      "as_published": true,
+      "adopted": true
+    },
+    "gate_4_placebo_draws_ge_real_loso_M_B": {
+      "as_published_frozen_screen": 0,
+      "adopted": 0
+    },
+    "gate_5_placebo_draws_ge_real_loso_M_F": {
+      "as_published_frozen_screen": 0,
+      "adopted": 0
+    },
+    "gate_6_instrument_split_half_mean_r": {
+      "value": 0.5725,
+      "threshold": ">0.3",
+      "passes": true,
+      "note": "a correlation of team forced-TO rates; unaffected by the R2 convention"
+    },
+    "verdict_under_adopted_convention": "keep-as-lead"
+  }
+}

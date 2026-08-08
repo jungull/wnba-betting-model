@@ -1,0 +1,1189 @@
+{
+  "what_this_is": "E1 re-measurement of idea I0009 (additive opponent pressure) under the adopted plain-OLS R2 convention, ordered by decision D069. NON-CLAIMING (GRAPH_POLICY 13.1): no registry entry, no preregistration, no leaderboard row, no promotion. A LEAD, never a RESULT.",
+  "stage": "E1 re-run",
+  "idea": "I0009",
+  "family": "F_TURNOVER_PRESSURE",
+  "partition": {
+    "method": "season column VALUES and game_date.dt.year VALUES; no byte/regex scan",
+    "detail": {
+      "E1_player_game_analysis": {
+        "rows": 18165,
+        "season_column_values": [
+          2021,
+          2022,
+          2023,
+          2024
+        ],
+        "game_date_years": [
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "E1_team_game_defense": {
+        "rows": 1940,
+        "season_column_values": [
+          2021,
+          2022,
+          2023,
+          2024
+        ],
+        "game_date_years": [
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "E0_player_game_analysis": {
+        "rows": 18165,
+        "season_column_values": [
+          2021,
+          2022,
+          2023,
+          2024
+        ],
+        "game_date_years": [
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      "E0_team_game_defense": {
+        "rows": 1940,
+        "season_column_values": [
+          2021,
+          2022,
+          2023,
+          2024
+        ],
+        "game_date_years": [
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      }
+    },
+    "holdout_2025_2026_touched": false
+  },
+  "manifest_check": {
+    "inputs_of_build_data": [
+      "experiments/player_program/turnover_targets_v1/player_turnover_targets_v1.parquet",
+      "experiments/player_program/possessions_v2/possessions_raw_v2.parquet"
+    ],
+    "sibling_manifest_json_present": false,
+    "checked_how": "directory listing of both parquet directories; no <artifact>.manifest.json exists",
+    "note": "No sibling manifest exists for either input, so asof_granularity cannot be read. Both are raw row-per-game / row-per-possession tallies with an explicit season column and no fitted cross-season parameter, so row-level partition filtering bounds them. This is a PROGRAM GAP, not a clean pass: the manifest rule cannot be executed as written for these two artifacts. This measurement re-uses the FROZEN CSVs the screens already wrote, which are themselves verified 2021-2024 on column values."
+  },
+  "PREMISE_CORRECTION": {
+    "task_premise": "both E0 and E1 analyze.py carry a defective weighted-R2 helper called wls_r2",
+    "finding_E0": "TRUE. wls_r2 at analyze.py lines 40-48 feeds delta_r2 (lines 55-62) and therefore EVERY dR2 E0 published.",
+    "finding_E1": "FALSE for the published numbers. E1 has no function named wls_r2. Its headline helper r2_in (lines 68-72) is already the STANDARD weighted R2, and its out-of-sample helper oos_delta (lines 281-301) uses the standard weighted SST about the TRAIN weighted mean. The defective form survives in E1 only inside delta_r2_e0convention (lines 220-228), which exists solely to reproduce E0's published figures as a frame-identity check and touches no E1 headline number.",
+    "consequence": "The headline +0.004003 was never a defective-convention number. Correcting the SST does not raise it. What actually moves it is dropping the possession WEIGHTS, which the adopted plain-OLS convention also requires -- and that moves it DOWN by ~79%, not up."
+  },
+  "defective_helper_source": {
+    "E0_file": "experiments/exploration/E0_I0009_additive_pressure/analyze.py",
+    "E0_function": "wls_r2",
+    "E0_lines": "40-48",
+    "E0_defect_line": "47: sst = float(((yw - yw.mean()) ** 2).sum())   # yw = sqrt(w)*y",
+    "E0_used_by": "delta_r2 (lines 55-62) -> EVERY dR2 E0 published",
+    "E1_file": "experiments/exploration/E1_I0009_additive_pressure/analyze.py",
+    "E1_function_name_note": "E1 has NO function named wls_r2. E1's headline helper is r2_in (lines 68-72), which is the STANDARD weighted R2: 1 - sum(w*r^2)/sum(w*(y-ybar_w)^2) with ybar_w = np.average(y, weights=w).",
+    "E1_defective_copy": "delta_r2_e0convention, lines 220-228, inline r2(): 1 - r@r / ((yw - yw.mean())**2).sum(). Used ONLY in the E0-reconciliation block (lines 230-249). It touches NO E1 headline number.",
+    "E1_oos_helper": "oos_delta, lines 281-301: SST = sum(w_test*(y_test - ybar_train_weighted)^2) -- standard weighted SST about the TRAIN weighted mean, NOT defective.",
+    "CONCLUSION": "The task premise that BOTH screens carry the defect in their published numbers is INCORRECT for E1. E0's published numbers are defective; E1's are already standard weighted. The headline +0.004003 is an E1 number and is NOT defective."
+  },
+  "weight_and_centering_audit": {
+    "weights": {
+      "E1": {
+        "variable": "realised_off_possessions",
+        "n": 18165,
+        "min": 1.0,
+        "max": 95.0,
+        "mean": 42.67184145334434,
+        "sd": 21.20519402477237,
+        "cv": 0.4969364644822574,
+        "max_over_min": 95.0,
+        "p01": 2.0,
+        "p99": 81.0,
+        "n_zero": 0,
+        "uniform": false
+      },
+      "E0": {
+        "variable": "realised_off_possessions",
+        "n": 18165,
+        "min": 1.0,
+        "max": 95.0,
+        "mean": 42.67184145334434,
+        "sd": 21.20519402477237,
+        "cv": 0.4969364644822574,
+        "max_over_min": 95.0,
+        "p01": 2.0,
+        "p99": 81.0,
+        "n_zero": 0,
+        "uniform": false
+      }
+    },
+    "response": {
+      "E1": {
+        "variable": "turnovers_per_100_off_poss",
+        "n": 18165,
+        "mean": 3.3957202682762673,
+        "sd": 3.98838695093429,
+        "mean_over_sd": 0.8514019101082484,
+        "weighted_mean": 3.30097763741495,
+        "min": 0.0,
+        "max": 66.66666666666667,
+        "frac_zero": 0.3153316818056702,
+        "centered": false
+      },
+      "E0": {
+        "variable": "turnovers_per_100_off_poss",
+        "n": 18165,
+        "mean": 3.3957202682762673,
+        "sd": 3.98838695093429,
+        "mean_over_sd": 0.8514019101082484,
+        "weighted_mean": 3.30097763741495,
+        "min": 0.0,
+        "max": 66.66666666666667,
+        "frac_zero": 0.3153316818056702,
+        "centered": false
+      },
+      "corr_y_sqrtw_E1": -0.04963223526203639,
+      "corr_y_sqrtw_E0": -0.04963223526203639
+    },
+    "mechanism_checks": {
+      "ratio_with_uniform_weights": 1.0,
+      "ratio_with_centered_response_real_weights": 0.9993107651250942,
+      "ratio_actual": 0.924644206993403,
+      "interpretation": "The defect vanishes (ratio 1.0) if EITHER weights are uniform OR the response is centered. Both are present here: w is possessions (dispersed) and y is a strictly-positive rate with a large mean-to-sd ratio."
+    },
+    "reading": "w = realised_off_possessions: min 1, max 95, mean 42.67, sd 21.21, CV 0.497, max/min 95x -- HEAVILY DISPERSED. y = turnovers_per_100_off_poss: mean 3.3957, sd 3.9884, mean/sd 0.8514, strictly non-negative -- NOT CENTERED. Both governing factors of the D069 defect are present, so a non-zero conservative bias is expected."
+  },
+  "analytic_prediction_vs_measurement": {
+    "prediction_rule": "Because SSE is identical under both conventions, dR2_defective/dR2_standard equals SST_standard/SST_defective EXACTLY, for every model comparison fitted on the same rows. SST_standard = sum(w*(y-mu_w)^2); SST_defective = sum((sqrt(w)*y - mean(sqrt(w)*y))^2).",
+    "predicted_before_measuring": {
+      "pooled_ratio_standard_over_defective": 0.924644206993403,
+      "pooled_predicted_bias_pct": -7.5355793006597,
+      "per_season_predicted_bias_pct": {
+        "2021": -5.770599,
+        "2022": -5.236181,
+        "2023": -8.775505,
+        "2024": -9.758531
+      }
+    },
+    "measured": {
+      "pooled_measured_bias_pct": -7.535579,
+      "per_season_measured_bias_pct": {
+        "2021": -5.770599,
+        "2022": -5.236181,
+        "2023": -8.775505,
+        "2024": -9.758531
+      }
+    },
+    "max_abs_discrepancy_prediction_vs_measurement_pct": 5.04e-12,
+    "inside_predicted_0_to_25_pct_band": true,
+    "verdict": "EXACT MATCH to ~5e-12 percentage points. The mechanism is confirmed: the discrepancy is a pure denominator effect governed by weight dispersion and response non-centering.",
+    "caveat_on_D069_wording": "D069 states a centered response gives a ratio of EXACTLY 1.0000. Measured here, centering y at its UNWEIGHTED mean gives 0.99931, not 1.0. Exact cancellation needs BOTH sum(w*y)=0 and sum(sqrt(w)*y)=0; centering delivers only the second-moment condition approximately, via corr(y, sqrt(w)) = -0.0496. Uniform weights DO give exactly 1.0000000000. So of the two stated escape hatches, only the uniform-weight one is exact."
+  },
+  "reproduction": {
+    "E0_published_reproduced_with_the_defective_helper_verbatim": true,
+    "E0_max_abs_delta": 3.926836525010302e-07,
+    "E1_published_reproduced_with_its_own_helper_verbatim": true,
+    "E1_max_abs_delta": 4.745772301476686e-07,
+    "note": "Both maxima sit at ~4e-7, which is the rounding granularity of the 6-decimal figures printed in the frozen run logs. Reproduction is exact to the precision at which the numbers were published, so every later difference is attributable to the convention change and not to this harness.",
+    "headline_check": {
+      "quantity": "E1 walk-forward mean dR2, M_B_plus_venue",
+      "published": 0.004003,
+      "reproduced": 0.0040030902585571505,
+      "abs_delta": 9.025855715084907e-08
+    }
+  },
+  "three_column_comparison_table": {
+    "column_definitions": {
+      "as_published": "the number the frozen screen actually printed, together with which convention produced it",
+      "defective_weighted": "1 - SSE_w / sum((sqrt(w)*y - mean(sqrt(w)*y))^2)  [E0's wls_r2]",
+      "standard_weighted": "1 - sum(w*r^2) / sum(w*(y - mu_w)^2), mu_w = sum(w*y)/sum(w)",
+      "plain_unweighted_ols": "ADOPTED. Unweighted OLS fit; R2 = 1 - SSE/SST with SST about the UNWEIGHTED mean. Out-of-sample: fit on train unweighted, SST about the TRAIN unweighted mean."
+    },
+    "E0_screen_published_numbers_are_defective": {
+      "E0_rung1_pooled_dR2": {
+        "published": 0.008424,
+        "reproduced_defective": 0.008424166509957809,
+        "abs_repro_delta": 1.6650995780971567e-07,
+        "standard_weighted": 0.009110711391736137,
+        "plain_unweighted_ols": 0.005079334007712322,
+        "realised_bias_pct_vs_standard": -7.535579300657669,
+        "ratio_defective_over_standard": 0.9246442069934233,
+        "beta_plain_ols": 0.1621153789006773,
+        "n": 18165
+      },
+      "E0_rung2_pooled_dR2": {
+        "published": 0.006505,
+        "reproduced_defective": 0.006504607316347499,
+        "abs_repro_delta": 3.926836525010302e-07,
+        "standard_weighted": 0.007034713749516919,
+        "plain_unweighted_ols": 0.004045643164564794,
+        "realised_bias_pct_vs_standard": -7.535579300661988,
+        "ratio_defective_over_standard": 0.9246442069933801,
+        "beta_plain_ols": 0.13013168880063175,
+        "n": 18165
+      },
+      "E0_rung2_2021_dR2": {
+        "published": 0.015038,
+        "reproduced_defective": 0.015038283234160565,
+        "abs_repro_delta": 2.832341605661648e-07,
+        "standard_weighted": 0.015959226174564023,
+        "plain_unweighted_ols": 0.012865864686886774,
+        "realised_bias_pct_vs_standard": -5.770598964699591,
+        "ratio_defective_over_standard": 0.9422940103530041,
+        "beta_plain_ols": 0.19355162398325132,
+        "n": 3878
+      },
+      "E0_rung2_2022_dR2": {
+        "published": 0.005329,
+        "reproduced_defective": 0.0053293516317235445,
+        "abs_repro_delta": 3.516317235441324e-07,
+        "standard_weighted": 0.005623825296141471,
+        "plain_unweighted_ols": 0.0029946750109561826,
+        "realised_bias_pct_vs_standard": -5.236180871762974,
+        "ratio_defective_over_standard": 0.9476381912823703,
+        "beta_plain_ols": 0.1110464633372018,
+        "n": 4508
+      },
+      "E0_rung2_2023_dR2": {
+        "published": 0.002279,
+        "reproduced_defective": 0.0022793227881139355,
+        "abs_repro_delta": 3.2278811393530657e-07,
+        "standard_weighted": 0.00249858635572231,
+        "plain_unweighted_ols": 0.0009730806301315731,
+        "realised_bias_pct_vs_standard": -8.77550488123865,
+        "ratio_defective_over_standard": 0.9122449511876135,
+        "beta_plain_ols": 0.08901408912633108,
+        "n": 4886
+      },
+      "E0_rung2_2024_dR2": {
+        "published": 0.006121,
+        "reproduced_defective": 0.006120760548607662,
+        "abs_repro_delta": 2.394513923375391e-07,
+        "standard_weighted": 0.006782647297314814,
+        "plain_unweighted_ols": 0.0033043240183110445,
+        "realised_bias_pct_vs_standard": -9.758531141213656,
+        "ratio_defective_over_standard": 0.9024146885878634,
+        "beta_plain_ols": 0.11634866809309086,
+        "n": 4893
+      },
+      "E0_rung1_dR2_defrtg_controlled": {
+        "published": 0.007528640760799399,
+        "reproduced_defective": 0.007528640760799399,
+        "abs_repro_delta": 0.0,
+        "standard_weighted": 0.008142202918547281,
+        "plain_unweighted_ols": 0.004920073140508796,
+        "realised_bias_pct_vs_standard": -7.53557930066121,
+        "ratio_defective_over_standard": 0.9246442069933879,
+        "beta_plain_ols": 0.1744180002087181,
+        "n": 18165
+      },
+      "E0_rung2_dR2_defrtg_controlled": {
+        "published": 0.005696485508333349,
+        "reproduced_defective": 0.005696485508333349,
+        "abs_repro_delta": 0.0,
+        "standard_weighted": 0.006160732382519352,
+        "plain_unweighted_ols": 0.0037465413449322416,
+        "realised_bias_pct_vs_standard": -7.535579300657025,
+        "ratio_defective_over_standard": 0.9246442069934298,
+        "beta_plain_ols": 0.13601947224195002,
+        "n": 18165
+      }
+    },
+    "E1_screen_in_sample_published_numbers_are_standard_weighted": {
+      "E1_insample_M_A_E0_replication_pooled_dR2": {
+        "published": 0.007035,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.007034713749516919,
+        "abs_repro_delta": 2.86250483080841e-07,
+        "defective_weighted": 0.006504607316347499,
+        "standard_weighted": 0.007034713749516919,
+        "plain_unweighted_ols": 0.004045643164564794,
+        "realised_bias_pct_defective_vs_standard": -7.535579300661988,
+        "change_pct_plain_vs_standard": -42.49029443674787,
+        "beta_plain_ols": 0.13013168880063175,
+        "n": 18165
+      },
+      "E1_insample_M_B_plus_venue_pooled_dR2": {
+        "published": 0.007045,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.007045210624633369,
+        "abs_repro_delta": 2.1062463336895404e-07,
+        "defective_weighted": 0.006514313191115617,
+        "standard_weighted": 0.007045210624633369,
+        "plain_unweighted_ols": 0.004055950774982331,
+        "realised_bias_pct_defective_vs_standard": -7.535579300659723,
+        "change_pct_plain_vs_standard": -42.42967327618538,
+        "beta_plain_ols": 0.1303014520957101,
+        "n": 18165
+      },
+      "E1_insample_M_C_plus_schedule_balance_pooled_dR2": {
+        "published": 0.007013,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.0070129491360071405,
+        "abs_repro_delta": 5.0863992859598306e-08,
+        "defective_weighted": 0.006484482792548318,
+        "standard_weighted": 0.0070129491360071405,
+        "plain_unweighted_ols": 0.004026755084690192,
+        "realised_bias_pct_defective_vs_standard": -7.535579300660766,
+        "change_pct_plain_vs_standard": -42.581145155961494,
+        "beta_plain_ols": 0.13005310492876077,
+        "n": 18165
+      },
+      "E1_insample_M_D_plus_opp_defrtg_pooled_dR2": {
+        "published": 0.005999,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.005999005482976383,
+        "abs_repro_delta": 5.482976382815974e-09,
+        "defective_weighted": 0.005546945667556091,
+        "standard_weighted": 0.005999005482976383,
+        "plain_unweighted_ols": 0.0036810641910164366,
+        "realised_bias_pct_defective_vs_standard": -7.535579300654415,
+        "change_pct_plain_vs_standard": -38.63875934998994,
+        "beta_plain_ols": 0.13582708224498183,
+        "n": 18165
+      },
+      "E1_insample_M_E_pregame_baseline_pooled_dR2": {
+        "published": 0.006765,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.006765422986286795,
+        "abs_repro_delta": 4.229862867952128e-07,
+        "defective_weighted": 0.006255609172129861,
+        "standard_weighted": 0.006765422986286795,
+        "plain_unweighted_ols": 0.003969752542045568,
+        "realised_bias_pct_defective_vs_standard": -7.535579300663143,
+        "change_pct_plain_vs_standard": -41.322921713955274,
+        "beta_plain_ols": 0.12891592121226214,
+        "n": 18165
+      },
+      "E1_insample_M_F_pregame_full_control_pooled_dR2": {
+        "published": 0.005649,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.005649369404458038,
+        "abs_repro_delta": 3.694044580374381e-07,
+        "defective_weighted": 0.005223656692997958,
+        "standard_weighted": 0.005649369404458038,
+        "plain_unweighted_ols": 0.00356609474628089,
+        "realised_bias_pct_defective_vs_standard": -7.535579300658601,
+        "change_pct_plain_vs_standard": -36.876233594021855,
+        "beta_plain_ols": 0.1336945383087767,
+        "n": 18165
+      }
+    },
+    "E1_screen_in_sample_M_A_per_season": {
+      "2021": {
+        "defective_weighted": 0.015038283234160565,
+        "standard_weighted": 0.015959226174564023,
+        "plain_unweighted_ols": 0.012865864686886774,
+        "realised_bias_pct": -5.770598964699591,
+        "n": 3878
+      },
+      "2022": {
+        "defective_weighted": 0.0053293516317235445,
+        "standard_weighted": 0.005623825296141471,
+        "plain_unweighted_ols": 0.0029946750109561826,
+        "realised_bias_pct": -5.236180871762974,
+        "n": 4508
+      },
+      "2023": {
+        "defective_weighted": 0.0022793227881139355,
+        "standard_weighted": 0.00249858635572231,
+        "plain_unweighted_ols": 0.0009730806301315731,
+        "realised_bias_pct": -8.77550488123865,
+        "n": 4886
+      },
+      "2024": {
+        "defective_weighted": 0.006120760548607662,
+        "standard_weighted": 0.006782647297314814,
+        "plain_unweighted_ols": 0.0033043240183110445,
+        "realised_bias_pct": -9.758531141213656,
+        "n": 4893
+      }
+    },
+    "E1_screen_out_of_sample_published_numbers_are_standard_weighted": {
+      "E1_oos_loso_mean_M_B_plus_venue": {
+        "published": 0.007071,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.007070672502987973,
+        "abs_repro_delta": 3.274970120266396e-07,
+        "defective_weighted": 0.006586871366992802,
+        "standard_weighted": 0.007070672502987973,
+        "plain_unweighted_ols": 0.003949436069858261,
+        "realised_bias_pct_defective_vs_standard": -6.842363803311824,
+        "change_pct_plain_vs_standard": -44.14341679395727,
+        "folds_standard_weighted": {
+          "loso_2021": 0.014195007173963362,
+          "loso_2022": 0.005358764025718554,
+          "loso_2023": 0.002193212116680364,
+          "loso_2024": 0.006535706695589616
+        },
+        "folds_plain_unweighted_ols": {
+          "loso_2021": 0.009599957711691722,
+          "loso_2022": 0.002922343578181871,
+          "loso_2023": 0.0006899500069182423,
+          "loso_2024": 0.0025854929826412106
+        },
+        "folds_defective": {
+          "loso_2021": 0.013375976646831354,
+          "loso_2022": 0.005075137855753673,
+          "loso_2023": 0.0020002687525833927,
+          "loso_2024": 0.005896102212802789
+        },
+        "sd_standard_weighted": 0.005091253394260076,
+        "sd_plain_unweighted_ols": 0.003893066655433894,
+        "all_positive_standard": true,
+        "all_positive_plain": true
+      },
+      "E1_oos_wf_mean_M_B_plus_venue": {
+        "published": 0.004003,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.0040030902585571505,
+        "abs_repro_delta": 9.025855715084907e-08,
+        "defective_weighted": 0.003668141214028324,
+        "standard_weighted": 0.0040030902585571505,
+        "plain_unweighted_ols": 0.0008498311796311047,
+        "realised_bias_pct_defective_vs_standard": -8.36726186257798,
+        "change_pct_plain_vs_standard": -78.77062157630658,
+        "folds_standard_weighted": {
+          "wf_train<=2021_test_2022": 0.0032762865470149444,
+          "wf_train<=2022_test_2023": 0.0021972775330668906,
+          "wf_train<=2023_test_2024": 0.006535706695589616
+        },
+        "folds_plain_unweighted_ols": {
+          "wf_train<=2021_test_2022": -0.0006944288842592974,
+          "wf_train<=2022_test_2023": 0.0006584294405114009,
+          "wf_train<=2023_test_2024": 0.0025854929826412106
+        },
+        "folds_defective": {
+          "wf_train<=2021_test_2022": 0.00310535769746161,
+          "wf_train<=2022_test_2023": 0.0020029637318205737,
+          "wf_train<=2023_test_2024": 0.005896102212802789
+        },
+        "sd_standard_weighted": 0.0022586886961001407,
+        "sd_plain_unweighted_ols": 0.001648316666343747,
+        "all_positive_standard": true,
+        "all_positive_plain": false
+      },
+      "E1_oos_loso_mean_M_D_plus_opp_defrtg": {
+        "published": 0.006297,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.006296897903943308,
+        "abs_repro_delta": 1.0209605669133509e-07,
+        "defective_weighted": 0.005885049417387151,
+        "standard_weighted": 0.006296897903943308,
+        "plain_unweighted_ols": 0.0037294976623625975,
+        "realised_bias_pct_defective_vs_standard": -6.540498080781099,
+        "change_pct_plain_vs_standard": -40.772460991831025,
+        "folds_standard_weighted": {
+          "loso_2021": 0.013425676902591669,
+          "loso_2022": 0.005763041162665598,
+          "loso_2023": 0.00195541095018778,
+          "loso_2024": 0.004043462600328187
+        },
+        "folds_plain_unweighted_ols": {
+          "loso_2021": 0.009029193945323715,
+          "loso_2022": 0.0033061815972641206,
+          "loso_2023": 0.0011419979533975962,
+          "loso_2024": 0.0014406171534649592
+        },
+        "folds_defective": {
+          "loso_2021": 0.012651035573011874,
+          "loso_2022": 0.005458017600427733,
+          "loso_2023": 0.0017833876588463384,
+          "loso_2024": 0.003647756837262656
+        },
+        "sd_standard_weighted": 0.005001032315731957,
+        "sd_plain_unweighted_ols": 0.0036606058656324376,
+        "all_positive_standard": true,
+        "all_positive_plain": true
+      },
+      "E1_oos_wf_mean_M_D_plus_opp_defrtg": {
+        "published": 0.00327,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.0032695702412141882,
+        "abs_repro_delta": 4.2975878581166804e-07,
+        "defective_weighted": 0.0030215372159364353,
+        "standard_weighted": 0.0032695702412141882,
+        "plain_unweighted_ols": 0.0007669164918945983,
+        "realised_bias_pct_defective_vs_standard": -7.5861048082467075,
+        "change_pct_plain_vs_standard": -76.54381354994851,
+        "folds_standard_weighted": {
+          "wf_train<=2021_test_2022": 0.004452274000259336,
+          "wf_train<=2022_test_2023": 0.0013129741230550403,
+          "wf_train<=2023_test_2024": 0.004043462600328187
+        },
+        "folds_plain_unweighted_ols": {
+          "wf_train<=2021_test_2022": -9.459857944992143e-05,
+          "wf_train<=2022_test_2023": 0.0009547309016687571,
+          "wf_train<=2023_test_2024": 0.0014406171534649592
+        },
+        "folds_defective": {
+          "wf_train<=2021_test_2022": 0.004219992097611374,
+          "wf_train<=2022_test_2023": 0.0011968627129352756,
+          "wf_train<=2023_test_2024": 0.003647756837262656
+        },
+        "sd_standard_weighted": 0.00170674631019815,
+        "sd_plain_unweighted_ols": 0.0007846512129834856,
+        "all_positive_standard": true,
+        "all_positive_plain": false
+      },
+      "E1_oos_loso_mean_M_E_pregame_baseline": {
+        "published": 0.006731,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.006730525422769852,
+        "abs_repro_delta": 4.745772301476686e-07,
+        "defective_weighted": 0.006272498892533259,
+        "standard_weighted": 0.006730525422769852,
+        "plain_unweighted_ols": 0.0038081336679994587,
+        "realised_bias_pct_defective_vs_standard": -6.805212096622604,
+        "change_pct_plain_vs_standard": -43.41996458231525,
+        "folds_standard_weighted": {
+          "loso_2021": 0.013658142436891322,
+          "loso_2022": 0.005267048710666266,
+          "loso_2023": 0.0017514866937681226,
+          "loso_2024": 0.006245423849753698
+        },
+        "folds_plain_unweighted_ols": {
+          "loso_2021": 0.009546374610094792,
+          "loso_2022": 0.0029392811684810912,
+          "loso_2023": 0.0004316835383990515,
+          "loso_2024": 0.0023151953550229003
+        },
+        "folds_defective": {
+          "loso_2021": 0.012870088196224965,
+          "loso_2022": 0.004988276806239214,
+          "loso_2023": 0.0015974032230921514,
+          "loso_2024": 0.005634227344576708
+        },
+        "sd_standard_weighted": 0.005005323558714151,
+        "sd_plain_unweighted_ols": 0.0039712128315117345,
+        "all_positive_standard": true,
+        "all_positive_plain": true
+      },
+      "E1_oos_wf_mean_M_E_pregame_baseline": {
+        "published": 0.003479,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.003478958014508683,
+        "abs_repro_delta": 4.198549131669352e-08,
+        "defective_weighted": 0.0031808429368956454,
+        "standard_weighted": 0.003478958014508683,
+        "plain_unweighted_ols": 0.0004526265969271186,
+        "realised_bias_pct_defective_vs_standard": -8.56909098557026,
+        "change_pct_plain_vs_standard": -86.98959300343724,
+        "folds_standard_weighted": {
+          "wf_train<=2021_test_2022": 0.0024134528251522334,
+          "wf_train<=2022_test_2023": 0.001777997368620118,
+          "wf_train<=2023_test_2024": 0.006245423849753698
+        },
+        "folds_plain_unweighted_ols": {
+          "wf_train<=2021_test_2022": -0.0013574440608424942,
+          "wf_train<=2022_test_2023": 0.00040012849660094957,
+          "wf_train<=2023_test_2024": 0.0023151953550229003
+        },
+        "folds_defective": {
+          "wf_train<=2021_test_2022": 0.0022875393224916145,
+          "wf_train<=2022_test_2023": 0.001620762143618613,
+          "wf_train<=2023_test_2024": 0.005634227344576708
+        },
+        "sd_standard_weighted": 0.00241680591328566,
+        "sd_plain_unweighted_ols": 0.0018368824425219537,
+        "all_positive_standard": true,
+        "all_positive_plain": false
+      },
+      "E1_oos_loso_mean_M_F_pregame_full_control": {
+        "published": 0.005908,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.005908037935098305,
+        "abs_repro_delta": 3.7935098304818504e-08,
+        "defective_weighted": 0.005526231276978571,
+        "standard_weighted": 0.005908037935098305,
+        "plain_unweighted_ols": 0.003580847960582477,
+        "realised_bias_pct_defective_vs_standard": -6.4624950332750615,
+        "change_pct_plain_vs_standard": -39.390234119698576,
+        "folds_standard_weighted": {
+          "loso_2021": 0.012671316765709189,
+          "loso_2022": 0.00579406276284345,
+          "loso_2023": 0.0016370891810514887,
+          "loso_2024": 0.0035296830307890922
+        },
+        "folds_plain_unweighted_ols": {
+          "loso_2021": 0.008894150917728024,
+          "loso_2022": 0.0034387446108231847,
+          "loso_2023": 0.0009648298942559094,
+          "loso_2024": 0.0010256664195227915
+        },
+        "folds_defective": {
+          "loso_2021": 0.011940200879476228,
+          "loso_2022": 0.005487397303779675,
+          "loso_2023": 0.0014930695983050087,
+          "loso_2024": 0.003184257326353372
+        },
+        "sd_standard_weighted": 0.004818454323086937,
+        "sd_plain_unweighted_ols": 0.003724866212700065,
+        "all_positive_standard": true,
+        "all_positive_plain": true
+      },
+      "E1_oos_wf_mean_M_F_pregame_full_control": {
+        "published": 0.002795,
+        "published_convention": "standard_weighted",
+        "reproduced_published_convention": 0.0027948873121937793,
+        "abs_repro_delta": 1.1268780622086111e-07,
+        "defective_weighted": 0.002583544152998583,
+        "standard_weighted": 0.0027948873121937793,
+        "plain_unweighted_ols": 0.0004132110531788567,
+        "realised_bias_pct_defective_vs_standard": -7.5617774739299755,
+        "change_pct_plain_vs_standard": -85.21546642055789,
+        "folds_standard_weighted": {
+          "wf_train<=2021_test_2022": 0.0038811831268098155,
+          "wf_train<=2022_test_2023": 0.0009737957789824315,
+          "wf_train<=2023_test_2024": 0.0035296830307890922
+        },
+        "folds_plain_unweighted_ols": {
+          "wf_train<=2021_test_2022": -0.000510795964917326,
+          "wf_train<=2022_test_2023": 0.0007247627049311047,
+          "wf_train<=2023_test_2024": 0.0010256664195227915
+        },
+        "folds_defective": {
+          "wf_train<=2021_test_2022": 0.0036786959031645428,
+          "wf_train<=2022_test_2023": 0.000887679229477834,
+          "wf_train<=2023_test_2024": 0.003184257326353372
+        },
+        "sd_standard_weighted": 0.0015868739265065103,
+        "sd_plain_unweighted_ols": 0.0008142342958154111,
+        "all_positive_standard": true,
+        "all_positive_plain": false
+      }
+    }
+  },
+  "headline_three_ways": {
+    "quantity": "I0009 walk-forward mean dR2 (train<=t, test t+1; 2021-2024)",
+    "M_B_plus_venue (retrospective LOO baseline, AS PUBLISHED)": {
+      "as_published_standard_weighted": 0.004003,
+      "defective_weighted": 0.003668141214028324,
+      "plain_unweighted_ols_ADOPTED": 0.0008498311796311047,
+      "change_pct_adopted_vs_published": -78.77062157630658
+    },
+    "M_F_pregame_full_control (prior-games-only baseline, the FORECASTING-HONEST one)": {
+      "as_published_standard_weighted": 0.002795,
+      "defective_weighted": 0.002583544152998583,
+      "plain_unweighted_ols_ADOPTED": 0.0004132110531788567,
+      "change_pct_adopted_vs_published": -85.21546642055789
+    }
+  },
+  "retrospective_baseline_audit": {
+    "predictor_under_test": {
+      "name": "opponent_pressure_pregame",
+      "construction": "pressure_lib_e1.PregameTeamPressure.lookup -> _PrefixIndex.prefix with np.searchsorted(dates, date_ns, side='left'), i.e. expanding over the opponent's games STRICTLY BEFORE this game's date, shrunk (K=200 poss) toward the prior-season team rate or the season league mean",
+      "reads_future": false,
+      "verdict": "PRIOR-GAMES-ONLY -- clean"
+    },
+    "other_controls": {
+      "opp_prior_home_share": {
+        "construction": "cumsum of def_is_home MINUS own row / cumcount",
+        "reads_future": false
+      },
+      "opponent_defrtg_pregame": {
+        "construction": "same PregameTeamPressure machinery on def_pts_allowed",
+        "reads_future": false
+      },
+      "player_is_home": {
+        "construction": "schedule fact, known pregame",
+        "reads_future": false
+      }
+    },
+    "baselines": {
+      "player_tendency_loo": {
+        "construction": "build_data.py 164-170: season_tov/season_poss over ALL games in the season, minus this game's own tallies (full-season leave-one-out)",
+        "reads_future": true,
+        "verdict": "RETROSPECTIVE -- named in constraint 3 as a known offender; confirmed by reading",
+        "used_by": [
+          "M_A_E0_replication",
+          "M_B_plus_venue",
+          "M_C_plus_schedule_balance",
+          "M_D_plus_opp_defrtg",
+          "E0 rung-1 and rung-2 (ALL E0 published numbers)"
+        ],
+        "carries_headline": true,
+        "headline_note": "the +0.004003 walk-forward figure is M_B, whose baseline is player_tendency_loo"
+      },
+      "player_tendency_pregame": {
+        "construction": "pressure_lib_e1.PregamePlayerTendency: expanding strictly-before-date, shrunk (K=100 poss) toward prior-season player rate or season league mean",
+        "reads_future": false,
+        "verdict": "PRIOR-GAMES-ONLY -- clean",
+        "used_by": [
+          "M_E_pregame_baseline",
+          "M_F_pregame_full_control"
+        ]
+      }
+    },
+    "empirical_probe": {
+      "probe": "correlate each baseline with the player's OWN strictly-after-date season rate",
+      "n_rows_with_future": 17544,
+      "corr_loo_with_future": 0.6455271556174542,
+      "corr_pregame_with_future": 0.3647336854631414,
+      "dr2_of_loo_over_pregame_predicting_the_future": 0.33187982919127434,
+      "conclusion": "player_tendency_loo predicts the player's unplayed future far better than the pregame baseline does, which is only possible because it contains it."
+    },
+    "overall": "The PREDICTOR under test is clean (prior games only). The BASELINE that carries the headline is retrospective. E1 anticipated this and shipped a fully-pregame variant (M_E/M_F); those, not M_A/M_B, are the forecasting-honest numbers. The headline +0.004003 is NOT a forecasting increment because its baseline reads the future."
+  },
+  "permutation_nulls": {
+    "grouping_level": {
+      "predictor": "opponent_pressure_pregame",
+      "varies_at": "OPPONENT-TEAM x GAME-DATE (a team-game level quantity broadcast to every player row)",
+      "n_rows": 18165,
+      "n_distinct_opponent_teams_per_season": 12,
+      "n_distinct_values_pooled": 1927,
+      "n_distinct_opponent_team_game_cells": 1940,
+      "note": "Row-level shuffling destroys the team-game clustering and gives an ANTI-CONSERVATIVE null. The team-identity derangement is the correct level: it swaps WHICH team's already-computed pregame value each row receives, preserving the 12-teams-per-season coarseness and the within-team-game repetition."
+    },
+    "plain_unweighted_ols": {
+      "team_identity_derangement_CORRECT_LEVEL__insample_M_A": {
+        "n_draws": 200,
+        "mean": 0.00020339267231647197,
+        "sd": 0.0002565846667586117,
+        "median": 8.871468490007084e-05,
+        "p95": 0.0007230279184959596,
+        "max": 0.0015084638889694135,
+        "real": 0.004045643164564794,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 2.681962222727644,
+        "real_z_vs_null": 14.974591197466266,
+        "sd_raw": "0.0002565846667586117",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "team_identity_derangement_CORRECT_LEVEL__insample_M_B": {
+        "n_draws": 200,
+        "mean": 0.00020386631239585672,
+        "sd": 0.0002568190236528859,
+        "median": 9.002253256507053e-05,
+        "p95": 0.0007228643883011407,
+        "max": 0.0015037960463778477,
+        "real": 0.004055950774982331,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 2.6971415337550515,
+        "real_z_vs_null": 14.999217767422534,
+        "sd_raw": "0.0002568190236528859",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "team_identity_derangement_CORRECT_LEVEL__insample_M_F": {
+        "n_draws": 200,
+        "mean": 0.00021196953294592147,
+        "sd": 0.0002558149506658779,
+        "median": 0.00011112724985778977,
+        "p95": 0.0007061226231157556,
+        "max": 0.0014193107003261929,
+        "real": 0.00356609474628089,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 2.512553978111567,
+        "real_z_vs_null": 13.111529269905029,
+        "sd_raw": "0.0002558149506658779",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "team_identity_derangement_CORRECT_LEVEL__wf_mean_M_B": {
+        "n_draws": 200,
+        "mean": -0.00048112392889321833,
+        "sd": 0.0006540323386585783,
+        "median": -0.0003044180715508868,
+        "p95": 0.0002507711556300311,
+        "max": 0.0008098091639725,
+        "real": 0.0008498311796311047,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 1.0494215395912263,
+        "real_z_vs_null": 2.03499892872899,
+        "sd_raw": "0.0006540323386585783",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "team_identity_derangement_CORRECT_LEVEL__wf_mean_M_F": {
+        "n_draws": 200,
+        "mean": -0.0005424701278361952,
+        "sd": 0.0007124685110683772,
+        "median": -0.00033492849730283397,
+        "p95": 0.00028450976692624095,
+        "max": 0.0008224518826783685,
+        "real": 0.0004132110531788567,
+        "n_draws_ge_real": 7,
+        "p_empirical": 0.035,
+        "real_over_placebo_max": 0.5024136510371984,
+        "real_z_vs_null": 1.3413662023911297,
+        "sd_raw": "0.0007124685110683772",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "team_identity_derangement_CORRECT_LEVEL__loso_mean_M_B": {
+        "n_draws": 200,
+        "mean": -0.00016123147503006432,
+        "sd": 0.0004398198712771359,
+        "median": -0.00011426611874295334,
+        "p95": 0.0004996890120930584,
+        "max": 0.0010064656604902608,
+        "real": 0.003949436069858261,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 3.924064401694983,
+        "real_z_vs_null": 9.346252439554155,
+        "sd_raw": "0.0004398198712771359",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "team_identity_derangement_CORRECT_LEVEL__loso_mean_M_F": {
+        "n_draws": 200,
+        "mean": -0.00013945625703027476,
+        "sd": 0.00043534054326271567,
+        "median": -0.00010556760036178428,
+        "p95": 0.0005380216098146512,
+        "max": 0.0011045255367150635,
+        "real": 0.003580847960582477,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 3.2419784256253323,
+        "real_z_vs_null": 8.54573339237015,
+        "sd_raw": "0.00043534054326271567",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "row_shuffle_WRONG_LEVEL__insample_M_A": {
+        "n_draws": 200,
+        "mean": 4.290528383883663e-05,
+        "sd": 7.337997053830709e-05,
+        "median": 1.9330866329603236e-05,
+        "p95": 0.0001905250542871271,
+        "max": 0.0005307907612835949,
+        "real": 0.004045643164564794,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 7.6219170710155915,
+        "real_z_vs_null": 54.54809877085435,
+        "sd_raw": "7.337997053830709e-05",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "row_shuffle_WRONG_LEVEL__insample_M_B": {
+        "n_draws": 200,
+        "mean": 4.294905217868683e-05,
+        "sd": 7.348461290037037e-05,
+        "median": 1.8866341039314172e-05,
+        "p95": 0.00019091484015540378,
+        "max": 0.0005392150513233718,
+        "real": 0.004055950774982331,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 7.521953931048455,
+        "real_z_vs_null": 54.61009542561553,
+        "sd_raw": "7.348461290037037e-05",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "row_shuffle_WRONG_LEVEL__insample_M_F": {
+        "n_draws": 200,
+        "mean": 4.3107999718793865e-05,
+        "sd": 7.660347139641806e-05,
+        "median": 1.6743017898002144e-05,
+        "p95": 0.00017083873841828844,
+        "max": 0.0005720413937021496,
+        "real": 0.00356609474628089,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 6.233980242586577,
+        "real_z_vs_null": 45.98990988712333,
+        "sd_raw": "7.660347139641806e-05",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "row_shuffle_WRONG_LEVEL__wf_mean_M_B": {
+        "n_draws": 200,
+        "mean": -0.00013159416251440974,
+        "sd": 0.0002065654758691296,
+        "median": -7.730686676400749e-05,
+        "p95": 7.793800108177506e-05,
+        "max": 0.00040848611509770394,
+        "real": 0.0008498311796311047,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 2.0804407988943208,
+        "real_z_vs_null": 4.751158624238352,
+        "sd_raw": "0.0002065654758691296",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "row_shuffle_WRONG_LEVEL__wf_mean_M_F": {
+        "n_draws": 200,
+        "mean": -0.000133339059579594,
+        "sd": 0.00020661024967895953,
+        "median": -8.917691620077448e-05,
+        "p95": 8.549402289765586e-05,
+        "max": 0.000487915919356225,
+        "real": 0.0004132110531788567,
+        "n_draws_ge_real": 2,
+        "p_empirical": 0.01,
+        "real_over_placebo_max": 0.8468898775101728,
+        "real_z_vs_null": 2.6453194534526014,
+        "sd_raw": "0.00020661024967895953",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "row_shuffle_WRONG_LEVEL__loso_mean_M_B": {
+        "n_draws": 200,
+        "mean": -9.83643861368165e-05,
+        "sd": 0.00014340965464581634,
+        "median": -8.302241050695371e-05,
+        "p95": 5.8796469738149146e-05,
+        "max": 0.0005491209368592956,
+        "real": 0.003949436069858261,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 7.192288264306789,
+        "real_z_vs_null": 28.22543897753653,
+        "sd_raw": "0.00014340965464581634",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "row_shuffle_WRONG_LEVEL__loso_mean_M_F": {
+        "n_draws": 200,
+        "mean": -0.00010124250317635878,
+        "sd": 0.00014761879788985626,
+        "median": -8.414297277065371e-05,
+        "p95": 6.59806717753684e-05,
+        "max": 0.0006049738602543997,
+        "real": 0.003580847960582477,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0,
+        "real_over_placebo_max": 5.919012697634047,
+        "real_z_vs_null": 24.943235660990663,
+        "sd_raw": "0.00014761879788985626",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": false
+      },
+      "noop_defective_placebo_POSITIVE_DIAGNOSTIC__insample_M_A": {
+        "n_draws": 25,
+        "mean": 0.004045643164564794,
+        "sd": 0.0,
+        "median": 0.004045643164564794,
+        "p95": 0.004045643164564794,
+        "max": 0.004045643164564794,
+        "real": 0.004045643164564794,
+        "n_draws_ge_real": 25,
+        "p_empirical": 1.0,
+        "real_over_placebo_max": 1.0,
+        "real_z_vs_null": null,
+        "sd_raw": "0.0",
+        "degenerate_sd_exactly_zero": true,
+        "degenerate_sd_at_float_noise": true
+      },
+      "noop_defective_placebo_POSITIVE_DIAGNOSTIC__insample_M_B": {
+        "n_draws": 25,
+        "mean": 0.004055950774982331,
+        "sd": 0.0,
+        "median": 0.004055950774982331,
+        "p95": 0.004055950774982331,
+        "max": 0.004055950774982331,
+        "real": 0.004055950774982331,
+        "n_draws_ge_real": 25,
+        "p_empirical": 1.0,
+        "real_over_placebo_max": 1.0,
+        "real_z_vs_null": null,
+        "sd_raw": "0.0",
+        "degenerate_sd_exactly_zero": true,
+        "degenerate_sd_at_float_noise": true
+      },
+      "noop_defective_placebo_POSITIVE_DIAGNOSTIC__insample_M_F": {
+        "n_draws": 25,
+        "mean": 0.00356609474628089,
+        "sd": 0.0,
+        "median": 0.00356609474628089,
+        "p95": 0.00356609474628089,
+        "max": 0.00356609474628089,
+        "real": 0.00356609474628089,
+        "n_draws_ge_real": 25,
+        "p_empirical": 1.0,
+        "real_over_placebo_max": 1.0,
+        "real_z_vs_null": null,
+        "sd_raw": "0.0",
+        "degenerate_sd_exactly_zero": true,
+        "degenerate_sd_at_float_noise": true
+      },
+      "noop_defective_placebo_POSITIVE_DIAGNOSTIC__wf_mean_M_B": {
+        "n_draws": 25,
+        "mean": 0.0008498311796311046,
+        "sd": 1.1065592085860339e-19,
+        "median": 0.0008498311796311047,
+        "p95": 0.0008498311796311047,
+        "max": 0.0008498311796311047,
+        "real": 0.0008498311796311047,
+        "n_draws_ge_real": 25,
+        "p_empirical": 1.0,
+        "real_over_placebo_max": 1.0,
+        "real_z_vs_null": 0.9797958971132712,
+        "sd_raw": "1.1065592085860339e-19",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": true
+      },
+      "noop_defective_placebo_POSITIVE_DIAGNOSTIC__wf_mean_M_F": {
+        "n_draws": 25,
+        "mean": 0.00041321105317885674,
+        "sd": 5.532796042930169e-20,
+        "median": 0.0004132110531788567,
+        "p95": 0.0004132110531788567,
+        "max": 0.0004132110531788567,
+        "real": 0.0004132110531788567,
+        "n_draws_ge_real": 25,
+        "p_empirical": 1.0,
+        "real_over_placebo_max": 1.0,
+        "real_z_vs_null": -0.9797958971132712,
+        "sd_raw": "5.532796042930169e-20",
+        "degenerate_sd_exactly_zero": false,
+        "degenerate_sd_at_float_noise": true
+      },
+      "noop_defective_placebo_POSITIVE_DIAGNOSTIC__loso_mean_M_B": {
+        "n_draws": 25,
+        "mean": 0.003949436069858261,
+        "sd": 0.0,
+        "median": 0.003949436069858261,
+        "p95": 0.003949436069858261,
+        "max": 0.003949436069858261,
+        "real": 0.003949436069858261,
+        "n_draws_ge_real": 25,
+        "p_empirical": 1.0,
+        "real_over_placebo_max": 1.0,
+        "real_z_vs_null": null,
+        "sd_raw": "0.0",
+        "degenerate_sd_exactly_zero": true,
+        "degenerate_sd_at_float_noise": true
+      },
+      "noop_defective_placebo_POSITIVE_DIAGNOSTIC__loso_mean_M_F": {
+        "n_draws": 25,
+        "mean": 0.003580847960582477,
+        "sd": 0.0,
+        "median": 0.003580847960582477,
+        "p95": 0.003580847960582477,
+        "max": 0.003580847960582477,
+        "real": 0.003580847960582477,
+        "n_draws_ge_real": 25,
+        "p_empirical": 1.0,
+        "real_over_placebo_max": 1.0,
+        "real_z_vs_null": null,
+        "sd_raw": "0.0",
+        "degenerate_sd_exactly_zero": true,
+        "degenerate_sd_at_float_noise": true
+      }
+    },
+    "standard_weighted_walk_forward_for_contrast": {
+      "standard_weighted__wf_mean_M_B_plus_venue": {
+        "real": 0.0040030902585571505,
+        "mean": -0.0006191587174289887,
+        "sd": 0.0009052585280859735,
+        "p95": 0.0004187646570260921,
+        "max": 0.0013586914744449826,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0
+      },
+      "standard_weighted__wf_mean_M_F_pregame_full_control": {
+        "real": 0.0027948873121937793,
+        "mean": -0.0006302275831305586,
+        "sd": 0.0008682111811139413,
+        "p95": 0.0004890225302771958,
+        "max": 0.0013431158462405906,
+        "n_draws_ge_real": 0,
+        "p_empirical": 0.0
+      }
+    },
+    "classical_t_statistics_plain_ols": {
+      "M_A_E0_replication": {
+        "beta": 0.13013168880063175,
+        "se_iid": 0.014897648278358953,
+        "t_iid": 8.735049074132549,
+        "se_cluster_opp_team_game": 0.014534681136472535,
+        "t_cluster": 8.953184977280747,
+        "n_clusters": 1940
+      },
+      "M_B_plus_venue": {
+        "beta": 0.1303014520957101,
+        "se_iid": 0.014897678355653234,
+        "t_iid": 8.746426724018008,
+        "se_cluster_opp_team_game": 0.014533425394133428,
+        "t_cluster": 8.965639452644636,
+        "n_clusters": 1940
+      },
+      "M_F_pregame_full_control": {
+        "beta": 0.1336945383087767,
+        "se_iid": 0.016338567687979713,
+        "t_iid": 8.182757562472002,
+        "se_cluster_opp_team_game": 0.016133719740063102,
+        "t_cluster": 8.28665307584262,
+        "n_clusters": 1940
+      }
+    },
+    "row_level_vs_correct_level": "The correct-level (team-identity derangement within season) null is 2.5-3.2x WIDER than the row-level shuffle null on every statistic (e.g. wf_mean_M_F: sd 0.000712 vs 0.000207). Row-level shuffling is anti-conservative here, exactly as constraint 4 warns. The classical row-level t on the pressure coefficient is +8.2 to +9.0 and the opponent-team-game cluster-robust t is essentially identical (+8.3 to +9.0) -- the cluster correction does NOT reproduce the width the permutation null shows, confirming it is not a substitute.",
+    "noop_placebo_diagnostic": {
+      "behaved_as_expected": true,
+      "signature": "sd 0.0 (5/7 bitwise exact, 2/7 at LAPACK float noise ~1e-19) and mean == real, all 7",
+      "sd_by_statistic": {
+        "insample_M_A": "0.0",
+        "insample_M_B": "0.0",
+        "insample_M_F": "0.0",
+        "wf_mean_M_B": "1.1065592085860339e-19",
+        "wf_mean_M_F": "5.532796042930169e-20",
+        "loso_mean_M_B": "0.0",
+        "loso_mean_M_F": "0.0"
+      },
+      "conclusion": "The two real controls have strictly non-zero sd and do NOT reproduce the real number, so they are genuinely shuffling."
+    }
+  },
+  "verdict_impact": {
+    "frozen_E1_verdict": "keep-as-lead",
+    "verdict_under_adopted_convention": "keep-as-lead",
+    "gate_by_gate": {
+      "gate_1_retained_after_home_away_control": {
+        "threshold": ">0.5",
+        "as_published": 1.001492153837414,
+        "adopted_convention": 1.0025478298501014,
+        "passes_as_published": true,
+        "passes_adopted": true
+      },
+      "gate_2_loso_all_positive_M_B": {
+        "as_published": true,
+        "adopted": true
+      },
+      "gate_3_loso_all_positive_M_F": {
+        "as_published": true,
+        "adopted": true
+      },
+      "gate_4_placebo_draws_ge_real_loso_M_B": {
+        "as_published_frozen_screen": 0,
+        "adopted": 0
+      },
+      "gate_5_placebo_draws_ge_real_loso_M_F": {
+        "as_published_frozen_screen": 0,
+        "adopted": 0
+      },
+      "gate_6_instrument_split_half_mean_r": {
+        "value": 0.5725,
+        "threshold": ">0.3",
+        "passes": true,
+        "note": "a correlation of team forced-TO rates; unaffected by the R2 convention"
+      },
+      "verdict_under_adopted_convention": "keep-as-lead"
+    },
+    "direction": "WEAKENS on effect size; HOLDS on the pass/fail gate",
+    "detail": "Every gate the frozen screen used still passes under plain OLS, so the formal verdict is unchanged at keep-as-lead. But the MAGNITUDE the lead is ranked on collapses out-of-sample. The in-sample and leave-one-season-out figures shrink only ~10%, because those folds are dominated by the same rows in train and test. The WALK-FORWARD figures -- the only genuinely prospective ones -- shrink ~79-85%: the headline 0.004003 becomes 0.000850, and the forecasting-honest M_F figure becomes 0.000413. Significance follows: under the published weighted convention the M_F walk-forward mean sat outside all 200 correct-level null draws (p<0.005); under plain OLS 7 of 200 draws equal or beat it (p=0.035). It survives, but marginally.",
+    "ranking_against_a_plain_ols_lead": "Against three leads screened under plain OLS, I0009 must be entered at 0.000413 (fully pregame baseline, fully controlled, walk-forward) or at most 0.000850 (retrospective LOO baseline). NOT at 0.004003, and emphatically not at 0.004003 scaled UP for a supposed defective-SST understatement. The pre-existing ranking was invalid, but in the OPPOSITE direction to the one D069 anticipated: I0009 was flattered by possession weighting, not penalised by the SST bug.",
+    "caveats": "Both the weighted and unweighted numbers are legitimate estimands -- weighting by possessions targets a possession-level effect, plain OLS a player-game-level one. The point is comparability: a like-for-like ranking against plain-OLS leads requires the plain-OLS number. The gap between them (0.004003 vs 0.000850) is itself informative: the effect is concentrated in high-possession player-games."
+  },
+  "non_claiming": "E0/E1 output is NON-CLAIMING. No registry entry, no preregistration, no leaderboard row, no promotion. This is a LEAD, never a RESULT. No file outside experiments/exploration/E1_I0009_r2_rerun was created or modified."
+}
