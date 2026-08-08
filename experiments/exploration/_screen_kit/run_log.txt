@@ -152,3 +152,304 @@ SUMMARY
 PROCESS EXIT CODE: 0
 wall clock: 141.9 s
 ================================================================================================
+
+
+================================================================================================
+SECOND ENTRY -- after the four defects reported by the kit's FIRST REAL USER were closed
+================================================================================================
+host: Windows 11 / PowerShell 5.1
+command: python TESTS.py
+run at: 2026-08-07 (same session as the fixes)
+numpy 2.5.1   pandas 3.0.5   python 3.13.14
+
+WHAT CHANGED SINCE THE FIRST ENTRY ABOVE (49 assertions):
+  P1  detect_grouping_level / permutation_null crashed with TypeError on ANY boolean feature
+      (bool passes is_numeric_dtype, and numpy booleans have no `-`).  The 49-assertion suite
+      never exercised a boolean, which is why it shipped.  -> TEST 9, 10 new assertions.
+  P2  detect_grouping_level returned recommended_permutation_level = 'row' for a row-varying
+      feature.  The field NAME read as an endorsement of the anticonservative null.  It now
+      returns None plus an explicit status.  *** BREAKING CHANGE ***  -> TEST 10, 11 new
+      assertions, plus ONE REWRITTEN assertion in TEST 3 that had encoded the old contract.
+  P3  screenkit.r2_plain(y, X) REFITS; rh_base.r2_plain(y, yhat) SCORES.  r2_of_forecast
+      added.  r2_plain unchanged.  -> TEST 11, 9 new assertions.
+  P4  no within-block scheme and no paired forecast-vs-forecast machinery.  scheme=SCHEME_WITHIN,
+      var_share_between and paired_forecast_comparison added, adapted from E0_I0014's
+      rh_base.py.  -> TESTS 12 and 13, 21 new assertions.
+
+  49 -> 100 assertions.  All 48 untouched originals still pass with IDENTICAL numbers:
+  the 73.3%-vs-3.3% over-rejection demonstration, the 39.19x median null-sd inflation, the
+  exact-1.0000000000 uniform-weight identity, the 0.99931 centered-response ratio, the
+  15.3117% dR2 shortfall, and the `_team_season_2025` trap-3 partition regression.
+
+EACH NEW TEST WAS VERIFIED TO FAIL AGAINST THE PRE-FIX screenkit.py (git HEAD 374fce9),
+by running this same TESTS.py against a copy of the pre-fix module:
+  TEST 9  -> TypeError: numpy boolean subtract ... at screenkit.py line 302 in _constant_within
+  TEST 10 -> [FAIL] recommended_permutation_level is None, NOT the string 'row'
+             (pre-fix printed: "-> COARSEST CONSTANT LEVEL = 'row'  == THE CORRECT
+              PERMUTATION LEVEL")
+  TEST 11 -> AttributeError: module 'screenkit' has no attribute 'r2_of_forecast'
+  TEST 12 -> AttributeError: module 'screenkit' has no attribute 'var_share_between'
+  TEST 13 -> AttributeError: module 'screenkit' has no attribute 'paired_forecast_comparison'
+  pre-fix result: 6 assertions, 0 PASSED, 6 FAILED, exit code 1.
+
+================================================================================================
+﻿================================================================================================
+screenkit TESTS -- known-answer tests, SYNTHETIC DATA ONLY, no 2025/2026 real data
+================================================================================================
+numpy 2.5.1   pandas 3.0.5   python 3.13.14
+
+================================================================================================
+TEST 1 -- r2_plain / delta_r2_plain against hand-computed arithmetic
+================================================================================================
+      hand-derived R2 = 169/175 = 0.9657142857142857
+      screenkit       =           0.9657142857142857
+    [PASS] r2_plain matches hand arithmetic (169/175)                 |diff| = 0.000e+00
+    [PASS] r2_plain == 1 on an exact linear fit                       R2 = 1.000000000000000
+    [PASS] r2_plain is invariant to shifting y by a constant          R2(y+1000) = 0.965714285714
+    [PASS] delta_r2_plain == r2_plain(full) - r2_plain(base)          dR2 = 0.0972953190, |diff| = 1.388e-17
+
+================================================================================================
+TEST 2 -- wls_r2_DEFECTIVE vs r2_weighted_standard (trap 4)
+================================================================================================
+      uniform w = 1.0      defective = 0.616518422578582  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=1 -> ratio EXACTLY 1.0000000000          ratio = 1.000000000000  (|ratio-1| = 0.000e+00)
+      uniform w = 3.7      defective = 0.616518422578582  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=3.7 -> ratio EXACTLY 1.0000000000        ratio = 1.000000000000  (|ratio-1| = 0.000e+00)
+      uniform w = 250.0    defective = 0.616518422578583  standard = 0.616518422578582  ratio = 1.000000000000
+    [PASS] uniform weights w=250 -> ratio EXACTLY 1.0000000000        ratio = 1.000000000000  (|ratio-1| = 4.441e-16)
+      construction check: sum(w*y) = 6.217e-15 (target 0)   t = T/S = 0.000689524 (target 0.000689524)
+      centered response:  standard R2 = 0.500000000000 (target 0.50)
+                          defective R2 = 0.499655000000
+                          ratio        = 0.999310000000 (target 0.99931)
+    [PASS] centered response: standard weighted R2 hits the constructed 0.5 R2_std = 0.500000000000
+    [PASS] centered response: ratio == 0.99931 (analytic target)      ratio = 0.999310000000
+    [PASS] centered response: ratio is NOT exactly 1                  ratio = 0.999310000000, 1-ratio = 6.900e-04
+    [PASS] defective R2 == closed form 1 - SSE/(S-T)                  |diff| = 1.110e-16
+      dispersed w, non-centered y:  dR2 standard  = 0.00959314
+                                    dR2 defective = 0.00812427
+                                    shortfall     = 15.3117%  (predicted 15.3117%)
+    [PASS] dR2 shortfall == closed form 1 - SST_std/SST_def           |diff| = 4.774e-15
+    [PASS] defect UNDERSTATES dR2 (defective <= standard)             def 0.00812427 <= std 0.00959314
+    [PASS] dR2 shortfall lands inside the measured 0-25.3%% band      shortfall = 15.31%
+
+================================================================================================
+TEST 3 -- detect_grouping_level must report `game`, not `row` (trap 1)
+================================================================================================
+  detect_grouping_level(game_pace): n_rows=300  dtype=float64  distinct values overall=30
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                   300         30          YES    YES 1
+    player_game           300         30          YES    YES 1
+    team_game              60         30          YES     no 1
+    game                   30         30          YES     no 1
+    team_season            24         12           no     no 3
+    season                  4          4           no     no 8
+    -> status=COARSER_LEVEL_FOUND
+    -> COARSEST CONSTANT LEVEL = 'game'  == THE CORRECT PERMUTATION LEVEL
+    [PASS] recommends the GAME level for a per-game feature           recommended = 'game'
+    [PASS] recommendation is NOT `row`                                
+    [PASS] game level is flagged constant                             
+    [PASS] team_season level is NOT constant (feature varies across a team's games) max distinct within a team-season = 3
+    [PASS] reports 30 distinct feature values across 300 rows         30 distinct / 300 rows
+    [PASS] a genuinely row-varying feature is not pushed to a coarse level (P2 contract) recommended = None  status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    [PASS] permutation_null REFUSES a None grouping level             
+    [PASS] permutation_null refuses a level where the feature is not constant 
+
+================================================================================================
+TEST 4 -- CRITICAL: row-level null over-rejects, correct-level null does not
+================================================================================================
+      120 replicate datasets, 200 permutation draws each, TRUE EFFECT = 0
+      rejection rate at alpha=0.05  --  NAIVE ROW-LEVEL null  : 0.733   (nominal 0.05)
+      rejection rate at alpha=0.05  --  CORRECT GAME-LEVEL null: 0.033   (nominal 0.05)
+      correct-level p-values: mean 0.517  median 0.530  min 0.005   (uniform => mean 0.5)
+      null sd inflation (correct/row): median 39.19x  min 25.19x  max 57.81x
+      analytic design effect DE = 1 + (50-1)*0.8 = 40.2 ; the statistic is dR2 = r^2,
+      so the expected sd inflation on the REPORTED scale is DE itself (~40.2x), and
+      sqrt(DE) = 6.34x on the correlation scale.
+    [PASS] row-level null OVER-REJECTS (rate >= 0.50 with zero true effect) row-level rejection rate = 0.733
+    [PASS] correct-level null is calibrated (rejection rate <= 0.20)  correct-level rejection rate = 0.033
+    [PASS] correct-level p-values are ~uniform (mean p in [0.30, 0.70]) mean p = 0.517
+    [PASS] row-level rejection rate strictly exceeds correct-level    0.733 > 0.033
+    [PASS] measured null-sd inflation brackets the analytic design effect 40.2 median inflation = 39.19x vs DE = 40.2
+
+================================================================================================
+TEST 5 -- noop_placebo: sd < 1e-15 on a genuine no-op, nonzero on a real shuffle
+================================================================================================
+  noop_placebo: real=0.001086910004  sd=0.000e+00  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=0.000e+00 < tol=1e-15, real reproduced)
+    [PASS] identity transform -> sd < 1e-15 and is_noop True          sd = 0.000e+00
+  noop_placebo: real=0.001086910004  sd=4.337e-19  max|draw-real|=0.000e+00  distinct=1 -> CONFIRMED NO-OP -- this control tests nothing (sd=4.337e-19 < tol=1e-15, real reproduced)
+    [PASS] permute-the-key-and-recompute is CONFIRMED a no-op (sd < 1e-15) sd = 4.337e-19, max|draw-real| = 0.000e+00
+    [PASS] noop_placebo RETURNS the observed sd rather than rounding it to zero sd = 4.337e-19 (reported, not asserted bitwise-zero)
+  noop_placebo: real=0.001086910004  sd=6.340e-04  max|draw-real|=1.084e-03  distinct=25 -> NOT a no-op (sd=6.340e-04) -- the transform does move the statistic
+    [PASS] a real shuffle FAILS the no-op signature (sd > 0, is_noop False) sd = 6.340e-04
+
+================================================================================================
+TEST 6 -- assert_partition is VALUE-based, never textual (trap 3)
+================================================================================================
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    -> PASS
+    [PASS] PASSES on clean 2021-2024 data                             
+    [PASS] RAISES PartitionViolation on a 2025 season VALUE           
+    [PASS] RAISES on a 2025 YEAR VALUE inside a date column           
+  assert_partition: allowed=[2021, 2022, 2023, 2024]
+    season col season                   VALUES = [2021, 2022, 2023, 2024]
+    date   col game_date                YEARS  = [2021, 2022, 2023, 2024]
+    skipped    _team_season_2025        name is season-like but VALUES are not seasons (range 2.675597852080434e-05..0.00017124660739951432) -> NOT a season column, skipped
+    skipped    dr2_draw_season_2026     name is season-like but VALUES are not seasons (range 3.634522082194045e-05..0.00017372009567027274) -> NOT a season column, skipped
+    -> PASS
+    [PASS] PASSES on a column NAMED `_team_season_2025` holding dR2 draws (trap-3 regression) violations = []
+    [PASS] the name-only column is recorded as SKIPPED, not checked   skipped = ['_team_season_2025', 'dr2_draw_season_2026']
+    [PASS] prose containing '2025' in a text column does not trigger a violation 
+    [PASS] catches year-VALUED data in an innocuously named column    
+
+================================================================================================
+TEST 7 -- check_manifest: missing manifest is UNVERIFIABLE, never a pass
+================================================================================================
+  check_manifest no_manifest.parquet -> UNVERIFIABLE (no manifest)
+    [PASS] MISSING manifest -> status UNVERIFIABLE                    status = UNVERIFIABLE
+    [PASS] MISSING manifest -> usable_at_e0_e1 is False (not a pass)  
+  check_manifest row_gran.parquet                         granularity='row'      -> USABLE_IF_FILTERED
+    [PASS] asof_granularity 'row' -> USABLE_IF_FILTERED               status = USABLE_IF_FILTERED
+    [PASS] 'row' granularity says filtering helps                     
+  check_manifest artifact_gran.parquet                    granularity='artifact' -> UNUSABLE
+    [PASS] asof_granularity 'artifact' -> UNUSABLE at E0/E1           status = UNUSABLE
+    [PASS] 'artifact' granularity says filtering does NOT help        
+  check_manifest odd_gran.parquet                         granularity=None       -> UNVERIFIABLE
+    [PASS] manifest present but granularity absent -> UNVERIFIABLE    status = UNVERIFIABLE
+
+================================================================================================
+TEST 8 -- future_leakage_probe detects a full-season leave-one-out baseline (trap 2)
+================================================================================================
+  future_leakage_probe: n=1680
+    corr(baseline_loo            , own strictly-after-date future) = +0.9504
+    corr(baseline_pregame        , own strictly-after-date future) = +0.8781
+    dR2 of suspect over clean, TARGET = the FUTURE          = 0.142440
+    -> 'baseline_loo' predicts the entity's UNPLAYED FUTURE better than 'baseline_pregame' (|0.9504| vs |0.8781|) and adds dR2=0.1424 on top of it in predicting that future. That is only possible because it CONTAINS the future. Any increment measured over this baseline is NOT a forecasting increment.
+    [PASS] flags the leave-one-out baseline as reading the future     
+    [PASS] LOO correlates with the unplayed future more strongly than the pregame baseline 0.9504 vs 0.8781
+    [PASS] LOO adds substantial dR2 over the pregame baseline in PREDICTING the future dR2 = 0.1424
+    [PASS] does NOT flag the pregame baseline when contrasted against the LOO one corr 0.8781 vs 0.9504, dR2 0.0102
+
+================================================================================================
+TEST 9 -- P1 REGRESSION: BOOLEAN features (pre-fix: TypeError, 0 of these ran)
+================================================================================================
+      feature dtype = bool ; is_numeric_dtype says True (which is why bool took the numeric branch)
+  detect_grouping_level(flag_bool): n_rows=48  dtype=bool  distinct values overall=2
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                    48          2          YES    YES 1
+    player_game            48          2          YES    YES 1
+    team_game              24          2          YES     no 1
+    game                   12          2          YES     no 1
+    team_season             4          1           no     no 2
+    season                  2          1           no     no 2
+    -> status=COARSER_LEVEL_FOUND
+    -> COARSEST CONSTANT LEVEL = 'game'  == THE CORRECT PERMUTATION LEVEL
+    [PASS] detect_grouping_level does not raise on a BOOLEAN feature  recommended = 'game'
+    [PASS] bool and its float twin give the IDENTICAL levels table    bool game spread = 0.0, float game spread = 0.0
+    [PASS] the bool went through the NUMERIC spread path, not the nunique fallback game spread = 0.0, season spread = 1.0
+    [PASS] the report says the feature is boolean                     feature_dtype = bool
+    [PASS] permutation_null runs on a BOOLEAN feature                 real = -0.234082  p = 0.4878  n_groups = 12
+    [PASS] stat_fn sees dtype bool on EVERY permuted frame, not float dtypes seen = ['bool']
+    [PASS] every draw is a genuine permutation: the True count never changes True counts seen = [32] (real = 32), sd = 0.307161
+    [PASS] permutation_null reports the feature as boolean            
+    [PASS] a nullable `boolean` column with pd.NA is handled, not crashed on dtype = boolean, season spread = 1.0
+    [PASS] a STRING feature still uses the distinct-count path (spread nan, no coercion) recommended = 'game'
+
+================================================================================================
+TEST 10 -- P2 REGRESSION: `row` must never be returned as a RECOMMENDATION
+================================================================================================
+  detect_grouping_level(player_minutes): n_rows=300  dtype=float64  distinct values overall=30
+    level            n_groups   distinct    constant? row==? max within-group distinct
+    row                   300         30          YES    YES 1
+    player_game           300         30          YES    YES 1
+    team_game              60         27           no     no 5
+    game                   30         17           no     no 10
+    team_season            24         18           no     no 14
+    season                  4          4           no     no 29
+    -> status=NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    -> recommended_permutation_level = None  (NOT 'row' -- there is no
+       recommendation to make here, and a row null would be anticonservative)
+    !! NO COARSER LEVEL EXISTS for 'player_minutes': it varies row by row (or every constant key identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the OUTCOME is clustered, which this function does not and cannot check -- it inspects the feature only. Your options, in order of preference: (a) find the level at which the OUTCOME clusters and permute there; (b) use permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, which preserves the group level and kills only the within-group alignment; (c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is anticonservative and by how much (null_width_comparison reports the factor). recommended_permutation_level is None precisely so that piping it into permutation_null REFUSES instead of quietly doing (c).
+    [PASS] recommended_permutation_level is None, NOT the string 'row' recommended = None
+    [PASS] status names the situation and says ANTICONSERVATIVE out loud status = NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE
+    [PASS] row_null_is_anticonservative is True and a warning is carried warning is 908 chars
+    [PASS] the naive null is still reachable, but ONLY via the opt-in field 
+    [PASS] piping the recommendation into permutation_null REFUSES (cannot be misled) 
+    [PASS] piping recommended_key_cols into permutation_null also REFUSES 
+    [PASS] NO field whose name reads as a recommendation carries the value 'row' offending fields = []
+    [PASS] `player_game` uniquely identifies rows here and is flagged is_row_equivalent n_groups = 300 vs n_rows = 300
+    [PASS] a constant-but-row-equivalent key is NOT recommended       
+    [PASS] the good path is unchanged: a real coarser level is still recommended recommended = 'game'
+    [PASS] an explicitly-requested ROW_LEVEL null returns a warning field warning is 276 chars
+
+================================================================================================
+TEST 11 -- P3 REGRESSION: r2_of_forecast (scores) vs r2_plain (refits)
+================================================================================================
+      hand-derived 1 - 0.07/5.0 = 0.9860000000000000
+      screenkit                 = 0.9860000000000000
+    [PASS] r2_of_forecast matches hand arithmetic (1 - 0.07/5.0 = 0.986) |diff| = 0.000e+00
+      r2_plain(y, yhat) REFITS y ~ a + b*yhat and returns 0.9867855270057682
+    [PASS] THE COLLISION: r2_plain(y, yhat) != r2_of_forecast(y, yhat) refit 0.986786 vs scored 0.986000 (gap 0.000786)
+    [PASS] r2_plain(y, -y) == 1.0 exactly (it refits, so the sign is free) r2_plain = 1.000000000000000
+    [PASS] r2_of_forecast(y, -y) == -23.0 exactly (hand-derived; it does NOT refit) r2_of_forecast = -23.000000000000000
+    [PASS] r2_plain(y, f) >= r2_of_forecast(y, f) on 25 random forecasts 0/25 violations
+    [PASS] on OLS-FITTED values the two agree exactly, and both equal r2_plain(y, X) scored 0.413665529219 vs fitted-model 0.413665529219
+    [PASS] equals the frozen rh_base 1 - SSE/SST form recomputed inline |diff| = 0.000e+00
+    [PASS] a perfect forecast scores exactly 1.0                      R2 = 1.0
+    [PASS] passing a design matrix raises and points at r2_plain      
+
+================================================================================================
+TEST 12 -- P4 REGRESSION: within-group scheme + var_share_between
+================================================================================================
+    [PASS] var_share_between == 1.0 for a feature constant within groups share = 1.000000000000000
+    [PASS] var_share_between == 0.0 exactly when all group means are equal share = 0.0
+    [PASS] var_share_between == 0.5 on a balanced half-and-half construction share = 0.500000000000000
+    [PASS] var_share_between handles a BOOLEAN feature too (P1 path shared) share = 1.000000000000000
+    [PASS] WITHIN scheme preserves every group mean EXACTLY on every draw max |group-mean drift| over 30 draws = 6.661e-16
+    [PASS] WITHIN scheme preserves each group's multiset (within-group SS unchanged) max |draw - real| = 1.137e-13
+      within-group SS: real = 585.9354 ; BETWEEN-scheme draws max = 5.474e-29 ; WITHIN-scheme draws min = 585.9354
+    [PASS] BETWEEN scheme on a within-varying feature destroys ALL within-group variation real = 585.9354, max draw = 5.474e-29
+    [PASS] WITHIN scheme is REFUSED on a feature constant within groups (it is the identity) 
+    [PASS] WITHIN scheme is REFUSED at ROW_LEVEL                      
+    [PASS] an unrecognised scheme raises rather than falling back to a default 
+      80 replicates, 200 within-group draws each, TRUE WITHIN-GROUP EFFECT = 0
+      WITHIN-scheme rejection rate at alpha=0.05 : 0.025   mean p = 0.513 (uniform => 0.5)
+    [PASS] WITHIN-scheme null is calibrated with a group-level confounder (rej <= 0.15) rejection rate = 0.025
+    [PASS] WITHIN-scheme p-values are ~uniform (mean p in [0.30, 0.70]) mean p = 0.513
+
+================================================================================================
+TEST 13 -- P4 REGRESSION: paired forecast-vs-forecast comparison
+================================================================================================
+    [PASS] paired_forecast_comparison REFUSES a None clustering level 
+  paired_forecast_comparison(A vs B): n=1000 over 25 clusters
+    r2_of_forecast(A         ) = +0.653727
+    r2_of_forecast(B         ) = +0.092271
+    dR2 (A - B)            = +0.561455   mean paired loss diff = -1.20131
+    CLUSTER sign-flip null : sd = 0.122233   p = 0.0005
+    NAIVE row sign-flip    : sd = 0.0428295   p = 0.0005   [CONTRAST ONLY]
+    null-width inflation (cluster/row) = 2.854
+    -> A beats B by dR2 = +0.561455 (cluster sign-flip p = 0.0005 over 25 clusters). The naive independent-rows null would have given p = 0.0005; it is 2.85x TOO NARROW.
+    [PASS] dR2 == r2_of_forecast(A) - r2_of_forecast(B) exactly       |diff| = 1.110e-16
+    [PASS] the genuinely better forecast wins with a small clustered p dR2 = +0.561455, p = 0.00050
+    [PASS] identical forecasts -> dR2 == 0.0 and p == 1.0 EXACTLY     dR2 = -0.0, p = 1.0
+    [PASS] swapping A and B negates dR2 exactly and preserves the two-sided p dR2 -0.56145536 vs +0.56145536, p 0.00050 vs 0.00050
+      200 replicates, 300 sign-flip draws each, TWO EXCHANGEABLE FORECASTS (true dR2 = 0)
+      rejection rate at alpha=0.05 -- CLUSTER sign-flip : 0.045   (nominal 0.05)
+      rejection rate at alpha=0.05 -- NAIVE ROW flip    : 0.735   [CONTRAST ONLY]
+      cluster p-values: mean 0.493  median 0.490   null-width inflation median 4.91x
+    [PASS] CLUSTER sign-flip null is calibrated (rejection rate <= 0.12) cluster rejection rate = 0.045
+    [PASS] NAIVE row-wise sign flip OVER-REJECTS (rate >= 0.20 with true dR2 = 0) row-level rejection rate = 0.735
+    [PASS] cluster p-values are ~uniform (mean p in [0.30, 0.70])     mean p = 0.493
+    [PASS] the row-wise null is measurably TOO NARROW (median inflation > 2x) median sd_cluster/sd_row = 4.91x
+
+================================================================================================
+SUMMARY
+================================================================================================
+  100 assertions: 100 PASSED, 0 FAILED
+  RESULT: ALL TESTS PASS
+
+================================================================================================
+PROCESS EXIT CODE: 0
+wall clock: 89.4 s
+================================================================================================

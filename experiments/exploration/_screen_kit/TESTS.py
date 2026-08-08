@@ -251,11 +251,17 @@ def test_detect_grouping_level():
           rep["n_distinct_values_global"] == 30 and rep["n_rows"] == 300,
           "%d distinct / %d rows" % (rep["n_distinct_values_global"], rep["n_rows"]))
 
-    # A genuinely row-level feature must NOT be pushed to a coarse level.
+    # A genuinely row-level feature must NOT be pushed to a coarse level -- and, since the P2 fix,
+    # must NOT be "recommended" as `row` either.  THIS ASSERTION WAS REWRITTEN BY THE P2 FIX: it
+    # previously required `recommended_permutation_level == sk.ROW_LEVEL`, i.e. it asserted the
+    # defective contract.  The intent (do not push a row-varying feature to a coarse level) is
+    # preserved; the contract it is checked against is the new one.  See TEST 10.
     rep2 = sk.detect_grouping_level(df, "player_minutes")
-    check("a genuinely row-varying feature falls back to `row`",
-          rep2["recommended_permutation_level"] == sk.ROW_LEVEL,
-          "recommended = %r" % rep2["recommended_permutation_level"])
+    check("a genuinely row-varying feature is not pushed to a coarse level (P2 contract)",
+          rep2["recommended_permutation_level"] is None
+          and rep2["status"] == sk.STATUS_NO_COARSER_LEVEL,
+          "recommended = %r  status = %s" % (rep2["recommended_permutation_level"],
+                                             rep2["status"]))
 
     # The refusal contract.
     raised = False
@@ -572,6 +578,487 @@ def test_future_leakage_probe():
 
 
 # ===========================================================================================
+# REGRESSION TESTS FOR THE FOUR ISSUES FOUND BY THE KIT'S FIRST REAL USER (E0_I0015).
+#
+# Each of TEST 9-13 FAILS against the pre-fix screenkit.py.  That is the point: the 49-assertion
+# suite passed while `detect_grouping_level` crashed on every boolean feature, because the suite
+# only ever exercised floats.  The remedy for a blind spot is to close the blind spot, not just
+# the bug.
+# ===========================================================================================
+
+def _bool_frame(n_games=12, rows_per_game=4, seed=17):
+    """Frame whose feature is a BOOLEAN constant within game.  Mirrors the reporter's repro in
+    E0_I0015/KIT_BUG_REPRO.py, enlarged so a permutation null is meaningful."""
+    rng = np.random.default_rng(seed)
+    rows = []
+    for gi in range(n_games):
+        # flag varies WITHIN each season (2 False / 4 True per season) so `season` is not itself a
+        # constant level, and the coarsest constant level is genuinely `game`.
+        flag = bool(gi % 3 != 0)
+        for k in range(rows_per_game):
+            rows.append({
+                "season": 2021 + (gi // (n_games // 2)),
+                "game_id": 500 + gi,
+                "team_id": 1 if k < rows_per_game // 2 else 2,
+                "player_id": 10 * (1 + k),
+                "flag_bool": flag,
+                "y": float(rng.normal()),
+            })
+    df = pd.DataFrame(rows)
+    df["flag_float"] = df["flag_bool"].astype(float)
+    return df
+
+
+def test_boolean_feature_p1():
+    """P1 REGRESSION.  Pre-fix, every assertion here is unreachable: `detect_grouping_level`
+    raises `TypeError: numpy boolean subtract ...` on the first call, because `bool` passes
+    `pd.api.types.is_numeric_dtype` and `groupby.transform('max') - groupby.transform('min')` is
+    not defined for numpy booleans.  `permutation_null` inherits it through the same helper.
+    """
+    section("TEST 9 -- P1 REGRESSION: BOOLEAN features (pre-fix: TypeError, 0 of these ran)")
+    df = _bool_frame()
+    print("      feature dtype = %s ; is_numeric_dtype says %s (which is why bool took the "
+          "numeric branch)" % (df["flag_bool"].dtype, pd.api.types.is_numeric_dtype(df["flag_bool"])))
+
+    rep_b = sk.detect_grouping_level(df, "flag_bool", verbose=True)
+    rep_f = sk.detect_grouping_level(df, "flag_float")
+    check("detect_grouping_level does not raise on a BOOLEAN feature",
+          rep_b["recommended_permutation_level"] == "game",
+          "recommended = %r" % rep_b["recommended_permutation_level"])
+    check("bool and its float twin give the IDENTICAL levels table",
+          rep_b["levels"] == rep_f["levels"],
+          "bool game spread = %r, float game spread = %r"
+          % (rep_b["levels"]["game"]["max_within_group_spread"],
+             rep_f["levels"]["game"]["max_within_group_spread"]))
+    check("the bool went through the NUMERIC spread path, not the nunique fallback",
+          rep_b["levels"]["game"]["max_within_group_spread"] == 0.0
+          and rep_b["levels"]["season"]["max_within_group_spread"] == 1.0,
+          "game spread = %r, season spread = %r"
+          % (rep_b["levels"]["game"]["max_within_group_spread"],
+             rep_b["levels"]["season"]["max_within_group_spread"]))
+    check("the report says the feature is boolean", rep_b["feature_is_boolean"] is True,
+          "feature_dtype = %s" % rep_b["feature_dtype"])
+
+    # permutation_null inherited the crash through the same helper.
+    seen_dtypes, true_counts = [], []
+
+    def stat_bool(d):
+        seen_dtypes.append(str(d["flag_bool"].dtype))
+        true_counts.append(int(d["flag_bool"].sum()))
+        # BOOLEAN MASKING -- this is what silently breaks if the kit hands stat_fn floats back
+        return float(d.loc[d["flag_bool"], "y"].mean() - d.loc[~d["flag_bool"], "y"].mean())
+
+    res = sk.permutation_null(stat_bool, df, ["game_id"], 40, 1,
+                              feature_col="flag_bool", block_col="season",
+                              alternative="two_sided")
+    check("permutation_null runs on a BOOLEAN feature", np.isfinite(res["real"]),
+          "real = %.6f  p = %.4f  n_groups = %d" % (res["real"], res["p"], res["n_groups"]))
+    check("stat_fn sees dtype bool on EVERY permuted frame, not float",
+          set(seen_dtypes) == {"bool"}, "dtypes seen = %s" % sorted(set(seen_dtypes)))
+    check("every draw is a genuine permutation: the True count never changes",
+          set(true_counts) == {int(df["flag_bool"].sum())} and res["sd"] > 0,
+          "True counts seen = %s (real = %d), sd = %.6g"
+          % (sorted(set(true_counts)), int(df["flag_bool"].sum()), res["sd"]))
+    check("permutation_null reports the feature as boolean",
+          res["feature_is_boolean"] is True)
+
+    # A nullable pandas `boolean` column (pd.NA present) must also be handled, not crash.
+    dfn = df.copy()
+    vals = df["flag_bool"].to_numpy().copy()
+    arr = pd.array(vals, dtype="boolean")
+    arr[0] = pd.NA
+    dfn["flag_nullable"] = arr
+    rep_n = sk.detect_grouping_level(dfn, "flag_nullable")
+    check("a nullable `boolean` column with pd.NA is handled, not crashed on",
+          rep_n["feature_is_boolean"] is True
+          and np.isfinite(rep_n["levels"]["season"]["max_within_group_spread"]),
+          "dtype = %s, season spread = %r"
+          % (rep_n["feature_dtype"], rep_n["levels"]["season"]["max_within_group_spread"]))
+
+    # Negative control: a non-numeric, non-boolean feature still takes the distinct-count path.
+    dfs = df.copy()
+    dfs["label"] = np.where(df["flag_bool"], "hot", "cold")
+    rep_s = sk.detect_grouping_level(dfs, "label")
+    check("a STRING feature still uses the distinct-count path (spread nan, no coercion)",
+          rep_s["recommended_permutation_level"] == "game"
+          and np.isnan(rep_s["levels"]["game"]["max_within_group_spread"]),
+          "recommended = %r" % rep_s["recommended_permutation_level"])
+
+
+# ===========================================================================================
+def test_row_recommendation_is_not_an_endorsement_p2():
+    """P2 REGRESSION -- THE SERIOUS ONE, AND THE SILENT ONE.
+
+    Pre-fix, `detect_grouping_level` returned `recommended_permutation_level: "row"` for a
+    genuinely row-varying feature -- 34 of 55 candidates in the screen that reported it.  The
+    docstring carried the caveat; the FIELD NAME undid it.  `"row"` is also the exact sentinel
+    `permutation_null` accepts for the naive null, so a caller who trusted the field name got the
+    anticonservative null WITH THE KIT'S AUTHORITY BEHIND IT, and no signal at all.
+    """
+    section("TEST 10 -- P2 REGRESSION: `row` must never be returned as a RECOMMENDATION")
+    df = _game_frame()
+    rep = sk.detect_grouping_level(df, "player_minutes", verbose=True)
+
+    check("recommended_permutation_level is None, NOT the string 'row'",
+          rep["recommended_permutation_level"] is None
+          and rep["recommended_permutation_level"] != sk.ROW_LEVEL,
+          "recommended = %r" % rep["recommended_permutation_level"])
+    check("status names the situation and says ANTICONSERVATIVE out loud",
+          rep["status"] == sk.STATUS_NO_COARSER_LEVEL
+          and "ANTICONSERVATIVE" in rep["status"],
+          "status = %s" % rep["status"])
+    check("row_null_is_anticonservative is True and a warning is carried",
+          rep["row_null_is_anticonservative"] is True
+          and isinstance(rep["warning"], str) and "ANTICONSERVATIVE" in rep["warning"].upper(),
+          "warning is %d chars" % len(rep["warning"] or ""))
+    check("the naive null is still reachable, but ONLY via the opt-in field",
+          rep["level_if_you_accept_the_anticonservative_row_null"] == sk.ROW_LEVEL)
+
+    # THE CONTRACT THAT MATTERS: a caller who reads ONLY the recommendation field and pipes it
+    # straight into permutation_null must be REFUSED, not silently given the wrong null.
+    refused = False
+    try:
+        sk.permutation_null(lambda d: 0.0, df, rep["recommended_permutation_level"], 10, 1,
+                            feature_col="player_minutes")
+    except ValueError as exc:
+        refused = "REFUSES" in str(exc)
+    check("piping the recommendation into permutation_null REFUSES (cannot be misled)", refused)
+
+    refused_k = False
+    try:
+        sk.permutation_null(lambda d: 0.0, df, rep["recommended_key_cols"], 10, 1,
+                            feature_col="player_minutes")
+    except ValueError as exc:
+        refused_k = "REFUSES" in str(exc)
+    check("piping recommended_key_cols into permutation_null also REFUSES", refused_k)
+
+    # Generic guard against reintroducing the defect under a different field name.
+    endorsing = sorted(k for k, v in rep.items()
+                       if isinstance(v, str) and v == sk.ROW_LEVEL
+                       and ("recommend" in k.lower() or "correct" in k.lower()
+                            or "level" == k.lower()))
+    check("NO field whose name reads as a recommendation carries the value 'row'",
+          endorsing == [], "offending fields = %s" % endorsing)
+
+    # A key that identifies rows uniquely is a row-level null wearing key columns.
+    check("`player_game` uniquely identifies rows here and is flagged is_row_equivalent",
+          rep["levels"]["player_game"]["is_row_equivalent"] is True
+          and rep["levels"]["player_game"]["constant_within"] is True,
+          "n_groups = %d vs n_rows = %d"
+          % (rep["levels"]["player_game"]["n_groups"], rep["n_rows"]))
+    check("a constant-but-row-equivalent key is NOT recommended",
+          rep["recommended_permutation_level"] != "player_game")
+
+    # POSITIVE CONTROL: when a genuinely coarser level exists the good path is unchanged.
+    rep_ok = sk.detect_grouping_level(df, "game_pace")
+    check("the good path is unchanged: a real coarser level is still recommended",
+          rep_ok["status"] == sk.STATUS_COARSER_LEVEL_FOUND
+          and rep_ok["recommended_permutation_level"] == "game"
+          and rep_ok["recommended_key_cols"] == ["game_id"]
+          and rep_ok["row_null_is_anticonservative"] is False,
+          "recommended = %r" % rep_ok["recommended_permutation_level"])
+
+    # And an explicit row-level null still carries its own warning in the result.
+    naive = sk.permutation_null(lambda d: float(d["player_minutes"].mean()), df,
+                                sk.ROW_LEVEL, 5, 1, feature_col="player_minutes")
+    check("an explicitly-requested ROW_LEVEL null returns a warning field",
+          naive["is_row_level_naive"] is True
+          and isinstance(naive["warning"], str) and "anticonservative" in naive["warning"],
+          "warning is %d chars" % len(naive["warning"] or ""))
+
+
+# ===========================================================================================
+def test_r2_of_forecast_p3():
+    """P3 REGRESSION.  `screenkit.r2_plain(y, X)` REFITS; the screens' own
+    `rh_base.r2_plain(y, yhat)` SCORES A GIVEN FORECAST.  Same name, different semantics.  The
+    reporter got 0.4747 against a published 0.4694 and briefly believed its reproduction had
+    failed.  Pre-fix, `sk.r2_of_forecast` does not exist and this whole test raises.
+    """
+    section("TEST 11 -- P3 REGRESSION: r2_of_forecast (scores) vs r2_plain (refits)")
+    y = np.array([1.0, 2.0, 3.0, 4.0])
+    yhat = np.array([1.1, 1.9, 3.2, 3.9])
+    # SSE = 0.01 + 0.01 + 0.04 + 0.01 = 0.07 ; SST = 2.25+0.25+0.25+2.25 = 5.0
+    # R2  = 1 - 0.07/5.0 = 0.986   -- arithmetic done on paper, independent of the implementation
+    expected = 0.986
+    got = sk.r2_of_forecast(y, yhat)
+    print("      hand-derived 1 - 0.07/5.0 = %.16f" % expected)
+    print("      screenkit                 = %.16f" % got)
+    check("r2_of_forecast matches hand arithmetic (1 - 0.07/5.0 = 0.986)",
+          abs(got - expected) < 1e-12, "|diff| = %.3e" % abs(got - expected))
+
+    refit = sk.r2_plain(y, yhat)
+    print("      r2_plain(y, yhat) REFITS y ~ a + b*yhat and returns %.16f" % refit)
+    check("THE COLLISION: r2_plain(y, yhat) != r2_of_forecast(y, yhat)",
+          abs(refit - got) > 1e-6, "refit %.6f vs scored %.6f (gap %.6f)"
+          % (refit, got, refit - got))
+
+    # The sharpest statement of the difference: an ANTI-correlated forecast.  Refitting flips the
+    # sign and scores a perfect 1.0; scoring it as given gives 1 - 4*sum(y^2)/SST = 1 - 120/5 = -23.
+    check("r2_plain(y, -y) == 1.0 exactly (it refits, so the sign is free)",
+          abs(sk.r2_plain(y, -y) - 1.0) < 1e-12, "r2_plain = %.15f" % sk.r2_plain(y, -y))
+    check("r2_of_forecast(y, -y) == -23.0 exactly (hand-derived; it does NOT refit)",
+          abs(sk.r2_of_forecast(y, -y) - (-23.0)) < 1e-12,
+          "r2_of_forecast = %.15f" % sk.r2_of_forecast(y, -y))
+
+    # Refitting can never do worse than scoring as given: r2_plain >= r2_of_forecast, always.
+    worse = 0
+    for s in range(25):
+        rg = np.random.default_rng(400 + s)
+        yy = rg.normal(size=120)
+        ff = 0.6 * yy + rg.normal(size=120) * 0.5 + rg.normal() * 2.0
+        if sk.r2_plain(yy, ff) < sk.r2_of_forecast(yy, ff) - 1e-12:
+            worse += 1
+    check("r2_plain(y, f) >= r2_of_forecast(y, f) on 25 random forecasts", worse == 0,
+          "%d/25 violations" % worse)
+
+    # The identity that pins the semantics: for an ALREADY OLS-CALIBRATED forecast (the fitted
+    # values of y on X) the two coincide exactly, and both equal r2_plain(y, X).
+    rg = np.random.default_rng(77)
+    n = 300
+    X = rg.normal(size=(n, 2))
+    yy = X @ np.array([0.8, -0.3]) + rg.normal(size=n)
+    Xd = np.column_stack([np.ones(n), X])
+    beta, *_ = np.linalg.lstsq(Xd, yy, rcond=None)
+    fitted = Xd @ beta
+    check("on OLS-FITTED values the two agree exactly, and both equal r2_plain(y, X)",
+          abs(sk.r2_of_forecast(yy, fitted) - sk.r2_plain(yy, X)) < 1e-12
+          and abs(sk.r2_plain(yy, fitted) - sk.r2_plain(yy, X)) < 1e-12,
+          "scored %.12f vs fitted-model %.12f" % (sk.r2_of_forecast(yy, fitted),
+                                                  sk.r2_plain(yy, X)))
+
+    # Matches the frozen rh_base(y, yhat) form, recomputed inline here from its definition.
+    rg2 = np.random.default_rng(88)
+    ya = rg2.normal(size=500) * 3.0 + 10.0
+    fa = ya * 0.85 + rg2.normal(size=500)
+    sse = float(((ya - fa) ** 2).sum())
+    sst = float(((ya - ya.mean()) ** 2).sum())
+    check("equals the frozen rh_base 1 - SSE/SST form recomputed inline",
+          abs(sk.r2_of_forecast(ya, fa) - (1.0 - sse / sst)) < 1e-14,
+          "|diff| = %.3e" % abs(sk.r2_of_forecast(ya, fa) - (1.0 - sse / sst)))
+    check("a perfect forecast scores exactly 1.0",
+          sk.r2_of_forecast(ya, ya) == 1.0, "R2 = %r" % sk.r2_of_forecast(ya, ya))
+
+    # It must refuse a design matrix rather than silently doing something.
+    raised = False
+    try:
+        sk.r2_of_forecast(yy, X)
+    except ValueError as exc:
+        raised = "r2_plain" in str(exc)
+    check("passing a design matrix raises and points at r2_plain", raised)
+
+
+# ===========================================================================================
+def test_within_scheme_and_var_share_p4():
+    """P4 REGRESSION (a).  The kit shipped only a BETWEEN-group permutation scheme and no variance
+    decomposition, so E0_I0014 had to write `within_block_index` and `var_share_between` itself.
+    Pre-fix, `scheme=` is not a parameter and `sk.var_share_between` does not exist.
+    """
+    section("TEST 12 -- P4 REGRESSION: within-group scheme + var_share_between")
+
+    # ---- var_share_between against three exact constructions -----------------------------
+    g = np.repeat(np.arange(20), 10)
+    pure_between = pd.DataFrame({"g": g, "x": g.astype(float)})            # constant within group
+    check("var_share_between == 1.0 for a feature constant within groups",
+          abs(sk.var_share_between(pure_between, "x", "g") - 1.0) < 1e-12,
+          "share = %.15f" % sk.var_share_between(pure_between, "x", "g"))
+
+    alt = np.tile(np.array([-1.0, 1.0]), 100)
+    pure_within = pd.DataFrame({"g": g, "x": alt})                          # every group mean = 0
+    check("var_share_between == 0.0 exactly when all group means are equal",
+          sk.var_share_between(pure_within, "x", "g") == 0.0,
+          "share = %r" % sk.var_share_between(pure_within, "x", "g"))
+
+    # group mean = +-1 (balanced), within-group deviation = +-1 (balanced) -> share exactly 1/2
+    mu = np.where((g % 2) == 0, 1.0, -1.0)
+    half = pd.DataFrame({"g": g, "x": mu + alt})
+    check("var_share_between == 0.5 on a balanced half-and-half construction",
+          abs(sk.var_share_between(half, "x", "g") - 0.5) < 1e-12,
+          "share = %.15f" % sk.var_share_between(half, "x", "g"))
+    check("var_share_between handles a BOOLEAN feature too (P1 path shared)",
+          abs(sk.var_share_between(_bool_frame(), "flag_bool", "game_id") - 1.0) < 1e-12,
+          "share = %.15f" % sk.var_share_between(_bool_frame(), "flag_bool", "game_id"))
+
+    # ---- structural guarantees of the two schemes ----------------------------------------
+    rng = np.random.default_rng(31)
+    n_g, m = 40, 15
+    codes = np.repeat(np.arange(n_g), m)
+    n = n_g * m
+    x = np.repeat(rng.normal(size=n_g), m) + rng.normal(size=n)   # varies BOTH between and within
+    df = pd.DataFrame({"season": 2021 + (codes % 4) * 0, "grp": codes, "x": x})
+    cnt = np.bincount(codes)
+    gm0 = np.bincount(codes, weights=x) / cnt
+
+    def group_mean_dev(d):
+        v = d["x"].to_numpy(float)
+        return float(np.max(np.abs(np.bincount(codes, weights=v) / cnt - gm0)))
+
+    def within_ss(d):
+        v = d["x"].to_numpy(float)
+        return float(((v - (np.bincount(codes, weights=v) / cnt)[codes]) ** 2).sum())
+
+    w_means = sk.permutation_null(group_mean_dev, df, "grp", 30, 5,
+                                  feature_col="x", scheme=sk.SCHEME_WITHIN)
+    check("WITHIN scheme preserves every group mean EXACTLY on every draw",
+          float(np.max(w_means["draws"])) < 1e-12,
+          "max |group-mean drift| over 30 draws = %.3e" % float(np.max(w_means["draws"])))
+
+    w_ss = sk.permutation_null(within_ss, df, "grp", 30, 5,
+                               feature_col="x", scheme=sk.SCHEME_WITHIN)
+    check("WITHIN scheme preserves each group's multiset (within-group SS unchanged)",
+          float(np.max(np.abs(w_ss["draws"] - w_ss["real"]))) < 1e-9,
+          "max |draw - real| = %.3e" % float(np.max(np.abs(w_ss["draws"] - w_ss["real"]))))
+
+    # WHY THE WITHIN SCHEME HAD TO EXIST: forcing the BETWEEN scheme onto a within-varying feature
+    # (allow_nonconstant=True) broadcasts one representative value per group, annihilating 100% of
+    # the within-group variation the statistic depends on.  Every draw is ~0 against a real value
+    # of ~n; any p taken there is manufactured, not measured.
+    b_ss = sk.permutation_null(within_ss, df, "grp", 30, 5, feature_col="x",
+                               scheme=sk.SCHEME_BETWEEN, allow_nonconstant=True)
+    print("      within-group SS: real = %.4f ; BETWEEN-scheme draws max = %.3e ; "
+          "WITHIN-scheme draws min = %.4f"
+          % (b_ss["real"], float(np.max(b_ss["draws"])), float(np.min(w_ss["draws"]))))
+    check("BETWEEN scheme on a within-varying feature destroys ALL within-group variation",
+          b_ss["real"] > 100.0 and float(np.max(b_ss["draws"])) < 1e-12,
+          "real = %.4f, max draw = %.3e" % (b_ss["real"], float(np.max(b_ss["draws"]))))
+
+    # ---- refusal contracts ---------------------------------------------------------------
+    const_df = pd.DataFrame({"grp": codes, "x": np.repeat(rng.normal(size=n_g), m)})
+    raised = False
+    try:
+        sk.permutation_null(lambda d: 0.0, const_df, "grp", 5, 1,
+                            feature_col="x", scheme=sk.SCHEME_WITHIN)
+    except ValueError as exc:
+        raised = "IDENTITY" in str(exc)
+    check("WITHIN scheme is REFUSED on a feature constant within groups (it is the identity)",
+          raised)
+
+    raised2 = False
+    try:
+        sk.permutation_null(lambda d: 0.0, df, sk.ROW_LEVEL, 5, 1,
+                            feature_col="x", scheme=sk.SCHEME_WITHIN)
+    except ValueError as exc:
+        raised2 = "meaningless at ROW_LEVEL" in str(exc)
+    check("WITHIN scheme is REFUSED at ROW_LEVEL", raised2)
+
+    raised3 = False
+    try:
+        sk.permutation_null(lambda d: 0.0, df, "grp", 5, 1, feature_col="x", scheme="sideways")
+    except ValueError as exc:
+        raised3 = "scheme must be" in str(exc)
+    check("an unrecognised scheme raises rather than falling back to a default", raised3)
+
+    # ---- calibration: the WITHIN null is EXACT for a group-demeaned statistic -------------
+    # Group level is a confounder present in BOTH x and y; the true WITHIN effect is exactly zero.
+    n_rep, n_dr, alpha = 80, 200, 0.05
+    p_within = []
+    for r in range(n_rep):
+        rg = np.random.default_rng(5000 + r)
+        u = rg.normal(0.0, 2.0, n_g)
+        y = u[codes] + rg.normal(0.0, 1.0, n)
+        xv = u[codes] * 1.5 + rg.normal(0.0, 1.0, n)      # shares the group level, no within link
+        ym = y - (np.bincount(codes, weights=y) / cnt)[codes]
+        d_ = pd.DataFrame({"grp": codes, "x": xv})
+
+        def fwl(dd, _ym=ym):
+            v = dd["x"].to_numpy(float)
+            xm = v - (np.bincount(codes, weights=v) / cnt)[codes]
+            sxx = float(xm @ xm)
+            return abs(float(xm @ _ym) / sxx) if sxx > 1e-12 else 0.0
+
+        p_within.append(sk.permutation_null(fwl, d_, "grp", n_dr, 700 + r,
+                                            feature_col="x", scheme=sk.SCHEME_WITHIN,
+                                            alternative="greater")["p"])
+    p_within = np.array(p_within)
+    rej = float((p_within <= alpha).mean())
+    print("      %d replicates, %d within-group draws each, TRUE WITHIN-GROUP EFFECT = 0" % (n_rep, n_dr))
+    print("      WITHIN-scheme rejection rate at alpha=0.05 : %.3f   mean p = %.3f (uniform => 0.5)"
+          % (rej, p_within.mean()))
+    check("WITHIN-scheme null is calibrated with a group-level confounder (rej <= 0.15)",
+          rej <= 0.15, "rejection rate = %.3f" % rej)
+    check("WITHIN-scheme p-values are ~uniform (mean p in [0.30, 0.70])",
+          0.30 <= float(p_within.mean()) <= 0.70, "mean p = %.3f" % p_within.mean())
+
+
+# ===========================================================================================
+def test_paired_forecast_comparison_p4():
+    """P4 REGRESSION (b).  Forecast-vs-forecast on the same rows is the shape EVERY skill
+    comparison in this program has, and the kit shipped nothing for it.  Pre-fix,
+    `sk.paired_forecast_comparison` does not exist and this whole test raises.
+    """
+    section("TEST 13 -- P4 REGRESSION: paired forecast-vs-forecast comparison")
+    rng = np.random.default_rng(101)
+    n_g, m = 25, 40
+    codes = np.repeat(np.arange(n_g), m)
+    n = n_g * m
+    y = np.repeat(rng.normal(0.0, 1.0, n_g), m) + rng.normal(0.0, 1.0, n)
+    a = 0.5 * y + rng.normal(0.0, 0.5, n)
+    b = 0.5 * y + rng.normal(0.0, 1.2, n)                 # B is genuinely worse
+
+    refused = False
+    try:
+        sk.paired_forecast_comparison(y, a, b, None, 50, 1)
+    except ValueError as exc:
+        refused = "REFUSES" in str(exc)
+    check("paired_forecast_comparison REFUSES a None clustering level", refused)
+
+    res = sk.paired_forecast_comparison(y, a, b, codes, 2000, 3,
+                                        name_a="A", name_b="B", verbose=True)
+    check("dR2 == r2_of_forecast(A) - r2_of_forecast(B) exactly",
+          abs(res["dr2_a_minus_b"] - (sk.r2_of_forecast(y, a) - sk.r2_of_forecast(y, b))) < 1e-12,
+          "|diff| = %.3e"
+          % abs(res["dr2_a_minus_b"] - (sk.r2_of_forecast(y, a) - sk.r2_of_forecast(y, b))))
+    check("the genuinely better forecast wins with a small clustered p",
+          res["dr2_a_minus_b"] > 0 and res["p"] < 0.01,
+          "dR2 = %+.6f, p = %.5f" % (res["dr2_a_minus_b"], res["p"]))
+
+    # Comparing a forecast with ITSELF can never look significant: d == 0 for every row.
+    same = sk.paired_forecast_comparison(y, a, a, codes, 500, 3)
+    check("identical forecasts -> dR2 == 0.0 and p == 1.0 EXACTLY",
+          same["dr2_a_minus_b"] == 0.0 and same["p"] == 1.0,
+          "dR2 = %r, p = %r" % (same["dr2_a_minus_b"], same["p"]))
+
+    # Antisymmetry: swapping the two forecasts negates dR2 exactly and leaves two-sided p alone.
+    rev = sk.paired_forecast_comparison(y, b, a, codes, 2000, 3)
+    check("swapping A and B negates dR2 exactly and preserves the two-sided p",
+          abs(rev["dr2_a_minus_b"] + res["dr2_a_minus_b"]) < 1e-15 and rev["p"] == res["p"],
+          "dR2 %+.8f vs %+.8f, p %.5f vs %.5f"
+          % (rev["dr2_a_minus_b"], res["dr2_a_minus_b"], rev["p"], res["p"]))
+
+    # THE TRAP-1 ANALOGUE FOR PAIRED TESTS.  Two EXCHANGEABLE forecasts (true difference zero),
+    # clustered errors.  Flipping signs cluster-wise is exact; flipping them row-wise is the
+    # paired twin of the naive row-level permutation null and over-rejects for the same reason.
+    n_rep, n_dr, alpha = 200, 300, 0.05
+    pc, pr, infl = [], [], []
+    for r in range(n_rep):
+        rg = np.random.default_rng(9100 + r)
+        u = rg.normal(0.0, 1.0, n_g)
+        yy = u[codes] + rg.normal(0.0, 1.0, n)
+        fa = np.repeat(rg.normal(0.0, 1.0, n_g), m)       # cluster-constant, independent of y
+        fb = np.repeat(rg.normal(0.0, 1.0, n_g), m)       # ... and exchangeable with fa
+        rr = sk.paired_forecast_comparison(yy, fa, fb, codes, n_dr, 4200 + r)
+        pc.append(rr["p"])
+        pr.append(rr["p_row_level_NAIVE"])
+        infl.append(rr["inflation"])
+    pc, pr, infl = np.array(pc), np.array(pr), np.array(infl)
+    rej_c, rej_r = float((pc <= alpha).mean()), float((pr <= alpha).mean())
+    print("      %d replicates, %d sign-flip draws each, TWO EXCHANGEABLE FORECASTS (true dR2 = 0)"
+          % (n_rep, n_dr))
+    print("      rejection rate at alpha=0.05 -- CLUSTER sign-flip : %.3f   (nominal %.2f)"
+          % (rej_c, alpha))
+    print("      rejection rate at alpha=0.05 -- NAIVE ROW flip    : %.3f   [CONTRAST ONLY]" % rej_r)
+    print("      cluster p-values: mean %.3f  median %.3f   null-width inflation median %.2fx"
+          % (pc.mean(), np.median(pc), np.median(infl)))
+    check("CLUSTER sign-flip null is calibrated (rejection rate <= 0.12)", rej_c <= 0.12,
+          "cluster rejection rate = %.3f" % rej_c)
+    check("NAIVE row-wise sign flip OVER-REJECTS (rate >= 0.20 with true dR2 = 0)", rej_r >= 0.20,
+          "row-level rejection rate = %.3f" % rej_r)
+    check("cluster p-values are ~uniform (mean p in [0.30, 0.70])",
+          0.30 <= float(pc.mean()) <= 0.70, "mean p = %.3f" % pc.mean())
+    check("the row-wise null is measurably TOO NARROW (median inflation > 2x)",
+          float(np.median(infl)) > 2.0, "median sd_cluster/sd_row = %.2fx" % np.median(infl))
+
+
+# ===========================================================================================
 def main():
     print("=" * 96)
     print("screenkit TESTS -- known-answer tests, SYNTHETIC DATA ONLY, no 2025/2026 real data")
@@ -588,7 +1075,21 @@ def main():
         test_assert_partition,
         test_check_manifest,
         test_future_leakage_probe,
+        # regression tests for the four issues found by the kit's first user (E0_I0015)
+        test_boolean_feature_p1,
+        test_row_recommendation_is_not_an_endorsement_p2,
+        test_r2_of_forecast_p3,
+        test_within_scheme_and_var_share_p4,
+        test_paired_forecast_comparison_p4,
     ]
+
+    # Optional name filter, e.g. `python TESTS.py p1 p2` -- used to demonstrate that each new
+    # regression test FAILS against the pre-fix screenkit.py without waiting for the full suite.
+    sel = [a for a in sys.argv[1:] if not a.startswith("-")]
+    if sel:
+        tests = [t for t in tests if any(s in t.__name__ for s in sel)]
+        print("  RUNNING A SUBSET: %s" % ", ".join(t.__name__ for t in tests))
+
     for t in tests:
         try:
             t()

@@ -27,10 +27,23 @@ import screenkit as sk
 
 sk.check_manifest(parquet_path, verbose=True)         # 1. before you trust an input
 sk.assert_partition(df, verbose=True)                 # 2. after every load and every filter
+
 lvl = sk.detect_grouping_level(df, "my_feature", verbose=True)   # 3. before choosing a null
+if lvl["status"] == sk.STATUS_NO_COARSER_LEVEL:       # 3b. READ THE STATUS, not just the level
+    print(lvl["warning"])                             #     -> no coarser level exists; see below
+    ...
+
 cmp = sk.null_width_comparison(stat_fn, df, lvl["recommended_key_cols"],
                                400, seed=1, feature_col="my_feature",
                                block_col="season", verbose=True)  # 4. verdict + inflation factor
+```
+
+Comparing **two forecasts** rather than testing one feature? That is the other half of the kit:
+
+```python
+sk.var_share_between(df, "my_feature", "game_id")     # which permutation scheme is the real null?
+sk.paired_forecast_comparison(y, yhat_a, yhat_b, groups=df["game_id"],
+                              n_draws=2000, seed=1, verbose=True)   # clustered paired sign-flip
 ```
 
 Then copy `SCREEN_TEMPLATE.py` into your screen directory and replace the DEMO DATA block.
@@ -71,7 +84,11 @@ alternative to a correct-level permutation null.
 all four instances), `permutation_null` (**refuses to run without an explicit grouping level**;
 you must pass `screenkit.ROW_LEVEL` by name to get the wrong one), `null_width_comparison`
 (runs both and publishes the inflation factor so every screen surfaces the number instead of
-rediscovering it).
+rediscovering it), and `paired_forecast_comparison` for the forecast-vs-forecast form of the same
+trap.
+
+**The kit itself fell into trap 1 once** — by *recommending* the row level under that name when no
+coarser level existed. See **P2** below; the field is now `None` plus an explicit status.
 
 `SCREEN_TEMPLATE.py` demonstrates the trap live on synthetic data where the feature has **zero**
 true effect: the row-level null returns `p = 0.0033` (spuriously significant) while the correct
@@ -157,14 +174,17 @@ Read them; the "does not" halves are where the remaining sharp edges live.
 
 | function | guarantees, in one line |
 |---|---|
-| `r2_plain(y, X)` | Unweighted OLS R2 with SST about the **unweighted** mean — the adopted D069 convention. |
+| `r2_plain(y, X)` | **Refits OLS.** Unweighted R2 with SST about the **unweighted** mean — the adopted D069 convention for a *fitted model*. |
+| `r2_of_forecast(y, yhat)` | **Scores a forecast you already have.** `1 − SSE/SST`, nothing fitted. Can be negative, and is meant to be. |
 | `delta_r2_plain(y, X_base, X_full)` | Incremental plain R2 with a **shared** SST, so it is exactly `(SSE_base − SSE_full)/SST`. |
 | `r2_weighted_standard(y, X, w)` | Weighted R2 with SST about the **weighted** mean — the textbook form. |
 | `delta_r2_weighted(...)` | Incremental standard weighted R2, shared SST about `mu_w`. |
 | `wls_r2_DEFECTIVE(y, X, w)` | Bit-comparable reproduction of the **broken** frozen convention. Never for a new result. |
-| `detect_grouping_level(df, feature_col, ...)` | Reports distinct values and constancy at each candidate key, and names the **coarsest constant level** = the correct permutation level. |
-| `permutation_null(stat_fn, data, group_col, n_draws, seed, *, feature_col, ...)` | Permutes **only the assignment** of already-computed values, at an **explicitly named** level; refuses to default to rows. |
+| `detect_grouping_level(df, feature_col, ...)` | Reports distinct values and constancy at each candidate key, and names the **coarsest constant level** = the correct permutation level — or returns `None` with a status saying no coarser level exists. |
+| `permutation_null(stat_fn, data, group_col, n_draws, seed, *, feature_col, scheme=..., ...)` | Permutes at an **explicitly named** level; refuses to default to rows. `scheme="between"` kills the group level, `scheme="within"` preserves it and kills only the within-group alignment. |
 | `null_width_comparison(...)` | Runs both nulls with the same seed and statistic and reports `sd_correct / sd_row`. |
+| `var_share_between(data, feature_col, group_col)` | Fraction of a feature's variance living **between** groups — tells you which `scheme` is actually a null. Exactly `1.0` for a constant-within feature, exactly `0.0` when all group means are equal. |
+| `paired_forecast_comparison(y, yhat_a, yhat_b, groups, ...)` | **Forecast vs forecast on the same rows.** Paired loss difference, null by sign-flipping whole **clusters**; refuses a `None` clustering level exactly as `permutation_null` does. |
 | `noop_placebo(stat_fn, data, n_draws, transform=None)` | Detects a placebo that is secretly the identity; asserts `sd < 1e-15` and **returns the observed sd**. |
 | `assert_partition(df, ...)` | Value-based 2021–2024 check on parsed dates and season-valued columns; never reads text. |
 | `check_manifest(artifact_path)` | `row` → usable if filtered; `artifact` → **unusable, filtering does not help**; missing → **`UNVERIFIABLE`, never a pass**. |
@@ -185,12 +205,165 @@ bitwise exact and 2 at `~1e-19` from LAPACK non-determinism. The function tests 
 used by the variance computation — `n_distinct_draw_values == 1` confirms the draws really are
 identical.)
 
+**Choosing a permutation scheme is not automatic.** `scheme="between"` destroys the *between*-group
+signal and leaves the within-group signal intact; `scheme="within"` does the opposite. Neither is a
+superset of the other, and a candidate that beats only one has not been shown to beat a null. Run
+`var_share_between` first: near `1.0` → between is the null; near `0.0` → within is the null;
+in between → **run both and credit the candidate only if it beats both**, which is what
+`E0_I0014` did. Applying `scheme="between"` to a within-varying feature (via
+`allow_nonconstant=True`) annihilates **100 %** of the within-group variation — a test proves the
+draws collapse to `5e-29` against a real value of `586` — so any p taken there is manufactured
+rather than measured.
+
+---
+
+## Four defects found by the kit's first real user
+
+The adoption note for this kit (**D077**) recorded the risk deliberately: *"a shared kit
+concentrates failure — one wrong function would propagate silently into everything downstream and
+carry more authority while doing it."*
+
+The first screen to use it, **`E0_I0015_points_skill_decomposition`**, found **four issues within
+hours** and wrote a minimal reproduction (`KIT_BUG_REPRO.py`) rather than patching around them
+silently. **That is the system working**, and the provenance is worth keeping. All four are closed,
+and **each one now has a regression test that fails against the pre-fix code**.
+
+### P1 — crash on boolean features
+
+`detect_grouping_level` raised
+
+```
+TypeError: numpy boolean subtract, the `-` operator, is not supported
+```
+
+on **any** boolean feature: `bool` passes `pd.api.types.is_numeric_dtype`, so the numeric branch
+was taken and `max − min` on numpy booleans is undefined. `permutation_null` inherited it through
+the same helper.
+
+This was not academic — binary pre-game flags are among the most common candidates here, and **two
+of the four surviving leads** from `E0_I0014`'s residual-heterogeneity screen are booleans
+(`is_fallback` among them).
+
+**The 49-assertion suite passed while this was broken, because it only ever exercised floats.**
+That blind spot is the real defect; the remedy is closing the blind spot, not just the bug.
+
+**Fix:** booleans are converted **explicitly** in `_as_float_for_spread` (`False→0.0`, `True→1.0`,
+`pd.NA→nan` — exact, total, order-preserving, so `max − min <= tol` means the same thing it means
+for any numeric feature). A crash is the *safe* failure mode, so this is deliberately **not** a
+permissive coercion of arbitrary dtypes: only `bool` is special-cased, non-numeric types still take
+the distinct-count path, and anything else still raises. `permutation_null` additionally hands the
+permuted column back to `stat_fn` **as `bool`**, so a `stat_fn` that boolean-masks (`d[d[col]]`)
+behaves identically on the real frame and on every draw. Nullable `boolean` columns with `pd.NA`
+work too.
+
+### P2 — `recommended_permutation_level: "row"` — the serious one, and the silent one
+
+`detect_grouping_level` returned `recommended_permutation_level: "row"` for genuinely row-varying
+features — **34 of the reporter's 55 candidates**. The docstring carried the caveat, **but the
+field name undid it**: a field called `recommended_permutation_level` holding the value `"row"`
+reads as *the kit recommending the anticonservative null, with the kit's authority behind it*.
+`"row"` is also the exact sentinel `permutation_null` accepts. **That is the precise error the
+entire kit exists to prevent, and unlike P1 it is silent.**
+
+**Fix — the semantics, not the wording. THIS IS A BREAKING CHANGE.**
+
+| field | before | after |
+|---|---|---|
+| `recommended_permutation_level` | `"row"` | **`None`** — never the string `"row"` |
+| `recommended_key_cols` | `None` | `None` (unchanged) |
+| `status` | *(did not exist)* | `NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE` |
+| `row_null_is_anticonservative` | *(did not exist)* | `True` |
+| `warning` | *(did not exist)* | full explanation with the three options ranked |
+| `level_if_you_accept_the_anticonservative_row_null` | *(did not exist)* | `"row"` — the only route to the sentinel |
+
+The requirement was that *a caller who reads only the field name cannot be misled*, and the test
+that enforces it is end-to-end: **piping `recommended_permutation_level` straight into
+`permutation_null` now triggers its refusal** rather than quietly producing the wrong null. A
+further assertion sweeps the whole returned dict for any field whose *name* reads as a
+recommendation and whose *value* is `"row"`, so the defect cannot be reintroduced under a new name.
+
+A related hazard is closed at the same time: a key that happens to identify rows uniquely (e.g.
+`player_game` on a player-game frame) is a row-level null wearing key columns. Such levels are now
+flagged `is_row_equivalent: True` and are never recommended.
+
+**Migration:** compare `status` to `sk.STATUS_NO_COARSER_LEVEL`, not
+`recommended_permutation_level` to `"row"`. One assertion in `TESTS.py` (TEST 3) was rewritten
+because it had encoded the old contract; its *intent* — a row-varying feature must not be pushed to
+a coarse level — is preserved.
+
+### P3 — name collision that caused a false alarm
+
+`screenkit.r2_plain(y, X)` **refits OLS**. The screens' own `rh_base.r2_plain(y, yhat)` computes
+`1 − SSE/SST` for an **already-given forecast**. Same name, opposite semantics. The reporter got
+**0.4747 against a published 0.4694** and briefly believed its reproduction had failed.
+
+**Fix:** `r2_of_forecast(y, yhat)` is added — scores a given forecast, fits nothing — and both
+docstrings now state plainly which is which. **`r2_plain` is unchanged in behaviour**; frozen
+screens and this session's committed work depend on it exactly as it stands.
+
+The sharpest statement of the difference, both hand-derived and both asserted:
+
+| call | value | why |
+|---|---|---|
+| `r2_plain(y, −y)` | **`1.0` exactly** | it refits, so the sign is free |
+| `r2_of_forecast(y, −y)` | **`−23.0` exactly** | it does not refit |
+
+`r2_plain(y, f) >= r2_of_forecast(y, f)` always, and the two **coincide exactly** when `f` is
+already the OLS-fitted value — which is precisely the miscalibration gap the reporter saw.
+
+### P4 — missing machinery
+
+The kit shipped only a *between*-block permutation scheme, and nothing at all for
+forecast-versus-forecast contrasts — **which is what every skill comparison in this program actually
+needs**. `E0_I0014` had to reimplement within/between schemes and a `var_share_between` measure
+itself.
+
+**Fix:** ported in, crediting `E0_I0014_residual_heterogeneity/rh_base.py` (frozen, read only) in
+the source comments:
+
+- **`permutation_null(..., scheme=SCHEME_WITHIN)`** — shuffles values *inside* each group, so the
+  group's level survives and only the within-group alignment dies. Refused when the feature is
+  constant within groups, because it is then the literal identity (the same vacuous control
+  `noop_placebo` exists to catch), and refused at `ROW_LEVEL` for the same reason.
+- **`var_share_between`** — the between/within variance split that tells you which scheme is real.
+- **`paired_forecast_comparison`** — the paired contrast. Per-row loss difference
+  `d_i = (y−a)² − (y−b)²`, aggregated to
+  `dR2 = r2_of_forecast(y,a) − r2_of_forecast(y,b)` **exactly**, with a null built by sign-flipping
+  **whole clusters**. Under exchangeability of the two forecasts within a cluster the test is
+  **exact, not asymptotic**, and it needs no scipy. `groups` has no default and `None` raises,
+  mirroring `permutation_null`.
+
+**The paired test reproduces trap 1 in its own shape**, which is why row-wise sign flipping is
+reported for contrast only:
+
+| paired null, 200 replicates, two exchangeable forecasts (true dR2 = 0) | rejection rate at α = 0.05 |
+|---|---|
+| **naive row-wise sign flip** | **0.735** |
+| correct cluster sign flip | 0.045 (nominal 0.05) |
+
+with cluster p-values uniform (mean 0.493, median 0.490) and the row-wise null a median **4.91x too
+narrow**. Compare the original trap-1 numbers below — 0.733 vs 0.033. It is the same error.
+
 ---
 
 ## What `TESTS.py` proves
 
-`python TESTS.py` → **49 assertions, all passing, exit code 0** (~142 s wall clock; the critical
-test does 48,000 permutation fits). Full captured output is in `run_log.txt`.
+`python TESTS.py` → **100 assertions, all passing, exit code 0** (~92 s wall clock; the critical
+test does 48,000 permutation fits). Full captured output for both runs is in `run_log.txt`.
+
+> **49 → 100.** The original 49 are unchanged apart from **one rewritten assertion** in TEST 3 that
+> had encoded the P2 defect. All the hard-won numbers are bit-identical after the fixes: the
+> 73.3 %-vs-3.3 % over-rejection demonstration, the 39.19x median null-sd inflation, the
+> exactly-`1.0000000000` uniform-weight identity, the `0.99931` centered-response ratio, the
+> 15.3117 % dR2 shortfall, and the `_team_season_2025` trap-3 partition regression.
+>
+> **Every one of the 51 new assertions was verified to fail against the pre-fix module** (git
+> `374fce9`), by running this same `TESTS.py` against a copy of it: TEST 9 → the `numpy boolean
+> subtract` `TypeError` at `screenkit.py:302`; TEST 10 → `recommended = 'row'`; TESTS 11–13 →
+> `AttributeError` for each function that did not yet exist. A fix without a failing-first test is
+> not accepted here — the suite's blind spot is what let P1 ship.
+>
+> `python TESTS.py p1 p2` runs a name-filtered subset, which is how that check was performed.
 
 A shared library that is subtly wrong is *worse* than copy-paste, because it propagates one error
 into every future screen with the authority of a shared helper. Every assertion is against a value
@@ -230,6 +403,27 @@ Highlights:
 - **`future_leakage_probe`**: flags a full-season leave-one-out baseline
   (corr +0.9504 vs +0.8781 with the unplayed future, dR2 0.1424) and does **not** flag the clean
   pregame one in the reverse contrast.
+- **P1 (booleans)** — 10 assertions. A boolean feature and its float twin produce an *identical*
+  levels table; the boolean takes the numeric spread path (`0.0` within game, `1.0` within season)
+  rather than the `nan` fallback; `stat_fn` sees dtype `bool` on all 40 permuted frames and the
+  True count is invariant across every draw; nullable `boolean` with `pd.NA` works; a string
+  feature still takes the distinct-count path with `nan` spread.
+- **P2 (`row` is not a recommendation)** — 11 assertions, including the end-to-end one: piping
+  `recommended_permutation_level` **and** `recommended_key_cols` into `permutation_null` both
+  trigger its refusal, the whole dict is swept for endorsement-shaped field names holding `"row"`,
+  a row-equivalent key (`player_game`, 300 groups over 300 rows) is flagged and never recommended,
+  and the good path (`game_pace` → `game`) is confirmed unchanged.
+- **P3 (`r2_of_forecast`)** — 9 assertions: `1 − 0.07/5.0 = 0.986` by hand, the `1.0` vs `−23.0`
+  contrast, `r2_plain >= r2_of_forecast` on 25 random forecasts, exact agreement on OLS-fitted
+  values, exact agreement with the frozen `rh_base` form recomputed inline, and a refusal when
+  handed a design matrix.
+- **P4 (schemes, variance share, paired test)** — 21 assertions: `var_share_between` hits exactly
+  `1.0`, exactly `0.0` and exactly `0.5` on three constructions; the within scheme preserves every
+  group mean to `6.7e-16` and each group's multiset to `1.1e-13`; forcing the between scheme onto a
+  within-varying feature collapses the draws to `5.5e-29` against a real value of `585.94`; the
+  within null is calibrated under a group-level confounder (rejection 0.025, mean p 0.513);
+  identical forecasts give `dR2 = 0` and `p = 1.0` **exactly**; swapping A and B negates dR2 exactly
+  and preserves the two-sided p; and the paired cluster/row rejection rates land at 0.045 vs 0.735.
 
 ---
 
@@ -249,6 +443,9 @@ screens were read **read-only**:
 | `check_manifest` fields and verdicts | `E1_I0008_height_mismatch/build_frame.py` manifest block |
 | `future_leakage_probe` | `E1_I0009_r2_rerun/step5_baseline_audit_and_gate.py` section (a) |
 | `noop_placebo` tolerance behaviour | `E1_I0008_height_mismatch/stage1_noise_floor.py`, `E0_I0013_possession_volume/run_screen.py` |
+| `scheme="within"` (P4) | `E0_I0014_residual_heterogeneity/rh_base.py :: within_block_index()` |
+| `var_share_between` (P4) | `E0_I0014_residual_heterogeneity/rh_base.py :: var_share_between()` |
+| `r2_of_forecast` (P3) | `E0_I0014_residual_heterogeneity/rh_base.py :: r2_plain(y, yhat)` — the colliding name |
 
 ---
 

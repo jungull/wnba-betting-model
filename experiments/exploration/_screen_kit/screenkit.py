@@ -55,6 +55,49 @@ Adapted, not reinvented, from these FROZEN screens (read-only):
                                              section (a), the probe that caught the 4th instance
   * `noop_placebo` tolerance behaviour     <- E1_I0008_height_mismatch/stage1_noise_floor.py and
                                              E0_I0013_possession_volume/run_screen.py no-op block
+  * `_permute_within_groups` (scheme="within")
+                                          <- E0_I0014_residual_heterogeneity/rh_base.py ::
+                                             within_block_index()
+  * `var_share_between`                   <- E0_I0014_residual_heterogeneity/rh_base.py ::
+                                             var_share_between()
+  * `r2_of_forecast`                      <- E0_I0014_residual_heterogeneity/rh_base.py ::
+                                             r2_plain(y, yhat)  -- SAME NAME, DIFFERENT FUNCTION
+                                             from this module's `r2_plain(y, X)`.  See the
+                                             NAME COLLISION note on both.
+
+REVISION HISTORY -- FOUND BY THE KIT'S FIRST REAL USER
+------------------------------------------------------
+The adoption note for this kit (D077) recorded the deliberate risk that "a shared kit concentrates
+failure -- one wrong function would propagate silently into everything downstream and carry more
+authority while doing it."  The FIRST screen to use it, `E0_I0015_points_skill_decomposition`,
+found four issues within hours.  All four are closed here, each with a regression test in TESTS.py
+that FAILS against the pre-fix code:
+
+  P1  CRASH ON BOOLEAN FEATURES.  `bool` passes `pd.api.types.is_numeric_dtype`, so
+      `_constant_within` took the numeric branch and `max - min` on numpy booleans raised
+      `TypeError: numpy boolean subtract ...`.  `permutation_null` inherited it through the same
+      helper.  The 49-assertion suite never exercised a boolean.  Booleans are now handled
+      EXPLICITLY (see `_as_float_for_spread`); the loud crash is replaced by correct handling, not
+      by a silent coercion, and a bool feature is handed BACK to `stat_fn` as bool.
+  P2  `recommended_permutation_level: "row"` -- A DESIGN DEFECT, AND THE SILENT ONE.  The field
+      NAME undid the docstring caveat: a field called `recommended_permutation_level` holding the
+      value `"row"` reads as the kit RECOMMENDING the anticonservative null, with the kit's
+      authority behind it.  That is the exact error this kit exists to prevent.  FIXED BY CHANGING
+      THE SEMANTICS: `recommended_permutation_level` is now `None` whenever no coarser level
+      exists, `status` carries `NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE`, and the
+      bare string `"row"` is only ever reachable through the opt-in field
+      `level_if_you_accept_the_anticonservative_row_null`.  *** THIS IS A BREAKING CHANGE. ***
+  P3  NAME COLLISION.  `screenkit.r2_plain(y, X)` REFITS OLS.  The screens' own
+      `rh_base.r2_plain(y, yhat)` SCORES AN ALREADY-GIVEN FORECAST.  Same name, different
+      semantics; the reporter got 0.4747 against a published 0.4694 and briefly believed its
+      reproduction had failed.  `r2_of_forecast(y, yhat)` is added; `r2_plain` is UNCHANGED in
+      behaviour (frozen screens and committed work depend on it) and both docstrings now say
+      plainly which is which.
+  P4  MISSING MACHINERY.  Only a between-block permutation scheme existed, and there was no
+      paired forecast-versus-forecast machinery -- which is what every skill comparison in this
+      program actually needs.  `permutation_null(..., scheme="within")`, `var_share_between` and
+      `paired_forecast_comparison` are added, adapted from E0_I0014's rh_base.py (frozen, read
+      only), which had to reimplement all three itself.
 
 DEPENDENCIES: standard library + numpy + pandas only.  scipy is NOT installed in this environment.
 """
@@ -70,11 +113,15 @@ import pandas as pd
 
 __all__ = [
     "EXPLORATION_SEASONS", "HOLDOUT_SEASONS", "ROW_LEVEL", "DEFAULT_CANDIDATE_KEYS",
+    "SCHEME_BETWEEN", "SCHEME_WITHIN",
+    "STATUS_COARSER_LEVEL_FOUND", "STATUS_NO_COARSER_LEVEL",
     "PartitionViolation",
     "r2_plain", "delta_r2_plain",
+    "r2_of_forecast",
     "r2_weighted_standard", "delta_r2_weighted",
     "wls_r2_DEFECTIVE",
     "detect_grouping_level", "permutation_null", "null_width_comparison",
+    "var_share_between", "paired_forecast_comparison",
     "noop_placebo",
     "assert_partition", "check_manifest", "future_leakage_probe",
 ]
@@ -85,6 +132,14 @@ HOLDOUT_SEASONS = (2025, 2026)
 #: Sentinel a caller must pass EXPLICITLY to get the naive row-level permutation null.
 #: It is never a default.  See `permutation_null`.
 ROW_LEVEL = "row"
+
+#: Permutation schemes for `permutation_null`.  See its docstring for when each is the right null.
+SCHEME_BETWEEN = "between"      #: reassign whole groups' values BETWEEN groups (group level dies)
+SCHEME_WITHIN = "within"        #: shuffle values INSIDE each group (group level SURVIVES)
+
+#: `detect_grouping_level` status values.  READ THE STATUS, NOT JUST THE LEVEL.
+STATUS_COARSER_LEVEL_FOUND = "COARSER_LEVEL_FOUND"
+STATUS_NO_COARSER_LEVEL = "NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE"
 
 #: Standard candidate grouping levels, finest to coarsest by construction.  `detect_grouping_level`
 #: drops any level whose key columns are absent from the frame, and orders by MEASURED group count
@@ -123,9 +178,24 @@ def _fit_sse(y, X):
 
 
 def r2_plain(y, X, add_intercept=True):
-    """Plain UNWEIGHTED OLS R2 = 1 - SSE/SST, SST about the UNWEIGHTED mean.
+    """*** THIS FUNCTION REFITS OLS.  IT DOES NOT SCORE A FORECAST YOU ALREADY HAVE. ***
 
-    THIS IS THE ADOPTED DEFAULT CONVENTION (D069).  Adapted from
+    Plain UNWEIGHTED OLS R2 = 1 - SSE/SST, SST about the UNWEIGHTED mean, where SSE is the residual
+    sum of squares of a FRESHLY FITTED least-squares regression of `y` on `X`.
+
+    NAME COLLISION -- READ THIS BEFORE YOU BELIEVE A REPRODUCTION FAILED
+      Several screens define their OWN `r2_plain(y, yhat)` that takes an ALREADY-COMPUTED FORECAST
+      and returns `1 - sum((y-yhat)^2)/SST` with NO FITTING -- e.g.
+      `E0_I0014_residual_heterogeneity/rh_base.py :: r2_plain`.  Same name, different function.
+      Calling THIS one with a forecast in the `X` slot silently refits `y ~ a + b*yhat`, which
+      rescales and re-centres the forecast and therefore returns a DIFFERENT (generally larger)
+      number.  The kit's first user hit exactly this: 0.4747 here against a published 0.4694, and
+      briefly believed its reproduction of a frozen screen had failed.
+
+        want to SCORE a forecast you already have?   -> `r2_of_forecast(y, yhat)`
+        want to FIT a model and score the fit?       -> `r2_plain(y, X)`  (this function)
+
+    THIS IS THE ADOPTED DEFAULT CONVENTION (D069) FOR FITTED MODELS.  Adapted from
     E1_I0013_tempo_redundancy/e1_lib.py :: r2().
 
     GUARANTEES
@@ -135,6 +205,7 @@ def r2_plain(y, X, add_intercept=True):
       * An intercept column is prepended unless `add_intercept=False`.
 
     DOES *NOT*
+      * score a given forecast.  It FITS.  Use `r2_of_forecast` for that.
       * weight anything.  If you have a substantive reason to weight, use
         `r2_weighted_standard`, and say in FINDINGS.json why.
       * adjust for degrees of freedom.  This is raw R2, not adjusted R2.
@@ -154,6 +225,62 @@ def r2_plain(y, X, add_intercept=True):
     y = np.asarray(y, dtype=float)
     Xd = _design(X, add_intercept)
     _, sse, _ = _fit_sse(y, Xd)
+    sst = float(((y - y.mean()) ** 2).sum())
+    if sst <= 0:
+        return float("nan")
+    return 1.0 - sse / sst
+
+
+def r2_of_forecast(y, yhat):
+    """*** SCORES A FORECAST YOU ALREADY HAVE.  NOTHING IS FITTED. ***
+
+    `1 - sum((y - yhat)^2) / sum((y - mean(y))^2)`.  This is the "R2" that a screen means when it
+    reports how well a MODEL'S OUTPUT tracks the outcome: the forecast is taken exactly as given,
+    with no intercept, no slope, no rescaling and no re-centring.
+
+    Adapted from E0_I0014_residual_heterogeneity/rh_base.py :: r2_plain(y, yhat) (frozen, read
+    only), which is the form the screens in this program actually use on OOF predictions.
+
+    NAME COLLISION -- THE REASON THIS FUNCTION EXISTS
+      This module's `r2_plain(y, X)` REFITS OLS.  `rh_base.r2_plain(y, yhat)` does NOT.  Passing a
+      forecast to `r2_plain` fits `y ~ a + b*yhat` and returns the R2 OF THAT REFIT, which is
+      >= this value and equals it only when the forecast is already perfectly calibrated in the
+      least-squares sense (a=0, b=1).  The kit's first user was misled by exactly this and briefly
+      thought a reproduction of a frozen screen had failed (0.4747 vs a published 0.4694).
+
+      A screen reproducing a published number from a stored prediction column wants THIS function.
+
+    GUARANTEES
+      * No fitting of any kind.  The returned value is a deterministic function of `y` and `yhat`
+        alone, so it is comparable bit-for-bit with any screen using the `1 - SSE/SST` form.
+      * SST is about the UNWEIGHTED mean of `y` (D069), matching `r2_plain`'s denominator, so the
+        two differ ONLY in the numerator.
+      * CAN BE NEGATIVE, and is meant to be: a forecast worse than the sample mean of `y` scores
+        below 0.  That is information, not a bug -- do not clip it.
+
+    DOES *NOT*
+      * fit, calibrate, rescale or de-bias `yhat`.  If you want to know how much of the gap is
+        miscalibration, compare this against `r2_plain(y, yhat)` and report BOTH.
+      * handle NaN.  Drop or impute first; NaN propagates.
+      * adjust for degrees of freedom, or say anything about out-of-sample performance beyond what
+        the provenance of `yhat` already establishes.
+
+    Parameters
+    ----------
+    y    : (n,) array_like of float -- the outcome
+    yhat : (n,) array_like of float -- the ALREADY-COMPUTED forecast, used verbatim
+
+    Returns
+    -------
+    float
+    """
+    y = np.asarray(y, dtype=float)
+    yhat = np.asarray(yhat, dtype=float)
+    if y.shape != yhat.shape:
+        raise ValueError("r2_of_forecast: y and yhat must have the same shape, got %s and %s "
+                         "-- this function scores a FORECAST, it does not take a design matrix "
+                         "(you may want r2_plain)" % (y.shape, yhat.shape))
+    sse = float(((y - yhat) ** 2).sum())
     sst = float(((y - y.mean()) ** 2).sum())
     if sst <= 0:
         return float("nan")
@@ -294,12 +421,50 @@ def _group_codes(df, cols):
     return codes
 
 
+def _as_float_for_spread(s):
+    """Return a float Series suitable for a `max - min` within-group spread, or None.
+
+    *** BOOLEAN FEATURES ARE HANDLED EXPLICITLY HERE.  THIS IS THE P1 FIX. ***
+
+    THE BUG THIS CLOSES.  `pd.api.types.is_numeric_dtype` returns True for `bool`, so a boolean
+    feature used to fall into the plain numeric branch below, where
+    `groupby.transform("max") - groupby.transform("min")` raises
+
+        TypeError: numpy boolean subtract, the `-` operator, is not supported, use the
+                   bitwise_xor, the `^` operator, or the logical_xor function instead.
+
+    Found by the kit's first user (E0_I0015).  It matters concretely: binary pre-game flags are
+    among the most common candidates in this program -- two of the four surviving leads from
+    E0_I0014's residual-heterogeneity screen are booleans, `is_fallback` among them.
+
+    WHY A CAST AND NOT A `nunique` FALLBACK.  `False -> 0.0`, `True -> 1.0` is exact, total and
+    order-preserving, so `max - min <= tol` means for a boolean exactly what it means for any other
+    numeric feature, and `max_within_group_spread` stays comparable across features.  Routing
+    booleans to the non-numeric `nunique` path instead would report `nan` for the spread and would
+    silently ignore `tol`.  Missing values in a nullable `boolean` column become `nan` and are
+    handled by the same `nanmax` the numeric branch already uses.
+
+    NOTE ON THE FAILURE MODE.  The pre-fix behaviour -- a loud, immediate TypeError -- was the SAFE
+    failure mode, and it is deliberately NOT replaced by a permissive coercion of arbitrary dtypes.
+    Only `bool` is converted, and only because the conversion is exact.  Anything that is neither
+    boolean nor numeric still goes to the distinct-count path, and anything that cannot be handled
+    at all still raises.
+    """
+    if pd.api.types.is_bool_dtype(s):
+        return s.astype("float64")          # exact: False->0.0, True->1.0, pd.NA->nan
+    if pd.api.types.is_numeric_dtype(s):
+        return s
+    return None
+
+
 def _constant_within(values, codes, tol=0.0):
-    """(is_constant, max_distinct_within_a_group) for `values` under grouping `codes`."""
+    """(is_constant, max_distinct_within_a_group, max_within_group_spread) under grouping `codes`."""
     s = pd.Series(values)
     g = s.groupby(codes, sort=False)
-    if pd.api.types.is_numeric_dtype(s):
-        spread = g.transform("max") - g.transform("min")
+    s_num = _as_float_for_spread(s)
+    if s_num is not None:
+        gn = s_num.groupby(codes, sort=False)
+        spread = gn.transform("max") - gn.transform("min")
         spread = pd.to_numeric(spread, errors="coerce").abs()
         max_spread = float(np.nanmax(spread.to_numpy())) if len(spread) else 0.0
         is_const = bool(max_spread <= tol)
@@ -322,17 +487,47 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
     PER GAME (774 distinct values across 10,167 rows from 48 team-season series) whose published
     family-wise p of 0.003 was computed against a row-level null entirely.
 
+    *** THE `row` CASE IS NOT A RECOMMENDATION.  READ `status`. ***  (P2, fixed 2026-08-07)
+      This function used to return `recommended_permutation_level: "row"` for a genuinely
+      row-varying feature -- 34 of 55 candidates in the screen that reported it.  The docstring
+      carried the caveat, but the FIELD NAME undid it: a field called
+      `recommended_permutation_level` holding the value `"row"` reads as THE KIT RECOMMENDING THE
+      ANTICONSERVATIVE NULL, with the kit's authority behind it, and unlike a crash it is SILENT.
+      A caller who trusted the field name would do the wrong thing with no signal at all.
+
+      The semantics are therefore changed, not just the wording:
+        * `recommended_permutation_level` is `None` -- never the string `"row"` -- whenever no
+          coarser level exists.  Feeding `None` to `permutation_null` triggers its REFUSAL, so the
+          naive path is now unreachable by accident even for a caller who reads nothing else.
+        * `status` is `STATUS_NO_COARSER_LEVEL`, whose literal value is
+          "NO_COARSER_LEVEL_EXISTS__ROW_NULL_IS_ANTICONSERVATIVE".
+        * `row_null_is_anticonservative` is True and `warning` carries the full explanation.
+        * The bare `"row"` sentinel is reachable ONLY through the opt-in field
+          `level_if_you_accept_the_anticonservative_row_null`, whose name cannot be read as an
+          endorsement.
+      *** BREAKING CHANGE *** for any caller that compared `recommended_permutation_level` to
+      `"row"` or `ROW_LEVEL`.  Compare `status` to `STATUS_NO_COARSER_LEVEL` instead.
+
     GUARANTEES
       * "Coarsest" is decided by the MEASURED number of groups (fewest groups wins), not by an
         assumed hierarchy, because `game` and `team_season` do not nest in each other.
+      * A level is only eligible to be recommended if it is BOTH constant-within AND has strictly
+        FEWER GROUPS THAN ROWS.  A key that happens to identify rows uniquely (e.g. `player_game`
+        on a player-game frame) is a row-level null wearing key columns, and is reported with
+        `is_row_equivalent: True` rather than recommended.
       * Levels whose key columns are absent from `df` are skipped and listed under `skipped`.
-      * The `row` level is always constant by construction and is reported for contrast only; it
-        can only win when the feature genuinely varies row by row.
+      * The `row` level is reported in `levels` for contrast only.  It is constant by construction
+        and can never be the recommendation.
 
     DOES *NOT*
       * prove the recommended level is the right unit of INFERENCE for your statistic.  It reports
         where the FEATURE is constant.  If your outcome is clustered at a coarser level than the
         feature, that is a separate (and also real) problem this does not detect.
+      * tell you that a row-varying feature is safe to permute row-wise.  It tells you the opposite:
+        that no coarser level exists, that the row null is anticonservative, and that you must
+        either find a clustering level from the OUTCOME side, use
+        `permutation_null(..., scheme=SCHEME_WITHIN)` at a level the feature varies inside, or
+        declare the anticonservatism explicitly in FINDINGS.json.
       * handle a feature that is constant within groups only up to floating-point noise unless you
         raise `tol` -- the default requires exact constancy (max - min <= 0).
       * inspect the OUTCOME at all.
@@ -342,18 +537,22 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
     df : pandas.DataFrame
     feature_col : str
     candidate_keys : dict[str, list[str] | None], default DEFAULT_CANDIDATE_KEYS
-    tol : float -- max within-group spread still counted as constant (numeric features only)
+    tol : float -- max within-group spread still counted as constant (numeric and BOOLEAN features)
     verbose : bool -- print the table
 
     Returns
     -------
     dict with keys:
-      n_rows, feature_col, n_distinct_values_global,
+      n_rows, feature_col, n_distinct_values_global, feature_dtype, feature_is_boolean,
       levels : dict level -> {key_cols, n_groups, constant_within, max_distinct_within_group,
-                              max_within_group_spread, n_distinct_at_level}
+                              max_within_group_spread, n_distinct_at_level, is_row_equivalent}
       constant_levels : list[str]
-      recommended_permutation_level : str
+      status : STATUS_COARSER_LEVEL_FOUND | STATUS_NO_COARSER_LEVEL
+      recommended_permutation_level : str | None   -- NEVER the string "row"; None means REFUSE
       recommended_key_cols : list[str] | None
+      row_null_is_anticonservative : bool
+      warning : str | None
+      level_if_you_accept_the_anticonservative_row_null : str | None
       skipped : dict level -> missing columns
     """
     if candidate_keys is None:
@@ -362,9 +561,12 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
         raise KeyError("feature_col %r not in frame" % feature_col)
 
     values = df[feature_col]
+    n_rows = int(len(df))
     out = {
-        "n_rows": int(len(df)),
+        "n_rows": n_rows,
         "feature_col": feature_col,
+        "feature_dtype": str(values.dtype),
+        "feature_is_boolean": bool(pd.api.types.is_bool_dtype(values)),
         "n_distinct_values_global": int(values.nunique(dropna=False)),
         "levels": {},
         "skipped": {},
@@ -386,27 +588,68 @@ def detect_grouping_level(df, feature_col, candidate_keys=None, tol=0.0, verbose
             "max_distinct_within_group": max_distinct,
             "max_within_group_spread": max_spread,
             "n_distinct_at_level": int(pd.Series(rep).nunique(dropna=False)),
+            # a key that identifies rows uniquely gives a ROW-LEVEL null wearing key columns
+            "is_row_equivalent": bool(n_groups >= n_rows),
         }
 
     const = [(lv, d["n_groups"]) for lv, d in out["levels"].items() if d["constant_within"]]
     const.sort(key=lambda t: t[1])                      # fewest groups == coarsest
     out["constant_levels"] = [lv for lv, _ in const]
-    rec = const[0][0] if const else ROW_LEVEL
-    out["recommended_permutation_level"] = rec
-    out["recommended_key_cols"] = out["levels"].get(rec, {}).get("key_cols")
+
+    # ---- P2: a level only counts if it is genuinely COARSER than the rows -----------------
+    eligible = [(lv, n) for lv, n in const
+                if lv != ROW_LEVEL and not out["levels"][lv]["is_row_equivalent"]]
+    if eligible:
+        rec = eligible[0][0]
+        out["status"] = STATUS_COARSER_LEVEL_FOUND
+        out["recommended_permutation_level"] = rec
+        out["recommended_key_cols"] = out["levels"][rec]["key_cols"]
+        out["row_null_is_anticonservative"] = False
+        out["warning"] = None
+        out["level_if_you_accept_the_anticonservative_row_null"] = None
+    else:
+        rec = None
+        out["status"] = STATUS_NO_COARSER_LEVEL
+        out["recommended_permutation_level"] = None
+        out["recommended_key_cols"] = None
+        out["row_null_is_anticonservative"] = True
+        out["level_if_you_accept_the_anticonservative_row_null"] = ROW_LEVEL
+        out["warning"] = (
+            "NO COARSER LEVEL EXISTS for %r: it varies row by row (or every constant key "
+            "identifies rows uniquely), so there is NOTHING here to recommend. THIS IS NOT A "
+            "RECOMMENDATION TO PERMUTE ROWS. A row-level null is ANTICONSERVATIVE whenever the "
+            "OUTCOME is clustered, which this function does not and cannot check -- it inspects "
+            "the feature only. Your options, in order of preference: (a) find the level at which "
+            "the OUTCOME clusters and permute there; (b) use "
+            "permutation_null(..., scheme=SCHEME_WITHIN) at a level the feature varies inside, "
+            "which preserves the group level and kills only the within-group alignment; "
+            "(c) pass screenkit.ROW_LEVEL explicitly and record in FINDINGS.json that the p is "
+            "anticonservative and by how much (null_width_comparison reports the factor). "
+            "recommended_permutation_level is None precisely so that piping it into "
+            "permutation_null REFUSES instead of quietly doing (c)." % feature_col)
 
     if verbose:
-        print("  detect_grouping_level(%s): n_rows=%d  distinct values overall=%d"
-              % (feature_col, out["n_rows"], out["n_distinct_values_global"]))
-        print("    %-14s %10s %10s %12s %s"
-              % ("level", "n_groups", "distinct", "constant?", "max within-group distinct"))
+        print("  detect_grouping_level(%s): n_rows=%d  dtype=%s  distinct values overall=%d"
+              % (feature_col, out["n_rows"], out["feature_dtype"],
+                 out["n_distinct_values_global"]))
+        print("    %-14s %10s %10s %12s %6s %s"
+              % ("level", "n_groups", "distinct", "constant?", "row==?", "max within-group distinct"))
         for lv, d in out["levels"].items():
-            print("    %-14s %10d %10d %12s %d"
+            print("    %-14s %10d %10d %12s %6s %d"
                   % (lv, d["n_groups"], d["n_distinct_at_level"],
-                     "YES" if d["constant_within"] else "no", d["max_distinct_within_group"]))
+                     "YES" if d["constant_within"] else "no",
+                     "YES" if d["is_row_equivalent"] else "no",
+                     d["max_distinct_within_group"]))
         for lv, miss in out["skipped"].items():
             print("    %-14s SKIPPED (missing columns: %s)" % (lv, miss))
-        print("    -> COARSEST CONSTANT LEVEL = %r  == THE CORRECT PERMUTATION LEVEL" % rec)
+        if rec is not None:
+            print("    -> status=%s" % out["status"])
+            print("    -> COARSEST CONSTANT LEVEL = %r  == THE CORRECT PERMUTATION LEVEL" % rec)
+        else:
+            print("    -> status=%s" % out["status"])
+            print("    -> recommended_permutation_level = None  (NOT 'row' -- there is no")
+            print("       recommendation to make here, and a row null would be anticonservative)")
+            print("    !! %s" % out["warning"])
     return out
 
 
@@ -433,6 +676,36 @@ def _permute_group_values(values, codes, block_codes, rng):
     return perm_gvals[slot]
 
 
+def _permute_within_groups(values, codes, rng):
+    """WITHIN-GROUP permutation: shuffle values INSIDE each group, keeping group membership.
+
+    Adapted from E0_I0014_residual_heterogeneity/rh_base.py :: within_block_index() (frozen, read
+    only), which had to implement this itself because the kit only shipped the between-group form.
+    Its comment states the case exactly: "values are shuffled INSIDE each (season,key) block, so
+    the block's LEVEL survives and only the within-block (game-to-game) alignment is destroyed.
+    This is the correct null for a candidate whose variance is mostly WITHIN its block -- for such
+    a candidate the between-block reassignment leaves the effect almost intact and is not a null at
+    all.  A candidate is only credited if it beats BOTH."
+
+    Use `var_share_between` to see which regime a candidate is in before choosing.
+
+    NOTE: this is the IDENTITY for a feature that is constant within groups, which is why
+    `permutation_null` refuses that combination rather than returning a vacuous null (the same
+    failure `noop_placebo` exists to detect).  No block_col loop is needed: groups are required to
+    nest inside blocks, so a within-group shuffle never crosses a block.
+    """
+    v = np.asarray(values, dtype=float)
+    out = np.empty(len(v), dtype=float)
+    order = np.argsort(codes, kind="stable")
+    sorted_codes = np.asarray(codes)[order]
+    starts = np.flatnonzero(np.r_[True, sorted_codes[1:] != sorted_codes[:-1]])
+    ends = np.r_[starts[1:], len(sorted_codes)] if len(starts) else np.array([], dtype=int)
+    for s, e in zip(starts, ends):
+        idx = order[s:e]
+        out[idx] = v[idx][rng.permutation(e - s)]
+    return out
+
+
 def _permute_rows(values, block_codes, rng):
     """THE NAIVE ROW-LEVEL PERMUTATION.  Adapted from e1_lib.py :: perm_rows.
 
@@ -447,9 +720,44 @@ def _permute_rows(values, block_codes, rng):
     return out
 
 
+def _feature_to_float(s, feature_col):
+    """Feature column -> float array, with BOOLEAN handled explicitly (P1).
+
+    Returns (values_float, restore_fn) where `restore_fn(v)` turns a permuted float array back
+    into a column of the ORIGINAL dtype.  For a boolean feature this matters: permutation only
+    reshuffles values that are already exactly 0.0/1.0, so restoring `bool` is exact, and it means
+    `stat_fn` sees the SAME dtype on the real frame and on every permuted frame.  Without the
+    restore, a `stat_fn` that boolean-masks (`d[d[col]]`) would behave differently on the draws
+    than on the real data -- a silent, direction-unknown bias.  Only bool is special-cased.
+    """
+    if pd.api.types.is_bool_dtype(s):
+        v = s.astype("float64").to_numpy()
+        nullable = not isinstance(s.dtype, np.dtype)        # pandas "boolean" vs numpy bool
+
+        def _restore(x):
+            has_nan = bool(np.isnan(x).any())
+            if not has_nan and not nullable:
+                return x.astype(bool)
+            arr = pd.array(x != 0.0, dtype="boolean")
+            if has_nan:
+                arr[np.isnan(x)] = pd.NA
+            return arr
+
+        return v, _restore
+    try:
+        v = np.asarray(s.to_numpy(), dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise TypeError(
+            "permutation_null cannot permute feature %r of dtype %s: it is neither numeric nor "
+            "boolean and could not be converted to float (%s). Convert it yourself and say in "
+            "FINDINGS.json what the conversion means -- the kit will not guess an encoding for "
+            "you." % (feature_col, s.dtype, exc))
+    return v, (lambda x: x)
+
+
 def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
                      feature_col, block_col=None, alternative="greater",
-                     allow_nonconstant=False, tol=0.0):
+                     allow_nonconstant=False, tol=0.0, scheme=SCHEME_BETWEEN):
     """Permutation null AT A SPECIFIED GROUPING LEVEL.  REFUSES to guess.
 
     THE POINT: a team- or game-level aggregate permuted ROW BY ROW gets a null that is far too
@@ -470,12 +778,31 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
         from a permuted key -- that form is a no-op (see `noop_placebo`).
       * `stat_fn` receives a DataFrame whose `feature_col` has been replaced.  A single working copy
         is reused across draws for speed; `stat_fn` MUST NOT mutate it.
+      * A BOOLEAN feature is permuted as 0.0/1.0 and handed back to `stat_fn` AS BOOL, so the real
+        frame and every permuted frame carry the same dtype.  (P1: this used to raise TypeError
+        before reaching here, via the constancy check.)
       * p is the standard add-one estimator, (1 + #{draw at least as extreme}) / (n_draws + 1), so
         it is never 0.
+
+    TWO SCHEMES -- `scheme=SCHEME_BETWEEN` (default) or `SCHEME_WITHIN`  (P4)
+      BETWEEN: reassign WHICH GROUP's already-computed value each group receives.  The group's
+        LEVEL is destroyed; within-group structure is untouched (and for a constant feature there
+        is none).  This is the right null for a feature whose signal lives BETWEEN groups.
+      WITHIN: shuffle values INSIDE each group.  The group's LEVEL SURVIVES and only the
+        within-group (game-to-game) alignment is destroyed.  This is the right null for a candidate
+        whose variance is mostly WITHIN its group -- for such a candidate the BETWEEN scheme leaves
+        the effect almost intact and is not a null at all.
+      Adapted from E0_I0014_residual_heterogeneity/rh_base.py, which ran both and credited a
+      candidate ONLY IF IT BEAT BOTH.  Use `var_share_between` to see which regime you are in;
+      report both nulls when the share is not near 0 or 1.
+      The WITHIN scheme is REFUSED when the feature is constant within groups, because it is then
+      the literal identity -- the same vacuous control `noop_placebo` exists to catch.
 
     DOES *NOT*
       * choose the level for you, verify that the level is right, or look at the outcome's
         clustering.  Run `detect_grouping_level` first and record its output in FINDINGS.json.
+      * choose the SCHEME for you either.  Neither scheme is a superset of the other and a
+        candidate that beats only one has not been shown to beat a null.
       * re-derive the feature.  If your feature is built from an aggregate, permuting the finished
         column is correct; permuting the KEY and recomputing is not (it is the identity).
       * give a valid null if your statistic depends on columns other than `feature_col` that are
@@ -493,11 +820,12 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
     alternative  : "greater" | "less" | "two_sided"
     allow_nonconstant : bool
     tol          : float -- constancy tolerance passed to the within-group spread check
+    scheme       : SCHEME_BETWEEN ("between", default) | SCHEME_WITHIN ("within")
 
     Returns
     -------
     dict: real, draws (np.ndarray), n_draws, mean, sd, p, alternative, level, key_cols, n_groups,
-          block_col, constant_within, seed
+          block_col, constant_within, scheme, feature_is_boolean, seed, is_row_level_naive, warning
     """
     if group_col is None:
         raise ValueError(
@@ -509,9 +837,14 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
         raise KeyError("feature_col %r not in frame" % feature_col)
     if alternative not in ("greater", "less", "two_sided"):
         raise ValueError("alternative must be greater|less|two_sided")
+    if scheme not in (SCHEME_BETWEEN, SCHEME_WITHIN):
+        raise ValueError("scheme must be %r or %r, got %r"
+                         % (SCHEME_BETWEEN, SCHEME_WITHIN, scheme))
 
     rng = np.random.default_rng(seed)
-    values = data[feature_col].to_numpy(dtype=float)
+    feature_series = data[feature_col]
+    feature_is_boolean = bool(pd.api.types.is_bool_dtype(feature_series))
+    values, _restore_dtype = _feature_to_float(feature_series, feature_col)
 
     if block_col is None:
         block_codes = np.zeros(len(data), dtype=int)
@@ -523,6 +856,11 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
 
     is_row_level = isinstance(group_col, str) and group_col == ROW_LEVEL
     if is_row_level:
+        if scheme == SCHEME_WITHIN:
+            raise ValueError(
+                "scheme=%r is meaningless at ROW_LEVEL: each 'group' is a single row, so shuffling "
+                "inside it is the identity. Pass a real grouping level, or scheme=%r."
+                % (SCHEME_WITHIN, SCHEME_BETWEEN))
         key_cols, codes, n_groups, is_const = None, None, int(len(data)), True
         level = ROW_LEVEL
     else:
@@ -532,13 +870,21 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
             raise KeyError("group_col columns missing from frame: %s" % missing)
         codes = _group_codes(data, key_cols)
         n_groups = int(len(np.unique(codes)))
-        is_const, max_distinct, _ = _constant_within(data[feature_col], codes, tol=tol)
-        if not is_const and not allow_nonconstant:
+        is_const, max_distinct, _ = _constant_within(feature_series, codes, tol=tol)
+        if scheme == SCHEME_BETWEEN and not is_const and not allow_nonconstant:
             raise ValueError(
                 "feature %r is NOT constant within groups %s (up to %d distinct values inside one "
                 "group). Permuting group-representative values would silently discard within-group "
-                "variation. Run screenkit.detect_grouping_level to find the right level, or pass "
+                "variation. Run screenkit.detect_grouping_level to find the right level, pass "
+                "scheme=screenkit.SCHEME_WITHIN if the signal lives INSIDE the groups, or pass "
                 "allow_nonconstant=True and declare it." % (feature_col, key_cols, max_distinct))
+        if scheme == SCHEME_WITHIN and is_const:
+            raise ValueError(
+                "feature %r IS constant within groups %s, so scheme=%r is the LITERAL IDENTITY: "
+                "every row would receive its own value back and the 'null' would reproduce the "
+                "real statistic with sd ~ 0. That is the vacuous control screenkit.noop_placebo "
+                "exists to detect. Use scheme=%r at this level instead."
+                % (feature_col, key_cols, SCHEME_WITHIN, SCHEME_BETWEEN))
         # groups must nest inside blocks
         if block_col is not None:
             nest = pd.DataFrame({"g": codes, "b": block_codes}).groupby("g", sort=False)["b"].nunique()
@@ -551,9 +897,11 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
     for i in range(n_draws):
         if is_row_level:
             v = _permute_rows(values, block_codes, rng)
+        elif scheme == SCHEME_WITHIN:
+            v = _permute_within_groups(values, codes, rng)
         else:
             v = _permute_group_values(values, codes, block_codes, rng)
-        work[feature_col] = v
+        work[feature_col] = _restore_dtype(v)
         draws[i] = float(stat_fn(work))
 
     real = float(stat_fn(data))
@@ -581,14 +929,21 @@ def permutation_null(stat_fn, data, group_col, n_draws, seed, *,
         "n_groups": n_groups,
         "block_col": block_desc,
         "constant_within": bool(is_const),
+        "scheme": ROW_LEVEL if is_row_level else scheme,
+        "feature_is_boolean": feature_is_boolean,
         "seed": int(seed),
         "is_row_level_naive": bool(is_row_level),
+        "warning": (
+            "THIS IS THE NAIVE ROW-LEVEL NULL. It is anticonservative whenever the feature or the "
+            "outcome is clustered, and it must not carry a verdict. It is here for CONTRAST -- "
+            "report it beside a correct-level null and its inflation factor (see "
+            "null_width_comparison), never on its own." if is_row_level else None),
     }
 
 
 def null_width_comparison(stat_fn, data, group_col, n_draws, seed, *,
                           feature_col, block_col=None, alternative="greater",
-                          allow_nonconstant=False, verbose=False):
+                          allow_nonconstant=False, scheme=SCHEME_BETWEEN, verbose=False):
     """Run BOTH the correct-level null and the naive ROW-LEVEL null; report the INFLATION FACTOR.
 
     Every screen should surface this number rather than rediscovering it.  Measured precedents:
@@ -613,7 +968,8 @@ def null_width_comparison(stat_fn, data, group_col, n_draws, seed, *,
     """
     correct = permutation_null(stat_fn, data, group_col, n_draws, seed,
                                feature_col=feature_col, block_col=block_col,
-                               alternative=alternative, allow_nonconstant=allow_nonconstant)
+                               alternative=alternative, allow_nonconstant=allow_nonconstant,
+                               scheme=scheme)
     naive = permutation_null(stat_fn, data, ROW_LEVEL, n_draws, seed,
                              feature_col=feature_col, block_col=block_col,
                              alternative=alternative)
@@ -636,6 +992,262 @@ def null_width_comparison(stat_fn, data, group_col, n_draws, seed, *,
         print("    NAIVE row level %-20s sd=%.6g  p=%.4f  [CONTRAST ONLY]"
               % ("row", naive["sd"], naive["p"]))
         print("    INFLATION FACTOR sd_correct/sd_row = %.3f -> %s" % (infl, res["verdict"]))
+    return res
+
+
+# ===========================================================================================
+# VARIANCE DECOMPOSITION -- WHICH PERMUTATION SCHEME IS THE REAL NULL?  (trap 1 / P4)
+# ===========================================================================================
+
+def var_share_between(data, feature_col, group_col, block_col=None):
+    """Fraction of a feature's variance that lives BETWEEN groups rather than WITHIN them.
+
+    Adapted from E0_I0014_residual_heterogeneity/rh_base.py :: var_share_between() (frozen, read
+    only), which had to write it itself because the kit shipped no such helper.
+
+    WHY YOU NEED THIS BEFORE CHOOSING A SCHEME
+      `permutation_null(..., scheme=SCHEME_BETWEEN)` destroys the BETWEEN-group signal and leaves
+      the WITHIN-group signal intact.  If a candidate's variance is almost entirely WITHIN its
+      groups (share near 0), the between-scheme barely perturbs it: the "null" draws still contain
+      nearly the whole effect, and beating that null is not evidence of anything.  The mirror
+      holds for `SCHEME_WITHIN` on a share near 1 -- there it is the literal identity, and
+      `permutation_null` refuses it.
+
+        share ~ 1.0  -> the feature is (near) constant within groups.  BETWEEN is the null.
+        share ~ 0.0  -> the feature is (near) mean-free across groups.  WITHIN is the null.
+        in between   -> RUN BOTH and credit the candidate only if it beats BOTH, which is exactly
+                        what E0_I0014 did.
+
+    GUARANTEES
+      * The ratio is SS_between / SS_total over the FINITE rows only, with both taken about the
+        same global mean, so it is exactly 1.0 for a feature constant within groups and exactly 0.0
+        for a feature whose group means are all equal.
+      * NaNs are dropped, not imputed; groups left empty by that drop are skipped.
+      * `nan` is returned (never an exception, never 0) when total variance is zero or non-finite.
+
+    DOES *NOT*
+      * decide the scheme for you, or adjust for group sizes / unbalanced designs -- this is a raw
+        variance share, not an ICC estimate with a correction.
+      * say anything about the OUTCOME's clustering, which is a separate question and the one that
+        governs whether a row-level null is anticonservative.
+
+    Parameters
+    ----------
+    data        : pandas.DataFrame
+    feature_col : str
+    group_col   : str | list[str] -- the same key you would pass to `permutation_null`
+    block_col   : str | list[str] | None -- appended to the key, matching rh_base's
+                  (season, key) blocks.  A no-op when groups already nest inside blocks.
+
+    Returns
+    -------
+    float
+    """
+    if feature_col not in data.columns:
+        raise KeyError("feature_col %r not in frame" % feature_col)
+    key = [group_col] if isinstance(group_col, str) else list(group_col)
+    if block_col is not None:
+        bcols = [block_col] if isinstance(block_col, str) else list(block_col)
+        key = bcols + [c for c in key if c not in bcols]
+    missing = [c for c in key if c not in data.columns]
+    if missing:
+        raise KeyError("group_col/block_col columns missing from frame: %s" % missing)
+
+    v, _ = _feature_to_float(data[feature_col], feature_col)
+    codes = _group_codes(data, key)
+    fin = np.isfinite(v)
+    if fin.sum() == 0:
+        return float("nan")
+    vf, cf = v[fin], np.asarray(codes)[fin]
+    tot = float(np.var(vf))                       # population variance, as rh_base used
+    if not np.isfinite(tot) or tot <= 0:
+        return float("nan")
+    gm = float(vf.mean())
+    order = np.argsort(cf, kind="stable")
+    sc, sv = cf[order], vf[order]
+    starts = np.flatnonzero(np.r_[True, sc[1:] != sc[:-1]])
+    ends = np.r_[starts[1:], len(sc)]
+    num = 0.0
+    for s, e in zip(starts, ends):
+        num += (e - s) * (float(sv[s:e].mean()) - gm) ** 2
+    return float(num / len(vf) / tot)
+
+
+# ===========================================================================================
+# PAIRED FORECAST-VS-FORECAST COMPARISON  (P4)
+# ===========================================================================================
+
+def paired_forecast_comparison(y, yhat_a, yhat_b, groups, n_draws=2000, seed=0, *,
+                               name_a="A", name_b="B", alternative="two_sided", verbose=False):
+    """Is forecast A better than forecast B on the SAME rows?  Clustered paired sign-flip test.
+
+    THIS IS THE SHAPE EVERY SKILL COMPARISON IN THIS PROGRAM ACTUALLY HAS: two forecasts of one
+    outcome on one row set, and the question of whether the difference between them survives the
+    clustering.  Before this existed, screens either compared two R2 numbers with no null at all,
+    or reimplemented a null themselves.
+
+    THE STATISTIC
+      Per row, the PAIRED loss difference `d_i = (y_i - a_i)^2 - (y_i - b_i)^2`; `d_i < 0` means A
+      is closer on that row.  Aggregated, `dr2_a_minus_b = -sum(d)/SST = r2_of_forecast(y, a) -
+      r2_of_forecast(y, b)` exactly.  The pairing is what buys the power: the shared, and usually
+      dominant, difficulty of each row cancels inside `d_i`.
+
+    THE NULL: SIGN-FLIP WHOLE CLUSTERS
+      Under H0 that the two forecasts are exchangeable, swapping the labels A/B within an entire
+      cluster negates that cluster's whole contribution to `sum(d)` and leaves the joint
+      distribution unchanged.  So the null is generated by flipping the sign of each CLUSTER'S SUM
+      independently -- not each row's.  Flipping ROWS independently is the paired analogue of the
+      row-level permutation null and is anticonservative in exactly the same way and for exactly
+      the same reason; it is computed here for CONTRAST ONLY and reported as
+      `p_row_level_NAIVE` with the inflation factor beside it.
+
+    GUARANTEES
+      * `groups` has NO DEFAULT and `None` raises, mirroring `permutation_null`.  Getting the naive
+        row-level version requires passing `screenkit.ROW_LEVEL` by name.
+      * `dr2_a_minus_b` equals `r2_of_forecast(y, yhat_a) - r2_of_forecast(y, yhat_b)` to machine
+        precision, on the rows where all three of y, a, b are finite.
+      * The cluster-level test is EXACT under exchangeability of the two forecasts within a
+        cluster -- it is not an asymptotic approximation, and it needs no scipy.
+      * Identical forecasts give `d == 0` for every row, hence `p == 1.0` exactly, not a small
+        random number.  A comparison of a forecast with itself can never look significant.
+      * p is the add-one estimator, so it is never 0.
+      * Both the cluster and the row-level nulls use the SAME seed and the SAME `d`, so the
+        inflation factor is attributable to the clustering alone.
+
+    DOES *NOT*
+      * fit or calibrate either forecast.  Both are scored exactly as given (see `r2_of_forecast`).
+        If A wins only after refitting, that is a different and much weaker claim.
+      * test "equal expected loss" in general -- it tests whether the cluster contributions are
+        symmetric about zero, which is what exchangeability of the two forecasts implies.  A
+        difference in loss VARIANCE with equal means is not detected.
+      * know whether your clusters are the right ones.  If the errors are correlated at a level
+        COARSER than `groups`, this is still anticonservative; use the coarsest level you can
+        defend and say which one in FINDINGS.json.
+      * handle NaN by imputing.  Rows where any of y, a, b is non-finite are DROPPED, and the count
+        that survived is returned as `n`.
+
+    Parameters
+    ----------
+    y, yhat_a, yhat_b : (n,) array_like of float
+    groups   : (n,) array_like of cluster labels, or `screenkit.ROW_LEVEL`.  Required.
+    n_draws  : int
+    seed     : int
+    alternative : "two_sided" (default) | "greater" (A better) | "less" (B better)
+    verbose  : bool
+
+    Returns
+    -------
+    dict: n, n_groups, r2_a, r2_b, dr2_a_minus_b, mean_paired_loss_diff, draws, sd, p,
+          p_row_level_NAIVE, inflation, alternative, is_row_level_naive, seed, verdict, warning
+    """
+    if groups is None:
+        raise ValueError(
+            "paired_forecast_comparison REFUSES to run without an explicit clustering level. "
+            "Pass the cluster labels the forecast errors are correlated within (game, team-season, "
+            "player-season ...), or pass screenkit.ROW_LEVEL explicitly if you genuinely intend "
+            "the naive independent-rows null, which is anticonservative for clustered errors.")
+    if alternative not in ("greater", "less", "two_sided"):
+        raise ValueError("alternative must be greater|less|two_sided")
+
+    y = np.asarray(y, dtype=float)
+    a = np.asarray(yhat_a, dtype=float)
+    b = np.asarray(yhat_b, dtype=float)
+    if not (y.shape == a.shape == b.shape) or y.ndim != 1:
+        raise ValueError("paired_forecast_comparison: y, yhat_a, yhat_b must be 1-D and the same "
+                         "length, got %s, %s, %s" % (y.shape, a.shape, b.shape))
+
+    is_row_level = isinstance(groups, str) and groups == ROW_LEVEL
+    if is_row_level:
+        g = np.arange(len(y))
+    else:
+        g = np.asarray(groups)
+        if g.shape[0] != y.shape[0]:
+            raise ValueError("groups must have one label per row (%d), got %d"
+                             % (len(y), g.shape[0]))
+
+    m = np.isfinite(y) & np.isfinite(a) & np.isfinite(b)
+    if m.sum() < 2:
+        raise ValueError("paired_forecast_comparison: fewer than 2 rows are finite in all of "
+                         "y, yhat_a, yhat_b")
+    y, a, b, g = y[m], a[m], b[m], g[m]
+    n = int(len(y))
+
+    sst = float(((y - y.mean()) ** 2).sum())
+    if sst <= 0:
+        raise ValueError("paired_forecast_comparison: y has zero variance, R2 is undefined")
+    d = (y - a) ** 2 - (y - b) ** 2                       # >0 => A worse on that row
+    r2_a = 1.0 - float(((y - a) ** 2).sum()) / sst
+    r2_b = 1.0 - float(((y - b) ** 2).sum()) / sst
+    real = -float(d.sum()) / sst                          # == r2_a - r2_b
+
+    gcodes = pd.factorize(g, sort=False)[0]
+    n_groups = int(gcodes.max()) + 1 if len(gcodes) else 0
+    csum = np.bincount(gcodes, weights=d, minlength=n_groups)
+
+    def _draws_for(vec, rng):
+        signs = rng.integers(0, 2, size=(int(n_draws), len(vec))) * 2 - 1
+        return -(signs @ vec) / sst
+
+    draws = _draws_for(csum, np.random.default_rng(seed))
+    row_draws = _draws_for(d, np.random.default_rng(seed))
+
+    def _p(dr):
+        if alternative == "greater":
+            n_ext = int((dr >= real).sum())
+        elif alternative == "less":
+            n_ext = int((dr <= real).sum())
+        else:
+            n_ext = int((np.abs(dr) >= abs(real)).sum())   # sign-flip null is centred at 0
+        return (1.0 + n_ext) / (len(dr) + 1.0)
+
+    p = _p(draws)
+    p_row = _p(row_draws)
+    sd = float(draws.std(ddof=1)) if n_draws > 1 else float("nan")
+    sd_row = float(row_draws.std(ddof=1)) if n_draws > 1 else float("nan")
+    infl = sd / sd_row if sd_row > 0 else float("inf")
+
+    better = name_a if real > 0 else (name_b if real < 0 else "neither")
+    res = {
+        "n": n,
+        "n_groups": n_groups,
+        "name_a": name_a,
+        "name_b": name_b,
+        "r2_a": r2_a,
+        "r2_b": r2_b,
+        "dr2_a_minus_b": real,
+        "mean_paired_loss_diff": float(d.mean()),
+        "draws": draws,
+        "n_draws": int(n_draws),
+        "sd": sd,
+        "p": float(p),
+        "p_row_level_NAIVE": float(p_row),
+        "sd_row_level_NAIVE": sd_row,
+        "inflation": float(infl),
+        "alternative": alternative,
+        "is_row_level_naive": bool(is_row_level),
+        "seed": int(seed),
+        "verdict": ("%s beats %s by dR2 = %+.6f (cluster sign-flip p = %.4f over %d clusters). "
+                    "The naive independent-rows null would have given p = %.4f; it is %.2fx TOO "
+                    "NARROW." % (better, name_b if better == name_a else name_a, abs(real), p,
+                                 n_groups, p_row, infl))
+                   if real != 0 else
+                   ("the two forecasts are IDENTICAL on these rows (dR2 = 0 exactly, p = %.4f)" % p),
+        "warning": (
+            "groups=ROW_LEVEL: this is the NAIVE independent-rows paired test. It is "
+            "anticonservative whenever forecast errors are correlated within games, teams or "
+            "players, which they are. Report it for contrast only." if is_row_level else None),
+    }
+    if verbose:
+        print("  paired_forecast_comparison(%s vs %s): n=%d over %d clusters"
+              % (name_a, name_b, n, n_groups))
+        print("    r2_of_forecast(%-10s) = %+.6f" % (name_a, r2_a))
+        print("    r2_of_forecast(%-10s) = %+.6f" % (name_b, r2_b))
+        print("    dR2 (A - B)            = %+.6f   mean paired loss diff = %+.6g"
+              % (real, res["mean_paired_loss_diff"]))
+        print("    CLUSTER sign-flip null : sd = %.6g   p = %.4f" % (sd, p))
+        print("    NAIVE row sign-flip    : sd = %.6g   p = %.4f   [CONTRAST ONLY]" % (sd_row, p_row))
+        print("    null-width inflation (cluster/row) = %.3f" % infl)
+        print("    -> %s" % res["verdict"])
     return res
 
 
