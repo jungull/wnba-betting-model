@@ -1,0 +1,380 @@
+{
+  "screen": "E1_I0023_usage_defence_interaction",
+  "tests": "D093's structural usage x opponent-defence correlation, as a FORECASTING term",
+  "partition": {
+    "allowed_seasons": [
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "scored_seasons": [
+      2022,
+      2023,
+      2024
+    ],
+    "note": "2021 appears ONLY as a training fold in the walk-forward, exactly as D089 used it. No figure is reported on 2021 rows. 2025/2026 never read."
+  },
+  "base_complete": [
+    "refB_ppm",
+    "refB_spm",
+    "refB_pps",
+    "refB_mpg",
+    "refB_own_usg_pg"
+  ],
+  "base_single_CONTRAST_ONLY": [
+    "refB_ppm"
+  ],
+  "usage_main_effect": "O01_own_usg_pg",
+  "defence_terms": [
+    {
+      "id": "A10_opp_defrtg",
+      "why": "D093's decisive axis: Spearman +0.320, family-wise p 0.0035"
+    },
+    {
+      "id": "A01_opp_efg_allowed",
+      "why": "same D085 opponent-allowance family; D093 r +0.167"
+    },
+    {
+      "id": "A02_opp_ts_allowed",
+      "why": "same D085 opponent-allowance family; D093 r +0.198"
+    }
+  ],
+  "negative_controls": [
+    {
+      "id": "NC1_noise_x_defrtg",
+      "usage": "G01_noise",
+      "defence": "A10_opp_defrtg",
+      "why": "noise x the real defence term: does the machinery manufacture an increment?"
+    },
+    {
+      "id": "NC2_usage_x_noise",
+      "usage": "O01_own_usg_pg",
+      "defence": "G01_noise_tvframe",
+      "why": "the real usage term x noise: is the usage side alone enough to fake it?"
+    }
+  ],
+  "responses": [
+    {
+      "id": "ppm",
+      "rate_col": "y_ppm",
+      "target_col": "y_ppm",
+      "scale_by_minutes": false,
+      "units": "points per minute"
+    },
+    {
+      "id": "points",
+      "rate_col": "y_ppm",
+      "target_col": "y_pts",
+      "scale_by_minutes": true,
+      "units": "points per game"
+    },
+    {
+      "id": "attempts",
+      "rate_col": "y_spm",
+      "target_col": "TSA",
+      "scale_by_minutes": true,
+      "units": "true-shooting attempts per game"
+    }
+  ],
+  "strata": [
+    {
+      "id": "POOLED",
+      "why": "all rows in the screen frame"
+    },
+    {
+      "id": "DECISION",
+      "why": "D081's decision-relevant stratum: n_prior >= 8 AND prior5_minutes >= 24 -- the players anyone would actually bet on"
+    }
+  ],
+  "primary_cell": {
+    "defence": "A10_opp_defrtg",
+    "response": "points",
+    "stratum": "DECISION",
+    "base": "B_COMPLETE",
+    "fit": "walk_forward",
+    "why": "D093's decisive axis, on the bettable target, on the stratum D081 identified as decision-relevant, against the complete reference, with the coefficient fitted strictly on earlier seasons. Declared BEFORE any statistic was computed."
+  },
+  "co_primary_cell": {
+    "defence": "A10_opp_defrtg",
+    "response": "ppm",
+    "stratum": "DECISION",
+    "base": "B_COMPLETE",
+    "fit": "walk_forward",
+    "why": "the mechanism check on the rate the interaction is actually fitted on"
+  },
+  "n_real_cells": 18,
+  "n_control_cells": 12,
+  "n_draws": 2000,
+  "seed": 20260808,
+  "cluster_level": [
+    "opp_team_id",
+    "season"
+  ],
+  "cluster_level_why": "the defence term is constant within opponent-team-season, so rows sharing an opponent-season are not independent; the row-level null is anticonservative and is reported only as the contrast",
+  "contrast_form": "NESTED. Arm B = [1, base, usage, defence]; Arm A = [1, base, usage, defence, usage x defence]. Identical rows, identical base, identical main effects. The only difference is the interaction column.",
+  "fit_windows": [
+    "walk_forward (coefficients fitted on seasons < s, applied to season s) -- the HEADLINE",
+    "in_sample (whole partition) -- DIAGNOSTIC ONLY, reported as one"
+  ],
+  "decision_rule": "The interaction is KEPT only if (a) the PRIMARY cell's walk-forward paired dR2 is positive at cluster-level p < 0.05, (b) it survives the max-statistic family-wise correction across the 18 real cells, (c) both negative controls fail, and (d) the arithmetic ceiling is not smaller than D084's 0.000129. Any one of these failing is a KILL or at most a lead.",
+  "ceiling_benchmarks": {
+    "D079_shot_mix": 0.001127,
+    "D084_conversion": 0.000129,
+    "D089_teammate_volume_prior_only": 0.002057
+  },
+  "ceiling_form": "D084/D089 form: ceiling dR2 <= (points moved by 1 sd of the centred interaction term / sd of the response)^2. The ORACLE variant (best rescaling chosen with hindsight) is a DIAGNOSTIC and is excluded from every headline.",
+  "d093_reproduction_targets": {
+    "R04_opp_defrtg_spearman": 0.3200431235648813,
+    "R06_own_usage_spearman": 0.2805225231952508,
+    "family_wise_p": 0.0035,
+    "NC1_p": 0.20439780109945027,
+    "NC2_p": 0.9385307346326837,
+    "prereg_sha256_of_D093": "8d7c8af4fce21746ce4e1ec3b58dc346a8ea696075b5149c05b9ad4817a96cbb",
+    "floor": 20,
+    "min_games_per_player": 8
+  },
+  "cell_list": [
+    {
+      "cell_id": "A10_opp_defrtg|ppm|POOLED",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A10_opp_defrtg",
+      "response": "ppm",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "A10_opp_defrtg|ppm|DECISION",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A10_opp_defrtg",
+      "response": "ppm",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "A10_opp_defrtg|points|POOLED",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A10_opp_defrtg",
+      "response": "points",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "A10_opp_defrtg|points|DECISION",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A10_opp_defrtg",
+      "response": "points",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "A10_opp_defrtg|attempts|POOLED",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A10_opp_defrtg",
+      "response": "attempts",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "A10_opp_defrtg|attempts|DECISION",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A10_opp_defrtg",
+      "response": "attempts",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "A01_opp_efg_allowed|ppm|POOLED",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A01_opp_efg_allowed",
+      "response": "ppm",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "A01_opp_efg_allowed|ppm|DECISION",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A01_opp_efg_allowed",
+      "response": "ppm",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "A01_opp_efg_allowed|points|POOLED",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A01_opp_efg_allowed",
+      "response": "points",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "A01_opp_efg_allowed|points|DECISION",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A01_opp_efg_allowed",
+      "response": "points",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "A01_opp_efg_allowed|attempts|POOLED",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A01_opp_efg_allowed",
+      "response": "attempts",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "A01_opp_efg_allowed|attempts|DECISION",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A01_opp_efg_allowed",
+      "response": "attempts",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "A02_opp_ts_allowed|ppm|POOLED",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A02_opp_ts_allowed",
+      "response": "ppm",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "A02_opp_ts_allowed|ppm|DECISION",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A02_opp_ts_allowed",
+      "response": "ppm",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "A02_opp_ts_allowed|points|POOLED",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A02_opp_ts_allowed",
+      "response": "points",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "A02_opp_ts_allowed|points|DECISION",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A02_opp_ts_allowed",
+      "response": "points",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "A02_opp_ts_allowed|attempts|POOLED",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A02_opp_ts_allowed",
+      "response": "attempts",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "A02_opp_ts_allowed|attempts|DECISION",
+      "kind": "REAL",
+      "usage": "O01_own_usg_pg",
+      "defence": "A02_opp_ts_allowed",
+      "response": "attempts",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "NC1_noise_x_defrtg|ppm|POOLED",
+      "kind": "CONTROL",
+      "usage": "G01_noise",
+      "defence": "A10_opp_defrtg",
+      "response": "ppm",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "NC1_noise_x_defrtg|ppm|DECISION",
+      "kind": "CONTROL",
+      "usage": "G01_noise",
+      "defence": "A10_opp_defrtg",
+      "response": "ppm",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "NC1_noise_x_defrtg|points|POOLED",
+      "kind": "CONTROL",
+      "usage": "G01_noise",
+      "defence": "A10_opp_defrtg",
+      "response": "points",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "NC1_noise_x_defrtg|points|DECISION",
+      "kind": "CONTROL",
+      "usage": "G01_noise",
+      "defence": "A10_opp_defrtg",
+      "response": "points",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "NC1_noise_x_defrtg|attempts|POOLED",
+      "kind": "CONTROL",
+      "usage": "G01_noise",
+      "defence": "A10_opp_defrtg",
+      "response": "attempts",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "NC1_noise_x_defrtg|attempts|DECISION",
+      "kind": "CONTROL",
+      "usage": "G01_noise",
+      "defence": "A10_opp_defrtg",
+      "response": "attempts",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "NC2_usage_x_noise|ppm|POOLED",
+      "kind": "CONTROL",
+      "usage": "O01_own_usg_pg",
+      "defence": "G01_noise_tvframe",
+      "response": "ppm",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "NC2_usage_x_noise|ppm|DECISION",
+      "kind": "CONTROL",
+      "usage": "O01_own_usg_pg",
+      "defence": "G01_noise_tvframe",
+      "response": "ppm",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "NC2_usage_x_noise|points|POOLED",
+      "kind": "CONTROL",
+      "usage": "O01_own_usg_pg",
+      "defence": "G01_noise_tvframe",
+      "response": "points",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "NC2_usage_x_noise|points|DECISION",
+      "kind": "CONTROL",
+      "usage": "O01_own_usg_pg",
+      "defence": "G01_noise_tvframe",
+      "response": "points",
+      "stratum": "DECISION"
+    },
+    {
+      "cell_id": "NC2_usage_x_noise|attempts|POOLED",
+      "kind": "CONTROL",
+      "usage": "O01_own_usg_pg",
+      "defence": "G01_noise_tvframe",
+      "response": "attempts",
+      "stratum": "POOLED"
+    },
+    {
+      "cell_id": "NC2_usage_x_noise|attempts|DECISION",
+      "kind": "CONTROL",
+      "usage": "O01_own_usg_pg",
+      "defence": "G01_noise_tvframe",
+      "response": "attempts",
+      "stratum": "DECISION"
+    }
+  ],
+  "prereg_sha256": "b8777375c40e500d97e2e79a3516d663a7a7665127e5c11bb8030bd20cac69d4"
+}
