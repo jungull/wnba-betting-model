@@ -1,0 +1,117 @@
+﻿
+============================================================================================
+s06  NAMED-CASE TRACE -- the twelve, individually
+============================================================================================
+  allowlist (12 ids), resolved and printed:
+    203400    Skylar Diggins | Skylar Diggins-Smith
+    1628922   Azura Stevens | Azurá Stevens
+    1629484   Megan DiLeo | Megan Gustafson
+    1629546   Marine Johannes | Marine Johannès
+    1629566   Han Xu | Xu Han
+    1630043   Bernadett Hatar | Bernadett Határ
+    1630151   Olivia Epoupa | Olivia Époupa
+    1631021   Sika Kone | Sika Koné
+    1631263   Nikolina Milic | Nikolina Milić
+    1641657   Dorka Juhasz | Dorka Juhász
+    1641661   Lou Lopez Senechal | Lou Lopez Sénéchal
+    1642299   Nika Muhl | Nika Mühl
+
+============================================================================================
+1. THE SHARED SCREEN FRAME AND ITS DECISION STRATUM
+============================================================================================
+  frame : exploration\E0_I0029_freethrow_hurdle\screen_frame.parquet
+  sha256: a6d94f6687fdcd70dfaec40ef4abc141614adfc421317a1ee17682d6571af288   rows=18212
+  manifest: MISSING_UNVERIFIABLE
+  (identical row count/ambiguity profile to E0_I0008, E0_I0011, E1_I0004_rim_finishing,
+   E1_I0008 and E1_I0011 frames -- see out/_s05_frame_divergence.csv)
+  PARTITION GUARD: {"label": "screen_frame", "rows_in": 18212, "rows_kept": 18212, "sealed_rows_dropped": 0, "seasons_seen": [2021, 2022, 2023, 2024]}
+  stratum columns present: ['n_prior']
+
+============================================================================================
+2. THE CHAMPION'S FIT POOL -- m13 translation_rows
+============================================================================================
+  frame : exploration\MEASURE_F1_m13_fitpool\repro_out\translation_rows.parquet
+  sha256: 9935e1dd63dcb2ede90e14efd2874e7801fff6e404c1c5bd005661e237ba01cd   rows=5889
+  manifest: MISSING_UNVERIFIABLE
+  PARTITION GUARD: {"label": "translation_rows", "rows_in": 5889, "rows_kept": 1726, "sealed_rows_dropped": 4163, "seasons_seen": [2024, 2025, 2026]}
+  ids with >1 spelling IN THE FIT POOL : 0 -> []
+  names with >1 id IN THE FIT POOL     : 0  (DROP mode)
+    203400    Skylar Diggins | Skylar Diggins-Smith         fit_pool_rows=36   spellings_here=1 
+    1628922   Azura Stevens | Azurá Stevens                 fit_pool_rows=14   spellings_here=1 
+    1629484   Megan DiLeo | Megan Gustafson                 fit_pool_rows=0    spellings_here=0 
+    1629546   Marine Johannes | Marine Johannès             fit_pool_rows=0    spellings_here=0 
+    1629566   Han Xu | Xu Han                               fit_pool_rows=0    spellings_here=0 
+    1630043   Bernadett Hatar | Bernadett Határ             fit_pool_rows=0    spellings_here=0 
+    1630151   Olivia Epoupa | Olivia Époupa                 fit_pool_rows=0    spellings_here=0 
+    1631021   Sika Kone | Sika Koné                         fit_pool_rows=0    spellings_here=0 
+    1631263   Nikolina Milic | Nikolina Milić               fit_pool_rows=0    spellings_here=0 
+    1641657   Dorka Juhasz | Dorka Juhász                   fit_pool_rows=0    spellings_here=0 
+    1641661   Lou Lopez Senechal | Lou Lopez Sénéchal       fit_pool_rows=0    spellings_here=0 
+    1642299   Nika Muhl | Nika Mühl                         fit_pool_rows=0    spellings_here=0 
+
+  m13_lib.py:348  m = scored.merge(market, on=['game_id','player_id'],
+                                    how='inner', validate='one_to_one')
+  -> the fit pool is assembled on (game_id, player_id) with a one-to-one validator.
+     A name-keyed assembly is structurally impossible here; the validator would raise.
+
+============================================================================================
+3. E1_I0045_roster_currency -- the one NAME_ONLY published table
+============================================================================================
+  exploration\E1_I0045_roster_currency\top_removed_players_R3.csv  rows=10
+       player_name  rows_removed  mean_p_active  appearances  p_active_mass
+   Bernadett Hatar             1       0.800000            0       0.800000
+   Brittney Griner             1       0.800000            1       0.800000
+ Diamond DeShields             1       0.800000            1       0.800000
+       Emma Cannon             1       0.800000            0       0.800000
+Jocelyn Willoughby             1       0.800000            1       0.800000
+  Karlie Samuelson             1       0.800000            1       0.800000
+Lou Lopez Sénéchal             1       0.800000            1       0.800000
+    Kiana Williams             1       0.800000            1       0.800000
+      Rennia Davis             1       0.800000            1       0.800000
+ Isabelle Harrison             1       0.282273            0       0.282273
+
+  rows whose player_name is an ambiguous spelling: 2
+    Bernadett Hatar          -> player_id 1630043    all spellings: Bernadett Hatar | Bernadett Határ
+    Lou Lopez Sénéchal       -> player_id 1641661    all spellings: Lou Lopez Senechal | Lou Lopez Sénéchal
+
+  source frame _PF.parquet rows=20084  sha256=28c91e30f6bb8b3a
+
+============================================================================================
+4. THE NORMALIZED-NAME INDEX the market lane resolves through
+============================================================================================
+  index size (distinct normalized spellings, 2021-2024): 271
+  normalized spellings binding to MORE THAN ONE player_id (a silent merge): 0
+
+  which of the twelve does _norm_name ABSORB (both spellings -> same string)?
+    203400    Skylar Diggins | Skylar Diggins-Smith        -> 2  normalized form(s) ['skylardiggins', 'skylardigginssmith']  NOT ABSORBED
+           but both forms map to player_id 203400 in the index: {'skylardiggins': 203400, 'skylardigginssmith': 203400}
+    1628922   Azura Stevens | Azurá Stevens                -> 1  normalized form(s) ['azurastevens']  ABSORBED
+           but both forms map to player_id 1628922 in the index: {'azurastevens': 1628922}
+    1629484   Megan DiLeo | Megan Gustafson                -> 2  normalized form(s) ['megandileo', 'megangustafson']  NOT ABSORBED
+           but both forms map to player_id 1629484 in the index: {'megandileo': 1629484, 'megangustafson': 1629484}
+    1629546   Marine Johannes | Marine Johannès            -> 1  normalized form(s) ['marinejohannes']  ABSORBED
+           but both forms map to player_id 1629546 in the index: {'marinejohannes': 1629546}
+    1629566   Han Xu | Xu Han                              -> 2  normalized form(s) ['hanxu', 'xuhan']  NOT ABSORBED
+           but both forms map to player_id 1629566 in the index: {'hanxu': 1629566, 'xuhan': 1629566}
+    1630043   Bernadett Hatar | Bernadett Határ            -> 1  normalized form(s) ['bernadetthatar']  ABSORBED
+           but both forms map to player_id 1630043 in the index: {'bernadetthatar': 1630043}
+    1630151   Olivia Epoupa | Olivia Époupa                -> 1  normalized form(s) ['oliviaepoupa']  ABSORBED
+           but both forms map to player_id 1630151 in the index: {'oliviaepoupa': 1630151}
+    1631021   Sika Kone | Sika Koné                        -> 1  normalized form(s) ['sikakone']  ABSORBED
+           but both forms map to player_id 1631021 in the index: {'sikakone': 1631021}
+    1631263   Nikolina Milic | Nikolina Milić              -> 1  normalized form(s) ['nikolinamilic']  ABSORBED
+           but both forms map to player_id 1631263 in the index: {'nikolinamilic': 1631263}
+    1641657   Dorka Juhasz | Dorka Juhász                  -> 1  normalized form(s) ['dorkajuhasz']  ABSORBED
+           but both forms map to player_id 1641657 in the index: {'dorkajuhasz': 1641657}
+    1641661   Lou Lopez Senechal | Lou Lopez Sénéchal      -> 1  normalized form(s) ['loulopezsenechal']  ABSORBED
+           but both forms map to player_id 1641661 in the index: {'loulopezsenechal': 1641661}
+    1642299   Nika Muhl | Nika Mühl                        -> 1  normalized form(s) ['nikamuhl']  ABSORBED
+           but both forms map to player_id 1642299 in the index: {'nikamuhl': 1642299}
+
+  absorbed by normalisation      : 9  [1628922, 1629546, 1630043, 1630151, 1631021, 1631263, 1641657, 1641661, 1642299]
+  NOT absorbed (distinct strings): 3  [203400, 1629484, 1629566]
+  -> but build_identity_index maps EVERY distinct (player_id, player_name) pair, so all
+     12 resolve to the correct player_id anyway. Absorption is not what makes it safe;
+     enumerating every observed spelling is.
+
+DONE s06

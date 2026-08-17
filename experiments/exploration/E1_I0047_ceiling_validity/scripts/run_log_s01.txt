@@ -1,0 +1,76 @@
+
+====================================================================================================
+E1_I0047 s01 -- ANCHORS (target 0.000e+00 on every one)
+====================================================================================================
+  PREREG sha256 ﻿abbf0077ceb179b076646aeef5eda6ae2efeeced931fe87c69801ce6fc9b4994
+
+====================================================================================================
+A1/A2 -- D097's OWN RECORDED TABLE: the two algebraic identities
+====================================================================================================
+  E0_I0024/upstream_signals.csv : 250 recorded cells
+  columns used: dr2, beta, sd_candidate, sd_candidate_resid, sd_y, CEILING_dr2_D089form, CEILING_dr2_residualised
+
+  A1  max |CEILING_dr2_residualised - dr2|            = 2.711e-20   over 250 cells
+  A2  max |CEILING_dr2_D089form - dr2*(sd_x/sd_xr)^2| = 1.440e-16   over 250 cells
+
+  CONSEQUENCE  min(CEILING_dr2_D089form - dr2) over all 250 recorded cells = +0.000000e+00
+               cells with ceiling < dr2 : 0
+               min VIF = 1.0000000461   (VIF < 1 would be the only way the form can fail)
+
+====================================================================================================
+A3/A4 -- REFIT TWO D097 CELLS FROM THE FROZEN PARQUET, INDEPENDENT IMPLEMENTATION
+====================================================================================================
+  screen_frame.parquet (18212, 78)   seasons [2021, 2022, 2023, 2024]  (PARTITION GUARD PASSED)
+  D097 headline frame (14327, 78)  seasons [2022, 2023, 2024]
+
+  A3  DECISION | y_oreb | B_COMPLETE | R08_player_ra_share
+      n recorded   5111   refit   5111   diff 0
+      dr2 recorded 0.001145976477   refit 0.001145976477   |diff| 3.318e-17
+      ceiling(D089 raw-sd) recorded 0.002575212832  refit 0.002575212832  |diff| 7.546e-17
+      ON THE SHIFT VECTOR d = beta_hat * x_perp, SAME rows/response/SST/base:
+         (d.d)/SST  [C-VARSHARE] = 0.001145976477
+         ORACLE                  = 0.001145976477
+         realised (2d.e-d.d)/SST = 0.001145976477
+         c* = (d.e)/(d.d)        = 1.000000000000000    |c*-1| = 2.220e-16
+
+  A4  POOLED | y_oreb | B_COMPLETE | R08_player_ra_share
+      n recorded  13784   refit  13784   diff 0
+      dr2 recorded 0.006488115970   refit 0.006488115970   |diff| 4.250e-17
+      ceiling(D089 raw-sd) recorded 0.010598178107  refit 0.010598178107  |diff| 6.245e-17
+      ON THE SHIFT VECTOR d = beta_hat * x_perp, SAME rows/response/SST/base:
+         (d.d)/SST  [C-VARSHARE] = 0.006488115970
+         ORACLE                  = 0.006488115970
+         realised (2d.e-d.d)/SST = 0.006488115970
+         c* = (d.e)/(d.d)        = 1.000000000000000    |c*-1| = 0.000e+00
+
+====================================================================================================
+A5/A6/A7 -- E1_I0023's RECORDED CEILING TABLE (the noise-floor anchors)
+====================================================================================================
+  E1_I0023/arithmetic_ceiling.csv : 64 rows, 16 negative-control rows
+  A5  max negative-control ceiling_1sd_form (whole table) = 4.375669e-03   target 4.375669e-03  |diff| 1.871e-10
+  A6  DECISION/ALL_TIERS/INTERACTION/walk_forward NC     = 3.979894e-04   target 3.979894e-04  |diff| 3.972e-11
+  A7  D098 headline ceiling (D084 form)                  = 0.01280821    target 0.01280821   |diff| 3.920e-09
+      that cell's own recorded c* (implied_optimal_rescaling) = 1.230110
+      that cell's own recorded ORACLE                         = 0.01938101
+      that cell's own recorded realised paired dR2            = +0.01870281
+
+====================================================================================================
+A8 -- E1_I0043's CORRECTED CEILING TABLE
+====================================================================================================
+  E1_I0043/CEILING_MATCHED.csv : (48, 20)
+  columns: response, window, base, arm, candidate, is_negative_control, n, sd_defence_centred, beta, injected_var_share, oracle_upper_bound, realised_signed_dr2, implied_optimal_rescaling, sd_shift, sd_y, response_moved_by_1sd_of_shift, pct_of_response_sd, oracle_vs_floor_single, oracle_vs_floor_132, realised_over_oracle
+
+====================================================================================================
+ANCHOR SUMMARY
+====================================================================================================
+  A1   PASS   D097 CEILING_dr2_residualised == dr2                       2.711e-20
+  A2   PASS   D097 CEILING_dr2_D089form == dr2 * VIF                     1.440e-16
+  A2b  PASS   D097 ceiling >= dr2 for every recorded cell                0.000e+00
+  A3   PASS   DECISION|y_oreb|B_COMPLETE|R08_player_ra_share dr2 refit   3.318e-17
+  A4   PASS   POOLED|y_oreb|B_COMPLETE|R08_player_ra_share dr2 refit     4.250e-17
+  A5   PASS   E1_I0023 max NC ceiling_1sd_form                           1.871e-10
+  A6   PASS   E1_I0023 disclosed NC cell                                 3.972e-11
+  A7   PASS   E1_I0023 D098 headline ceiling                             3.920e-09
+  A8   PASS   E1_I0043 CEILING_MATCHED.csv loaded                        
+
+  9 of 9 anchors PASS

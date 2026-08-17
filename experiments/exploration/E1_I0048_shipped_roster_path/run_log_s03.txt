@@ -1,0 +1,36 @@
+﻿==============================================================================
+s03 â€” SHIPPED DAMAGE, pre-repair era, fidelity-gated slots only
+==============================================================================
+resolved columns by explicit allowlist: ['game_id', 'season', 'game_date', 'team_id', 'team_abbreviation', 'player_id', 'player_name', 'minutes']
+master rows 34199; outcome columns asserted absent: ['pts', 'fgm', 'fga', 'reb', 'ast', 'plus_minus', 'appeared']
+
+pre-repair team-slots in shipped log : 76
+  passed the fidelity gate (usable)  : 76
+  fidelity rate                      : 76/76
+
+--- H1  phantom (departed) player-club pairings ---
+  E1_I0045 'departed' predicate, ported verbatim : 9 emissions on 9 of 76 slots
+    of which STALE  (appeared here, since appeared elsewhere) : 0   <-- THE DEFECT
+    of which ARRIVAL (never appeared here, not yet debuted)   : 9   <-- correct rostering, NOT damage
+
+--- H2/H4  name key vs player_id key, SAME frame (no drift) ---
+  team-slots where the two keys give different roster sizes : 0 of 76
+  total name->multi-id collisions (a player DROPPED)        : 0
+  total id->multi-name variants  (a player DUPLICATED)      : 0
+
+--- named cases ---
+                   case  record_idx slate_date team  player_id    player_name last_appearance_for  appeared_for_this_club  n_prior_app_season  trail5_min  in_decision_stratum
+ARRIVAL_NOT_YET_DEBUTED           1 2026-07-31  DAL    1641650    Haley Jones                 PDX                       0                   5      11.320                False
+ARRIVAL_NOT_YET_DEBUTED           4 2026-07-31  DAL    1641650    Haley Jones                 PDX                       0                   5      11.320                False
+ARRIVAL_NOT_YET_DEBUTED          22 2026-08-04  TOR    1642800 Aneesah Morrow                 CON                       0                  20      18.170                False
+ARRIVAL_NOT_YET_DEBUTED          23 2026-08-04  TOR    1642800 Aneesah Morrow                 CON                       0                  20      18.170                False
+ARRIVAL_NOT_YET_DEBUTED          24 2026-08-04  TOR    1642800 Aneesah Morrow                 CON                       0                  20      18.170                False
+ARRIVAL_NOT_YET_DEBUTED          27 2026-08-05  DAL    1641650    Haley Jones                 PDX                       0                   5      11.320                False
+ARRIVAL_NOT_YET_DEBUTED          31 2026-08-05  DAL    1641650    Haley Jones                 PDX                       0                   5      11.320                False
+ARRIVAL_NOT_YET_DEBUTED          35 2026-08-05  DAL    1641650    Haley Jones                 PDX                       0                   5      11.320                False
+ARRIVAL_NOT_YET_DEBUTED          38 2026-08-06  MIN    1631064    Chloe Bibby                 CHI                       0                   4      12.788                False
+
+--- DECISION STRATUM (n_prior_app_season>=8 AND trail5_min>=24) ---
+  affected emissions reaching the decision stratum: 0 of 9
+
+wrote SHIPPED_DAMAGE.csv, SHIPPED_DAMAGE_by_slot.csv

@@ -1,0 +1,173 @@
+﻿strong sites: 363 / 540
+
+=== class counts ===
+candidate_class
+ATOMIC                  252
+UNDETERMINABLE_SITE     177
+COMPOSITE_DIFFERENCE     30
+UNDETERMINABLE_EXPR      23
+COMPOSITE_RATIO          21
+COMPOSITE_PRODUCT        16
+COMPOSITE_SUM            13
+COMPOSITE_MIXED           6
+BUNDLE                    2
+
+=== composites by screen ===
+screen
+E0_I0014_residual_heterogeneity        14
+E0_I0015_points_skill_decomposition    12
+E0_I0016_efficiency_predictors         12
+E0_I0017_shot_quality_efficiency       11
+E0_I0019_availability_forecast          9
+E0_I0029_freethrow_hurdle               2
+E1_I0018_teammate_volume_channel        2
+E1_I0020_coldstart_tiering              4
+E1_I0021_heterogeneity_diagnostic       2
+E1_I0022_optimal_simple_estimator       1
+E1_I0023_usage_defence_interaction      2
+E1_I0025_threshold_vs_refit             1
+E1_I0030_home_advantage_accounting     15
+E1_I0036_level_artefact_sweep           1
+
+=== composites, resolved list ===
+                             screen                 candidate      candidate_class                                                                construction_expr
+    E0_I0014_residual_heterogeneity     pl_prior_season_games COMPOSITE_DIFFERENCE                                 d["pl_career_games_prior"] - d["pl_games_prior"]
+    E0_I0014_residual_heterogeneity                pl_min_cv5      COMPOSITE_RATIO                       app["pl_min_sd5"] / app["pl_min_mean5"].replace(0, np.nan)
+    E0_I0014_residual_heterogeneity pl_teamgames_since_appear COMPOSITE_DIFFERENCE                                       d["tm_game_idx"] - d["_last_ap_idx"] - 1.0
+    E0_I0014_residual_heterogeneity              tm_rest_days COMPOSITE_DIFFERENCE           g["gdate"].transform(lambda x: (x - x.shift(1)).dt.days).astype(float)
+    E0_I0014_residual_heterogeneity              tm_rest_diff COMPOSITE_DIFFERENCE                                           T["tm_rest_days"] - T["opp_rest_days"]
+    E0_I0014_residual_heterogeneity           pts__pred_width COMPOSITE_DIFFERENCE                                          f["pts__pred_q95"] - f["pts__pred_q05"]
+    E0_I0014_residual_heterogeneity             pts__pred_iqr COMPOSITE_DIFFERENCE                                    f["%s__pred_q75" % t] - f["%s__pred_q25" % t]
+    E0_I0014_residual_heterogeneity              pts__pred_cv      COMPOSITE_RATIO                f["%s__pred_sd" % t] / f["%s__pred_point" % t].replace(0, np.nan)
+    E0_I0014_residual_heterogeneity       minutes__pred_width COMPOSITE_DIFFERENCE                                    f["%s__pred_q95" % t] - f["%s__pred_q05" % t]
+    E0_I0014_residual_heterogeneity         minutes__pred_iqr COMPOSITE_DIFFERENCE                                    f["%s__pred_q75" % t] - f["%s__pred_q25" % t]
+    E0_I0014_residual_heterogeneity          minutes__pred_cv      COMPOSITE_RATIO                f["%s__pred_sd" % t] / f["%s__pred_point" % t].replace(0, np.nan)
+    E0_I0014_residual_heterogeneity           fga__pred_width COMPOSITE_DIFFERENCE                                    f["%s__pred_q95" % t] - f["%s__pred_q05" % t]
+    E0_I0014_residual_heterogeneity             fga__pred_iqr COMPOSITE_DIFFERENCE                                    f["%s__pred_q75" % t] - f["%s__pred_q25" % t]
+    E0_I0014_residual_heterogeneity              fga__pred_cv      COMPOSITE_RATIO                f["%s__pred_sd" % t] / f["%s__pred_point" % t].replace(0, np.nan)
+     E0_I0016_efficiency_predictors       A01_opp_efg_allowed        COMPOSITE_SUM                    safe_div(PS["opp_fgm"] + 0.5 * PS["opp_fg3m"], PS["opp_fga"])
+     E0_I0016_efficiency_predictors        A02_opp_ts_allowed        COMPOSITE_SUM            safe_div(PS["opp_pts"], 2.0 * (PS["opp_fga"] + 0.44 * PS["opp_fta"]))
+     E0_I0016_efficiency_predictors        B04_matchup_ftrate    COMPOSITE_PRODUCT                               pl["B01_pl_ftrate"] * pl["A07_opp_ftrate_allowed"]
+     E0_I0016_efficiency_predictors      B05_matchup_fouldraw    COMPOSITE_PRODUCT                                pl["B03_pl_fouls_drawn_per36"] * pl["A08_opp_pf"]
+     E0_I0016_efficiency_predictors              D03_pace_sum        COMPOSITE_SUM                               pl["D01_tm_poss_per40"] + pl["D02_opp_poss_per40"]
+     E0_I0016_efficiency_predictors     D05_transition_x_pace    COMPOSITE_PRODUCT                                pl["D04_pl_fastbreak_share"] * pl["D03_pace_sum"]
+     E0_I0016_efficiency_predictors      E04_3pt_vs_opp_perim    COMPOSITE_PRODUCT                           pl["E01_pl_fg3a_share"] * pl["A05_opp_fg3pct_allowed"]
+     E0_I0016_efficiency_predictors      E05_paint_vs_opp_rim    COMPOSITE_PRODUCT                                  pl["E02_pl_paintpts_share"] * pl["A04_opp_blk"]
+     E0_I0016_efficiency_predictors          E06_pl_efg_prior        COMPOSITE_SUM                                safe_div(QS["fgm"] + 0.5 * QS["fg3m"], QS["fga"])
+     E0_I0016_efficiency_predictors      F01_b2b_x_fg3a_share    COMPOSITE_PRODUCT                                          pl["_tm_b2b"] * pl["E01_pl_fg3a_share"]
+     E0_I0016_efficiency_predictors          F02_b2b_x_ftrate    COMPOSITE_PRODUCT                                              pl["_tm_b2b"] * pl["B01_pl_ftrate"]
+     E0_I0016_efficiency_predictors     F04_load_x_fg3a_share    COMPOSITE_PRODUCT                              pl["F03_minutes_load_7d"] * pl["E01_pl_fg3a_share"]
+   E0_I0017_shot_quality_efficiency        D04_xefg_minus_own COMPOSITE_DIFFERENCE                                             pl["D01_xefg_zone"] - pl["refB_efg"]
+   E0_I0017_shot_quality_efficiency      F02_lt5ft_x_opplt5ft    COMPOSITE_PRODUCT                             pl["A02_share_lt5ft"] * pl["E02_opp_lt5ft_conceded"]
+   E0_I0017_shot_quality_efficiency           A04_share_paint        COMPOSITE_SUM   safe_div(P[zc["Restricted Area"]] + P[zc["In The Paint (Non-RA)"]], P["_att"])
+   E0_I0017_shot_quality_efficiency        F01_dist_x_oppdist    COMPOSITE_PRODUCT                                pl["A01_dist_mean"] * pl["E01_opp_dist_conceded"]
+   E0_I0017_shot_quality_efficiency        F03_xefg_x_oppxefg    COMPOSITE_PRODUCT                                pl["D01_xefg_zone"] * pl["E04_opp_xefg_conceded"]
+   E0_I0017_shot_quality_efficiency          F04_3pa_x_opp3pa    COMPOSITE_PRODUCT                                 pl["A08_share_3pa"] * pl["E05_opp_3pa_conceded"]
+   E0_I0017_shot_quality_efficiency         A06_share_corner3        COMPOSITE_SUM            safe_div(P[zc["Left Corner 3"]] + P[zc["Right Corner 3"]], P["_att"])
+   E0_I0017_shot_quality_efficiency             B06_3pa_trend COMPOSITE_DIFFERENCE                           safe_div(T5["_is3"], T5["_att"]) - pl["A08_share_3pa"]
+   E0_I0017_shot_quality_efficiency            B04_dist_trend COMPOSITE_DIFFERENCE                                          pl["B01_dist_t5"] - pl["A01_dist_mean"]
+   E0_I0017_shot_quality_efficiency        C05_assisted_trend COMPOSITE_DIFFERENCE                           pl["C04_assisted_share_t5"] - pl["C01_assisted_share"]
+   E0_I0017_shot_quality_efficiency           B05_lt5ft_trend COMPOSITE_DIFFERENCE                                       pl["B02_lt5ft_t5"] - pl["A02_share_lt5ft"]
+     E0_I0019_availability_forecast     pl_prior_season_games COMPOSITE_DIFFERENCE                                 H["pl_career_games_prior"] - H["pl_games_prior"]
+     E0_I0019_availability_forecast      pl_min_per_opp_prior      COMPOSITE_RATIO                    H["pl_minutes_prior"] / H["pl_opps_prior"].replace(0, np.nan)
+     E0_I0019_availability_forecast         pl_boundary_score    COMPOSITE_PRODUCT       4.0 * r_ * (1.0 - r_)          # peaks at r = 0.5, the "sometimes" players
+     E0_I0019_availability_forecast  pl_boundary_score_career    COMPOSITE_PRODUCT                                                            4.0 * rc * (1.0 - rc)
+     E0_I0019_availability_forecast            pl_switch_rate      COMPOSITE_RATIO                         H["pl_switches"] / H["pl_opps_prior"].replace(0, np.nan)
+     E0_I0019_availability_forecast                pl_min_cv5      COMPOSITE_RATIO                       app["pl_min_sd5"] / app["pl_min_mean5"].replace(0, np.nan)
+     E0_I0019_availability_forecast              tm_rest_days COMPOSITE_DIFFERENCE           g["gdate"].transform(lambda x: (x - x.shift(1)).dt.days).astype(float)
+     E0_I0019_availability_forecast      tm_win_pct_vs_league COMPOSITE_DIFFERENCE                                                      tg["tm_win_pct_prior"] - lg
+     E0_I0019_availability_forecast          mdl_pred_entropy      COMPOSITE_MIXED                                   -(pc * np.log(pc) + (1 - pc) * np.log(1 - pc))
+          E0_I0029_freethrow_hurdle          X01_fd_x_oppfoul    COMPOSITE_PRODUCT                                                    app["_c_F02"] * app["_c_M01"]
+          E0_I0029_freethrow_hurdle       X02_ftr_x_oppftrate    COMPOSITE_PRODUCT                                                    app["_c_F01"] * app["_c_M04"]
+   E1_I0018_teammate_volume_channel      N01_news_vs_prevgame COMPOSITE_DIFFERENCE                                   pl["T01_c04_tiptime"] - pl["P01_c04_prevgame"]
+   E1_I0018_teammate_volume_channel         N02_news_vs_avail COMPOSITE_DIFFERENCE                              pl["T01_c04_tiptime"] - pl["P02_c04_availweighted"]
+ E1_I0023_usage_defence_interaction       A01_opp_efg_allowed        COMPOSITE_SUM                    safe_div(PS["opp_fgm"] + 0.5 * PS["opp_fg3m"], PS["opp_fga"])
+ E1_I0023_usage_defence_interaction        A02_opp_ts_allowed        COMPOSITE_SUM            safe_div(PS["opp_pts"], 2.0 * (PS["opp_fga"] + 0.44 * PS["opp_fta"]))
+E0_I0015_points_skill_decomposition     pl_prior_season_games COMPOSITE_DIFFERENCE                                 d["pl_career_games_prior"] - d["pl_games_prior"]
+E0_I0015_points_skill_decomposition                pl_min_cv5      COMPOSITE_RATIO                       app["pl_min_sd5"] / app["pl_min_mean5"].replace(0, np.nan)
+E0_I0015_points_skill_decomposition pl_teamgames_since_appear COMPOSITE_DIFFERENCE                                       d["tm_game_idx"] - d["_last_ap_idx"] - 1.0
+E0_I0015_points_skill_decomposition              tm_rest_days COMPOSITE_DIFFERENCE           g["gdate"].transform(lambda x: (x - x.shift(1)).dt.days).astype(float)
+E0_I0015_points_skill_decomposition              tm_rest_diff COMPOSITE_DIFFERENCE                                           T["tm_rest_days"] - T["opp_rest_days"]
+E0_I0015_points_skill_decomposition           pts__pred_width COMPOSITE_DIFFERENCE                                          f["pts__pred_q95"] - f["pts__pred_q05"]
+E0_I0015_points_skill_decomposition             pts__pred_iqr COMPOSITE_DIFFERENCE                                          f["pts__pred_q75"] - f["pts__pred_q25"]
+E0_I0015_points_skill_decomposition       minutes__pred_width COMPOSITE_DIFFERENCE                                  f["minutes__pred_q95"] - f["minutes__pred_q05"]
+E0_I0015_points_skill_decomposition           fga__pred_width COMPOSITE_DIFFERENCE                                          f["fga__pred_q95"] - f["fga__pred_q05"]
+E0_I0015_points_skill_decomposition           rate_pred_width      COMPOSITE_RATIO                                  f["pts__pred_width"] / f["minutes__pred_point"]
+E0_I0015_points_skill_decomposition              rate_pred_cv      COMPOSITE_RATIO                      f["pts__pred_sd"] / f["pts__pred_point"].replace(0, np.nan)
+E0_I0015_points_skill_decomposition               pts_per_min      COMPOSITE_RATIO                                                          t["pts"] / t["minutes"]
+  E1_I0021_heterogeneity_diagnostic       A01_opp_efg_allowed        COMPOSITE_SUM                    safe_div(PS["opp_fgm"] + 0.5 * PS["opp_fg3m"], PS["opp_fga"])
+  E1_I0021_heterogeneity_diagnostic        A02_opp_ts_allowed        COMPOSITE_SUM            safe_div(PS["opp_pts"], 2.0 * (PS["opp_fga"] + 0.44 * PS["opp_fta"]))
+ E1_I0030_home_advantage_accounting                       ppp      COMPOSITE_RATIO                                                             t["pts"] / t["poss"]
+ E1_I0030_home_advantage_accounting                      fg2a COMPOSITE_DIFFERENCE                                                             t["fga"] - t["fg3a"]
+ E1_I0030_home_advantage_accounting                      fg2m COMPOSITE_DIFFERENCE                                                             t["fgm"] - t["fg3m"]
+ E1_I0030_home_advantage_accounting                    fg_pct      COMPOSITE_RATIO                                           t["fgm"] / t["fga"].replace(0, np.nan)
+ E1_I0030_home_advantage_accounting                   fg2_pct      COMPOSITE_RATIO                                         t["fg2m"] / t["fg2a"].replace(0, np.nan)
+ E1_I0030_home_advantage_accounting                   fg3_pct      COMPOSITE_RATIO                                         t["fg3m"] / t["fg3a"].replace(0, np.nan)
+ E1_I0030_home_advantage_accounting                    ft_pct      COMPOSITE_RATIO                                           t["ftm"] / t["fta"].replace(0, np.nan)
+ E1_I0030_home_advantage_accounting                   efg_pct      COMPOSITE_MIXED                       (t["fgm"] + 0.5 * t["fg3m"]) / t["fga"].replace(0, np.nan)
+ E1_I0030_home_advantage_accounting                    ts_pct      COMPOSITE_MIXED               t["pts"] / (2.0 * (t["fga"] + 0.44 * t["fta"])).replace(0, np.nan)
+ E1_I0030_home_advantage_accounting               pts_per_min      COMPOSITE_RATIO                                                          t["pts"] / t["minutes"]
+ E1_I0030_home_advantage_accounting                    ppm_mw      COMPOSITE_RATIO                                                        tg["pts"] / tg["minutes"]
+ E1_I0030_home_advantage_accounting            fga_per_min_mw      COMPOSITE_RATIO                                                        tg["fga"] / tg["minutes"]
+ E1_I0030_home_advantage_accounting            fta_per_min_mw      COMPOSITE_RATIO                                                        tg["fta"] / tg["minutes"]
+ E1_I0030_home_advantage_accounting                  ftapm_eq               BUNDLE                                                         ("fta_per_min", "mean"))
+ E1_I0030_home_advantage_accounting                       ppm      COMPOSITE_RATIO np.where(p["appeared"] == 1, p["pts"] / p["minutes"].replace(0, np.nan), np.nan)
+      E1_I0036_level_artefact_sweep           ROSTER_RA_SHARE               BUNDLE                                                 ("R08_player_ra_share", "mean"),
+         E1_I0020_coldstart_tiering               P0_champion        COMPOSITE_SUM                                              frame["champ_" + t].to_numpy(float)
+         E1_I0020_coldstart_tiering               P1_ref_D076        COMPOSITE_SUM                                                 frame["p1_" + t].to_numpy(float)
+         E1_I0020_coldstart_tiering       P1full_running_mean        COMPOSITE_SUM                                             frame["p1full_" + t].to_numpy(float)
+         E1_I0020_coldstart_tiering                       ppm      COMPOSITE_MIXED         (d["pp__poss"] + SHRINK_MIN * d["lg_ppm"]) / (d["pp__min"] + SHRINK_MIN)
+  E1_I0022_optimal_simple_estimator                       ppm      COMPOSITE_MIXED         (d["pp__poss"] + SHRINK_MIN * d["lg_ppm"]) / (d["pp__min"] + SHRINK_MIN)
+        E1_I0025_threshold_vs_refit                       ppm      COMPOSITE_MIXED         (d["pp__poss"] + SHRINK_MIN * d["lg_ppm"]) / (d["pp__min"] + SHRINK_MIN)
+
+=== unresolved, by screen ===
+screen                               candidate_class    
+E0_I0014_residual_heterogeneity      UNDETERMINABLE_EXPR     3
+                                     UNDETERMINABLE_SITE    15
+E0_I0015_points_skill_decomposition  UNDETERMINABLE_EXPR     5
+                                     UNDETERMINABLE_SITE    19
+E0_I0016_efficiency_predictors       UNDETERMINABLE_SITE     1
+E0_I0019_availability_forecast       UNDETERMINABLE_EXPR     2
+                                     UNDETERMINABLE_SITE     5
+E0_I0024_reb_ast_characterisation    UNDETERMINABLE_SITE    10
+E0_I0029_freethrow_hurdle            UNDETERMINABLE_SITE     2
+E1_I0004_efficiency_transfer         UNDETERMINABLE_EXPR     2
+E1_I0004_efficiency_transfer_v2      UNDETERMINABLE_SITE     9
+E1_I0020_coldstart_tiering           UNDETERMINABLE_EXPR     1
+                                     UNDETERMINABLE_SITE    18
+E1_I0021_heterogeneity_diagnostic    UNDETERMINABLE_SITE     1
+E1_I0022_optimal_simple_estimator    UNDETERMINABLE_SITE    11
+E1_I0025_threshold_vs_refit          UNDETERMINABLE_EXPR     1
+                                     UNDETERMINABLE_SITE     7
+E1_I0027_reference_ladder            UNDETERMINABLE_SITE    13
+E1_I0030_home_advantage_accounting   UNDETERMINABLE_EXPR     8
+                                     UNDETERMINABLE_SITE    18
+E1_I0031_rapm_as_prior               UNDETERMINABLE_EXPR     1
+                                     UNDETERMINABLE_SITE     1
+E1_I0032_aggregate_stack             UNDETERMINABLE_SITE    14
+E1_I0033_aggregation_level           UNDETERMINABLE_SITE    12
+E1_I0034_redistribution              UNDETERMINABLE_SITE    20
+E1_I0035_availability_sum            UNDETERMINABLE_SITE     1
+
+unresolved candidates:
+  E0_I0014_residual_heterogeneity          ['fga__pred_point', 'fga__pred_sd', 'minutes__pred_point', 'minutes__pred_sd', 'opp_game_idx', 'opp_poss_mean_prior', 'opp_rest_days', 'pl_min_rng5', 'pl_min_trend5', 'pts__fallback_level', 'pts__is_cold_start', 'pts__n_prior_games', 'pts__pred_sd', 'tm_five_changed_prior', 'tm_five_tenure_prior', 'tm_newfaces_prior', 'tm_poss_mean_prior', 'tm_roster_churn_prior']
+  E0_I0015_points_skill_decomposition      ['A', 'ADEQUATE >= 8 prior appearances', 'B', 'POOLED', 'THIN   < 8 prior same-season appearances', 'fallback rows only', 'fga__pred_sd', 'minutes__pred_sd', 'non-fallback rows only', 'opp_game_idx', 'opp_poss_mean_prior', 'opp_rest_days', 'pl_min_rng5', 'pl_min_trend5', 'pts__fallback_level', 'pts__is_cold_start', 'pts__n_prior_games', 'pts__pred_sd', 'pts_per_fga', 'tm_five_changed_prior', 'tm_five_tenure_prior', 'tm_newfaces_prior', 'tm_poss_mean_prior', 'tm_roster_churn_prior']
+  E0_I0016_efficiency_predictors           ['D02_opp_poss_per40']
+  E0_I0019_availability_forecast           ['pl_min_trend5', 'tm_five_changed_prior', 'tm_five_tenure_prior', 'tm_late_out_of_contention', 'tm_newfaces_prior', 'tm_roster_churn_prior', 'tm_roster_size_prior']
+  E0_I0024_reb_ast_characterisation        ['G02_placebo_noop', 'R01_opp_allowed_miss_pg', 'R02_opp_allowed_ra_share', 'R03_opp_allowed_atb3_share', 'R04_opp_allowed_mid_share', 'R05_opp_allowed_long_miss_pg', 'R06_own_atb3_share', 'R07_own_miss_pg', 'R09_opp_allowed_paint_share', 'R10_opp_allowed_oreb_pg']
+  E0_I0029_freethrow_hurdle                ['G02_placebo_noop', 'G03_placebo_perturbed']
+  E1_I0004_efficiency_transfer             ['A', 'B']
+  E1_I0004_efficiency_transfer_v2          ['SPEC_ALL5_GLOBAL', 'SPEC_ALL5_GLOBAL_UNCENTRED', 'SPEC_ALL5_GLOBAL_XSCENTRED', 'SPEC_ALL5_PERZONE', 'SPEC_ALL5_PERZONE_UNCENTRED', 'SPEC_ALL5_PERZONE_XSCENTRED', 'SPEC_RA', 'SPEC_RA_UNCENTRED', 'SPEC_RA_XSCENTRED']
+  E1_I0020_coldstart_tiering               ['2024', 'P2_position', 'P3_draft_bin', 'P3_draft_ols', 'P4_teamrole', 'P5a_draft_x_depth', 'P5b_pos_x_draft', 'P5c_additive', 'P5d_blend_k1', 'P5d_blend_k10', 'P5d_blend_k2', 'P5d_blend_k3', 'P5d_blend_k5', 'P5e_careerblend_k2', 'P5e_careerblend_k3', 'P5e_careerblend_k5', 'TIER_DATA_POOR', 'sub_0_priors', 'sub_1_2_priors']
+  E1_I0021_heterogeneity_diagnostic        ['FAMILY(6 preregistered relationships)']
+  E1_I0022_optimal_simple_estimator        ['decision_stratum_wf', 'outside_decision_stratum_wf', 'pooled_wf', 'tier_0', 'tier_1-2', 'tier_15-24', 'tier_25+', 'tier_3-7', 'tier_8-14', 'tier_ge3_priors', 'tier_lt3_priors']
+  E1_I0025_threshold_vs_refit              ['L1_pooled_defence_main', 'L2_pooled_linear_interaction', 'L3_pooled_tier_dummy_x_defence', 'L4_tier_restricted_refit', 'PLAYERBLOCK', 'POOLED', 'ROWSHUFFLE', 'points']
+  E1_I0027_reference_ladder                ['-0.0002961142343277', '-1.0570163212486603e-05', '0.0035722898272361', '0.0039145919604981', '0.0045498548762125', '0.0045748709111776', '0.0051773646242858', '0.0064193656303963', '0.0096470153400169', '0.0102777472750601', '0.0112794646108451', '8.323895376183277e-05', 'R4_RICH_LOOKUP']
+  E1_I0030_home_advantage_accounting       ['ALL_2021_2024', 'REGULAR_SEASON', '__RECON_G_team_pts', '__RECON_composition', '__RECON_residual', '__RECON_sum_of_parts', '__RECON_within_player', '__RECON_within_via_minutes', '__RECON_within_via_ppm', 'dreb', 'fg3a', 'fg3a_eq', 'fga', 'fga_eq', 'fgapm_eq', 'fgm', 'fta', 'fta_eq', 'ftm', 'hhi_minutes', 'min_eq', 'oreb', 'ppm_eq', 'pts', 'pts_eq', 'starter_minute_share']
+  E1_I0031_rapm_as_prior                   ['RAPM_as_feature', 'pm_all']
+  E1_I0032_aggregate_stack                 ['CHAMPION', 'FULL_STACK', 'PLACEBO_FULL', 'PLACEBO_STACK', 'STACK', 'STEP0', 'STEP1', 'STEP2', 'STEP3', 'STEP4', 'STEP5', 'STEP6', 'v14', 'v15']
+  E1_I0033_aggregation_level               ['B1_BOTTOMUP_AVAIL', 'B3_ORACLE_ROSTER', 'P07', 'P07b_EXPLORATORY', 'P08', 'P09', 'P10', 'P11', 'P12', 'P13', 'X1_EXPLORATORY', 'X2_EXPLORATORY']
+  E1_I0034_redistribution                  ['FREED_fga', 'FREED_minutes', 'FREED_pts', 'P01_LEAKAGE_fga', 'P01_LEAKAGE_minutes', 'P01_LEAKAGE_pts', 'P02_TILT_fga', 'P02_TILT_minutes', 'P02_TILT_pts', 'P03_fga', 'P03_minutes', 'P03_pts', 'P03_vs_base5_fga', 'P03_vs_base5_minutes', 'P03_vs_base5_pts', 'P04_vs_champion_fga', 'P04_vs_champion_minutes', 'P04_vs_champion_pts', 'u * posmatch', 'u * z']
+  E1_I0035_availability_sum                ['XaO']
+
+DONE s08

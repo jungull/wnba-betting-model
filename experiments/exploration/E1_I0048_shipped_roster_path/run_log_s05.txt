@@ -1,0 +1,267 @@
+﻿==============================================================================
+s05 — NAME KEY vs player_id KEY at the roster site
+==============================================================================
+resolved by explicit allowlist: ['game_id', 'season', 'game_date', 'team_id', 'team_abbreviation', 'player_id', 'player_name', 'minutes']
+
+--- H3: stable id availability in master_player.parquet ---
+  'player_id' column present : True
+  null player_id rows        : 0 of 34199
+  dtype                      : Int64
+
+--- identity ambiguity in the production input, by season ---
+ season  rows  distinct_player_id  distinct_player_name  names_mapping_to_multiple_ids  ids_mapping_to_multiple_names             partition
+   2021  4575                 159                   163                              0                              4 exploration_2021_2024
+   2022  5261                 168                   174                              0                              6 exploration_2021_2024
+   2023  5749                 164                   172                              0                              8 exploration_2021_2024
+   2024  5877                 157                   165                              0                              8 exploration_2021_2024
+   2025  7071                 184                   184                              0                              0        SEALED_holdout
+   2026  5666                 228                   229                              0                              1        SEALED_holdout
+
+--- named identities where the two keys disagree (27) ---
+ season                   kind  player_id                                  values     teams
+   2021 ID_WITH_MULTIPLE_NAMES     203400   Skylar Diggins | Skylar Diggins-Smith       PHO
+   2021 ID_WITH_MULTIPLE_NAMES    1628922           Azura Stevens | Azurá Stevens       CHI
+   2021 ID_WITH_MULTIPLE_NAMES    1629484           Megan DiLeo | Megan Gustafson       WAS
+   2021 ID_WITH_MULTIPLE_NAMES    1630043       Bernadett Hatar | Bernadett Határ       IND
+   2022 ID_WITH_MULTIPLE_NAMES     203400   Skylar Diggins | Skylar Diggins-Smith       PHO
+   2022 ID_WITH_MULTIPLE_NAMES    1628922           Azura Stevens | Azurá Stevens       CHI
+   2022 ID_WITH_MULTIPLE_NAMES    1629484           Megan DiLeo | Megan Gustafson       PHO
+   2022 ID_WITH_MULTIPLE_NAMES    1629546       Marine Johannes | Marine Johannès       NYL
+   2022 ID_WITH_MULTIPLE_NAMES    1629566                         Han Xu | Xu Han       NYL
+   2022 ID_WITH_MULTIPLE_NAMES    1631263         Nikolina Milic | Nikolina Milić       MIN
+   2023 ID_WITH_MULTIPLE_NAMES    1628922           Azura Stevens | Azurá Stevens       LAS
+   2023 ID_WITH_MULTIPLE_NAMES    1629484           Megan DiLeo | Megan Gustafson       PHO
+   2023 ID_WITH_MULTIPLE_NAMES    1629546       Marine Johannes | Marine Johannès       NYL
+   2023 ID_WITH_MULTIPLE_NAMES    1629566                         Han Xu | Xu Han       NYL
+   2023 ID_WITH_MULTIPLE_NAMES    1630043       Bernadett Hatar | Bernadett Határ CON | IND
+   2023 ID_WITH_MULTIPLE_NAMES    1631021                   Sika Kone | Sika Koné       CHI
+   2023 ID_WITH_MULTIPLE_NAMES    1631263         Nikolina Milic | Nikolina Milić       MIN
+   2023 ID_WITH_MULTIPLE_NAMES    1641657             Dorka Juhasz | Dorka Juhász       MIN
+   2024 ID_WITH_MULTIPLE_NAMES     203400   Skylar Diggins | Skylar Diggins-Smith       SEA
+   2024 ID_WITH_MULTIPLE_NAMES    1628922           Azura Stevens | Azurá Stevens       LAS
+   2024 ID_WITH_MULTIPLE_NAMES    1629484           Megan DiLeo | Megan Gustafson       LVA
+   2024 ID_WITH_MULTIPLE_NAMES    1630151           Olivia Epoupa | Olivia Époupa       MIN
+   2024 ID_WITH_MULTIPLE_NAMES    1631021                   Sika Kone | Sika Koné MIN | WAS
+   2024 ID_WITH_MULTIPLE_NAMES    1641657             Dorka Juhasz | Dorka Juhász       MIN
+   2024 ID_WITH_MULTIPLE_NAMES    1641661 Lou Lopez Senechal | Lou Lopez Sénéchal       DAL
+   2024 ID_WITH_MULTIPLE_NAMES    1642299                   Nika Muhl | Nika Mühl       SEA
+   2026 ID_WITH_MULTIPLE_NAMES    1643490         Eliska Hamzova | Eliska Joklova       MIN
+
+--- roster windows simulated at every team-game index: 3030 ---
+  windows where the two keys give a DIFFERENT roster size: 204
+        windows_differing  teams
+season                          
+2021                   20      4
+2022                   30      4
+2023                   59      6
+2024                   87      5
+2026                    8      1
+
+  detail:
+ season team  slate_index  n_roster_name_key  n_roster_id_key  delta
+   2021  PHO           33                 12               11      1
+   2021  PHO           34                 12               11      1
+   2021  WAS           19                 13               12      1
+   2021  WAS           20                 13               12      1
+   2021  WAS           23                 13               12      1
+   2021  WAS           24                 13               12      1
+   2021  WAS           29                 13               12      1
+   2021  WAS           30                 13               12      1
+   2021  WAS           31                 13               12      1
+   2021  WAS           32                 13               12      1
+   2021  IND            6                 13               12      1
+   2021  IND            7                 13               12      1
+   2021  IND           15                 13               12      1
+   2021  IND           16                 13               12      1
+   2021  IND           19                 13               12      1
+   2021  IND           20                 13               12      1
+   2021  CHI            3                 14               13      1
+   2021  CHI            4                 13               12      1
+   2021  CHI           33                 12               11      1
+   2021  CHI           34                 12               11      1
+   2022  NYL            2                 13               12      1
+   2022  NYL            3                 13               12      1
+   2022  NYL            4                 13               12      1
+   2022  NYL            5                 13               12      1
+   2022  NYL            6                 14               13      1
+   2022  NYL            7                 14               13      1
+   2022  NYL           17                 14               13      1
+   2022  NYL           18                 14               13      1
+   2022  NYL           19                 14               13      1
+   2022  NYL           37                 13               12      1
+   2022  NYL           38                 13               12      1
+   2022  PHO           24                 12               11      1
+   2022  PHO           25                 12               11      1
+   2022  PHO           26                 13               12      1
+   2022  PHO           27                 13               12      1
+   2022  PHO           28                 14               13      1
+   2022  PHO           29                 14               13      1
+   2022  PHO           30                 14               13      1
+   2022  PHO           33                 14               13      1
+   2022  PHO           34                 14               13      1
+   2022  PHO           37                 15               14      1
+   2022  PHO           38                 15               14      1
+   2022  MIN           23                 11               10      1
+   2022  MIN           24                 11               10      1
+   2022  MIN           25                 11               10      1
+   2022  CHI            8                 11               10      1
+   2022  CHI            9                 11               10      1
+   2022  CHI           10                 11               10      1
+   2022  CHI           37                 12               11      1
+   2022  CHI           38                 12               11      1
+   2023  NYL            4                 13               12      1
+   2023  NYL            5                 13               11      2
+   2023  NYL            6                 12               11      1
+   2023  NYL            7                 12               11      1
+   2023  NYL            8                 12               11      1
+   2023  NYL           34                 13               11      2
+   2023  NYL           35                 13               11      2
+   2023  NYL           36                 13               11      2
+   2023  NYL           37                 12               11      1
+   2023  NYL           38                 12               11      1
+   2023  NYL           39                 12               11      1
+   2023  NYL           41                 12               11      1
+   2023  NYL           42                 12               11      1
+   2023  PHO            4                 14               13      1
+   2023  PHO            5                 13               12      1
+   2023  PHO           14                 13               12      1
+   2023  PHO           15                 13               12      1
+   2023  PHO           16                 13               12      1
+   2023  PHO           31                 14               13      1
+   2023  PHO           32                 14               13      1
+   2023  PHO           33                 16               15      1
+   2023  LAS            6                 13               12      1
+   2023  LAS            7                 13               12      1
+   2023  CON           28                 12               11      1
+   2023  CON           29                 12               11      1
+   2023  CON           31                 13               12      1
+   2023  CON           34                 13               12      1
+   2023  CON           38                 12               11      1
+   2023  CON           39                 12               11      1
+   2023  MIN            6                 12               11      1
+   2023  MIN            7                 12               11      1
+   2023  MIN            8                 12               11      1
+   2023  MIN           28                 13               12      1
+   2023  MIN           29                 13               12      1
+   2023  MIN           30                 12               11      1
+   2023  MIN           31                 12               11      1
+   2023  MIN           41                 13               11      2
+   2023  MIN           42                 13               11      2
+   2023  CHI            4                 13               12      1
+   2023  CHI            5                 13               12      1
+   2023  CHI           14                 14               13      1
+   2023  CHI           15                 14               13      1
+   2023  CHI           16                 14               13      1
+   2023  CHI           17                 14               13      1
+   2023  CHI           18                 15               14      1
+   2023  CHI           19                 15               14      1
+   2023  CHI           20                 14               13      1
+   2023  CHI           22                 14               13      1
+   2023  CHI           23                 14               13      1
+   2023  CHI           24                 14               13      1
+   2023  CHI           31                 14               13      1
+   2023  CHI           32                 14               13      1
+   2023  CHI           33                 14               13      1
+   2023  CHI           34                 14               13      1
+   2023  CHI           35                 14               13      1
+   2023  CHI           36                 14               13      1
+   2023  CHI           37                 14               13      1
+   2023  CHI           41                 14               13      1
+   2023  CHI           42                 14               13      1
+   2024  LVA           21                 12               11      1
+   2024  LVA           22                 12               11      1
+   2024  LVA           23                 12               11      1
+   2024  LVA           24                 12               11      1
+   2024  LVA           43                 13               12      1
+   2024  LVA           44                 13               12      1
+   2024  LVA           45                 13               12      1
+   2024  LVA           46                 13               12      1
+   2024  DAL            5                 13               12      1
+   2024  DAL            6                 13               12      1
+   2024  DAL            7                 13               12      1
+   2024  DAL            9                 13               12      1
+   2024  DAL           10                 10                9      1
+   2024  DAL           11                 10                9      1
+   2024  DAL           12                 10                9      1
+   2024  DAL           24                 14               13      1
+   2024  DAL           25                 14               13      1
+   2024  DAL           26                 13               12      1
+   2024  DAL           27                 14               13      1
+   2024  DAL           28                 12               11      1
+   2024  DAL           29                 12               11      1
+   2024  DAL           31                 12               11      1
+   2024  DAL           32                 12               11      1
+   2024  DAL           33                 12               11      1
+   2024  DAL           35                 12               11      1
+   2024  DAL           36                 12               11      1
+   2024  DAL           38                 11               10      1
+   2024  DAL           39                 12               11      1
+   2024  DAL           40                 12               11      1
+   2024  WAS           31                 13               12      1
+   2024  WAS           32                 13               12      1
+   2024  MIN            2                 15               13      2
+   2024  MIN            3                 15               13      2
+   2024  MIN            4                 14               13      1
+   2024  MIN            5                 15               13      2
+   2024  MIN            6                 14               12      2
+   2024  MIN            7                 14               12      2
+   2024  MIN            8                 14               12      2
+   2024  MIN           10                 13               12      1
+   2024  MIN           11                 13               12      1
+   2024  MIN           12                 13               12      1
+   2024  MIN           13                 13               12      1
+   2024  MIN           14                 14               12      2
+   2024  MIN           15                 14               12      2
+   2024  MIN           16                 14               12      2
+   2024  MIN           17                 13               12      1
+   2024  MIN           18                 14               12      2
+   2024  MIN           19                 14               12      2
+   2024  MIN           20                 14               12      2
+   2024  MIN           21                 14               12      2
+   2024  MIN           22                 14               12      2
+   2024  MIN           26                 13               12      1
+   2024  MIN           27                 14               12      2
+   2024  MIN           28                 15               13      2
+   2024  MIN           39                 12               11      1
+   2024  MIN           40                 13               12      1
+   2024  MIN           41                 13               12      1
+   2024  MIN           42                 13               12      1
+   2024  SEA            7                 12               11      1
+   2024  SEA            8                 12               11      1
+   2024  SEA            9                 13               12      1
+   2024  SEA           10                 13               12      1
+   2024  SEA           11                 12               11      1
+   2024  SEA           12                 12               11      1
+   2024  SEA           13                 12               11      1
+   2024  SEA           14                 12               11      1
+   2024  SEA           15                 12               11      1
+   2024  SEA           16                 12               11      1
+   2024  SEA           17                 12               11      1
+   2024  SEA           18                 12               11      1
+   2024  SEA           20                 12               11      1
+   2024  SEA           21                 12               11      1
+   2024  SEA           23                 12               11      1
+   2024  SEA           24                 12               11      1
+   2024  SEA           25                 12               11      1
+   2024  SEA           26                 12               11      1
+   2024  SEA           27                 12               11      1
+   2024  SEA           28                 13               12      1
+   2024  SEA           29                 12               11      1
+   2024  SEA           35                 12               11      1
+   2024  SEA           36                 12               11      1
+   2024  SEA           37                 12               11      1
+   2024  SEA           38                 12               11      1
+   2024  SEA           39                 12               11      1
+   2024  SEA           40                 12               11      1
+   2024  SEA           41                 13               11      2
+   2024  SEA           42                 13               11      2
+   2026  MIN            2                 14               13      1
+   2026  MIN            3                 15               14      1
+   2026  MIN            4                 15               14      1
+   2026  MIN            5                 15               14      1
+   2026  MIN            6                 15               14      1
+   2026  MIN            7                 15               14      1
+   2026  MIN           21                 14               13      1
+   2026  MIN           22                 14               13      1
+
+wrote NAME_KEY_*.csv

@@ -1,0 +1,854 @@
+﻿
+============================================================================================
+s12  RESIDUAL -- unresolved keys in the screens where ambiguity actually exists
+============================================================================================
+  frames with an in-partition ambiguous identity: 16
+  owning screens (11):
+    exploration/E0_I0006_usage_redistribution
+    exploration/E0_I0008_height_differential
+    exploration/E0_I0011_tendency_estimator
+    exploration/E0_I0029_freethrow_hurdle
+    exploration/E1_I0004_rim_finishing
+    exploration/E1_I0008_height_mismatch
+    exploration/E1_I0011_split_alpha
+    exploration/E1_I0030_home_advantage_accounting
+    exploration/E1_I0033_aggregation_level
+    exploration/E1_I0035_availability_sum
+    exploration/E1_I0045_roster_currency
+
+  unresolved structural ops inside those screens: 70
+  (out of 387 unresolved structural ops repository-wide)
+
+  ----------------------------------------------------------------------------------------
+  exploration/E0_I0006_usage_redistribution/analyze_clean.py
+    L126   groupby(GROUPBY) keys=<var:key_col>
+         124|         return pd.Series({"top1_share": pos.delta_usage.iloc[0] / pos.delta_usage.sum(),
+         125|                            "n_gainers": len(pos)})
+         126|     return redis_df.groupby(key_col).apply(f).reset_index()
+         127| 
+
+  ----------------------------------------------------------------------------------------
+  exploration/E0_I0008_height_differential/build.py
+    L129   drop_duplicates(DEDUP) keys=<none>
+         127| reb_all = reb.copy()
+         128| # need season per event via game->season map from filtered possessions (1:1)
+         129| game_season = poss[["game_id", "season"]].drop_duplicates().set_index("game_id")["season"]
+         130| reb_all["season"] = reb_all["game_id"].map(game_season)
+
+  ----------------------------------------------------------------------------------------
+  exploration/E0_I0011_tendency_estimator/boundary_check.py
+    L37    groupby(GROUPBY) keys=<var:gk>
+          35|     sh_r = df.groupby(KEY, sort=False)["_r"].shift(1)
+          36|     sh_m = df.groupby(KEY, sort=False)["minutes"].shift(1)
+          37|     ewm_m = sh_m.groupby(gk, sort=False).transform(
+          38|         lambda x: x.ewm(alpha=am, adjust=True, ignore_na=True).mean())
+    L44    groupby(GROUPBY) keys=<var:gk>
+          42|             lambda x: x.ewm(alpha=a, adjust=True, ignore_na=True).mean())
+          43|         cand[f"a{a:.2f}"] = e * ewm_m / 36.0
+          44|     e = sh_r.groupby(gk, sort=False).transform(lambda x: x.expanding(min_periods=1).mean())
+          45|     cand["a->0 (expanding mean of rate)"] = e * ewm_m / 36.0
+    L41    groupby(GROUPBY) keys=<var:gk>
+          39|     cand = {}
+          40|     for a in RATE_ALPHAS:
+          41|         e = sh_r.groupby(gk, sort=False).transform(
+          42|             lambda x: x.ewm(alpha=a, adjust=True, ignore_na=True).mean())
+
+  ----------------------------------------------------------------------------------------
+  exploration/E0_I0011_tendency_estimator/build_frame.py
+    L166   groupby(GROUPBY) keys=<var:gk>
+         164| df["n_prior"] = df.groupby(["player_id", "season"], sort=False).cumcount()
+         165| gk = [df["player_id"], df["season"]]
+         166| df["std_minutes"] = (df.groupby(["player_id", "season"], sort=False)["minutes"].shift(1)
+         167|                        .groupby(gk, sort=False).transform(lambda s: s.expanding(1).mean()))
+    L168   groupby(GROUPBY) keys=<var:gk>
+         166| df["std_minutes"] = (df.groupby(["player_id", "season"], sort=False)["minutes"].shift(1)
+         167|                        .groupby(gk, sort=False).transform(lambda s: s.expanding(1).mean()))
+         168| df["std_usage"] = (df.groupby(["player_id", "season"], sort=False)["usage_percentage"].shift(1)
+         169|                      .groupby(gk, sort=False).transform(lambda s: s.expanding(1).mean()))
+    L50    groupby(GROUPBY) keys=<sub:season>|<sub:team_id>
+          48|                  ("opp_reb", "std_allow_reb"), ("opp_ast", "std_allow_ast")]:
+          49|     sh = g[src].shift(1)
+          50|     tm[dst] = sh.groupby([tm["season"], tm["team_id"]], sort=False).transform(
+          51|         lambda s: s.expanding(min_periods=1).mean())
+
+  ----------------------------------------------------------------------------------------
+  exploration/E0_I0011_tendency_estimator/score.py
+    L80    drop_duplicates(DEDUP) keys=<none>
+          78| 
+          79| # donor mapping for NEG_other_player: shuffle player-seasons within season
+          80| ps = df[KEY].drop_duplicates().reset_index(drop=True)
+          81| donor_map = {}
+    L48    groupby(GROUPBY) keys=<var:gk>
+          46| 
+          47| def ewm_of(s, alpha):
+          48|     return s.groupby(gk, sort=False).transform(
+          49|         lambda x: x.ewm(alpha=alpha, adjust=True, ignore_na=True).mean())
+    L53    groupby(GROUPBY) keys=<var:gk>
+          51| 
+          52| def roll_of(s, w):
+          53|     return s.groupby(gk, sort=False).transform(
+          54|         lambda x: x.rolling(w, min_periods=1).mean())
+    L58    groupby(GROUPBY) keys=<var:gk>
+          56| 
+          57| def exp_of(s):
+          58|     return s.groupby(gk, sort=False).transform(lambda x: x.expanding(min_periods=1).mean())
+          59| 
+    L65    groupby(GROUPBY) keys=<var:gk>
+          63|     out = np.full(len(s), np.nan)
+          64|     vals = s.values
+          65|     for _, idx in s.groupby(gk, sort=False).groups.items():
+          66|         pos = df.index.get_indexer(idx)
+
+  ----------------------------------------------------------------------------------------
+  exploration/E0_I0029_freethrow_hurdle/ft_base.py
+    L194   groupby(GROUPBY) keys=<none>
+         192| # In EVERY one of these, .shift(1) precedes the accumulator.  That is the whole of trap 3.
+         193| def prior_sum(df, keys, col):
+         194|     return df.groupby(list(keys), sort=False)[col].transform(
+         195|         lambda x: x.shift(1).expanding().sum())
+    L199   groupby(GROUPBY) keys=<none>
+         197| 
+         198| def prior_mean(df, keys, col):
+         199|     return df.groupby(list(keys), sort=False)[col].transform(
+         200|         lambda x: x.shift(1).expanding().mean())
+    L204   groupby(GROUPBY) keys=<none>
+         202| 
+         203| def prior_count(df, keys, col):
+         204|     return df.groupby(list(keys), sort=False)[col].transform(
+         205|         lambda x: x.shift(1).expanding().count())
+    L209   groupby(GROUPBY) keys=<none>
+         207| 
+         208| def prior_trail(df, keys, col, k=5):
+         209|     return df.groupby(list(keys), sort=False)[col].transform(
+         210|         lambda x: x.shift(1).rolling(k, min_periods=1).mean())
+    L214   groupby(GROUPBY) keys=<none>
+         212| 
+         213| def prior_ewma(df, keys, col, halflife=EWMA_HALFLIFE):
+         214|     return df.groupby(list(keys), sort=False)[col].transform(
+         215|         lambda x: x.shift(1).ewm(halflife=halflife, min_periods=1).mean())
+    L221   groupby(GROUPBY) keys=<var:seasoncol>
+         219|     """Expanding league mean over rows strictly EARLIER IN THE SAME SEASON.  COLD START ONLY."""
+         220|     fs = df.sort_values([seasoncol, datecol, tiecol], kind="stable")
+         221|     cum = fs.groupby(seasoncol, sort=False)[valcol].transform(
+         222|         lambda x: x.shift(1).expanding().mean())
+
+  ----------------------------------------------------------------------------------------
+  exploration/E0_I0029_freethrow_hurdle/s04_stages.py
+    L52    groupby(GROUPBY) keys=<sub:season>
+          50|     if mask is not None:
+          51|         v = v.where(mask)
+          52|     out = v.groupby(F["season"], sort=False).transform(lambda x: x.shift(1).expanding().mean())
+          53|     # cold start at the very first rows of a season: fall back to the season's first available
+    L54    groupby(GROUPBY) keys=<sub:season>
+          52|     out = v.groupby(F["season"], sort=False).transform(lambda x: x.shift(1).expanding().mean())
+          53|     # cold start at the very first rows of a season: fall back to the season's first available
+          54|     return out.groupby(F["season"], sort=False).transform(lambda x: x.ffill().bfill())
+          55| 
+
+  ----------------------------------------------------------------------------------------
+  exploration/E0_I0029_freethrow_hurdle/s06_ceiling.py
+    L49    groupby(GROUPBY) keys=<sub:season>
+          47|     if mask is not None:
+          48|         v = v.where(mask)
+          49|     out = v.groupby(F["season"], sort=False).transform(lambda x: x.shift(1).expanding().mean())
+          50|     return out.groupby(F["season"], sort=False).transform(lambda x: x.ffill().bfill())
+    L50    groupby(GROUPBY) keys=<sub:season>
+          48|         v = v.where(mask)
+          49|     out = v.groupby(F["season"], sort=False).transform(lambda x: x.shift(1).expanding().mean())
+          50|     return out.groupby(F["season"], sort=False).transform(lambda x: x.ffill().bfill())
+          51| 
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0004_rim_finishing/_validate_sandbox/baseline/corrected_baseline.py
+    L75    groupby(GROUPBY) keys=<var:keys>
+          73|         return series.groupby(keys, sort=False).transform(
+          74|             lambda x: x.expanding(min_periods=1).mean())
+          75|     return series.groupby(keys, sort=False).transform(
+          76|         lambda x: x.ewm(alpha=alpha, adjust=True, ignore_na=True).mean())
+    L81    groupby(GROUPBY) keys=<var:keys>
+          79| def _shift_state(s: pd.Series, keys) -> pd.Series:
+          80|     """State as of strictly before the current row, within the player-season."""
+          81|     return s.groupby(keys, sort=False).shift(1)
+          82| 
+    L73    groupby(GROUPBY) keys=<var:keys>
+          71|     do not blank it -- that is what ignore_na / min_periods=1 buy."""
+          72|     if alpha == 0.0:
+          73|         return series.groupby(keys, sort=False).transform(
+          74|             lambda x: x.expanding(min_periods=1).mean())
+    L164   groupby(GROUPBY) keys=<var:keys>
+         162|         std = _shift_state(_smooth(tot, keys, 0.0), keys)
+         163|         n_prior = _shift_state(
+         164|             played.astype(float).groupby(keys, sort=False).cumsum(), keys).fillna(0.0)
+         165| 
+    L188   groupby(GROUPBY) keys=<var:keys>
+         186|         played = (d["minutes"] > 0) & d[target].notna()
+         187|         keys = [d["player_id"], d["season"]]
+         188|         n = _shift_state(played.astype(float).groupby(keys, sort=False).cumsum(),
+         189|                          keys).fillna(0.0)
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0004_rim_finishing/build_and_measure.py
+    L238   groupby(GROUPBY) keys=<var:_kk>
+         236| _v = pg.sort_values(["player_id", "season", "game_date", "game_id"], kind="stable").copy()
+         237| _kk = [_v["player_id"], _v["season"]]
+         238| _eff = (_v["ra_mk"] / _v["ra_att"]).groupby(_kk, sort=False).transform(
+         239|     lambda x: x.ewm(alpha=ALPHA_EFF, adjust=True, ignore_na=True).mean())
+    L240   groupby(GROUPBY) keys=<var:_kk>
+         238| _eff = (_v["ra_mk"] / _v["ra_att"]).groupby(_kk, sort=False).transform(
+         239|     lambda x: x.ewm(alpha=ALPHA_EFF, adjust=True, ignore_na=True).mean())
+         240| _eff = _eff.groupby(_kk, sort=False).shift(1)
+         241| _v["_check"] = _eff
+    L253   groupby(GROUPBY) keys=<var:kk>
+         251|                     kind="stable").reset_index(drop=True)
+         252| kk = [pg["player_id"], pg["season"]]
+         253| pg["pre_att"] = pg.groupby(kk, sort=False)["ra_att"].cumsum() - pg["ra_att"]
+         254| pg["pre_mk"] = pg.groupby(kk, sort=False)["ra_mk"].cumsum() - pg["ra_mk"]
+    L254   groupby(GROUPBY) keys=<var:kk>
+         252| kk = [pg["player_id"], pg["season"]]
+         253| pg["pre_att"] = pg.groupby(kk, sort=False)["ra_att"].cumsum() - pg["ra_att"]
+         254| pg["pre_mk"] = pg.groupby(kk, sort=False)["ra_mk"].cumsum() - pg["ra_mk"]
+         255| lg = pg.sort_values(["season", "game_date", "game_id"], kind="stable").copy()
+    L319   groupby(GROUPBY) keys=<attr:values>
+         317|     cl = pd.Series(list(cluster), dtype=object)
+         318|     meat = np.zeros((kp, kp))
+         319|     for _, idx in cl.groupby(cl.values, sort=False).indices.items():
+         320|         Xg, eg = X[idx], e[idx]
+    L208   groupby(GROUPBY) keys=<var:k>
+         206| k = [og["OPP_TEAM_ID"], og["season"]]
+         207| for c in ["pool_att", "pool_mk", "z_att", "z_mk"]:
+         208|     og["pre_" + c] = og.groupby(k, sort=False)[c].cumsum() - og[c]
+         209| og["O2"] = og["pre_z_mk"] / og["pre_z_att"] - og["pre_pool_mk"] / og["pre_pool_att"]
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0004_rim_finishing/robustness.py
+    L94    groupby(GROUPBY) keys=<var:gcols>
+          92|         for on, oc in OPPS.items():
+          93|             d = frame[[yc, oc, "OPP_TEAM_ID", "season", "PLAYER_ID", "TEAM_ID"]].dropna().copy()
+          94|             g = d.groupby(gcols, sort=False)
+          95|             d["_y"] = d[yc] - g[yc].transform("mean")
+    L48    groupby(GROUPBY) keys=<attr:values>
+          46|     cl = pd.Series(list(cluster), dtype=object)
+          47|     meat = np.zeros((kp, kp))
+          48|     for _, idx in cl.groupby(cl.values, sort=False).indices.items():
+          49|         u = X[idx].T @ e[idx]
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0008_height_mismatch/stage1_addendum.py
+    L92    drop_duplicates(DEDUP) keys=<none>
+          90| 
+          91|     # per-season lookup of the true aggregates
+          92|     prof = (sub[["opp_team_id", "season", "opp_roster_mean_height"]]
+          93|             .drop_duplicates().rename(columns={"opp_team_id": "team_id",
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0008_height_mismatch/stage1_noise_floor.py
+    L202   drop_duplicates(DEDUP) keys=<none>
+         200|         if prof is None:
+         201|             # rung2 aggregate lives on the frame already; rebuild the team-season lookup
+         202|             prof = (df[["opp_team_id", "season", opp_col]]
+         203|                     .drop_duplicates()
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0008_height_mismatch/stage1_position_null.py
+    L67    drop_duplicates(DEDUP) keys=<none>
+          65|         season_arr = sub["season"].to_numpy()
+          66|         opp_arr = sub["opp_team_id"].to_numpy()
+          67|         prof = (sub[["opp_team_id", "season", "opp_roster_mean_height"]].drop_duplicates())
+          68|         lut = {}
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0011_split_alpha/baseline/corrected_baseline.py
+    L75    groupby(GROUPBY) keys=<var:keys>
+          73|         return series.groupby(keys, sort=False).transform(
+          74|             lambda x: x.expanding(min_periods=1).mean())
+          75|     return series.groupby(keys, sort=False).transform(
+          76|         lambda x: x.ewm(alpha=alpha, adjust=True, ignore_na=True).mean())
+    L81    groupby(GROUPBY) keys=<var:keys>
+          79| def _shift_state(s: pd.Series, keys) -> pd.Series:
+          80|     """State as of strictly before the current row, within the player-season."""
+          81|     return s.groupby(keys, sort=False).shift(1)
+          82| 
+    L73    groupby(GROUPBY) keys=<var:keys>
+          71|     do not blank it -- that is what ignore_na / min_periods=1 buy."""
+          72|     if alpha == 0.0:
+          73|         return series.groupby(keys, sort=False).transform(
+          74|             lambda x: x.expanding(min_periods=1).mean())
+    L164   groupby(GROUPBY) keys=<var:keys>
+         162|         std = _shift_state(_smooth(tot, keys, 0.0), keys)
+         163|         n_prior = _shift_state(
+         164|             played.astype(float).groupby(keys, sort=False).cumsum(), keys).fillna(0.0)
+         165| 
+    L188   groupby(GROUPBY) keys=<var:keys>
+         186|         played = (d["minutes"] > 0) & d[target].notna()
+         187|         keys = [d["player_id"], d["season"]]
+         188|         n = _shift_state(played.astype(float).groupby(keys, sort=False).cumsum(),
+         189|                          keys).fillna(0.0)
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0011_split_alpha/build_frame.py
+    L76    groupby(GROUPBY) keys=<var:gk>
+          74| 
+          75| gk = [mp["player_id"], mp["season"]]
+          76| mp["std_minutes"] = (g["minutes"].shift(1)
+          77|                      .groupby(gk, sort=False).transform(lambda s: s.expanding(1).mean()))
+    L78    groupby(GROUPBY) keys=<var:gk>
+          76| mp["std_minutes"] = (g["minutes"].shift(1)
+          77|                      .groupby(gk, sort=False).transform(lambda s: s.expanding(1).mean()))
+          78| mp["std_usage"] = (g["usage_percentage"].shift(1)
+          79|                    .groupby(gk, sort=False).transform(lambda s: s.expanding(1).mean()))
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0011_split_alpha/grid.py
+    L57    groupby(GROUPBY) keys=<var:gk>
+          55|         return s.groupby(gk, sort=False).transform(
+          56|             lambda x: x.expanding(min_periods=1).mean()).values.astype(float)
+          57|     return s.groupby(gk, sort=False).transform(
+          58|         lambda x: x.ewm(alpha=alpha, adjust=True, ignore_na=True).mean()).values.astype(float)
+    L55    groupby(GROUPBY) keys=<var:gk>
+          53|     (house convention, features/common.py, as used by props_edge.py)."""
+          54|     if alpha == 0.0:
+          55|         return s.groupby(gk, sort=False).transform(
+          56|             lambda x: x.expanding(min_periods=1).mean()).values.astype(float)
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0011_split_alpha/i0009_baseline_delta.py
+    L78    groupby(GROUPBY) keys=<sub:player_id>|<sub:season>
+          76|         "LOO_SEASON_TOTAL": loo(tgt),
+          77|         "LOO_PER36_x_MIN": loo("_p36") * loo("minutes") / 36.0,
+          78|         "EXPANDING_TOTAL": df.groupby(KEY, sort=False)[tgt].shift(1)
+          79|                              .groupby([df["player_id"], df["season"]], sort=False)
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0011_split_alpha/placebo.py
+    L112   groupby(GROUPBY) keys=<var:g2>
+         110|     g2 = [d2["player_id"], d2["season"]]
+         111|     v = d2.groupby(["player_id", "season"], sort=False)[col].shift(1)
+         112|     out = v.groupby(g2, sort=False).transform(
+         113|         lambda x: x.expanding(min_periods=1).mean())
+    L57    groupby(GROUPBY) keys=<var:keycols>
+          55| def sh(col, frame=None, keycols=KEY):
+          56|     f = df if frame is None else frame
+          57|     return f.groupby(keycols, sort=False)[col].shift(1)
+          58| 
+    L65    groupby(GROUPBY) keys=<var:k>
+          63|         return s.groupby(k, sort=False).transform(
+          64|             lambda x: x.expanding(min_periods=1).mean()).values.astype(float)
+          65|     return s.groupby(k, sort=False).transform(
+          66|         lambda x: x.ewm(alpha=alpha, adjust=True, ignore_na=True).mean()).values.astype(float)
+    L63    groupby(GROUPBY) keys=<var:k>
+          61|     k = gk if keys is None else keys
+          62|     if alpha == 0.0:
+          63|         return s.groupby(k, sort=False).transform(
+          64|             lambda x: x.expanding(min_periods=1).mean()).values.astype(float)
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0030_home_advantage_accounting/ha_base.py
+    L255   groupby(GROUPBY) keys=<none>
+         253| 
+         254| def group_bounds(f, keys):
+         255|     codes = f.groupby(list(keys), sort=False).ngroup().to_numpy()
+         256|     change = np.flatnonzero(np.r_[True, codes[1:] != codes[:-1]])
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0030_home_advantage_accounting/s05_heterogeneity.py
+    L42    unstack(PIVOT) keys=<none>
+          40|     f = f.sort_values(["player_id", "game_date", "game_id"], kind="stable").reset_index(drop=True)
+          41| 
+          42|     cnt = f.groupby(["player_id", "is_home"]).size().unstack(fill_value=0)
+          43|     keep = cnt.index[(cnt.get(1, 0) >= MIN_PER_VENUE) & (cnt.get(0, 0) >= MIN_PER_VENUE)]
+    L76    unstack(PIVOT) keys=<none>
+          74|         stat = make_stat(tgt)
+          75|         real = stat(g)
+          76|         m = (g.groupby(["player_id", "is_home"])[tgt].mean().unstack())
+          77|         diff = (m[1] - m[0]).dropna()
+    L66    unstack(PIVOT) keys=<none>
+          64|             def stat(d):
+          65|                 sub = d[["player_id", "is_home", col]].dropna()
+          66|                 m = (sub.groupby(["player_id", "is_home"])[col].mean()
+          67|                         .unstack())
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0033_aggregation_level/scripts/agg_base.py
+    L265   groupby(GROUPBY) keys=<none>
+         263|     den = (np.ones(len(f)) if den_col is None
+         264|            else pd.to_numeric(f[den_col], errors="coerce").to_numpy(float))
+         265|     codes = f.groupby(list(entity_cols), sort=False).ngroup().to_numpy()
+         266|     change = np.flatnonzero(np.r_[True, codes[1:] != codes[:-1]])
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0033_aggregation_level/scripts/refs.py
+    L53    groupby(GROUPBY) keys=<none>
+          51|     den = (np.ones(len(f)) if den_col is None
+          52|            else pd.to_numeric(f[den_col], errors="coerce").to_numpy(float))
+          53|     codes = f.groupby(list(entity_cols), sort=False).ngroup().to_numpy()
+          54|     change = np.flatnonzero(np.r_[True, codes[1:] != codes[:-1]])
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0033_aggregation_level/scripts/s03b_probe2.py
+    L50    drop_duplicates(DEDUP) keys=<none>
+          48|         print("  v5 player_game", g5.shape)
+          49|         print("  v5 cols:", list(g5.columns)[:40])
+          50|         m = ps.merge(g5[["row_uid"]].drop_duplicates(), on="row_uid", how="left", indicator=True)
+          51|         print("  arm rows joining v5: %d of %d" % ((m["_merge"] == "both").sum(), len(m)))
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0033_aggregation_level/scripts/s05_build.py
+    L153   drop_duplicates(DEDUP) keys=<none>
+         151|     for c in ["game_id", "team_id", "player_id"]:
+         152|         pm[c] = pd.to_numeric(pm[c], errors="raise").astype("int64")
+         153|     tg_all = tm[["game_id", "team_id", "season", "game_date"]].drop_duplicates()
+         154|     # THE UNIVERSE IS EVERY PLAYER SEEN ANYWHERE IN THE PARTITION, not only in that season:
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0035_availability_sum/scripts/av_base.py
+    L200   drop_duplicates(DEDUP) keys=<none>
+         198|         "canonical key field order changed; the map rule must be re-derived"
+         199| 
+         200|     tg = team_master[["game_id", "team_id"]].drop_duplicates()
+         201|     players = np.sort(player_master["player_id"].unique())
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0035_availability_sum/scripts/s03_population.py
+    L33    drop_duplicates(DEDUP) keys=<none>
+          31| tm = ab.load_team_master()
+          32| # game_date is a SCHEDULE FACT, not an outcome; taken from master_team's team-game rows
+          33| PF = PF.merge(tm[["game_id", "team_id", "game_date"]].drop_duplicates(),
+          34|               on=["game_id", "team_id"], how="left")
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0045_roster_currency/scripts/rc_base.py
+    L171   drop_duplicates(DEDUP) keys=<none>
+         169|     assert tuple(CANONICAL_KEY_FIELDS) == ("player_id", "game_id", "team_id"), \
+         170|         "canonical key field order changed; the map rule must be re-derived"
+         171|     tg = team_master[["game_id", "team_id"]].drop_duplicates()
+         172|     players = np.sort(player_master["player_id"].unique())
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0045_roster_currency/scripts/s01_build_and_anchor.py
+    L113   drop_duplicates(DEDUP) keys=<none>
+         111| 
+         112| # game_date for rows with no box row: take it from the team schedule
+         113| gdates = tm[["game_id", "game_date"]].drop_duplicates().rename(columns={"game_date": "_gd"})
+         114| pf = pf.merge(gdates, on="game_id", how="left")
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0045_roster_currency/scripts/s02_universe.py
+    L70    drop_duplicates(DEDUP) keys=<none>
+          68| # =========================================================================================
+          69| rb.hdr("2. RE-EXECUTE S1 AND S2 OVER master_player")
+          70| tg = (pm[["game_id", "team_id", "season", "game_date"]].drop_duplicates()
+          71|       .sort_values(["team_id", "season", "game_date", "game_id"], kind="mergesort")
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0045_roster_currency/scripts/s03_currency.py
+    L49    drop_duplicates(DEDUP) keys=<none>
+          47| #  from the same schedule the contract uses.)
+          48| pm = rb.load_player_master()
+          49| tgs = (pm[["game_id", "team_id", "season", "game_date"]].drop_duplicates()
+          50|        .sort_values(["team_id", "season", "game_date", "game_id"], kind="mergesort"))
+    L201   groupby(GROUPBY) keys=<sub:game_id>|<sub:team_id>
+         199| PFq = PF.copy()
+         200| PFq["w"] = w_Xa
+         201| b1 = (PFq["w"] * PFq["pts_hat"]).groupby([PFq["game_id"], PFq["team_id"]]).sum()
+         202| TFq = TF.merge(b1.rename("c").reset_index(), on=["game_id", "team_id"], how="left")
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0045_roster_currency/scripts/s04_coverage_and_exposure.py
+    L35    drop_duplicates(DEDUP) keys=<none>
+          33| # =========================================================================================
+          34| rb.hdr("1. COVERAGE COST -- EVERY FALSE REMOVAL, NAMED")
+          35| tmn = rb.load_team_master()[["game_id", "team_id", "game_date", "opp_team_id"]].drop_duplicates()
+          36| rows = []
+
+  ----------------------------------------------------------------------------------------
+  exploration/E1_I0045_roster_currency/scripts/s05_stratify_not_remove.py
+    L39    drop_duplicates(DEDUP) keys=<none>
+          37| # rebuild the fit pool's S2 flag and the R3 drop mask exactly as s03 did
+          38| pm = rb.load_player_master()
+          39| tgs = (pm[["game_id", "team_id", "season", "game_date"]].drop_duplicates()
+          40|        .sort_values(["team_id", "season", "game_date", "game_id"], kind="mergesort"))
+
+============================================================================================
+who reads the ambiguous frames?
+============================================================================================
+  frame basenames: ['_PF.parquet', '_PF_arms.parquet', '_master_player_partition.parquet', '_pf_all_seasons.parquet', '_player_frame.parquet', '_player_frame_all_seasons.parquet', '_player_frame_repaired.parquet', '_population_frame.parquet', 'clean_roster_panel.parquet', 'frame.parquet', 'player_game_height_vs_opponent.csv', 'screen_frame.parquet']
+
+  _PF.parquet                                    read by 8 file(s)
+      exploration/E1_I0045_roster_currency/scripts/s01_build_and_anchor.py     name_keyed_ops=0
+      exploration/E1_I0045_roster_currency/scripts/s02_universe.py             name_keyed_ops=0
+      exploration/E1_I0045_roster_currency/scripts/s03_currency.py             name_keyed_ops=0
+      exploration/E1_I0048_shipped_roster_path/scripts/s01_anchors.py          name_keyed_ops=0
+      exploration/E1_I0048_shipped_roster_path/scripts/s07_findings.py         name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s06_named_trace.py  name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s06b_columns.py     name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s07_stratum_and_guard.py name_keyed_ops=0
+
+  _PF_arms.parquet                               read by 4 file(s)
+      exploration/E1_I0045_roster_currency/scripts/s03_currency.py             name_keyed_ops=0
+      exploration/E1_I0045_roster_currency/scripts/s04_coverage_and_exposure.py name_keyed_ops=1
+      exploration/E1_I0045_roster_currency/scripts/s05_stratify_not_remove.py  name_keyed_ops=0
+      exploration/E1_I0045_roster_currency/scripts/s06_resolve_floors.py       name_keyed_ops=0
+
+  _master_player_partition.parquet               read by 3 file(s)
+      exploration/E1_I0033_aggregation_level/scripts/s05_build.py              name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s05_team_frames.py     name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s06b_columns.py     name_keyed_ops=0
+
+  _pf_all_seasons.parquet                        read by 3 file(s)
+      exploration/E1_I0045_roster_currency/scripts/s01_build_and_anchor.py     name_keyed_ops=0
+      exploration/E1_I0045_roster_currency/scripts/s03_currency.py             name_keyed_ops=0
+      exploration/E1_I0045_roster_currency/scripts/s05_stratify_not_remove.py  name_keyed_ops=0
+
+  _player_frame.parquet                          read by 31 file(s)
+      exploration/E1_I0030_home_advantage_accounting/s01_guards_and_build.py   name_keyed_ops=0
+      exploration/E1_I0030_home_advantage_accounting/s03_player_reconcile.py   name_keyed_ops=0
+      exploration/E1_I0030_home_advantage_accounting/s04_main_effect.py        name_keyed_ops=0
+      exploration/E1_I0030_home_advantage_accounting/s05_heterogeneity.py      name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s06_build.py                name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s05_build.py              name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s06_topdown_vs_bottomup.py name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s07_gap_decomposition.py  name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s08_which_level.py        name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s10_player_value_scope.py name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s02_build_and_anchor.py      name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s03_probe.py                 name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s03b_probe2.py               name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s03c_probe3.py               name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s03d_probe4.py               name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s05_frame.py                 name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s10_findings.py              name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s02_reproduce.py           name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s03_population.py          name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s04_repairs.py             name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s07_tier_crosscheck.py     name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s05_team_frames.py     name_keyed_ops=0
+      exploration/E1_I0039_stacking/scripts/s01_inspect.py                     name_keyed_ops=0
+      exploration/E1_I0039_stacking/scripts/s02_anchors_and_overlap.py         name_keyed_ops=0
+      exploration/E1_I0039_stacking/scripts/s04_build.py                       name_keyed_ops=0
+      exploration/E1_I0040_audit_extension/scripts/s05_measure_shares.py       name_keyed_ops=0
+      exploration/E1_I0040_audit_extension/scripts/s07_finalise.py             name_keyed_ops=0
+      exploration/E1_I0042_redistribution_replication/scripts/s00_probe.py     name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s00_probe.py                     name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s00c_anchor_hunt.py              name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s06b_columns.py     name_keyed_ops=0
+
+  _player_frame_all_seasons.parquet              read by 2 file(s)
+      exploration/E1_I0035_availability_sum/scripts/s02_reproduce.py           name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s04_repairs.py             name_keyed_ops=0
+
+  _player_frame_repaired.parquet                 read by 3 file(s)
+      exploration/E1_I0035_availability_sum/scripts/s04_repairs.py             name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s05_power_and_exposure.py  name_keyed_ops=0
+      exploration/E1_I0037_mde_audit/scripts/s03_decompose.py                  name_keyed_ops=0
+
+  _population_frame.parquet                      read by 1 file(s)
+      exploration/E1_I0035_availability_sum/scripts/s03_population.py          name_keyed_ops=0
+
+  clean_roster_panel.parquet                     read by 3 file(s)
+      exploration/E0_I0006_usage_redistribution/analyze_clean.py               name_keyed_ops=3
+      exploration/E0_I0006_usage_redistribution/rebuild_clean.py               name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s04_e0i0006.py      name_keyed_ops=0
+
+  frame.parquet                                  read by 218 file(s)
+      exploration/E0_I0011_tendency_estimator/boundary_check.py                name_keyed_ops=0
+      exploration/E0_I0011_tendency_estimator/build_frame.py                   name_keyed_ops=0
+      exploration/E0_I0011_tendency_estimator/score.py                         name_keyed_ops=0
+      exploration/E0_I0014_residual_heterogeneity/s03_build_frame.py           name_keyed_ops=0
+      exploration/E0_I0014_residual_heterogeneity/s04_screen.py                name_keyed_ops=0
+      exploration/E0_I0014_residual_heterogeneity/s05_abstention.py            name_keyed_ops=0
+      exploration/E0_I0014_residual_heterogeneity/s08_conditioning.py          name_keyed_ops=0
+      exploration/E0_I0015_points_skill_decomposition/psd_base.py              name_keyed_ops=0
+      exploration/E0_I0015_points_skill_decomposition/s00_inspect.py           name_keyed_ops=0
+      exploration/E0_I0015_points_skill_decomposition/s01_reproduce.py         name_keyed_ops=0
+      exploration/E0_I0015_points_skill_decomposition/s02_decompose_hybrid.py  name_keyed_ops=0
+      exploration/E0_I0015_points_skill_decomposition/s03_mechanism_and_abstention.py name_keyed_ops=0
+      exploration/E0_I0015_points_skill_decomposition/s04_findings.py          name_keyed_ops=0
+      exploration/E0_I0015_points_skill_decomposition/s05_stratified.py        name_keyed_ops=0
+      exploration/E0_I0015_points_skill_decomposition/s06_depth_by_volume.py   name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/ep_base.py                    name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s00_inspect.py                name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s01_build_frame.py            name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s02_screen.py                 name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s02_screen_SUPERSEDED.py      name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s03_survivors.py              name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s05_verify.py                 name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s06_finalise_findings.py      name_keyed_ops=0
+      exploration/E0_I0017_shot_quality_efficiency/s01_build_frame.py          name_keyed_ops=0
+      exploration/E0_I0017_shot_quality_efficiency/s02_screen.py               name_keyed_ops=0
+      exploration/E0_I0017_shot_quality_efficiency/s03_forensics.py            name_keyed_ops=0
+      exploration/E0_I0017_shot_quality_efficiency/s04_transfer.py             name_keyed_ops=0
+      exploration/E0_I0019_availability_forecast/s01_provenance.py             name_keyed_ops=0
+      exploration/E0_I0019_availability_forecast/s01_provenance_v1_FAILED.py   name_keyed_ops=0
+      exploration/E0_I0019_availability_forecast/s01_provenance_v2_INCONCLUSIVE.py name_keyed_ops=0
+      exploration/E0_I0019_availability_forecast/s01_provenance_v3_MISCALIBRATED.py name_keyed_ops=0
+      exploration/E0_I0019_availability_forecast/s02_build_candidates.py       name_keyed_ops=0
+      exploration/E0_I0019_availability_forecast/s03_characterise.py           name_keyed_ops=0
+      exploration/E0_I0019_availability_forecast/s04_screen.py                 name_keyed_ops=0
+      exploration/E0_I0019_availability_forecast/s05_spreads_and_decomposition.py name_keyed_ops=0
+      exploration/E0_I0019_availability_forecast/s06_abstention.py             name_keyed_ops=0
+      exploration/E0_I0024_reb_ast_characterisation/s02_build_frame.py         name_keyed_ops=0
+      exploration/E0_I0024_reb_ast_characterisation/s03_ladder.py              name_keyed_ops=0
+      exploration/E0_I0024_reb_ast_characterisation/s04_screen.py              name_keyed_ops=0
+      exploration/E0_I0024_reb_ast_characterisation/s05_mechanism.py           name_keyed_ops=0
+      exploration/E0_I0028_degeneracy_sweep/s01_load.py                        name_keyed_ops=0
+      exploration/E0_I0028_degeneracy_sweep/s02_sweep.py                       name_keyed_ops=0
+      exploration/E0_I0028_degeneracy_sweep/s03_routing.py                     name_keyed_ops=0
+      exploration/E0_I0028_degeneracy_sweep/s04_adjudicate.py                  name_keyed_ops=0
+      exploration/E0_I0028_degeneracy_sweep/s05_findings.py                    name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s02_build_frame.py                 name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s03_ladder.py                      name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s04_stages.py                      name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s05_screen.py                      name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s05b_report.py                     name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s06_ceiling.py                     name_keyed_ops=0
+      exploration/E1_I0004_efficiency_transfer/et_base.py                      name_keyed_ops=0
+      exploration/E1_I0004_efficiency_transfer/s00_inspect.py                  name_keyed_ops=0
+      exploration/E1_I0004_efficiency_transfer/s01_reproduce.py                name_keyed_ops=0
+      exploration/E1_I0004_efficiency_transfer/s02_build.py                    name_keyed_ops=0
+      exploration/E1_I0004_efficiency_transfer/s03_contrast.py                 name_keyed_ops=0
+      exploration/E1_I0004_efficiency_transfer/s04_ceiling_and_findings.py     name_keyed_ops=0
+      exploration/E1_I0004_efficiency_transfer_v2/etv2_base.py                 name_keyed_ops=0
+      exploration/E1_I0004_efficiency_transfer_v2/s01_reproduce.py             name_keyed_ops=0
+      exploration/E1_I0004_fga_forecast/addendum.py                            name_keyed_ops=0
+      exploration/E1_I0004_fga_forecast/build_forecasts.py                     name_keyed_ops=0
+      exploration/E1_I0004_fga_forecast/check_pooled_vs_wf.py                  name_keyed_ops=0
+      exploration/E1_I0004_fga_forecast/end_to_end.py                          name_keyed_ops=0
+      exploration/E1_I0004_fga_forecast/make_findings.py                       name_keyed_ops=0
+      exploration/E1_I0004_fga_forecast/probe_sources.py                       name_keyed_ops=0
+      exploration/E1_I0004_rim_finishing/_validate_sandbox/baseline/validate_baseline.py name_keyed_ops=0
+      exploration/E1_I0004_rim_finishing/build_and_measure.py                  name_keyed_ops=0
+      exploration/E1_I0004_rim_finishing/make_findings.py                      name_keyed_ops=0
+      exploration/E1_I0004_rim_finishing/placebo.py                            name_keyed_ops=0
+      exploration/E1_I0004_rim_finishing/robustness.py                         name_keyed_ops=0
+      exploration/E1_I0004_rim_finishing/verify_partition.py                   name_keyed_ops=0
+      exploration/E1_I0004_shot_selection/addendum.py                          name_keyed_ops=0
+      exploration/E1_I0004_shot_selection/analyze.py                           name_keyed_ops=0
+      exploration/E1_I0004_shot_selection/build_frames.py                      name_keyed_ops=0
+      exploration/E1_I0004_shot_selection/dr2_playergame.py                    name_keyed_ops=0
+      exploration/E1_I0004_shot_selection/robustness.py                        name_keyed_ops=0
+      exploration/E1_I0008_height_mismatch/build_frame.py                      name_keyed_ops=0
+      exploration/E1_I0008_height_mismatch/make_findings.py                    name_keyed_ops=0
+      exploration/E1_I0008_height_mismatch/stage1_addendum.py                  name_keyed_ops=0
+      exploration/E1_I0008_height_mismatch/stage1_noise_floor.py               name_keyed_ops=0
+      exploration/E1_I0008_height_mismatch/stage1_position_null.py             name_keyed_ops=0
+      exploration/E1_I0011_split_alpha/baseline/validate_baseline.py           name_keyed_ops=0
+      exploration/E1_I0011_split_alpha/build_frame.py                          name_keyed_ops=0
+      exploration/E1_I0011_split_alpha/grid.py                                 name_keyed_ops=0
+      exploration/E1_I0011_split_alpha/i0009_baseline_delta.py                 name_keyed_ops=0
+      exploration/E1_I0011_split_alpha/placebo.py                              name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s01_build_frame.py          name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s02_reproduce.py            name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s03_screen.py               name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s04_points.py               name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s05_walkforward_and_mechanism.py name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s06_tiptime_diagnostics.py  name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/tv_base.py                  name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/ct_base.py                        name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/s00_inspect.py                    name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/s01_reproduce.py                  name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/s02_taxonomy.py                   name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/s02b_diagnose.py                  name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/s03_placeholders.py               name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/s04_decompose_and_crossover.py    name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/s05_operating_rule.py             name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/s06_findings.py                   name_keyed_ops=0
+      exploration/E1_I0020_coldstart_tiering/s07_redact_s00.py                 name_keyed_ops=0
+      exploration/E1_I0021_heterogeneity_diagnostic/hd_base.py                 name_keyed_ops=0
+      exploration/E1_I0021_heterogeneity_diagnostic/s01_floor_curve.py         name_keyed_ops=0
+      exploration/E1_I0022_optimal_simple_estimator/ose_base.py                name_keyed_ops=0
+      exploration/E1_I0022_optimal_simple_estimator/s00_inspect.py             name_keyed_ops=0
+      exploration/E1_I0022_optimal_simple_estimator/s01_reproduce.py           name_keyed_ops=0
+      exploration/E1_I0022_optimal_simple_estimator/s07_findings.py            name_keyed_ops=0
+      exploration/E1_I0023_usage_defence_interaction/uid_base.py               name_keyed_ops=0
+      exploration/E1_I0026_detection_floor/scripts/df_base.py                  name_keyed_ops=0
+      exploration/E1_I0026_detection_floor/scripts/s00_inspect.py              name_keyed_ops=0
+      exploration/E1_I0026_detection_floor/scripts/s06_retrospective.py        name_keyed_ops=0
+      exploration/E1_I0026_detection_floor/scripts/s06b_ns.py                  name_keyed_ops=0
+      exploration/E1_I0026_detection_floor/scripts/s10_assemble.py             name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s01_inspect.py                     name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s02_inspect_inputs.py              name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s03_prereg.py                      name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s04_ladder.py                      name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s05_reprice.py                     name_keyed_ops=0
+      exploration/E1_I0030_home_advantage_accounting/s01_guards_and_build.py   name_keyed_ops=0
+      exploration/E1_I0030_home_advantage_accounting/s02_team_effect.py        name_keyed_ops=0
+      exploration/E1_I0030_home_advantage_accounting/s03_player_reconcile.py   name_keyed_ops=0
+      exploration/E1_I0030_home_advantage_accounting/s04_main_effect.py        name_keyed_ops=0
+      exploration/E1_I0030_home_advantage_accounting/s05_heterogeneity.py      name_keyed_ops=0
+      exploration/E1_I0030_home_advantage_accounting/s06_travel.py             name_keyed_ops=0
+      exploration/E1_I0031_rapm_as_prior/rp_base.py                            name_keyed_ops=0
+      exploration/E1_I0031_rapm_as_prior/s01_prereg.py                         name_keyed_ops=0
+      exploration/E1_I0031_rapm_as_prior/s02_feature.py                        name_keyed_ops=0
+      exploration/E1_I0031_rapm_as_prior/s03_reference.py                      name_keyed_ops=0
+      exploration/E1_I0031_rapm_as_prior/s04_coldstart.py                      name_keyed_ops=0
+      exploration/E1_I0031_rapm_as_prior/s05_decompose.py                      name_keyed_ops=0
+      exploration/E1_I0031_rapm_as_prior/s06_plusminus.py                      name_keyed_ops=0
+      exploration/E1_I0031_rapm_as_prior/s07_findings.py                       name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s01_inspect.py              name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s02_join_probe.py           name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s03_prereg.py               name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s05_amend.py                name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s06_build.py                name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s07_reproduce.py            name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/stack_base.py               name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s05_build.py              name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s06_topdown_vs_bottomup.py name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s07_gap_decomposition.py  name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s08_which_level.py        name_keyed_ops=0
+      exploration/E1_I0033_aggregation_level/scripts/s10_player_value_scope.py name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s02_build_and_anchor.py      name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s03_probe.py                 name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s03b_probe2.py               name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s03c_probe3.py               name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s03d_probe4.py               name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s05_frame.py                 name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s06_cells.py                 name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s07_power.py                 name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s08_secondary.py             name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s09_null_audit.py            name_keyed_ops=0
+      exploration/E1_I0034_redistribution/scripts/s10_findings.py              name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s02_reproduce.py           name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s03_population.py          name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s04_repairs.py             name_keyed_ops=0
+      exploration/E1_I0035_availability_sum/scripts/s07_tier_crosscheck.py     name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s02_inspect_frames.py  name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s05_team_frames.py     name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s08_cols29.py          name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s09_d097_reexam.py     name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s10_d097_components.py name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s11_level_rerun.py     name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s12_level_fairtest.py  name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s13_d097_relevel.py    name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s04_audit_table.py name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s06_d04_demonstration.py name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s06b_mechanism.py  name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s07_remeasure.py   name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s10_d04_confirm_250.py name_keyed_ops=0
+      exploration/E1_I0039_stacking/scripts/s01_inspect.py                     name_keyed_ops=0
+      exploration/E1_I0039_stacking/scripts/s02_anchors_and_overlap.py         name_keyed_ops=0
+      exploration/E1_I0039_stacking/scripts/s03_join_probe.py                  name_keyed_ops=0
+      exploration/E1_I0039_stacking/scripts/s04_build.py                       name_keyed_ops=0
+      exploration/E1_I0040_audit_extension/scripts/s05_measure_shares.py       name_keyed_ops=0
+      exploration/E1_I0040_audit_extension/scripts/s06_resolve.py              name_keyed_ops=0
+      exploration/E1_I0040_audit_extension/scripts/s07_finalise.py             name_keyed_ops=0
+      exploration/E1_I0040_audit_extension/scripts/s08_discharge.py            name_keyed_ops=0
+      exploration/E1_I0042_redistribution_replication/scripts/rr_frames.py     name_keyed_ops=0
+      exploration/E1_I0042_redistribution_replication/scripts/s00_probe.py     name_keyed_ops=0
+      exploration/E1_I0043_opponent_defence/scripts/od_base.py                 name_keyed_ops=0
+      exploration/E1_I0043_opponent_defence/scripts/s01_anchors_independence.py name_keyed_ops=0
+      exploration/E1_I0043_opponent_defence/scripts/s07_findings.py            name_keyed_ops=0
+      exploration/E1_I0044_broken_nulls_and_composites/scripts/_rebuild_e14.py name_keyed_ops=0
+      exploration/E1_I0044_broken_nulls_and_composites/scripts/s01_probe_broken.py name_keyed_ops=0
+      exploration/E1_I0044_broken_nulls_and_composites/scripts/s02_diagnose.py name_keyed_ops=0
+      exploration/E1_I0044_broken_nulls_and_composites/scripts/s16_measure_interactions.py name_keyed_ops=0
+      exploration/E1_I0044_broken_nulls_and_composites/scripts/s17_finalise_sweep.py name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s00_probe.py                     name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s00c_anchor_hunt.py              name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s00d_anchor_hunt2.py             name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s00e_prior_check.py              name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s01_anchors_frame.py             name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s02_stability_reference_ceiling.py name_keyed_ops=0
+      exploration/E1_I0047_ceiling_validity/scripts/s01_anchors.py             name_keyed_ops=0
+      exploration/E1_I0047_ceiling_validity/scripts/s04_remeasure.py           name_keyed_ops=0
+      exploration/E1_I0047_ceiling_validity/scripts/s05_nulls_and_injection.py name_keyed_ops=0
+      exploration/E1_I0049_benchmark_constants/scripts/s02_anchors_and_rederive.py name_keyed_ops=0
+      exploration/E1_I0049_benchmark_constants/scripts/s03_floor_response_basis.py name_keyed_ops=0
+      exploration/E1_I0049_benchmark_constants/scripts/s04_counts_and_denominators.py name_keyed_ops=0
+      exploration/E1_I0049_benchmark_constants/scripts/s05_emit_deliverables.py name_keyed_ops=0
+      exploration/E1_I0051_constraint_sweep/scripts/s01_anchors.py             name_keyed_ops=0
+      exploration/E1_I0051_constraint_sweep/scripts/s02_reference_and_cells.py name_keyed_ops=0
+      exploration/E1_I0051_constraint_sweep/scripts/s03_nulls.py               name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s06_named_trace.py  name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s06b_columns.py     name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s07_stratum_and_guard.py name_keyed_ops=0
+      exploration/E1_I0053_minutes/scripts/s00_probe.py                        name_keyed_ops=0
+      exploration/E1_I0053_minutes/scripts/s01_anchors.py                      name_keyed_ops=0
+      exploration/E1_I0053_minutes/scripts/s02_reference.py                    name_keyed_ops=0
+      exploration/E1_I0053_minutes/scripts/s03_ceiling.py                      name_keyed_ops=0
+      exploration/IDEATION_QUEUE/_build_queue_json.py                          name_keyed_ops=0
+      exploration/MANIFEST_REMEDIATION/s12_build_plan.py                       name_keyed_ops=0
+      exploration/MANIFEST_REMEDIATION/s13_build_md.py                         name_keyed_ops=0
+
+  player_game_height_vs_opponent.csv             read by 2 file(s)
+      exploration/E0_I0008_height_differential/analyze_rung1_rung2.py          name_keyed_ops=0
+      exploration/E0_I0008_height_differential/build_rung1_rung2.py            name_keyed_ops=0
+
+  screen_frame.parquet                           read by 78 file(s)
+      exploration/E0_I0016_efficiency_predictors/s01_build_frame.py            name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s02_screen.py                 name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s02_screen_SUPERSEDED.py      name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s03_survivors.py              name_keyed_ops=0
+      exploration/E0_I0016_efficiency_predictors/s05_verify.py                 name_keyed_ops=0
+      exploration/E0_I0017_shot_quality_efficiency/s01_build_frame.py          name_keyed_ops=0
+      exploration/E0_I0017_shot_quality_efficiency/s02_screen.py               name_keyed_ops=0
+      exploration/E0_I0017_shot_quality_efficiency/s03_forensics.py            name_keyed_ops=0
+      exploration/E0_I0017_shot_quality_efficiency/s04_transfer.py             name_keyed_ops=0
+      exploration/E0_I0024_reb_ast_characterisation/s02_build_frame.py         name_keyed_ops=0
+      exploration/E0_I0024_reb_ast_characterisation/s03_ladder.py              name_keyed_ops=0
+      exploration/E0_I0024_reb_ast_characterisation/s04_screen.py              name_keyed_ops=0
+      exploration/E0_I0024_reb_ast_characterisation/s05_mechanism.py           name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s02_build_frame.py                 name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s03_ladder.py                      name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s04_stages.py                      name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s05_screen.py                      name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s05b_report.py                     name_keyed_ops=0
+      exploration/E0_I0029_freethrow_hurdle/s06_ceiling.py                     name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s01_build_frame.py          name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s02_reproduce.py            name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s03_screen.py               name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s04_points.py               name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s05_walkforward_and_mechanism.py name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/s06_tiptime_diagnostics.py  name_keyed_ops=0
+      exploration/E1_I0018_teammate_volume_channel/tv_base.py                  name_keyed_ops=0
+      exploration/E1_I0021_heterogeneity_diagnostic/hd_base.py                 name_keyed_ops=0
+      exploration/E1_I0023_usage_defence_interaction/uid_base.py               name_keyed_ops=0
+      exploration/E1_I0026_detection_floor/scripts/df_base.py                  name_keyed_ops=0
+      exploration/E1_I0026_detection_floor/scripts/s00_inspect.py              name_keyed_ops=0
+      exploration/E1_I0026_detection_floor/scripts/s10_assemble.py             name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s01_inspect.py                     name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s02_inspect_inputs.py              name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s03_prereg.py                      name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s04_ladder.py                      name_keyed_ops=0
+      exploration/E1_I0027_reference_ladder/s05_reprice.py                     name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s01_inspect.py              name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s02_join_probe.py           name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s03_prereg.py               name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s05_amend.py                name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s06_build.py                name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/s07_reproduce.py            name_keyed_ops=0
+      exploration/E1_I0032_aggregate_stack/scripts/stack_base.py               name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s02_inspect_frames.py  name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s05_team_frames.py     name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s08_cols29.py          name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s09_d097_reexam.py     name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s10_d097_components.py name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s11_level_rerun.py     name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s12_level_fairtest.py  name_keyed_ops=0
+      exploration/E1_I0036_level_artefact_sweep/scripts/s13_d097_relevel.py    name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s04_audit_table.py name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s06_d04_demonstration.py name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s06b_mechanism.py  name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s07_remeasure.py   name_keyed_ops=0
+      exploration/E1_I0038_within_entity_null_audit/scripts/s10_d04_confirm_250.py name_keyed_ops=0
+      exploration/E1_I0040_audit_extension/scripts/s05_measure_shares.py       name_keyed_ops=0
+      exploration/E1_I0040_audit_extension/scripts/s06_resolve.py              name_keyed_ops=0
+      exploration/E1_I0043_opponent_defence/scripts/od_base.py                 name_keyed_ops=0
+      exploration/E1_I0043_opponent_defence/scripts/s01_anchors_independence.py name_keyed_ops=0
+      exploration/E1_I0043_opponent_defence/scripts/s07_findings.py            name_keyed_ops=0
+      exploration/E1_I0044_broken_nulls_and_composites/scripts/s16_measure_interactions.py name_keyed_ops=0
+      exploration/E1_I0044_broken_nulls_and_composites/scripts/s17_finalise_sweep.py name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s00_probe.py                     name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s00d_anchor_hunt2.py             name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s00e_prior_check.py              name_keyed_ops=0
+      exploration/E1_I0046_allocation/scripts/s01_anchors_frame.py             name_keyed_ops=0
+      exploration/E1_I0047_ceiling_validity/scripts/s01_anchors.py             name_keyed_ops=0
+      exploration/E1_I0047_ceiling_validity/scripts/s04_remeasure.py           name_keyed_ops=0
+      exploration/E1_I0047_ceiling_validity/scripts/s05_nulls_and_injection.py name_keyed_ops=0
+      exploration/E1_I0049_benchmark_constants/scripts/s02_anchors_and_rederive.py name_keyed_ops=0
+      exploration/E1_I0049_benchmark_constants/scripts/s03_floor_response_basis.py name_keyed_ops=0
+      exploration/E1_I0049_benchmark_constants/scripts/s04_counts_and_denominators.py name_keyed_ops=0
+      exploration/E1_I0049_benchmark_constants/scripts/s05_emit_deliverables.py name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s06_named_trace.py  name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s06b_columns.py     name_keyed_ops=0
+      exploration/E1_I0052_identity_key_divergence/scripts/s07_stratum_and_guard.py name_keyed_ops=0
+      exploration/IDEATION_QUEUE/_build_queue_json.py                          name_keyed_ops=0

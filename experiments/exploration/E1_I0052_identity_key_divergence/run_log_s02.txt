@@ -1,0 +1,416 @@
+﻿name-keyed / mixed sites: 42 in 12 files
+
+====================================================================================================
+exploration/E0_I0006_usage_redistribution/analyze_clean.py
+====================================================================================================
+  --- L20  groupby(GROUPBY)  keys=player_id|player_name|team_id|season  [MIXED]
+        17| roster = pd.read_parquet(f"{OUT}/clean_roster_panel.parquet")
+        18| 
+        19| # ---- high-usage rotation regulars (same thresholds as before: >=0.20 mean usage, >=15 GP) ----
+   >>   20| baseline = played.groupby(["player_id", "player_name", "team_id", "season"]).agg(
+        21|     baseline_usage=("usage_percentage", "mean"), games_played=("game_id", "count"),
+        22|     start_rate=("start_position", lambda s: (s.fillna("") != "").mean()),
+        23| ).reset_index()
+
+  --- L87  groupby(GROUPBY)  keys=player_id|player_name  [MIXED]
+        84|             continue
+        85|         control = played[(played.team_id == tid) & (played.season == season) &
+        86|                           (played.game_id.isin(control_games)) & (played.player_id != pid)]
+   >>   87|         tm_baseline = control.groupby(["player_id", "player_name"]).agg(
+        88|             tm_baseline_usage=("usage_percentage", "mean"), n_control_games=("game_id", "count")
+        89|         ).reset_index()
+        90|         tm_baseline = tm_baseline[tm_baseline.n_control_games >= 5]
+
+  --- L92  merge(JOIN)  keys=player_id|player_name  [MIXED]
+        89|         ).reset_index()
+        90|         tm_baseline = tm_baseline[tm_baseline.n_control_games >= 5]
+        91|         game_rows = played[(played.game_id == gid) & (played.team_id == tid) & (played.player_id != pid)]
+   >>   92|         merged = game_rows.merge(tm_baseline, on=["player_id", "player_name"], how="inner")
+        93|         if merged.empty:
+        94|             continue
+        95|         merged["delta_usage"] = merged.usage_percentage - merged.tm_baseline_usage
+
+====================================================================================================
+exploration/E0_I0006_usage_redistribution/build_redistribution.py
+====================================================================================================
+  --- L29  groupby(GROUPBY)  keys=player_id|player_name|team_id|season  [MIXED]
+        26| # ---- 1. baseline usage per player-team-season (games actually played) ----
+        27| played = d[d.played]
+        28| baseline = (
+   >>   29|     played.groupby(["player_id", "player_name", "team_id", "season"])
+        30|     .agg(baseline_usage=("usage_percentage", "mean"), games_played=("game_id", "count"))
+        31|     .reset_index()
+        32| )
+
+  --- L74  groupby(GROUPBY)  keys=player_id|player_name  [MIXED]
+        71|     # control games: same team/season, player played, excluding this absence game itself (trivially true)
+        72|     control_games = played[(played.team_id == tid) & (played.season == season) & (played.player_id == pid)].game_id.unique()
+        73|     control = played[(played.team_id == tid) & (played.season == season) & (played.game_id.isin(control_games)) & (played.player_id != pid)]
+   >>   74|     tm_baseline = control.groupby(["player_id", "player_name"]).agg(
+        75|         tm_baseline_usage=("usage_percentage", "mean"), n_control_games=("game_id", "count")
+        76|     ).reset_index()
+        77|     tm_baseline = tm_baseline[tm_baseline.n_control_games >= 5]
+
+  --- L80  merge(JOIN)  keys=player_id|player_name  [MIXED]
+        77|     tm_baseline = tm_baseline[tm_baseline.n_control_games >= 5]
+        78| 
+        79|     game_rows = d[(d.game_id == gid) & (d.team_id == tid) & (d.played) & (d.player_id != pid)]
+   >>   80|     merged = game_rows.merge(tm_baseline, on=["player_id", "player_name"], how="inner")
+        81|     if merged.empty:
+        82|         continue
+        83|     merged["delta_usage"] = merged.usage_percentage - merged.tm_baseline_usage
+
+====================================================================================================
+exploration/E0_I0006_usage_redistribution/placebo_check.py
+====================================================================================================
+  --- L50  groupby(GROUPBY)  keys=player_id|player_name  [MIXED]
+        47|     remaining_games = [g for g in control_games if g != event_gid]
+        48| 
+        49|     control = played[(played.team_id == tid) & (played.season == season) & (played.game_id.isin(remaining_games)) & (played.player_id != pid)]
+   >>   50|     tm_baseline = control.groupby(["player_id", "player_name"]).agg(
+        51|         tm_baseline_usage=("usage_percentage", "mean"), n_control_games=("game_id", "count")
+        52|     ).reset_index()
+        53|     tm_baseline = tm_baseline[tm_baseline.n_control_games >= 5]
+
+  --- L56  merge(JOIN)  keys=player_id|player_name  [MIXED]
+        53|     tm_baseline = tm_baseline[tm_baseline.n_control_games >= 5]
+        54| 
+        55|     game_rows = d[(d.game_id == event_gid) & (d.team_id == tid) & (d.played) & (d.player_id != pid)]
+   >>   56|     merged = game_rows.merge(tm_baseline, on=["player_id", "player_name"], how="inner")
+        57|     if merged.empty:
+        58|         continue
+        59|     merged["delta_usage"] = merged.usage_percentage - merged.tm_baseline_usage
+
+====================================================================================================
+exploration/E1_I0045_roster_currency/scripts/s04_coverage_and_exposure.py
+====================================================================================================
+  --- L88  groupby(GROUPBY)  keys=player_name  [PLAYER_NAME_KEYED]
+        85| 
+        86| # the biggest contributors removed, by player -- the "established starters held against clubs
+        87| # they have left" population E1_I0035 named
+   >>   88| big = (PF[PF["drop_R3_union_S2"]].groupby("player_name")
+        89|        .agg(rows_removed=("p_active_hat", "size"), mean_p_active=("p_active_hat", "mean"),
+        90|             appearances=("appeared", "sum"),
+        91|             p_active_mass=("p_active_hat", "sum")).reset_index()
+
+====================================================================================================
+exploration/E1_I0048_shipped_roster_path/scripts/s02_shipped.py
+====================================================================================================
+  --- L80  drop_duplicates(DEDUP)  keys=team|player  [PLAYER_NAME_KEYED]
+        77|     """Line-for-line re-execution of daily_forecast.py:645-759 for one team."""
+        78|     inj = inj_all[inj_all.cap_dt <= cutoff]
+        79|     if len(inj):
+   >>   80|         inj = (inj.sort_values("cap_dt")
+        81|                   .drop_duplicates(subset=["team", "player"], keep="last"))
+        82|     abbr_to_name = {v: k for k, v in TEAMS.items()}
+        83| 
+
+  --- L91  unique(UNIQUE)  keys=player_name  [PLAYER_NAME_KEYED]
+        88|     tgames = sorted(tp.game_id.unique(),
+        89|                     key=lambda gid: tp[tp.game_id == gid].game_date.iloc[0])
+        90|     recent = set(tgames[-RECENCY_GAMES:])
+   >>   91|     roster = tp[tp.game_id.isin(recent)].player_name.unique()
+        92| 
+        93|     team_inj = (inj[inj.team == abbr_to_name.get(team_ab, "?")]
+        94|                 if len(inj) else pd.DataFrame())
+
+====================================================================================================
+exploration/E1_I0048_shipped_roster_path/scripts/s03_damage.py
+====================================================================================================
+  --- L108  unique(UNIQUE)  keys=player_name  [PLAYER_NAME_KEYED]
+       105|         rec_rows = tp[tp.game_id.isin(recent)]
+       106| 
+       107|         # ---- the two keys, on the SAME frame (controlled: no master drift) --
+   >>  108|         name_roster = set(rec_rows.player_name.unique())     # shipped key
+       109|         id_roster = set(rec_rows.player_id.unique())         # stable key
+       110| 
+       111|         # name -> distinct player_id  (collision: two people, one emitted row)
+
+  --- L112  groupby(GROUPBY)  keys=player_name  [PLAYER_NAME_KEYED]
+       109|         id_roster = set(rec_rows.player_id.unique())         # stable key
+       110| 
+       111|         # name -> distinct player_id  (collision: two people, one emitted row)
+   >>  112|         n2i = rec_rows.groupby("player_name").player_id.nunique()
+       113|         collisions = n2i[n2i > 1]
+       114|         # player_id -> distinct player_name (variant: one person, two rows)
+       115|         i2n = rec_rows.groupby("player_id").player_name.nunique()
+
+  --- L115  nunique(CARDINALITY)  keys=player_name  [PLAYER_NAME_KEYED]
+       112|         n2i = rec_rows.groupby("player_name").player_id.nunique()
+       113|         collisions = n2i[n2i > 1]
+       114|         # player_id -> distinct player_name (variant: one person, two rows)
+   >>  115|         i2n = rec_rows.groupby("player_id").player_name.nunique()
+       116|         variants = i2n[i2n > 1]
+       117| 
+       118|         # ---- departure, strictly pre-cutoff, no outcome data ---------------
+
+  --- L152  unique(UNIQUE)  keys=player_name  [PLAYER_NAME_KEYED]
+       149|                 n_stale += 1
+       150|             else:
+       151|                 n_arrival += 1
+   >>  152|             nm = sorted(rec_rows[rec_rows.player_id == pid].player_name.unique())
+       153|             k = len(a)
+       154|             t5 = float(a.minutes.iloc[-5:].mean())
+       155|             cases.append({"case": kind, "record_idx": r["record_idx"],
+
+  --- L171  unique(UNIQUE)  keys=player_name  [PLAYER_NAME_KEYED]
+       168|                           "player_name": nm, "n_prior_app_season": None,
+       169|                           "trail5_min": None, "in_decision_stratum": None})
+       170|         for pid, k in variants.items():
+   >>  171|             nms = sorted(rec_rows[rec_rows.player_id == pid].player_name.unique())
+       172|             a = app[app.player_id == pid]
+       173|             kk = len(a)
+       174|             t5 = float(a.minutes.iloc[-5:].mean()) if kk else float("nan")
+
+====================================================================================================
+exploration/E1_I0048_shipped_roster_path/scripts/s05_name_key.py
+====================================================================================================
+  --- L49  groupby(GROUPBY)  keys=player_name  [PLAYER_NAME_KEYED]
+        46| # ---- identity ambiguity per season (exact equality only, no fuzzy) --------
+        47| amb = []
+        48| for s, g in p.groupby("season"):
+   >>   49|     n2i = g.groupby("player_name").player_id.nunique()
+        50|     i2n = g.groupby("player_id").player_name.nunique()
+        51|     amb.append({"season": int(s), "rows": len(g),
+        52|                 "distinct_player_id": int(g.player_id.nunique()),
+
+  --- L50  nunique(CARDINALITY)  keys=player_name  [PLAYER_NAME_KEYED]
+        47| amb = []
+        48| for s, g in p.groupby("season"):
+        49|     n2i = g.groupby("player_name").player_id.nunique()
+   >>   50|     i2n = g.groupby("player_id").player_name.nunique()
+        51|     amb.append({"season": int(s), "rows": len(g),
+        52|                 "distinct_player_id": int(g.player_id.nunique()),
+        53|                 "distinct_player_name": int(g.player_name.nunique()),
+
+  --- L53  nunique(CARDINALITY)  keys=player_name  [PLAYER_NAME_KEYED]
+        50|     i2n = g.groupby("player_id").player_name.nunique()
+        51|     amb.append({"season": int(s), "rows": len(g),
+        52|                 "distinct_player_id": int(g.player_id.nunique()),
+   >>   53|                 "distinct_player_name": int(g.player_name.nunique()),
+        54|                 "names_mapping_to_multiple_ids": int((n2i > 1).sum()),
+        55|                 "ids_mapping_to_multiple_names": int((i2n > 1).sum()),
+        56|                 "partition": ("exploration_2021_2024" if s <= 2024
+
+  --- L66  nunique(CARDINALITY)  keys=player_name  [PLAYER_NAME_KEYED]
+        63| # name the offending identities (exact grouping, never substring selection)
+        64| offenders = []
+        65| for s, g in p.groupby("season"):
+   >>   66|     i2n = g.groupby("player_id").player_name.nunique()
+        67|     for pid in i2n[i2n > 1].index:
+        68|         offenders.append({"season": int(s), "kind": "ID_WITH_MULTIPLE_NAMES",
+        69|                           "player_id": int(pid),
+
+  --- L71  unique(UNIQUE)  keys=player_name  [PLAYER_NAME_KEYED]
+        68|         offenders.append({"season": int(s), "kind": "ID_WITH_MULTIPLE_NAMES",
+        69|                           "player_id": int(pid),
+        70|                           "values": " | ".join(sorted(
+   >>   71|                               g[g.player_id == pid].player_name.unique())),
+        72|                           "teams": " | ".join(sorted(
+        73|                               g[g.player_id == pid].team_abbreviation.unique()))})
+        74|     n2i = g.groupby("player_name").player_id.nunique()
+
+  --- L74  groupby(GROUPBY)  keys=player_name  [PLAYER_NAME_KEYED]
+        71|                               g[g.player_id == pid].player_name.unique())),
+        72|                           "teams": " | ".join(sorted(
+        73|                               g[g.player_id == pid].team_abbreviation.unique()))})
+   >>   74|     n2i = g.groupby("player_name").player_id.nunique()
+        75|     for nm in n2i[n2i > 1].index:
+        76|         offenders.append({"season": int(s), "kind": "NAME_WITH_MULTIPLE_IDS",
+        77|                           "player_id": " | ".join(map(str, sorted(
+
+  --- L97  nunique(CARDINALITY)  keys=player_name  [PLAYER_NAME_KEYED]
+        94|     for i in range(1, len(gids) + 1):          # slate before game i (1..n)
+        95|         recent = set(gids[max(0, i - RECENCY_GAMES):i])
+        96|         rr = g[g.game_id.isin(recent)]
+   >>   97|         n_name = rr.player_name.nunique()
+        98|         n_id = rr.player_id.nunique()
+        99|         if n_name != n_id:
+       100|             rows.append({"season": int(s), "team": ab, "slate_index": i,
+
+====================================================================================================
+exploration/E1_I0048_shipped_roster_path/scripts/s06_postrepair.py
+====================================================================================================
+  --- L64  drop_duplicates(DEDUP)  keys=team|player  [PLAYER_NAME_KEYED]
+        61| 
+        62|     inj = inj_all[inj_all.cap_dt <= cutoff]
+        63|     if len(inj):
+   >>   64|         inj = (inj.sort_values("cap_dt")
+        65|                   .drop_duplicates(subset=["team", "player"], keep="last"))
+        66|     pp = p_all[(p_all.season == season)
+        67|                & (pd.to_datetime(p_all.game_date).dt.date < slate_date)].copy()
+
+====================================================================================================
+exploration/MEASURE_F1_m13_fitpool/m14_lib.py
+====================================================================================================
+  --- L267  duplicated(DEDUP)  keys=game_id|player_name|bookmaker_key|line  [PLAYER_NAME_KEYED]
+       264|     one_sided = df["over_price"].isna() | df["under_price"].isna()
+       265|     n_one_sided_excluded = int(one_sided.sum())
+       266|     df = df[~one_sided].copy()
+   >>  267|     dup_bl = df.duplicated(["game_id", "player_name", "bookmaker_key", "line"])
+       268|     n_dup_dropped = int(dup_bl.sum())
+       269|     df = df[~dup_bl].copy()
+       270| 
+
+  --- L271  map(LOOKUP)  keys=player_name  [PLAYER_NAME_KEYED]
+       268|     n_dup_dropped = int(dup_bl.sum())
+       269|     df = df[~dup_bl].copy()
+       270| 
+   >>  271|     df["norm_name"] = df["player_name"].map(mvm._norm_name)
+       272|     df["player_id"] = df["norm_name"].map(id_index)
+       273|     n_unresolved = int(df["player_id"].isna().sum())
+       274|     df = df[df["player_id"].notna()].copy()
+
+  --- L272  map(LOOKUP)  keys=norm_name  [PLAYER_NAME_KEYED]
+       269|     df = df[~dup_bl].copy()
+       270| 
+       271|     df["norm_name"] = df["player_name"].map(mvm._norm_name)
+   >>  272|     df["player_id"] = df["norm_name"].map(id_index)
+       273|     n_unresolved = int(df["player_id"].isna().sum())
+       274|     df = df[df["player_id"].notna()].copy()
+       275|     df["player_id"] = df["player_id"].astype("int64")
+
+====================================================================================================
+player_program/future_research/F16_PLAYER_PROPS/measure_props_evidence.py
+====================================================================================================
+  --- L50  nunique(CARDINALITY)  keys=player_name  [PLAYER_NAME_KEYED]
+        47|         "distinct_snapshots": sorted(live["snapshot_utc"].astype(str).unique().tolist()),
+        48|         "markets": sorted(live["market_key"].unique().tolist()),
+        49|         "rows_by_market": {k: int(v) for k, v in live["market_key"].value_counts().items()},
+   >>   50|         "distinct_player_name_strings": int(live["player_name"].nunique()),
+        51|         "event_player_pairs": int(live[["api_event_id", "player_name"]].drop_duplicates().shape[0]),
+        52|         "event_player_market_cells": int(
+        53|             live[["api_event_id", "player_name", "market_key"]].drop_duplicates().shape[0]),
+
+  --- L130  map(LOOKUP)  keys=player_name  [PLAYER_NAME_KEYED]
+       127| 
+       128|     # ---- M4  identity join, archive side --------------------------------------------------
+       129|     mp = pd.read_parquet(MASTER_PLAYER)
+   >>  130|     mp["n"] = mp["player_name"].map(norm)
+       131|     mp["gid"] = mp["game_id"].astype(str)
+       132|     key = set(zip(mp["gid"], mp["n"]))
+       133|     hp = hist[["game_id", "player_name"]].drop_duplicates().copy()
+
+  --- L135  map(LOOKUP)  keys=player_name  [PLAYER_NAME_KEYED]
+       132|     key = set(zip(mp["gid"], mp["n"]))
+       133|     hp = hist[["game_id", "player_name"]].drop_duplicates().copy()
+       134|     hp["gid"] = hp["game_id"].astype(str)
+   >>  135|     hp["n"] = hp["player_name"].map(norm)
+       136|     hp["matched"] = [(g, n) in key for g, n in zip(hp["gid"], hp["n"])]
+       137|     unmatched = hp.loc[~hp["matched"]]
+       138|     all_names = set(mp["n"])
+
+  --- L145  nunique(CARDINALITY)  keys=player_name  [PLAYER_NAME_KEYED]
+       142|         "matched_same_game_box_row": int(hp["matched"].sum()),
+       143|         "match_rate": float(hp["matched"].mean()),
+       144|         "unmatched_player_games": int(len(unmatched)),
+   >>  145|         "unmatched_distinct_name_strings": int(unmatched["player_name"].nunique()),
+       146|         "unmatched_whose_name_exists_elsewhere_in_master": int(
+       147|             unmatched["n"].isin(all_names).sum()),
+       148|         "top_unmatched_names": {str(k): int(v) for k, v in
+
+  --- L149  value_counts(CARDINALITY)  keys=player_name  [PLAYER_NAME_KEYED]
+       146|         "unmatched_whose_name_exists_elsewhere_in_master": int(
+       147|             unmatched["n"].isin(all_names).sum()),
+       148|         "top_unmatched_names": {str(k): int(v) for k, v in
+   >>  149|                                 unmatched["player_name"].value_counts().head(10).items()},
+       150|         "distinct_priced_players": int(hp["n"].nunique()),
+       151|         "note": ("normalized-exact name join only; no player_id exists on either props file. "
+       152|                  "A non-match is not evidence of a settlement error and was not treated as one."),
+
+  --- L168  map(LOOKUP)  keys=player_name  [PLAYER_NAME_KEYED]
+       165|     live["date"] = (pd.to_datetime(live["commence_time"], utc=True)
+       166|                     .dt.tz_convert("US/Eastern").dt.date.astype(str))
+       167|     sub = live[["date", "player_name"]].drop_duplicates().copy()
+   >>  168|     sub["n"] = sub["player_name"].map(norm)
+       169|     datekey = set(zip(mp["game_date"].astype(str).str[:10], mp["n"]))
+       170|     sub["matched"] = [(d, n) in datekey for d, n in zip(sub["date"], sub["n"])]
+       171|     m["M6_prospective_gradeability"] = {
+
+====================================================================================================
+player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/fix_entity_resolution.py
+====================================================================================================
+  --- L93  unique(UNIQUE)  keys=player_name  [PLAYER_NAME_KEYED]
+        90|         tgames = sorted(tp.game_id.unique(),
+        91|                         key=lambda gid: tp[tp.game_id == gid].game_date.iloc[0])
+        92|         recent = set(tgames[-RECENCY_GAMES:])
+   >>   93|         roster = tp[tp.game_id.isin(recent)].player_name.unique()
+        94|         team_inj = (inj[inj.team == abbr_to_name.get(team_ab, "?")]
+        95|                     if len(inj) else pd.DataFrame())
+        96|         inj_by_norm = ({_norm_name(r.player): r for r in team_inj.itertuples()}
+
+  --- L110  unique(UNIQUE)  keys=player_name  [PLAYER_NAME_KEYED]
+       107|                 matched.add(_norm_name(name))
+       108|                 rec["designation"] = hit.status
+       109|             (outs if rec["designation"] == "Out" else avail).append(rec)
+   >>  110|         season_by_norm = {_norm_name(n): n for n in tp.player_name.unique()}
+       111|         unmatched = []
+       112|         for n, r in inj_by_norm.items():
+       113|             if n in matched:
+
+====================================================================================================
+player_program/ops_lane/O14_OPS_ENTITY_RESOLUTION/repro_entity_resolution.py
+====================================================================================================
+  --- L182  drop_duplicates(DEDUP)  keys=team|player  [PLAYER_NAME_KEYED]
+       179|     teams_ever = s.groupby("player_id").team_abbreviation.apply(
+       180|         lambda x: sorted(set(x))).to_dict()
+       181| 
+   >>  182|     latest = (inj.sort_values("capture_utc")
+       183|                  .drop_duplicates(subset=["team", "player"], keep="last"))
+       184|     cross, unknown, ok = [], [], 0
+       185|     for r in latest.itertuples(index=False):
+
+  --- L239  unique(UNIQUE)  keys=player  [PLAYER_NAME_KEYED]
+       236|         weak_index.setdefault(weak(nm), set()).add(int(pid))
+       237| 
+       238|     unmatched_exact, recovered_by_weak = [], []
+   >>  239|     for nm in sorted(inj.player.unique()):
+       240|         if _norm_name(nm) in master_norms:
+       241|             continue
+       242|         unmatched_exact.append(nm)
+
+  --- L250  nunique(CARDINALITY)  keys=player  [PLAYER_NAME_KEYED]
+       247|                 {"capture_name": nm, "player_id": pid,
+       248|                  "master_name": str(ids[ids.player_id == pid].player_name.iloc[0])})
+       249|     return {
+   >>  250|         "n_distinct_capture_names": int(inj.player.nunique()),
+       251|         "n_norm_collisions_between_distinct_master_players": len(collisions),
+       252|         "norm_collisions": collisions,
+       253|         "n_capture_names_unmatched_by_normalized_exact": len(unmatched_exact),
+
+  --- L300  map(LOOKUP)  keys=player_name  [PLAYER_NAME_KEYED]
+       297|                        name2ab: dict) -> dict:
+       298|     s = p[p.season == season].copy()
+       299|     s["gd"] = pd.to_datetime(s.game_date).dt.tz_localize("UTC")
+   >>  300|     s["norm"] = s.player_name.map(_norm_name)
+       301|     # EVERY captured row, not the latest per (team, player): the defect is a
+       302|     # transient window, and collapsing to the latest state hides exactly the
+       303|     # interval in which the forecaster would have run.
+
+  --- L332  map(LOOKUP)  keys=player_name  [PLAYER_NAME_KEYED]
+       329|                          "player": r.player, "status": r.status,
+       330|                          "in_any_earlier_season": bool(
+       331|                              len(p[(p.season < season)
+   >>  332|                                    & (p.player_name.map(_norm_name) == nm)]))})
+       333|     cross_players = sorted({c["player"] for c in cross})
+       334|     cold_players = sorted({c["player"] for c in cold})
+       335|     windows = {}
+
+  --- L389  map(LOOKUP)  keys=player_name  [PLAYER_NAME_KEYED]
+       386|         return {"present": False}
+       387|     d = pd.read_csv(f)
+       388|     names = sorted(set(d.player_name.dropna())) if "player_name" in d else []
+   >>  389|     m_season = set(p[p.season == season].player_name.map(_norm_name))
+       390|     m_all = set(p.player_name.map(_norm_name))
+       391|     u_season = [x for x in names if _norm_name(x) not in m_season]
+       392|     u_all = [x for x in names if _norm_name(x) not in m_all]
+
+  --- L390  map(LOOKUP)  keys=player_name  [PLAYER_NAME_KEYED]
+       387|     d = pd.read_csv(f)
+       388|     names = sorted(set(d.player_name.dropna())) if "player_name" in d else []
+       389|     m_season = set(p[p.season == season].player_name.map(_norm_name))
+   >>  390|     m_all = set(p.player_name.map(_norm_name))
+       391|     u_season = [x for x in names if _norm_name(x) not in m_season]
+       392|     u_all = [x for x in names if _norm_name(x) not in m_all]
+       393|     return {
+

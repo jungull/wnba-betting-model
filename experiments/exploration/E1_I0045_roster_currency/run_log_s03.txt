@@ -1,0 +1,449 @@
+﻿  RS1 1392 team-games | RS1P 20084 rows | fit pool 26574 rows
+    [pick] master_player                        -> 17 cols: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'player_id', 'player_name', 'position', 'starter_flag', 'dnp_reason', 'minutes', 'pts', 'fga', 'fta', 'ftm', 'reb', 'ast']
+  fit-pool rows with rec_S2 = 4130
+
+====================================================================================================
+0. THE DECISION-STRATUM INTERSECTION, REPORTED FIRST
+====================================================================================================
+  Stratum (E1_I0004's registered definition): >=8 prior same-season appearances AND
+  trailing-5 mean minutes >=24, both computed strictly pre-cutoff.
+
+  RS1P rows in the decision stratum: 4964 of 20084 (24.72%)
+  tier_A x in_decision_stratum:
+in_decision_stratum  False  True 
+tier_A                           
+False                 3770      2
+True                 11350   4962
+
+  TIER-B rows in the decision stratum: 2  <-- the rows a currency rule could touch
+
+====================================================================================================
+1. THE CURRENCY RULES  (every input strictly pre-cutoff; no wire, no bios, no roster_asof)
+====================================================================================================
+           rule  n_dropped  share_of_RS1P  n_dropped_tier_A  n_dropped_tier_B  n_dropped_that_APPEARED  appearance_rate_of_dropped  mean_p_active_of_dropped  sum_p_active_removed_per_team_game  n_dropped_in_decision_stratum
+ R1_departed_S2       1489       0.074139                 0              1489                        3                    0.002015                  0.448556                            0.479813                              0
+    R2_stale_S2       1501       0.074736                 0              1501                        7                    0.004664                  0.489063                            0.527359                              0
+    R3_union_S2       2054       0.102270                 0              2054                        7                    0.003408                  0.476361                            0.702906                              0
+R4_departed_all       2080       0.103565               248              1832                      151                    0.072596                  0.435396                            0.650591                              9
+
+  RECENCY CURVE (drop S2 rows whose last appearance for this club is > tau days old):
+ tau_days  n_dropped  n_dropped_that_appeared  appearance_rate_of_dropped  sum_p_removed_per_team_game
+        7       3266                      199                    0.060931                     1.206693
+       14       3266                      199                    0.060931                     1.206693
+       30       3266                      199                    0.060931                     1.206693
+       60       3266                      199                    0.060931                     1.206693
+       90       3266                      199                    0.060931                     1.206693
+      120       3266                      199                    0.060931                     1.206693
+      180       3266                      199                    0.060931                     1.206693
+      200       3266                      199                    0.060931                     1.206693
+      250       2612                       70                    0.026799                     0.921289
+      300       1992                       14                    0.007028                     0.691324
+      365       1605                        8                    0.004984                     0.560693
+      400       1501                        7                    0.004664                     0.527359
+      500       1501                        7                    0.004664                     0.527359
+      700        767                        5                    0.006519                     0.267783
+      900        510                        4                    0.007843                     0.181624
+
+====================================================================================================
+2. Xa REPRODUCED -- the benchmark, per-stratum walk-forward recalibration
+====================================================================================================
+  strata: ('A|const', 'A|fit', 'B|const', 'B|fit')
+arm  season stratum  n_train  n_test         a        b                               action  train_base_rate
+ Xa    2022 A|const     4850     248  1.199600 0.000000                       intercept_only         0.768454
+ Xa    2022   A|fit        0    4777       NaN      NaN UNRECALIBRATED (train pool too thin)              NaN
+ Xa    2022 B|const      143     408  0.013986 0.000000                       intercept_only         0.503497
+ Xa    2022   B|fit        0     358       NaN      NaN UNRECALIBRATED (train pool too thin)              NaN
+ Xa    2023 A|const     5098     198  1.213347 0.000000                       intercept_only         0.770891
+ Xa    2023   A|fit     5315    5514  0.102399 1.067845                      affine_in_logit         0.782502
+ Xa    2023 B|const      551     546 -0.706790 0.000000                       intercept_only         0.330309
+ Xa    2023   B|fit      358     718 -3.043376 0.023561                      affine_in_logit         0.044693
+ Xa    2024 A|const     5296     168  1.222310 0.000000                       intercept_only         0.772470
+ Xa    2024   A|fit    11267    5407  0.106825 1.096425                      affine_in_logit         0.776249
+ Xa    2024 B|const     1097     671 -0.967915 0.000000                       intercept_only         0.275296
+ Xa    2024   B|fit     1076    1071 -3.758590 0.131746                      affine_in_logit         0.020446
+
+  Xa quantity                            MINE    PUBLISHED    abs diff  verdict
+  Xa team MAE                       10.957277    10.957000    0.000277  CONFIRMED
+  Xa player Brier (all)              0.094677     0.094700    0.000023  CONFIRMED
+  Xa player Brier (tier A)           0.093349     0.093300    0.000049  CONFIRMED
+  Xa player AUC                      0.928452     0.928500    0.000048  CONFIRMED
+  Xa sum p_active/team-game          9.560942     9.561000    0.000058  CONFIRMED
+  Xa REPRODUCED.  It is a valid benchmark.
+
+====================================================================================================
+3. ASSEMBLE THE ARMS
+====================================================================================================
+  arms: ('X0', 'Xa', 'Y_R1_departed_S2', 'Z_R1_departed_S2', 'Y_R2_stale_S2', 'Z_R2_stale_S2', 'Y_R3_union_S2', 'Z_R3_union_S2', 'Y_R4_departed_all', 'Z_R4_departed_all')
+
+====================================================================================================
+4. TEAM LEVEL  (RS1, n=1392, response master_team.pts, SST 168710.4073, no weighting, no base)
+====================================================================================================
+                window               arm    n       MAE      RMSE      bias  R2_common_SST  corr_with_response  mean_sum_w  MAE_vs_X0  MAE_vs_Xa
+        FULL 2022-2024                X0 1392 18.263037 34.221614  8.138903      -8.662697            0.001301   10.338079   0.000000  -7.305759
+        FULL 2022-2024                Xa 1392 10.957277 14.476702  1.127289      -0.729166            0.055862    9.560942   7.305759   0.000000
+        FULL 2022-2024  Y_R1_departed_S2 1392 14.174266 23.073213  3.965311      -3.392517            0.008958    9.858266   4.088771  -3.216989
+        FULL 2022-2024  Z_R1_departed_S2 1392 10.446160 13.533992  0.278112      -0.511295            0.079589    9.460329   7.816877   0.511117
+        FULL 2022-2024     Y_R2_stale_S2 1392 13.715957 20.646312  3.558018      -2.517081            0.010705    9.810720   4.547079  -2.758680
+        FULL 2022-2024     Z_R2_stale_S2 1392 10.646502 13.986391  0.102719      -0.614019            0.072796    9.442746   7.616535   0.310775
+        FULL 2022-2024     Y_R3_union_S2 1392 12.292421 17.843713  2.021894      -1.627047            0.024711    9.635173   5.970615  -1.335144
+        FULL 2022-2024     Z_R3_union_S2 1392 10.296099 13.250936 -0.341787      -0.448740            0.091585    9.389202   7.966938   0.661179
+        FULL 2022-2024 Y_R4_departed_all 1392 13.055224 19.570315  2.587333      -2.160043            0.023157    9.687488   5.207812  -2.097947
+        FULL 2022-2024 Z_R4_departed_all 1392 10.361136 13.373937 -0.529439      -0.475761            0.095674    9.358311   7.901901   0.596142
+CLEAN WINDOW 2023-2024                X0  960 19.916137 38.413155  9.899087     -11.136684            0.008318   10.513154   0.000000  -9.529798
+CLEAN WINDOW 2023-2024                Xa  960 10.386339 13.374882  0.899532      -0.471364            0.105338    9.520469   9.529798   0.000000
+CLEAN WINDOW 2023-2024  Y_R1_departed_S2  960 14.643956 24.596834  4.565858      -3.976208            0.017547    9.903268   5.272181  -4.257617
+CLEAN WINDOW 2023-2024  Z_R1_departed_S2  960 10.127736 12.993984  0.303402      -0.388752            0.123757    9.450850   9.788401   0.258603
+CLEAN WINDOW 2023-2024     Y_R2_stale_S2  960 13.425210 20.211644  3.359141      -2.360032            0.026806    9.760247   6.490927  -3.038871
+CLEAN WINDOW 2023-2024     Z_R2_stale_S2  960 10.005806 12.771405 -0.516005      -0.341583            0.134323    9.357142   9.910331   0.380533
+CLEAN WINDOW 2023-2024     Y_R3_union_S2  960 11.992485 17.414992  1.829154      -1.494518            0.043538    9.589123   7.923652  -1.606146
+CLEAN WINDOW 2023-2024     Z_R3_union_S2  960  9.947966 12.663801 -0.541074      -0.319071            0.141283    9.353965   9.968172   0.438374
+CLEAN WINDOW 2023-2024 Y_R4_departed_all  960 13.499360 20.775227  3.164392      -2.550027            0.031074    9.729354   6.416778  -3.113020
+CLEAN WINDOW 2023-2024 Z_R4_departed_all  960 10.126832 13.036478 -0.619511      -0.397850            0.132740    9.336573   9.789306   0.259508
+
+====================================================================================================
+5. PLAYER LEVEL -- THE PART THAT DECIDES
+====================================================================================================
+                window               arm          row_set     n   mean_w  base_rate    brier  logloss      AUC  cal_intercept  cal_slope  uncond_pts_MAE  uncond_pts_bias
+        FULL 2022-2024                X0       RS1P (all) 20084 0.716521   0.651613 0.130248 0.405581 0.902573      -0.688443   1.150162        3.907382         0.576098
+        FULL 2022-2024                X0  RS1P-A (tier A) 16312 0.760833   0.778813 0.093201 0.313589 0.897850       0.133898   1.059142        3.776286        -0.155697
+        FULL 2022-2024                X0  RS1P-B (tier B)  3772 0.524892   0.101538 0.290459 0.803401 0.760331      -3.054613   1.230192        4.474306         3.740745
+        FULL 2022-2024                X0 DECISION STRATUM  4964 0.905396   0.908340 0.047243 0.186414 0.839533      -0.346260   1.213832        5.252078         0.062636
+        FULL 2022-2024                Xa       RS1P (all) 20084 0.662658   0.651613 0.094677 0.314125 0.928452      -0.166160   1.096157        3.454724         0.090131
+        FULL 2022-2024                Xa  RS1P-A (tier A) 16312 0.770531   0.778813 0.093349 0.312474 0.897331       0.083843   1.005078        3.783533        -0.091687
+        FULL 2022-2024                Xa  RS1P-B (tier B)  3772 0.196164   0.101538 0.100420 0.321264 0.772287      -1.016977   0.859610        2.032792         0.876403
+        FULL 2022-2024                Xa DECISION STRATUM  4964 0.914433   0.908340 0.047740 0.187447 0.835866      -0.384465   1.133443        5.268461         0.181347
+        FULL 2022-2024  Y_R1_departed_S2       RS1P (all) 20084 0.683266   0.651613 0.112037 0.357723 0.917382      -0.357732   1.058109        3.619502         0.286831
+        FULL 2022-2024  Y_R1_departed_S2  RS1P-A (tier A) 16312 0.760833   0.778813 0.093201 0.313589 0.897850       0.133898   1.059142        3.776286        -0.155697
+        FULL 2022-2024  Y_R1_departed_S2  RS1P-B (tier B)  3772 0.347824   0.101538 0.193496 0.548582 0.823943      -2.092513   0.708801        2.941490         2.200543
+        FULL 2022-2024  Y_R1_departed_S2 DECISION STRATUM  4964 0.905396   0.908340 0.047243 0.186414 0.839533      -0.346260   1.213832        5.252078         0.062636
+        FULL 2022-2024  Z_R1_departed_S2       RS1P (all) 20084 0.655685   0.651613 0.091929 0.307160 0.931739      -0.079545   1.058653        3.391724         0.031275
+        FULL 2022-2024  Z_R1_departed_S2  RS1P-A (tier A) 16312 0.770531   0.778813 0.093349 0.312474 0.897331       0.083843   1.005078        3.783533        -0.091687
+        FULL 2022-2024  Z_R1_departed_S2  RS1P-B (tier B)  3772 0.159034   0.101538 0.085788 0.284181 0.835766      -0.847240   0.719924        1.697346         0.563026
+        FULL 2022-2024  Z_R1_departed_S2 DECISION STRATUM  4964 0.914505   0.908340 0.047626 0.186906 0.835954      -0.396993   1.139108        5.267459         0.182349
+        FULL 2022-2024     Y_R2_stale_S2       RS1P (all) 20084 0.679970   0.651613 0.108340 0.353804 0.920584      -0.341045   1.074964        3.592858         0.258602
+        FULL 2022-2024     Y_R2_stale_S2  RS1P-A (tier A) 16312 0.760833   0.778813 0.093201 0.313589 0.897850       0.133898   1.059142        3.776286        -0.155697
+        FULL 2022-2024     Y_R2_stale_S2  RS1P-B (tier B)  3772 0.330278   0.101538 0.173810 0.527712 0.847916      -1.945019   0.655141        2.799622         2.050238
+        FULL 2022-2024     Y_R2_stale_S2 DECISION STRATUM  4964 0.905396   0.908340 0.047243 0.186414 0.839533      -0.346260   1.213832        5.252078         0.062636
+        FULL 2022-2024     Z_R2_stale_S2       RS1P (all) 20084 0.654466   0.651613 0.092415 0.312504 0.931857      -0.049351   1.029290        3.381472         0.019119
+        FULL 2022-2024     Z_R2_stale_S2  RS1P-A (tier A) 16312 0.770531   0.778813 0.093349 0.312474 0.897331       0.083843   1.005078        3.783533        -0.091687
+        FULL 2022-2024     Z_R2_stale_S2  RS1P-B (tier B)  3772 0.152545   0.101538 0.088377 0.312630 0.822927      -1.002739   0.481412        1.642762         0.498300
+        FULL 2022-2024     Z_R2_stale_S2 DECISION STRATUM  4964 0.914434   0.908340 0.047738 0.187403 0.835866      -0.385197   1.133800        5.268443         0.181365
+        FULL 2022-2024     Y_R3_union_S2       RS1P (all) 20084 0.667803   0.651613 0.101811 0.335285 0.925737      -0.199038   1.037537        3.486391         0.152135
+        FULL 2022-2024     Y_R3_union_S2  RS1P-A (tier A) 16312 0.760833   0.778813 0.093201 0.313589 0.897850       0.133898   1.059142        3.776286        -0.155697
+        FULL 2022-2024     Y_R3_union_S2  RS1P-B (tier B)  3772 0.265495   0.101538 0.139044 0.429112 0.870024      -1.558289   0.508092        2.232739         1.483355
+        FULL 2022-2024     Y_R3_union_S2 DECISION STRATUM  4964 0.905396   0.908340 0.047243 0.186414 0.839533      -0.346260   1.213832        5.252078         0.062636
+        FULL 2022-2024     Z_R3_union_S2       RS1P (all) 20084 0.650755   0.651613 0.090347 0.305715 0.933900      -0.002906   1.018257        3.346969        -0.011689
+        FULL 2022-2024     Z_R3_union_S2  RS1P-A (tier A) 16312 0.770531   0.778813 0.093349 0.312474 0.897331       0.083843   1.005078        3.783533        -0.091687
+        FULL 2022-2024     Z_R3_union_S2  RS1P-B (tier B)  3772 0.132786   0.101538 0.077366 0.276486 0.862174      -0.780276   0.477419        1.459049         0.334262
+        FULL 2022-2024     Z_R3_union_S2 DECISION STRATUM  4964 0.914502   0.908340 0.047630 0.186915 0.835946      -0.396651   1.138971        5.267505         0.182303
+        FULL 2022-2024 Y_R4_departed_all       RS1P (all) 20084 0.671429   0.651613 0.113184 0.543341 0.914470       0.141940   0.676706        3.567093         0.191325
+        FULL 2022-2024 Y_R4_departed_all  RS1P-A (tier A) 16312 0.757616   0.778813 0.092905 0.367106 0.898268       0.276012   0.929111        3.758642        -0.177466
+        FULL 2022-2024 Y_R4_departed_all  RS1P-B (tier B)  3772 0.298716   0.101538 0.200880 1.305470 0.676961      -1.797992   0.076715        2.738742         1.786159
+        FULL 2022-2024 Y_R4_departed_all DECISION STRATUM  4964 0.904116   0.908340 0.046915 0.195651 0.839577      -0.214905   1.156890        5.238486         0.043276
+        FULL 2022-2024 Z_R4_departed_all       RS1P (all) 20084 0.648614   0.651613 0.094037 0.494022 0.928330       0.254523   0.704531        3.355946        -0.024695
+        FULL 2022-2024 Z_R4_departed_all  RS1P-A (tier A) 16312 0.767809   0.778813 0.092987 0.365786 0.897851       0.222962   0.884782        3.766448        -0.110061
+        FULL 2022-2024 Z_R4_departed_all  RS1P-B (tier B)  3772 0.133156   0.101538 0.098577 1.048580 0.688033      -1.572978   0.098626        1.580728         0.344469
+        FULL 2022-2024 Z_R4_departed_all DECISION STRATUM  4964 0.913539   0.908340 0.047200 0.195893 0.836015      -0.278293   1.088758        5.252994         0.167076
+CLEAN WINDOW 2023-2024                X0       RS1P (all) 14293 0.706124   0.631218 0.131969 0.410009 0.906658      -0.787140   1.174939        3.891166         0.673415
+CLEAN WINDOW 2023-2024                X0  RS1P-A (tier A) 11287 0.757900   0.776557 0.091862 0.309925 0.901696       0.139820   1.064476        3.761761        -0.158445
+CLEAN WINDOW 2023-2024                X0  RS1P-B (tier B)  3006 0.511713   0.085496 0.282563 0.785809 0.778061      -3.360847   1.370969        4.377057         3.796904
+CLEAN WINDOW 2023-2024                X0 DECISION STRATUM  3529 0.899865   0.895438 0.048791 0.192276 0.852177      -0.552381   1.258558        5.271713         0.195469
+CLEAN WINDOW 2023-2024                Xa       RS1P (all) 14293 0.639449   0.631218 0.088416 0.296783 0.936554      -0.120648   1.065662        3.303715         0.068953
+CLEAN WINDOW 2023-2024                Xa  RS1P-A (tier A) 11287 0.772609   0.776557 0.092028 0.308174 0.901057       0.055725   0.986306        3.772866        -0.059907
+CLEAN WINDOW 2023-2024                Xa  RS1P-B (tier B)  3006 0.139460   0.085496 0.074855 0.254009 0.787335      -0.498736   1.109499        1.542135         0.552801
+CLEAN WINDOW 2023-2024                Xa DECISION STRATUM  3529 0.912577   0.895438 0.049491 0.193729 0.851555      -0.645791   1.152031        5.294758         0.362451
+CLEAN WINDOW 2023-2024  Y_R1_departed_S2       RS1P (all) 14293 0.665160   0.631218 0.109691 0.351920 0.923980      -0.389912   1.063873        3.534905         0.315205
+CLEAN WINDOW 2023-2024  Y_R1_departed_S2  RS1P-A (tier A) 11287 0.757900   0.776557 0.091862 0.309925 0.901696       0.139820   1.064476        3.761761        -0.158445
+CLEAN WINDOW 2023-2024  Y_R1_departed_S2  RS1P-B (tier B)  3006 0.316939   0.085496 0.176636 0.509604 0.841580      -2.179354   0.700705        2.683098         2.093678
+CLEAN WINDOW 2023-2024  Y_R1_departed_S2 DECISION STRATUM  3529 0.899865   0.895438 0.048791 0.192276 0.852177      -0.552381   1.258558        5.271713         0.195469
+CLEAN WINDOW 2023-2024  Z_R1_departed_S2       RS1P (all) 14293 0.634773   0.631218 0.087028 0.294183 0.939025      -0.054586   1.025656        3.257851         0.028914
+CLEAN WINDOW 2023-2024  Z_R1_departed_S2  RS1P-A (tier A) 11287 0.772609   0.776557 0.092028 0.308174 0.901057       0.055725   0.986306        3.772866        -0.059907
+CLEAN WINDOW 2023-2024  Z_R1_departed_S2  RS1P-B (tier B)  3006 0.117227   0.085496 0.068254 0.241647 0.847957      -0.653823   0.779734        1.324061         0.362420
+CLEAN WINDOW 2023-2024  Z_R1_departed_S2 DECISION STRATUM  3529 0.912678   0.895438 0.049330 0.192968 0.851689      -0.662305   1.159242        5.293348         0.363861
+CLEAN WINDOW 2023-2024     Y_R2_stale_S2       RS1P (all) 14293 0.655554   0.631218 0.101526 0.334680 0.930317      -0.319742   1.085026        3.454827         0.234155
+CLEAN WINDOW 2023-2024     Y_R2_stale_S2  RS1P-A (tier A) 11287 0.757900   0.776557 0.091862 0.309925 0.901696       0.139820   1.064476        3.761761        -0.158445
+CLEAN WINDOW 2023-2024     Y_R2_stale_S2  RS1P-B (tier B)  3006 0.271263   0.085496 0.137816 0.427631 0.882001      -1.965704   0.730325        2.302345         1.708299
+CLEAN WINDOW 2023-2024     Y_R2_stale_S2 DECISION STRATUM  3529 0.899865   0.895438 0.048791 0.192276 0.852177      -0.552381   1.258558        5.271713         0.195469
+CLEAN WINDOW 2023-2024     Z_R2_stale_S2       RS1P (all) 14293 0.628479   0.631218 0.085338 0.291359 0.941450       0.042373   0.982770        3.204599        -0.026122
+CLEAN WINDOW 2023-2024     Z_R2_stale_S2  RS1P-A (tier A) 11287 0.772609   0.776557 0.092028 0.308174 0.901057       0.055725   0.986306        3.772866        -0.059907
+CLEAN WINDOW 2023-2024     Z_R2_stale_S2  RS1P-B (tier B)  3006 0.087300   0.085496 0.060221 0.228220 0.875990      -0.329528   0.750236        1.070856         0.100734
+CLEAN WINDOW 2023-2024     Z_R2_stale_S2 DECISION STRATUM  3529 0.912579   0.895438 0.049487 0.193667 0.851555      -0.646773   1.152490        5.294733         0.362476
+CLEAN WINDOW 2023-2024     Y_R3_union_S2       RS1P (all) 14293 0.644061   0.631218 0.095561 0.317534 0.934896      -0.178412   1.046821        3.352065         0.131392
+CLEAN WINDOW 2023-2024     Y_R3_union_S2  RS1P-A (tier A) 11287 0.757900   0.776557 0.091862 0.309925 0.901696       0.139820   1.064476        3.761761        -0.158445
+CLEAN WINDOW 2023-2024     Y_R3_union_S2  RS1P-B (tier B)  3006 0.216613   0.085496 0.109451 0.346106 0.898606      -1.564881   0.567556        1.813727         1.219680
+CLEAN WINDOW 2023-2024     Y_R3_union_S2 DECISION STRATUM  3529 0.899865   0.895438 0.048791 0.192276 0.852177      -0.552381   1.258558        5.271713         0.195469
+CLEAN WINDOW 2023-2024     Z_R3_union_S2       RS1P (all) 14293 0.628266   0.631218 0.084858 0.288851 0.942133       0.047808   0.979454        3.197723        -0.027806
+CLEAN WINDOW 2023-2024     Z_R3_union_S2  RS1P-A (tier A) 11287 0.772609   0.776557 0.092028 0.308174 0.901057       0.055725   0.986306        3.772866        -0.059907
+CLEAN WINDOW 2023-2024     Z_R3_union_S2  RS1P-B (tier B)  3006 0.086286   0.085496 0.057937 0.216294 0.896262      -0.385435   0.638869        1.038161         0.092727
+CLEAN WINDOW 2023-2024     Z_R3_union_S2 DECISION STRATUM  3529 0.912673   0.895438 0.049336 0.192980 0.851677      -0.661845   1.159063        5.293413         0.363796
+CLEAN WINDOW 2023-2024 Y_R4_departed_all       RS1P (all) 14293 0.653479   0.631218 0.111271 0.539571 0.920409       0.113611   0.674953        3.483992         0.221074
+CLEAN WINDOW 2023-2024 Y_R4_departed_all  RS1P-A (tier A) 11287 0.754474   0.776557 0.091437 0.365403 0.902240       0.286175   0.928108        3.742746        -0.181195
+CLEAN WINDOW 2023-2024 Y_R4_departed_all  RS1P-B (tier B)  3006 0.274260   0.085496 0.185741 1.193540 0.677167      -1.952659   0.077521        2.512417         1.731526
+CLEAN WINDOW 2023-2024 Y_R4_departed_all DECISION STRATUM  3529 0.898593   0.895438 0.048251 0.198006 0.852264      -0.453799   1.218548        5.258937         0.176848
+CLEAN WINDOW 2023-2024 Z_R4_departed_all       RS1P (all) 14293 0.627098   0.631218 0.088607 0.480665 0.935108       0.263899   0.690597        3.217099        -0.033074
+CLEAN WINDOW 2023-2024 Z_R4_departed_all  RS1P-A (tier A) 11287 0.769824   0.776557 0.091514 0.363369 0.901664       0.200151   0.865219        3.754532        -0.078410
+CLEAN WINDOW 2023-2024 Z_R4_departed_all  RS1P-B (tier B)  3006 0.091187   0.085496 0.077695 0.921092 0.681736      -1.651449   0.106446        1.199134         0.137155
+CLEAN WINDOW 2023-2024 Z_R4_departed_all DECISION STRATUM  3529 0.911848   0.895438 0.048653 0.198347 0.851908      -0.580206   1.125930        5.279346         0.350988
+
+====================================================================================================
+6. INVARIANCE CHECK -- conditional pts_hat on appeared rows must not move
+====================================================================================================
+  conditional pts_hat MAE on appeared rows (n=13087): 4.255252
+  no arm here touches pts_hat, so this is identical for every arm BY CONSTRUCTION.
+              arm  n_appeared  n_appeared_with_a_forecast  n_appeared_with_NO_forecast  share_of_appeared_lost  cond_MAE_on_survivors
+               X0       13087                       13087                            0                0.000000               4.255252
+               Xa       13087                       13087                            0                0.000000               4.255252
+ Y_R1_departed_S2       13087                       13084                            3                0.000229               4.254828
+ Z_R1_departed_S2       13087                       13084                            3                0.000229               4.254828
+    Y_R2_stale_S2       13087                       13080                            7                0.000535               4.253910
+    Z_R2_stale_S2       13087                       13080                            7                0.000535               4.253910
+    Y_R3_union_S2       13087                       13080                            7                0.000535               4.253910
+    Z_R3_union_S2       13087                       13080                            7                0.000535               4.253910
+Y_R4_departed_all       13087                       12936                          151                0.011538               4.244206
+Z_R4_departed_all       13087                       12936                          151                0.011538               4.244206
+
+====================================================================================================
+7. NULLS -- paired block sign-flip, vs X0 AND vs Xa
+====================================================================================================
+  TEAM-LEVEL TESTS (delta_MAE > 0 = the arm beats the reference)
+                window level               arm reference  delta_MAE        p  null_mean  null_sd    MDE80  n_blocks                        verdict
+        FULL 2022-2024  TEAM                Xa        X0   7.305759 0.000050  -0.020113 1.432938 4.014496        36                    ESTABLISHED
+        FULL 2022-2024  TEAM  Y_R1_departed_S2        X0   4.088771 0.000050  -0.012848 0.802029 2.246952        36                    ESTABLISHED
+        FULL 2022-2024  TEAM  Z_R1_departed_S2        X0   7.816877 0.000050  -0.020975 1.492265 4.180706        36                    ESTABLISHED
+        FULL 2022-2024  TEAM     Y_R2_stale_S2        X0   4.547079 0.000050  -0.014302 0.999669 2.800656        36                    ESTABLISHED
+        FULL 2022-2024  TEAM     Z_R2_stale_S2        X0   7.616535 0.000050  -0.020179 1.501907 4.207719        36                    ESTABLISHED
+        FULL 2022-2024  TEAM     Y_R3_union_S2        X0   5.970615 0.000050  -0.017314 1.200196 3.362451        36                    ESTABLISHED
+        FULL 2022-2024  TEAM     Z_R3_union_S2        X0   7.966938 0.000050  -0.020577 1.528921 4.283402        36                    ESTABLISHED
+        FULL 2022-2024  TEAM Y_R4_departed_all        X0   5.207812 0.000050  -0.015506 0.984527 2.758237        36                    ESTABLISHED
+        FULL 2022-2024  TEAM Z_R4_departed_all        X0   7.901901 0.000050  -0.020108 1.505292 4.217204        36                    ESTABLISHED
+        FULL 2022-2024  TEAM                X0        Xa  -7.305759 0.000050   0.020113 1.432938 4.014496        36                    ESTABLISHED
+        FULL 2022-2024  TEAM  Y_R1_departed_S2        Xa  -3.216989 0.000050   0.007264 0.665171 1.863534        36                    ESTABLISHED
+        FULL 2022-2024  TEAM  Z_R1_departed_S2        Xa   0.511117 0.000050  -0.000863 0.124319 0.348290        36                    ESTABLISHED
+        FULL 2022-2024  TEAM     Y_R2_stale_S2        Xa  -2.758680 0.000050   0.005811 0.519048 1.454157        36                    ESTABLISHED
+        FULL 2022-2024  TEAM     Z_R2_stale_S2        Xa   0.310775 0.003150  -0.000066 0.110919 0.310750        36                    ESTABLISHED
+        FULL 2022-2024  TEAM     Y_R3_union_S2        Xa  -1.335144 0.000050   0.002799 0.278489 0.780211        36                    ESTABLISHED
+        FULL 2022-2024  TEAM     Z_R3_union_S2        Xa   0.661179 0.000050  -0.000465 0.163858 0.459062        36                    ESTABLISHED
+        FULL 2022-2024  TEAM Y_R4_departed_all        Xa  -2.097947 0.000050   0.004607 0.501271 1.404354        36                    ESTABLISHED
+        FULL 2022-2024  TEAM Z_R4_departed_all        Xa   0.596142 0.000050   0.000005 0.162026 0.453930        36                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM                Xa        X0   9.529798 0.000050  -0.015346 2.051172 5.746531        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM  Y_R1_departed_S2        X0   5.272181 0.000050  -0.008658 1.144591 3.206670        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM  Z_R1_departed_S2        X0   9.788401 0.000050  -0.015288 2.108357 5.906743        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM     Y_R2_stale_S2        X0   6.490927 0.000050  -0.011553 1.450766 4.064445        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM     Z_R2_stale_S2        X0   9.910331 0.000050  -0.015747 2.146548 6.013738        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM     Y_R3_union_S2        X0   7.923652 0.000050  -0.012807 1.724547 4.831465        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM     Z_R3_union_S2        X0   9.968172 0.000050  -0.015766 2.158891 6.048317        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM Y_R4_departed_all        X0   6.416778 0.000050  -0.010693 1.382119 3.872125        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM Z_R4_departed_all        X0   9.789306 0.000050  -0.015701 2.117324 5.931863        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM                X0        Xa  -9.529798 0.000050   0.015346 2.051172 5.746531        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM  Y_R1_departed_S2        Xa  -4.257617 0.000050   0.006688 0.951980 2.667053        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM  Z_R1_departed_S2        Xa   0.258603 0.004400   0.000058 0.094493 0.264729        24 NOT ESTABLISHED (underpowered)
+CLEAN WINDOW 2023-2024  TEAM     Y_R2_stale_S2        Xa  -3.038871 0.000050   0.003793 0.691113 1.936213        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM     Z_R2_stale_S2        Xa   0.380533 0.011499  -0.000402 0.155073 0.434451        24 NOT ESTABLISHED (underpowered)
+CLEAN WINDOW 2023-2024  TEAM     Y_R3_union_S2        Xa  -1.606146 0.000050   0.002539 0.381121 1.067742        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM     Z_R3_union_S2        Xa   0.438374 0.006500  -0.000420 0.167913 0.470421        24 NOT ESTABLISHED (underpowered)
+CLEAN WINDOW 2023-2024  TEAM Y_R4_departed_all        Xa  -3.113020 0.000050   0.004652 0.722753 2.024853        24                    ESTABLISHED
+CLEAN WINDOW 2023-2024  TEAM Z_R4_departed_all        Xa   0.259508 0.045098  -0.000356 0.131860 0.369418        24 NOT ESTABLISHED (underpowered)
+
+  PLAYER-LEVEL TESTS (delta_Brier > 0 = the arm LOWERS Brier, i.e. is better)
+                window  level metric               arm reference         row_set  delta_Brier        p     null_mean  null_sd    MDE80  n_blocks                        verdict
+        FULL 2022-2024 PLAYER  Brier                Xa        X0      RS1P (all)     0.035571 0.000050  1.011965e-06 0.001993 0.005585       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier                Xa        X0 RS1P-A (tier A)    -0.000148 0.276536 -1.619008e-06 0.000137 0.000384       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier                Xa        X0 RS1P-B (tier B)     0.190039 0.000050  9.947517e-05 0.010458 0.029298       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Y_R1_departed_S2        X0      RS1P (all)     0.018211 0.000050  1.387047e-05 0.001358 0.003804       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Y_R1_departed_S2        X0 RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Y_R1_departed_S2        X0 RS1P-B (tier B)     0.096963 0.000050  5.687231e-05 0.007185 0.020130       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Z_R1_departed_S2        X0      RS1P (all)     0.038319 0.000050  4.036333e-06 0.002088 0.005850       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Z_R1_departed_S2        X0 RS1P-A (tier A)    -0.000148 0.276536 -1.619008e-06 0.000137 0.000384       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Z_R1_departed_S2        X0 RS1P-B (tier B)     0.204671 0.000050  1.133601e-04 0.010987 0.030782       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R2_stale_S2        X0      RS1P (all)     0.021908 0.000050  2.015312e-06 0.001543 0.004322       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R2_stale_S2        X0 RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R2_stale_S2        X0 RS1P-B (tier B)     0.116649 0.000050  7.945602e-05 0.008160 0.022860       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R2_stale_S2        X0      RS1P (all)     0.037833 0.000050  1.125773e-06 0.002105 0.005897       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R2_stale_S2        X0 RS1P-A (tier A)    -0.000148 0.276536 -1.619008e-06 0.000137 0.000384       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R2_stale_S2        X0 RS1P-B (tier B)     0.202083 0.000050  1.079683e-04 0.011050 0.030957       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R3_union_S2        X0      RS1P (all)     0.028437 0.000050  1.003809e-05 0.001754 0.004913       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R3_union_S2        X0 RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R3_union_S2        X0 RS1P-B (tier B)     0.151415 0.000050  1.170608e-04 0.009307 0.026074       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R3_union_S2        X0      RS1P (all)     0.039901 0.000050  3.785470e-06 0.002158 0.006046       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R3_union_S2        X0 RS1P-A (tier A)    -0.000148 0.276536 -1.619008e-06 0.000137 0.000384       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R3_union_S2        X0 RS1P-B (tier B)     0.213093 0.000050  1.226607e-04 0.011365 0.031840       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Y_R4_departed_all        X0      RS1P (all)     0.017064 0.000050  1.958694e-05 0.001293 0.003622       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Y_R4_departed_all        X0 RS1P-A (tier A)     0.000296 0.335033  1.344772e-06 0.000303 0.000848       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Y_R4_departed_all        X0 RS1P-B (tier B)     0.089579 0.000050  5.551328e-05 0.006760 0.018938       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Z_R4_departed_all        X0      RS1P (all)     0.036211 0.000050  9.053364e-06 0.002024 0.005671       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Z_R4_departed_all        X0 RS1P-A (tier A)     0.000214 0.524574 -2.552097e-07 0.000336 0.000941       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Z_R4_departed_all        X0 RS1P-B (tier B)     0.191882 0.000050  1.051058e-04 0.010622 0.029760       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier                X0        Xa      RS1P (all)    -0.035571 0.000050 -1.011965e-06 0.001993 0.005585       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier                X0        Xa RS1P-A (tier A)     0.000148 0.276536  1.619008e-06 0.000137 0.000384       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier                X0        Xa RS1P-B (tier B)    -0.190039 0.000050 -9.947517e-05 0.010458 0.029298       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Y_R1_departed_S2        Xa      RS1P (all)    -0.017361 0.000050  1.285850e-05 0.001409 0.003947       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Y_R1_departed_S2        Xa RS1P-A (tier A)     0.000148 0.276536  1.619008e-06 0.000137 0.000384       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Y_R1_departed_S2        Xa RS1P-B (tier B)    -0.093076 0.000050 -4.260285e-05 0.007390 0.020705       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Z_R1_departed_S2        Xa      RS1P (all)     0.002748 0.000050  3.024368e-06 0.000350 0.000980       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Z_R1_departed_S2        Xa RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier  Z_R1_departed_S2        Xa RS1P-B (tier B)     0.014632 0.000050  1.388497e-05 0.001874 0.005251       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R2_stale_S2        Xa      RS1P (all)    -0.013663 0.000050  1.003347e-06 0.001259 0.003527       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R2_stale_S2        Xa RS1P-A (tier A)     0.000148 0.276536  1.619008e-06 0.000137 0.000384       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R2_stale_S2        Xa RS1P-B (tier B)    -0.073390 0.000050 -2.001915e-05 0.006619 0.018543       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R2_stale_S2        Xa      RS1P (all)     0.002262 0.000050  1.138081e-07 0.000193 0.000542       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R2_stale_S2        Xa RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R2_stale_S2        Xa RS1P-B (tier B)     0.012043 0.000050  8.493160e-06 0.001024 0.002869       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R3_union_S2        Xa      RS1P (all)    -0.007134 0.000050  9.026124e-06 0.001118 0.003133       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R3_union_S2        Xa RS1P-A (tier A)     0.000148 0.276536  1.619008e-06 0.000137 0.000384       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Y_R3_union_S2        Xa RS1P-B (tier B)    -0.038624 0.000050  1.758563e-05 0.005833 0.016341       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R3_union_S2        Xa      RS1P (all)     0.004330 0.000050  2.773505e-06 0.000388 0.001086       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R3_union_S2        Xa RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier     Z_R3_union_S2        Xa RS1P-B (tier B)     0.023054 0.000050  2.318555e-05 0.002078 0.005821       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Y_R4_departed_all        Xa      RS1P (all)    -0.018507 0.000050  1.857498e-05 0.001379 0.003864       725                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Y_R4_departed_all        Xa RS1P-A (tier A)     0.000444 0.202840  2.963780e-06 0.000346 0.000968       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Y_R4_departed_all        Xa RS1P-B (tier B)    -0.100460 0.000050 -4.396189e-05 0.007102 0.019897       709                    ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Z_R4_departed_all        Xa      RS1P (all)     0.000640 0.131643  8.041399e-06 0.000421 0.001180       725                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Z_R4_departed_all        Xa RS1P-A (tier A)     0.000361 0.266837  1.363798e-06 0.000322 0.000902       488                NOT ESTABLISHED
+        FULL 2022-2024 PLAYER  Brier Z_R4_departed_all        Xa RS1P-B (tier B)     0.001843 0.332333  5.630646e-06 0.001901 0.005325       709                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier                Xa        X0      RS1P (all)     0.043552 0.000050  2.533025e-05 0.002664 0.007463       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier                Xa        X0 RS1P-A (tier A)    -0.000166 0.383281  1.192520e-07 0.000191 0.000536       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier                Xa        X0 RS1P-B (tier B)     0.207708 0.000050  1.044736e-04 0.012671 0.035498       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Y_R1_departed_S2        X0      RS1P (all)     0.022278 0.000050  1.624814e-05 0.001784 0.004997       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Y_R1_departed_S2        X0 RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Y_R1_departed_S2        X0 RS1P-B (tier B)     0.105927 0.000050  2.231620e-05 0.008573 0.024019       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Z_R1_departed_S2        X0      RS1P (all)     0.044941 0.000050  2.627864e-05 0.002726 0.007637       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Z_R1_departed_S2        X0 RS1P-A (tier A)    -0.000166 0.383281  1.192520e-07 0.000191 0.000536       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Z_R1_departed_S2        X0 RS1P-B (tier B)     0.214309 0.000050  1.030075e-04 0.012977 0.036356       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R2_stale_S2        X0      RS1P (all)     0.030442 0.000050  1.805650e-05 0.002144 0.006007       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R2_stale_S2        X0 RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R2_stale_S2        X0 RS1P-B (tier B)     0.144747 0.000050  2.075060e-05 0.010208 0.028599       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R2_stale_S2        X0      RS1P (all)     0.046630 0.000050  2.763497e-05 0.002819 0.007897       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R2_stale_S2        X0 RS1P-A (tier A)    -0.000166 0.383281  1.192520e-07 0.000191 0.000536       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R2_stale_S2        X0 RS1P-B (tier B)     0.222342 0.000050  1.010752e-04 0.013411 0.037571       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R3_union_S2        X0      RS1P (all)     0.036408 0.000050  2.081742e-05 0.002364 0.006622       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R3_union_S2        X0 RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R3_union_S2        X0 RS1P-B (tier B)     0.173112 0.000050  1.981578e-05 0.011327 0.031734       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R3_union_S2        X0      RS1P (all)     0.047111 0.000050  2.711069e-05 0.002827 0.007920       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R3_union_S2        X0 RS1P-A (tier A)    -0.000166 0.383281  1.192520e-07 0.000191 0.000536       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R3_union_S2        X0 RS1P-B (tier B)     0.224626 0.000050  9.768835e-05 0.013459 0.037705       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Y_R4_departed_all        X0      RS1P (all)     0.020698 0.000050  9.307937e-06 0.001697 0.004755       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Y_R4_departed_all        X0 RS1P-A (tier A)     0.000425 0.270236 -1.940168e-06 0.000376 0.001054       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Y_R4_departed_all        X0 RS1P-B (tier B)     0.096822 0.000050  2.780295e-05 0.008028 0.022491       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Z_R4_departed_all        X0      RS1P (all)     0.043361 0.000050  2.064936e-05 0.002678 0.007502       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Z_R4_departed_all        X0 RS1P-A (tier A)     0.000348 0.424129 -2.247228e-06 0.000431 0.001207       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Z_R4_departed_all        X0 RS1P-B (tier B)     0.204868 0.000050  1.103481e-04 0.012685 0.035539       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier                X0        Xa      RS1P (all)    -0.043552 0.000050 -2.533025e-05 0.002664 0.007463       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier                X0        Xa RS1P-A (tier A)     0.000166 0.383281 -1.192520e-07 0.000191 0.000536       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier                X0        Xa RS1P-B (tier B)    -0.207708 0.000050 -1.044736e-04 0.012671 0.035498       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Y_R1_departed_S2        Xa      RS1P (all)    -0.021275 0.000050 -9.082111e-06 0.001805 0.005058       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Y_R1_departed_S2        Xa RS1P-A (tier A)     0.000166 0.383281 -1.192520e-07 0.000191 0.000536       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Y_R1_departed_S2        Xa RS1P-B (tier B)    -0.101781 0.000050 -8.215742e-05 0.008514 0.023852       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Z_R1_departed_S2        Xa      RS1P (all)     0.001388 0.000050  9.483845e-07 0.000173 0.000484       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Z_R1_departed_S2        Xa RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier  Z_R1_departed_S2        Xa RS1P-B (tier B)     0.006601 0.000050 -1.466141e-06 0.000828 0.002321       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R2_stale_S2        Xa      RS1P (all)    -0.013110 0.000050 -7.273759e-06 0.001599 0.004480       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R2_stale_S2        Xa RS1P-A (tier A)     0.000166 0.383281 -1.192520e-07 0.000191 0.000536       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R2_stale_S2        Xa RS1P-B (tier B)    -0.062960 0.000050 -8.372302e-05 0.007561 0.021184       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R2_stale_S2        Xa      RS1P (all)     0.003078 0.000050  2.304719e-06 0.000246 0.000690       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R2_stale_S2        Xa RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R2_stale_S2        Xa RS1P-B (tier B)     0.014634 0.000050 -3.398390e-06 0.001175 0.003292       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R3_union_S2        Xa      RS1P (all)    -0.007145 0.000050 -4.512831e-06 0.001359 0.003808       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R3_union_S2        Xa RS1P-A (tier A)     0.000166 0.383281 -1.192520e-07 0.000191 0.000536       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Y_R3_union_S2        Xa RS1P-B (tier B)    -0.034595 0.000050 -8.465784e-05 0.006387 0.017895       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R3_union_S2        Xa      RS1P (all)     0.003558 0.000050  1.780431e-06 0.000275 0.000771       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R3_union_S2        Xa RS1P-A (tier A)     0.000000 1.000000  0.000000e+00 0.000000 0.000000       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier     Z_R3_union_S2        Xa RS1P-B (tier B)     0.016919 0.000050 -6.785269e-06 0.001324 0.003708       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Y_R4_departed_all        Xa      RS1P (all)    -0.022854 0.000050 -1.602232e-05 0.001797 0.005036       512                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Y_R4_departed_all        Xa RS1P-A (tier A)     0.000591 0.186591 -2.059420e-06 0.000443 0.001240       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Y_R4_departed_all        Xa RS1P-B (tier B)    -0.110886 0.000050 -7.667066e-05 0.008309 0.023279       508                    ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Z_R4_departed_all        Xa      RS1P (all)    -0.000191 0.660217 -4.680897e-06 0.000428 0.001198       512                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Z_R4_departed_all        Xa RS1P-A (tier A)     0.000514 0.218889 -2.366480e-06 0.000409 0.001146       320                NOT ESTABLISHED
+CLEAN WINDOW 2023-2024 PLAYER  Brier Z_R4_departed_all        Xa RS1P-B (tier B)    -0.002840 0.043348  5.874476e-06 0.001412 0.003955       508 NOT ESTABLISHED (underpowered)
+
+====================================================================================================
+8. POWER, VERIFIED BY INJECTION
+====================================================================================================
+  TEAM (team-season blocks, n_blocks=36).  Noise = the REAL Y_R1-vs-Xa per-row loss
+  difference, centred -- a no-effect world with this data's dispersion and blocks.
+    planted 0.25 MAE -> detection rate 0.095
+    planted 0.50 MAE -> detection rate 0.200
+    planted 1.00 MAE -> detection rate 0.710
+    planted 2.00 MAE -> detection rate 1.000
+    planted 4.00 MAE -> detection rate 1.000
+
+  PLAYER, tier A (player-season blocks, n_blocks=488).  Noise = the REAL Z_R3-vs-Xa
+  per-row Brier difference on tier A, centred.
+    planted 0.0005 Brier -> detection rate 1.000
+    planted 0.0010 Brier -> detection rate 1.000
+    planted 0.0025 Brier -> detection rate 1.000
+    planted 0.0050 Brier -> detection rate 1.000
+    planted 0.0100 Brier -> detection rate 1.000
+
+  TYPE-I CHECK (400 synthetic no-effect datasets, team-season blocks)
+    rejection rate at nominal 0.05 = 0.0675   p quartiles 0.253 / 0.530 / 0.776
+
+====================================================================================================
+9. FREEZE THE INTERCEPT
+====================================================================================================
+  A component can score above every power floor on rows where it does nothing, purely by
+  moving a shared level (measured elsewhere in this programme at +0.0287, p 0.00005).
+  TEAM: each arm's per-team-game sum of w is rescaled to equal Xa's, so the arm can differ
+  from Xa only in SHAPE -- which players carry the weight -- and not in level.
+                window               arm  MAE_unfrozen  MAE_frozen_to_Xa_level  mean_sum_w_unfrozen  mean_sum_w_frozen  frozen_MAE_vs_Xa
+        FULL 2022-2024                X0     18.263037               10.914323            10.338079           9.560942          0.042954
+        FULL 2022-2024                Xa     10.957277               10.957277             9.560942           9.560942          0.000000
+        FULL 2022-2024  Y_R1_departed_S2     14.174266               10.963308             9.858266           9.560942         -0.006030
+        FULL 2022-2024  Z_R1_departed_S2     10.446160               10.985096             9.460329           9.560942         -0.027819
+        FULL 2022-2024     Y_R2_stale_S2     13.715957               10.966222             9.810720           9.560942         -0.008945
+        FULL 2022-2024     Z_R2_stale_S2     10.646502               10.962130             9.442746           9.560942         -0.004853
+        FULL 2022-2024     Y_R3_union_S2     12.292421               10.971765             9.635173           9.560942         -0.014488
+        FULL 2022-2024     Z_R3_union_S2     10.296099               10.987023             9.389202           9.560942         -0.029746
+        FULL 2022-2024 Y_R4_departed_all     13.055224               10.986654             9.687488           9.560942         -0.029376
+        FULL 2022-2024 Z_R4_departed_all     10.361136               11.011832             9.358311           9.560942         -0.054555
+CLEAN WINDOW 2023-2024                X0     19.916137               10.324151            10.513154           9.520469          0.062189
+CLEAN WINDOW 2023-2024                Xa     10.386339               10.386339             9.520469           9.520469          0.000000
+CLEAN WINDOW 2023-2024  Y_R1_departed_S2     14.643956               10.361207             9.903268           9.520469          0.025132
+CLEAN WINDOW 2023-2024  Z_R1_departed_S2     10.127736               10.391920             9.450850           9.520469         -0.005581
+CLEAN WINDOW 2023-2024     Y_R2_stale_S2     13.425210               10.399673             9.760247           9.520469         -0.013334
+CLEAN WINDOW 2023-2024     Z_R2_stale_S2     10.005806               10.393637             9.357142           9.520469         -0.007298
+CLEAN WINDOW 2023-2024     Y_R3_union_S2     11.992485               10.373846             9.589123           9.520469          0.012493
+CLEAN WINDOW 2023-2024     Z_R3_union_S2      9.947966               10.395095             9.353965           9.520469         -0.008755
+CLEAN WINDOW 2023-2024 Y_R4_departed_all     13.499360               10.402005             9.729354           9.520469         -0.015666
+CLEAN WINDOW 2023-2024 Z_R4_departed_all     10.126832               10.437873             9.336573           9.520469         -0.051534
+
+  PLAYER: every arm receives a single GLOBAL intercept-only recalibration fitted
+  walk-forward on strictly earlier seasons, so all arms share a fitted global level and
+  any remaining Brier difference is shape, not shared-intercept movement.
+              arm         row_set     n  brier_unfrozen  brier_frozen  mean_w_unfrozen  mean_w_frozen  AUC_unfrozen
+               X0      RS1P (all) 20084        0.130248      0.123668         0.716521       0.682455      0.902573
+               X0 RS1P-A (tier A) 16312        0.093201      0.094987         0.760833       0.731136      0.897850
+               X0 RS1P-B (tier B)  3772        0.290459      0.247700         0.524892       0.471934      0.760331
+               Xa      RS1P (all) 20084        0.094677      0.093980         0.662658       0.634359      0.928452
+               Xa RS1P-A (tier A) 16312        0.093349      0.094304         0.770531       0.743260      0.897331
+               Xa RS1P-B (tier B)  3772        0.100420      0.092582         0.196164       0.163420      0.772287
+ Y_R1_departed_S2      RS1P (all) 20084        0.112037      0.109575         0.683266       0.659258      0.917382
+ Y_R1_departed_S2 RS1P-A (tier A) 16312        0.093201      0.094446         0.760833       0.736782      0.897850
+ Y_R1_departed_S2 RS1P-B (tier B)  3772        0.193496      0.175000         0.347824       0.324006      0.823943
+ Z_R1_departed_S2      RS1P (all) 20084        0.091929      0.091647         0.655685       0.633449      0.931739
+ Z_R1_departed_S2 RS1P-A (tier A) 16312        0.093349      0.094025         0.770531       0.748233      0.897331
+ Z_R1_departed_S2 RS1P-B (tier B)  3772        0.085788      0.081360         0.159034       0.137064      0.835766
+    Y_R2_stale_S2      RS1P (all) 20084        0.108340      0.105813         0.679970       0.653383      0.920584
+    Y_R2_stale_S2 RS1P-A (tier A) 16312        0.093201      0.094663         0.760833       0.734322      0.897850
+    Y_R2_stale_S2 RS1P-B (tier B)  3772        0.173810      0.154035         0.330278       0.303362      0.847916
+    Z_R2_stale_S2      RS1P (all) 20084        0.092415      0.092267         0.654466       0.630468      0.931857
+    Z_R2_stale_S2 RS1P-A (tier A) 16312        0.093349      0.094136         0.770531       0.746040      0.897331
+    Z_R2_stale_S2 RS1P-B (tier B)  3772        0.088377      0.084184         0.152545       0.130679      0.822927
+    Y_R3_union_S2      RS1P (all) 20084        0.101811      0.100535         0.667803       0.646531      0.925737
+    Y_R3_union_S2 RS1P-A (tier A) 16312        0.093201      0.094312         0.760833       0.738487      0.897850
+    Y_R3_union_S2 RS1P-B (tier B)  3772        0.139044      0.127447         0.265495       0.248865      0.870024
+    Z_R3_union_S2      RS1P (all) 20084        0.090347      0.090380         0.650755       0.630682      0.933900
+    Z_R3_union_S2 RS1P-A (tier A) 16312        0.093349      0.093967         0.770531       0.749724      0.897331
+    Z_R3_union_S2 RS1P-B (tier B)  3772        0.077366      0.074869         0.132786       0.115885      0.862174
+Y_R4_departed_all      RS1P (all) 20084        0.113184      0.111300         0.671429       0.651866      0.914470
+Y_R4_departed_all RS1P-A (tier A) 16312        0.092905      0.093963         0.757616       0.737512      0.898268
+Y_R4_departed_all RS1P-B (tier B)  3772        0.200880      0.186272         0.298716       0.281489      0.676961
+Z_R4_departed_all      RS1P (all) 20084        0.094037      0.093622         0.648614       0.630746      0.928330
+Z_R4_departed_all RS1P-A (tier A) 16312        0.092987      0.093541         0.767809       0.749249      0.897851
+Z_R4_departed_all RS1P-B (tier B)  3772        0.098577      0.093973         0.133156       0.118279      0.688033
+
+====================================================================================================
+10. PERSIST
+====================================================================================================
+  written.
+
+DONE s03

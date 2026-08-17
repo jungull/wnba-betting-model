@@ -1,0 +1,37 @@
+﻿
+============================================================================================
+s10  the unresolved spelling, opened
+============================================================================================
+  master_player rows whose normalized name starts 'cheyenneparker' (ALL seasons,
+  including sealed -- shown for identity resolution only, NO statistic taken from them):
+player_id  player_name           season
+204323     Cheyenne Parker-Tyus  2021      18
+                                 2022      36
+                                 2023      42
+                                 2024      33
+                                 2025      15
+                                 2026      26
+
+  distinct player_id behind those spellings: [204323]
+  -> ONE person, two spellings
+
+  EXPLORATION PARTITION 2021-2024 only:
+player_id  player_name           season
+204323     Cheyenne Parker-Tyus  2021      18
+                                 2022      36
+                                 2023      42
+                                 2024      33
+  normalized spellings present in 2021-2024: ['cheyenneparkertyus']
+  is 'cheyenneparker' among them? False
+
+  CONSEQUENCE for the market frame:
+    build_identity_index is built from OWNED GAMELOG name rows. If the props feed's
+    spelling never appears there, the row resolves to NaN and is EXCLUDED.
+    That is a DROP: 62 priced rows removed from the market denominator in 2024.
+    It is not the 'two players share one name' drop mode -- that has zero instances.
+    It is a CROSS-FEED drop: two feeds hold two spellings of one person, and the
+    join is normalized-exact with an empty alias table.
+
+    The m14 code already names this case in its own `known_variants` dict and
+    excludes-and-lists rather than guessing. The exclusion is correct behaviour;
+    the 62 rows are the measured cost of an empty alias table.

@@ -1,0 +1,49 @@
+﻿
+============================================================================================
+s09  (A) the market frame: dedup by NAME, then resolve to player_id
+============================================================================================
+  props source (PRODUCTION worktree, as MODEL_VS_MARKET reads it):
+    C:\Users\jgallagher\wnba-betting-model\data\props_capture\historical\master_props_historical.csv
+    sha256   : 47983f8725e775aac16ff342d7704b7b2a8e72c3dfdf0b1448d4481660431a82
+    manifest : MISSING_UNVERIFIABLE
+  alias table: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\player_program\ops_lane\O14_OPS_ENTITY_RESOLUTION\alias_table.json  exists=True
+    aliases   : 0  {}
+
+  rows(all)=36946  cols=14
+  carries player_id column? False
+  seasons present: [2024, 2025, 2026]
+  PARTITION GUARD: {"label": "master_props_historical", "rows_in": 36946, "rows_kept": 11237, "sealed_rows_dropped": 25709, "seasons_seen": [2024, 2025, 2026]}
+  in-play excluded=0 ; one-sided excluded=8 ; two-sided rows=11229
+
+  normalized-exact resolution: unresolved rows=62 of 11229 (0.5521%)
+  unresolved names: {'Cheyenne Parker': 62}
+
+  dedup by NAME key ['game_id', 'player_name', 'bookmaker_key', 'line']  -> 11229 rows
+  dedup by ID   key ['game_id', 'player_id', 'bookmaker_key', 'line']  -> 11167 rows (resolved rows only, 11167)
+
+  on the identical resolved row set:
+    name-key survivors = 11167
+    id-key   survivors = 11167
+    DELTA              = +0
+    direction          = NONE
+
+  the twelve inside the priced (2024) universe:
+    203400    Skylar Diggins | Skylar Diggins-Smith        priced_rows=232   spellings_priced=['Skylar Diggins-Smith']
+    1628922   Azura Stevens | Azurá Stevens                priced_rows=64    spellings_priced=['Azurá Stevens']
+    identities present: 2 of 12 ; carrying >1 spelling in the props feed: 0
+
+============================================================================================
+s09  (B) F16_PLAYER_PROPS -- the surface with NO stable key at source
+============================================================================================
+  measure_props_evidence.py joins props to box scores on normalized name + game_id.
+  Its own note, quoted from the file: 'no player_id exists on either props file.'
+  So this is not a choice of key -- it is the only key the source admits.
+
+  COVERAGE consequence, measured above on the same feed:
+    priced rows 2021-2024 (2024 only)               : 11229
+    resolved to a player_id by normalized-exact     : 11167 (99.4479%)
+    unresolved (excluded and listed, never guessed) : 62
+    normalized spellings binding to >1 player_id    : 0  (s06)
+    -> once resolved, every downstream operation is keyed on player_id.
+
+DONE s09

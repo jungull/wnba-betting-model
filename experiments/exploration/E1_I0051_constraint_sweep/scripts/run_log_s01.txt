@@ -1,0 +1,91 @@
+﻿
+============================================================================================================
+E1_I0051_constraint_sweep -- s01 ANCHORS
+============================================================================================================
+PREREG.md sha256 05b1e7ec055eb7f1442baf13aa76da760d0f78be6ba71bdda85b956489ca8c5f
+  assert_partition PASS master_player      seasons=[2021, 2022, 2023, 2024] datetime-gated=['game_date']
+  assert_partition PASS master_team        seasons=[2021, 2022, 2023, 2024] datetime-gated=[]
+  CLOSURE  pts max|d|=0.000000000000 (nonzero 0)   fga max|d|=0.000000000000 (nonzero 0)   min max|d|=0.066667   mean roster 9.4127
+  BUDGET   T_min lands on the 25-lattice on ALL 1776 team-games; max residual 0.066667 min (minute:second rounding).  frac at exactly 200: 0.952703
+  SIMPLEX  S_share_min sums to 1 within team-game to < 1e-12 (asserted)
+  A4 vacated prior share: mean 0.10245  sd 0.11498  frac>0 0.7370
+  assert_partition PASS FRAME              seasons=[2021, 2022, 2023, 2024] datetime-gated=['game_date']
+  FRAME 16717 appeared player-games  team-games=1776  players=265  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+    candidate A1_pts_share_prior       mean +0.106469  sd 0.069073  n_imputed_to_mean 634
+    candidate A2_fga_share_prior       mean +0.106414  sd 0.063588  n_imputed_to_mean 634
+    candidate A3_starter_rate_prior    mean +0.525372  sd 0.431082  n_imputed_to_mean 634
+    candidate A4_vac_x_own             mean +0.010044  sd 0.014481  n_imputed_to_mean 0
+    candidate A5_opp_defrtg            mean +81.610783  sd 4.708419  n_imputed_to_mean 0
+    candidate G01_noise                mean -0.008095  sd 0.997949  n_imputed_to_mean 0
+
+============================================================================================================
+ANCHOR BLOCK -- the run halts on any failure
+============================================================================================================
+  A1    appeared player-games, 2021-24 Regular Season              req=16717                              got=16717                              PASS 
+  A2    team-games                                                 req=1776                               got=1776                               PASS 
+  A3    sum(player pts) == team pts, max |diff|                    req=0.0 exact / 0 nonzero              got=0.000000000000 / 0                 PASS 0.000e+00
+  A4    sum(player fga) == team fga, max |diff|                    req=0.0 exact / 0 nonzero              got=0.000000000000 / 0                 PASS 0.000e+00
+  A5    sum(player minutes) vs box minutes, max |diff|             req=<= 0.07                            got=0.066667                           PASS 
+  A6    decision stratum, all seasons (rows / players / games)     req=(5673, 149, 708)                   got=(5673, 149, 708)                   PASS 
+  A7    decision stratum, clean window 2023-24, rows               req=3167                               got=3167                               PASS 
+  A8    mean appeared roster per team-game                         req=9.41 (2dp)                         got=9.4127                             PASS 
+  A9    E0_I0016 / E1_I0018 screen frame (>=3 prior appearances)   req=14852                              got=14852                              PASS 
+  A10   home advantage in team points (mean home - mean away)      req=+0.965090 on 888 games             got=+0.965090 on 888 games             PASS |d| 9.01e-08
+  A11   median sum(player poss) / (5 x team poss)                  req=0.992 / .960 / 1.023               got=0.993217 / 0.947 / 1.031           **NON-REPRODUCTION -- DEMOTED, NOT A HALT (DEFECTS D-01)**
+  A12   T_min on the 25-lattice: n on lattice / max residual       req=1776 / 0.066667                    got=1776 / 0.066667                    PASS 
+  A14   appeared player-games with points share exactly 0          req=2506                               got=2506                               PASS 
+
+  12 of 13 ANCHORS PASS (2 at exactly 0.000e+00).  1 demoted non-reproduction (A11).
+
+============================================================================================================
+A13 (ATTEMPTED, NOT A HALT-ANCHOR) -- E1_I0034's trailing-form accounting
+============================================================================================================
+  E1_I0034 defines ESTABLISHED over the CHAMPION'S OBLIGATION UNIVERSE ('champion candidate
+  rows for g with >=3 strictly-prior same-season appearances and a base5').  That universe is not
+  reachable from master_player alone, so an EXACT reproduction is not available to this screen and
+  A13 is DEMOTED from a halt-anchor to a corroboration, stated as such.  What follows is an
+  INDEPENDENT reconstruction from master_player using the closest available definition:
+    ESTABLISHED = a player with >=3 strictly-prior same-season appearances FOR THIS TEAM whose
+                  last appearance was within the team's previous 5 team-games (so the universe is
+                  current rather than season-cumulative).
+  The QUALITATIVE claim under test is the one that matters to this screen: does a per-player
+  trailing-form minutes estimator sum to the 200-minute budget, or not?
+
+        team_games  rem_base5_sum   n_est  n_rem  realised_gain  slack_vs_200
+bucket                                                                       
+none           274       133.0658  6.2993 6.2993        -6.6019       66.9342
+0-15           223       202.3576 10.4529 9.0762        -4.3979       -2.3576
+15-30          201       194.5145 10.6368 8.8010         1.0496        5.4855
+30-45          140       184.1470 10.6357 8.5643        11.0182       15.8530
+45+            122       172.8754 11.0410 8.1475        16.7537       27.1246
+
+  E1_I0034 published (clean window, champion universe):
+     bucket        team-games   rem trailing-5 sum   slack   realised gain
+     none              261            198.96          +1.0       -3.24
+     0-15              220            201.08          -1.1       -2.59
+     15-30             171            201.50          -1.5       -3.01
+     30-45             124            191.44          +8.6       +6.36
+     45+               112            184.02         +16.0      +15.47
+
+============================================================================================================
+THE MEASUREMENT THIS SCREEN EXISTS FOR -- does an independent minutes forecast sum to 200?
+============================================================================================================
+  Every minutes screen in this programme models the player's minutes INDEPENDENTLY and never
+  checks the roster sum.  Here is what the sum actually is, for the simplest such forecast, on the
+  APPEARED ROSTER (so the roster is granted as an oracle and only the BUDGET is at issue).
+
+ h      k  mean_sum  sd_sum  mae_vs_200      p05      p95  frac_within_5
+ 3 0.0000  201.5603 17.2478     13.0942 171.8513 227.8929         0.2849
+ 3 1.0000  202.2462 17.1183     13.2596 173.3082 229.7552         0.2680
+ 5 0.0000  201.4652 18.0321     13.8953 170.6446 229.1424         0.2573
+ 5 1.0000  202.1604 17.8336     13.9540 171.6415 230.6321         0.2438
+ 8 0.0000  201.3814 18.6532     14.4928 169.1784 230.3666         0.2370
+ 8 1.0000  202.0837 18.4001     14.4977 170.8693 231.1224         0.2325
+13 0.0000  201.3053 19.1243     14.9254 168.6624 230.9637         0.2264
+13 1.0000  202.0132 18.8301     14.8863 170.0885 231.6356         0.2157
+
+wrote ANCHORS.csv, A13_TRAILING_FORM_ACCOUNTING.csv, BUDGET_VIOLATION.csv
+
+============================================================================================================
+DONE s01
+============================================================================================================

@@ -1,0 +1,140 @@
+
+====================================================================================================
+E1_I0047 s02 -- BOUND OR NOT
+====================================================================================================
+
+====================================================================================================
+A. THE ALGEBRA, VERIFIED NUMERICALLY (not asserted)
+====================================================================================================
+  Let e = y - yhat_base on the scored rows, d = the forecast shift the candidate adds,
+  SST = sum (y - ybar)^2 on those same rows.  Then
+
+      SSE_base = e.e
+      SSE_new  = (e-d).(e-d) = e.e - 2 d.e + d.d
+      dR2      = (SSE_base - SSE_new)/SST = (2 d.e - d.d)/SST                        [1]
+
+  Define c* = (d.e)/(d.d), the scalar rescaling of d that maximises [1].  Then
+
+      (d.d)/SST >= dR2   <==>   d.d >= 2 d.e - d.d   <==>   d.e <= d.d   <==>  c* <= 1   [2]
+      ORACLE := max_c (2c d.e - c^2 d.d)/SST = (d.e)^2/((d.d) SST) = c*^2 (d.d)/SST      [3]
+
+  So:  (d.d)/SST is an upper bound on the REALISED increment iff c* <= 1, and it understates
+  the ACHIEVABLE increment by exactly the factor c*^2 whenever c* > 1.
+  c*^2 is therefore THE exposure multiplier, and it is 1 exactly when d is the OLS fitted
+  contribution on the same rows/response/base -- because then d.e = d.d identically.
+
+  A-i  d = OLS fitted contribution, same rows/response/base:
+       (d.d)/SST 0.001883808980 | ORACLE 0.001883808980 | realised 0.001883808980 | c* 1.000000000000000
+       max pairwise |diff| among the three = 1.735e-18   ->  they are ONE number
+       literal two-fit check: dR2 = 0.001883808980  |diff| 1.084e-18
+
+  A-ii SHRUNK  (coef halved -- the walk-forward case)
+       (d.d)/SST 0.000470952245 | ORACLE 0.001883808980 | realised 0.001412856735 | c* 2.000000
+       realised > (d.d)/SST ?  YES  <-- THE BOUND FAILS      ORACLE/(d.d)/SST = c*^2 = 4.000000
+
+  A-ii INFLATED (coef 1.5x -- over-scaled)
+       (d.d)/SST 0.004238570205 | ORACLE 0.001883808980 | realised 0.001412856735 | c* 0.666667
+       realised > (d.d)/SST ?  no      ORACLE/(d.d)/SST = c*^2 = 0.444444
+
+====================================================================================================
+B. THE LIVE COUNTEREXAMPLE CENSUS -- recorded artifacts, no synthetic data
+====================================================================================================
+  Scan rule (frozen, column-based, NO NAME MATCHING): any recorded table in this programme
+  that carries BOTH a ceiling column and a realised-increment column computed by the source
+  screen inside ONE loop iteration on ONE (d, e, SST) triple.  Two such tables exist.
+
+  B1  E1_I0023/arithmetic_ceiling.csv  (64 rows)
+      D101 declaration for this table, read from E1_I0023/s03_arithmetic_ceiling.py:
+        response  y_pts (points)   |   rows  the scored test rows of the fit ('n')
+        SST       sum (y_pts - mean)^2 on those rows, unweighted
+        base      pr.BASE_COMPLETE (+ usage main effect; + the interaction for A-arms)
+        d         (Xa_te@ba - Xb_te@bb) * m_hat   -- a PPM-scale coefficient difference
+                  multiplied by an estimated-minutes vector, i.e. a TRANSPORTED shift
+        ceiling_D084_form_var_share = (d.d)/SST ; realised_paired_dr2_points = (2d.e-d.d)/SST
+      All four are computed in one iteration on one triple.  The comparison is legitimate.
+
+      ROWS WHERE realised > (d.d)/SST : 35 of 64  (54.7%)
+      c* distribution: min -23.1691  median 1.0741  max 2.4514   ; c* > 1 in 35 of 64 rows
+
+      WORST 8 (signed, unstandardised):
+      defence            stratum   tier           contrast     fit              ceiling   realised    ratio       c*
+      G01_noise_tvframe  DECISION  ALL_TIERS      INTERACTION  in_sample       0.000069   0.000268    3.903   2.4514
+      A02_opp_ts_allowed POOLED    ALL_TIERS      INTERACTION  walk_forward    0.000256   0.000835    3.263   2.1314
+      A01_opp_efg_allowed POOLED    ALL_TIERS      INTERACTION  walk_forward    0.000295   0.000787    2.670   1.8348
+      A02_opp_ts_allowed POOLED    ALL_TIERS      MAIN_EFFECT  walk_forward    0.000463   0.001168    2.525   1.7627
+      A02_opp_ts_allowed POOLED    T3_high_usage  MAIN_EFFECT  walk_forward    0.001981   0.004953    2.501   1.7503
+      A02_opp_ts_allowed DECISION  T3_high_usage  MAIN_EFFECT  walk_forward    0.005669   0.012692    2.239   1.6194
+      A01_opp_efg_allowed DECISION  T3_high_usage  MAIN_EFFECT  walk_forward    0.005039   0.010766    2.137   1.5683
+      A01_opp_efg_allowed POOLED    ALL_TIERS      MAIN_EFFECT  walk_forward    0.000504   0.001074    2.132   1.5661
+
+      *** THE COUNTEREXAMPLE IS D098's OWN HEADLINE CELL ***
+      MAIN_EFFECT / DECISION / T3_high_usage / walk_forward, n=1687
+        ceiling  (d.d)/SST                 = 0.01280821   <- the number D098 published as 'the ceiling'
+        realised (2 d.e - d.d)/SST         = 0.01870281   <- what the same shift actually bought
+        ORACLE   (d.e)^2/((d.d) SST)       = 0.01938101
+        c*                                 = 1.230110
+        realised / ceiling                 = 1.4602   -> THE BOUND IS EXCEEDED BY 46%
+      This is not synthetic and not this screen's construction. It is in the artifact
+      E1_I0023 wrote, and E1_I0043 did not find it because it looked at the noise floor.
+
+      MECHANISM: split by fit kind (in_sample = d is the OLS shift on the SAME rows)
+        in_sample     n_rows 32 | c* mean 0.3302 sd 4.2998 | realised>ceiling 17 | max ratio 3.903
+        walk_forward  n_rows 32 | c* mean 1.0155 sd 0.6798 | realised>ceiling 18 | max ratio 3.263
+      NOTE both kinds transport a PPM coefficient onto a POINTS response via m_hat, so
+      neither is the pure same-scale OLS case; c* != 1 in both, and the in_sample arm is
+      not exempt.  Transport, not out-of-sample-ness, is the operative condition.
+
+  B2  E1_I0043/CEILING_MATCHED.csv  (48 rows)
+      columns injected_var_share = (d.d)/SST, oracle_upper_bound, realised_signed_dr2,
+      implied_optimal_rescaling -- all on the cell's own response/rows/SST/base.
+      realised > (d.d)/SST in 34 of 48 rows; c* range [-0.0688, 8.4305]; max ratio 15.861
+
+  B3  E0_I0024/upstream_signals.csv  (250 rows) -- THE SOURCE OF ALL 213 CEILING KILLS
+      D101 declaration, read from E0_I0024/s04_screen.py + rb_base.py:
+        response  the cell's own target (y_reb/y_oreb/y_dreb/y_ast/y_pts)
+        rows      complete-case rows for [target]+base+candidate, seasons 2022-2024,
+                  POOLED or DECISION (n_prior>=8 AND ref_trail5_minutes>=24)
+        SST       sum (y - ybar)^2 on those rows, unweighted (D069)
+        weighting none            base  B_COMPLETE or B_COMPLETE_PLUS_R10
+        fit       IN-SAMPLE OLS, Frisch-Waugh, SAME rows.  d = beta_hat * x_perp.
+      d is therefore NOT transported: it is the OLS fitted contribution on the very rows,
+      response and base the increment is scored on.  By [2] above, c* = 1 identically.
+
+      realised > ceiling in 0 of 250 rows.  min gap = +0.000e+00
+      VIF = (sd_x/sd_x_perp)^2 : min 1.0000000461  median 1.010530  max 716134515100279115461718704128.0000
+      -> C-RAWSD = dR2 * VIF, and VIF >= 1 ALWAYS.  Collinearity with the base makes this
+         form MORE conservative, not less.  The orthogonality suspicion is inverted:
+         an EXACTLY ORTHOGONAL candidate is the WORST case (VIF = 1, zero slack), and even
+         then the form equals the realised increment rather than falling below it.
+
+====================================================================================================
+C. THE MINIMAL SYNTHETIC COUNTEREXAMPLE (smallest concrete case)
+====================================================================================================
+  Smallest case in which realised dR2 exceeds (d.d)/SST.  n = 3, one base column
+  (the intercept alone), one candidate.  Everything integer or exactly representable.
+
+  y = [-1.0, 0.0, 1.0]   base = intercept only   e = y - ybar = [-1.0, 0.0, 1.0]   SST = 2.0
+
+  d = 0.5 * (-1, 0, 1) = [-0.5, 0.0, 0.5]   (a candidate applied at half its optimal coefficient)
+     d.d = 0.5000   d.e = 1.0000   SST = 2.0000
+     (d.d)/SST                 = 0.250000   <- 'the ceiling'
+     realised (2 d.e - d.d)/SST = 0.750000   <- EXCEEDS IT BY 3.00x
+     ORACLE                     = 1.000000   c* = 2.0000  (c*^2 = 4.00 = the understatement factor)
+
+  THE CANDIDATE IS EXACTLY ORTHOGONAL TO THE BASE HERE (x is centred, base is the
+  intercept).  So ORTHOGONALITY IS NOT THE FAILING ASSUMPTION.  The failing assumption is
+  SCALE: the shift was applied at c* = 2, i.e. at half the coefficient the data supports.
+
+  The complementary case, same three rows, shift at TWICE the optimal scale:
+     (d.d)/SST 4.000000 | realised +0.000000 | ORACLE 1.000000 | c* 0.5000  -> bound HOLDS, and loosely
+
+  C-ii  DOES COLLINEARITY WITH THE BASE BREAK IT?  1,000 draws, candidate correlated
+        with the base at every level from 0 to 0.99, d always the OLS fitted contribution.
+        max |c* - 1| over 1,000 draws at every collinearity level = 6.772e-15
+        min (varshare / realised)                                 = 0.999999999999996
+        min (rawsd_form / realised)                               = 1.000028488241079
+        VIF range [1.0000, 57.03]  -- rises with collinearity, always >= 1
+        VERDICT: collinearity does NOT break the bound for an OLS-fitted shift. It widens it.
+
+  wrote COUNTEREXAMPLE/minimal_counterexample.npz, collinearity_probe.csv,
+        live_counterexamples.csv, README.md

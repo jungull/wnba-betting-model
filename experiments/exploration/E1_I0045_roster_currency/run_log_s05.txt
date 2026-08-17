@@ -1,0 +1,95 @@
+﻿    [pick] master_player                        -> 17 cols: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'player_id', 'player_name', 'position', 'starter_flag', 'dnp_reason', 'minutes', 'pts', 'fga', 'fta', 'ftm', 'reb', 'ast']
+
+====================================================================================================
+1. Xa+  -- THE SAME SIGNAL AS A STRATUM, NOT AS A DELETION
+====================================================================================================
+  strata (6): ('A|const|current', 'A|fit|current', 'B|const|STALE', 'B|const|current', 'B|fit|STALE', 'B|fit|current')
+ season         stratum  n_train  n_test          a        b                               action  train_base_rate
+   2022 A|const|current     4850     248   1.199600 0.000000                       intercept_only         0.768454
+   2022   A|fit|current        0    4777        NaN      NaN UNRECALIBRATED (train pool too thin)              NaN
+   2022   B|const|STALE        0      41        NaN      NaN UNRECALIBRATED (train pool too thin)              NaN
+   2022 B|const|current      143     367   0.013986 0.000000                       intercept_only         0.503497
+   2022     B|fit|STALE        0     151        NaN      NaN UNRECALIBRATED (train pool too thin)              NaN
+   2022   B|fit|current        0     207        NaN      NaN UNRECALIBRATED (train pool too thin)              NaN
+   2023 A|const|current     5098     198   1.213347 0.000000                       intercept_only         0.770891
+   2023   A|fit|current     5315    5514   0.102399 1.067845                      affine_in_logit         0.782502
+   2023   B|const|STALE       41     197  -2.970414 0.000000                       intercept_only         0.048780
+   2023 B|const|current      510     349  -0.606136 0.000000                       intercept_only         0.352941
+   2023     B|fit|STALE      151     488 -15.873040 0.695555                      affine_in_logit         0.000000
+   2023   B|fit|current      207     230  -1.770805 0.765692                      affine_in_logit         0.077295
+   2024 A|const|current     5296     168   1.222310 0.000000                       intercept_only         0.772470
+   2024   A|fit|current    11267    5407   0.106825 1.096425                      affine_in_logit         0.776249
+   2024   B|const|STALE      238     364  -4.069027 0.000000                       intercept_only         0.016807
+   2024 B|const|current      859     307  -0.632627 0.000000                       intercept_only         0.346915
+   2024     B|fit|STALE      639     813 -16.991659 1.186064                      affine_in_logit         0.000000
+   2024   B|fit|current      437     258  -1.764175 1.174014                      affine_in_logit         0.050343
+
+====================================================================================================
+2. THE HEAD-TO-HEAD: Xa  vs  Xa+ (stratify)  vs  Z_R3 (remove)
+====================================================================================================
+         window           arm  team_MAE  team_bias  team_corr  sum_w_per_team_game  brier_all  brier_tierA  brier_tierB  AUC_all  logloss_all  uncond_pts_MAE  appeared_rows_with_NO_forecast
+ FULL 2022-2024            X0 18.263037   8.138903   0.001301            10.338079   0.130248     0.093201     0.290459 0.902573     0.405581        3.907382                               0
+ FULL 2022-2024            Xa 10.957277   1.127289   0.055862             9.560942   0.094677     0.093349     0.100420 0.928452     0.314125        3.454724                               0
+ FULL 2022-2024       Xa_plus 10.697021   0.308082   0.068393             9.466143   0.092888     0.093349     0.090897 0.931718     0.305022        3.391019                               0
+ FULL 2022-2024 Z_R3_union_S2 10.296099  -0.341787   0.091585             9.389202   0.090347     0.093349     0.077366 0.933900     0.300900        3.346969                               7
+CLEAN 2023-2024            X0 19.916137   9.899087   0.008318            10.513154   0.131969     0.091862     0.282563 0.906658     0.410009        3.891166                               0
+CLEAN 2023-2024            Xa 10.386339   0.899532   0.105338             9.520469   0.088416     0.092028     0.074855 0.936554     0.296783        3.303715                               0
+CLEAN 2023-2024       Xa_plus  9.915224  -0.398494   0.138774             9.370348   0.084877     0.092028     0.058028 0.942142     0.281576        3.207160                               0
+CLEAN 2023-2024 Z_R3_union_S2  9.947966  -0.541074   0.141283             9.353965   0.084858     0.092028     0.057937 0.942133     0.284018        3.197723                               5
+
+  EXPOSURE SHAPE (minutes/team-game handed to tier-B rows in excess of what they play):
+          arm  misallocation_minutes_per_team_game
+           X0                             8.912455
+           Xa                             4.005280
+      Xa_plus                             3.171232
+Z_R3_union_S2                             2.437888
+
+====================================================================================================
+3. NULLS -- Xa+ and Z_R3 against Xa, and Z_R3 against Xa+
+====================================================================================================
+         window                   level           arm reference  delta_MAE        p  null_sd  MDE80_signflip  injection_floor_80pct  n_blocks   power_floor_kind                                 verdict  delta_Brier
+ FULL 2022-2024                    TEAM       Xa_plus        Xa   0.260256 0.021149 0.115002        0.322189                0.30000        36 INJECTION-VERIFIED NOT ESTABLISHED (below injection floor)          NaN
+ FULL 2022-2024       PLAYER RS1P (all)       Xa_plus        Xa        NaN 0.000050 0.000247        0.000692                0.00100       725 INJECTION-VERIFIED                             ESTABLISHED     0.001789
+ FULL 2022-2024  PLAYER RS1P-A (tier A)       Xa_plus        Xa        NaN 1.000000 0.000000        0.000000                0.00025       488 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000000
+ FULL 2022-2024  PLAYER RS1P-B (tier B)       Xa_plus        Xa        NaN 0.000050 0.001321        0.003702                    NaN       709 INJECTION-VERIFIED NOT ESTABLISHED (below injection floor)     0.009523
+ FULL 2022-2024 PLAYER DECISION STRATUM       Xa_plus        Xa        NaN 1.000000 0.000110        0.000308                0.00050       254 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000110
+ FULL 2022-2024                    TEAM Z_R3_union_S2        Xa   0.661179 0.000050 0.163858        0.459062                0.40000        36 INJECTION-VERIFIED                             ESTABLISHED          NaN
+ FULL 2022-2024       PLAYER RS1P (all) Z_R3_union_S2        Xa        NaN 0.000050 0.000388        0.001086                0.00200       725 INJECTION-VERIFIED                             ESTABLISHED     0.004330
+ FULL 2022-2024  PLAYER RS1P-A (tier A) Z_R3_union_S2        Xa        NaN 1.000000 0.000000        0.000000                0.00025       488 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000000
+ FULL 2022-2024  PLAYER RS1P-B (tier B) Z_R3_union_S2        Xa        NaN 0.000050 0.002078        0.005821                    NaN       709 INJECTION-VERIFIED NOT ESTABLISHED (below injection floor)     0.023054
+ FULL 2022-2024 PLAYER DECISION STRATUM Z_R3_union_S2        Xa        NaN 1.000000 0.000110        0.000308                0.00050       254 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000110
+ FULL 2022-2024                    TEAM Z_R3_union_S2   Xa_plus   0.400922 0.000650 0.138426        0.387813                0.40000        36 INJECTION-VERIFIED                             ESTABLISHED          NaN
+ FULL 2022-2024       PLAYER RS1P (all) Z_R3_union_S2   Xa_plus        NaN 0.000050 0.000450        0.001260                0.00200       725 INJECTION-VERIFIED                             ESTABLISHED     0.002541
+ FULL 2022-2024  PLAYER RS1P-A (tier A) Z_R3_union_S2   Xa_plus        NaN 1.000000 0.000000        0.000000                0.00025       488 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000000
+ FULL 2022-2024  PLAYER RS1P-B (tier B) Z_R3_union_S2   Xa_plus        NaN 0.000050 0.002418        0.006774                    NaN       709 INJECTION-VERIFIED NOT ESTABLISHED (below injection floor)     0.013531
+ FULL 2022-2024 PLAYER DECISION STRATUM Z_R3_union_S2   Xa_plus        NaN 1.000000 0.000000        0.000000                0.00025       254 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000000
+CLEAN 2023-2024                    TEAM       Xa_plus        Xa   0.471115 0.001800 0.162234        0.454514                0.40000        24 INJECTION-VERIFIED                             ESTABLISHED          NaN
+CLEAN 2023-2024       PLAYER RS1P (all)       Xa_plus        Xa        NaN 0.000050 0.000270        0.000758                0.00100       512 INJECTION-VERIFIED                             ESTABLISHED     0.003539
+CLEAN 2023-2024  PLAYER RS1P-A (tier A)       Xa_plus        Xa        NaN 1.000000 0.000000        0.000000                0.00025       320 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000000
+CLEAN 2023-2024  PLAYER RS1P-B (tier B)       Xa_plus        Xa        NaN 0.000050 0.001301        0.003645                    NaN       508 INJECTION-VERIFIED NOT ESTABLISHED (below injection floor)     0.016827
+CLEAN 2023-2024 PLAYER DECISION STRATUM       Xa_plus        Xa        NaN 1.000000 0.000155        0.000433                0.00050       171 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000155
+CLEAN 2023-2024                    TEAM Z_R3_union_S2        Xa   0.438374 0.006500 0.167913        0.470421                0.60000        24 INJECTION-VERIFIED NOT ESTABLISHED (below injection floor)          NaN
+CLEAN 2023-2024       PLAYER RS1P (all) Z_R3_union_S2        Xa        NaN 0.000050 0.000275        0.000771                0.00100       512 INJECTION-VERIFIED                             ESTABLISHED     0.003558
+CLEAN 2023-2024  PLAYER RS1P-A (tier A) Z_R3_union_S2        Xa        NaN 1.000000 0.000000        0.000000                0.00025       320 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000000
+CLEAN 2023-2024  PLAYER RS1P-B (tier B) Z_R3_union_S2        Xa        NaN 0.000050 0.001324        0.003708                    NaN       508 INJECTION-VERIFIED NOT ESTABLISHED (below injection floor)     0.016919
+CLEAN 2023-2024 PLAYER DECISION STRATUM Z_R3_union_S2        Xa        NaN 1.000000 0.000155        0.000433                0.00050       171 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000155
+CLEAN 2023-2024                    TEAM Z_R3_union_S2   Xa_plus  -0.032742 0.092345 0.019429        0.054432                0.10000        24 INJECTION-VERIFIED                         NOT ESTABLISHED          NaN
+CLEAN 2023-2024       PLAYER RS1P (all) Z_R3_union_S2   Xa_plus        NaN 0.064997 0.000011        0.000030                0.00025       512 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000019
+CLEAN 2023-2024  PLAYER RS1P-A (tier A) Z_R3_union_S2   Xa_plus        NaN 1.000000 0.000000        0.000000                0.00025       320 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000000
+CLEAN 2023-2024  PLAYER RS1P-B (tier B) Z_R3_union_S2   Xa_plus        NaN 0.066297 0.000051        0.000143                0.00025       508 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000092
+CLEAN 2023-2024 PLAYER DECISION STRATUM Z_R3_union_S2   Xa_plus        NaN 1.000000 0.000000        0.000000                0.00025       171 INJECTION-VERIFIED                         NOT ESTABLISHED     0.000000
+
+====================================================================================================
+4. FREEZE THE INTERCEPT, Xa+ AND Z_R3
+====================================================================================================
+         window           arm  team_MAE_unfrozen  team_MAE_frozen_to_Xa_level
+ FULL 2022-2024            X0          18.263037                    10.914323
+ FULL 2022-2024            Xa          10.957277                    10.957277
+ FULL 2022-2024       Xa_plus          10.697021                    10.963335
+ FULL 2022-2024 Z_R3_union_S2          10.296099                    10.987023
+CLEAN 2023-2024            X0          19.916137                    10.324151
+CLEAN 2023-2024            Xa          10.386339                    10.386339
+CLEAN 2023-2024       Xa_plus           9.915224                    10.395115
+CLEAN 2023-2024 Z_R3_union_S2           9.947966                    10.395095
+
+DONE s05

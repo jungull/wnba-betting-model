@@ -1,0 +1,54 @@
+﻿
+============================================================================================================
+E1_I0046_allocation  --  s01  ANCHORS AND FRAME
+============================================================================================================
+PREREG.md sha256 = b6dd2e6b141295b8accd92c9fb8920ef5d05a9901f35bf74410fb9c1ba331322
+
+============================================================================================================
+1. ANCHORS -- reproduced on bytes BEFORE any new statistic
+============================================================================================================
+  A1a   D104 regular-season game count 2021-2024                       repro=888                    rec=888                    |d|=0.000e+00  PASS
+  A1b   D104 home advantage on those 888 games                         repro=0.96509                rec=0.96509                |d|=0.000e+00  PASS
+  A2a   E0_I0016 screen_frame row count                                repro=14852                  rec=14852                  |d|=0.000e+00  PASS
+  A2b   E1_I0018 screen_frame row count                                repro=14852                  rec=14852                  |d|=0.000e+00  PASS
+  A2c   inner merge row count                                          repro=14852                  rec=14852                  |d|=0.000e+00  PASS
+  A3a   E1_I0043 DECISION stratum rows                                 repro=5673                   rec=5673                   |d|=0.000e+00  PASS
+  A3b   E1_I0043 DECISION distinct players                             repro=149                    rec=149                    |d|=0.000e+00  PASS
+  A3c   E1_I0043 DECISION distinct games                               repro=708                    rec=708                    |d|=0.000e+00  PASS
+  A3d   E1_I0043 DECISION rows in 2023-24                              repro=3167                   rec=3167                   |d|=0.000e+00  PASS
+  A4a   D085 A10_opp_defrtg -> y_ppm dR2 over refB (RECOMPUTED)        repro=0.0014430974149688691  rec=0.0014430974149688     |d|=6.917e-17  PASS
+  A4b     its n                                                        repro=14852                  rec=14852                  |d|=0.000e+00  PASS
+  A4c   D085 same cell over refA (RECOMPUTED)                          repro=0.0015087657892968237  rec=0.0015087657892969     |d|=7.633e-17  PASS
+
+============================================================================================================
+2. FRAME -- appeared-roster composition, 2021-2024 regular season
+============================================================================================================
+  assert_partition PASS master_player      seasons=[2021, 2022, 2023, 2024] datetime-gated=['game_date']
+  assert_partition PASS master_team        seasons=[2021, 2022, 2023, 2024] datetime-gated=[]
+  CLOSURE  pts max|d|=0.000000000000 (nonzero 0)   fga max|d|=0.000000000000 (nonzero 0)   min max|d|=0.066667   mean roster 9.4127
+  SIMPLEX  every response sums to 1 within team-game to < 1e-12  (asserted)
+  A4 vacated prior share: mean 0.10245  sd 0.11498  frac>0 0.7370
+  assert_partition PASS FRAME              seasons=[2021, 2022, 2023, 2024] datetime-gated=['game_date']
+  FRAME 16717 appeared player-games  team-games=1776  players=265  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  A5a   E1_I0018 rows located in this screen's appeared universe       repro=14852                  rec=14852                  |d|=0.000e+00  PASS
+  A5b   n_prior exact matches                                          repro=14852                  rec=14852                  |d|=0.000e+00  PASS
+  A5c   prior5_minutes max|diff| where both present                    repro=1.4210854715202004e-14 rec=0.0                    |d|=1.421e-14  PASS
+  A5d   minutes max|diff|                                              repro=0.0                    rec=0.0                    |d|=0.000e+00  PASS
+  A5e   pts max|diff|                                                  repro=0.0                    rec=0.0                    |d|=0.000e+00  PASS
+  A6a   composition closure: nonzero points diffs over 1,776 team-game repro=0                      rec=0                      |d|=0.000e+00  PASS
+  A6b   composition closure: nonzero attempts diffs                    repro=0                      rec=0                      |d|=0.000e+00  PASS
+  A6c   E1_I0033 realised roster size (2 dp)                           repro=9.41                   rec=9.41                   |d|=0.000e+00  PASS
+
+  ANCHORS: 20/20 PASS
+
+============================================================================================================
+3. FRAME CENSUS
+============================================================================================================
+  ALL_APPEARED               rows= 16717 players= 265 team-games= 1776 dates= 335  100.00% of frame  mean rows/team-game 9.413
+  DECISION                   rows=  5673 players= 149 team-games= 1388 dates= 270  33.94% of frame  mean rows/team-game 4.087
+  DECISION_CLEAN_2023_24     rows=  3167 players= 113 team-games=  764 dates= 143  18.94% of frame  mean rows/team-game 4.145
+  DECISION_DISCLOSED_2022    rows=  1350 players=  83 team-games=  336 dates=  64  8.08% of frame  mean rows/team-game 4.018
+  DECISION_TRAIN_le2022      rows=  2506 players= 116 team-games=  624 dates= 127  14.99% of frame  mean rows/team-game 4.016
+  ALL_CLEAN_2023_24          rows=  9056 players= 202 team-games=  960 dates= 174  54.17% of frame  mean rows/team-game 9.433
+
+  s01 OK.  frame written to scripts/_frame.parquet

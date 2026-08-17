@@ -1,0 +1,76 @@
+  assert_partition PASS FRAME_reload       seasons=[2021, 2022, 2023, 2024] datetime-gated=['game_date']
+
+============================================================================================================
+CONTROL 1 -- NO-OP PLACEBO.  The transform is ASSERTED to be the identity first.
+============================================================================================================
+  cells 36   max |deviation| = 0.000e+00   EXACTLY 0.000e+00 ON ALL CELLS
+
+============================================================================================================
+CONTROL 4 -- RESPONSE PLACEBO.  Permute the RESPONSE inside the team-game.
+============================================================================================================
+  A1_pts_share_prior   RAW          observed +0.004501   placebo mean -0.000257  min -0.003526  max +0.004079
+  A1_pts_share_prior   PROJ_BUDGET  observed -0.005456   placebo mean -0.000933  min -0.009819  max +0.001448
+  A4_vac_x_own         RAW          observed +0.000877   placebo mean +0.003134  min -0.003332  max +0.008649
+  A4_vac_x_own         PROJ_BUDGET  observed -0.018404   placebo mean -0.001045  min -0.008512  max +0.003315
+
+============================================================================================================
+CONTROL 8 -- SEASON SPLIT.  eval 2023 / eval 2024 / DISCLOSED 2022.
+============================================================================================================
+   response             candidate      arm  projection  eval_2023  eval_2024  disclosed_2022
+M_level_min    A1_pts_share_prior UNFROZEN         RAW  +0.003418  +0.005557       +0.005570
+M_level_min    A1_pts_share_prior UNFROZEN PROJ_BUDGET  -0.005240  -0.005673       -0.009308
+M_level_min    A2_fga_share_prior UNFROZEN         RAW  +0.003066  +0.005323       +0.005841
+M_level_min    A2_fga_share_prior UNFROZEN PROJ_BUDGET  -0.005396  -0.004038       -0.007944
+M_level_min A3_starter_rate_prior UNFROZEN         RAW  +0.000223  +0.000103       +0.002865
+M_level_min A3_starter_rate_prior UNFROZEN PROJ_BUDGET  +0.001166  +0.001565       +0.010041
+M_level_min          A4_vac_x_own UNFROZEN         RAW  +0.001795  -0.000011       +0.007318
+M_level_min          A4_vac_x_own UNFROZEN PROJ_BUDGET  -0.028943  -0.008231       -0.036008
+M_level_min         A5_opp_defrtg UNFROZEN         RAW  +0.001806  -0.005318       +0.003274
+M_level_min         A5_opp_defrtg UNFROZEN PROJ_BUDGET  -0.000268  -0.001455       -0.002534
+M_level_min             G01_noise UNFROZEN         RAW  -0.000204  -0.000594       -0.001502
+M_level_min             G01_noise UNFROZEN PROJ_BUDGET  -0.000167  -0.000462       -0.001422
+
+============================================================================================================
+CONTROL 7 -- BLOCK BOOTSTRAP over TEAM-GAMES, beside the permutation null
+============================================================================================================
+  A1_pts_share_prior   FROZEN    RAW          obs +0.003365  boot sd 0.001243  t  +2.71  MDE80_boot 0.003480
+  A1_pts_share_prior   FROZEN    PROJ_BUDGET  obs +0.021110  boot sd 0.002713  t  +7.78  MDE80_boot 0.007597
+  A1_pts_share_prior   UNFROZEN  RAW          obs +0.004501  boot sd 0.001277  t  +3.53  MDE80_boot 0.003575
+  A1_pts_share_prior   UNFROZEN  PROJ_BUDGET  obs -0.005456  boot sd 0.001855  t  -2.94  MDE80_boot 0.005193
+  A2_fga_share_prior   FROZEN    RAW          obs +0.003141  boot sd 0.001179  t  +2.66  MDE80_boot 0.003302
+  A2_fga_share_prior   FROZEN    PROJ_BUDGET  obs +0.020479  boot sd 0.002589  t  +7.91  MDE80_boot 0.007248
+  A2_fga_share_prior   UNFROZEN  RAW          obs +0.004210  boot sd 0.001246  t  +3.38  MDE80_boot 0.003488
+  A2_fga_share_prior   UNFROZEN  PROJ_BUDGET  obs -0.004702  boot sd 0.001793  t  -2.62  MDE80_boot 0.005021
+  A4_vac_x_own         FROZEN    RAW          obs +0.003156  boot sd 0.004417  t  +0.71  MDE80_boot 0.012367
+  A4_vac_x_own         FROZEN    PROJ_BUDGET  obs +0.012132  boot sd 0.003094  t  +3.92  MDE80_boot 0.008663
+  A4_vac_x_own         UNFROZEN  RAW          obs +0.000877  boot sd 0.004698  t  +0.19  MDE80_boot 0.013153
+  A4_vac_x_own         UNFROZEN  PROJ_BUDGET  obs -0.018404  boot sd 0.002233  t  -8.24  MDE80_boot 0.006253
+
+============================================================================================================
+SECTION 6 -- THE AVAILABILITY DEFECT AS A CONSTRAINT.  P1 and P2, measured.
+============================================================================================================
+
+P1 -- IS A ROSTER SUM A BUDGET?  Compare the two candidate 'budgets' on the same team-games.
+                       quantity      mean      sd      cv  n_distinct  mae_best_pretip_assertion  pct_of_total                           lands_on_a_rules_lattice
+team MINUTES (the rules budget) 201.26954 5.85727 0.02910          10                    1.26984       0.63091 YES -- 1776/1776 within 0.0667 of a multiple of 25
+           realised ROSTER SIZE   9.41273 1.00771 0.10706           7                    0.84157       8.94073             NO -- integers 6..12, no rule fixes it
+
+  The roster count is 14.17x LOOSER, as a fraction of itself, than the minutes budget.
+  P1 CONFIRMED: a roster sum is not a budget in the PREREG section 2 sense.
+
+P2 -- DOES A UNIFORM PER-TEAM-GAME RESCALING CANCEL UNDER A RENORMALISING DOWNSTREAM STEP?
+  The exposure producer allocates a FIXED 200 team-minutes in proportion to p_active x e_min.
+  Xb multiplies every p_active in a team-game by one scalar s_g = Rhat_g / sum(p_active).
+  Claim: project_to(s_g * w, ...) == project_to(w, ...) EXACTLY.  Demonstrated numerically here on
+  this screen's own team-game structure with randomly drawn positive weights and scalars, which is
+  a property of the arithmetic and not of any basketball fact.
+  max |project(w) - project(s_g * w)| over 16717 rows / 1776 team-games = 2.132e-14  EXACT CANCELLATION
+  P2 CONFIRMED, and it was DERIVED before it was looked up: E1_I0035 measured Xb's downstream
+  exposure misallocation at 8.912455 minutes -- IDENTICAL TO THE UNREPAIRED CHAMPION TO THE LAST
+  DIGIT.  The constraint framing predicts that number exactly, with no fit and no data.
+
+wrote PLACEBOS.csv RESPONSE_PLACEBO.csv SEASON_STABILITY.csv BOOTSTRAP_VARIANCE.csv AVAILABILITY_P1_TIGHTNESS.csv AVAILABILITY_P2_CANCELLATION.csv
+
+============================================================================================================
+DONE s05
+============================================================================================================

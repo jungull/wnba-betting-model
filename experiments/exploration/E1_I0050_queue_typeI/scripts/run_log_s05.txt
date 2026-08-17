@@ -1,0 +1,33 @@
+pool COMPOSED2  (6s)
+pool BETWEEN    (8s)
+pool WITHIN     (11s)
+pool ROW_NAIVE  (12s)
+generators ready (16s)
+
+=== TEST 1: reproduce E1_I0044's five Type-I numbers (its generator, its arm) ===
+   pl_usg_sd5|pts_absres            composed2 mine 0.0580 theirs 0.0525 (tol 0.0396) | lm 0.2540/0.2500 | row 0.3090/0.2800  OK
+   pl_minutes_prior|minutes_absres  composed2 mine 0.0240 theirs 0.0225 (tol 0.0263) | lm 0.0450/0.0175 | row 0.2890/0.2625  DIFFERS
+   pts__pred_cv|fga_absres          composed2 mine 0.1390 theirs 0.1475 (tol 0.0629) | lm 0.5430/0.5925 | row 0.5200/0.5475  OK
+   pl_dnp_frac5|pts_sqres           composed2 mine 0.0280 theirs 0.0250 (tol 0.0277) | lm 0.0520/0.0675 | row 0.1750/0.1800  OK
+   pl_games_prior|pts_absres        composed2 mine 0.5810 theirs 0.5950 (tol 0.0871) | lm 0.8910/0.9250 | row 0.8810/0.9075  OK
+   ordering by composed-2 Type-I preserved: True
+   mine  : [0.024, 0.028, 0.058, 0.139, 0.581]
+   theirs: [0.0225, 0.025, 0.0525, 0.1475, 0.595]
+
+=== TEST 2: positive control on LEVEL -- iid-noise candidate, no block structure ===
+   IID_NOISE|pts_absres       composed2 Type-I 0.0230   (0.05 +/- 0.0207)  FAIL
+   IID_NOISE|minutes_absres   composed2 Type-I 0.0060   (0.05 +/- 0.0207)  FAIL
+
+=== TEST 3: positive control on POWER -- dR2 = 0.005 injected into EXCH responses ===
+   pl_min_sd5|minutes_absres      power at injected dR2 0.005 = 0.9990   OK
+   pl_usg_sd5|pts_absres          power at injected dR2 0.005 = 1.0000   OK
+   pts__pred_cv|fga_absres        power at injected dR2 0.005 = 1.0000   OK
+
+=== TEST 4: degenerate-null control -- E0_I0014's own null on the bar-supplying cell ===
+   EXCH       scheme COMPOSED2  Type-I 0.0580 | that scheme's null on the REAL response: mean signed t   -0.135  sd 1.672
+   EXCH       scheme WITHIN     Type-I 0.0570 | that scheme's null on the REAL response: mean signed t   27.616  sd 0.872
+   BLOCKBOOT  scheme COMPOSED2  Type-I 0.0490 | that scheme's null on the REAL response: mean signed t   -0.135  sd 1.672
+   BLOCKBOOT  scheme WITHIN     Type-I 0.0580 | that scheme's null on the REAL response: mean signed t   27.616  sd 0.872
+
+wrote _SELFTESTS.csv  (69s)
+DONE s05

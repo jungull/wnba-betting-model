@@ -1,0 +1,180 @@
+
+====================================================================================================
+E1_I0047 s03 -- EXPOSURE ACROSS THE 213
+====================================================================================================
+  E1_I0036/CENSUS.csv : 1999 cells
+  CEILING kills       : 213
+  source screens      : ['E0_I0024_reb_ast_characterisation']
+  source decisions    : ['D097']
+
+  Established in s02 from source: `ceiling_recorded` is populated for exactly one screen,
+  E0_I0024 (D097), from its column CEILING_dr2_D089form. Every other census SPEC passes
+  ceiling=None. Therefore all 213 kills share ONE construction, C-RAWSD.
+
+  joined to D097's own table on (stratum,target,base,candidate): 213/213 matched
+  n agreement census vs source: max |diff| = 0
+  ceiling agreement:            max |diff| = 3.388e-21
+  dr2 agreement:                max |diff| = 3.388e-21
+
+====================================================================================================
+1. THE SAFE-BY-MARGIN COUNT, BEFORE ANY EXPENSIVE WORK (PREREG 5)
+====================================================================================================
+  margin = FLOOR_1CELL / computed ceiling, FLOOR_1CELL = 0.00102 (D103, injection-verified)
+    margin min  =           1.28 x
+    margin 1%   =           1.42 x
+    margin 5%   =           2.04 x
+    margin 10%  =           3.08 x
+    margin 25%  =           5.48 x
+    margin 50%  =          21.67 x
+    margin 75%  =         156.73 x
+    margin 95%  =            nan x
+    margin max  =            inf x
+
+  SAFE_BY_MARGIN (margin >= 100x)        :   64 of 213  (30.0%)
+    margin >=  1000x                     :   37
+    margin >=   100x                     :   64
+    margin >=    30x                     :   86
+    margin >=    10x                     :  135
+    margin >=     3x                     :  193
+    margin >=     1x                     :  213
+
+  SAFE_BY_CONSTRUCTION (C >= R and U<=1) :  213 of 213  (100.0%)
+  AT_RISK (true_ceiling_upper >= floor)  :    0 of 213
+
+====================================================================================================
+2. ORTHOGONALITY -- CHECKED, NOT ASSUMED
+====================================================================================================
+  VIF = (sd_x / sd_x_perp)^2 = 1/(1 - R^2 of the candidate on the base).
+  VIF = 1 means EXACTLY orthogonal to the base.  C-RAWSD = realised dR2 x VIF.
+    min 1.0000000000  p05 1.000000  median 1.003017  p95 1.166666  max 1.678582
+    cells with VIF < 1 (the ONLY way C-RAWSD could fail): 0
+    cells 'effectively orthogonal' (VIF < 1.01)         : 140 of 213  (65.7%)
+
+  The brief's suspicion was that non-orthogonality breaks the bound. It is the reverse:
+  orthogonality is the ZERO-SLACK case (C-RAWSD = realised exactly) and non-orthogonality
+  only ADDS slack. There is no configuration of the candidate-base correlation that makes
+  C-RAWSD fall below the realised increment for this fit.
+
+====================================================================================================
+3. HOW MUCH COULD THE TRUE CEILING EXCEED THE COMPUTED ONE?
+====================================================================================================
+  true_ceiling_upper = C x U, U = c*^2 / VIF.  c* = 1 exactly (s01 anchors A3/A4, |c*-1| <=
+  2.2e-16; s02 collinearity probe, max|c*-1| = 6.8e-15 over 1,000 draws).
+  So U = 1/VIF <= 1 for EVERY one of the 213, and the true ceiling can only be LOWER.
+    U min 0.5957408011  median 0.996992  max 1.0000000000
+    cells with U > 1 (i.e. genuine understatement): 0
+
+  Equivalently: true_ceiling_upper = realised dR2, and realised dR2 vs the floor:
+    realised dR2 >= FLOOR_1CELL (0.00102) : 0 of 213
+    realised dR2 >= FLOOR_132  (0.00235) : 0 of 213
+    realised dR2 >= BEST_LIVE  (0.002057): 0 of 213
+    max realised dR2 among the 213 = 0.00079634  (= 0.7807 x the single-cell floor)
+
+====================================================================================================
+4. THE SECOND FLOOR: EACH CELL'S OWN INJECTION-VERIFIED mde80, WHERE RECORDED
+====================================================================================================
+  The census also carries mde80_fw_used (D103 / E1_I0026, injection-verified where present).
+  That is a per-cell floor, so it is the better matched comparison than one global constant.
+    cells with an mde80_fw_used recorded : 213 of 213
+    ceiling >= own mde80                 : 0
+    realised >= own mde80                : 0
+    margin vs own mde80: min 2.05x  median 48.47x
+
+====================================================================================================
+5. THE SELECTION FOR RE-MEASUREMENT (PREREG 6, applied without amendment)
+====================================================================================================
+  (a) margin < 10x        : 78
+  (b) top 25 by ceiling   : 25
+  (c) identity C >= R fails: 0
+  SELECTED (union)        : 78   cap 30
+  over cap -- taking top 30 by rank_score; 48 reported as selected-but-not-run
+  TO_RUN                  : 30
+
+  RANKED BY (understatement) x (gap to floor) = rank_score, top 30:
+  stratum   target   base                 candidate                   ceiling   realised      VIF    margin     rank
+  DECISION  y_dreb   B_SINGLE             R02_opp_allowed_ra_share  7.964e-04  7.963e-04   1.0001      1.28   0.7807
+  DECISION  y_oreb   B_SINGLE             R07_own_miss_pg           7.713e-04  7.447e-04   1.0357      1.32   0.7301
+  DECISION  y_dreb   B_COMPLETE           R02_opp_allowed_ra_share  7.325e-04  7.302e-04   1.0032      1.39   0.7159
+  DECISION  y_reb    B_SINGLE             R02_opp_allowed_ra_share  6.199e-04  6.197e-04   1.0003      1.65   0.6076
+  DECISION  y_reb    B_SINGLE             R07_own_miss_pg           5.791e-04  5.770e-04   1.0036      1.76   0.5657
+  DECISION  y_reb    B_COMPLETE           R02_opp_allowed_ra_share  5.653e-04  5.630e-04   1.0042      1.80   0.5519
+  DECISION  y_dreb   B_COMPLETE_PLUS_R10  R02_opp_allowed_ra_share  5.689e-04  5.268e-04   1.0800      1.79   0.5165
+  DECISION  y_reb    B_COMPLETE_PLUS_R10  R02_opp_allowed_ra_share  5.687e-04  5.260e-04   1.0813      1.79   0.5156
+  POOLED    y_oreb   B_SINGLE             R07_own_miss_pg           5.354e-04  5.258e-04   1.0182      1.91   0.5155
+  DECISION  y_oreb   B_COMPLETE           R10_opp_allowed_oreb_pg   5.051e-04  5.010e-04   1.0082      2.02   0.4912
+  DECISION  y_pts    B_COMPLETE           G01_noise                 4.959e-04  4.946e-04   1.0026      2.06   0.4849
+  DECISION  y_pts    B_SINGLE             G01_noise                 4.743e-04  4.737e-04   1.0012      2.15   0.4644
+  DECISION  y_oreb   B_SINGLE             R10_opp_allowed_oreb_pg   4.228e-04  4.228e-04   1.0000      2.41   0.4145
+  POOLED    y_oreb   B_COMPLETE           R10_opp_allowed_oreb_pg   4.077e-04  4.008e-04   1.0171      2.50   0.3930
+  DECISION  y_dreb   B_COMPLETE_PLUS_R10  R01_opp_allowed_miss_pg   4.832e-04  3.754e-04   1.2874      2.11   0.3680
+  POOLED    y_dreb   B_SINGLE             R04_opp_allowed_mid_share  3.726e-04  3.726e-04   1.0001      2.74   0.3653
+  DECISION  y_reb    B_COMPLETE_PLUS_R10  R01_opp_allowed_miss_pg   4.397e-04  3.415e-04   1.2875      2.32   0.3348
+  DECISION  y_dreb   B_COMPLETE           R10_opp_allowed_oreb_pg   3.405e-04  3.377e-04   1.0081      3.00   0.3311
+  POOLED    y_reb    B_SINGLE             R04_opp_allowed_mid_share  3.353e-04  3.353e-04   1.0000      3.04   0.3287
+  DECISION  y_ast    B_SINGLE             A02_n_present_prevgame    3.334e-04  3.332e-04   1.0006      3.06   0.3267
+  POOLED    y_dreb   B_COMPLETE_PLUS_R10  R04_opp_allowed_mid_share  3.220e-04  3.218e-04   1.0007      3.17   0.3155
+  DECISION  y_dreb   B_SINGLE             R10_opp_allowed_oreb_pg   3.186e-04  3.186e-04   1.0000      3.20   0.3124
+  POOLED    y_dreb   B_COMPLETE           R04_opp_allowed_mid_share  3.185e-04  3.184e-04   1.0004      3.20   0.3122
+  POOLED    y_reb    B_COMPLETE           R04_opp_allowed_mid_share  3.133e-04  3.130e-04   1.0009      3.26   0.3069
+  POOLED    y_reb    B_COMPLETE_PLUS_R10  R04_opp_allowed_mid_share  3.118e-04  3.115e-04   1.0012      3.27   0.3053
+  POOLED    y_reb    B_SINGLE             R07_own_miss_pg           3.084e-04  3.082e-04   1.0006      3.31   0.3022
+  DECISION  y_oreb   B_COMPLETE           R01_opp_allowed_miss_pg   3.084e-04  3.067e-04   1.0056      3.31   0.3007
+  DECISION  y_reb    B_COMPLETE           R08_player_ra_share       5.066e-04  3.020e-04   1.6775      2.01   0.2961
+  DECISION  y_reb    B_COMPLETE_PLUS_R10  R08_player_ra_share       4.984e-04  2.969e-04   1.6786      2.05   0.2911
+  POOLED    y_oreb   B_SINGLE             R10_opp_allowed_oreb_pg   2.952e-04  2.951e-04   1.0000      3.46   0.2894
+
+====================================================================================================
+6. COMPOSITION OF THE 213 (recorded columns only, no name parsing)
+====================================================================================================
+  by stratum:
+      DECISION                    110
+      POOLED                      103
+  by target:
+      y_oreb                       62
+      y_reb                        62
+      y_dreb                       60
+      y_ast                        21
+      y_pts                         8
+  by base:
+      B_COMPLETE                   83
+      B_SINGLE                     81
+      B_COMPLETE_PLUS_R10          49
+  by level:
+      opp_team_season             124
+      team_season                  47
+      row                          40
+      player_season                 2
+
+  classification:
+      SAFE_BY_CONSTRUCTION        149
+      SAFE_BY_MARGIN               44
+      SAFE_DEGENERATE_ZERO         20
+
+====================================================================================================
+7. THE FINDING THAT WEAKENS THE FAVOURABLE VERDICT -- what these kills actually ARE
+====================================================================================================
+  C-RAWSD is computed FROM beta_hat, the fitted coefficient of the SAME in-sample OLS fit
+  whose increment it is supposed to bound. So D097 did not close these channels WITHOUT
+  fitting: every one of the 213 was fitted, and the 'ceiling' is that fit's own realised
+  increment multiplied by its VIF. The kills are sound. They are not, however, the
+  pre-fit arithmetic screen the ruling describes, and they are not fit-invariant.
+
+  CONSEQUENCE FOR E1_I0036's EXCLUSION. That screen excluded all 213 from re-levelling on
+  the stated ground 'a ceiling kill is arithmetic and survives re-levelling' (T1_not_ceiling).
+  A beta_hat-derived ceiling is NOT invariant to re-levelling: beta_hat, sd_x, sd_y and SST
+  all change when player-games are aggregated to team-games.
+    of the 213, level is roster-constant in            : 171
+    target is summable in                              : 213
+    WOULD HAVE BEEN T2 AND T3 ELIGIBLE but for T1      : 171
+    E1_I0036 published eligibility                     : 118 of 1580 killed cells (7.5%)
+    with these added                                   : 289 of 1580 (18.3%)
+  That does not resurrect any of them -- E1_I0036's own arithmetic (detection floor rises
+  8.3-9.3x at team level against a ~9.4x dilution gain) says re-levelling roughly cancels,
+  and all 213 sit below the PLAYER-level floor before any of that. But the STATED GROUND for
+  the exclusion is wrong for this construction, and it is recorded as a defect.
+
+  COMPOSITION NOTE (recorded columns, no name parsing): 20 of the 213 have ceiling exactly 0
+  and realised exactly 0 -- they are the no-op placebo, a negative control. A further 20
+  are the pure-noise control. So 40 of the 213 'kills' are controls that were never candidates.
+
+  wrote EXPOSURE_213.csv  (213 rows x 35 cols)

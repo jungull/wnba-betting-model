@@ -1,0 +1,106 @@
+﻿
+====================================================================================================
+A. FRAME -- E1_I0026/df_base.load_frame() replicated inline (read-only, not imported)
+====================================================================================================
+  joined frame (14852, 62)  seasons=[np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  DECISION rows after finiteness on ['y_ppm', 'y_pts', '_m_hat', 'P01_c04_prevgame', 'refB_ppm', 'refB_spm', 'refB_pps', 'refB_mpg']: n=5673   (E1_I0026 records 5,673)
+
+  DENOMINATORS, stated in full (D101):
+    ARM P  response y_ppm  | n=5673 | SST=281.316436 (about the unweighted mean) | no weights
+           base [1, refB_ppm, refB_spm, refB_pps, refB_mpg] | statistic: OLS increment dR2
+    ARM T  response y_pts  | n=5673 | SST=318732.970210 (about the unweighted mean) | no weights
+           same base, coefficient fitted on y_ppm and TRANSPORTED by per-row m_hat
+           statistic: (2 d.e - d.d)/SST_pts, D089's realised paired-forecast dR2
+    ARM C  response y_pts  | same rows, same SST | statistic: (d.d)/SST_pts, the ceiling itself
+
+  REAL carrier: ARM P (y_ppm dR2) = 0.0023420284
+                ARM T (points realised) = 0.0033139323
+                ARM C (points ceiling (d.d)/SST) = 0.0019278879
+                c* = 1.3594722754   ORACLE = 0.0035630546
+
+====================================================================================================
+B. ONE NULL SEQUENCE, THREE MATCHED ARMS -- entity swap team-season, 600 draws, seed 20260808
+====================================================================================================
+  kit returned in 0.7s: real=2.342028e-03 mean=1.661220e-04 sd=2.152857e-04 p=0.0017 n_groups=48
+  stat_fn invocations captured: 601 (n_draws=600)
+  -> dropped invocation index 600 (the real-frame call); remaining 600 match kit draws EXACTLY (atol=0)
+
+====================================================================================================
+C. ANCHOR -- ARM P reproduces E1_I0026's recorded null mean and sd for this exact cell
+====================================================================================================
+ stratum       base                        null          carrier        kind                 level block    n  n_groups  real_dr2  null_mean  null_sd        p  q95_dr2  secs  t_crit_percell
+DECISION B_COMPLETE N_B_entity_swap_team_season P01_c04_prevgame entity_swap ['team_id', 'season']   NaN 5673        48  0.002342   0.000166 0.000215 0.001664 0.000654   0.4        2.265068
+  [PASS] A15_real_dr2   recorded 0.00234202844557  reproduced 0.00234202844557  |d|=3.643e-17
+  [PASS] A15_null_mean  recorded 0.000166121978154  reproduced 0.000166121978154  |d|=7.324e-17
+  [PASS] A15_null_sd    recorded 0.000215285694658  reproduced 0.000215285694658  |d|=1.868e-17
+  [PASS] A15_n          recorded 5673  reproduced 5673  |d|=0.000e+00
+  (kit-reported mean 0.000166121978154 sd 0.000215285694658)
+
+====================================================================================================
+D. THE FLOOR ON EACH SCALE -- same rows, same base, same null, same draws
+====================================================================================================
+                          arm response  family_size_K   null_mean     null_sd    null_q95       real  MDE80_analytic
+        P_y_ppm_OLS_increment    y_ppm              1 0.000166122 0.000215286 0.000653759 0.00234203      0.00113279
+        P_y_ppm_OLS_increment    y_ppm             18 0.000166122 0.000215286 0.000653759 0.00234203      0.00214351
+        P_y_ppm_OLS_increment    y_ppm             44 0.000166122 0.000215286 0.000653759 0.00234203      0.00236694
+        P_y_ppm_OLS_increment    y_ppm            132 0.000166122 0.000215286 0.000653759 0.00234203      0.00267125
+T_points_transported_realised    y_pts              1 9.69543e-05 0.000183215 0.000451724 0.00331393     0.000797812
+T_points_transported_realised    y_pts             18 9.69543e-05 0.000183215 0.000451724 0.00331393      0.00162444
+T_points_transported_realised    y_pts             44 9.69543e-05 0.000183215 0.000451724 0.00331393      0.00180784
+T_points_transported_realised    y_pts            132 9.69543e-05 0.000183215 0.000451724 0.00331393      0.00205799
+ C_points_transported_ceiling    y_pts              1 0.000135662 0.000175702 0.000527643 0.00192789     0.000924816
+ C_points_transported_ceiling    y_pts             18 0.000135662 0.000175702 0.000527643 0.00192789      0.00174976
+ C_points_transported_ceiling    y_pts             44 0.000135662 0.000175702 0.000527643 0.00192789      0.00193212
+ C_points_transported_ceiling    y_pts            132 0.000135662 0.000175702 0.000527643 0.00192789      0.00218049
+
+====================================================================================================
+E. THE COMPARISON THE PROGRAMME HAS BEEN MAKING, AND THE MATCHED ONE
+====================================================================================================
+
+  K = 1
+    published floor (drift-corrected, y_ppm)            0.001020
+    this screen, ARM P analytic (y_ppm, same null)      0.001133   <- calibrates the analytic form
+    this screen, ARM T analytic (POINTS, D089's stat)   0.000798   <- the MATCHED floor
+    this screen, ARM C analytic (POINTS, the ceiling)   0.000925   <- noise floor OF THE CEILING
+    ratio ARM T / ARM P                                 0.704x
+    0.002057 vs ARM T floor                             2.579x
+    0.0033139 (realised, same cell) vs ARM T floor      4.154x
+
+
+  K = 132
+    published floor (drift-corrected, y_ppm)            0.002350
+    this screen, ARM P analytic (y_ppm, same null)      0.002671   <- calibrates the analytic form
+    this screen, ARM T analytic (POINTS, D089's stat)   0.002058   <- the MATCHED floor
+    this screen, ARM C analytic (POINTS, the ceiling)   0.002180   <- noise floor OF THE CEILING
+    ratio ARM T / ARM P                                 0.770x
+    0.002057 vs ARM T floor                             1.000x
+    0.0033139 (realised, same cell) vs ARM T floor      1.610x
+
+
+====================================================================================================
+E2. THE CONTROL D089 NEVER RECORDED -- the NOISE FLOOR OF THE CEILING STATISTIC ITSELF
+====================================================================================================
+
+  Same rows, same base, same carrier, same null, 600 entity-swap draws.  The statistic is the
+  ceiling itself, (d.d)/SST_pts, computed through the identical transported path.
+
+    null mean of the CEILING statistic        1.356624e-04
+    null sd                                   1.757022e-04
+    null q95 (the matched noise floor)        5.276433e-04
+    D089's published ceiling, var-share form  1.927888e-03   = 3.654x its own q95 noise floor
+    D089's published ceiling, per-sd form     2.057199e-03   = 3.899x its own q95 noise floor
+    D089's ORACLE (the true bound)            3.563055e-03   = 6.753x
+    p (share of draws >= the real ceiling)    0.0017
+
+  CAUTION, D101: this null mean (1.357e-04) is of the same ORDER as D084's entire published ceiling
+  (1.294e-04).  Those are DIFFERENT rows, a DIFFERENT frame and a DIFFERENT SST, so the pair is
+  NOT_COMPARABLE and no ratio is formed here.  It is recorded only as an order-of-magnitude
+  caution about ceilings of size ~1e-04 measured on designs of this shape.
+
+
+====================================================================================================
+F. RAW SIGNED UNSTANDARDISED DRAWS, FULL STRATUM KEY ON EVERY ROW
+====================================================================================================
+  wrote raw/s03_null_draws_signed_raw.{npz,csv}  (600 draws x 3 arms, signed, raw)
+
+DONE s03

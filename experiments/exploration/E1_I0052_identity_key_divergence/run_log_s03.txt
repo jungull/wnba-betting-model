@@ -1,0 +1,61 @@
+﻿
+============================================================================================
+s03  ANCHORS
+============================================================================================
+
+============================================================================================
+manifest status of every artifact this screen reads
+============================================================================================
+  master_player RESEARCH     PRESENT                C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\masters\master_player.parquet.manifest.json
+                             asof_granularity=row  fit_through_date=2026-08-01T12:00:00+00:00
+  master_player PRODUCTION   MISSING_UNVERIFIABLE   
+  master_team RESEARCH       PRESENT                C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\masters\master_team.parquet.manifest.json
+                             asof_granularity=row  fit_through_date=2026-08-01T12:00:00+00:00
+
+  read: C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\data\masters\master_player.parquet
+  sha256: 52e084efaad5c08444b407c64c18d55b57ff5a1e13491cc908dfd960b8641dce
+  rows(all seasons)=33712  cols=78
+
+============================================================================================
+A1-A3  the stable key exists and is complete
+============================================================================================
+  A1    master_player rows, all seasons                            expect=34199      got=33712      MISMATCH
+  A2    null player_id rows, all seasons                           expect=0          got=0          EXACT
+  A3    player_id dtype is Int64                                   expect=Int64      got=Int64      EXACT
+
+  PARTITION GUARD: {"label": "master_player", "rows_in": 33712, "rows_kept": 21462, "sealed_rows_dropped": 12250, "seasons_seen": [2021, 2022, 2023, 2024, 2025, 2026]}
+
+============================================================================================
+A4-A8  identity ambiguity, exact equality only
+============================================================================================
+  A4    distinct player_id with >1 player_name, ALL seasons        expect=13         got=12         MISMATCH
+  A5    distinct player_name with >1 player_id, ALL seasons        expect=0          got=0          EXACT
+  A6    distinct player_id with >1 player_name, 2021-2024          expect=12         got=12         EXACT
+  A7    distinct player_name with >1 player_id, 2021-2024          expect=0          got=0          EXACT
+  A8    ambiguous ids 2021-2024 == declared allowlist              expect=True       got=True       EXACT
+
+  RESOLVED AMBIGUOUS ID LIST (printed, per the no-name-selection rule):
+     203400     Skylar Diggins | Skylar Diggins-Smith           seasons=2021 2022 2023 2024  teams=PHO SEA
+     1628922    Azura Stevens | Azurá Stevens                   seasons=2021 2022 2023 2024  teams=CHI LAS
+     1629484    Megan DiLeo | Megan Gustafson                   seasons=2021 2022 2023 2024  teams=LVA PHO WAS
+     1629546    Marine Johannes | Marine Johannès               seasons=2022 2023            teams=NYL
+     1629566    Han Xu | Xu Han                                 seasons=2022 2023            teams=NYL
+     1630043    Bernadett Hatar | Bernadett Határ               seasons=2021 2023            teams=CON IND
+     1630151    Olivia Epoupa | Olivia Époupa                   seasons=2024                 teams=MIN
+     1631021    Sika Kone | Sika Koné                           seasons=2023 2024            teams=CHI MIN WAS
+     1631263    Nikolina Milic | Nikolina Milić                 seasons=2022 2023            teams=MIN
+     1641657    Dorka Juhasz | Dorka Juhász                     seasons=2023 2024            teams=MIN
+     1641661    Lou Lopez Senechal | Lou Lopez Sénéchal         seasons=2023 2024            teams=DAL
+     1642299    Nika Muhl | Nika Mühl                           seasons=2024                 teams=SEA
+
+============================================================================================
+A9-A12  roster-window divergence under the two keys (E1_I0048 s05 rule)
+============================================================================================
+  A9    roster windows simulated, 2021-2024                        expect=1940       got=1940       EXACT
+  A10   windows where the two keys differ, 2021-2024               expect=196        got=196        EXACT
+  A11   divergence rate 2021-2024 (%)                              expect=10.1       got=10.1       EXACT
+  A12   windows with NEGATIVE delta (drop mode), 2021-2024         expect=0          got=0          EXACT
+
+  delta distribution: {0: 1744, 1: 172, 2: 24}
+
+  anchors: 12  EXACT=10  PASS=0  MISMATCH=2

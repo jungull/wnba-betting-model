@@ -1,0 +1,74 @@
+  PREREG.md sha256 629fe4aa2d757d393ec7db5861feba28e431f25cb89562ac1e61e05cf9b73add
+  PARTITION: 2021-2024 exploration only. 2025/26 is NEVER read.
+  ALLOWLIST B0_COMPLETE  n=5  ['refB_ppm', 'refB_spm', 'refB_pps', 'refB_mpg', 'refB_own_usg_pg']
+  ALLOWLIST B1_HONEST    n=7  ['refB_ppm', 'refB_spm', 'refB_pps', 'refB_mpg', 'refB_own_usg_pg', 'D01_tm_poss_per40', 'D02_opp_poss_per40']
+  ALLOWLIST B2_FAMILY    n=9  ['refB_ppm', 'refB_spm', 'refB_pps', 'refB_mpg', 'refB_own_usg_pg', 'D01_tm_poss_per40', 'D02_opp_poss_per40', 'A01_opp_efg_allowed', 'A02_opp_ts_allowed']
+  ALLOWLIST CANDIDATE  n=1  ['A10_opp_defrtg']   (single column -> D120 every-component invariant is satisfied by construction, and this assertion is the proof)
+  A7a  E0_I0016 screen_frame row count                      reproduced 14852.000000000000   recorded 14852.000000000000   |diff| 0.000e+00   PASS
+  A7b  E1_I0018 screen_frame row count                      reproduced 14852.000000000000   recorded 14852.000000000000   |diff| 0.000e+00   PASS
+  A7c  merged row count                                     reproduced 14852.000000000000   recorded 14852.000000000000   |diff| 0.000e+00   PASS
+  A1   D085 A10_opp_defrtg -> ppm dR2 over refB             reproduced 0.001443097415   recorded 0.001443097415   |diff| 9.324e-18   PASS
+  A1b  D085 same cell over refA                             reproduced 0.001508765789   recorded 0.001508765789   |diff| 1.930e-17   PASS
+  A3   var_share_between opp_team_season                    reproduced 0.771355969528   recorded 0.771355969528   |diff| 1.110e-16   PASS
+  A2a  D085 p_N2_entity_swap (read)                         reproduced 0.001663893511   recorded 0.001664000000   |diff| 1.065e-07   PASS
+  A2b  D085 p_familywise_N2 (read)                          reproduced 0.009983361065   recorded 0.009983000000   |diff| 3.611e-07   PASS
+  A2c  D085 p_N1_within_entity (read) -- the BLIND arm      reproduced 0.870216306156   recorded 0.870216000000   |diff| 3.062e-07   PASS
+  A4a  D098 ceiling (T3, decision, wf)                      reproduced 0.012808213920   recorded 0.012808210000   |diff| 3.920e-09   PASS
+  A4b  D098 points moved by 1 sd (T3)                       reproduced 0.739198352829   recorded 0.739198000000   |diff| 3.528e-07   PASS
+  A4c  D098 realised dR2 points (T3, n=1687)                reproduced 0.018702810113   recorded 0.018703000000   |diff| 1.899e-07   PASS
+  A4d  D098 T3 row count                                    reproduced 1687.000000000000   recorded 1687.000000000000   |diff| 0.000e+00   PASS
+  A5a  D099 realised dR2 points, decision, n=4514           reproduced 0.003335424864   recorded 0.003335000000   |diff| 4.249e-07   PASS
+  A5b  D099 decision-stratum row count                      reproduced 4514.000000000000   recorded 4514.000000000000   |diff| 0.000e+00   PASS
+  A6   D093 opp-defrtg Spearman (carried anchor)            reproduced 0.320043123565   recorded 0.320043123565   |diff| 0.000e+00   PASS
+
+  ALL 16 ANCHORS REPRODUCED.  New statistics may now be generated.
+
+  I1 COLUMN IDENTITY -- resolve each sighting's defence column to a physical file
+    S1 D098  E1_I0023/uid_base.py:92   pd.read_parquet(E0_I0016/screen_frame.parquet)
+    S2 D099  E1_I0025/cbase.py         DEFENCE='A10_opp_defrtg', same merged frame
+    S3 D103  E1_I0026/NOTES.md         'joined 1:1 to E0_I0016/screen_frame.parquet for the opponent columns'
+    S4 D117  E1_I0038                  reads D085's OWN recorded p from E0_I0016
+    max |value difference| between the merged frame's column and the source parquet's column, on the joined rows: 0.000e+00
+  I1   column identity                    SAME VECTOR            max|diff| 0.000e+00 across all 14,852 rows; one physical column in one physical file
+
+  I2 ROW SETS -- pairwise containment on (player_id, game_id)
+    S1_D098   n=  1505
+    S2_D099   n=  4514
+    S3_D103   n=  5670
+    S4_D117   n= 14852
+    S1_D098   vs S2_D099    inter=  1505  jaccard=0.3334  a<=b=True  b<=a=False
+    S1_D098   vs S3_D103    inter=  1505  jaccard=0.2654  a<=b=True  b<=a=False
+    S1_D098   vs S4_D117    inter=  1505  jaccard=0.1013  a<=b=True  b<=a=False
+    S2_D099   vs S3_D103    inter=  4514  jaccard=0.7961  a<=b=True  b<=a=False
+    S2_D099   vs S4_D117    inter=  4514  jaccard=0.3039  a<=b=True  b<=a=False
+    S3_D103   vs S4_D117    inter=  5670  jaccard=0.3818  a<=b=True  b<=a=False
+  I2   row sets                           FULLY NESTED           S1 c S2 c S3 c S4; every sighting is a sub-population of the same 14,852-row frame
+  I3   response                           SHARED: ['y_ppm']      all four report the SAME response y_ppm; y_ppm is the only response common to all four
+  I4   base / reference                   3 of 4 SHARE A BASE FAMILY S1,S2 = BASE_COMPLETE(refB_ppm,spm,pps,mpg,own_usg); S3 = B_COMPLETE/B_SINGLE same refB family; S4 = [1, refB_ppm] alone. No base carries a possession or opponent-pace term.
+
+  I5 SHARED UPSTREAM -- provenance chain
+    E0_I0016_efficiency_predictors/screen_frame.parquet  ->  A10_opp_defrtg
+      |-- E1_I0021 (D093)  merged D085+D089        -> Spearman +0.320   [the STRUCTURAL claim]
+      |-- E1_I0023 (D098)  merged D085+D089        -> SIGHTING 1
+      |     `-- E1_I0025 (D099) confirmation of S1 -> SIGHTING 2
+      |-- E1_I0026 (D103)  joined D085 onto D089   -> SIGHTING 3
+      `-- E0_I0016 own recorded null (D085)        -> SIGHTING 4 via E1_I0038 (D117)
+  I5   shared upstream                    ONE SOURCE FILE        all four resolve to A10_opp_defrtg in E0_I0016/screen_frame.parquet; any defect in that column's construction propagates to all four identically
+
+  I6 REDUNDANCY -- was D085's 'twelve constructions' twelve tests?
+    corr(A10_opp_defrtg, A02_opp_ts_allowed          ) = +0.8289
+    corr(A10_opp_defrtg, A01_opp_efg_allowed         ) = +0.8153
+    corr(A10_opp_defrtg, A05_opp_fg3pct_allowed      ) = +0.6473
+    corr(A10_opp_defrtg, A09_opp_stl                 ) = -0.4819
+    corr(A10_opp_defrtg, A11_opp_fastbreak_allowed   ) = +0.4208
+    corr(A10_opp_defrtg, A03_opp_paintpts_allowed    ) = +0.3047
+    corr(A10_opp_defrtg, A07_opp_ftrate_allowed      ) = +0.2637
+    corr(A10_opp_defrtg, A08_opp_pf                  ) = +0.2637
+    corr(A10_opp_defrtg, A12_opp_2ndchance_allowed   ) = +0.2422
+    corr(A10_opp_defrtg, A06_opp_fg3a_share_allowed  ) = +0.2205
+    corr(A10_opp_defrtg, A04_opp_blk                 ) = -0.1997
+    A-family correlation-matrix eigenvalues: [4.1285, 2.0976, 1.6995, 1.0987, 0.8366, 0.7732, 0.6962, 0.3442, 0.1719, 0.0859, 0.0597, 0.0079]
+    effective dimension: 8 components carry 95% of variance, 10 carry 99% (of 12 columns)
+  I6   A-family redundancy                8 of 12 effective dims @95% max |corr| with A10 is +0.8289 (A02_opp_ts_allowed)
+  I1 same vector: True | I2 nested: True | I5 one source file: True
+  -> THE FOUR SIGHTINGS ARE ONE SIGHTING. No corroboration credit is taken from the count of four.

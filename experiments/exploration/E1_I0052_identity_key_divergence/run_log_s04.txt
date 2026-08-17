@@ -1,0 +1,54 @@
+﻿
+============================================================================================
+s04  E0_I0006_usage_redistribution -- both keys on the same frame
+============================================================================================
+  clean_played_panel   manifest=MISSING_UNVERIFIABLE   sha256=4819dbf2de8d91c4
+  clean_roster_panel   manifest=MISSING_UNVERIFIABLE   sha256=c980a426edcfe24d
+  (E0_I0006/NOTES.md: these are rebuilt from raw per-season gamelogs precisely because
+   master_player's manifest declares fit_through_season 2026. Provenance is that screen's.)
+
+  PARTITION GUARD played : {"label": "clean_played_panel", "rows_in": 16720, "rows_kept": 16720, "sealed_rows_dropped": 0, "seasons_seen": [2021, 2022, 2023, 2024]}
+  PARTITION GUARD roster : {"label": "clean_roster_panel", "rows_in": 21581, "rows_kept": 21581, "sealed_rows_dropped": 0, "seasons_seen": [2021, 2022, 2023, 2024]}
+
+============================================================================================
+1. identity ambiguity IN THIS SCREEN'S OWN SOURCE (not master_player)
+============================================================================================
+  played-panel rows              : 16720
+  distinct player_id             : 265
+  distinct player_name           : 265
+  ids with >1 name (DUPLICATION) : 0  -> []
+  names with >1 id (DROP)        : 0  -> []
+
+  cross-check vs master_player 2021-2024 allowlist: SUBSET
+  ids in master allowlist but absent from this panel: [203400, 1628922, 1629484, 1629546, 1629566, 1630043, 1630151, 1631021, 1631263, 1641657, 1641661, 1642299]
+
+============================================================================================
+2. SITE L20 -- the high-usage pool (the screen's fit population)
+============================================================================================
+  baseline rows  name-key=690   id-key=690   delta=+0
+  ANCHOR: published high-usage player-team-seasons (NOTES.md) = 200
+  high-usage pool  name-key=200   id-key=200   delta=+0
+  identities present under ID key but MISSING under NAME key (DROP): 0  []
+  identities present under NAME key but not ID key                : 0  []
+  identities appearing TWICE under the NAME key (DUPLICATION)     : 0  {}
+
+============================================================================================
+2b. named cases -- what the split does to each ambiguous identity's pool row
+============================================================================================
+
+============================================================================================
+3. SITES L87 + L92 -- teammate baseline and the INNER JOIN
+============================================================================================
+  Re-executing build_redistribution() under both keys on the identical event list.
+  ANCHOR: published absence-game rows (NOTES.md) = 622   reproduced = 622
+  ANCHOR: published teammate-level redistribution rows (NOTES.md) = 4,983
+  reproduced  name-key=4983   id-key=4983   delta=+0
+
+  ANCHOR: published real top1_share mean=0.470 median=0.454 n=578
+  name-key  mean=0.4699 median=0.4545 n=578
+  id-key    mean=0.4699 median=0.4545 n=578
+  D101 denominator: n changes by +0 events; top1_share mean changes by +0.000000
+  events present in both: 578 ; events whose top1_share DIFFERS: 0
+  events only under name-key: 0 ; only under id-key: 0
+
+DONE s04

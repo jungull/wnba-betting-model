@@ -1,0 +1,95 @@
+﻿    [pick] master_player                        -> 17 cols: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'player_id', 'player_name', 'position', 'starter_flag', 'dnp_reason', 'minutes', 'pts', 'fga', 'fta', 'ftm', 'reb', 'ast']
+
+====================================================================================================
+1. THE REGISTERED CONSTANTS, READ OUT OF prediction_contract_v5.py BY AST
+====================================================================================================
+    ROSTER_LOOKBACK    = 5
+    S_TX_HORIZON       = 3
+    S2_HORIZON         = 5
+    REPORT_ERA_START   = pd.Timestamp('2026-07-30T00:00:00Z')  (literal in source)
+
+    latest forecast_cutoff in this partition = 2024-09-18 18:00:00+00:00
+    REPORT_ERA_START                          = 2026-07-30 00:00:00+00:00
+    => S3 (the only Tier-A source that does not require a prior box row) admits ZERO rows
+       in 2021-2024.  Tier A here is S1 and nothing else.
+
+====================================================================================================
+2. RE-EXECUTE S1 AND S2 OVER master_player
+====================================================================================================
+  team-games in the partition = 1940
+  rows admitted by S1 (reconstructed) = 16312
+  rows admitted by S2 (reconstructed) = 4130
+
+  CROSS-CHECK: reconstructed S1 vs contract-v4 membership (the tier-A definition)
+    agree on 20084 of 20084 rows (100.0000%)
+    disagreements: 0   (S1 but not v4: 0 ; v4 but not S1: 0)
+
+====================================================================================================
+3. WHAT ADMITS THE TIER-B ROWS?
+====================================================================================================
+                        src    n  mean_p_active  appeared_rate       sum_p  sum_appeared  share_of_tier_B  excess_players_per_team_game
+  NEITHER S1 NOR S2 -> S_TX  506       0.593234       0.363636  300.176282           184         0.134146                      0.083460
+S2 prior-season affiliation 3266       0.514304       0.060931 1679.716463           199         0.865854                      1.063733
+
+  team_game_index of tier-B rows (S2 may only admit while index < 5):
+    {0: 1062, 1: 693, 2: 681, 3: 675, 4: 603, 5: 2, 6: 2, 8: 1, 9: 3, 11: 2, 12: 3, 13: 3}
+    tier-B rows at team_game_index >= 5 : 58 (1.5%)
+
+====================================================================================================
+4. WHY A PAIRING PERSISTS -- THE S2 RULE HAS NO RECENCY, NO DEPARTURE, NO RELEASE
+====================================================================================================
+  S2-admitted tier-B rows: 3266
+
+  by how many seasons ago she last played for THIS club:
+ seasons_since_club    n   mean_p  appeared
+                  1 1765 0.535769  0.108782
+                  2  991 0.485634  0.003027
+                  3  432 0.490920  0.002315
+                 99   78 0.522344  0.038462
+
+  by the DEPARTURE signal (has she played for somebody else since):
+ departed    n   mean_p  appeared
+    False 1777 0.569396  0.110298
+     True 1489 0.448556  0.002015
+
+  ALL tier-B rows by the departure signal:
+ departed    n   mean_p  appeared       sum_p  sum_app
+    False 1940 0.580803  0.138144 1126.757943      268
+     True 1832 0.465685  0.062773  853.134802      115
+
+  ALL tier-A rows by the departure signal (a mid-season trade can make one):
+ departed     n   mean_p  appeared
+    False 16064 0.769312  0.788596
+     True   248 0.211647  0.145161
+
+====================================================================================================
+5. UNVERIFIABLE COLOUR -- contract v5's own labels, and the transaction wire
+====================================================================================================
+  player_game.parquet exists=True   sibling manifest exists=False
+  => NO MANIFEST => UNVERIFIABLE => may not back a number.  Used below as COLOUR ONLY.
+    [pick] cv5 UNVERIFIABLE                     -> 4 cols: ['row_uid', 'universe_tier', 'candidate_source', 'team_assignment_source']
+
+  [UNVERIFIABLE] champion rows matched to a v5 row: 20084 of 20084
+  [UNVERIFIABLE] tier_A (v4 membership) x v5 team_assignment_source:
+team_assignment_source     S1    S2  S_TX
+tier_A                                   
+False                       0  2222  1550
+True                    16312     0     0
+
+  [UNVERIFIABLE] tier-B: v5's own source label x my reconstructed S2:
+rec_S2                  False  True 
+team_assignment_source              
+S2                          0   2222
+S_TX                      506   1044
+
+  injury_history.csv exists=True   sibling manifest exists=False
+  => NO MANIFEST => UNVERIFIABLE.  Its observation time is ALSO a single retrospective
+     scrape (S_TX_OBSERVED_TIME = 2026-07-30T17:42Z), so it is not provably pre-cutoff
+     for ANY 2021-2024 row.  It is therefore NOT used to build any rule measured here.
+
+====================================================================================================
+6. PERSIST
+====================================================================================================
+  written.
+
+DONE s02

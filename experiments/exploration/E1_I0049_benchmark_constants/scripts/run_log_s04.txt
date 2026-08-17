@@ -1,0 +1,121 @@
+﻿
+====================================================================================================
+1. THE 213 -- CANDIDATES vs CONTROLS, EXPLICIT ALLOWLIST, COUNTS ASSERTED
+====================================================================================================
+  RESOLVED candidate list in EXPOSURE_213 (16 distinct), printed in full:
+     A01_c04_prevgame                 x2   
+     A02_n_present_prevgame           x4   
+     A03_absent_usg_prevgame          x3   
+     A05_teammate_prior_fgpct         x2   
+     G01_noise                        x20   <-- CONTROL (allowlist)
+     G02_placebo_noop                 x20   <-- CONTROL (allowlist)
+     R01_opp_allowed_miss_pg          x22   
+     R02_opp_allowed_ra_share         x18   
+     R03_opp_allowed_atb3_share       x18   
+     R04_opp_allowed_mid_share        x18   
+     R05_opp_allowed_long_miss_pg     x18   
+     R06_own_atb3_share               x18   
+     R07_own_miss_pg                  x18   
+     R08_player_ra_share              x2   
+     R09_opp_allowed_paint_share      x18   
+     R10_opp_allowed_oreb_pg          x12   
+
+  total rows        213
+  controls          40  (G01_noise=20, G02_placebo_noop=20)
+  candidates        173
+  -> D125's '173 candidates + 40 controls' REPRODUCES EXACTLY.
+     G01_noise          ceiling min 1.165e-08 max 4.959e-04 | realised min 1.165e-08 max 4.946e-04
+     G02_placebo_noop   ceiling min 0.000e+00 max 0.000e+00 | realised min 0.000e+00 max 0.000e+00
+
+====================================================================================================
+2. THE TWO 213s -- IS THE CEILING COUNT THE SAME 213 AS THE player_season LEVEL COUNT?
+====================================================================================================
+  E1_I0036/CENSUS.csv: 1999 rows, 26 cols
+  columns: ['screen', 'decision', 'source_file', 'candidate', 'target', 'stratum', 'base', 'level_recorded', 'n', 'dr2_reported', 'p_correct_level', 'p_familywise', 'ceiling_recorded', 'd103_K', 'mde80_fw', 'mde80_percell', 'mde80_fw_used', 'blind_to_best_lead_fw', 'blind_used', 'kill_reason', 'kill_reason_corrected', 'T1_not_ceiling', 'T2_roster_constant', 'T3_summable_target', 'T4_power_recorded', 'ELIGIBLE']
+  columns whose VALUES contain 'CEILING': ['kill_reason', 'kill_reason_corrected']
+  columns whose VALUES contain 'player_season': ['level_recorded']
+  kill_reason values in the census:
+kill_reason
+POWERED_NULL             688
+UNINFORMATIVE_NULL       679
+SURVIVOR                 403
+CEILING                  213
+SURVIVOR_PERCELL_ONLY     16
+  KILL allowlist (explicit, not inferred): ['POWERED_NULL', 'UNINFORMATIVE_NULL', 'CEILING']
+  kills = 1580  (E1_I0036 publishes 1,580)
+
+  SET A: cells killed on arithmetic CEILING                        213
+         (quoted at D114, D117, D120, D122, D125, E1_I0047 as 'the 213')
+  SET B: KILLED cells recorded at level `player_season`            213
+         (quoted at D115/D117/E1_I0038/E1_I0040 as '213 + 337 = 550')
+  |A n B| = 2          |A \ B| = 211        |B \ A| = 211
+  Jaccard = 0.0047
+
+  *** TWO DIFFERENT SETS OF EXACTLY 213 CELLS CARRY THE SAME NUMBER IN THE LEDGER, AND THEY
+      OVERLAP IN 2 CELLS. *** Cross-check: killed cells at `opp_team_season` = 337, which is
+  the 337 of the same sentence, and 124 of those ARE ceiling kills -- so the '550 exposed'
+  arithmetic and the '213 ceiling kills' arithmetic double-count 126 cells between them.
+
+
+====================================================================================================
+3. THE DECISION STRATUM -- FOUR DIFFERENT n IN CIRCULATION, ALL RESOLVED
+====================================================================================================
+   n                                              source                                                                   predicate                                                  frame
+5673           D089 E1_I0018 points step / D103 E1_I0026     n_prior>=8 & prior5_minutes>=24, finite on y_ppm,y_pts,m_hat,B_COMPLETE E1_I0018/screen_frame.parquet (14,852 rows, 2021-2024)
+5654 D089 E1_I0018 arithmetic_ceiling.csv (volume route)                               same predicate PLUS finite on y_spm and y_pps                          E1_I0018/screen_frame.parquet
+5111               D097 E0_I0024 / E1_I0047 EXPOSURE_213          n_prior>=8 & ref_trail5_minutes>=24 on D097's own 14,327-row frame                           E0_I0024 frame (14,327 rows)
+5086     D084 E1_I0004_efficiency_transfer_v2 on_stratum >=8 prior appearances & trailing-5 minutes >=24 on the 11,267-row eff frame   E1_I0004_efficiency_transfer_v2/eff_frame_v2.parquet
+
+  These are FOUR DIFFERENT ROW SETS carrying one name.  Same predicate in spirit, different
+  frames and different finiteness filters.  Under D101 an effect measured on one is NOT
+  comparable to a floor measured on another without restating one of them.  The programme's
+  standing comparison -- D084's 0.000129 (n=5,086) and D079's 0.001127 (n=9,238 scored) against
+  D103's floor (n=5,673) -- crosses all three.
+
+  VERIFIED on the frozen D089 frame: points-step n = 5673 (recorded 5,673); volume-route n = 5654 (recorded 5,654)
+
+====================================================================================================
+4. D079's 0.001127 -- ATTEMPTED RE-DERIVATION FROM SOURCE
+====================================================================================================
+  RECORDED (end_to_end_results.json, step4_points.fg_pts):
+    response          fg_pts (FIELD-GOAL points only, NOT total box points)
+    target_sd         5.823572695034913
+    n / n_scored      10245 / 9238
+    coef_mix_pooled   F_A 0.220542345303932   F_B 0.535442856732823
+  RECORDED (FINDINGS.json): arithmetic ceiling = 0.001127  -- a BARE NUMBER.
+  The move (0.196 points per sd) appears ONLY in the D079 ledger prose; NO recorded table
+  in E1_I0004_fga_forecast carries the sd of the mix term or the move.
+
+  Inverting the published number:
+    sqrt(0.001127) * target_sd = 0.195502 points per sd   (ledger prose says 0.196)
+    implied sd of the mix term at coef_mix_pooled(F_B) = 0.365122
+
+  forecast_frame.parquet (51473, 33)  zones=['Above the Break 3', 'Corner 3', 'In The Paint (Non-RA)', 'Mid-Range', 'Restricted Area']
+    rebuilt F_A: n=10307  sd(FGAhat x mix)=0.181343  coef_mix_pooled=0.220542  -> ceiling 0.000047
+    rebuilt F_B: n=10307  sd(FGAhat x mix)=0.195273  coef_mix_pooled=0.535443  -> ceiling 0.000322
+
+  VERDICT on 0.001127: the response, the response sd (5.823572695034913) and the fitted
+  coefficient ARE recorded and reproduce.  The CEILING ITSELF is recorded only as the rounded
+  scalar 0.001127 with no recorded sd of the signal and no recorded move.  A rebuild of the mix
+  term requires reconstructing a zone-value convention and a row set that the artifacts do not
+  pin down, so the rebuilt figure above is INDICATIVE, not a reproduction.
+  -> D079's 0.001127 is marked PARTIALLY VERIFIABLE: its denominator is fully documented, its
+     numerator is not independently checkable from the recorded artifacts.
+
+
+====================================================================================================
+5. WHAT ARE THE ACTUAL LARGEST *EFFECTS* THE PROGRAMME HAS MEASURED?
+====================================================================================================
+                                                               label    value       response    n                                         fit                stat
+  D089 walk-forward points, prior-only (THE 'best-ever lead 0.0023') 0.002349 y_pts (points) 4517                                walk-forward paired-forecast dR2
+D089 in-sample points, prior-only, SAME CELL as the 0.002057 ceiling 0.003314 y_pts (points) 5673 in-sample OLS on y_ppm transported by m_hat paired-forecast dR2
+                         D089 in-sample points, prior-only, B_SINGLE 0.003842          y_pts 5673                       in-sample transported paired-forecast dR2
+                D108 opponent FT-allowed on POINTS, decision stratum 0.002951         points 5111                         in-sample screening   OLS increment dR2
+            D089 TIP-TIME points (UNUSABLE -- post-game observation) 0.007817          y_pts 4517                                walk-forward paired-forecast dR2
+
+  NONE of these five shares a denominator with all the others.  The phrase 'the programme's
+  largest live effect' does not name a single number; it names a family whose members sit on
+  three responses, four row sets and three statistic families.
+
+
+DONE s04

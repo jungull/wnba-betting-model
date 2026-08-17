@@ -1,0 +1,97 @@
+﻿python : C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E1_I0045
+_roster_currency\scripts\s01_build_and_anchor.py:227: DeprecationWarning: The 'generic' unit for NumPy timedelta is 
+deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 
+1`).Please use a specific unit instead.
+At line:2 char:1
++ python scripts\s01_build_and_anchor.py 2>&1 | Tee-Object -FilePath ru ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\jgalla...c unit instead.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  last_club_date = np.full(n, np.datetime64("NaT"), dtype="datetime64[ns]")
+C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\experiments\exploration\E1_I0045_roster_c
+urrency\scripts\s01_build_and_anchor.py:229: DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, 
+and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a 
+specific unit instead.
+  last_any_date = np.full(n, np.datetime64("NaT"), dtype="datetime64[ns]")
+
+====================================================================================================
+1. LOAD  (2021-2024 ONLY; 2025/2026 never enumerated)
+====================================================================================================
+    [pick] master_team                          -> 14 cols: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'opp_team_id', 'is_home', 'pts', 'fga', 'fta', 'ftm', 'reb', 'ast', 'minutes']
+    [pick] master_player                        -> 17 cols: ['game_id', 'season', 'season_type', 'game_date', 'team_id', 'player_id', 'player_name', 'position', 'starter_flag', 'dnp_reason', 'minutes', 'pts', 'fga', 'fta', 'ftm', 'reb', 'ast']
+  master_team rows   = 1940   seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+  master_player rows = 21462   seasons [np.int64(2021), np.int64(2022), np.int64(2023), np.int64(2024)]
+    [pick] arm/p_active                         -> 9 cols: ['row_uid', 'season', 'pred_point', 'is_fallback', 'fallback_level', 'component_id', 'is_cold_start', 'n_prior_games', 'forecast_cutoff']
+    [pick] arm/player_scoring_distribution      -> 9 cols: ['row_uid', 'season', 'pred_point', 'is_fallback', 'fallback_level', 'component_id', 'is_cold_start', 'n_prior_games', 'forecast_cutoff']
+    [pick] arm/e_minutes_given_active           -> 9 cols: ['row_uid', 'season', 'pred_point', 'is_fallback', 'fallback_level', 'component_id', 'is_cold_start', 'n_prior_games', 'forecast_cutoff']
+    [pick] arm/team                             -> 7 cols: ['row_uid', 'season', 'pred_point', 'is_fallback', 'fallback_level', 'component_id', 'n_prior_games']
+  champion p_active rows 2021-2024 = 26614
+  team arm rows 2021-2024          = 1940
+    [pick] cv4/player_game                      -> 9 cols: ['row_uid', 'game_id', 'team_id', 'player_id', 'season', 'candidate_at_cutoff', 'appeared', 'minutes', 'pts']
+    [pick] cv4/team_game                        -> 4 cols: ['row_uid', 'game_id', 'team_id', 'season']
+  contract v4 player rows 2021-2024 = 22659
+
+====================================================================================================
+2. IDENTITY MAP, RECONSTRUCTED FROM cbs_obligation_key/1
+====================================================================================================
+    team-games=1940  players=268  triples=519920
+  v4 rows 22659 | reconstructed 22659 | agree on all three fields 22659
+  EXACT on every shared row.
+
+====================================================================================================
+3. CHAMPION PLAYER FRAME
+====================================================================================================
+  rows with both p_active and pts_hat = 26614 ; unresolved row_uid = 40
+  tier A (in contract v4) = 22659   tier B = 3915
+
+====================================================================================================
+4. ANCHOR 1 -- D076's 13,879 APPEARED PLAYER-GAMES, BEFORE ANY NEW NUMBER
+====================================================================================================
+  reproduced (tier-A obligation set, 2022-2024) = 13879   published = 13879
+  EXACT.
+
+====================================================================================================
+5. ROW SETS RS1 / RS1P  (D101: identical to E1_I0035)
+====================================================================================================
+  RS1 team-games = 1392  (E1_I0035: 1392)   SST = 168710.4073  (E1_I0035: 168710.4073)
+  by season: {2022: 432, 2023: 480, 2024: 480}
+  RS1P = 20084   RS1P-A = 16312   RS1P-B = 3772
+
+====================================================================================================
+6. ANCHORS 2-4 -- E1_I0033 / E1_I0035 DESCRIPTIVE AND HEADLINE VALUES
+====================================================================================================
+
+  quantity                                     MINE      PUBLISHED      abs diff  verdict
+  universe rows per team-game             14.428161      14.428200      0.000039  CONFIRMED
+  realised roster per team-game            9.401580       9.401600      0.000020  CONFIRMED
+  sum p_active per team-game              10.338079      10.338100      0.000021  CONFIRMED
+  B1 level bias                            8.138903       8.138900      0.000003  CONFIRMED
+  B1 (bottom-up) team MAE                 18.263037      18.263037      0.000000  CONFIRMED
+  A_TEAM (top-down) team MAE               8.685506       8.685506      0.000000  CONFIRMED
+  player Brier, all RS1P                   0.130248       0.130200      0.000048  CONFIRMED
+  player Brier, tier A                     0.093201       0.093200      0.000001  CONFIRMED
+  player AUC, all RS1P                     0.902573       0.902600      0.000027  CONFIRMED
+  player log-loss, all RS1P                0.405581       0.405600      0.000019  CONFIRMED
+
+  ALL ANCHORS CONFIRMED.  New statistics may now be computed.
+
+====================================================================================================
+7. CURRENCY FEATURES -- from master_player ONLY, strictly pre-cutoff
+====================================================================================================
+  admission bound: a game's box is observable at game_date + 36h (the contract's own
+  availability_bound policy).  Every feature uses a STRICT '<' against forecast_cutoff.
+  admitted appearance records (minutes>0, 2021-2024) = 18212
+
+  currency feature summary on the champion's 2021-2024 rows (n=26574):
+    never played for this club (admitted)                        1214  (4.57%)
+    never played anywhere (admitted)                              619  (2.33%)
+    DEPARTED: played elsewhere since last game for this club     2139  (8.05%)
+    seasons_since_club distribution                            {0: 21906, 1: 2022, 2: 997, 3: 435, 99: 1214}
+
+====================================================================================================
+8. PERSIST
+====================================================================================================
+  wrote _PF.parquet (20084), _TF.parquet (1392), _pf_all_seasons.parquet (26574)
+
+DONE s01

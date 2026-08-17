@@ -1,0 +1,111 @@
+﻿
+====================================================================================================
+1. CLOSURE ON THE FULL PANEL, BEFORE ANY GATE (every player-game with >=1 FGA)
+====================================================================================================
+  Rebuilt from the raw shots.  This is the population the response is defined on.
+
+  C1  Sum_z share_z == 1 (ALL player-games, no gate)   units= 17056  incomplete=   0  max|Sum-1| = 1.110e-16
+  Backcourt shots excluded from the five-zone family: 254 (0.19% of all shots) -- the simplex is over the
+  FIVE zones only, so the budget is the player's five-zone attempts, not her FGA.
+
+====================================================================================================
+2. CLOSURE ON THE PUBLISHED ANALYSIS FRAME (51,473 rows / 10,307 player-games)
+====================================================================================================
+  C1  Sum_z share_z              == 1                  units= 10245  incomplete=  62  max|Sum-1| = 1.110e-16
+  C2  Sum_z S1_z (frozen base)   == 1                  units= 10245  incomplete=  62  max|Sum-1| = 5.551e-16
+  C3  Sum_z (share - S1)_z       == 0                  units= 10245  incomplete=  62  max|Sum-0| = 5.967e-16
+  C4  Sum_z opp_share_prior_z    == 1                  units= 10245  incomplete=  62  max|Sum-1| = 1.110e-16
+  C5  Sum_z lg_share_prior_z     == 1                  units= 10245  incomplete=  62  max|Sum-1| = 0.000e+00
+  C6  Sum_z OS_z                 == 0                  units= 10245  incomplete=  62  max|Sum-0| = 1.110e-16
+
+====================================================================================================
+3. C8 -- IS THE SIMPLEX COMPLETE ON THE ANALYSIS ROWS?
+====================================================================================================
+  zones present per analysis player-game:
+    4 zones : 62 player-games
+    5 zones : 10245 player-games
+
+  which zone is missing on the incomplete player-games:
+    {'Corner 3': 62}
+
+  CAUSE: (season, date, zone) cells with ZERO league shots = 6
+    [(2021, '2021-06-18', 'Corner 3'), (2021, '2021-08-18', 'Corner 3'), (2021, '2021-08-25', 'Corner 3'), (2021, '2021-09-13', 'Corner 3'), (2023, '2023-06-14', 'Corner 3'), (2024, '2024-09-04', 'Corner 3')]
+  On such a date the league prior-share table has no row, so OS_z is NaN and the
+  zone's row is dropped by the parent screen's `notna` gate -- which silently
+  DELETES ONE COMPONENT OF THE SIMPLEX and leaves the remaining four to sum to
+  less than 1.  Measured on those player-games:
+    Sum of the surviving four shares: min 1.000000  mean 1.000000  max 1.000000
+
+====================================================================================================
+4. CLOSURE ON THE COMPLETE SUBSET ONLY (the row set every projected arm uses)
+====================================================================================================
+  complete player-games = 10245  rows = 51225
+  C1c Sum_z share_z          == 1 (complete only)      units= 10245  incomplete=   0  max|Sum-1| = 1.110e-16
+  C2c Sum_z S1_z             == 1 (complete only)      units= 10245  incomplete=   0  max|Sum-1| = 5.551e-16
+  C3c Sum_z resid_S1_z       == 0 (complete only)      units= 10245  incomplete=   0  max|Sum-0| = 5.967e-16
+  C6c Sum_z OS_z             == 0 (complete only)      units= 10245  incomplete=   0  max|Sum-0| = 1.110e-16
+
+====================================================================================================
+5. C7 -- THE FITTED SLOPES, AND THE CLOSURE VIOLATION THEY IMPLY
+====================================================================================================
+  Restricted Area          n= 10307  intercept=+0.00398463  beta=+0.77427267
+  In The Paint (Non-RA)    n= 10307  intercept=+0.00151446  beta=+0.65298970
+  Mid-Range                n= 10307  intercept=-0.00172491  beta=+0.55582503
+  Corner 3                 n= 10245  intercept=-0.00123378  beta=+0.32472290
+  Above the Break 3        n= 10307  intercept=-0.00240234  beta=+0.56298405
+
+  fitted slope range = 0.3247 .. 0.7743   (E1_I0051 asserted 0.325 .. 0.774)   spread = 2.384x
+
+  Sum of the five intercepts (must be ~0 if the response closes and the row
+
+  Sum_z intercept_z = +1.380639e-04
+
+====================================================================================================
+6. THE MEASURED CLOSURE VIOLATION OF THE PUBLISHED FIT
+====================================================================================================
+  s_hat_z = S1_z + a_z + b_z * OS_z.  Budget = 1 EXACTLY, with ZERO pre-tip
+  uncertainty (unlike the minutes budget, whose best pre-tip assertion misses by
+  0.631% of itself).  Any violation is therefore infinitely many times the
+  budget's own uncertainty.
+
+  units (complete player-games) = 10245
+  Sum_z s_hat_z - 1 :  mean +0.000156   sd 0.007924   MAE 0.006448   max|.| 0.025609
+  MAE as a percentage of the budget (=1)          : 0.6448%
+  sibling minutes screen, for scale: MAE 13.0942 on a budget of 200 = 6.5471%
+  q05 / q95 of the violation: -0.012627 / +0.013543
+  fraction of player-games whose five fitted shares sum to within 0.5pp of 1: 43.12%
+
+  DECOMPOSITION.  Sum_z b_z*OS_z = Sum_z (b_z - bbar)*OS_z, so the varying part of
+  the violation is driven ENTIRELY by the slope spread:
+    sd of Sum_z (b_z - bbar) OS_z = 0.007924   (identical to the sd above: 0.000e+00)
+    constant part Sum_z a_z       = +1.380639e-04
+
+====================================================================================================
+7. G03 -- THE PROJECTION NO-OP PLACEBO (must be EXACTLY 0.000e+00)
+====================================================================================================
+  A fit whose five slopes are equal by construction already closes, so projecting
+  it must change nothing.  Asserted, so the check is not vacuous.
+
+  max|Sum_z fit_eq| over 10245 units (before projection) = 6.852e-17
+  max|project(fit_eq) - fit_eq| = 1.388e-17   *** NOT A NO-OP ***
+
+====================================================================================================
+8. X2 -- CAN THE CANDIDATE MOVE AN ALLOCATION AT ALL?
+====================================================================================================
+  A quantity constant within the team-game cannot move an allocation by
+  arithmetic.  OS_z is opponent-game-constant WITHIN a zone but varies ACROSS
+  zones.  Measured decomposition of var(OS) on the analysis rows:
+
+  total var(OS)                                  = 7.390711e-04
+  var of the WITHIN-player-game (across-zone) part = 7.390711e-04  (100.00%)
+  var of the row-constant part (the mean over zones) = 4.765867e-35  (0.0000%)
+  The row-constant part is ZERO by construction because Sum_z OS_z = 0, so the
+  candidate is 100% across-zone contrast.  It CAN move an allocation.  X2 does
+  NOT deflate the lead.
+
+====================================================================================================
+WRITE
+====================================================================================================
+  wrote _s02.json, _complete.parquet, raw/S02_closure_matrices.npz
+
+Done.

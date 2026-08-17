@@ -1,0 +1,77 @@
+  assert_partition PASS FRAME_reload       seasons=[2021, 2022, 2023, 2024] datetime-gated=['game_date']
+  N_TGSWAP  blocks 1776 groups 1776
+  N_PSWAP   blocks 48 groups 634
+  N_TGBLOCK blocks 335 groups 1776
+  N_BLIND   blocks 634 groups 634  (CONTRAST ONLY -- never a verdict)
+
+============================================================================================================
+TIMING PROBE
+============================================================================================================
+  0.0068 s per draw  ->  2000 draws = 13.5 s per cell
+
+============================================================================================================
+PRIMARY NULLS -- M_level_min | DECISION | CLEAN_2023_24 | SST on scored rows | no weighting
+============================================================================================================
+  [RAW/FROZEN] N_TGSWAP 2000 draws in 33.9 s
+    A5 N_TGBLOCK                  FROZEN/RAW  obs -0.001796  null sd 7.229e-04  z -2.04  p 0.9605
+    A5 N_TGSWAP_VACUOUS_CONTROL   FROZEN/RAW  obs -0.001796  null sd 0.000e+00  z +nan  p 1.0000
+  [RAW/UNFROZEN] N_TGSWAP 2000 draws in 41.4 s
+    A5 N_TGBLOCK                  UNFROZEN/RAW  obs -0.001812  null sd 7.216e-04  z -2.07  p 0.9620
+    A5 N_TGSWAP_VACUOUS_CONTROL   UNFROZEN/RAW  obs -0.001812  null sd 6.513e-19  z -1.00  p 1.0000
+  [PROJ_BUDGET/FROZEN] N_TGSWAP 2000 draws in 44.1 s
+    A5 N_TGBLOCK                  FROZEN/PROJ_BUDGET  obs -0.000825  null sd 3.221e-04  z -2.64  p 0.9875
+    A5 N_TGSWAP_VACUOUS_CONTROL   FROZEN/PROJ_BUDGET  obs -0.000825  null sd 0.000e+00  z +nan  p 1.0000
+  [PROJ_BUDGET/UNFROZEN] N_TGSWAP 2000 draws in 64.1 s
+    A5 N_TGBLOCK                  UNFROZEN/PROJ_BUDGET  obs -0.000870  null sd 6.715e-04  z -1.48  p 0.9460
+    A5 N_TGSWAP_VACUOUS_CONTROL   UNFROZEN/PROJ_BUDGET  obs -0.000870  null sd 2.171e-19  z +1.00  p 1.0000
+
+============================================================================================================
+NULLS -- N_TGSWAP, the primary null
+============================================================================================================
+                                  observed                     p                     z          
+projection                     PROJ_BUDGET       RAW PROJ_BUDGET       RAW PROJ_BUDGET       RAW
+candidate             arm                                                                       
+A1_pts_share_prior    FROZEN     +0.021110 +0.003365   +0.000500 +0.000500  +28.485264 +5.099071
+                      UNFROZEN   -0.005456 +0.004501   +0.997501 +0.000500   -4.918117 +6.775475
+A2_fga_share_prior    FROZEN     +0.020479 +0.003141   +0.000500 +0.001000  +27.649735 +4.797364
+                      UNFROZEN   -0.004702 +0.004210   +0.996002 +0.000500   -4.106788 +6.385094
+A3_starter_rate_prior FROZEN     +0.005088 +0.000164   +0.000500 +0.249375   +8.743320 +0.452125
+                      UNFROZEN   +0.001368 +0.000162   +0.001999 +0.245877   +2.433677 +0.452492
+A4_vac_x_own          FROZEN     +0.012132 +0.003156   +0.001000 +0.098951   +3.542244 +1.246299
+                      UNFROZEN   -0.018404 +0.000877   +1.000000 +0.323838   -5.898240 +0.459852
+G01_noise             FROZEN     -0.000344 -0.000401   +0.693653 +0.701649   -0.211656 -0.255744
+                      UNFROZEN   -0.000317 -0.000402   +0.629685 +0.703648   -0.022205 -0.250229
+
+============================================================================================================
+FAMILY-WISE -- max-z over the five between-player candidates, ONE SHARED DRAW STREAM
+============================================================================================================
+projection                      PROJ_BUDGET    RAW
+candidate             arm                         
+A1_pts_share_prior    FROZEN         0.0005 0.0010
+                      UNFROZEN       1.0000 0.0005
+A2_fga_share_prior    FROZEN         0.0005 0.0010
+                      UNFROZEN       1.0000 0.0005
+A3_starter_rate_prior FROZEN         0.0005 0.6697
+                      UNFROZEN       0.0150 0.6692
+A4_vac_x_own          FROZEN         0.0010 0.2274
+                      UNFROZEN       1.0000 0.6597
+G01_noise             FROZEN         0.9680 0.9700
+                      UNFROZEN       0.9375 0.9695
+
+============================================================================================================
+BLIND-NULL DEMONSTRATION -- re-run on THIS screen's own cells, not cited
+============================================================================================================
+  A1_pts_share_prior   FROZEN   N_TGSWAP_CORRECT         obs +0.021110  null mean -0.000582  z  +30.48  p 0.0025  
+  A1_pts_share_prior   FROZEN   N_WITHIN_PLAYER_BLIND    obs +0.021110  null mean +0.030311  z   -3.19  p 1.0000  <-- INVALID, contrast only
+  A1_pts_share_prior   UNFROZEN N_TGSWAP_CORRECT         obs -0.005456  null mean -0.000779  z   -4.98  p 1.0000  
+  A1_pts_share_prior   UNFROZEN N_WITHIN_PLAYER_BLIND    obs -0.005456  null mean -0.006359  z   +0.35  p 0.3865  <-- INVALID, contrast only
+  A4_vac_x_own         FROZEN   N_TGSWAP_CORRECT         obs +0.012132  null mean +0.003417  z   +3.47  p 0.0025  
+  A4_vac_x_own         FROZEN   N_WITHIN_PLAYER_BLIND    obs +0.012132  null mean +0.004496  z   +3.84  p 0.0025  <-- INVALID, contrast only
+  A4_vac_x_own         UNFROZEN N_TGSWAP_CORRECT         obs -0.018404  null mean -0.000293  z   -5.84  p 1.0000  
+  A4_vac_x_own         UNFROZEN N_WITHIN_PLAYER_BLIND    obs -0.018404  null mean -0.001236  z  -11.91  p 1.0000  <-- INVALID, contrast only
+
+wrote NULLS.csv FAMILYWISE.csv BLIND_NULL_DEMO.csv and nulls/*.npz
+
+============================================================================================================
+DONE s03
+============================================================================================================
