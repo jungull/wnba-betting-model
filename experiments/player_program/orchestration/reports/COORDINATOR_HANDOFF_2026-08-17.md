@@ -24,17 +24,16 @@ items already discharged thirty-plus decisions earlier.
 conclusion.** Running `git status` before believing a prose claim about the tree is the cheapest
 check in this program, and it is the one that saved the recovery.
 
-## 2. YOU MAY HAVE BEEN SUMMONED BY A BUG (`D135` §2)
+## 2. THE USER STARTS THESE SESSIONS BY HAND (`D137` §1 — `D135` §2 IS WITHDRAWN)
 
-`wnba-coordinator-06` carries **`enabled: false`** and a **one-time `fireAt` of 2026-08-08T01:34Z
-that had already fired**, yet its `lastRunAt` is 2026-08-17T13:08Z. A spent, disabled, one-time task
-re-fired seven days late. All five coordinator tasks are confirmed disabled, so `D070` was never
-violated by a coordinator — **the scheduler ignored it.**
+**An earlier version of this packet claimed a scheduler defect. There is none.** The user stated:
+*"i manually ran it to restart the project after some time away."* A coordinator task showing
+`enabled: false`, a spent one-time `fireAt`, **and** a fresh `lastRunAt` is the **normal signature of
+a manual restart**. The coordinator read that signature, reached past the ordinary explanation for a
+systems failure, and wrote it into the ledger as fact. Withdrawn in full as `D137` ruling 1.
 
-**This can recur at any moment and can put two coordinators on one branch** — the exact collision the
-staleness guard exists to prevent. Apply the staleness guard strictly: read the last line of
-`GRAPH_EVENTS.jsonl`, and if it is under 30 minutes old and is not a `coordinator_retired` event,
-append one `note` and stop.
+**Still apply the staleness guard**: read the last line of `GRAPH_EVENTS.jsonl`; if it is under 30
+minutes old and is not a `coordinator_retired` event, append one `note` and stop.
 
 ## 3. STATE
 
@@ -60,14 +59,26 @@ fresher quote was *demonstrably capturable* at time T. **Do not dispatch these h
 
 ## 6. WAITING ON THE USER — DO NOT SELF-GRANT
 
-1. **`D067` / `N1`** — the halted score lane. Fitting remains **unauthorised**.
-2. **`D095`** — the measurement regime boundary coincides with the exploration/confirmation partition
-   boundary; **no E2 may start** until ruled on. Costs nothing; nothing is ready for promotion.
-3. **`D078`** — M13/M14 calibration defect; measured and immaterial, annotate + fix-forward.
-4. **Two validated production changes await authorisation**: cold-start tiering (`D092`) and fallback
-   routing (`D094`).
-5. **NEW — the scheduler defect in §2.** The user must decide whether to delete the spent coordinator
-   tasks or re-enable a controlled one.
+1. **`D067` / `N1`** — the halted score lane. Fitting remains **unauthorised**. The user delegated
+   this on 2026-08-17 and the coordinator **declined to unfreeze** (`D137` ruling 4) — the freeze
+   rests on a failed cutoff audit and needs an independent audit, not permission.
+2. **`D095`** — **factual basis materially weakened by `D138`.** The era separation is *perfect*, but
+   `era` is a column-sniffing label and the harms it predicts do not occur in the V3 layer. The real
+   2026 constraint is raw play-by-play (0 of 215 games). **The E2 hold should be revisited.**
+3. **`D092` cold-start tiering — AUTHORISED BUT UNEXECUTABLE AS WRITTEN (`D139`).** Its `4.02` came
+   from a variant **including listed position**; its own ruling says drop position, which yields
+   `4.032479`. **The user must re-rule on which object they are authorising.** Independently blocked:
+   draft slot and depth-chart rank are **not registered production inputs**.
+4. **`D094` fallback routing — authorised, target verified sound, not implemented.** Needs a
+   cross-season history object the champion's plan lacks; `D094` labels its own split post hoc.
+5. **BINDING THE DISPERSION REPAIR (`D139`).** `cbs_player_runner_v16` is tested and unbound, so
+   **the production defect is still live**. Binding needs an arm-registry revision; doing it under the
+   existing arm id would make `D136`'s cited values unreproducible from that id. **Recommendation: one
+   registered generation run, measure on emitted output, then bind under a new id.**
+6. **TWO TEST DEFECTS (`D140`), neither fixed.** `tests/test_run_player_oof_v14.py` is
+   non-deterministic under any concurrent write. `tests/test_cbs_v15.py` fails **29/32** against a
+   receipt written for a superseded fork and is **absent from the gate**.
+7. **`D078`** — M13/M14 calibration defect; measured and immaterial, annotate + fix-forward.
 
 ## 7. THE SCIENCE, AND THE ONE OPEN THREAD
 
@@ -103,6 +114,39 @@ here, and it has now taken the program's own newest lead.
 trailing-level column as its reference.** This one lost 89% of an apparent effect to a ladder built
 from information already in hand. Also unrun: the kit's `entity_swap_null` (K2), the correct
 instrument for the cross-sectional question `D136` could only diagnose.
+
+## 7A. THE PROGRAMME WAS REFRAMED ON 2026-08-17 — READ THIS BEFORE PICKING WORK
+
+**User directive (`D137` §5), their words:** *"Analysts predict games well, they are using data and
+judgment. If we aren't predicting as well as them then we need to find what data they have that we
+don't, or improve the means of utilizing that data. There is no magic here."*
+
+**`D138` answered it, and the answer was humiliating and cheap to fix.** The
+`player-model-program` **worktree is missing six gitignored data directories that exist in the main
+checkout** — `drive_masters`, `entity_resolution`, `injury_official_live`, `market_snapshots`,
+`odds_capture`, `sxbet_capture` — because **a git worktree does not carry ignored paths.** All ~63
+exploration screens ran inside it. **Production reads three same-day sources the research lane has
+never once read.** No screen behaved dishonestly: `E1_I0013` probed for the odds master, recorded
+`master_odds_hits: []`, and reasoned correctly from what it could see. **An environmental absence was
+recorded as a repository fact.**
+
+**THE NEXT THREE ACTIONS, IN ORDER:**
+
+1. **Repoint the research lane's data root.** Hours of work. It is the cause of a whole class of
+   findings, not a surface.
+2. **Score against the pre-tip points line.** `data/props_capture/historical/master_props_historical.csv`
+   — **already tracked and in the worktree**. Coordinator-verified: **36,946 rows, 100.0% captured
+   strictly before tip, median 1.156 h pre-tip**, covering 262/262 exploration and 310/310
+   confirmation games. **This programme has never once scored itself against a market price.** It
+   spans the partition boundary, which is what would make an E2 replication interpretable.
+3. **Free throws via `fouls_drawn`.** Zero acquisition cost; `D084` explicitly carved the FT route out
+   of the shot-mix ceiling. Hurdle process — `fta == 0` on 46.4% of rows.
+
+**Deferred/killed on the audit's own counter-evidence — do not restart these:** injury designations
+overlap outcomes on only **9 game days** (~1/day accrual; freeze the capture, revisit at ≥60);
+pre-game lineups and minute restrictions are **NOT OBTAINABLE** (0 of 8 source domains bound); the
+sxbet tape needs a 2-hour provenance probe first. The information set is **~71 hours stale**: features
+cut off at the end of the player's previous game while availability resolves a median 1 h pre-tip.
 
 ## 8. THE HABIT THAT MATTERED MOST
 
