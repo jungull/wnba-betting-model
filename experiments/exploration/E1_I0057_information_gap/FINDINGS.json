@@ -1,0 +1,172 @@
+{
+  "investigation": "E1_I0057_information_gap",
+  "commissioned_by": "owner, decision D137, 2026-08-17",
+  "date": "2026-08-17",
+  "evidence_level": "E0/E1",
+  "type": "AUDIT — not a screen. No effect is measured and none is claimed. Every predictive number below is ILLUSTRATIVE and labelled so.",
+  "thesis_under_audit": "Analysts predict games well using data and judgment. If we are not predicting as well, find what data they have that we do not, or improve how we use it.",
+
+  "headline": "The program's research lane has never once read a same-day information source, and the production lane reads three of them daily. Everything this program knows about its own skill was measured on an information set strictly poorer than the one its own forecaster is handed at run time.",
+
+  "Q1_captured_but_unused": {
+    "method": "Enumerated every directory under data/ in BOTH the worktree and the main repository, profiled each on bytes, then established consumption by path-grep against features/, all 63 E0_*/E1_* exploration screens, the OOF runners and daily_forecast.py. Every grep hit was opened and read before being counted as a read (D086).",
+    "central_result": {
+      "exploration_screens_reading_any_capture_source": 0,
+      "of_screens_examined": 63,
+      "features_library_reading_any_capture_source": false,
+      "daily_forecast_reading_capture_sources": ["data/injury_capture/injury_log.csv", "data/odds_capture/live_*.json", "data/ref_assignments/assignments_log.csv"],
+      "nominated_but_disqualified_hits": [
+        {"file": "experiments/exploration/E1_I0013_tempo_redundancy/make_findings.py:69", "path": "data/props_capture/historical/master_props_historical.csv", "why_not_a_read": "appears inside a findings-declaration dict, not a load"},
+        {"file": "experiments/exploration/E1_I0034_redistribution/scripts/redist_base.py:15-16", "path": "data/injury_capture/injury_log.csv and data/injury_history/injury_history.csv", "why_not_a_read": "named in a docstring explaining why they are NOT used (manifest_present:false / UNVERIFIABLE)"},
+        {"file": "experiments/exploration/E1_I0048_shipped_roster_path/scripts/s07_findings.py:149", "path": "data/entity_resolution/alias_table.json", "why_not_a_read": "an entry in an artifact list inside a findings JSON"}
+      ]
+    },
+    "highest_value_find": {
+      "path": "data/props_capture/historical/master_props_historical.csv",
+      "what_it_is": "a closing-ish player POINTS prop line, one snapshot per event, taken a median 1.16 hours before tip",
+      "rows": 36946,
+      "point_in_time_provable": true,
+      "provenance": "snapshot_returned_utc strictly precedes commence_time on 100% of rows; median lead 1.16 h, min 0.57 h, max 3.24 h",
+      "coverage": {
+        "2024": {"games_with_a_line": 262, "games_in_season": 262, "joined_played_player_game_rows": 1972, "distinct_players": 79},
+        "2025": {"games_with_a_line": 310, "games_in_season": 310, "joined_played_player_game_rows": 2410, "distinct_players": 104},
+        "2026": {"games_with_a_line": 212, "games_in_season": 235, "joined_played_player_game_rows": 1984, "distinct_players": 130}
+      },
+      "illustrative_only_market_quality": {
+        "caveat": "ILLUSTRATIVE. Descriptive of the market line itself. Not a result about any model in this program.",
+        "corr_line_vs_realised_points": {"2024": 0.5439, "2025": 0.5380, "2026": 0.5765},
+        "mae_points": {"2024": 4.929, "2025": 4.977, "2026": 4.923}
+      },
+      "why_the_program_missed_it": "E1_I0013's env audit DID see the 11,237 rows dated 2024 and ruled 'PLAYER PROPS, not game totals; covers only the tail of one of four exploration seasons and extends into the forbidden holdout'. That verdict is correct for a game-tempo question. Under D137 the object of study is the player, so 'player props' is the point rather than a disqualification, and spanning the holdout is the property that makes it a cross-partition yardstick.",
+      "not_a_resurrection": "Same file, different question. CLOSED_SURFACES §7's 'market comparison impossible' is about GAME TOTALS and remains correct as stated."
+    },
+    "root_cause_of_the_blindness": {
+      "finding": "The data/ directory inside the worktree the exploration screens run in is missing six directories that exist in the main repository, all of them named in .gitignore.",
+      "missing_from_worktree": ["drive_masters", "entity_resolution", "injury_official_live", "market_snapshots", "odds_capture", "sxbet_capture"],
+      "corroborating_receipt": "experiments/exploration/E1_I0013_tempo_redundancy/step0_env_audit.json records master_odds_hits: []",
+      "consequence": "At least one recorded impossibility ('market comparison on the exploration partition') has a scope narrower than the record states: it is true of that worktree, not of the repository.",
+      "fix_cost": "hours — repoint the screens' DATA root, or un-ignore the capture directories"
+    },
+    "other_unused_sources": {
+      "data/drive_masters/master_odds.csv": {"rows": 20004, "span": "2022-05-21 to 2025-07-04 (commence)", "content": "timestamped game spread odds per book on a ~5-minute snapshot grid", "verdict": "CAPTURED_AND_UNUSED, covers 3 of 4 exploration seasons"},
+      "data/injury_official_live/status_transitions.csv": {"rows": 15145, "span": "2026-08-07 to 2026-08-17", "cadence": "PT15M", "verdict": "CAPTURED_AND_UNUSED; best provenance in the repository but only 11 days deep", "caveat": "99.0% of transitions are ->REMOVED_FROM_REPORT roll-off, not designation changes; only ~150 are genuine"},
+      "data/odds_capture/historical/hist_*.json": {"files": 292, "dates": 146, "span": "2025-07-05 to 2026-07-29", "cadence": "twice daily 15Z and 22Z", "verdict": "CAPTURED_AND_UNUSED"},
+      "data/market_snapshots/snapshots.csv": {"rows": 15453, "span": "2026-08-06 to 2026-08-17", "content": "player props and game markets on a declared T-4h obligation ladder with novig_prob and explicit max_staleness_bound", "verdict": "CAPTURED_AND_UNUSED"},
+      "data/news_capture/news_items.csv": {"rows": 8542, "span": "2026-07-30 to 2026-08-17", "verdict": "CAPTURED_AND_UNUSED and unresolved — players_mentioned_raw is free text"},
+      "data/injury_history/injury_history.csv": {"rows": 8340, "span": "2021-01-07 to 2026-07-29", "content": "2242 missed_game_injury, 3131 missed_game_other, plus transactions", "verdict": "CAPTURED_AND_UNUSED; already flagged in CLOSED_SURFACES §9.7 and still unused"},
+      "data/sxbet_capture/*.jsonl": {"trades": 114912, "orderbook": 57017, "best_line": 40145, "approx_mb": 403, "verdict": "CAPTURED_AND_UNUSED; provenance UNVERIFIED by this audit — sampled lines failed JSON parse"},
+      "data/lineups/lineups_*.parquet": {"verdict": "CAPTURED_AND_UNUSABLE — season-aggregate totals retrieved 2026-08-06; a retrospective-baseline trap, confirmed unread by every screen"}
+    }
+  },
+
+  "Q2_decision_timeline": {
+    "program_cutoff": {
+      "construction": "features/common.py:10-11 — every feature is groupby(player_id, season).shift(1) or an expanding/EWMA equivalent. No code path in features/ admits a same-day observation.",
+      "effective_as_of": "the end of the player's previous game",
+      "staleness_days_since_prior_game": {"n_rows": 27283, "mean": 3.66, "median": 3.0, "p25": 2, "p75": 4, "p90": 6, "max": 93, "share_ge_3_days": 0.509, "share_ge_5_days": 0.162, "share_ge_7_days": 0.073},
+      "rows_with_no_prior_state": 1039
+    },
+    "when_designations_land": {
+      "source": "data/injury_capture/injury_log.csv joined to real per-team tip from odds capture commence_time; 98.0% matched; restricted to captures strictly before tip",
+      "series": 169,
+      "game_days": 14,
+      "first_appearance_hours_before_tip": {"median": 19.5, "p10": 0.50, "p90": 26.0, "share_inside_T24h": 0.651, "share_inside_T12h": 0.391, "share_inside_T6h": 0.290},
+      "last_pretip_designation_hours_before_tip": {"median": 1.00, "p10": 0.10, "p90": 13.5, "share_inside_T12h": 0.888, "share_inside_T6h": 0.864, "share_inside_T1h": 0.822},
+      "pretip_designation_changes": {"n": 38, "of_series": 169, "share": 0.225, "share_landing_inside_T3h": 1.00, "median_hours_before_tip": 0.50,
+        "paths": {"Probable->Available": 16, "Questionable->Available": 11, "Questionable->Out": 7, "Doubtful->Out": 2, "Out->Available": 1, "Probable->Out": 1}}
+    },
+    "the_gap": {
+      "statement": "The program's features are as-of a median 72 hours before tip. The designation that decides availability lands a median 1.0 hour before tip, and every observed change landed inside 3 hours, median 30 minutes.",
+      "size_hours": 71,
+      "rows_affected": {
+        "played_rows_at_least_3_days_stale": 0.509,
+        "played_rows_at_least_5_days_stale": 0.162,
+        "2026_master_rows_that_are_DNP": 0.1778,
+        "DNPs_in_overlap_window_pre_announced": {"n": 47, "of": 130, "share": 0.362},
+        "designation_series_resolving_inside_T3h": {"n": 38, "of": 169, "share": 0.225}
+      }
+    },
+    "coverage_and_reliability_of_the_feed": {
+      "caveat": "COVERAGE STATISTIC, NOT A PREDICTIVE RESULT. Close to definitional — the league enforces the designation — and the sample is 9 game days.",
+      "window": "2026-07-30 to 2026-08-07, 636 player-game rows, 130 DNPs",
+      "designated_Out_did_not_play": "47 of 47",
+      "designated_Available_played": "25 of 25",
+      "DNPs_with_no_designation": {"n": 83, "all_reason": "Coach's Decision (82 DNP, 1 DND)"},
+      "interpretation": "The official report handles the injury channel of unavailability essentially completely and the coach's-decision channel not at all."
+    },
+    "when_the_market_moves": {
+      "source": "data/odds_capture/capture_log.csv, 44658 rows, 153 hourly snapshots, 11 books, 44 games with >=3 pre-tip snapshots",
+      "close_minus_open_total_points": {"median": 1.28, "p90": 2.60, "max": 4.66, "mean": 1.422},
+      "mean_abs_residual_to_closing_total_by_bucket": {">24h": 1.395, "12-24h": 1.026, "6-12h": 0.555, "3-6h": 0.539, "1-3h": 0.223, "<1h": 0.000},
+      "reading": "roughly 60% of the market's eventual movement is still ahead of it at T-24h and ~40% at T-12h — the same window in which designations resolve"
+    },
+    "corroboration_already_in_repo": "experiments/player_program/ops_lane/O11/DISCOVERY_LAG.json: 49 of 84 obligations NOT discoverable before cutoff; at a T-24h label, 0 of 21."
+  },
+
+  "Q3_forward_validation": {
+    "verdict": "POSSIBLE. D095's structural fact is confirmed and understated; its assumed harm is not present in the columns the feature library consumes.",
+    "separation_verified": {
+      "population": "regular season, played rows (minutes > 0)",
+      "exploration_le_2024": {"n": 16717, "gamelog_old_share": 1.0000},
+      "confirmation_ge_2025": {"n": 9665, "gamelog_new_share": 1.0000, "gamelog_old_rows": 0},
+      "note": "the recorded 92% is the all-season-type played-row figure (91.79%); on the regular-season played frame the separation is perfect"
+    },
+    "era_is_a_source_schema_label": {
+      "assigned_by": "wnba_schema.py:320-334 column sniffing; build_masters.py:473 sets era = era_gl.fillna('v3')",
+      "expected_consequences_per_wnba_schema_py_131": ["gamelog_new cannot yield starter_flag or dnp_reason", "gamelog_new minutes are endpoint-rounded ints"],
+      "both_checked_and_absent": {
+        "starter_flag_nonnull_every_season": 1.00,
+        "dnp_reason_populated_on_DNP_rows_by_season": [1.000, 1.000, 0.9988, 0.9969, 0.9992, 0.9989],
+        "played_rows_with_integer_minutes_by_season": [0.0203, 0.0177, 0.0259, 0.0261, 0.0178, 0.0188],
+        "minutes_source_on_played_rows": "misc (V3 boxscore) on 100% of played rows in all six seasons",
+        "why": "the V3 misc/advanced boxscore layer bridges both eras"
+      }
+    },
+    "the_one_material_discontinuity": {
+      "columns": ["fg_pct", "fg3_pct", "ft_pct"],
+      "null_rate_exploration": [0.0, 0.0, 0.0],
+      "null_rate_confirmation": [0.0628, 0.2480, 0.4511],
+      "mechanism": "0/0 encoding change — gamelog_old wrote 0.0 for zero-attempt rows, gamelog_new writes NULL",
+      "apparent_standardised_mean_shift": {"ft_pct": 0.805, "fg3_pct": 0.296, "fg_pct": 0.122},
+      "reading": "the shifts are artefacts of dropping zeros from the mean, not changes in shooting; every genuine count channel moves less than 0.08 sd",
+      "does_it_reach_features": false,
+      "evidence": "features/ computes its own ratios from numerator/denominator (e.g. matchup_overlay.py:120); the only other hit is a team-level rename in daily_forecast.py:288",
+      "recommended_fix": "recompute the three pct columns in build_masters.py with a uniform zero-attempt convention"
+    },
+    "the_real_constraint": {
+      "raw_playbyplay_game_coverage": {"2021": 0.919, "2022": 0.904, "2023": 0.923, "2024": 0.916, "2025": 0.348, "2026": 0.000},
+      "consequence": "any lead built on raw play-by-play is constructible in exploration and NOT confirmable on 2026",
+      "possessions_parquet_does_not_share_the_gap": {"rows": 237567, "games": 1489, "coverage_2021_2025": 1.000, "coverage_2026": 0.972, "open_issue": "still unmanifested; coverage exceeds its apparent source"}
+    },
+    "what_would_fix_it": "The T-1.16h player-points line spans the partition and barely moves across it (corr 0.5439 / 0.5380 / 0.5765; MAE 4.929 / 4.977 / 4.923 on 2024 / 2025 / 2026). A model scored against it on both sides is compared to the same opponent under the same conditions, which makes an E2 replication interpretable."
+  },
+
+  "Q4_ranked_gaps": [
+    {"rank": 1, "item": "Score player forecasts against the T-1.16h points line on 2024+2025+2026", "obtainable": "already on disk", "cost": "~1 day", "closed_surfaces_check": "CLOSED_SURFACES §7's impossibility is about GAME TOTALS and stands; this is player props read against a different question"},
+    {"rank": 2, "item": "Wire the research lane's data root to the directories the production lane reads", "obtainable": "path fix only", "cost": "hours", "closed_surfaces_check": "not a surface — it is the cause of one"},
+    {"rank": 3, "item": "Official injury designations as a feature rather than an exclusion rule", "obtainable": "captured and live", "cost": "low to build, high to wait — only 9 game days overlap outcomes today, accruing ~1/day", "closed_surfaces_check": "the opposite construction to D089's forbidden tip-time variant: witnessed pre-tip, not post-game", "recommendation": "freeze capture, revisit at >=60 game days, do not screen yet"},
+    {"rank": 4, "item": "Free throws via the fouls_drawn channel", "obtainable": "on disk, all six seasons", "cost": "near zero", "closed_surfaces_check": "D084 explicitly carved the FT route out of the shot-mix CEILING; §2's foul-draw MATCHUP is dead as REDUNDANT, this is the main effect's volume channel", "caution": "hurdle process — fta==0 on 46.4% of played rows"},
+    {"rank": 5, "item": "Reconcile fg_pct / fg3_pct / ft_pct null encoding in build_masters.py", "obtainable": "on disk", "cost": "hours", "closed_surfaces_check": "data-integrity repair, not a surface"},
+    {"rank": 6, "item": "Pre-game lineup / rotation intentions", "obtainable": "NO — D11 SOURCE_BINDING.json records 0 of 8 domains bound and UNAVAILABLE for a pregame lineup feed", "cost": "high", "recommendation": "do not start"},
+    {"rank": 7, "item": "Minute restrictions", "obtainable": "NO — D11 grep found 5 lines over 284 files, none naming a source", "cost": "high", "closed_surfaces_check": "D133's minutes null is about pre-game STATE; a restriction is same-day NEWS and outside what was tested", "recommendation": "park behind rank 3"},
+    {"rank": 8, "item": "The sxbet exchange tape", "obtainable": "on disk, ~403 MB, live", "cost": "2-hour provenance probe first", "blocker": "record-level timestamp semantics UNVERIFIED by this audit"}
+  ],
+
+  "could_not_determine": [
+    "Whether closing any part of the timing gap improves any forecast. Nothing here was screened.",
+    "Anything about the decision timeline before 2026-07-30 — every point-in-time capture starts then or later, so the historical timeline is unmeasurable from these sources.",
+    "Latency between a designation changing at the league and the capture observing it. The injury_snapshots vendor note states no SLA exists and the 15-minute grid is observed, not guaranteed — 'treat as UNBOUNDED for anything sharper than the 15-minute grid itself'.",
+    "Record-level timestamp semantics of data/sxbet_capture/*.jsonl — sampled lines failed JSON parse.",
+    "Whether any fitted artifact (RAPM tables, zone maps, frozen alphas) carries era-specific structure that would break at E2. Only the master frame's columns were checked.",
+    "Whether the props line's ~34% row coverage biases a model-vs-market comparison. It conditions on book-priced players and must be reported on that population only.",
+    "The provenance of data/possessions/possessions.parquet — still unmanifested, coverage still exceeds its apparent source. Unresolved before this audit and unresolved after it."
+  ],
+
+  "scope_discipline": {
+    "wrote_only_under": "experiments/exploration/E1_I0057_information_gap/",
+    "did_not_touch": ["DECISION_LEDGER.jsonl", "GRAPH_EVENTS.jsonl", "any file outside the investigation directory"],
+    "read_only_outside_scope": ["cbs_*.py", "run_player_oof_*.py", "features/*.py", "the main repository's data/ tree"],
+    "no_commits": true,
+    "no_subagents_used": true
+  }
+}
