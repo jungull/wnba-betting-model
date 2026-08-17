@@ -1,0 +1,69 @@
+n=3549 scored=2945  dR2(C5 over L5)=+0.012057  strongest level rung=L4
+
+====================================================================================================
+S03a -- POWER.  Injection curve: y_inj = y + c*sd(y)*u, u an extra column inside block N.
+====================================================================================================
+  c=0.00  implied dR2 0.00000  realised dR2 +0.011742 (sd 0.000326)  DETECTION 0.000  (111s)
+  c=0.10  implied dR2 0.00990  realised dR2 +0.018376 (sd 0.003077)  DETECTION 0.050  (210s)
+  c=0.15  implied dR2 0.02200  realised dR2 +0.027918 (sd 0.003424)  DETECTION 0.900  (310s)
+  c=0.20  implied dR2 0.03846  realised dR2 +0.041509 (sd 0.005001)  DETECTION 1.000  (407s)
+  c=0.30  implied dR2 0.08257  realised dR2 +0.076151 (sd 0.009424)  DETECTION 1.000  (508s)
+  c=0.40  implied dR2 0.13793  realised dR2 +0.122789 (sd 0.010810)  DETECTION 1.000  (642s)
+  c=0.60  implied dR2 0.26471  realised dR2 +0.253862 (sd 0.010744)  DETECTION 1.000  (789s)
+  c=0.90  implied dR2 0.44751  realised dR2 +0.435668 (sd 0.010819)  DETECTION 1.000  (917s)
+
+  P15 (detection >= 0.80 at an injected dR2 of ~0.010, c=0.10): False  [rate 0.050, realised dR2 +0.018376]
+  smallest injected dR2 detected at >= 80% power (MDE): +0.027918
+  false-positive rate at c=0 (should be near 0.05): 0.000
+
+====================================================================================================
+S03b -- ABSTENTION, in minutes.  Rank by predicted |error|, drop the worst q%, measure the SHIPPED forecast's MAE on what is left.
+====================================================================================================
+  full sample: n=2945  MAE=4.2777 min  RMSE=5.6722 min
+
+  MAE reduction on the retained rows, by ranking arm:
+arm          C5     L1     L4     L5
+drop_pct                            
+0          0.00   0.00   0.00   0.00
+10         3.90   2.16   3.72   3.52
+20         7.42   4.54   5.93   6.05
+30         9.48   6.76   9.26   8.78
+40        14.16   9.73  11.26  10.94
+50        15.19  10.59  13.31  13.67
+
+  P12 (C5 ranking, drop 30%, MAE reduction >= 8%): True  [9.48%]
+  the same abstention on the strongest LEVEL-ONLY ranking (L4): 9.26%  -> the non-level block is worth 0.22 percentage points of MAE reduction, not 9.48
+
+====================================================================================================
+S03c -- WHAT AN 80% INTERVAL COSTS.  |resid| -> Gaussian sd via sqrt(pi/2).
+====================================================================================================
+  SHIPPED_const_sd  coverage(nominal 80%)=0.6849  mean width=10.094 min  |  at MATCHED 80% cover: mean width=13.388 min  (sd of the per-row sd = 0.0503)
+  L1                coverage(nominal 80%)=0.6312  mean width=8.967 min  |  at MATCHED 80% cover: mean width=13.016 min  (sd of the per-row sd = 0.7738)
+  L4                coverage(nominal 80%)=0.6275  mean width=8.966 min  |  at MATCHED 80% cover: mean width=13.215 min  (sd of the per-row sd = 0.9489)
+  C5                coverage(nominal 80%)=0.5986  mean width=8.573 min  |  at MATCHED 80% cover: mean width=13.382 min  (sd of the per-row sd = 1.2793)
+
+  at matched 80% coverage: constant sd 13.388 -> level-only 13.215 (-1.29%) -> C5 13.382 (-0.04% vs constant, 1.27% vs level-only)
+
+====================================================================================================
+S03d -- T8: does the variance forecast convert into a better MINUTES LEVEL forecast?
+====================================================================================================
+  warm-up rows with no OOF vhat, filled from the strictly-prior expanding mean: 604 of 3549 (none of them is scored: True)
+  reference: tuned ridge on the L5 level columns, response y_minutes.  OOF R2 = +0.250786  (shipped forecast OOF R2 = +0.241269)
+  variance_weighted_refit            OOF R2 -2.531780   dR2 over level reference -2.782565   sign-flip p 0.0002
+  adaptive_blend_shipped_vs_level    OOF R2 +0.245541   dR2 over level reference -0.005244   sign-flip p 0.1282
+  mean_augmentation_vhat             OOF R2 +0.252026   dR2 over level reference +0.001240   sign-flip p 0.6879
+  vhat_x_level_interaction           OOF R2 +0.250426   dR2 over level reference -0.000359   sign-flip p 0.9154
+
+  P13 (best conversion dR2 <= +0.002 OR p >= 0.05, i.e. NO conversion): True  [best mean_augmentation_vhat at +0.001240, p 0.6879]
+  D131: these four arms produce a SUMMING minutes forecast but are defined only on a 3,549-row stratum, so no team-game sum is computable.  No team-aggregate mean is reported and no team-level claim is made.
+
+====================================================================================================
+S03e -- REPLICATION on a second response, and the GKF scheme
+====================================================================================================
+  WF  absres_minutes    L1 +0.018378 | L4 +0.034756 | L5 +0.033377 | C5 +0.045434 | dR2 over L5 +0.012057 (p 0.3421), over L4 +0.010678
+  WF  refabs_minutes    L1 +0.023893 | L4 +0.063260 | L5 +0.062831 | C5 +0.091436 | dR2 over L5 +0.028605 (p 0.0194), over L4 +0.028176
+  GKF absres_minutes    L1 +0.018578 | L4 +0.033978 | L5 +0.034278 | C5 +0.055691 | dR2 over L5 +0.021412
+
+  P14 (increment > 0 on the trailing-mean-error response): True
+
+DONE s03 (928s)

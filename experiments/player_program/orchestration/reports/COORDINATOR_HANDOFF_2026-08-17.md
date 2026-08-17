@@ -47,12 +47,8 @@ append one `note` and stop.
 
 ## 4. IN FLIGHT
 
-| directory | state |
-|---|---|
-| `E1_I0056_minutes_variance` | **AGENT LIVE at time of writing.** Write scope is that directory only. **DO NOT RE-DISPATCH — check for `FINDINGS.json`, `PREREG.md` and `run_log_s*.txt` first.** |
-
-If that agent died, its `s00` output is still trustworthy (log ends `DONE s00`, empty stderr) and
-`s00` deliberately runs *before* the PREREG is written. Resume from the preregistration.
+**NOTHING.** `E1_I0056_minutes_variance` returned and is CLOSED as `D136` — verified on bytes,
+committed and pushed. No agent holds a write scope.
 
 ## 5. THE TWO READY NODES ARE CORRECTLY PARKED
 
@@ -82,14 +78,31 @@ was briefly reported was an **overtime oracle** worth −0.000061 on regulation 
 apparent positive the program ever produced — sixteen family-wise survivors — **closed as a volume
 tautology** (`D134`): twelve had an exact algebraic identity behind them, and none improved points.
 
-**The one live thread is variance, and only on minutes** (`D134`): predicted-error forecasts are well
-calibrated (decile ratio 1.91, slope 1.01, OOF R² +0.043 on minutes) but **trailing level alone
-matches them on points and beats them on attempts**, so only minutes carries genuine non-level
-signal. **The incumbent variance model in the codebase has a NEGATIVE out-of-fold R².**
-`E1_I0056`'s `s00` already recorded a candidate mechanism: `_SEASON_CONSTANCY.csv` marks
-`minutes__pred_sd`, `pts__pred_sd`, `fga__pred_sd` and `minutes__pred_iqr` as **season-constant —
-one distinct value per season**, i.e. carrying zero per-row information. That is what `E1_I0056` was
-resumed to confirm or refute. **The reference to beat is trailing level, not the shipped column.**
+**That last thread is now closed too, by `D136`, and it went two ways at once.**
+
+**A confirmed production defect.** The shipped per-row uncertainty is a **per-season constant**.
+`cbs_v5.py dispersion()` returns a scalar and `cbs_player_runner_v14.py:313` broadcasts it across
+every test row (`pd.Series(sd_v, index=test.index)`); same construction in `cbs_v7.py` and
+`cbs_v8.py`. Every `pred_sd`, `q50−point` and `q75−point` carries **zero per-row information**; the
+only row-level variation in `q05`/`q95` is clipping at the [0,48] support. The incumbent's −0.004813
+out-of-fold R² is not a modelling failure but arithmetic — **an intercept cannot beat the mean out of
+fold.** **REPORTED, NOT REPAIRED:** the runner is outside any screen's write scope and a fix is a
+model change requiring user authorisation.
+
+**And `D134`'s live lead largely dissolved.** `D134` measured against trailing level as a **single
+column** (OOF R² +0.018378, decile ratio 1.3542). An **eight-column level-only ladder** reaches
++0.034756 / 1.8407 — **89% of the 1.35→1.91 distance, using nothing but levels a forecaster already
+had.** The 36 non-level columns then add +0.010678, bootstrap CI **[−0.009571, +0.036266]**, 15.85%
+of draws ≤ 0 — **not established**, and only +0.10 sd above the cyclic null (so cross-sectional, not
+temporal). **It is equally not a clean null:** the observed +0.012 sits *inside* the design's own 80%
+MDE (0.027918 iid / 0.039136 clustered). **Stop quoting the 1.91 decile ratio as evidence of
+non-level signal.** `D087` reference incompleteness is still the top-ranked source of wrong answers
+here, and it has now taken the program's own newest lead.
+
+**THE TOP COMMISSIONED ITEM, NOT YET DISPATCHED:** re-examine **every screen that used a single
+trailing-level column as its reference.** This one lost 89% of an apparent effect to a ladder built
+from information already in hand. Also unrun: the kit's `entity_swap_null` (K2), the correct
+instrument for the cross-sectional question `D136` could only diagnose.
 
 ## 8. THE HABIT THAT MATTERED MOST
 

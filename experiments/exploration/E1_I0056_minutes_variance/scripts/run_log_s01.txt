@@ -1,0 +1,65 @@
+====================================================================================================
+S01a -- THE SHIPPED UNCERTAINTY, ON THE PREDICTION PARQUET BYTES
+====================================================================================================
+  minutes  2022  n= 6333  pred_sd distinct=1 value=6.710391139367 ptp=0.000e+00 | off q50 distinct=1  q75 distinct=1  q05 distinct=523 | q05 clip dev=0.000e+00  q95 clip dev=7.105e-15
+  minutes  2023  n= 7418  pred_sd distinct=1 value=5.934714400560 ptp=0.000e+00 | off q50 distinct=1  q75 distinct=1  q05 distinct=710 | q05 clip dev=3.553e-15  q95 clip dev=7.105e-15
+  minutes  2024  n= 7866  pred_sd distinct=1 value=6.037461772357 ptp=0.000e+00 | off q50 distinct=1  q75 distinct=1  q05 distinct=636 | q05 clip dev=0.000e+00  q95 clip dev=7.105e-15
+  pts      2022  n= 6333  pred_sd distinct=1 value=5.455332651849 ptp=0.000e+00 | off q50 distinct=42  q75 distinct=1  q05 distinct=1974 | q05 clip dev=3.553e-15  q95 clip dev=7.105e-15
+  pts      2023  n= 7418  pred_sd distinct=1 value=5.258089971559 ptp=0.000e+00 | off q50 distinct=58  q75 distinct=1  q05 distinct=2287 | q05 clip dev=3.553e-15  q95 clip dev=7.105e-15
+  pts      2024  n= 7866  pred_sd distinct=1 value=5.411737410696 ptp=0.000e+00 | off q50 distinct=76  q75 distinct=1  q05 distinct=2258 | q05 clip dev=0.000e+00  q95 clip dev=7.105e-15
+  fga      2022  n= 6333  pred_sd distinct=1 value=3.349032976252 ptp=0.000e+00 | off q50 distinct=6  q75 distinct=1  q05 distinct=1296 | q05 clip dev=0.000e+00  q95 clip dev=3.553e-15
+  fga      2023  n= 7418  pred_sd distinct=1 value=3.205179394229 ptp=0.000e+00 | off q50 distinct=17  q75 distinct=1  q05 distinct=1592 | q05 clip dev=1.776e-15  q95 clip dev=3.553e-15
+  fga      2024  n= 7866  pred_sd distinct=1 value=3.265153240918 ptp=0.000e+00 | off q50 distinct=7  q75 distinct=1  q05 distinct=1662 | q05 clip dev=3.553e-15  q95 clip dev=3.553e-15
+
+  P1 pred_sd 1 distinct value per season (minutes, all 3 seasons): True
+  P2 q75/q50 offsets 1 distinct value per season               : True
+  P3 q05 is exactly max(point + off05, 0)  max dev 3.553e-15        : True
+  ALL THREE TARGETS pred_sd distinct==1 in every season        : True
+
+  dispersion method, decided on values (gaussian would give off_q75 == z75*sd exactly):
+    minutes 2022  off_q75=4.571109209  z75*sd=4.526090043  diff=+0.045019166  off_q50=+0.457048294  -> EMPIRICAL
+    minutes 2023  off_q75=3.859323931  z75*sd=4.002904034  diff=-0.143580102  off_q50=-0.009894831  -> EMPIRICAL
+    minutes 2024  off_q75=3.848185541  z75*sd=4.072206083  diff=-0.224020541  off_q50=+0.106480740  -> EMPIRICAL
+
+  consequence: the shipped 90%% interval width q95-q05 on the decision stratum
+    n=3549  distinct widths=37  min=16.072561  max=19.644939  sd=0.224131
+
+====================================================================================================
+S01b -- ANCHORS (P4, P5).  Season-median imputation, exactly the sibling's construction.
+====================================================================================================
+  n=3549  folds=138  scored=2945  SST=40861.607444  mean=4.277749
+  A_L1_eq_VLEV   nf= 1  oofR2=+0.018378  decile ratio=1.3542  slope=+0.8356
+  A_VSIG         nf= 7  oofR2=+0.042866  decile ratio=1.9089  slope=+1.0123
+  A_VSD          nf= 1  oofR2=-0.004813  decile ratio=0.9488  slope=-0.5105
+
+  P4 VLEV  mine 0.018378185  published 0.018378185  |diff|=9.714e-17  (bar 1e-6)  -> True
+  P5 VSIG  R2 mine 0.042865714  published 0.042865714  |diff|=2.914e-16  (bar 1e-4)
+     VSIG  ratio mine 1.908944 published 1.908944  |diff|=0.000e+00  (bar 2e-3)  -> True
+  incumbent A_VSD oofR2 = -0.004813  (published -0.004813)
+
+====================================================================================================
+S01c -- T1 EXPOSURE OF THE INHERITED IMPUTATION, and the leak-free replacement
+====================================================================================================
+  rows imputed by the STRICTLY-PRIOR rule (primary arms):
+    x53_C1_player_rest            385 / 3549  (10.85%)
+    x53_C2_foul_rate              385 / 3549  (10.85%)
+    x53_C3_blowout_adj            385 / 3549  (10.85%)
+    x53_C5_starter_delta          385 / 3549  (10.85%)
+    x53_C6_team_rest              385 / 3549  (10.85%)
+    x53_C7_sched_density          385 / 3549  (10.85%)
+    x53_n_prior                   385 / 3549  (10.85%)
+    x53_prior5_minutes            385 / 3549  (10.85%)
+    x53_prior5_sd_minutes         385 / 3549  (10.85%)
+    x53_starter_rate_prior        385 / 3549  (10.85%)
+    x53_starter_rate_recent3      385 / 3549  (10.85%)
+    pl_dnp_frac5                    3 / 3549  (0.08%)
+  max |season-median  -  strictly-prior| over all candidate cells: 0.000000
+
+====================================================================================================
+S01d -- D131 DISCLOSURE: dispersion of the shipped minutes forecast against the 200-minute budget
+====================================================================================================
+  realised           team-games=1486  MAE vs 200 = 1.9940  RMSE = 7.3210  within +-5 = 91.25%  exactly 200 = 76.31%
+  shipped forecast   team-games=1486  MAE vs 200 = 13.1698  RMSE = 17.6185  within +-5 = 27.79%  exactly 200 = 0.00%
+  (mean deliberately NOT reported -- D131: a mean of 201.56 concealed an MAE of 13.09)
+
+DONE s01
