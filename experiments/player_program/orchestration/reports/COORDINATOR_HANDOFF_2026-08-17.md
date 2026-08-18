@@ -155,3 +155,104 @@ failure in this program is not agents being wrong — it is **the coordinator re
 finding slightly stronger than the agent stated it** (`D133` records three such errors in one
 family). Agents have caught coordinator errors repeatedly, including a briefing that misquoted its
 own ledger. A powered honest null is a real result; an underpowered one is not a finding at all.
+
+
+---
+
+# ADDENDUM — 2026-08-18, COORDINATOR #08 ON DUTY
+
+**Appended by Coordinator #08.** Everything above is #07's and is left byte-for-byte intact; this
+addendum only adds what changed. The packet stays *insurance*, not a retirement.
+
+## 9.1 The identity chain, settled on evidence
+
+The scheduled-task prompt that started this session addressed me as **#07** and claimed **#06** had
+been cut off. Both are wrong, and the ledger settles it: `actor` on `GRAPH_EVENTS.jsonl` is
+`Coordinator #06` for all 59 events of 2026-08-08..08-10, and `Coordinator #07` for all six events
+of 2026-08-17 (D135–D140). **The session cut off by the usage limit was #07.** I am **#08** — which
+is exactly what §0 of this packet already told whoever took over. I reached it from the actor fields
+before reading §0; the packet and the ledger agree and the prompt disagrees with both.
+
+**This is the fourth consecutive briefing in this program to be wrong on checkable premises.** Treat
+that as a standing expectation, not an incident: **the identity and numbering claims in a
+coordinator briefing are its least reliable part.** The next coordinator is **#09**.
+
+**I also reproduced a briefing error I had just catalogued** — I wrote "no handoff packet exists"
+into the ledger, straight from the prompt, without listing `reports/`. This packet exists.
+Corrected in a follow-up event under my own name. §1's warning applies to the coordinator reading
+it, not only to its predecessors.
+
+## 9.2 DO NOT SUMMON A SUCCESSOR — verified independently, not taken from §0
+
+My prompt instructed me to create and number a successor task. **I did not.** `D070` is a direct
+user directive recorded verbatim in `DECISION_LEDGER.jsonl`:
+
+> "Ok dont handoff this time just remain the coordinator until i tell you to handoff, i need this to
+> keep working all night while i sleep"
+
+Step 6 of `wnba-coordinator-on-duty/SKILL.md` is **suspended**; succession is the user's call
+(`D137` ruling 1: the user restarts these by hand). Surfaced once in the closing note per `D057`.
+
+## 9.3 What moved: D141 — the market benchmark, resumed and closed
+
+**§7 item 2 above said "This programme has never once scored itself against a market price." That is
+no longer true.**
+
+`E1_I0058_market_benchmark` was dispatched by #07 minutes before it died. Its agent reported
+"failed — API error" and left a **0-byte output file**, which made the work look lost. **It was
+not.** On disk were a frozen `PREREG.md`, a completed frame with its leak proof, and a written but
+**never-executed** `s02_score.py`.
+
+**Resumed at s02 under the existing frozen hash. Nothing upstream was re-run, re-derived or
+rewritten** — proven by hash, not asserted: `PREREG.md` still re-derives to
+`6ea05be0…96ca9b`, and `analysis_frame.csv` to `8605a559…47b7c8`, the value `s01` recorded at build
+time. Rewriting a prereg after the frame's shape is known is the defect this program records; it
+could not have happened without breaking the first hash.
+
+**THE ANSWER: THE MARKET ENCOMPASSES THE MODEL, AND IT IS NOT CLOSE.** On book-priced 2024
+player-games (n=1972, 78 players, 262 games — **40.2% of played rows, and books price the players
+they choose to price**): market MAE **4.9043** vs model **5.3232**, gap **0.4189**, four times the
+0.10 materiality floor. Encompassing `pts ~ 1 + M2 + F1`: **bM = +1.0978** [+0.9556, +1.2450],
+p=0.0002, distinguishable; **bF = −0.1604**, p=0.7111, **not** distinguishable. The fitted blend
+buys **0.0051 MAE points out-of-fold against a 0.10 floor** — a TIE by the prereg's own rule.
+Powered: MDE(bF) = 0.0351 MAE points, **finer than materiality**, so this is a real null (`D136`).
+**P1 PASS, P2 PASS, P3 PASS, P4 FAIL, P5 FAIL.** Section 8's four subgroups were gated off and
+**not run**.
+
+**Two defects in the frozen prereg itself, both recorded, neither repaired** (repairing would break
+the freeze):
+
+1. **Its cyclic permutation null is centred at +0.1882, not zero** — the shift preserves each
+   player's mean level, and that level genuinely predicts points. So `p=0.7111` does **not** test
+   "bF = 0"; the observed bF lies *entirely below* the null's 95% interval. Reported as frozen with
+   the caveat attached everywhere it appears. **The conclusion rests on magnitudes instead, which
+   need no null at all.** Had the magnitudes been material this would have blocked the finding.
+   *General lesson: a permutation scheme chosen to preserve a nuisance structure may also preserve
+   signal. Always report the null's mean and interval beside its p-value.*
+2. **§5 and §7 state P2's rule differently.** §5 governs (§7 refers to it); both readings published.
+
+`scripts/verify.py --full` — **174/174 PASS** — re-derives both hashes, the partition, every
+accuracy and R² cell *from the frame* rather than reading conclusions back, all six regressions, the
+five verdicts from first principles, and the **seeded** bootstrap and permutation null to 1e-9/1e-12.
+
+## 9.4 Still open — unchanged from §6 above, plus one
+
+Everything in §6 stands: `D067`/`N1` (fitting still **unauthorised**), `D095`, `D092`, `D094`, the
+unbound dispersion repair, the two test defects, `D078`. **Nothing there was touched this session.**
+
+New, from `D141`, and **a lead rather than a result** — not preregistered, not tested, must not be
+reported as a finding: the model is **more dispersed than the market yet less correlated with
+outcomes** (sd 4.706 vs 4.297; corr 0.4474 vs 0.5450), and the univariate slope of `pts` on F1 is
+**0.7027**, CI [0.6031, 0.7819], **excluding 1.0**. The model's forecasts want shrinking ~30% toward
+the mean — the signature of a forecast treating noise as signal.
+
+Also from `D141`, cheap and useful: **the raw line is an adequate market estimate** for this market
+at this snapshot regime (`corr(M1,M2) = 0.9964`; de-vig worth +0.0188 MAE, below materiality). The
+de-vig machinery is not load-bearing and future screens need not treat it as such.
+
+## 9.5 The scope this screen does NOT cover
+
+It says nothing about the **~60% of played player-games books do not price** — silent on them *by
+construction*, and that is where a model could still be worth something. It tests forecast accuracy
+only: no bet selection, no staking, no decision rule. One season, one league, E1, single partition.
+**It promotes nothing.**

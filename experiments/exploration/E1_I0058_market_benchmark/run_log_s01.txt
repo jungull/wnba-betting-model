@@ -1,0 +1,43 @@
+E1_I0058 s01 -- frame construction under PREREG 6ea05be00509ab80d8fa7220bc24b07ad87c8159b52c05962f8838b13596ca9b
+============================================================================================
+
+--- A. PARTITION FILTER, APPLIED BEFORE ANY OTHER OPERATION ----------------------------
+  props rows total 36946 -> admitted 11237 (excluded 25709 = every 2025 and 2026 row, plus 2024 rows without a season-2024 master game)
+  admitted commence years: [2024]  (assert == [2024] PASSED)
+  master rows admitted: 5877; seasons [2024]
+
+--- B. sigma(.) CALIBRATION, seasons 2021-2023 ONLY (PREREG 3.3) -----------------------
+  player-seasons used: 415 (seasons [2021, 2022, 2023], >=10 played games)
+  FROZEN:  sigma(x) = 0.598519 + 1.530568 * sqrt(x),  clipped to [1.0, 15.0]
+  sanity:  sigma(5)=4.021  sigma(10)=5.439  sigma(20)=7.443
+  NOTE: 2021-2023 outcomes are exploration-partition. No 2024 outcome and no props row
+        of any year entered this fit.
+
+--- C. BOOK-LEVEL PRICES -> de-vig -> per-book mu (PREREG 3.1-3.4) ---------------------
+  latest pre-tip snapshot per (game, player, book): 11173 rows
+  lead time (h) of the used snapshot: median 1.156 p10 1.156 p90 1.156 min 0.573
+  dropped 8 book rows with an incomplete two-sided price
+  overround: mean 0.0672 median 0.0678 p05 0.0623 p95 0.0713
+  book rows with a NEGATIVE overround (arbitrage-looking, kept): 0
+  p_over_fair (proportional): mean 0.4956 p05 0.4562 p95 0.5408
+  per-book mu - line: mean -0.0761 sd 0.4720 p05 -0.7420 p95 +0.5929
+  consensus obligations (game x player): 2014
+
+--- D. JOIN TO OUTCOMES AND TO THE MODEL ANCHOR ----------------------------------------
+  joined to master: 1987
+  played rows (PREREG 1.2): 1972
+  F1 manifest re-verified at analysis time: match=True sha256=f01151efa99b620e...
+  F2 manifest re-verified at analysis time: match=True sha256=955f534c38f81024...
+  after PRIMARY anchor join: 1972
+  F2 (robustness anchor) present on 1927 of 1972 rows
+  pregame minutes forecast (for subgroup S1) present on 1972 rows
+  anchor fallback on the admitted rows: level {0: 1826, 2: 101, 3: 45}; share 0.0740  (vs 0.2801 on the whole 2024 anchor -- the priced population is far better covered, as expected)
+
+--- E. FINAL LEAK PROOF ON THE FRAME THAT ENTERS EVERY COMPUTATION ---------------------
+  screenkit.assert_partition(allowed=EXPLORATION_SEASONS, season_cols=['season']) PASSED
+  rows from a HOLDOUT season: 0
+  rows dated after 2024-12-31: 0
+  final frame: n=1972 players=78 games=262 dates 2024-05-14..2024-10-20
+  wrote out/analysis_frame.csv  sha256=8605a559fc660769...
+
+  NO STATISTIC RELATING pts TO ANY FORECAST WAS COMPUTED IN THIS STAGE.

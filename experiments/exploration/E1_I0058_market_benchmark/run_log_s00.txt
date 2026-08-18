@@ -1,0 +1,75 @@
+E1_I0058_market_benchmark -- s00 STRUCTURAL PROBE (pre-preregistration)
+============================================================================================
+
+--- 1. PARTITION, from the repository's own definition -------------------------------
+  screenkit.EXPLORATION_SEASONS = (2021, 2022, 2023, 2024)
+  screenkit.HOLDOUT_SEASONS     = (2025, 2026)   <-- FORBIDDEN
+  season this screen may use    = 2024 (max of EXPLORATION_SEASONS; the props instrument does not exist before it)
+
+--- 2. IDENTITY: our row_uid reproduction vs the repository's -------------------------
+  reproduced cbs_obligation_key.row_uid exactly on 3 probes; key id = cbs_obligation_key/1
+
+--- 3. THE INSTRUMENT ------------------------------------------------------------------
+  data\props_capture\historical\master_props_historical.csv
+  rows=36946  markets=['player_points']  books=9
+  snapshot_returned_utc < commence_time on 100.00% of rows; median lead 1.156 h; min lead 0.573 h
+  rows by commence-year: {2024: 11237, 2025: 15053, 2026: 10656}
+  snapshots per (event,player,book): max 5 (1 => one snapshot per event, NOT a tape)
+
+--- 4. PARTITION FILTER APPLIED FIRST ---------------------------------------------------
+  master_player rows, season 2024: 5877  games=262  players=157
+  master seasons present after filter: [np.int64(2024)]
+  props rows whose game_id is a season-2024 master game: 11237 of 36946
+  their commence years: [np.int32(2024)]   <-- must be [2024] only
+  distinct games with props: 262 of 262 (100.0%)
+  books present: {'fanduel': 1853, 'betmgm': 1853, 'betrivers': 1852, 'bovada': 1745, 'williamhill_us': 1562, 'draftkings': 1175, 'betonlineag': 901, 'unibet_us': 296}
+  books per (game,player): mean 5.55 median 6 min 1 max 7
+
+--- 5. JOIN HIT RATE, name side (D086: a name join is an identity minefield) -----------
+  distinct normalised props names: 79
+  matched EXACTLY on the normalised key: 78 (98.7%)
+  UNMATCHED props names (1): ['cheyenneparker']
+  props ROWS carried by unmatched names: 62 (0.55% of props rows in partition)
+  DISPOSITION: unmatched names are DROPPED, listed above, and counted. No substring,
+  fuzzy or nickname matching is performed anywhere in this screen.
+  master (game, normalised-name) keys mapping to >1 obligation (traded-player / name collision): 0
+
+--- 6. THE MODEL ANCHOR, REPRODUCED FROM ITS OWN BYTES ---------------------------------
+  [PRIMARY] cbs_v15_player_oof_v5/1
+     experiments/cbs_v15_player_oof_v5/attempt_001/predictions__player_scoring_distribution__2024.parquet
+     rows=7866  target_key=['player_scoring_distribution']  arm=['cbs_v15_player_oof_v5']  fold=['season:2024']
+     sha256 recomputed = f01151efa99b620eb133d38f0ce91a8fe48d7efa9f6b850b63e4bf27aa28cd21
+     sha256 manifest   = f01151efa99b620eb133d38f0ce91a8fe48d7efa9f6b850b63e4bf27aa28cd21   MATCH=True
+     forecast_cutoff range: 2024-05-13 18:00:00+00:00 .. 2024-10-19 18:00:00+00:00
+     fallback share 0.2801; components {'player_scoring_distribution/walk_forward_active_ewma': 5663, 'player_scoring_distribution/prefix_mean': 2203}
+     row_uid unique: True
+  [SECONDARY] cbs_v14_player_oof/1
+     experiments/cbs_v14_player_oof/attempt_001/predictions__player_scoring_distribution__2024.parquet
+     rows=6096  target_key=['player_scoring_distribution']  arm=['contract_baseline_suite_v14']  fold=['season:2024']
+     sha256 recomputed = 955f534c38f81024ac2c04f1e5285421530729e8df22afe8bee5f47b59cb8388
+     sha256 manifest   = 955f534c38f81024ac2c04f1e5285421530729e8df22afe8bee5f47b59cb8388   MATCH=True
+     forecast_cutoff range: 2024-05-15 18:00:00+00:00 .. 2024-10-19 18:00:00+00:00
+     fallback share 0.1265; components {'player_scoring_distribution/walk_forward_active_ewma': 5325, 'player_scoring_distribution/prefix_mean': 771}
+     row_uid unique: True
+
+--- 7. STRICTLY-PRE-GAME CHECK ON EVERY INPUT ------------------------------------------
+  anchor rows joinable to season-2024 master by row_uid: 5852 of 7866
+  forecast_cutoff <= game_date 00:00Z on 100.00% of rows; cutoff strictly before game_date+24h is the runner's own admission rule
+  feature_asof < forecast_cutoff on 100.00%
+  MARKET side: the snapshot precedes tip on 100% of rows (section 3).
+  OUTCOME side: `pts` is read ONLY as the response, never as a regressor.
+
+--- 8. THE JOINED FRAME, SHAPE ONLY (no outcome statistic computed) --------------------
+  book-level joined rows (game x player x book): 11068
+  ... restricted to rows the player actually PLAYED: 11032
+  distinct player-game obligations with >=1 book price: 1972
+  distinct players 78  distinct games 262
+  as a share of all season-2024 played master rows: 40.2%
+  ^^ THE SELECTION.  Books price the players they choose to price.  Every number this
+     screen reports is conditional on THIS population and may not be generalised.
+  price completeness: over_price non-null 0.9996, under_price non-null 0.9996, line non-null 1.0000
+  of those obligations, carrying a PRIMARY-anchor forecast: 1972 (100.00%)
+
+--- 9. NOTHING INVOLVING pts WAS AGGREGATED IN THIS STAGE ------------------------------
+  grep-able assertion: this script contains no call computing a moment, error or
+  correlation of `pts`.  s01 onward do, and only after PREREG.sha256 exists.
