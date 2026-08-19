@@ -30,6 +30,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field, asdict
 
 import oddsmath as om
+import promos as _promos
+import contract as _contract
 from oddsmath import Leg
 
 # --------------------------------------------------------------------------------------
@@ -37,12 +39,14 @@ from oddsmath import Leg
 # call made at render time.
 # --------------------------------------------------------------------------------------
 TIER_LOCKED = 1        # guaranteed positive in every settlement branch
-TIER_BOUNDED = 2       # both legs can win; downside bounded by vig, not stake
-TIER_INFORMATIONAL = 3 # descriptive; no position implied
+TIER_SUBSIDISED = 2    # venue-subsidised positive EV, capped by the offer; no edge required
+TIER_BOUNDED = 3       # both legs can win; downside bounded by vig, not stake
+TIER_INFORMATIONAL = 4 # descriptive; no position implied
 TIER_GATED = 9         # cannot be actioned until a named gate clears
 
 TIER_NAMES = {
     TIER_LOCKED: "Locked",
+    TIER_SUBSIDISED: "Subsidised",
     TIER_BOUNDED: "Bounded risk",
     TIER_INFORMATIONAL: "Informational",
     TIER_GATED: "Gated",
@@ -186,6 +190,7 @@ def _arb_opportunity(q0, market, res, point) -> Opportunity:
         legs=[_leg_dict(a, res.stakes[0]), _leg_dict(b, res.stakes[1])],
         rank_score=res.worst_case_return,
         suggested_stake={
+            "kind": "DETERMINISTIC_SPLIT",
             "basis": "deterministic arbitrage split -- no probability estimate involved",
             "total": res.total_stake,
             "legs": [
@@ -323,6 +328,96 @@ def detect_dispersion(snapshot, min_spread_pct: float = 4.0) -> list[Opportunity
 
 
 # --------------------------------------------------------------------------------------
+# Detector 4 -- PROMOTIONAL_VALUE (added to the taxonomy by amendment v1 under D144)
+# --------------------------------------------------------------------------------------
+
+
+def detect_promos(snapshot) -> list[Opportunity]:
+    """Value the user's own entered offers against de-vigged cross-book consensus.
+
+    Deliberately model-free: the probability comes from the market, so this lane sits
+    outside S42 and does not depend on an edge this programme has not demonstrated.
+    """
+    opps: list[Opportunity] = []
+    for rec in _promos.evaluate_offers(snapshot):
+        example = rec.get("example_only", False)
+        ex_note = ("EXAMPLE OFFER - illustrative terms, not seen at a book. Replace it in "
+                   "promos.json.")
+
+        if rec["status"] != "VALUED":
+            opps.append(Opportunity(
+                opp_id="PROMO-" + rec["id"],
+                class_id="PROMOTIONAL_VALUE",
+                tier=TIER_SUBSIDISED,
+                matchup=rec.get("matchup_contains", "-"),
+                commence_time="",
+                market=rec.get("market", ""),
+                headline=rec.get("label", rec["id"]) + " - could not be valued",
+                detail=rec.get("note", ""),
+                rank_score=-1.0,
+                stake_gate="No live two-sided market matched this offer.",
+                evidence="Listed rather than dropped, so a silent match failure stays visible.",
+                caveats=[ex_note if example else
+                         "Offer terms are as you entered them and are not verified against the venue."],
+            ))
+            continue
+
+        v = rec["value"]
+        ev_pct = v["ev_per_unit"] * 100.0
+        cap = float(rec.get("max_stake", 0.0) or 0.0)
+        head = "{:+.1f}% expected value".format(ev_pct)
+        if cap:
+            head += " - ${:+,.2f} at the ${:,.0f} cap".format(v["ev_total"], cap)
+
+        caveats = ([ex_note] if example else [])
+        caveats += [
+            "This can lose on any single bet - the worst case is the whole stake.",
+            "Fair probability is an estimate from market consensus, not a certainty.",
+            rec.get("restrictions") or "Check the offer's own restrictions before acting.",
+        ]
+
+        opps.append(Opportunity(
+            opp_id="PROMO-" + rec["id"],
+            class_id="PROMOTIONAL_VALUE",
+            tier=TIER_SUBSIDISED,
+            matchup=rec.get("matchup_contains", "-"),
+            commence_time="",
+            market="{} - {}".format(MARKET_NAMES.get(rec["market"], rec["market"]), rec["outcome"]),
+            headline=head,
+            detail=(
+                "{} at {}. {}. Consensus fair probability {:.4f} from {} books; the same "
+                "wager unpromoted is {:+.1f}%, so the promotion itself is worth {:+.1f} points."
+            ).format(rec.get("label", rec["id"]), rec.get("venue", "your book"), v["basis"],
+                     v["fair_prob"], v["n_books"], v["baseline_ev_per_unit"] * 100.0,
+                     v["uplift_per_unit"] * 100.0),
+            legs=[{"book": rec.get("venue", "your book"), "outcome": rec["outcome"],
+                   "price": rec.get("boosted_price") or rec["base_price"],
+                   "point": rec.get("point"), "last_update": "", "stake": cap or None}],
+            rank_score=v["ev_total"] if cap else v["ev_per_unit"],
+            stake_gate=(
+                "The figure shown is the OFFER'S OWN CAP, not a sizing recommendation. "
+                "Choosing any amount BELOW the cap is a staking decision and is still "
+                "governed by the gated policy (M24 <- M23 <- M22). This row is "
+                "EV-positive in expectation and can lose in full."),
+            suggested_stake={
+                "kind": "OFFER_CAP",
+                "basis": ("the offer's OWN cap, published by the venue. With positive EV "
+                          "per unit and a hard cap, expected value is maximised at the cap "
+                          "-- but this is the venue's number, NOT our sizing policy"),
+                "total": cap,
+                "legs": [{"book": rec.get("venue", "your book"), "outcome": rec["outcome"],
+                          "stake": cap}],
+                "worst_case_profit": -cap,
+                "worst_case_return_pct": -100.0,
+            },
+            evidence=("Arithmetic on the offer's stated terms plus a de-vigged consensus "
+                      "probability. Positive in EXPECTATION, not locked."),
+            caveats=caveats,
+        ))
+    return opps
+
+
+# --------------------------------------------------------------------------------------
 # Gated lanes -- present so the board is honest about what it is NOT showing
 # --------------------------------------------------------------------------------------
 
@@ -356,18 +451,6 @@ GATED_LANES = [
         "gate": "M02B_VENDOR_PURCHASE_DECISION (yours)",
         "why": "No vendor projection feed is licensed. Purchases are yours alone.",
     },
-    {
-        "class_id": "PROMOTIONAL_VALUE",
-        "label": "Boosts, specials and promos",
-        "gate": "Not yet a contract class — needs an M00 amendment",
-        "why": (
-            "You named promotions as a legitimate reason to bet and the arithmetic is "
-            "simple, but the M00 taxonomy has six classes and this is not one of them. "
-            "Adding a seventh is a contract amendment, which follows M00's own amendment "
-            "procedure rather than being slipped in by a rendering node. The lane is "
-            "scaffolded and the calculator is written; it stays dark until the class exists."
-        ),
-    },
 ]
 
 
@@ -380,12 +463,19 @@ def build_board(snapshot, bankroll: float = 1000.0, stake_each: float = 100.0) -
     arbs = detect_arbitrage(snapshot, bankroll=bankroll)
     mids = detect_middles(snapshot, stake_each=stake_each)
     disp = detect_dispersion(snapshot)
+    promo = detect_promos(snapshot)
 
-    opportunities = arbs + mids + disp
+    opportunities = arbs + promo + mids + disp
     # Rank: tier first (locked before bounded before informational), then score within tier.
     opportunities.sort(key=lambda o: (o.tier, -o.rank_score))
 
+    ctr = _contract.load()
+    for o in opportunities:
+        ctr.require(o.class_id)          # a rendering node may not mint a class
+
     return {
+        "contract_base_sha256": ctr.base_sha256,
+        "contract_amendment_version": ctr.amendment_version,
         "snapshot_utc": snapshot.snapshot_utc,
         "captured_at": snapshot.captured_at.isoformat(),
         "age_seconds": round(snapshot.age_seconds, 1),
@@ -397,6 +487,7 @@ def build_board(snapshot, bankroll: float = 1000.0, stake_each: float = 100.0) -
         "bankroll": bankroll,
         "counts": {
             "TRUE_CROSS_BOOK_ARBITRAGE": len(arbs),
+            "PROMOTIONAL_VALUE": len(promo),
             "MIDDLES_AND_DISLOCATIONS": len(mids),
             "PURE_MICROSTRUCTURE": len(disp),
         },

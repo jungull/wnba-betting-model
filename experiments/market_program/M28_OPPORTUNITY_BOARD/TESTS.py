@@ -17,6 +17,8 @@ import oddsmath as om
 from oddsmath import Leg
 import board
 import feed
+import promos as pr
+import contract as ct
 
 PASS, FAIL = [], []
 
@@ -220,12 +222,29 @@ live_ok = True
 try:
     real = feed.load_latest()
     b = board.build_board(real)
+    # THE INVARIANT, stated precisely rather than loosely:
+    #   * only locked arbitrage may carry a DETERMINISTIC_SPLIT stake, and it needs no gate;
+    #   * a promotion may carry the OFFER'S OWN CAP, but must ALSO carry a sizing gate,
+    #     because choosing anything below that cap is a staking decision we cannot govern;
+    #   * every other class carries no number at all, only the name of its gate.
+    det_ok = cap_ok = none_ok = True
     for o in b["opportunities"]:
-        if o["class_id"] != "TRUE_CROSS_BOOK_ARBITRAGE":
-            if o["suggested_stake"] is not None or not o["stake_gate"]:
-                live_ok = False
-                break
-    check("no probabilistic opportunity carries a suggested stake", live_ok)
+        st, cls = o["suggested_stake"], o["class_id"]
+        if cls == "TRUE_CROSS_BOOK_ARBITRAGE":
+            if not st or st.get("kind") != "DETERMINISTIC_SPLIT":
+                det_ok = False
+        elif cls == "PROMOTIONAL_VALUE":
+            if st and (st.get("kind") != "OFFER_CAP" or not o["stake_gate"]):
+                cap_ok = False
+        else:
+            if st is not None or not o["stake_gate"]:
+                none_ok = False
+    check("only locked arbitrage carries a deterministic-split stake", det_ok)
+    check("a promotion's number is the OFFER CAP and still carries a sizing gate", cap_ok)
+    check("every other probabilistic class carries no stake, only its gate", none_ok)
+    check("no class other than arbitrage claims a deterministic split",
+          all(not o["suggested_stake"] or o["suggested_stake"].get("kind") != "DETERMINISTIC_SPLIT"
+              for o in b["opportunities"] if o["class_id"] != "TRUE_CROSS_BOOK_ARBITRAGE"))
     check("every gated lane names its gate",
           all(g.get("gate") and g.get("why") for g in b["gated_lanes"]))
     check("execution mode is SHADOW", b["execution_mode"] == "SHADOW")
@@ -260,6 +279,150 @@ try:
               "a sub-minute grid would change the executability discussion")
 except FileNotFoundError as e:
     print(f"  SKIP  feed assertions -- {e}")
+
+
+# ======================================================================================
+section("8. Contract loading and amendment discipline")
+
+c = ct.load()
+check("composed taxonomy exposes seven classes", len(c.classes) == 7, str(len(c.classes)))
+check("the six base classes survive the amendment",
+      {"TRUE_CROSS_BOOK_ARBITRAGE", "MIDDLES_AND_DISLOCATIONS", "STALE_LINE_DELAYED_REACTION",
+       "MODEL_VS_MARKET_VALUE", "THIRD_PARTY_PROJECTION_VALUE", "PURE_MICROSTRUCTURE"}
+      <= set(c.classes))
+check("PROMOTIONAL_VALUE was added by amendment, not by the base file",
+      "PROMOTIONAL_VALUE" in c.amended_class_ids)
+check("the base taxonomy bytes are UNCHANGED by the amendment",
+      c.base_sha256 == "c83e25e783a4ee8642a26dd416362e46c2c34196ff8f8354977c28b72940a12c",
+      c.base_sha256)
+check("the reserved-terms ruling on `arbitrage` is intact",
+      "TRUE_CROSS_BOOK_ARBITRAGE" in c.reserved_terms["arbitrage"])
+check("SHADOW remains the default execution mode", c.default_execution_mode == "SHADOW")
+try:
+    c.require("NOT_A_REAL_CLASS")
+    check("a rendering node cannot mint a class", False, "no exception")
+except KeyError:
+    check("a rendering node cannot mint a class", True)
+
+# The amendment must cite a ledgered decision AND verbatim user authorization.
+import json as _json
+_am = _json.loads(open(ct.AMENDMENTS_PATH, encoding="utf-8").read())
+check("amendment cites a ledgered decision", bool(_am["authorization"]["ledgered_decision"]))
+check("amendment records the user's authorization VERBATIM",
+      len(_am["authorization"]["verbatim"]) > 40)
+check("amendment is additive only (declares no redefinitions)",
+      all(cl["id"] not in {"TRUE_CROSS_BOOK_ARBITRAGE", "MIDDLES_AND_DISLOCATIONS"}
+          for cl in _am["new_classes"]))
+check("amendment affirms reserved_terms unchanged",
+      any("reserved_terms" in u for u in _am["unchanged"]))
+check("PROMOTIONAL_VALUE forbids using our own model for the probability",
+      any("NEVER our own model" in x for x in c.classes["PROMOTIONAL_VALUE"]["constraints"]))
+check("PROMOTIONAL_VALUE is explicitly not arbitrage",
+      any("NOT arbitrage" in x for x in c.classes["PROMOTIONAL_VALUE"]["constraints"]))
+
+# ======================================================================================
+section("9. Promotion valuation")
+
+# Odds boost. Fair 20%, base +400 (dec 5.0), boosted +500 (dec 6.0).
+v = pr.value_promo("odds_boost", fair_prob=0.20, base_price=400, boosted_price=500,
+                   max_stake=100.0)
+close("odds boost EV per unit", v.ev_per_unit, 0.20 * 6.0 - 1.0, 1e-6)
+close("odds boost EV at cap", v.ev_total, round((0.20 * 6.0 - 1.0) * 100.0, 2), 0.011)
+close("baseline EV without the promo", v.baseline_ev_per_unit, 0.20 * 5.0 - 1.0, 1e-6)
+close("uplift is promo minus baseline", v.uplift_per_unit,
+      (0.20 * 6.0 - 1.0) - (0.20 * 5.0 - 1.0), 1e-6)
+check("a fairly-priced boost is EV-positive", v.ev_per_unit > 0)
+
+# Profit boost. base -110 (dec 1.909...), +50% profit -> 1 + 0.909*1.5 = 2.3636
+v2 = pr.value_promo("profit_boost", fair_prob=0.5, base_price=-110, boost_pct=0.5,
+                    max_stake=50.0)
+_d = om.american_to_decimal(-110)
+close("profit boost effective EV", v2.ev_per_unit, 0.5 * (1 + (_d - 1) * 1.5) - 1.0, 1e-6)
+check("a 50% profit boost turns a -110 coinflip positive", v2.ev_per_unit > 0)
+
+# Free bet, stake NOT returned: EV = p * (dec - 1) on face value.
+v3 = pr.value_promo("free_bet", fair_prob=0.5, base_price=100, max_stake=25.0)
+close("free bet EV per unit of face", v3.ev_per_unit, 0.5 * 1.0, 1e-6)
+check("free bet baseline is zero -- nothing of yours was risked",
+      v3.baseline_ev_per_unit == 0.0)
+v3b = pr.value_promo("free_bet", fair_prob=0.5, base_price=100, max_stake=25.0,
+                     free_bet_stake_returned=True)
+check("a stake-returned free bet is worth strictly more",
+      v3b.ev_per_unit > v3.ev_per_unit)
+# The known property that matters operationally: free bets are worth more at longer prices.
+short = pr.value_promo("free_bet", fair_prob=0.8, base_price=-400, max_stake=25.0)
+lng = pr.value_promo("free_bet", fair_prob=0.2, base_price=400, max_stake=25.0)
+check("free bets are worth more on longer prices", lng.ev_per_unit > short.ev_per_unit,
+      f"{lng.ev_per_unit:.4f} vs {short.ev_per_unit:.4f}")
+
+# Bonus back.
+v4 = pr.value_promo("bonus_back", fair_prob=0.5, base_price=100, max_stake=100.0,
+                    bonus_back_recovery=0.7)
+close("bonus back EV", v4.ev_per_unit, 0.5 * 1.0 + 0.5 * (-1.0 + 0.7), 1e-6)
+check("full recovery would make bonus-back a free roll",
+      pr.value_promo("bonus_back", fair_prob=0.5, base_price=100,
+                     bonus_back_recovery=1.0).ev_per_unit > v4.ev_per_unit)
+
+for bad in ("boost", "", "arbitrage"):
+    try:
+        pr.value_promo(bad, fair_prob=0.5, base_price=100)
+        check(f"rejects unknown promo kind {bad!r}", False, "no exception")
+    except ValueError:
+        check(f"rejects unknown promo kind {bad!r}", True)
+
+check("every valuation names its assumption", "ESTIMATE" in v.assumption)
+check("the assumption states our model is not used", "not used" in v.assumption)
+
+# ======================================================================================
+section("10. Promotions against live consensus")
+
+try:
+    _s = feed.load_latest()
+    fair, nb = pr.consensus_fair_prob(_s, _s.quotes[0].home_team[:8], "h2h",
+                                      _s.quotes[0].home_team)
+    if fair is not None:
+        check("consensus probability is a probability", 0.0 < fair < 1.0, str(fair))
+        check("consensus used more than one book", nb > 1, str(nb))
+        other = [q.outcome for q in _s.quotes
+                 if q.matchup == _s.quotes[0].matchup and q.market == "h2h"
+                 and q.outcome != _s.quotes[0].home_team]
+        if other:
+            f2, _ = pr.consensus_fair_prob(_s, _s.quotes[0].home_team[:8], "h2h", other[0])
+            close("de-vigged two-way consensus sums to 1", fair + f2, 1.0, 1e-9)
+
+    evald = pr.evaluate_offers(_s)
+    check("example offers load", len(evald) > 0, f"{len(evald)}")
+    valued = [e for e in evald if e["status"] == "VALUED"]
+    check("at least one example offer matched a live market", len(valued) > 0)
+    check("every valued offer reports its book count",
+          all(e["value"]["n_books"] > 0 for e in valued))
+    check("unmatched offers are listed, never silently dropped",
+          all(("value" in e) or e.get("note") for e in evald))
+
+    _b = board.build_board(_s)
+    promo_opps = [o for o in _b["opportunities"] if o["class_id"] == "PROMOTIONAL_VALUE"]
+    check("promotions reach the board", len(promo_opps) > 0)
+    check("promotions rank in the subsidised tier",
+          all(o["tier"] == board.TIER_SUBSIDISED for o in promo_opps))
+    check("promotions rank ABOVE middles",
+          board.TIER_SUBSIDISED < board.TIER_BOUNDED)
+    check("every example promo is labelled as an example on the board",
+          all(any("EXAMPLE" in c for c in o["caveats"]) for o in promo_opps))
+    check("every promo warns it can lose the whole stake",
+          all(any("whole stake" in c for c in o["caveats"]) for o in promo_opps))
+    check("promo stake basis credits the venue's cap, not our policy",
+          all("NOT our sizing policy" in o["suggested_stake"]["basis"]
+              for o in promo_opps if o["suggested_stake"]))
+    check("every promo still carries a sizing gate despite showing a number",
+          all(o["stake_gate"] and "not a sizing recommendation" in o["stake_gate"]
+              for o in promo_opps))
+    check("PROMOTIONAL_VALUE is no longer listed as a gated lane",
+          "PROMOTIONAL_VALUE" not in {g["class_id"] for g in _b["gated_lanes"]})
+    check("the board records the contract hash it validated against",
+          _b.get("contract_base_sha256") == c.base_sha256)
+    check("the board records the amendment version", _b.get("contract_amendment_version") == 1)
+except FileNotFoundError as e:
+    print(f"  SKIP  live promo assertions -- {e}")
 
 # ======================================================================================
 print("\n" + "=" * 86)

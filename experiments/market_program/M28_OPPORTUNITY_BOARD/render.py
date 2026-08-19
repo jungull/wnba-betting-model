@@ -19,8 +19,9 @@ from pathlib import Path
 
 import board as _board
 
-TIER_CLASS = {1: "locked", 2: "bounded", 3: "info", 9: "gated"}
-TIER_LABEL = {1: "Locked", 2: "Bounded risk", 3: "Informational", 9: "Gated"}
+TIER_CLASS = {1: "locked", 2: "subsidy", 3: "bounded", 4: "info", 9: "gated"}
+TIER_LABEL = {1: "Locked", 2: "Subsidised", 3: "Bounded risk", 4: "Informational",
+              9: "Gated"}
 
 CLASS_LABEL = {
     "TRUE_CROSS_BOOK_ARBITRAGE": "Arbitrage",
@@ -39,6 +40,7 @@ CSS = """
   --accent:#2D5BA8; --accent-bg:#E6EDF9;
   --locked:#1C7A4C; --locked-bg:#E2F2E9;
   --bounded:#9A6512; --bounded-bg:#FBEFDC;
+  --subsidy:#5B3FA6; --subsidy-bg:#EDE8F7;
   --info:#4C5561; --info-bg:#E9ECF0;
   --gated:#8C3A42; --gated-bg:#F7E8E9;
   --mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
@@ -50,6 +52,7 @@ CSS = """
   --accent:#7FA8E8; --accent-bg:#182335;
   --locked:#5FC48D; --locked-bg:#12271C;
   --bounded:#D9A75A; --bounded-bg:#2A2113;
+  --subsidy:#B29BE0; --subsidy-bg:#1F1930;
   --info:#A5AEBB; --info-bg:#1E232B;
   --gated:#DE8C94; --gated-bg:#2A1719;
 }}
@@ -59,6 +62,7 @@ CSS = """
   --accent:#7FA8E8; --accent-bg:#182335;
   --locked:#5FC48D; --locked-bg:#12271C;
   --bounded:#D9A75A; --bounded-bg:#2A2113;
+  --subsidy:#B29BE0; --subsidy-bg:#1F1930;
   --info:#A5AEBB; --info-bg:#1E232B;
   --gated:#DE8C94; --gated-bg:#2A1719;
 }
@@ -90,6 +94,7 @@ h2 .count{font-family:var(--mono);font-weight:400;color:var(--ink-3);font-size:.
 .opp{background:var(--panel);border:1px solid var(--line);border-left-width:4px;
   border-radius:4px;margin-bottom:.75rem;overflow:hidden}
 .opp.locked{border-left-color:var(--locked)}
+.opp.subsidy{border-left-color:var(--subsidy)}
 .opp.bounded{border-left-color:var(--bounded)}
 .opp.info{border-left-color:var(--info)}
 .opp-head{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:baseline;
@@ -101,6 +106,7 @@ h2 .count{font-family:var(--mono);font-weight:400;color:var(--ink-3);font-size:.
 .badge{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;
   padding:.18rem .45rem;border-radius:3px;white-space:nowrap}
 .b-locked{background:var(--locked-bg);color:var(--locked)}
+.b-subsidy{background:var(--subsidy-bg);color:var(--subsidy)}
 .b-bounded{background:var(--bounded-bg);color:var(--bounded)}
 .b-info{background:var(--info-bg);color:var(--info)}
 .b-gated{background:var(--gated-bg);color:var(--gated)}
@@ -223,9 +229,11 @@ def render(b: dict) -> str:
     order = [
         (1, "Locked opportunities",
          "Guaranteed positive in every settlement outcome, pushes included. These carry a concrete stake because the split is arithmetic, not a forecast."),
-        (2, "Bounded-risk opportunities",
+        (2, "Subsidised opportunities — your promotions",
+         "Venue-subsidised positive expected value, capped by the offer itself. No informational edge is required to take these, and the probability comes from the market consensus rather than our model. Positive in expectation, NOT locked."),
+        (3, "Bounded-risk opportunities",
          "Both legs can win. The downside is the vig rather than a full stake — but the profit is probabilistic, so this is not arbitrage and carries no suggested stake."),
-        (3, "Informational",
+        (4, "Informational",
          "Where the books most disagree. Descriptive only: no position is implied."),
     ]
     rank = 0
@@ -234,10 +242,15 @@ def render(b: dict) -> str:
         sections.append(f'<h2>{_esc(title)}<span class="count">{len(rows)}</span></h2>'
                         f'<p class="h2sub">{_esc(sub)}</p>')
         if not rows:
-            reason = ("No locked combination exists across these books right now. That is "
-                      "the normal state of a mature market — arbitrage is rare, brief, and "
-                      "rarer still on an hourly grid."
-                      if tier == 1 else "Nothing detected in this snapshot.")
+            if tier == 1:
+                reason = ("No locked combination exists across these books right now. That is "
+                          "the normal state of a mature market — arbitrage is rare, brief, "
+                          "and rarer still on an hourly grid.")
+            elif tier == 2:
+                reason = ("No promotions entered. Add your real offers to promos.json and they "
+                          "will be valued here against the market's own consensus.")
+            else:
+                reason = "Nothing detected in this snapshot."
             sections.append(f'<div class="empty">{_esc(reason)}</div>')
         for o in rows:
             rank += 1
@@ -268,6 +281,7 @@ def render(b: dict) -> str:
   <div class="stat"><div class="k">Books</div><div class="v">{b['n_books']}</div></div>
   <div class="stat"><div class="k">Quotes</div><div class="v">{b['n_quotes']}</div></div>
   <div class="stat"><div class="k">Locked</div><div class="v" style="color:var(--locked)">{b['counts']['TRUE_CROSS_BOOK_ARBITRAGE']}</div></div>
+  <div class="stat"><div class="k">Promos</div><div class="v" style="color:var(--subsidy)">{b['counts'].get('PROMOTIONAL_VALUE', 0)}</div></div>
   <div class="stat"><div class="k">Middles</div><div class="v" style="color:var(--bounded)">{b['counts']['MIDDLES_AND_DISLOCATIONS']}</div></div>
   <div class="stat"><div class="k">Bankroll</div><div class="v">${b['bankroll']:,.0f}<small>sizing basis</small></div></div>
 </div>
@@ -285,7 +299,8 @@ found nothing there. These lanes are built and dark.</p>
   Snapshot {_esc(b['snapshot_utc'])} · captured {_esc(b['captured_at'])} · age {b['age_seconds']:.0f}s<br>
   Data root {_esc(b['data_root'])} · resolved via {_esc(b['data_root_how'])}<br>
   {_esc(b['execution_mode_note'])}<br>
-  M28_OPPORTUNITY_BOARD · classes per M00 opportunity_taxonomy · this page places nothing and never will
+  M28_OPPORTUNITY_BOARD · M00 taxonomy {_esc(b.get('contract_base_sha256',''))[:16]}… + amendment v{b.get('contract_amendment_version')} (D144) · every class id verified against the contract<br>
+  this page places nothing and never will
 </footer>
 </div>"""
 

@@ -26,9 +26,10 @@ Reads the newest live odds snapshot, normalises every quote, and emits one ranke
 | Tier | Class | Stake shown? | Why |
 |---|---|---|---|
 | 1 · Locked | `TRUE_CROSS_BOOK_ARBITRAGE` | **Yes, exact** | The split follows from the prices and the bankroll. No probability estimate is involved anywhere, so the number is arithmetic and is defensible. |
-| 2 · Bounded risk | `MIDDLES_AND_DISLOCATIONS` | **No — gated** | Sizing needs a hit probability this node has not measured and a staking policy that is gated: `M24_STAKING` ← `M23_SHADOW_TRADING` ← `M22_CAPACITY`. Equal-stake figures are shown to illustrate payoff shape only. |
-| 3 · Informational | `PURE_MICROSTRUCTURE` (dispersion) | No | Line shopping is not a position. |
-| Dark | four further lanes | No | Built and switched off; see §5. |
+| 2 · Subsidised | `PROMOTIONAL_VALUE` | **The offer's cap** | The venue publishes a hard maximum. With positive EV per unit, value is maximised at that cap — but the number is the *venue's*, not our sizing policy, so it is tagged `OFFER_CAP` and still carries a sizing gate for any amount below it. |
+| 3 · Bounded risk | `MIDDLES_AND_DISLOCATIONS` | **No — gated** | Sizing needs a hit probability this node has not measured and a staking policy that is gated: `M24_STAKING` ← `M23_SHADOW_TRADING` ← `M22_CAPACITY`. Equal-stake figures are shown to illustrate payoff shape only. |
+| 4 · Informational | `PURE_MICROSTRUCTURE` (dispersion) | No | Line shopping is not a position. |
+| Dark | three further lanes | No | Built and switched off; see §5. |
 
 Ranking is frozen in code: tier first, then a score within tier. Reordering is a visible code
 change, never a judgement made at render time. Middles rank by **window width per unit of cost**,
@@ -80,12 +81,64 @@ each dark lane is rendered with its blocking gate named:
   quote demonstrably capturable at the same moment; on an hourly grid that comparison cannot be
   made, so any staleness shown would be an artifact of our own cadence.
 * **Vendor projections** — `M02B_VENDOR_PURCHASE_DECISION`, the user's alone.
-* **Boosts, specials and promos** — **the user asked for these and they are not in the contract.**
-  M00's `opportunity_taxonomy` has six classes and promotional value is not one of them. The
-  arithmetic is trivial, but adding a seventh class is a contract amendment that follows M00's own
-  amendment procedure; a rendering node must not mint a taxonomy class. **The lane is scaffolded
-  and stays dark until the class exists.** This is the one part of the user's request that is
-  blocked by something, and the block is procedural rather than technical.
+*(Promotions were the fourth dark lane. They are now **live** — see §5A.)*
+
+## 5A. Promotions — the taxonomy amended, and why not in place
+
+The user named promotional specials as a legitimate reason to bet. M00's amendment procedure
+permits exactly this: *"amended only by a ledgered decision citing user authorization"*. The
+user's instruction **is** that authorization, so it is recorded verbatim rather than paraphrased —
+a paraphrase of an authorization is not an authorization — and the class is added under `D144`.
+
+**The amendment is additive, in a sidecar, and the base file is untouched.** That is not
+squeamishness. `TAXONOMY.json`'s sha256 is **pinned in nine places across six passed nodes**:
+`M11_CONSENSUS_MODEL/consensus.py:59` and `M25_MARKET_UI_FIXTURES/contract_constants.py:29` assert
+it *at import time and raise rather than render*; `M11_CONSENSUS_MODEL/TESTS.py:291` asserts it in
+a suite; and `M01`, `M02`, `M04` record it as verification receipts that are correct as records of
+their own date. Editing the base bytes would have broken two importers immediately, falsified one
+test suite, and silently invalidated three historical receipts. `TAXONOMY_AMENDMENTS.json` adds the
+seventh class beside the six and preserves every one of those pins.
+
+**The cost is stated in the amendment file itself**: a reader of `TAXONOMY.json` alone now sees six
+classes and will not know a seventh exists. That is a real defect of this approach, mitigated by
+`contract.py`, which composes base + amendments, verifies the base hash still matches what the
+amendment was written against, and **fails loudly rather than rendering** if they disagree.
+
+### Why promotions are not behind the model gate
+
+A promotion is valued against the **de-vigged cross-book consensus probability, never against our
+own model.** That is deliberate. Routing promo valuation through our model would put it behind
+`S42` and — worse — would make a subsidy anyone can capture look as though it depended on an edge
+we have measured ourselves *not* to have (`D141`). The venue discloses the subsidy. No
+informational advantage is required, and none is claimed.
+
+De-vigging happens **per book before averaging**. The other order bakes an average margin into the
+result and biases every promo valuation downward.
+
+### What is computed
+
+| Kind | Formula | Note |
+|---|---|---|
+| `odds_boost` | `p · d_boosted − 1` | the price itself improves |
+| `profit_boost` | `p · (1 + (d−1)(1+b)) − 1` | profit multiplied, stake not |
+| `free_bet` | `p · (d−1)` on **face value** | baseline is zero: none of your money was at risk |
+| `bonus_back` | `p·(d−1) + (1−p)·(recovery−1)` | `recovery` is a judgement about *your* conversion, not a market fact |
+
+Each row also reports the **uplift** — promo EV minus the EV of the same wager unpromoted — so the
+promotion's own contribution is separated from whether the underlying bet was any good.
+
+A property worth knowing, and asserted in the suite: **free bets are worth more at longer prices**,
+because the unreturned stake costs relatively less. Valuing one at a short price understates the
+token.
+
+### What is not computed
+
+Sizing below the offer's cap. Whether the stated terms are actually realisable — that is an
+`EXECUTION_FEASIBLE` question this node does not answer. And nothing enrols in anything: offers are
+entered by the user in `promos.json`, the programme does not scrape them, and enrolment is
+`USER_REQUIRED` like every other account action. **The shipped `promos.json` contains four
+clearly-labelled EXAMPLE offers**, marked as examples on the board itself, so the lane renders and
+the arithmetic is inspectable before any real offer is entered.
 
 ## 6. Safety posture
 
@@ -116,25 +169,37 @@ Two live snapshots were exercised, roughly 18 hours apart:
 books at hourly cadence: true arbitrage is rare, brief, and rarer still on a coarse grid. The
 detector is proven live by a manufactured fixture in `TESTS.py`, not by a real hit.
 
-`python TESTS.py` → **69/69 PASS**, exit 0. One test failure was found and fixed during the build:
-the expectation, not the code — `implied_prob(-110)` is `110/210`, not `100/210`.
+`python TESTS.py` → **120/120 PASS**, exit 0. Two failures were found by the suite during the
+build, and both were worth having:
+
+1. A wrong test expectation, not wrong code — `implied_prob(-110)` is `110/210`, not `100/210`.
+2. **A genuine discipline slip by the author.** The suite asserts that only deterministic
+   sizing may carry a stake number. Adding promotions violated it: a promo is probabilistic
+   and was given a number. The cap really is the venue's rather than ours — but blurring
+   "the venue's ceiling" and "our recommended size" into one field is exactly the drift the
+   invariant exists to prevent. **The data model was fixed rather than the test weakened**:
+   stakes now carry an explicit `kind` (`DETERMINISTIC_SPLIT` vs `OFFER_CAP`), only
+   arbitrage may use the former, and a promo showing a number must ALSO carry a sizing gate.
 
 ## 9. Files
 
 | File | Role |
 |---|---|
 | `oddsmath.py` | Pure price arithmetic; arbitrage and middle math with settlement rules |
+| `contract.py` | Composes the M00 taxonomy with its amendments and verifies both |
+| `promos.py` | Promotion valuation against de-vigged cross-book consensus |
+| `promos.json` | **Your offers.** Ships with four labelled examples |
 | `feed.py` | Data-root resolution, snapshot loading, quote normalisation, cadence measurement |
 | `board.py` | Detectors, classification, frozen ranking, stake gating |
 | `render.py` | Self-contained HTML dashboard |
-| `TESTS.py` | 69 checks, weighted toward the arithmetic |
+| `TESTS.py` | 120 checks, weighted toward the arithmetic |
 | `board.html` / `board.json` | Rendered output for the snapshot named in the footer |
 
 Run: `python render.py` → writes `board.html` and `board.json` from the newest snapshot.
 
 ## 10. What this node does NOT do
 
-It does not claim any opportunity is executable. It does not size anything probabilistic. It does
-not evaluate our model against the market. It does not detect stale lines. It does not price
-promos. It places no orders and never will. Each of those is either a named gate above or a
+It does not claim any opportunity is executable. It does not size anything probabilistic below
+an offer's own cap. It does not evaluate our model against the market. It does not detect stale
+lines. It does not scrape, create or enrol in any promotion. It places no orders and never will. Each of those is either a named gate above or a
 measurement this node has not made — and none of them is quietly missing.

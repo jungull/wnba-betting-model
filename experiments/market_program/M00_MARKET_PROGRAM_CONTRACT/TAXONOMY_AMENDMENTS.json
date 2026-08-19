@@ -1,0 +1,44 @@
+{
+  "amendment_record_id": "M00_TAXONOMY_AMENDMENTS",
+  "version": 1,
+  "base_file": "TAXONOMY.json",
+  "base_sha256": "c83e25e783a4ee8642a26dd416362e46c2c34196ff8f8354977c28b72940a12c",
+  "why_this_file_exists_instead_of_an_in_place_edit": [
+    "TAXONOMY.json's amendment_procedure requires 'a ledgered decision citing user authorization'. It does NOT require that the amendment be an in-place edit, and an in-place edit would be actively harmful here.",
+    "The base file's sha256 is PINNED IN NINE PLACES ACROSS SIX PASSED NODES. Two of them assert it at import time and raise rather than render (M11_CONSENSUS_MODEL/consensus.py:59, M25_MARKET_UI_FIXTURES/contract_constants.py:29); one asserts it in a test suite (M11_CONSENSUS_MODEL/TESTS.py:291); three record it as a verification receipt describing what was true on their own date (M01_MARKET_DATA_INVENTORY/INVENTORY.json, M02_BUILD_VS_BUY/{REPORT.md,VENDOR_MATRIX.json}, M04_COMPETITOR_ARCHIVE_DESIGN/DESIGN.json).",
+    "Editing the base bytes would break the two importers immediately, falsify one test suite, and silently invalidate three historical receipts that are CORRECT as records of their own date. An append-only amendment preserves every one of them.",
+    "This mirrors how the rest of this programme handles change: ledgers are append-only, frozen artifacts stay frozen, and a later fact is added beside an earlier one rather than overwriting it.",
+    "COST, STATED PLAINLY: a reader of TAXONOMY.json alone now sees six classes and will not know a seventh exists. That is a real defect of this approach. It is mitigated by requiring every consumer to load base + amendments through contract.py, which fails loudly if either file is missing or the base hash has moved. If the user prefers the base file edited in place instead, that is a coordinated change across the six nodes above and is a larger job than it looks."
+  ],
+  "authorization": {
+    "authorised_by": "user, in chat, 2026-08-19",
+    "verbatim": "it doesnt have to always be because our model outperformed the lines either, just normal arbritrage on slower moving markets is an acceptable reason to place a bet, or if there are specials avaliable for example",
+    "ledgered_decision": "D144",
+    "note": "The user's instruction names promotional specials as a legitimate reason to place a bet. That is the user authorization the amendment_procedure requires. It is recorded verbatim rather than paraphrased, because a paraphrase of an authorization is not an authorization."
+  },
+  "adds_to": "opportunity_taxonomy.classes",
+  "new_classes": [
+    {
+      "id": "PROMOTIONAL_VALUE",
+      "definition": "A venue-offered promotion - odds boost, profit boost, free bet, risk-free bet, or equivalent - whose terms change the payoff of an otherwise ordinary wager in the bettor's favour. Value is computed against a de-vigged multi-book consensus probability, never against our own model, and is therefore independent of any fundamental-model claim.",
+      "mechanism": "Venues subsidise acquisition and retention. The subsidy is a real, disclosed change to the price, not a mispricing, so it requires no informational edge to capture.",
+      "falsified_by": "Realised promotional return, measured over a logged sample of offers at their stated terms, indistinguishable from the return of taking the unboosted price after promotional restrictions (max stake, market eligibility, wagering requirements, settlement exclusions) are applied.",
+      "constraints": [
+        "Every promotional claim carries the offer's OWN restrictions as first-class fields: maximum stake, eligible markets, expiry, wagering requirements, and whether the stake is returned on a win.",
+        "The fair probability used for valuation is the de-vigged cross-book consensus at a witnessed timestamp. It is NEVER our own model's probability - that would route the class through S42 and defeat the point of it being model-independent.",
+        "Promotional value is capped by the offer's own maximum stake and is therefore a BOUNDED opportunity by construction. Capacity claims are meaningless here and must not be made.",
+        "This class is EV-positive-in-expectation, not locked. It is NOT arbitrage and may never use that reserved word.",
+        "Offer terms are entered by the user or captured from the venue; this programme does not create, accept or enrol in any offer, and enrolment remains USER_REQUIRED like every other account action."
+      ],
+      "primary_families": [],
+      "evidence_note": "A promotion's value does not need the evidence ladder in the way a mispricing claim does, because the subsidy is disclosed by the venue rather than inferred by us. What DOES need evidence is whether the stated terms are realisable in practice - that is an EXECUTION_FEASIBLE question and is not answered by this class."
+    }
+  ],
+  "unchanged": [
+    "reserved_terms - `arbitrage` still names TRUE_CROSS_BOOK_ARBITRAGE and nothing else",
+    "evidence_ladder - seven labels, unchanged, PRODUCTION_ELIGIBLE still the top rung",
+    "execution_mode_ladder - unchanged, SHADOW still the default and every step above it USER_REQUIRED",
+    "user_required_boundary - unchanged; accounts, deposits, credentials and orders remain the user's alone",
+    "final_state_archive_ruling - unchanged"
+  ]
+}
