@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `e9b823e534ac471e6fd2045ddead1dd2f67dbfd5` |
+| HEAD | `943bd0a62f6a1e8e023b58c5a4ad5898dbf3e0e8` |
 | working tree | DIRTY |
-| nodes | 104 |
-| events | 528 |
+| nodes | 105 |
+| events | 530 |
 
 ## Counts by status
 
@@ -17,7 +17,7 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 6 |
 | HALTED | 1 |
-| PASSED | 86 |
+| PASSED | 87 |
 | READY | 2 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 3 |
@@ -65,6 +65,7 @@ None.
 * `M25_MARKET_UI_FIXTURES` — Market screen shell against fixtures, extending the existing U11/U13 pattern
 * `M26_CAPTURE_MICROSTRUCTURE_REMEDIATION` — Remediate the capture topology: game lines, per-book independence, witnessed absence
 * `M27_PER_BOOK_POLLING` — Bounded per-book polling: make the cross-book synchronization window measurable
+* `M28_OPPORTUNITY_BOARD` — Unified opportunity board: every M00 class ranked together against live capture, with a stake only where sizing is deterministic
 * `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
 * `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
 * `O12_PER_GAME_EXECUTION_SCOPE` — Per-game execution scope defect
@@ -137,7 +138,7 @@ None.
 | data | 0 | 0 | 5 | 0 | 1 | 0 |
 | future_research | 0 | 0 | 7 | 0 | 0 | 0 |
 | governance | 0 | 0 | 5 | 0 | 1 | 0 |
-| market_intelligence | 2 | 0 | 19 | 2 | 0 | 1 |
+| market_intelligence | 2 | 0 | 20 | 2 | 0 | 1 |
 | operations | 0 | 0 | 12 | 0 | 2 | 0 |
 | possession | 0 | 0 | 25 | 0 | 2 | 1 |
 | product | 0 | 0 | 4 | 0 | 0 | 0 |
