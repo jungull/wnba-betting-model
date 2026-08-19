@@ -690,6 +690,70 @@ try:
 except FileNotFoundError as e:
     print(f"  SKIP  spread-promo assertions -- {e}")
 
+
+# ======================================================================================
+section("16. Silent-gap audit -- the class of bug, not the instances")
+
+# Two bugs here produced SILENCE rather than errors: in-play games scanned as pre-game
+# (D151) and every spread discarded by three surfaces (D155). 174 assertions passed
+# throughout BOTH, because none of them said what SHOULD be present. This runs the
+# coverage audit as a test, so the class is caught rather than only the two instances.
+import coverage_audit as ca
+
+check("every deliberate omission carries a written reason",
+      all(isinstance(v, str) and len(v) > 40 for v in ca.DECLARED_SCOPE.values()),
+      "a scope decision without a reason is indistinguishable from an oversight")
+check("scanned-but-empty is modelled separately from out-of-scope",
+      bool(ca.SCANS_BUT_MAY_FIND_NOTHING) and
+      not (set(ca.SCANS_BUT_MAY_FIND_NOTHING) & set(ca.DECLARED_SCOPE)),
+      "finding nothing today and never having looked are different facts")
+check("spread middles are declared rather than forgotten",
+      ("middles", "spreads") in ca.DECLARED_SCOPE
+      and "MARGINS" in ca.DECLARED_SCOPE[("middles", "spreads")])
+
+try:
+    import io as _io
+    import contextlib as _ctx
+    _buf = _io.StringIO()
+    with _ctx.redirect_stdout(_buf):
+        _rc = ca.main()
+    check("the coverage audit reports NO silent gaps", _rc == 0,
+          "a market is quoted but some surface produces nothing and nobody said why")
+except FileNotFoundError as e:
+    print(f"  SKIP  coverage audit -- {e}")
+
+
+# ======================================================================================
+section("16. Silent-gap audit -- the class of bug, not the instances")
+
+# Two bugs here produced SILENCE rather than errors: in-play games scanned as pre-game
+# (D151) and every spread discarded by three surfaces (D155). 174 assertions passed
+# throughout BOTH, because none of them said what SHOULD be present. This runs the
+# coverage audit as a test, so the class is caught rather than only the two instances.
+import coverage_audit as ca
+
+check("every deliberate omission carries a written reason",
+      all(isinstance(v, str) and len(v) > 40 for v in ca.DECLARED_SCOPE.values()),
+      "a scope decision without a reason is indistinguishable from an oversight")
+check("scanned-but-empty is modelled separately from out-of-scope",
+      bool(ca.SCANS_BUT_MAY_FIND_NOTHING) and
+      not (set(ca.SCANS_BUT_MAY_FIND_NOTHING) & set(ca.DECLARED_SCOPE)),
+      "finding nothing today and never having looked are different facts")
+check("spread middles are declared rather than forgotten",
+      ("middles", "spreads") in ca.DECLARED_SCOPE
+      and "MARGINS" in ca.DECLARED_SCOPE[("middles", "spreads")])
+
+try:
+    import io as _io
+    import contextlib as _ctx
+    _buf = _io.StringIO()
+    with _ctx.redirect_stdout(_buf):
+        _rc = ca.main()
+    check("the coverage audit reports NO silent gaps", _rc == 0,
+          "a market is quoted but some surface produces nothing and nobody said why")
+except FileNotFoundError as e:
+    print(f"  SKIP  coverage audit -- {e}")
+
 # ======================================================================================
 print("\n" + "=" * 86)
 if FAIL:
