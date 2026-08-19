@@ -499,6 +499,69 @@ try:
 except FileNotFoundError as e:
     print(f"  SKIP  cadence-honesty assertions -- {e}")
 
+
+# ======================================================================================
+section("13. Middle expected value -- the number M10 said it never computed")
+
+import middle_ev as mev
+
+_d110 = om.american_to_decimal(-110)
+
+# Breakeven from the prices alone. Stake 1 each side at -110: hit pays 2 x 0.909 = 1.818,
+# miss loses 1 - 0.909 = 0.0909. Breakeven p = 0.0909 / 1.909 = 4.762%.
+close("breakeven hit rate at -110/-110", mev.breakeven_probability(_d110, _d110), 0.047619, 1e-5)
+check("breakeven falls when the prices improve",
+      mev.breakeven_probability(om.american_to_decimal(100), om.american_to_decimal(100))
+      < mev.breakeven_probability(_d110, _d110))
+
+_bw = mev.breakeven_window(_d110, _d110)
+check("the breakeven window at -110/-110 is about 1.8 points", 1.6 < _bw < 2.0, f"{_bw}")
+
+# The finding that changes the product: narrow middles lose money.
+for w in (0.5, 1.0, 1.5):
+    r = mev.evaluate(w, _d110, _d110)
+    check(f"a {w}-point middle is NEGATIVE expectation at -110", not r.is_positive,
+          f"EV {r.ev}")
+for w in (2.5, 3.0, 5.0):
+    r = mev.evaluate(w, _d110, _d110)
+    check(f"a {w}-point middle is positive expectation at -110", r.is_positive, f"EV {r.ev}")
+
+check("hit probability rises with window width",
+      mev.evaluate(1.0, _d110, _d110).p_hit < mev.evaluate(3.0, _d110, _d110).p_hit)
+check("the conservative estimate is never more optimistic than the headline",
+      all(mev.evaluate(w, _d110, _d110).p_hit_conservative
+          <= mev.evaluate(w, _d110, _d110).p_hit for w in (0.5, 1, 2, 3, 5)))
+check("a zero-width window cannot hit", mev.evaluate(0.0, _d110, _d110).p_hit == 0.0)
+check("the model states its provenance", "exploration games" in mev.PROVENANCE)
+check("the model admits the window-centring assumption",
+      "centred" in mev.evaluate(2.0, _d110, _d110).caveat)
+check("residual sd is below the unconditional sd, as a decomposition requires",
+      mev.SD_RESIDUAL < mev.SD_TOTAL_EXPLORATION)
+
+try:
+    _s = feed.load_latest()
+    _b = board.build_board(_s)
+    _m = [o for o in _b["opportunities"] if o["class_id"] == "MIDDLES_AND_DISLOCATIONS"]
+    if _m:
+        check("every middle on the board reports an expected value",
+              all("expected on" in o["headline"] or "EV" in o["headline"] for o in _m))
+        check("middles are ranked by expected value, best first",
+              all(_m[i]["rank_score"] >= _m[i + 1]["rank_score"] for i in range(len(_m) - 1)))
+        check("negative-EV middles are shown, not hidden -- no silent cap",
+              any(o["rank_score"] <= 0 for o in _m) or all(o["rank_score"] > 0 for o in _m))
+        _neg = [o for o in _m if o["rank_score"] <= 0]
+        if _neg:
+            check("a negative-EV middle says so in its headline",
+                  all("NEGATIVE EV" in o["headline"] for o in _neg))
+            check("a negative-EV middle names the breakeven window in its caveats",
+                  all(any("breakeven" in c for c in o["caveats"]) for o in _neg))
+        check("every middle still carries a sizing gate",
+              all(o["stake_gate"] for o in _m))
+        check("no middle claims a measured hit rate",
+              all("MODEL" in o["evidence"] for o in _m))
+except FileNotFoundError as e:
+    print(f"  SKIP  live middle-EV assertions -- {e}")
+
 # ======================================================================================
 print("\n" + "=" * 86)
 if FAIL:

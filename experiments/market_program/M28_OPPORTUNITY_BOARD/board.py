@@ -33,6 +33,7 @@ import oddsmath as om
 import promos as _promos
 import contract as _contract
 import feed as _feed
+import middle_ev as _mev
 from oddsmath import Leg
 
 # --------------------------------------------------------------------------------------
@@ -247,6 +248,16 @@ def detect_middles(snapshot, stake_each: float = 100.0) -> list[Opportunity]:
             res = om.middle_totals(_to_leg(o), _to_leg(u), stake_each=stake_each)
             if not res.is_middle:
                 continue
+            # EVERY MIDDLE NOW CARRIES AN EXPECTED VALUE. M10_MIDDLES built the scanner and
+            # recorded in its own limitations that it computed no probability model, so every
+            # middle this programme ever surfaced was shown without the number that decides
+            # whether to take it. At -110/-110 the breakeven window is 1.81 points, so a
+            # 1.0- or 1.5-point middle -- the majority this board was surfacing -- is
+            # NEGATIVE expectation.
+            ev = _mev.evaluate(res.window_width,
+                               om.american_to_decimal(o.price),
+                               om.american_to_decimal(u.price),
+                               stake_each=stake_each)
             key = (res.window_low, res.window_high)
             cand = Opportunity(
                 opp_id=f"MID-{q0.game_id[:8]}-{res.window_low:g}-{res.window_high:g}",
@@ -256,8 +267,10 @@ def detect_middles(snapshot, stake_each: float = 100.0) -> list[Opportunity]:
                 commence_time=q0.commence_time,
                 market=f"Total {res.window_low:g}–{res.window_high:g}",
                 headline=(
-                    f"{res.window_width:g}-point middle: both legs win if the total lands "
-                    f"between {res.window_low:g} and {res.window_high:g}"
+                    f"{'+EV' if ev.is_positive else 'NEGATIVE EV'}: "
+                    f"{ev.ev:+.2f} expected on {stake_each * 2:.0f} staked "
+                    f"({res.window_width:g}-point window, hits ~{ev.p_hit * 100:.1f}% vs "
+                    f"{ev.breakeven_p * 100:.1f}% needed)"
                 ),
                 detail=(
                     f"Over {o.point:g} at {o.price:+g} ({o.book_title}) with Under "
@@ -266,15 +279,26 @@ def detect_middles(snapshot, stake_each: float = 100.0) -> list[Opportunity]:
                     f"{res.cost_if_missed:+.2f}."
                 ),
                 legs=[_leg_dict(_to_leg(o), stake_each), _leg_dict(_to_leg(u), stake_each)],
-                rank_score=round(res.window_width / max(abs(res.cost_if_missed), 1e-9), 4),
+                rank_score=round(ev.ev, 4),
                 stake_gate=(
-                    "Sizing a middle needs a hit probability this node has not measured "
-                    "and a staking policy that is gated: M24_STAKING depends on "
-                    "M23_SHADOW_TRADING, which depends on M22_CAPACITY. The equal-stake "
-                    "figures above illustrate the payoff shape only."
+                    "The hit probability is now MODELLED (see middle_ev.py) but sizing is "
+                    "still gated: M24_STAKING depends on M23_SHADOW_TRADING, which depends "
+                    "on M22_CAPACITY. Equal stakes are shown to illustrate the payoff shape, "
+                    "not as a recommended size."
                 ),
-                evidence="Arithmetic on witnessed prices. Profit is probabilistic, never locked.",
+                evidence=(
+                    f"Prices are arithmetic on witnessed quotes; the hit probability is a "
+                    f"MODEL. {ev.basis}. Breakeven window at these prices: "
+                    f"{ev.breakeven_window:g} points."
+                ),
                 caveats=[
+                    ("NEGATIVE EXPECTATION at these prices -- the window is narrower than the "
+                     f"{ev.breakeven_window:g}-point breakeven. Shown rather than hidden so the "
+                     "omission is not silent."
+                     if not ev.is_positive else
+                     f"Positive expectation, but the edge is thin and the hit rate "
+                     f"({ev.p_hit * 100:.1f}%) is a MODEL, not a measurement."),
+                    ev.caveat,
                     "This is NOT arbitrage. M00 reserves that word for locked-positive "
                     "combinations only.",
                     ("A whole-number edge can push, returning that leg's stake."
