@@ -14,11 +14,32 @@ HOW THE PROBABILITY IS DERIVED, including what is assumed rather than measured:
 
   1. Dispersion of FINAL TOTALS, measured on the exploration partition only (2021-2024,
      888 games): sd = 17.30. No line is involved, so no market data enters this term.
-  2. Dispersion of the POSTED LINE across games, measured from the capture tape: sd = 8.37.
-     **This uses no outcome** -- only where books set their numbers -- so it raises no
-     partition question.
+  2. Dispersion of the POSTED LINE across games: sd = 8.445, measured over **457 distinct
+     games** from the 2025 historical archive plus the 2026 live tape. **This uses no
+     outcome** -- only where books set their numbers.
+
+     ON PARTITION, stated plainly rather than glossed: 2025 and 2026 are both holdout
+     seasons, and there is no alternative, because no exploration-era totals lines exist in
+     this repository at all -- `drive_masters/master_odds.csv` carries spreads and moneyline
+     only (D147). So the line term MUST come from holdout-era data. It is admissible because
+     it uses no outcome and therefore cannot carry outcome information across the boundary;
+     the outcome term in (1) is exploration-only and never mixes with it.
+
   3. Residual dispersion around the line, by variance decomposition:
-         sd_resid = sqrt(var_total - var_line) = 15.15
+         sd_resid = sqrt(var_total - var_line) = 15.099
+
+  SENSITIVITY TO THE LINE SAMPLE, because this was the weakest input and was re-measured:
+
+        scope              games   sd_line   sd_resid   breakeven window
+        2025 only            198     6.077     16.198        1.935
+        2026 only            259     7.920     15.380        1.837
+        2025+2026 pooled     457     8.445     15.099        1.803
+        (original estimate)   48     8.370     15.140        1.810
+
+     **The breakeven window is 1.80-1.94 points under every scope**, so the verdict on 1.0-
+     and 1.5-point middles does not depend on the choice. The POOLED figure is used because
+     it has the most data AND yields the NARROWEST breakeven, i.e. it is the estimate most
+     favourable to middles -- and they still lose.
 
   ASSUMPTIONS, named because they are assumptions:
     * the line is an unbiased conditional mean and is uncorrelated with its own residual.
@@ -27,7 +48,8 @@ HOW THE PROBABILITY IS DERIVED, including what is assumed rather than measured:
       is an approximation whose error is second-order over a 1-5 point window;
     * the window sits CENTRED on the line. A middle whose window sits off-centre hits less
       often than this model says, so every number here is an UPPER bound;
-    * `sd_line` rests on 48 games of tape. It is the weakest input.
+    * `sd_line` now rests on 457 games rather than the original 48. It was the weakest
+      input, was re-measured, and the conclusion did not move (see the table above).
 
   ROBUSTNESS, and the reason the headline survives: using the UNCONDITIONAL sd (17.30)
   instead of the residual (15.15) *lowers* every hit rate, because a wider distribution puts
@@ -41,15 +63,18 @@ from math import erf, sqrt
 
 #: Measured on the exploration partition (2021-2024, 888 games). No market data.
 SD_TOTAL_EXPLORATION = 17.30
-#: Measured from the capture tape across 48 games. Uses no outcome.
-SD_LINE_TAPE = 8.37
+#: Measured across 457 games (2025 archive + 2026 tape). Uses no outcome. See the
+#: sensitivity table in the module docstring for the 2025-only and 2026-only values.
+SD_LINE_TAPE = 8.445
+#: Every scope measured, kept so a reader can see the conclusion is scope-invariant.
+SD_LINE_BY_SCOPE = {"2025_only": 6.077, "2026_only": 7.920, "pooled": 8.445}
 #: Variance decomposition of the two above.
 SD_RESIDUAL = sqrt(max(SD_TOTAL_EXPLORATION ** 2 - SD_LINE_TAPE ** 2, 1.0))
 
 PROVENANCE = (
     f"residual sd {SD_RESIDUAL:.2f} = sqrt({SD_TOTAL_EXPLORATION:.2f}^2 - {SD_LINE_TAPE:.2f}^2); "
-    f"total sd from 888 exploration games (2021-2024), line sd from the capture tape with no "
-    f"outcome used"
+    f"total sd from 888 exploration games (2021-2024); line sd from 457 games of 2025-2026 "
+f"tape with NO outcome used, which is the only era in which totals lines exist here"
 )
 
 
