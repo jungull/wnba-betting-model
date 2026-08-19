@@ -457,6 +457,77 @@ def detect_promos(snapshot) -> list[Opportunity]:
 
 
 # --------------------------------------------------------------------------------------
+# Best-price table -- line shopping made operational
+# --------------------------------------------------------------------------------------
+
+
+def best_price_table(snapshot, min_books: int = 3) -> list[dict]:
+    """For every pre-game market, WHERE to bet each side and what shopping is worth.
+
+    Line shopping is the only thing this programme has measured that is simultaneously
+    real, free and requires no opinion about a game: taking the best available price on
+    each side removes a median 26.8% of the vig (4.753% -> 3.477% overround), worth 0.64
+    points of breakeven win rate (D151).
+
+    That finding was a statistic. This turns it into an instruction: the book to use, the
+    price it is offering, and how much better that is than betting at a typical book. It is
+    NOT a recommendation to bet -- it is a statement that IF you are betting this side, this
+    is where.
+    """
+    rows: list[dict] = []
+    groups: dict = defaultdict(lambda: defaultdict(list))
+    for q in snapshot.quotes:
+        if q.is_in_play(snapshot.captured_at):
+            continue
+        groups[(q.game_id, q.market, q.point)][q.outcome].append(q)
+
+    for (game_id, market, point), sides in groups.items():
+        if len(sides) != 2:
+            continue
+        if min(len(v) for v in sides.values()) < min_books:
+            continue
+        q0 = next(iter(sides.values()))[0]
+        entry = {
+            "matchup": q0.matchup,
+            "commence_time": q0.commence_time,
+            "market": MARKET_NAMES.get(market, market),
+            "point": point,
+            "sides": [],
+        }
+        shop_gain = []
+        for outcome, quotes in sides.items():
+            decs = sorted(((om.american_to_decimal(q.price), q) for q in quotes),
+                          key=lambda t: -t[0])
+            best_dec, best_q = decs[0]
+            mid = decs[len(decs) // 2][0]
+            worst_dec = decs[-1][0]
+            gain_vs_median = (best_dec / mid - 1.0) * 100.0
+            shop_gain.append(gain_vs_median)
+            entry["sides"].append({
+                "outcome": outcome,
+                "best_book": best_q.book_title,
+                "best_price": best_q.price,
+                "n_books": len(quotes),
+                "median_price": om.decimal_to_american(mid),
+                "worst_price": om.decimal_to_american(worst_dec),
+                "gain_vs_median_pct": round(gain_vs_median, 3),
+                "gain_vs_worst_pct": round((best_dec / worst_dec - 1.0) * 100.0, 3),
+            })
+        entry["mean_gain_vs_median_pct"] = round(sum(shop_gain) / len(shop_gain), 3)
+        # Overround at best prices vs at the median book, for this market.
+        best_probs = [1.0 / om.american_to_decimal(sd["best_price"]) for sd in entry["sides"]]
+        med_probs = [1.0 / om.american_to_decimal(sd["median_price"]) for sd in entry["sides"]]
+        entry["overround_best_pct"] = round((sum(best_probs) - 1.0) * 100.0, 3)
+        entry["overround_median_pct"] = round((sum(med_probs) - 1.0) * 100.0, 3)
+        entry["vig_removed_pct"] = round(entry["overround_median_pct"]
+                                         - entry["overround_best_pct"], 3)
+        rows.append(entry)
+
+    rows.sort(key=lambda r: -r["vig_removed_pct"])
+    return rows
+
+
+# --------------------------------------------------------------------------------------
 # Gated lanes -- present so the board is honest about what it is NOT showing
 # --------------------------------------------------------------------------------------
 
@@ -560,6 +631,11 @@ def build_board(snapshot, bankroll: float = 1000.0, stake_each: float = 100.0) -
             "PURE_MICROSTRUCTURE": len(disp),
         },
         "opportunities": [o.as_dict() for o in opportunities],
+        "best_prices": best_price_table(snapshot),
+        "best_prices_note": (
+            "Where to bet each side IF you are betting it. Taking the best available price "
+            "removes a median 26.8% of the vig (D151) -- free, mechanical, and requiring no "
+            "opinion about any game. This is not a recommendation to bet."),
         "gated_lanes": GATED_LANES,
         "execution_mode": "SHADOW",
         "execution_mode_note": (

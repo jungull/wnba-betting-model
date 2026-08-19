@@ -43,6 +43,7 @@ CSS = """
   --subsidy:#5B3FA6; --subsidy-bg:#EDE8F7;
   --info:#4C5561; --info-bg:#E9ECF0;
   --gated:#8C3A42; --gated-bg:#F7E8E9;
+  --shop:#146B72; --shop-bg:#E0F0F1;
   --mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 }
@@ -55,6 +56,7 @@ CSS = """
   --subsidy:#B29BE0; --subsidy-bg:#1F1930;
   --info:#A5AEBB; --info-bg:#1E232B;
   --gated:#DE8C94; --gated-bg:#2A1719;
+  --shop:#63B8C0; --shop-bg:#0F262A;
 }}
 :root[data-theme="dark"]{
   --bg:#0E1116; --panel:#161A21; --panel-2:#1E232B; --line:#252B34; --line-2:#333B46;
@@ -65,6 +67,7 @@ CSS = """
   --subsidy:#B29BE0; --subsidy-bg:#1F1930;
   --info:#A5AEBB; --info-bg:#1E232B;
   --gated:#DE8C94; --gated-bg:#2A1719;
+  --shop:#63B8C0; --shop-bg:#0F262A;
 }
 *{box-sizing:border-box}
 body{margin:0;padding:0 1.25rem 5rem;background:var(--bg);color:var(--ink);
@@ -134,6 +137,17 @@ h2 .count{font-family:var(--mono);font-weight:400;color:var(--ink-3);font-size:.
 .lane .gate{font-family:var(--mono);font-size:.7rem;color:var(--gated);margin-top:.5rem}
 .empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:4px;
   padding:1.4rem 1.2rem;color:var(--ink-2);font-size:.9rem}
+.shop{width:100%;border-collapse:collapse;font-size:.85rem;background:var(--panel);
+  border:1px solid var(--line);margin-bottom:1.2rem}
+.shop th{font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:500;text-align:left;padding:.5rem .8rem;
+  background:var(--panel-2);border-bottom:1px solid var(--line)}
+.shop td{padding:.5rem .8rem;border-bottom:1px solid var(--line)}
+.shop td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.shop tr:last-child td{border-bottom:0}
+.shop .bk{font-weight:640;color:var(--shop)}
+.shop .gain{font-family:var(--mono);color:var(--shop);font-variant-numeric:tabular-nums}
+.gm{font-weight:640;font-size:.9rem;margin:1.4rem 0 .4rem}
 footer{margin-top:3.5rem;padding-top:1rem;border-top:1px solid var(--line);
   font-family:var(--mono);font-size:.72rem;color:var(--ink-3);line-height:1.8}
 """
@@ -279,6 +293,42 @@ def render(b: dict) -> str:
             rank += 1
             sections.append(_opp_html(o, rank))
 
+    # ---- best-price / line-shopping section
+    bp = b.get("best_prices") or []
+    shop_html = ""
+    if bp:
+        by_game: dict[str, list] = {}
+        for r in bp:
+            by_game.setdefault(r["matchup"], []).append(r)
+        parts = []
+        for matchup, rows_ in list(by_game.items())[:8]:
+            body = []
+            for r in rows_:
+                pt = f' {r["point"]:g}' if r.get("point") is not None else ""
+                for sd in r["sides"]:
+                    body.append(
+                        f'<tr><td>{_esc(r["market"])}{_esc(pt)}</td>'
+                        f'<td>{_esc(sd["outcome"])}</td>'
+                        f'<td class="bk">{_esc(sd["best_book"])}</td>'
+                        f'<td class="n">{_esc(_fmt_price(sd["best_price"]))}</td>'
+                        f'<td class="n" style="color:var(--ink-3)">'
+                        f'{_esc(_fmt_price(sd["median_price"]))}</td>'
+                        f'<td class="n gain">+{sd["gain_vs_median_pct"]:.2f}%</td>'
+                        f'<td class="n" style="color:var(--ink-3)">{sd["n_books"]}</td></tr>')
+            parts.append(
+                f'<div class="gm">{_esc(matchup)}</div>'
+                f'<table class="shop"><thead><tr>'
+                f'<th>Market</th><th>Side</th><th>Best book</th>'
+                f'<th style="text-align:right">Best</th>'
+                f'<th style="text-align:right">Typical</th>'
+                f'<th style="text-align:right">Gain</th>'
+                f'<th style="text-align:right">Books</th>'
+                f'</tr></thead><tbody>{"".join(body)}</tbody></table>')
+        shop_html = (
+            f'<h2>Where to bet each side<span class="count">{len(bp)}</span></h2>'
+            f'<p class="h2sub">{_esc(b.get("best_prices_note", ""))}</p>'
+            + "".join(parts))
+
     lanes = "".join(
         f'<div class="lane"><span class="badge b-gated">Gated</span>'
         f'<h3>{_esc(g["label"])}</h3><p>{_esc(g["why"])}</p>'
@@ -313,6 +363,8 @@ def render(b: dict) -> str:
 <div class="notice"><b>Read this before acting on anything below.</b> {cadence_note}</div>
 
 {"".join(sections)}
+
+{shop_html}
 
 <h2>Not shown, and why<span class="count">{len(b['gated_lanes'])}</span></h2>
 <p class="h2sub">A board that silently omits a category is indistinguishable from one that

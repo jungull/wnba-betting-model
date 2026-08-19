@@ -562,6 +562,66 @@ try:
 except FileNotFoundError as e:
     print(f"  SKIP  live middle-EV assertions -- {e}")
 
+
+# ======================================================================================
+section("14. Best-price table -- line shopping made operational")
+
+# D151 measured that taking the best available price removes a median 26.8% of the vig.
+# That was a statistic; this section checks it was turned into an instruction that is
+# actually correct -- the named book must really be offering the named price.
+try:
+    _s = feed.load_latest()
+    _bp = board.best_price_table(_s)
+    check("a best-price table is produced", len(_bp) > 0, f"{len(_bp)} markets")
+
+    _ok_best = _ok_side = _ok_gain = _ok_vig = _ok_real = True
+    for r in _bp:
+        if len(r["sides"]) != 2:
+            _ok_side = False
+        for sd in r["sides"]:
+            # the quoted best must be the best actually present for that outcome
+            cands = [q for q in _s.quotes
+                     if q.matchup == r["matchup"] and q.point == r["point"]
+                     and q.outcome == sd["outcome"]
+                     and board.MARKET_NAMES.get(q.market, q.market) == r["market"]]
+            if not cands:
+                _ok_real = False
+                continue
+            top = max(om.american_to_decimal(q.price) for q in cands)
+            if abs(om.american_to_decimal(sd["best_price"]) - top) > 1e-9:
+                _ok_best = False
+            if not any(q.book_title == sd["best_book"]
+                       and abs(q.price - sd["best_price"]) < 1e-9 for q in cands):
+                _ok_real = False
+            if sd["gain_vs_median_pct"] < -1e-9:
+                _ok_gain = False
+        if r["overround_best_pct"] > r["overround_median_pct"] + 1e-9:
+            _ok_vig = False
+
+    check("every row has exactly two sides", _ok_side)
+    check("the quoted best price IS the best available for that outcome", _ok_best)
+    check("the named book really offers the named price", _ok_real)
+    check("shopping never scores worse than the typical book", _ok_gain)
+    check("overround at best prices never exceeds overround at the median book", _ok_vig)
+    check("rows are sorted by how much vig shopping removes",
+          all(_bp[i]["vig_removed_pct"] >= _bp[i + 1]["vig_removed_pct"]
+              for i in range(len(_bp) - 1)))
+    check("no in-play game appears in the best-price table",
+          not any(q.is_in_play(_s.captured_at) for q in _s.quotes
+                  for r in _bp if q.matchup == r["matchup"]
+                  and q.is_in_play(_s.captured_at)))
+    check("every row reports how many books were compared",
+          all(sd["n_books"] >= 3 for r in _bp for sd in r["sides"]))
+
+    _b = board.build_board(_s)
+    check("the board carries the best-price table", "best_prices" in _b)
+    check("the table is framed as where-if-you-bet, not as a recommendation",
+          "not a recommendation to bet" in _b.get("best_prices_note", ""))
+    _html = _render.render(_b)
+    check("the page renders a where-to-bet section", "Where to bet each side" in _html)
+except FileNotFoundError as e:
+    print(f"  SKIP  best-price assertions -- {e}")
+
 # ======================================================================================
 print("\n" + "=" * 86)
 if FAIL:
