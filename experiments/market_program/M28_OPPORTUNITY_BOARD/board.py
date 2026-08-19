@@ -32,6 +32,7 @@ from dataclasses import dataclass, field, asdict
 import oddsmath as om
 import promos as _promos
 import contract as _contract
+import feed as _feed
 from oddsmath import Leg
 
 # --------------------------------------------------------------------------------------
@@ -473,6 +474,26 @@ GATED_LANES = [
 # --------------------------------------------------------------------------------------
 
 
+def _measure_cadence_safe(snapshot) -> dict:
+    """Measure the capture grid rather than asserting it.
+
+    The board used to state 'hourly' as a hard-coded fact. Cadence was raised on 2026-08-19,
+    which made that sentence false while the page went on printing it. A surface that
+    describes its own data must derive that description from the data.
+    """
+    try:
+        c = _feed.measure_cadence(snapshot.data_root, sample=12)
+        gap = c.get("median_gap_s")
+        return {
+            "median_gap_s": gap,
+            "median_gap_min": round(gap / 60.0, 1) if gap else None,
+            "min_gap_s": c.get("min_gap_s"),
+            "n_sampled": c.get("n"),
+        }
+    except Exception:
+        return {"median_gap_s": None, "median_gap_min": None, "min_gap_s": None, "n_sampled": 0}
+
+
 def build_board(snapshot, bankroll: float = 1000.0, stake_each: float = 100.0) -> dict:
     arbs = detect_arbitrage(snapshot, bankroll=bankroll)
     mids = detect_middles(snapshot, stake_each=stake_each)
@@ -499,6 +520,7 @@ def build_board(snapshot, bankroll: float = 1000.0, stake_each: float = 100.0) -
         "n_books": snapshot.n_books,
         "n_quotes": len(snapshot.quotes),
         "n_games_in_play_excluded": count_in_play(snapshot),
+        "cadence": _measure_cadence_safe(snapshot),
         "in_play_note": (
             "Games already under way are excluded from the arbitrage and middle "
             "detectors. Measured over 179 snapshots, 24.56% of in-play two-sided markets "

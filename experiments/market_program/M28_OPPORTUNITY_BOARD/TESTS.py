@@ -468,6 +468,37 @@ try:
 except FileNotFoundError as e:
     print(f"  SKIP  in-play live assertions -- {e}")
 
+
+# ======================================================================================
+section("12. The page must describe the grid it MEASURED, not one it remembers")
+
+# This guard exists because the board asserted "an hourly polling grid" as hard-coded prose
+# and kept printing it for a day after the capture cadence was raised. A surface that
+# describes its own data has to derive that description from the data.
+import render as _render
+
+try:
+    _s = feed.load_latest()
+    _b = board.build_board(_s)
+    check("the board measures its own capture cadence", "cadence" in _b)
+    _cad = _b.get("cadence", {})
+    check("the measured cadence is a real number or an explicit None",
+          "median_gap_min" in _cad)
+    _html = _render.render(_b)
+    check("the page contains NO hard-coded claim of an hourly grid",
+          "hourly polling grid" not in _html)
+    if _cad.get("median_gap_min") is not None:
+        check("the measured gap appears on the page",
+              f"{_cad['median_gap_min']:g}" in _html,
+              "the banner must quote the number it measured")
+    check("the page still refuses an executability claim",
+          "not</b> a claim that you could still take it" in _html
+          or "not a claim that you could still take it" in _html)
+    check("the page names what an executability claim would require",
+          "M21/M22" in _html)
+except FileNotFoundError as e:
+    print(f"  SKIP  cadence-honesty assertions -- {e}")
+
 # ======================================================================================
 print("\n" + "=" * 86)
 if FAIL:

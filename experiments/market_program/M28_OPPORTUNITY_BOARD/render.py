@@ -218,12 +218,35 @@ def render(b: dict) -> str:
         by_tier.setdefault(o["tier"], []).append(o)
 
     age_min = b["age_seconds"] / 60.0
+
+    # Describe the grid we MEASURED, never a remembered one. This page asserted "hourly"
+    # for a day after the cadence was raised, which is exactly the drift it warns about.
+    cad = b.get("cadence") or {}
+    gap_min = cad.get("median_gap_min")
+    if gap_min is None:
+        grid = "an unmeasured polling grid"
+    elif gap_min >= 30:
+        grid = f"a coarse polling grid (median {gap_min:g} min between captures)"
+    elif gap_min >= 10:
+        grid = f"a {gap_min:g}-minute polling grid"
+    else:
+        grid = f"a fast polling grid (median {gap_min:g} min between captures)"
+
     cadence_note = (
-        "Captured on an hourly polling grid. A price seen here existed at some point in "
-        "that window; it is <b>not</b> a claim that you could still take it. Detecting a "
-        "locked combination and being able to strike both legs are different assertions, "
-        "and the second one needs faster capture plus measured limits (M21/M22)."
+        f"Captured on {grid}. A price seen here existed at some point inside that window; "
+        "it is <b>not</b> a claim that you could still take it. Detecting a locked "
+        "combination and being able to strike both legs are different assertions, and the "
+        "second needs measured limits and latency (M21/M22), which this node does not have."
     )
+    excluded = b.get("n_games_in_play_excluded", 0)
+    if excluded:
+        cadence_note += (
+            f" <b>{excluded} game(s) already under way are excluded</b> from the arbitrage "
+            "and middle detectors: measured over 179 snapshots, 24.56% of in-play markets "
+            "show a negative cross-book overround against 0.27% pre-game, because a book "
+            "that has not moved off its pre-game price after tip re-stamps its update time "
+            "without changing the number."
+        )
 
     sections = []
     order = [
@@ -283,6 +306,7 @@ def render(b: dict) -> str:
   <div class="stat"><div class="k">Locked</div><div class="v" style="color:var(--locked)">{b['counts']['TRUE_CROSS_BOOK_ARBITRAGE']}</div></div>
   <div class="stat"><div class="k">Promos</div><div class="v" style="color:var(--subsidy)">{b['counts'].get('PROMOTIONAL_VALUE', 0)}</div></div>
   <div class="stat"><div class="k">Middles</div><div class="v" style="color:var(--bounded)">{b['counts']['MIDDLES_AND_DISLOCATIONS']}</div></div>
+  <div class="stat"><div class="k">Grid</div><div class="v">{(str(b.get('cadence',{}).get('median_gap_min','?')) + 'm') if b.get('cadence',{}).get('median_gap_min') is not None else '?'}<small>median capture gap</small></div></div>
   <div class="stat"><div class="k">Bankroll</div><div class="v">${b['bankroll']:,.0f}<small>sizing basis</small></div></div>
 </div>
 
