@@ -73,7 +73,7 @@ def main():
            "prereg_sha256": open("PREREG.sha256").read().split()[0]}
 
     print("=" * 92)
-    print("M29 s02 -- SECONDARY analysis (post-hoc). The preregistered median was degenerate.")
+    print("M30 s02 -- SECONDARY analysis (post-hoc). The preregistered median was degenerate.")
     print("=" * 92)
 
     zb = sum(1 for o in prim if o["book_share"] == 0.0)

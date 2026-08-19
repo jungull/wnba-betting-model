@@ -43,7 +43,7 @@ DECLARED_SCOPE = {
 #: "looked and found none", which is a RESULT, not a gap -- arbitrage runs at 0.18-0.25% of
 #: markets (D151/robustness check), so zero on any one snapshot is the expected observation.
 SCANS_BUT_MAY_FIND_NOTHING = {
-    # M29/D157 measured that only 1.18% of quotes beat their peers' de-vigged consensus, so
+    # M30/D157 measured that only 1.18% of quotes beat their peers' de-vigged consensus, so
     # zero on any one snapshot -- and zero on a whole market type on a thin slate -- is the
     # expected observation, not a gap. The surface runs on all three markets.
     ("stale_line", "h2h"),

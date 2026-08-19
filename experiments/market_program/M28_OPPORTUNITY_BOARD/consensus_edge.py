@@ -1,6 +1,6 @@
 """consensus_edge.py -- is this price better than what the rest of the market thinks?
 
-M29 measured what a cross-book disagreement is actually worth, on 54,524 live quotes and a
+M30 measured what a cross-book disagreement is actually worth, on 54,524 live quotes and a
 reserved 66,967-quote replication that agreed to two decimal places. The finding the board
 needs is a threshold:
 
@@ -14,7 +14,7 @@ needs is a threshold:
 So dispersion below about 2 percentage points of de-vigged opinion is NOT an opportunity,
 and the board must stop presenting it as one. 3pp is where acting is justified.
 
-The arithmetic here is deliberately identical to M29's so that the threshold means on the
+The arithmetic here is deliberately identical to M30's so that the threshold means on the
 live board exactly what it meant in the measurement: de-vig each book across its own two
 sides FIRST, then take the MEDIAN of every OTHER book, requiring at least three peers.
 
@@ -32,19 +32,19 @@ import oddsmath as om
 # THE GATE IS ON `edge`, NOT ON THE OPINION GAP, and that distinction was found by running
 # this on live quotes: a BetRivers price of -910 sat 2.12pp clear of peer opinion and still
 # returned -3.07%, because at a heavy favourite the vig eats a 2pp dislocation whole. The
-# opinion gap is what M29 BUCKETED BY; the edge is what you are paid. So the board gates on
+# opinion gap is what M30 BUCKETED BY; the edge is what you are paid. So the board gates on
 # the payoff and uses the gap only to grade strength.
 #
 # Note what each number is worth. "edge > 0" is directly implementable at quote time with no
-# lookahead, and M29 found it on 1.18% of quotes in BOTH samples, worth +1.68% and +2.24%.
+# lookahead, and M30 found it on 1.18% of quotes in BOTH samples, worth +1.68% and +2.24%.
 # The >= 3pp grade is the stronger claim, because gap and edge are different quantities and
 # finding that a 3pp gap implies positive edge is a real finding rather than a truncation.
 MIN_EDGE = 0.0        # the price must beat peer consensus AFTER that book's own vig
-ACT_PP = 0.030        # gap grade at which M29 measured +1.44% live, +2.74% replication
-WATCH_PP = 0.020      # gap grade where M29 measured break-even, CI spanning zero
+ACT_PP = 0.030        # gap grade at which M30 measured +1.44% live, +2.74% replication
+WATCH_PP = 0.020      # gap grade where M30 measured break-even, CI spanning zero
 MIN_PEERS = 3         # two peers cannot outvote a disagreement in any meaningful sense
 
-PROVENANCE = ("D157 / M29: thresholds measured on 54,524 live quotes over 48 games and "
+PROVENANCE = ("D157 / M30: thresholds measured on 54,524 live quotes over 48 games and "
               "replicated on 66,967 quotes over 411 games reserved by preregistration. "
               "Market prices only -- no model, and no game outcome was read.")
 
@@ -78,7 +78,7 @@ class Dislocation:
 
     @property
     def actionable(self) -> bool:
-        """Beats consensus after vig AND is dislocated enough that M29 measured a return."""
+        """Beats consensus after vig AND is dislocated enough that M30 measured a return."""
         return self.edge > MIN_EDGE and self.opinion_gap >= ACT_PP
 
     @property

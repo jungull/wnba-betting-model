@@ -137,7 +137,7 @@ def main():
     rows = panel.load_rows("live", as_of=AS_OF)
     obs = observations(rows)
     print("=" * 92)
-    print("M29 PRICE LEADERSHIP -- live tape, market prices only, no game outcome read")
+    print("M30 PRICE LEADERSHIP -- live tape, market prices only, no game outcome read")
     print("=" * 92)
     print("qualifying observations: %d over %d games, %d books"
           % (len(obs), len({o["game"] for o in obs}), len({o["book"] for o in obs})))

@@ -799,7 +799,7 @@ if _sm:
 # ======================================================================================
 section("18. Stale-line lane -- the first positive-expectation claim on this board")
 
-# M29/D157 measured what a cross-book disagreement is worth: 1.18% of quotes beat their
+# M30/D157 measured what a cross-book disagreement is worth: 1.18% of quotes beat their
 # peers' de-vigged consensus in BOTH an live sample and a reserved replication, worth +1.68%
 # and +2.24%. This lane turns that into a flag. Every check below guards the property that
 # makes the claim admissible -- it must be arithmetic on witnessed prices, never a forecast.
@@ -824,9 +824,9 @@ check("in-play quotes are excluded from the lane",
           if (q.game_id, q.market, q.outcome, q.point, q.book)
           == (d.game_id, d.market, d.outcome, d.point, d.book)),
       "D151: in-play prices are a different process")
-check("the hit rate is in the range M29 measured",
+check("the hit rate is in the range M30 measured",
       (not _pre) or 0.0 <= len(_dis) / len(_pre) <= 0.10,
-      "M29 found 1.18%% of quotes qualify in two independent samples; 10%% would mean a bug")
+      "M30 found 1.18%% of quotes qualify in two independent samples; 10%% would mean a bug")
 
 _st = board.detect_stale_lines(_s)
 check("the lane emits no stake, ever",

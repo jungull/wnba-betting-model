@@ -147,7 +147,7 @@ def main():
            "as_of": s01.AS_OF,
            "prereg_sha256": open("PREREG.sha256").read().split()[0]}
     print("=" * 96)
-    print("M29 s03 -- does beating the peer consensus survive the vig you pay to do it?")
+    print("M30 s03 -- does beating the peer consensus survive the vig you pay to do it?")
     print("=" * 96)
     print()
     print("LIVE FAMILY (2026 tape)")

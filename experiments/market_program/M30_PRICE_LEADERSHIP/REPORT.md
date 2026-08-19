@@ -1,4 +1,4 @@
-# M29 PRICE LEADERSHIP -- report
+# M30 PRICE LEADERSHIP -- report
 
 **Prereg** `895d004fceaf3c3f64bc0d2f04e581520c284925d2af089672b8e5f2d0371f87` (frozen before
 any statistic). **Tape pinned at** `2026-08-19T23:05:00Z`. **No game outcome is read, joined,

@@ -1,4 +1,6 @@
-# M29 -- defects, recorded not repaired
+# M30 -- defects, recorded not repaired
+
+NOTE ON THE NODE NUMBER: this node was first created as M29, which collided with the existing and already-PASSED M29_CREDIT_BURN_ATTRIBUTION, and was renumbered to M30. `PREREG.md` still carries the old title in its text because it is HASH-FROZEN and is not edited for any reason, cosmetic ones least of all. D158 records the renumber.
 
 `PREREG.md` is frozen at `895d004fceaf3c3f64bc0d2f04e581520c284925d2af089672b8e5f2d0371f87`.
 It is not edited. These are the ways it turned out to be wrong, written down so that the

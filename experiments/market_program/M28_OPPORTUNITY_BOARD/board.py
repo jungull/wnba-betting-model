@@ -546,7 +546,7 @@ def best_price_table(snapshot, min_books: int = 3) -> list[dict]:
     removed) across 4,460 two-sided markets (D155, correcting D151's 26.8%, which had been
     computed on a sample that silently excluded every spread).
 
-    M29/D157 puts the same thing on a returns footing: betting blind loses 4.43% a stake,
+    M30/D157 puts the same thing on a returns footing: betting blind loses 4.43% a stake,
     and always taking the best of eleven books still loses 2.05%. Shopping is necessary and
     is nowhere near sufficient.
 
@@ -687,7 +687,7 @@ def detect_stale_lines(snapshot) -> list[Opportunity]:
     """Quotes that beat the de-vigged consensus of their peers, graded by how dislocated.
 
     This is the first lane on this board carrying a positive-expectation claim, and the
-    claim rests on a measurement rather than on a forecast. M29/D157 asked who moves when a
+    claim rests on a measurement rather than on a forecast. M30/D157 asked who moves when a
     book disagrees with its peers, and found the OUTLIER does essentially all of the moving:
     a >=1.5pp dislocation closes 0.491pp [0.426,0.574] over an hour, of which only
     0.131pp [-0.047,0.235] is consensus drifting toward the outlier. No book leads. That
@@ -732,12 +732,12 @@ def detect_stale_lines(snapshot) -> list[Opportunity]:
                 "SHADOW mode. Nothing is placed, no venue is contacted, no account is held.",
             ] + ([
                 f"Graded ACT: at least {_cedge.ACT_PP * 100:g}pp of dislocation, the band where "
-                f"M29 measured +1.44% live and +2.74% in a reserved replication."]
+                f"M30 measured +1.44% live and +2.74% in a reserved replication."]
                 if strong else [
                 f"Graded {d.grade}: the return looks large but rests on only "
                 f"{d.opinion_gap * 100:.2f}pp of disagreement. At long-shot prices a small "
                 f"probability difference becomes a big percentage, and the consensus estimate "
-                f"is proportionally noisier there. M29 measured a reliable return only at "
+                f"is proportionally noisier there. M30 measured a reliable return only at "
                 f"{_cedge.ACT_PP * 100:g}pp and above."])),
         ))
     return opps
@@ -789,7 +789,7 @@ def build_board(snapshot, bankroll: float = 1000.0, stake_each: float = 100.0) -
         "stale_line_note": (
             "The only lane on this board carrying a positive-expectation claim. It flags a "
             "quote that beats the de-vigged median of the other books after that book's own "
-            "vig. M29/D157 measured this on 54,524 live quotes and a reserved 66,967-quote "
+            "vig. M30/D157 measured this on 54,524 live quotes and a reserved 66,967-quote "
             "replication: 1.18% of quotes qualify in BOTH samples, worth +1.68% and +2.24%. "
             "Grades: ACT means at least 3pp of dislocation, where the measured return was "
             "+1.44% live and +2.74% replicated. Anything less is shown but not recommended. "
@@ -799,7 +799,7 @@ def build_board(snapshot, bankroll: float = 1000.0, stake_each: float = 100.0) -
         "best_prices_note": (
             "Where to bet each side IF you are betting it. Taking the best available price "
             "removes a median 24.3% of the vig (D155) -- free, mechanical, and requiring no "
-            "opinion about any game. It is not enough on its own: M29/D157 measured that "
+            "opinion about any game. It is not enough on its own: M30/D157 measured that "
             "always taking the best of eleven books still returns -2.05% a stake against "
             "-4.43% for betting blind. This is not a recommendation to bet."),
         "gated_lanes": GATED_LANES,
