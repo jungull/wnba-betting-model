@@ -622,6 +622,57 @@ try:
 except FileNotFoundError as e:
     print(f"  SKIP  best-price assertions -- {e}")
 
+
+# ======================================================================================
+section("15. Spread promos -- mirrored points, found by pointing the tool at a real one")
+
+# A total's two sides share one number (Over 181.5 / Under 181.5). A SPREAD's sides carry
+# OPPOSITE numbers (-8.5 / +8.5). consensus_fair_prob matched points by equality, so every
+# spread offer found one side, never completed a two-sided de-vig, and reported "0 books".
+# Nothing surfaced it until add_promo.py --list printed a spread row.
+try:
+    _s = feed.load_latest()
+    _sp = [q for q in _s.quotes if q.market == "spreads" and not q.is_in_play(_s.captured_at)]
+    if _sp:
+        # find a spread with both mirrored sides quoted by several books
+        from collections import Counter as _C
+        _mag = _C()
+        for q in _sp:
+            if q.point is not None:
+                _mag[(q.matchup, abs(q.point))] += 1
+        (_mu, _pt), _n = _mag.most_common(1)[0]
+        _sides = {q.outcome for q in _sp if q.matchup == _mu and abs(q.point) == _pt}
+        check("a mirrored spread exists in the tape to test against", len(_sides) == 2,
+              str(_sides))
+        _team = _mu.split(" @ ")[-1][:10]
+        _out = sorted(_sides)[0]
+        _signed = next(q.point for q in _sp
+                       if q.matchup == _mu and abs(q.point) == _pt and q.outcome == _out)
+        _p, _nb = pr.consensus_fair_prob(_s, _team, "spreads", _out, _signed)
+        check("a spread outcome now prices at all", _p is not None,
+              "this returned None before the mirrored-point fix")
+        if _p is not None:
+            check("it uses more than one book", _nb > 1, f"{_nb} books")
+            check("the probability is a probability", 0.0 < _p < 1.0, str(_p))
+            # the mirrored side must complement it
+            _other = sorted(_sides)[1]
+            _q2, _ = pr.consensus_fair_prob(_s, _team, "spreads", _other, -_signed)
+            if _q2 is not None:
+                close("the two mirrored spread sides sum to 1", _p + _q2, 1.0, 1e-9)
+        # and the fix must NOT have loosened totals, where equality is correct
+        _tot = [q for q in _s.quotes if q.market == "totals" and q.point is not None
+                and not q.is_in_play(_s.captured_at)]
+        if _tot:
+            _t0 = _tot[0]
+            _pa, _ = pr.consensus_fair_prob(_s, _t0.matchup.split(" @ ")[-1][:10],
+                                            "totals", _t0.outcome, _t0.point)
+            _pb, _ = pr.consensus_fair_prob(_s, _t0.matchup.split(" @ ")[-1][:10],
+                                            "totals", _t0.outcome, -abs(_t0.point) - 99)
+            check("totals still match by equality, not magnitude", _pa is not None and _pb is None,
+                  "a negative/absent total must NOT resolve")
+except FileNotFoundError as e:
+    print(f"  SKIP  spread-promo assertions -- {e}")
+
 # ======================================================================================
 print("\n" + "=" * 86)
 if FAIL:

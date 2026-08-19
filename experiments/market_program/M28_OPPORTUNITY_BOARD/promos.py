@@ -58,9 +58,22 @@ def consensus_fair_prob(snapshot, matchup_contains: str, market: str,
     result and bias every promo valuation downward.
     """
     key = matchup_contains.lower()
+
+    # SPREADS ARE MIRRORED, TOTALS ARE NOT, AND CONFLATING THEM SILENTLY BREAKS SPREADS.
+    # A total's two sides share one number (Over 181.5 / Under 181.5), so matching on
+    # equality is right. A spread's sides carry OPPOSITE numbers (-9 / +9), so equality
+    # matching finds only one side, the two-sided de-vig never fires, and every spread
+    # offer reports "0 books" -- which is what this function did until it was pointed at
+    # a real spread.
+    def _point_ok(qp) -> bool:
+        if point is None or qp is None:
+            return point is None
+        if market == "spreads":
+            return abs(abs(qp) - abs(point)) < 1e-9
+        return abs(qp - point) < 1e-9
+
     rows = [q for q in snapshot.quotes
-            if key in q.matchup.lower() and q.market == market
-            and (point is None or q.point == point)]
+            if key in q.matchup.lower() and q.market == market and _point_ok(q.point)]
     if not rows:
         return None, 0
 
