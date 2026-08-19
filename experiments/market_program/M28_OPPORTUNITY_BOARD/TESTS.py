@@ -707,9 +707,15 @@ check("scanned-but-empty is modelled separately from out-of-scope",
       bool(ca.SCANS_BUT_MAY_FIND_NOTHING) and
       not (set(ca.SCANS_BUT_MAY_FIND_NOTHING) & set(ca.DECLARED_SCOPE)),
       "finding nothing today and never having looked are different facts")
-check("spread middles are declared rather than forgotten",
-      ("middles", "spreads") in ca.DECLARED_SCOPE
-      and "MARGINS" in ca.DECLARED_SCOPE[("middles", "spreads")])
+# Spread middles WERE declared out of scope here, because the margin dispersion had never
+# been measured and pricing them off the totals distribution would have been worse than
+# showing nothing. It has since been measured (signed sd 13.73 over 970 exploration games),
+# so the declaration was discharged into an implementation. That is what a declared gap is
+# for; this check now guards the implementation instead of the excuse.
+check("spread middles are implemented, not merely declared",
+      ("middles", "spreads") not in ca.DECLARED_SCOPE
+      and ("middles", "spreads") in ca.SCANS_BUT_MAY_FIND_NOTHING,
+      "the gap was closed by measuring the missing quantity, not by widening the excuse")
 
 try:
     import io as _io
@@ -721,38 +727,72 @@ try:
           "a market is quoted but some surface produces nothing and nobody said why")
 except FileNotFoundError as e:
     print(f"  SKIP  coverage audit -- {e}")
+
 
 
 # ======================================================================================
-section("16. Silent-gap audit -- the class of bug, not the instances")
+section("17. Spread middles and the push branch")
 
-# Two bugs here produced SILENCE rather than errors: in-play games scanned as pre-game
-# (D151) and every spread discarded by three surfaces (D155). 174 assertions passed
-# throughout BOTH, because none of them said what SHOULD be present. This runs the
-# coverage audit as a test, so the class is caught rather than only the two instances.
-import coverage_audit as ca
+# Two omissions closed here. (a) Spread middles existed in the tape and were skipped
+# because the MARGIN dispersion had never been measured. (b) Both middle surfaces scored
+# an exact landing on a whole-number line as a MISS, when it actually refunds one leg and
+# wins the other. (b) was nearly shipped as a caveat asserting the effect was too small to
+# matter -- measuring it showed it is worth about 5pp of a stake on the low key numbers.
+import middle_ev as _me
 
-check("every deliberate omission carries a written reason",
-      all(isinstance(v, str) and len(v) > 40 for v in ca.DECLARED_SCOPE.values()),
-      "a scope decision without a reason is indistinguishable from an oversight")
-check("scanned-but-empty is modelled separately from out-of-scope",
-      bool(ca.SCANS_BUT_MAY_FIND_NOTHING) and
-      not (set(ca.SCANS_BUT_MAY_FIND_NOTHING) & set(ca.DECLARED_SCOPE)),
-      "finding nothing today and never having looked are different facts")
-check("spread middles are declared rather than forgotten",
-      ("middles", "spreads") in ca.DECLARED_SCOPE
-      and "MARGINS" in ca.DECLARED_SCOPE[("middles", "spreads")])
+check("margin dispersion is measured, not borrowed from totals",
+      _me.SD_RESIDUAL_SPREAD != _me.SD_RESIDUAL and 12.0 < _me.SD_RESIDUAL_SPREAD < 14.0,
+      "a margin is not a total and must not inherit its distribution")
+check("margins are tighter than totals, so spread middles break even sooner",
+      _me.breakeven_window(1.9091, 1.9091, market="spreads")
+      < _me.breakeven_window(1.9091, 1.9091, market="totals"),
+      "if this inverts, the two dispersions have been swapped")
+check("the push table loaded and covers the exploration partition only",
+      _me.PUSH_PMF_AVAILABLE and _me.PUSH_PMF_GAMES == 970)
 
-try:
-    import io as _io
-    import contextlib as _ctx
-    _buf = _io.StringIO()
-    with _ctx.redirect_stdout(_buf):
-        _rc = ca.main()
-    check("the coverage audit reports NO silent gaps", _rc == 0,
-          "a market is quoted but some surface produces nothing and nobody said why")
-except FileNotFoundError as e:
-    print(f"  SKIP  coverage audit -- {e}")
+check("a half-point line cannot push", _me.push_probability([2.5, 8.5], "spreads") == 0.0,
+      "only whole numbers can land exactly on the line")
+check("a whole-number margin pushes at a measured, material rate",
+      0.03 < _me.push_probability([3], "spreads") < 0.08,
+      "this is the quantity a caveat once dismissed as negligible")
+check("WNBA margins really do cluster on the low key numbers",
+      _me.push_probability([3], "spreads") > _me.push_probability([13], "spreads"),
+      "three-pointers and free-throw pairs put mass on 3, 5, 6, 7 and 10")
+check("a missing push table degrades to zero, never to a guess",
+      _me.push_probability([3], "spreads") >= 0.0 and
+      _me.push_probability([999], "spreads") == 0.0,
+      "outside the measured support the correction is dropped, which understates")
+
+_no = _me.evaluate(0.5, 1.9091, 1.9091, market="spreads")
+_yes = _me.evaluate(0.5, 1.9091, 1.9091, market="spreads", push_points=[2.5, 3])
+check("pricing the push branch can only help the holder", _yes.ev > _no.ev,
+      "a refund plus a win beats a loss plus a win; the sign of the correction is fixed")
+check("the uncorrected number is retained so the correction is auditable",
+      abs(_yes.ev_no_push - _no.ev) < 0.01 and _yes.p_push > 0)
+check("the correction is exactly one stake times the push probability",
+      abs((_yes.ev - _yes.ev_no_push) - _yes.p_push * 100.0) < 0.02,
+      "the window model already counted this branch as a miss, so the gap is one stake")
+
+_sm = [o for o in board.detect_middles(_s) if o.market.startswith("Spread")]
+check("spread middles are actually produced from the live tape",
+      bool(_sm) or not any(q.market == "spreads" for q in _s.quotes),
+      "98 spread quotes once produced 0 middles and no test noticed")
+if _sm:
+    check("every spread middle names both sides and the winning window",
+          all("Both win if" in o.detail and o.class_id == "MIDDLES_AND_DISLOCATIONS"
+              for o in _sm))
+    check("no spread middle claims to be arbitrage",
+          all(o.class_id != "TRUE_CROSS_BOOK_ARBITRAGE" for o in _sm)
+          and all(any("NOT arbitrage" in c for c in o.caveats) for o in _sm))
+    check("no spread middle emits a stake",
+          all(o.suggested_stake is None and o.stake_gate for o in _sm),
+          "sizing stays gated on M24 <- M23 <- M22 for every probabilistic class")
+    def _has_whole_leg(o):
+        lo, hi = o.market.split()[1].split("-")
+        return float(lo).is_integer() or float(hi).is_integer()
+    check("the push disclosure appears exactly where a leg can actually push",
+          all(any("refunds it" in c for c in o.caveats) == _has_whole_leg(o) for o in _sm),
+          "the disclosure must track the arithmetic, not decorate every row")
 
 # ======================================================================================
 print("\n" + "=" * 86)

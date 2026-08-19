@@ -231,11 +231,85 @@ def _arb_opportunity(q0, market, res, point) -> Opportunity:
 # --------------------------------------------------------------------------------------
 
 
+def _spread_middles(quotes, stake_each: float) -> list[Opportunity]:
+    """Straddle a game's MARGIN: take one team at -a and the other at +b with b > a.
+
+    Both bets win when the favourite's margin lands strictly between a and b. Priced with
+    the MARGIN dispersion (residual sd 13.05), never the totals dispersion - margins are
+    less dispersed, so the breakeven window is 1.56 points rather than 1.80, and borrowing
+    the wrong distribution would have made these look worse than they are.
+    """
+    out: list[Opportunity] = []
+    q0 = quotes[0]
+    teams = {q.outcome for q in quotes}
+    if len(teams) != 2:
+        return out
+    best: dict[tuple, Opportunity] = {}
+    for a, b in itertools.product(quotes, quotes):
+        if a.outcome == b.outcome or a.book == b.book:
+            continue
+        if a.point is None or b.point is None or a.point >= 0:
+            continue
+        lo, hi = -a.point, b.point          # favourite laying `lo`, dog getting `hi`
+        if hi <= lo:
+            continue
+        width = round(hi - lo, 2)
+        ev = _mev.evaluate(width, om.american_to_decimal(a.price),
+                           om.american_to_decimal(b.price),
+                           stake_each=stake_each, market="spreads",
+                           push_points=[lo, hi])
+        cand = Opportunity(
+            opp_id=f"MIDS-{q0.game_id[:8]}-{lo:g}-{hi:g}",
+            class_id="MIDDLES_AND_DISLOCATIONS",
+            tier=TIER_BOUNDED,
+            matchup=q0.matchup,
+            commence_time=q0.commence_time,
+            market=f"Spread {lo:g}-{hi:g}",
+            headline=(f"{'+EV' if ev.is_positive else 'NEGATIVE EV'}: {ev.ev:+.2f} expected on "
+                      f"{stake_each * 2:.0f} staked ({width:g}-point margin window, hits "
+                      f"~{ev.p_hit * 100:.1f}% vs {ev.breakeven_p * 100:.1f}% needed)"),
+            detail=(f"{a.outcome} {a.point:+g} at {a.price:+g} ({a.book_title}) with "
+                    f"{b.outcome} {b.point:+g} at {b.price:+g} ({b.book_title}). Both win if "
+                    f"{a.outcome} wins by more than {lo:g} and fewer than {hi:g}."),
+            legs=[_leg_dict(_to_leg(a), stake_each), _leg_dict(_to_leg(b), stake_each)],
+            rank_score=round(ev.ev, 4),
+            stake_gate=("The hit probability is MODELLED from margin dispersion; sizing remains "
+                        "gated (M24 <- M23 <- M22). Equal stakes illustrate payoff shape only."),
+            evidence=(f"Prices are arithmetic on witnessed quotes; the hit rate is a MODEL. "
+                      f"{ev.basis}. Breakeven window at these prices: {ev.breakeven_window:g} pts."),
+            caveats=[
+                ("NEGATIVE EXPECTATION at these prices -- the window is narrower than the "
+                 f"{ev.breakeven_window:g}-point breakeven."
+                 if not ev.is_positive else
+                 f"Positive expectation, but the hit rate ({ev.p_hit * 100:.1f}%) is a MODEL."),
+                ev.caveat,
+                "This is NOT arbitrage. M00 reserves that word for locked-positive combinations.",
+                "Priced on MARGIN dispersion, not totals dispersion -- they are different.",
+            ] + ([
+                # This started life as a caveat claiming the push branch was too small to
+                # matter. Measuring it showed otherwise -- WNBA margins pile up on the low
+                # key numbers -- so it is now PRICED rather than disclaimed.
+                f"A leg sits on a whole number, so an exact margin refunds it and wins the "
+                f"other: worth {ev.p_push * 100:.1f}pp, already included. Without it this "
+                f"middle would score {ev.ev_no_push:+.2f}."
+            ] if ev.p_push > 0 else []),
+        )
+        key = (lo, hi)
+        prev = best.get(key)
+        if prev is None or cand.rank_score > prev.rank_score:
+            best[key] = cand
+    ranked = sorted(best.values(), key=lambda o: -o.rank_score)
+    return ranked[:2]
+
+
 def detect_middles(snapshot, stake_each: float = 100.0) -> list[Opportunity]:
     opps: list[Opportunity] = []
     groups = _by_game_market(snapshot.quotes, snapshot.captured_at, pre_game_only=True)
 
     for (game_id, market), quotes in groups.items():
+        if market == "spreads":
+            opps.extend(_spread_middles(quotes, stake_each))
+            continue
         if market != "totals":
             continue
         q0 = quotes[0]
@@ -257,7 +331,8 @@ def detect_middles(snapshot, stake_each: float = 100.0) -> list[Opportunity]:
             ev = _mev.evaluate(res.window_width,
                                om.american_to_decimal(o.price),
                                om.american_to_decimal(u.price),
-                               stake_each=stake_each)
+                               stake_each=stake_each,
+                               push_points=[o.point, u.point])
             key = (res.window_low, res.window_high)
             cand = Opportunity(
                 opp_id=f"MID-{q0.game_id[:8]}-{res.window_low:g}-{res.window_high:g}",

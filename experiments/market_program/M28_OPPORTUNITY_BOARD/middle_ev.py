@@ -58,6 +58,9 @@ HOW THE PROBABILITY IS DERIVED, including what is assumed rather than measured:
 """
 from __future__ import annotations
 
+import json as _json
+import os as _os
+
 from dataclasses import dataclass
 from math import erf, sqrt
 
@@ -70,6 +73,72 @@ SD_LINE_TAPE = 8.445
 SD_LINE_BY_SCOPE = {"2025_only": 6.077, "2026_only": 7.920, "pooled": 8.445}
 #: Variance decomposition of the two above.
 SD_RESIDUAL = sqrt(max(SD_TOTAL_EXPLORATION ** 2 - SD_LINE_TAPE ** 2, 1.0))
+
+# ---------------------------------------------------------------------------------------
+# SPREADS. A margin is not a total and must not borrow its dispersion.
+#
+# The coverage audit (D155 follow-up) declared spread middles out of scope precisely
+# BECAUSE this quantity had never been measured, and pricing them with the totals
+# distribution would have been worse than not showing them. It has now been measured, so
+# the omission is closed rather than merely documented.
+#
+# Signed margin sd is sqrt(E[m^2]) over 888 exploration games (the signed margin is
+# mean-zero by construction, since either side may win): 13.60. Spread-line dispersion
+# across 457 games of 2025-2026 tape, lines only and NO outcome: 3.852.
+#: Signed margin dispersion, exploration partition (2021-2024, 970 games). No market data.
+#: An earlier pass reported 13.60 on 888 games; that set was incomplete (2024 regular season is
+#: absent from the team-level gamelogs and has to be recovered by aggregating player logs).
+#: 970 games supersedes it. The same complete set reproduces the TOTALS sd at 17.396 against the
+#: 17.30 carried here from M10, which corroborates that constant rather than disturbing it.
+SD_MARGIN_EXPLORATION = 13.7311
+#: Spread-line dispersion across games, 457 games of tape. Uses no outcome.
+SD_SPREAD_LINE_TAPE = 3.852
+#: Residual dispersion around the posted spread.
+SD_RESIDUAL_SPREAD = sqrt(max(SD_MARGIN_EXPLORATION ** 2 - SD_SPREAD_LINE_TAPE ** 2, 1.0))
+
+#: Margins are LESS dispersed than totals, so a spread middle needs a NARROWER window than
+#: a totals middle to break even: 1.56 points against 1.80 at -110/-110.
+RESIDUAL_BY_MARKET = {"totals": SD_RESIDUAL, "spreads": SD_RESIDUAL_SPREAD}
+
+# ---------------------------------------------------------------------------------------
+# THE PUSH BRANCH.
+#
+# _p_window is open at both ends, so it scores "the game landed exactly on the line" as a
+# MISS. That is wrong, and wrong in a way that matters: the leg sitting on the whole number
+# is refunded while the other leg wins, so an exact landing pays roughly a full extra stake
+# against what the window model assumed. WNBA margins pile up on 3, 5, 6, 7 and 10 -- a 2.5/3
+# spread middle carries a ~5.4% push branch, which is enough to flip its sign from -6.08 to
+# positive. This was nearly shipped as a caveat saying the effect was too small to matter;
+# measuring it showed the opposite.
+_PMF_PATH = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "push_pmf.json")
+try:
+    with open(_PMF_PATH, encoding="utf-8") as _fh:
+        _PMF = _json.load(_fh)
+    PUSH_PMF_AVAILABLE = True
+except FileNotFoundError:          # never silently zero -- callers must be able to tell
+    _PMF = {"margin": {}, "total": {}, "_n_games": 0}
+    PUSH_PMF_AVAILABLE = False
+
+PUSH_PMF_GAMES = _PMF.get("_n_games", 0)
+_PMF_KEY = {"totals": "total", "spreads": "margin"}
+
+
+def push_probability(points, market: str = "totals") -> float:
+    """Total probability that the settling number lands on one of `points`.
+
+    Only whole numbers can push; a half-point line cannot. Returns 0.0 for half-points and
+    for numbers outside the measured support, which is the conservative direction: the
+    correction is always POSITIVE, so omitting it understates rather than oversells.
+    """
+    table = _PMF.get(_PMF_KEY.get(market, "total"), {})
+    out = 0.0
+    for x in points:
+        if x is None or not float(x).is_integer():
+            continue
+        out += table.get(str(int(abs(x))), 0.0)
+    return out
+
+UNCONDITIONAL_BY_MARKET = {"totals": SD_TOTAL_EXPLORATION, "spreads": SD_MARGIN_EXPLORATION}
 
 PROVENANCE = (
     f"residual sd {SD_RESIDUAL:.2f} = sqrt({SD_TOTAL_EXPLORATION:.2f}^2 - {SD_LINE_TAPE:.2f}^2); "
@@ -90,6 +159,8 @@ class MiddleEV:
     is_positive: bool
     basis: str
     caveat: str
+    p_push: float = 0.0
+    ev_no_push: float = 0.0
 
 
 def _p_window(width: float, sd: float) -> float:
@@ -112,8 +183,11 @@ def breakeven_probability(dec_over: float, dec_under: float) -> float:
     return -miss / (hit - miss)
 
 
-def breakeven_window(dec_over: float, dec_under: float, sd: float = SD_RESIDUAL) -> float:
+def breakeven_window(dec_over: float, dec_under: float, sd: float | None = None,
+                     market: str = "totals") -> float:
     """The narrowest window that is not negative expectation, by bisection."""
+    if sd is None:
+        sd = RESIDUAL_BY_MARKET.get(market, SD_RESIDUAL)
     target = breakeven_probability(dec_over, dec_under)
     lo, hi = 0.0, 40.0
     for _ in range(80):
@@ -126,15 +200,23 @@ def breakeven_window(dec_over: float, dec_under: float, sd: float = SD_RESIDUAL)
 
 
 def evaluate(window: float, dec_over: float, dec_under: float,
-             stake_each: float = 100.0) -> MiddleEV:
-    p = _p_window(window, SD_RESIDUAL)
-    p_cons = _p_window(window, SD_TOTAL_EXPLORATION)
+             stake_each: float = 100.0, market: str = "totals",
+             push_points=()) -> MiddleEV:
+    sd = RESIDUAL_BY_MARKET.get(market, SD_RESIDUAL)
+    sd_unc = UNCONDITIONAL_BY_MARKET.get(market, SD_TOTAL_EXPLORATION)
+    p = _p_window(window, sd)
+    p_cons = _p_window(window, sd_unc)
     outlay = 2.0 * stake_each
     hit_profit = stake_each * (dec_over + dec_under) - outlay
     miss_profit = stake_each * min(dec_over, dec_under) - outlay
-    ev = p * hit_profit + (1.0 - p) * miss_profit
+    ev_raw = p * hit_profit + (1.0 - p) * miss_profit
+    # A push refunds the leg on the number and pays the other, so relative to the modelled
+    # miss the game is better off by one full stake. The window model already counted this
+    # outcome as a miss, so the correction is exactly p_push * stake_each.
+    p_push = push_probability(push_points, market) if push_points else 0.0
+    ev = ev_raw + p_push * stake_each
     be_p = breakeven_probability(dec_over, dec_under)
-    be_w = breakeven_window(dec_over, dec_under)
+    be_w = breakeven_window(dec_over, dec_under, market=market)
     return MiddleEV(
         window=window,
         p_hit=round(p, 6),
@@ -144,7 +226,12 @@ def evaluate(window: float, dec_over: float, dec_under: float,
         breakeven_p=round(be_p, 6),
         breakeven_window=be_w,
         is_positive=bool(ev > 0),
-        basis=PROVENANCE,
+        p_push=round(p_push, 6),
+        ev_no_push=round(ev_raw, 2),
+        basis=(PROVENANCE if market == "totals" else
+               f"residual sd {SD_RESIDUAL_SPREAD:.2f} = sqrt({SD_MARGIN_EXPLORATION:.2f}^2"
+               f" - {SD_SPREAD_LINE_TAPE:.3f}^2); signed margin sd from 970 exploration"
+               f" games, spread-line sd from 457 games of tape with NO outcome used"),
         caveat=(
             "Upper bound. The window is assumed centred on the line; an off-centre window hits "
             "less. The residual is assumed Gaussian on a discrete, mildly skewed variable. "

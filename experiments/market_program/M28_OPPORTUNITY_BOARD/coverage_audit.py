@@ -34,19 +34,16 @@ import promos
 DECLARED_SCOPE = {
     ("middles", "h2h"): (
         "A moneyline has no line to straddle, so a middle is undefined on it. Not a gap."),
-    ("middles", "spreads"): (
-        "SPREAD MIDDLES ARE REAL AND ARE NOT IMPLEMENTED. Betting -1.5 and +3.5 middles on a "
-        "2- or 3-point margin. They are omitted because the EV model (middle_ev.py) is "
-        "calibrated on the dispersion of game TOTALS (sd 17.30), and the dispersion of "
-        "MARGINS is a different quantity that has not been measured. Surfacing spread middles "
-        "without their own dispersion would price them with the wrong distribution, which is "
-        "worse than not showing them. Declared, not forgotten."),
+    # NOTE: ("middles", "spreads") was declared out of scope here until the margin
+    # dispersion was measured (signed sd 13.60, residual 13.05). It is now IMPLEMENTED,
+    # which is what a declared gap is supposed to lead to rather than a permanent excuse.
 }
 
 #: Surfaces that scan a market but legitimately find nothing on a given day. Zero here means
 #: "looked and found none", which is a RESULT, not a gap -- arbitrage runs at 0.18-0.25% of
 #: markets (D151/robustness check), so zero on any one snapshot is the expected observation.
 SCANS_BUT_MAY_FIND_NOTHING = {
+    ("middles", "spreads"),
     ("arbitrage", "h2h"),
     ("arbitrage", "spreads"),
     ("arbitrage", "totals"),
