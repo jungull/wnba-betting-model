@@ -6,18 +6,18 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `b9e54c9241b666906ea9554f947a7866e7786075` |
+| HEAD | `a8188901c571d35569e1ded1302c91d9213a0f96` |
 | working tree | DIRTY |
 | nodes | 106 |
-| events | 534 |
+| events | 548 |
 
 ## Counts by status
 
 | status | n |
 |---|---|
-| BLOCKED | 6 |
+| BLOCKED | 5 |
 | HALTED | 1 |
-| PASSED | 88 |
+| PASSED | 89 |
 | READY | 2 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 3 |
@@ -33,7 +33,7 @@ None.
 ## Ready — next automatically scheduled
 
 * `M08_STALE_WINDOW` (market_intelligence) — Stale-line window measurement conditional on demonstrated lead-lag structure
-* `M22_CAPACITY` (market_intelligence) — Capacity analysis: how much money the measured opportunity classes can absorb
+* `M23_SHADOW_TRADING` (market_intelligence) — Shadow trading: paper decisions logged against capturable prices, append-only
 
 ## Passed
 
@@ -62,6 +62,7 @@ None.
 * `M16_RELATED_MARKET_COHERENCE` — Coherence checks across related markets (moneyline, spread, total, props)
 * `M17_SUSPENSION_REOPENING` — Market suspension and reopening microstructure on the high-frequency tape
 * `M21_EXECUTION_REALISM` — Execution realism: limits, slippage and decision-to-executable latency, measured
+* `M22_CAPACITY` — Capacity analysis: how much money the measured opportunity classes can absorb
 * `M25_MARKET_UI_FIXTURES` — Market screen shell against fixtures, extending the existing U11/U13 pattern
 * `M26_CAPTURE_MICROSTRUCTURE_REMEDIATION` — Remediate the capture topology: game lines, per-book independence, witnessed absence
 * `M27_PER_BOOK_POLLING` — Bounded per-book polling: make the cross-book synchronization window measurable
@@ -139,7 +140,7 @@ None.
 | data | 0 | 0 | 5 | 0 | 1 | 0 |
 | future_research | 0 | 0 | 7 | 0 | 0 | 0 |
 | governance | 0 | 0 | 5 | 0 | 1 | 0 |
-| market_intelligence | 2 | 0 | 21 | 2 | 0 | 1 |
+| market_intelligence | 1 | 0 | 22 | 2 | 0 | 1 |
 | operations | 0 | 0 | 12 | 0 | 2 | 0 |
 | possession | 0 | 0 | 25 | 0 | 2 | 1 |
 | product | 0 | 0 | 4 | 0 | 0 | 0 |
