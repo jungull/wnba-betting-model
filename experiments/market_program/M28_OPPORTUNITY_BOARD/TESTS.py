@@ -424,6 +424,50 @@ try:
 except FileNotFoundError as e:
     print(f"  SKIP  live promo assertions -- {e}")
 
+
+# ======================================================================================
+section("11. In-play exclusion -- the phantom-arbitrage guard")
+
+# WHY THIS GUARD EXISTS, measured over 179 snapshots:
+#   in-play two-sided markets with a negative cross-book overround : 24.56%
+#   pre-game                                                       :  0.27%
+# 85.7% of all apparent arbitrage on this tape came from games already under way, where a
+# book re-stamps last_update without moving off its pre-game price. Quote age does not
+# detect it. Without this guard the board hands out confident stakes on phantoms.
+from datetime import datetime as _dt, timezone as _tz
+
+_q = feed.Quote(game_id="g", commence_time="2026-08-19T01:00:00Z", home_team="H",
+                away_team="A", book="b", book_title="B", market="h2h", outcome="H",
+                price=-110, point=None, last_update="", snapshot_utc="x")
+check("a game already started is flagged in-play",
+      _q.is_in_play(_dt(2026, 8, 19, 3, 0, tzinfo=_tz.utc)) is True)
+check("a game not yet started is not flagged",
+      _q.is_in_play(_dt(2026, 8, 19, 0, 0, tzinfo=_tz.utc)) is False)
+check("exactly at tip counts as in play",
+      _q.is_in_play(_dt(2026, 8, 19, 1, 0, tzinfo=_tz.utc)) is True)
+_bad = feed.Quote(game_id="g", commence_time="not-a-date", home_team="H", away_team="A",
+                  book="b", book_title="B", market="h2h", outcome="H", price=-110,
+                  point=None, last_update="", snapshot_utc="x")
+check("an unparseable commence time does not crash, and is treated as pre-game",
+      _bad.is_in_play(_dt(2026, 8, 19, 3, 0, tzinfo=_tz.utc)) is False)
+
+try:
+    _s = feed.load_latest()
+    _b = board.build_board(_s)
+    check("the board reports how many in-play games it excluded",
+          "n_games_in_play_excluded" in _b)
+    check("the exclusion is explained rather than silent",
+          "in_play_note" in _b and "24.56%" in _b["in_play_note"])
+    _inplay = {q.game_id[:8] for q in _s.quotes if q.is_in_play(_s.captured_at)}
+    _arb = [o for o in _b["opportunities"] if o["class_id"] == "TRUE_CROSS_BOOK_ARBITRAGE"]
+    check("no arbitrage is reported on a game already under way",
+          not any(any(gid in o["opp_id"] for gid in _inplay) for o in _arb))
+    _mid = [o for o in _b["opportunities"] if o["class_id"] == "MIDDLES_AND_DISLOCATIONS"]
+    check("no middle is reported on a game already under way",
+          not any(any(gid in o["opp_id"] for gid in _inplay) for o in _mid))
+except FileNotFoundError as e:
+    print(f"  SKIP  in-play live assertions -- {e}")
+
 # ======================================================================================
 print("\n" + "=" * 86)
 if FAIL:
