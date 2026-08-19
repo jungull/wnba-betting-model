@@ -43,6 +43,12 @@ DECLARED_SCOPE = {
 #: "looked and found none", which is a RESULT, not a gap -- arbitrage runs at 0.18-0.25% of
 #: markets (D151/robustness check), so zero on any one snapshot is the expected observation.
 SCANS_BUT_MAY_FIND_NOTHING = {
+    # M29/D157 measured that only 1.18% of quotes beat their peers' de-vigged consensus, so
+    # zero on any one snapshot -- and zero on a whole market type on a thin slate -- is the
+    # expected observation, not a gap. The surface runs on all three markets.
+    ("stale_line", "h2h"),
+    ("stale_line", "spreads"),
+    ("stale_line", "totals"),
     ("middles", "spreads"),
     ("arbitrage", "h2h"),
     ("arbitrage", "spreads"),
@@ -66,6 +72,7 @@ def main() -> int:
     produced: dict[str, Counter] = {
         "arbitrage": Counter(), "middles": Counter(),
         "dispersion": Counter(), "best_price": Counter(), "promos": Counter(),
+        "stale_line": Counter(),
     }
     label_to_key = {v: k for k, v in board.MARKET_NAMES.items()}
     for o in live["opportunities"]:
@@ -80,6 +87,8 @@ def main() -> int:
             produced["dispersion"][key] += 1
         elif cls == "PROMOTIONAL_VALUE":
             produced["promos"][key] += 1
+        elif cls == "STALE_LINE_DELAYED_REACTION":
+            produced["stale_line"][key] += 1
     for r in live.get("best_prices", []):
         produced["best_price"][label_to_key.get(r["market"], r["market"].lower())] += 1
 
@@ -88,7 +97,7 @@ def main() -> int:
     print("COVERAGE BY SURFACE")
     print("=" * 78)
     gaps = []
-    surfaces = ["arbitrage", "middles", "dispersion", "best_price"]
+    surfaces = ["arbitrage", "middles", "dispersion", "best_price", "stale_line"]
     print(f"  {'surface':<12}" + "".join(f"{m:>13}" for m in present))
     print(f"  {'':<12}" + "".join(f"{'':>13}" for m in present))
     for surf in surfaces:

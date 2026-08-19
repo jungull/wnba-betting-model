@@ -31,6 +31,7 @@ from dataclasses import dataclass, field, asdict
 
 import oddsmath as om
 import promos as _promos
+import consensus_edge as _cedge
 import contract as _contract
 import feed as _feed
 import middle_ev as _mev
@@ -541,8 +542,13 @@ def best_price_table(snapshot, min_books: int = 3) -> list[dict]:
 
     Line shopping is the only thing this programme has measured that is simultaneously
     real, free and requires no opinion about a game: taking the best available price on
-    each side removes a median 26.8% of the vig (4.753% -> 3.477% overround), worth 0.64
-    points of breakeven win rate (D151).
+    each side removes a median 24.3% of the vig (4.758% -> 3.600% overround, 1.157 points
+    removed) across 4,460 two-sided markets (D155, correcting D151's 26.8%, which had been
+    computed on a sample that silently excluded every spread).
+
+    M29/D157 puts the same thing on a returns footing: betting blind loses 4.43% a stake,
+    and always taking the best of eleven books still loses 2.05%. Shopping is necessary and
+    is nowhere near sufficient.
 
     That finding was a statistic. This turns it into an instruction: the book to use, the
     price it is offering, and how much better that is than betting at a typical book. It is
@@ -677,13 +683,74 @@ def _measure_cadence_safe(snapshot) -> dict:
         return {"median_gap_s": None, "median_gap_min": None, "min_gap_s": None, "n_sampled": 0}
 
 
+def detect_stale_lines(snapshot) -> list[Opportunity]:
+    """Quotes that beat the de-vigged consensus of their peers, graded by how dislocated.
+
+    This is the first lane on this board carrying a positive-expectation claim, and the
+    claim rests on a measurement rather than on a forecast. M29/D157 asked who moves when a
+    book disagrees with its peers, and found the OUTLIER does essentially all of the moving:
+    a >=1.5pp dislocation closes 0.491pp [0.426,0.574] over an hour, of which only
+    0.131pp [-0.047,0.235] is consensus drifting toward the outlier. No book leads. That
+    makes peer consensus the attractor, and therefore the right thing to price against.
+
+    What it is NOT is a claim about truth. Consensus is where prices settle, not a referee.
+    If the whole market is wrong about a game, this lane cannot see it and would score the
+    one correct book as the mistake. Every number below is closing-line value against the
+    market's own settling point.
+
+    No scoring model is involved anywhere, so this lane is untouched by S42 and by
+    D141/D150's finding that our model trails the market.
+    """
+    opps: list[Opportunity] = []
+    for d in _cedge.find_dislocations(snapshot):
+        pt = f" {d.point:+g}" if d.point is not None and d.market == "spreads" else (
+            f" {d.point:g}" if d.point is not None else "")
+        strong = d.grade == "ACT"
+        opps.append(Opportunity(
+            opp_id=f"STALE-{d.game_id[:8]}-{d.market}-{d.book}-{d.outcome[:10]}".replace(" ", ""),
+            class_id="STALE_LINE_DELAYED_REACTION",
+            tier=TIER_BOUNDED if strong else TIER_INFORMATIONAL,
+            matchup=d.matchup,
+            commence_time=d.commence_time,
+            market=f"{MARKET_NAMES.get(d.market, d.market)}{pt} — {d.outcome}",
+            headline=(f"[{d.grade}] {d.book_title} pays {d.price:+g}, worth {d.edge * 100:+.2f}% "
+                      f"against the other {d.n_peers} books' de-vigged consensus"),
+            detail=(f"{d.book_title} implies {d.p_devig * 100:.1f}% for this side; the median "
+                    f"of the other {d.n_peers} books implies {d.consensus * 100:.1f}%. That is "
+                    f"{d.opinion_gap * 100:.2f} points of disagreement, and after "
+                    f"{d.book_title}'s own vig it leaves {d.edge * 100:+.2f}% per unit staked "
+                    f"if the consensus is fair."),
+            legs=[{"book": d.book, "outcome": d.outcome, "price": d.price,
+                   "point": d.point, "last_update": d.last_update, "stake": None}],
+            rank_score=round(d.edge * 100, 4),
+            stake_gate=("Sizing stays gated (M24 <- M23 <- M22). A measured edge is not a "
+                        "staking policy, and this lane emits no number."),
+            evidence=_cedge.PROVENANCE,
+            caveats=([
+                "Measured against the OTHER BOOKS' opinion, not against truth. If the market "
+                "is collectively wrong, this scores the correct book as the error.",
+                "SHADOW mode. Nothing is placed, no venue is contacted, no account is held.",
+            ] + ([
+                f"Graded ACT: at least {_cedge.ACT_PP * 100:g}pp of dislocation, the band where "
+                f"M29 measured +1.44% live and +2.74% in a reserved replication."]
+                if strong else [
+                f"Graded {d.grade}: the return looks large but rests on only "
+                f"{d.opinion_gap * 100:.2f}pp of disagreement. At long-shot prices a small "
+                f"probability difference becomes a big percentage, and the consensus estimate "
+                f"is proportionally noisier there. M29 measured a reliable return only at "
+                f"{_cedge.ACT_PP * 100:g}pp and above."])),
+        ))
+    return opps
+
+
 def build_board(snapshot, bankroll: float = 1000.0, stake_each: float = 100.0) -> dict:
     arbs = detect_arbitrage(snapshot, bankroll=bankroll)
     mids = detect_middles(snapshot, stake_each=stake_each)
     disp = detect_dispersion(snapshot)
     promo = detect_promos(snapshot)
+    stale = detect_stale_lines(snapshot)
 
-    opportunities = arbs + promo + mids + disp
+    opportunities = arbs + promo + stale + mids + disp
     # Rank: tier first (locked before bounded before informational), then score within tier.
     opportunities.sort(key=lambda o: (o.tier, -o.rank_score))
 
@@ -717,13 +784,24 @@ def build_board(snapshot, bankroll: float = 1000.0, stake_each: float = 100.0) -
             "PROMOTIONAL_VALUE": len(promo),
             "MIDDLES_AND_DISLOCATIONS": len(mids),
             "PURE_MICROSTRUCTURE": len(disp),
+            "STALE_LINE_DELAYED_REACTION": len(stale),
         },
+        "stale_line_note": (
+            "The only lane on this board carrying a positive-expectation claim. It flags a "
+            "quote that beats the de-vigged median of the other books after that book's own "
+            "vig. M29/D157 measured this on 54,524 live quotes and a reserved 66,967-quote "
+            "replication: 1.18% of quotes qualify in BOTH samples, worth +1.68% and +2.24%. "
+            "Grades: ACT means at least 3pp of dislocation, where the measured return was "
+            "+1.44% live and +2.74% replicated. Anything less is shown but not recommended. "
+            "The comparison is against the market's own settling point, never against truth."),
         "opportunities": [o.as_dict() for o in opportunities],
         "best_prices": best_price_table(snapshot),
         "best_prices_note": (
             "Where to bet each side IF you are betting it. Taking the best available price "
-            "removes a median 26.8% of the vig (D151) -- free, mechanical, and requiring no "
-            "opinion about any game. This is not a recommendation to bet."),
+            "removes a median 24.3% of the vig (D155) -- free, mechanical, and requiring no "
+            "opinion about any game. It is not enough on its own: M29/D157 measured that "
+            "always taking the best of eleven books still returns -2.05% a stake against "
+            "-4.43% for betting blind. This is not a recommendation to bet."),
         "gated_lanes": GATED_LANES,
         "execution_mode": "SHADOW",
         "execution_mode_note": (

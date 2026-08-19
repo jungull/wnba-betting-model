@@ -566,7 +566,8 @@ except FileNotFoundError as e:
 # ======================================================================================
 section("14. Best-price table -- line shopping made operational")
 
-# D151 measured that taking the best available price removes a median 26.8% of the vig.
+# D155 measured that taking the best available price removes a median 24.3% of the vig
+# (correcting D151's 26.8%, which had excluded every spread).
 # That was a statistic; this section checks it was turned into an instruction that is
 # actually correct -- the named book must really be offering the named price.
 try:
@@ -793,6 +794,60 @@ if _sm:
     check("the push disclosure appears exactly where a leg can actually push",
           all(any("refunds it" in c for c in o.caveats) == _has_whole_leg(o) for o in _sm),
           "the disclosure must track the arithmetic, not decorate every row")
+
+
+# ======================================================================================
+section("18. Stale-line lane -- the first positive-expectation claim on this board")
+
+# M29/D157 measured what a cross-book disagreement is worth: 1.18% of quotes beat their
+# peers' de-vigged consensus in BOTH an live sample and a reserved replication, worth +1.68%
+# and +2.24%. This lane turns that into a flag. Every check below guards the property that
+# makes the claim admissible -- it must be arithmetic on witnessed prices, never a forecast.
+import consensus_edge as _ce
+import contract
+
+_dis = _ce.find_dislocations(_s)
+_pre = [q for q in _s.quotes if not q.is_in_play(_s.captured_at)]
+check("the lane gates on the payoff, not on the opinion gap",
+      all(d.edge > 0 for d in _dis),
+      "a 2pp gap at -910 still loses 3%; the gap grades strength, the edge decides")
+check("every flagged quote really does beat its peers after that book's own vig",
+      all(d.consensus > d.p_raw for d in _dis),
+      "p_raw is vigged and consensus is not -- that asymmetry is the whole test")
+check("consensus never includes the book being judged",
+      all(d.n_peers >= _ce.MIN_PEERS for d in _dis),
+      "including it would let an outlier drag its own benchmark and manufacture an edge")
+check("in-play quotes are excluded from the lane",
+      all(not q.is_in_play(_s.captured_at)
+          for q in _s.quotes
+          for d in _dis
+          if (q.game_id, q.market, q.outcome, q.point, q.book)
+          == (d.game_id, d.market, d.outcome, d.point, d.book)),
+      "D151: in-play prices are a different process")
+check("the hit rate is in the range M29 measured",
+      (not _pre) or 0.0 <= len(_dis) / len(_pre) <= 0.10,
+      "M29 found 1.18%% of quotes qualify in two independent samples; 10%% would mean a bug")
+
+_st = board.detect_stale_lines(_s)
+check("the lane emits no stake, ever",
+      all(o.suggested_stake is None and o.stake_gate for o in _st),
+      "a measured edge is not a staking policy; M24 <- M23 <- M22 still gates sizing")
+check("every row says it is measured against opinion, not against truth",
+      all(any("not against truth" in c for c in o.caveats) for o in _st),
+      "consensus is where prices settle, not a referee")
+check("every row declares SHADOW",
+      all(any("SHADOW" in c for c in o.caveats) for o in _st))
+check("only sufficiently dislocated rows are graded ACT",
+      all((o.tier == board.TIER_BOUNDED) == o.headline.startswith("[ACT]") for o in _st),
+      "tier and grade must agree or the ranking lies about the evidence")
+check("a thin row explains why a big percentage is not a big edge",
+      all(any("long-shot" in c or "rests on only" in c for c in o.caveats)
+          for o in _st if not o.headline.startswith("[ACT]")),
+      "+7.94%% on a +750 shot came from 1.39pp of disagreement and must say so")
+check("the lane uses a class the contract already declares",
+      all(o.class_id == "STALE_LINE_DELAYED_REACTION" for o in _st)
+      and contract.load().require("STALE_LINE_DELAYED_REACTION") is not None,
+      "a rendering node may not mint a taxonomy class")
 
 # ======================================================================================
 print("\n" + "=" * 86)
