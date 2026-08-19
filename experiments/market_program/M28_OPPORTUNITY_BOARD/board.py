@@ -479,7 +479,15 @@ def best_price_table(snapshot, min_books: int = 3) -> list[dict]:
     for q in snapshot.quotes:
         if q.is_in_play(snapshot.captured_at):
             continue
-        groups[(q.game_id, q.market, q.point)][q.outcome].append(q)
+        # SPREADS PAIR ON MAGNITUDE, EVERYTHING ELSE ON THE NUMBER ITSELF.
+        # A total's two sides share one number (Over 181.5 / Under 181.5). A spread's sides
+        # carry OPPOSITE numbers (-8.5 / +8.5), so keying on the signed point puts each side
+        # in its own group, no group ever has two outcomes, and EVERY SPREAD IS SILENTLY
+        # DROPPED. That is what this table did until it was audited: 98 spread quotes across
+        # 5 games produced 0 rows, on a market where line shopping matters as much as any
+        # other.
+        key_point = abs(q.point) if (q.market == "spreads" and q.point is not None) else q.point
+        groups[(q.game_id, q.market, key_point)][q.outcome].append(q)
 
     for (game_id, market, point), sides in groups.items():
         if len(sides) != 2:
@@ -505,6 +513,11 @@ def best_price_table(snapshot, min_books: int = 3) -> list[dict]:
             shop_gain.append(gain_vs_median)
             entry["sides"].append({
                 "outcome": outcome,
+                # EACH SIDE CARRIES ITS OWN SIGNED LINE. The group is keyed on magnitude so
+                # mirrored spreads pair at all, but "Spread 8.5" alone does not tell a reader
+                # which team is -8.5 and which is +8.5 -- and a table whose job is to say
+                # where to bet must not be ambiguous about WHAT to bet.
+                "point": best_q.point,
                 "best_book": best_q.book_title,
                 "best_price": best_q.price,
                 "n_books": len(quotes),

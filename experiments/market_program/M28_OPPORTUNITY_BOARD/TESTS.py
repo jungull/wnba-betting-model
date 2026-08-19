@@ -580,8 +580,11 @@ try:
             _ok_side = False
         for sd in r["sides"]:
             # the quoted best must be the best actually present for that outcome
+            # Match on the SIDE's own signed point: the row is keyed on magnitude so
+            # mirrored spreads pair, but each side records the line it is actually on.
+            _sp = sd.get("point", r["point"])
             cands = [q for q in _s.quotes
-                     if q.matchup == r["matchup"] and q.point == r["point"]
+                     if q.matchup == r["matchup"] and q.point == _sp
                      and q.outcome == sd["outcome"]
                      and board.MARKET_NAMES.get(q.market, q.market) == r["market"]]
             if not cands:
@@ -610,6 +613,20 @@ try:
           not any(q.is_in_play(_s.captured_at) for q in _s.quotes
                   for r in _bp if q.matchup == r["matchup"]
                   and q.is_in_play(_s.captured_at)))
+    _signed_ok = True
+    for r in _bp:
+        if r["market"] != "Spread":
+            continue
+        pts = [sd.get("point") for sd in r["sides"]]
+        if len(pts) == 2 and all(x is not None for x in pts):
+            if not (abs(pts[0] + pts[1]) < 1e-9 and abs(pts[0]) == abs(pts[1])):
+                _signed_ok = False
+    check("a spread row's two sides carry equal and opposite lines", _signed_ok,
+          "otherwise the table says where to bet but not what")
+    check("spreads actually appear in the table at all",
+          any(r["market"] == "Spread" for r in _bp) or
+          not any(q.market == "spreads" for q in _s.quotes),
+          "98 spread quotes once produced 0 rows and no test noticed")
     check("every row reports how many books were compared",
           all(sd["n_books"] >= 3 for r in _bp for sd in r["sides"]))
 

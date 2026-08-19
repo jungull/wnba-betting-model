@@ -77,7 +77,15 @@ def main() -> int:
                     for o in m.get("outcomes", []):
                         if o.get("price") is None:
                             continue
-                        key = (m["key"], o.get("point"))
+                        # Spreads pair on MAGNITUDE (-8.5 vs +8.5); totals and moneyline
+                        # pair on the number itself. Keying spreads on the signed point
+                        # splits every spread into two one-sided groups that are then
+                        # discarded, which is why the first run of this script counted
+                        # 29 spread markets against 1,657 totals.
+                        _pt = o.get("point")
+                        if m["key"] == "spreads" and _pt is not None:
+                            _pt = abs(_pt)
+                        key = (m["key"], _pt)
                         acc.setdefault(key, {}).setdefault(o["name"], []).append(
                             (b["key"], float(o["price"])))
 

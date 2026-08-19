@@ -304,11 +304,18 @@ def render(b: dict) -> str:
         for matchup, rows_ in list(by_game.items())[:8]:
             body = []
             for r in rows_:
-                pt = f' {r["point"]:g}' if r.get("point") is not None else ""
                 for sd in r["sides"]:
+                    # Show the SIDE's own signed line. The row is keyed on magnitude so
+                    # mirrored spreads pair at all, but "Spread 8.5" alone does not say which
+                    # team is -8.5 -- and a table whose job is to tell you where to bet must
+                    # not be ambiguous about what to bet.
+                    spt = sd.get("point", r.get("point"))
+                    pt = ""
+                    if spt is not None:
+                        pt = f' {spt:+g}' if r["market"] == "Spread" else f' {spt:g}'
                     body.append(
-                        f'<tr><td>{_esc(r["market"])}{_esc(pt)}</td>'
-                        f'<td>{_esc(sd["outcome"])}</td>'
+                        f'<tr><td>{_esc(r["market"])}</td>'
+                        f'<td>{_esc(sd["outcome"])}{_esc(pt)}</td>'
                         f'<td class="bk">{_esc(sd["best_book"])}</td>'
                         f'<td class="n">{_esc(_fmt_price(sd["best_price"]))}</td>'
                         f'<td class="n" style="color:var(--ink-3)">'
