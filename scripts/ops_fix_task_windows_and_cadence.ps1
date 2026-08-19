@@ -26,13 +26,15 @@
      Widen the window at your own cost: 12h/day is ~432/day and ~62 days.
 
 .HOW TO RUN
-  Right-click Windows Terminal or PowerShell -> "Run as administrator", then:
+  From ANY PowerShell window -- it asks Windows for admin rights itself and a UAC
+  prompt appears. Click Yes; the work happens in a new window that stays open.
 
-      & "C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\scripts\ops_fix_task_windows_and_cadence.ps1"
+      powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\scripts\ops_fix_task_windows_and_cadence.ps1"
 
   To preview without changing anything:   -WhatIfOnly
   To undo everything:                     -Undo
   To hide windows but NOT touch cadence:  -SkipCadence
+  To refuse to self-elevate (CI/testing): -NoElevate
 
 .NOTES
   Writes a fresh backup of every task principal and trigger before changing anything.
@@ -42,6 +44,7 @@ param(
     [switch]$Undo,
     [switch]$WhatIfOnly,
     [switch]$SkipCadence,
+    [switch]$NoElevate,
     [string]$CadenceInterval = 'PT5M',
     [string]$CadenceDuration = 'PT8H',
     [string]$CadenceStartTime = '15:00',
@@ -62,15 +65,41 @@ function Test-Elevated {
 }
 
 if (-not (Test-Elevated)) {
+    if ($NoElevate) {
+        Write-Host ""
+        Write-Host "  NOT ELEVATED and -NoElevate was passed, so nothing was done." -ForegroundColor Red
+        Write-Host "  Windows refuses to modify root-folder scheduled tasks without admin rights."
+        Write-Host ""
+        exit 1
+    }
     Write-Host ""
-    Write-Host "  NOT ELEVATED." -ForegroundColor Red
-    Write-Host "  Windows refuses to modify tasks in the root task folder without admin rights,"
-    Write-Host "  which is why this could not be done for you automatically."
+    Write-Host "  Not elevated. Asking Windows for admin rights..." -ForegroundColor Yellow
+    Write-Host "  A User Account Control prompt will appear -- click Yes." -ForegroundColor Yellow
+    Write-Host "  The work then happens in a NEW window, which stays open so you can read it."
     Write-Host ""
-    Write-Host "  Close this, reopen PowerShell with 'Run as administrator', and run the same"
-    Write-Host "  command again."
-    Write-Host ""
-    exit 1
+
+    # Rebuild this invocation for the elevated process.
+    $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-NoExit', '-File', $PSCommandPath)
+    if ($Undo)            { $argList += '-Undo' }
+    if ($WhatIfOnly)      { $argList += '-WhatIfOnly' }
+    if ($SkipCadence)     { $argList += '-SkipCadence' }
+    if ($PSBoundParameters.ContainsKey('CadenceInterval'))  { $argList += @('-CadenceInterval', $CadenceInterval) }
+    if ($PSBoundParameters.ContainsKey('CadenceDuration'))  { $argList += @('-CadenceDuration', $CadenceDuration) }
+    if ($PSBoundParameters.ContainsKey('CadenceStartTime')) { $argList += @('-CadenceStartTime', $CadenceStartTime) }
+
+    try {
+        Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $argList | Out-Null
+        Write-Host "  Launched. Continue in the new Administrator window." -ForegroundColor Green
+        exit 0
+    } catch {
+        Write-Host ""
+        Write-Host "  Elevation was declined or failed, so NOTHING was changed." -ForegroundColor Red
+        Write-Host "  If you clicked No on the prompt, just run the command again and click Yes."
+        Write-Host "  Otherwise open PowerShell via Start -> right-click -> Run as administrator,"
+        Write-Host "  and run the same command there."
+        Write-Host ""
+        exit 1
+    }
 }
 
 $tasks = Get-ScheduledTask | Where-Object { $_.TaskName -match '^WNBA' }
