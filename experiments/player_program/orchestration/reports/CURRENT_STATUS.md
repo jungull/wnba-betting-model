@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `a8188901c571d35569e1ded1302c91d9213a0f96` |
+| HEAD | `a7ea4829b2d63007c06f18af5f62b98e6e397af0` |
 | working tree | DIRTY |
-| nodes | 106 |
-| events | 548 |
+| nodes | 107 |
+| events | 563 |
 
 ## Counts by status
 
@@ -17,7 +17,7 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 5 |
 | HALTED | 1 |
-| PASSED | 89 |
+| PASSED | 90 |
 | READY | 2 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 3 |
@@ -68,6 +68,7 @@ None.
 * `M27_PER_BOOK_POLLING` — Bounded per-book polling: make the cross-book synchronization window measurable
 * `M28_OPPORTUNITY_BOARD` — Unified opportunity board: every M00 class ranked together against live capture, with a stake only where sizing is deterministic
 * `M29_CREDIT_BURN_ATTRIBUTION` — Attribute Odds API credit burn between our own calls and everything else; size the capture cadence the remaining quota can afford
+* `M30_PRICE_LEADERSHIP` — Price leadership: when a book disagrees with its peers, who moves -- and is the disagreement worth more than the vig you pay to take it?
 * `O10_LATE_RECORD_AUDIT_CLASSIFICATION` — Classify late-arriving records in the prospective capture audit
 * `O11_OBLIGATION_DISCOVERY_LEAD_WINDOW` — Obligation-discovery lead window defect
 * `O12_PER_GAME_EXECUTION_SCOPE` — Per-game execution scope defect
@@ -140,7 +141,7 @@ None.
 | data | 0 | 0 | 5 | 0 | 1 | 0 |
 | future_research | 0 | 0 | 7 | 0 | 0 | 0 |
 | governance | 0 | 0 | 5 | 0 | 1 | 0 |
-| market_intelligence | 1 | 0 | 22 | 2 | 0 | 1 |
+| market_intelligence | 1 | 0 | 23 | 2 | 0 | 1 |
 | operations | 0 | 0 | 12 | 0 | 2 | 0 |
 | possession | 0 | 0 | 25 | 0 | 2 | 1 |
 | product | 0 | 0 | 4 | 0 | 0 | 0 |

@@ -8,6 +8,7 @@ cannot be scheduled.
 
 from __future__ import annotations
 
+import hashlib
 import sys
 
 import graph_lib as G
@@ -90,7 +91,23 @@ def main():
             if shared:
                 errs.append(f"{n['id']} audits {d} but shares owned files: {sorted(shared)}")
 
-    # 5. an experiment must sit downstream of a frozen preregistration
+    # 5. an experiment must sit downstream of a frozen preregistration.
+    #
+    # Two arrangements satisfy this, because the requirement is a FROZEN PREREGISTRATION and
+    # not a naming convention:
+    #
+    #   (a) an ancestor node whose id names it as one. This is how the player program is
+    #       built -- a preregistration node freezes the task cards, and the experiments that
+    #       consume them sit downstream.
+    #
+    #   (b) the node pins its OWN PREREG.md in input_hashes. A single-node measurement that
+    #       carries its preregistration internally satisfies the intent directly, and (b) is
+    #       checked more strictly than (a) has ever been: the file must exist on disk AND
+    #       still hash to the pinned value. Form (a) never verified that any preregistration
+    #       was actually frozen, only that a node with the right name was upstream.
+    #
+    # Amended under D159 when M30_PRICE_LEADERSHIP -- which carries a hash-frozen prereg and
+    # re-verifies it on every run -- failed a rule whose purpose it fully met.
     prereg = {i for i in idx if "PREREG" in i or "FREEZE_TASK_CARDS" in i}
     for n in nodes:
         if n["type"] != "experiment":
@@ -103,8 +120,23 @@ def main():
                 continue
             anc.add(cur)
             stack.extend(idx[cur]["dependencies"])
-        if not (anc & prereg):
-            errs.append(f"{n['id']} is an experiment with no preregistration node among its ancestors")
+        if anc & prereg:
+            continue
+        own = {p: h for p, h in (n.get("input_hashes") or {}).items()
+               if p.rsplit("/", 1)[-1].upper().startswith("PREREG")}
+        if not own:
+            errs.append(f"{n['id']} is an experiment with no preregistration node among its "
+                        f"ancestors and no PREREG file pinned in its own input_hashes")
+            continue
+        for path, want in own.items():
+            full = G.REPO / path
+            if not full.exists():
+                errs.append(f"{n['id']} pins {path} as its preregistration but the file "
+                            f"does not exist")
+            elif hashlib.sha256(full.read_bytes()).hexdigest() != want:
+                errs.append(f"{n['id']} pins {path} at {want[:16]}... but the file on disk "
+                            f"hashes to {hashlib.sha256(full.read_bytes()).hexdigest()[:16]}"
+                            f"... -- restore the frozen bytes, do not re-pin (D158)")
 
     # 6. seed status vs derived status — divergence is reported, not silently accepted
     state = G.derive_state(graph, G.load_events())
