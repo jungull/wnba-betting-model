@@ -6954,6 +6954,89 @@
       "validation_commands": [
         "python verify.py"
       ]
+    },
+    {
+      "acceptance_criteria": [
+        "PREREG.md matches its frozen sha256 on every run, and is restored rather than re-hashed if it is ever edited (D158)",
+        "the sample gate is enforced IN CODE and no primary statistic is emitted while it is closed",
+        "the gate thresholds are never lowered to reach an answer sooner -- verify.py fails if they change",
+        "right-censored episodes are censored, never dropped and never treated as closed",
+        "episodes straddling a capture gap wider than 12 minutes are discarded and the discarded count is reported",
+        "the horizon is defined in clock time, never in consecutive captures (M30 DEFECT 5)",
+        "no game outcome is read, joined, plotted or described anywhere in the node",
+        "the five-minute resolution floor is stated as an upward bias on every lifetime, not omitted"
+      ],
+      "agent_prompt_path": "experiments/player_program/orchestration/prompts/M25_MARKET_UI_FIXTURES.md",
+      "agent_role": "market microstructure analyst",
+      "allowed_read_paths": [
+        "experiments/",
+        "data/odds_capture/"
+      ],
+      "allowed_tools": [
+        "Read",
+        "Grep",
+        "Glob",
+        "Write",
+        "Edit",
+        "Bash"
+      ],
+      "allowed_write_paths": [
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/"
+      ],
+      "dependencies": [
+        "M00_MARKET_PROGRAM_CONTRACT",
+        "M03_CAPTURE_UPGRADE",
+        "M30_PRICE_LEADERSHIP"
+      ],
+      "disallowed_tools": [
+        "Agent"
+      ],
+      "epistemic_status": "NO RESULT YET, BY DESIGN. The analysis is frozen and implemented; the sample gate (30 games, 150 episodes, 40 strong) is CLOSED at 5/38/3 and the survival curve is not computed. The gate is enforced in code specifically to prevent optional stopping - recomputing daily and publishing on the best-looking day is choosing the answer while appearing to measure it. When it opens, the node will measure PERSISTENCE against peer consensus, never truth, and will make no executability claim: a price that stayed on the screen was not necessarily takeable in size. The five-minute grid is a resolution floor, so every lifetime it can ever report is an over-estimate.",
+      "expected_outputs": [
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/REPORT.md",
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/FINDINGS.json",
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/verify.py"
+      ],
+      "forbidden_inputs": [
+        "experiments/player_program/stage2b/SEALED_RESULTS",
+        "ANY game outcome, score, margin or result of any kind. This node measures how long a price persists, not whether it was right (GRAPH_POLICY s13.2, admissibility per D147).",
+        "the hourly capture era before 2026-08-19T14:00:00Z -- a phenomenon lasting minutes is invisible on a sixty-minute grid, and pooling would let the hourly tape dominate the sample while contributing nothing about short horizons"
+      ],
+      "human_gate": false,
+      "id": "M31_DISLOCATION_PERSISTENCE",
+      "input_artifacts": [
+        "data/odds_capture/ (live_* five-minute era only; MARKET PRICES ONLY)",
+        "experiments/player_program/orchestration/GRAPH_POLICY.md",
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/PREREG.md"
+      ],
+      "input_hashes": {
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/PREREG.md": "51fc14ff79821bdbfe3569145dd517d5433f1defbef515380bb6b37653fbcb76"
+      },
+      "lane": "market_intelligence",
+      "max_retries": 2,
+      "merge_policy": "auto",
+      "on_fail": [],
+      "on_pass": [],
+      "owned_files": [
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/PREREG.md",
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/PREREG.sha256",
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/s01_persistence.py",
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/verify.py",
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/REPORT.md",
+        "experiments/market_program/M31_DISLOCATION_PERSISTENCE/FINDINGS.json"
+      ],
+      "severity_on_failure": "B",
+      "status": "READY",
+      "stop_conditions": [
+        "the sample gate would have to be lowered, or the era widened, to produce a result -- HALT; that is optional stopping and the whole node exists to prevent it",
+        "a finding would require spending money, placing a wager, entering credentials, accepting scraping or licensing risk, or reading sealed possession results -- HALT and raise to a USER_REQUIRED gate",
+        "the analysis would need a game outcome to proceed -- HALT; different partition, different node"
+      ],
+      "title": "Dislocation persistence: how long does a cross-book dislocation stay on the screen, and is a ten-minute board refresh fast enough to ever catch one?",
+      "type": "experiment",
+      "validation_commands": [
+        "python verify.py"
+      ]
     }
   ],
   "notes": [

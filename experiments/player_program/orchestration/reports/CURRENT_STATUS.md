@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `a7ea4829b2d63007c06f18af5f62b98e6e397af0` |
+| HEAD | `9ced36cdc605b434ac403b8f745150f1a9394544` |
 | working tree | DIRTY |
-| nodes | 107 |
-| events | 563 |
+| nodes | 108 |
+| events | 565 |
 
 ## Counts by status
 
@@ -18,7 +18,7 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | BLOCKED | 5 |
 | HALTED | 1 |
 | PASSED | 90 |
-| READY | 2 |
+| READY | 3 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 3 |
 
@@ -34,6 +34,7 @@ None.
 
 * `M08_STALE_WINDOW` (market_intelligence) — Stale-line window measurement conditional on demonstrated lead-lag structure
 * `M23_SHADOW_TRADING` (market_intelligence) — Shadow trading: paper decisions logged against capturable prices, append-only
+* `M31_DISLOCATION_PERSISTENCE` (market_intelligence) — Dislocation persistence: how long does a cross-book dislocation stay on the screen, and is a ten-minute board refresh fast enough to ever catch one?
 
 ## Passed
 
@@ -141,7 +142,7 @@ None.
 | data | 0 | 0 | 5 | 0 | 1 | 0 |
 | future_research | 0 | 0 | 7 | 0 | 0 | 0 |
 | governance | 0 | 0 | 5 | 0 | 1 | 0 |
-| market_intelligence | 1 | 0 | 23 | 2 | 0 | 1 |
+| market_intelligence | 1 | 0 | 23 | 3 | 0 | 1 |
 | operations | 0 | 0 | 12 | 0 | 2 | 0 |
 | possession | 0 | 0 | 25 | 0 | 2 | 1 |
 | product | 0 | 0 | 4 | 0 | 0 | 0 |
