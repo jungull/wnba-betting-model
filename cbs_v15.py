@@ -34,13 +34,13 @@ from cbs_v7 import recompute_registered_config_hash as _recompute_for
 REPO = Path(__file__).resolve().parent
 
 ARM_ID = "cbs_v15_player_oof_v5"
-ARM_REVISION = 8
+ARM_REVISION = 9
 ROW_UNIVERSE = "prediction_contract_v5"
 SUPERSEDES = None
 INHERITS_ESTIMATOR_FROM = _v14.ARM_ID
 
 ARM_REGISTRY = REPO / "experiments" / "player_program" / "arm_registry.jsonl"
-REGISTRY_RECORD_ID = "cbs_v15_player_oof_v5__rev8"
+REGISTRY_RECORD_ID = "cbs_v15_player_oof_v5__rev9"
 
 HISTORY_POLICY = "tier_a_target_fit_with_observed_history/1"
 

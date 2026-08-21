@@ -67,6 +67,11 @@ PRODUCER_SOURCES = tuple(list(R14.PRODUCER_SOURCES) + [
     "run_player_oof_v15.py", "cbs_v15.py", "cbs_player_runner_v15.py",
     "cbs_real_frames_v5.py", "prediction_contract_v5.py",
     "prediction_contract_v5_enrich.py",
+    # rev9: the cold-start repair chain. /18 is the arm binding, /17 the point seam,
+    # /16 the dispersion seam it inherits, and the arithmetic they both call.
+    "cbs_player_runner_v18.py", "cbs_player_runner_v17.py",
+    "cbs_player_runner_v16.py", "cbs_player_coldstart_v16.py",
+    "cbs_player_dispersion_v16.py",
 ])
 
 #: Reused by reference — provenance machinery, never re-implemented.
@@ -115,7 +120,9 @@ def run_fold(season: int, root: Path, out: Path, log, pdig: str,
     log(f"season {season}: train={len(train)} (Tier A only) test={len(test)} {tiers} "
         f"snapshot={snap[:16]}")
 
-    import cbs_player_runner_v15 as runner
+    # rev9 binds the cold-start repair: /18 is /15's arm over /17's core. The arm
+    # source is unchanged; only the inner core it calls differs. D167.
+    import cbs_player_runner_v18 as runner
     res = runner.run_player_fold(
         train, test, fold_id,
         config_hash=v15.REGISTERED_CONFIG_HASH, snapshot_hash=snap,
