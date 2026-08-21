@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Author>SZ\jgallagher</Author>
+    <Description>WNBA prospective_team_pair_v1. Every 15 minutes: gated base structural forecast to the official chain, then the W2-C1 companion arm forecast, then the coverage audit. All three steps are idempotent; the base step is gated so each (game, decision time) is written at most once. Cadence of 15 minutes is what covers the registered decision times T-24h / T-8h / T-90m / T-30m; a once-daily task cannot satisfy the prediction contract.</Description>
+    <URI>\WNBA prospective pair</URI>
+  </RegistrationInfo>
+  <Principals>
+    <Principal id="Author">
+      <UserId>S-1-5-21-1225438708-3013916289-1686297083-2261</UserId>
+      <LogonType>InteractiveToken</LogonType>
+    </Principal>
+  </Principals>
+  <Settings>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <RestartOnFailure>
+      <Count>3</Count>
+      <Interval>PT5M</Interval>
+    </RestartOnFailure>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <WakeToRun>true</WakeToRun>
+    <IdleSettings>
+      <StopOnIdleEnd>false</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <UseUnifiedSchedulingEngine>true</UseUnifiedSchedulingEngine>
+  </Settings>
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2026-08-03T00:00:00</StartBoundary>
+      <Repetition>
+        <Interval>PT15M</Interval>
+        <Duration>P1D</Duration>
+      </Repetition>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+  <Actions Context="Author">
+    <Exec>
+      <Command>C:\Windows\System32\wscript.exe</Command>
+      <Arguments>//nologo "C:\Users\jgallagher\wnba-betting-model\.claude\worktrees\player-model-program\scripts\run_hidden.vbs" "C:\Users\jgallagher\wnba-betting-model\logs\task_wrappers\WNBA_prospective_pair.cmd"</Arguments>
+    </Exec>
+  </Actions>
+</Task>

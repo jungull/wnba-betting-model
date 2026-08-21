@@ -1,6 +1,6 @@
 # Daily forecast — DRY RUN (scratch chain; NOT the regime-D log)
 
-*Generated 2026-08-07T14:20:05.713465+00:00 by `daily_forecast.py` (v0). Slate date 2026-08-07 (ET); forecast cutoff 2026-08-07T14:20:03.529881+00:00. Model hash `0fa225211ddb21db…`; data snapshot hash `9481457096ee177d…`; code `git:9cfe22e61d77`. Team model: promoted structural channels (chanreval_2026_structural_repaired/run1); player layer informational only — it does not modify the team forecast.*
+*Generated 2026-08-19T14:20:05.176617+00:00 by `daily_forecast.py` (v0). Slate date 2026-08-19 (ET); forecast cutoff 2026-08-19T14:20:03.477556+00:00. Model hash `3a7ef1866347ec72…`; data snapshot hash `e41e6ee406679e36…`; code `git:5943846f4d01`. Team model: promoted structural channels (chanreval_2026_structural_repaired/run1); player layer informational only — it does not modify the team forecast.*
 
 **This file is engineering output. The records behind it were written ONLY to `experiments/forecast_dryrun/scratch_chain.jsonl`. The official regime-D clock starts with the first record of `forecasts/forecast_log.jsonl`, which this job refuses to touch.**
 
@@ -8,36 +8,31 @@
 
 | Game (away @ home) | Tip (ET) | Label | Model H | Model A | Model margin (H−A) | Market home spread | Model total | Market total | Edge vs spread | Edge vs total |
 |---|---|---|---|---|---|---|---|---|---|---|
-| PHX @ CON | 2026-08-07 19:30 | T-8h | 80.3 | 83.3 | -3.9 | +6.5 (11 bks) | 163.5 | 174.5 | +2.6 | -11.0 |
-| ATL @ WAS | 2026-08-07 19:30 | T-8h | 83.1 | 83.9 | -1.4 | +6.5 (11 bks) | 167.1 | 170.5 | +5.1 | -3.4 |
-| GSV @ DAL | 2026-08-07 21:30 | T-8h | 80.5 | 80.7 | -0.4 | -1.0 (11 bks) | 161.2 | 161.5 | -1.4 | -0.3 |
+| TOR @ WAS | 2026-08-19 19:30 | T-8h | 85.8 | 81.8 | +4.4 | -11.0 (11 bks) | 167.6 | 170.5 | -6.6 | -2.9 |
+| MIN @ GSV | 2026-08-19 22:10 | T-8h | 84.1 | 81.8 | +2.3 | +2.0 (11 bks) | 165.9 | 164.0 | +4.3 | +1.9 |
 
 *Market home spread is quoted book-style (negative = home favored); market-implied margin = −spread. Edge vs spread = model margin − market-implied margin. Both edges are informational — no betting layer ran (`not_applicable`, stake 0).*
 
 ## Player layer (informational — does not modify the team forecast)
 
-- **PHX** — roster 11 (last 3 games through 2026-08-05), OUT 1 (vacated 0.0 EWMA min): Kara Dunn (no played games). Other designations: {'Available': 2}. Available min-EWMA sum 228.0; long-term absent (report-listed, outside recency roster): Jovana Nogic (Out, last rostered 2026-06-17); Shay Ciezki (Out, last rostered 2026-07-09); UNMATCHED report rows: ['Kara Dunn (Out)'].
-- **CON** — roster 14 (last 3 games through 2026-08-02), OUT 4 (vacated 47.7 EWMA min): Aaliyah Edwards (16.6 min EWMA), Hailey Van Lith (9.2 min EWMA), Ashlon Jackson (9.2 min EWMA), Raegan Beers (12.6 min EWMA). Other designations: {'Questionable': 1}. Available min-EWMA sum 196.9.
-  - crew (PHX @ CON): Isaac Barnett (Crew Chief); Ashley Gloss (Referee); Kelsey Reynolds (Umpire)
-- **ATL** — roster 13 (last 3 games through 2026-08-05), OUT 1 (vacated 7.4 EWMA min): Te-Hina Paopao (7.4 min EWMA). Other designations: none. Available min-EWMA sum 207.8; long-term absent (report-listed, outside recency roster): Indya Nivar (Out, last rostered 2026-07-11).
-- **WAS** — roster 13 (last 3 games through 2026-08-05), OUT 1 (vacated 0.2 EWMA min): Darianna Littlepage-Buggs (0.2 min EWMA). Other designations: none. Available min-EWMA sum 213.6.
-  - crew (ATL @ WAS): Kevin Fahy (Crew Chief); Charles Watson (Referee); RJ Johnson (Umpire)
-- **GSV** — roster 13 (last 3 games through 2026-08-04), OUT 1 (vacated 4.8 EWMA min): Ashten Prechtel (4.8 min EWMA). Other designations: {'Available': 1}. Available min-EWMA sum 210.6; long-term absent (report-listed, outside recency roster): Miela Sowah (Out, last rostered 2026-07-10).
-- **DAL** — roster 14 (last 3 games through 2026-08-05), OUT 2 (vacated 17.9 EWMA min): Haley Jones (12.1 min EWMA), Costanza Verona (5.8 min EWMA). Other designations: {'Questionable': 1}. Available min-EWMA sum 219.3.
-  - crew (GSV @ DAL): Randy Richardson (Crew Chief); Marcy Williams (Referee); Jason Alabanza (Umpire)
+- **TOR** — roster 13 (last 3 games through 2026-08-18), OUT 5 (vacated 111.2 EWMA min): Isabelle Harrison (20.8 min EWMA), Julie Allemand (29.4 min EWMA), Maria Conde (29.4 min EWMA), Nyara Sabally (23.1 min EWMA), Ornella Bankole (8.5 min EWMA). Other designations: {'Available': 3}. Available min-EWMA sum 163.1.
+- **WAS** — roster 12 (last 3 games through 2026-08-15), OUT 0 (vacated 0.0 EWMA min): none. Other designations: none. Available min-EWMA sum 212.6; long-term absent (report-listed, outside recency roster): Darianna Littlepage-Buggs (Out, last rostered 2026-08-09).
+  - crew (TOR @ WAS): Isaac Barnett (Crew Chief); Jason Alabanza (Referee); Ken Jones (Umpire)
+- **MIN** — roster 12 (last 3 games through 2026-08-15), OUT 2 (vacated 12.8 EWMA min): Chloe Bibby (12.8 min EWMA), Elena Buenavida (no played games). Other designations: {'Available': 1}. Available min-EWMA sum 215.0; long-term absent (report-listed, outside recency roster): Emma Cechova (Out, last rostered 2026-07-30); Liatu King (Out, last rostered 2026-07-15); UNMATCHED report rows: ['Elena Buenavida (Out)'].
+- **GSV** — roster 13 (last 3 games through 2026-08-17), OUT 1 (vacated 12.7 EWMA min): Ashten Prechtel (12.7 min EWMA). Other designations: {'Questionable': 1, 'Available': 2}. Available min-EWMA sum 211.5; long-term absent (report-listed, outside recency roster): Miela Sowah (Out, last rostered 2026-07-10).
+  - crew (MIN @ GSV): Maj Forsberg (Crew Chief); Randy Richardson (Referee); Angel Kent (Umpire)
 
 ## Degradations & notes (no-imputation rule: explicit, never silent)
 
+- **WARN** [injuries] latest injury capture is 16.3 h before the cutoff (game-day cadence is hourly) — stale
 - **BLOCK** [entity-resolution] Indiana Fever: designation 'Out' for 'Ugonne Onyiah' resolves to NO player identity in any season — cold start or unlisted alias. FAIL-CLOSED: the availability estimate for this team is not trustworthy until an alias or a cold-start object is supplied.
-- **BLOCK** [entity-resolution] Phoenix Mercury: designation 'Out' for 'Kara Dunn' resolves to NO player identity in any season — cold start or unlisted alias. FAIL-CLOSED: the availability estimate for this team is not trustworthy until an alias or a cold-start object is supplied.
-- **BLOCK** [entity-resolution] Los Angeles Sparks: designation 'Out' for 'Tonie Morgan' resolves to NO player identity in any season — cold start or unlisted alias. FAIL-CLOSED: the availability estimate for this team is not trustworthy until an alias or a cold-start object is supplied.
+- **BLOCK** [entity-resolution] Minnesota Lynx: designation 'Out' for 'Elena Buenavida' resolves to NO player identity in any season — cold start or unlisted alias. FAIL-CLOSED: the availability estimate for this team is not trustworthy until an alias or a cold-start object is supplied.
 - **BLOCK** [entity-resolution] Indiana Fever: designation 'Out' for 'Michelle Onyiah' resolves to NO player identity in any season — cold start or unlisted alias. FAIL-CLOSED: the availability estimate for this team is not trustworthy until an alias or a cold-start object is supplied.
-- **INFO** [player-layer] ATL: Indya Nivar (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-07-11) — long-term absentee, already excluded from the availability estimate
 - **INFO** [player-layer] GSV: Miela Sowah (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-07-10) — long-term absentee, already excluded from the availability estimate
-- **INFO** [player-layer] PHX: Jovana Nogic (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-06-17) — long-term absentee, already excluded from the availability estimate
-- **INFO** [player-layer] PHX: Shay Ciezki (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-07-09) — long-term absentee, already excluded from the availability estimate
-- **INFO** [trend-staleness] CON last played 2026-08-02 (5 days before the slate) — trend features are that old (schedule gap, not a data failure: masters are current through yesterday)
+- **INFO** [player-layer] MIN: Emma Cechova (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-07-30) — long-term absentee, already excluded from the availability estimate
+- **INFO** [player-layer] MIN: Liatu King (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-07-15) — long-term absentee, already excluded from the availability estimate
+- **INFO** [player-layer] WAS: Darianna Littlepage-Buggs (Out) is on the injury report but outside the 3-game recency roster (last rostered 2026-08-09) — long-term absentee, already excluded from the availability estimate
 
 ## Chain
 
-- OFFICIAL chain verified (forecast_log.jsonl): ok=True, n_records=48, tip_sha256=63c24bdf7918155f56377ef11cb72b282c1cfab56437c7284e4e2f8449503af3 — record these two values out of band; tail truncation is only detectable against an external anchor
+- OFFICIAL chain verified (forecast_log.jsonl): ok=True, n_records=94, tip_sha256=ae79a738aaed8c466ef0d8b195fdf1f0f47f923b8c17ebc696c7e5b8b2b95d51 — record these two values out of band; tail truncation is only detectable against an external anchor
