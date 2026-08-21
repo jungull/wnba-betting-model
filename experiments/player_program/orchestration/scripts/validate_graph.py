@@ -9,6 +9,8 @@ cannot be scheduled.
 from __future__ import annotations
 
 import hashlib
+import json
+import re
 import sys
 
 import graph_lib as G
@@ -138,13 +140,80 @@ def main():
                             f"hashes to {hashlib.sha256(full.read_bytes()).hexdigest()[:16]}"
                             f"... -- restore the frozen bytes, do not re-pin (D158)")
 
-    # 6. seed status vs derived status — divergence is reported, not silently accepted
-    state = G.derive_state(graph, G.load_events())
+    # 6. seed status vs derived status — divergence is reported, not silently accepted.
+    #
+    # ONE DIVERGENCE IS STRUCTURAL AND WAS WARNING FOREVER FOR NO INFORMATION. The node
+    # contract REQUIRES a human_gate node to carry seed status USER_REQUIRED
+    # (validate_node_contract), while derive_state gives an event-forced status precedence
+    # OVER the human_gate rule. So the moment such a node legitimately passes, its seed and
+    # derived statuses diverge by construction and stay diverged for the life of the graph.
+    # The warning fired identically whether the gate had been satisfied by a recorded user
+    # decision or closed by nobody, so it could not distinguish the benign case from the one
+    # worth stopping for.
+    #
+    # It now judges the thing that matters: whether the event that closed the gate RECORDS AN
+    # AUTHORITY. A human gate that passed citing a decision is silent. One that passed citing
+    # nothing is an ERROR — that is the case this check exists for, and it was previously
+    # indistinguishable from the benign one. Amended under D171.
+    events = G.load_events()
+    state = G.derive_state(graph, events)
+    by_node = {}
+    for e in events:
+        nid = e.get("node") or e.get("node_id")
+        if nid:
+            by_node.setdefault(nid, []).append(e)
+
+    # A citation counts ONLY if the decision exists in the ledger AND names this node. The
+    # first version of this check accepted any D-number appearing anywhere in the event, and a
+    # tamper test caught it: stripping O16's real authority (D022) still passed, because the
+    # same sentence happens to mention D017 -- an unrelated push authorisation whose `nodes`
+    # field is null. A regex over free text is not an authority check.
+    _ledger = {}
+    try:
+        with open(G.REPO / "experiments" / "player_program" / "orchestration"
+                  / "DECISION_LEDGER.jsonl", encoding="utf-8") as fh:
+            for line in fh:
+                if line.strip():
+                    r = json.loads(line)
+                    did = str(r.get("decision_id", ""))
+                    key = did.split("_")[0]
+                    if key:
+                        _ledger.setdefault(key, set()).update(r.get("nodes") or [])
+    except OSError:
+        _ledger = {}
+
+    def closing_authority(nid, derived):
+        """Decisions cited by the event that produced THIS status, that exist and name the node.
+
+        Not merely any status-forcing event: `agent_launched` also forces a status (RUNNING)
+        and O16's happens to cite the same decision, so scanning all of them let a stripped
+        `node_passed` citation pass the tamper test. The authority must be carried by the event
+        that actually closed the gate.
+        """
+        cited = set()
+        for e in by_node.get(nid, []):
+            if G.EVENT_STATUS.get(e.get("event")) != derived:
+                continue
+            for d in re.findall(r"\bD\d{2,4}\b", json.dumps(e, ensure_ascii=False)):
+                if nid in _ledger.get(d, set()):
+                    cited.add(d)
+        return sorted(cited)
+
     for n in nodes:
         derived = state["status"][n["id"]]
-        if n["status"] != derived and n["status"] not in G.DERIVED_ONLY:
-            warns.append(f"{n['id']}: seed status {n['status']} vs derived {derived} "
-                         f"(derived governs)")
+        if n["status"] == derived or n["status"] in G.DERIVED_ONLY:
+            continue
+        if n.get("human_gate") and n["status"] == "USER_REQUIRED":
+            cited = closing_authority(n["id"], derived)
+            if cited:
+                continue                     # gate satisfied, and the authority is on record
+            errs.append(
+                f"{n['id']}: a HUMAN GATE reads {derived}, but the event that set that "
+                f"status cites no ledger decision naming this node; a gate closed by "
+                f"nobody is not a closed gate")
+            continue
+        warns.append(f"{n['id']}: seed status {n['status']} vs derived {derived} "
+                     f"(derived governs)")
 
     # 7. forbidden_inputs must not also be readable
     for n in nodes:
