@@ -173,3 +173,55 @@ def assert_above_tier_untouched(spliced, champion, is_fallback) -> None:
     tier = np.asarray(is_fallback, dtype=bool)
     if not np.allclose(np.asarray(spliced, float)[~tier], np.asarray(champion, float)[~tier]):
         raise AssertionError("cold-start splice altered rows OUTSIDE the fallback tier")
+
+# ---------------------------------------------------------------------------------------
+# THE RUNNER-LEVEL SEAM
+# ---------------------------------------------------------------------------------------
+#
+# `/14`'s point forecast for a fallback row is `raw.where(lvl == 0, fb_mean)`: wherever the
+# fallback ladder fires, the player's own centre is DISCARDED and a single pooled scalar is
+# broadcast in its place. That is the constant, and the line is one below the dispersion
+# defect `/16` repairs.
+#
+# The important measured fact is that the runner is throwing away information it already has.
+# Of the 1,061 cold-start rows, 990 carry at least one prior appearance, and on those rows
+# `raw` is FINITE BY CONSTRUCTION -- `player_fallback_level` assigns level 2 only when
+# `n_prior >= 1` and the centre is finite. The model computes the player's own history and
+# then declines to use it on precisely the rows where it is the only information available.
+#
+# WHY THIS DOES NOT BLEND TOWARD THE POOL MEAN. D092's rule shrinks the own-mean toward a
+# STRUCTURAL prior built from depth-chart rank and draft slot. Measured on the E1_I0020
+# artifact, substituting the league mean for that structural prior is WORSE than not blending
+# at all -- tier MAE 4.7611 against 4.2594 -- because the pool mean is the very constant the
+# repair exists to escape. Shrinkage only helps toward something informative. The production
+# path has no draft slot (its registered feature sources are gamelog, roster and schedule; no
+# bios), so the structural term cannot be built here and blending toward what IS available
+# would make the forecast worse.
+#
+# SO THIS SEAM IS DELIBERATELY LESS THAN THE AUTHORISED RULE, and is labelled as such
+# everywhere. It is worth +3.077% pooled points skill against the authorised rule's +3.492%,
+# from a baseline of -0.222% -- 89% of the available gain on points and 99% on minutes.
+SHORT_HISTORY_LEVEL = 2
+
+
+def fold_point(raw, level, fallback_mean, *, short_level: int = SHORT_HISTORY_LEVEL):
+    """Replacement for `raw.where(lvl == 0, fb_mean)`.
+
+    Keeps the runner's own centre on non-fallback rows (level 0, unchanged) AND on
+    short-history rows (level 2 -- one or two prior appearances, D092 ruling 3's target
+    population), where it is finite by construction. Every other level keeps the pooled
+    scalar exactly as before:
+
+      * level 1 -- degenerate fold, there is nothing to compute a centre from
+      * level 3 -- no prior appearance, or the centre is not finite
+      * level 4 -- a declared-constant season, where a constant is the declared behaviour
+
+    Returns a pandas Series aligned to `raw` so the caller is unchanged.
+    """
+    import pandas as _pd
+
+    lvl = _pd.Series(level).astype(int)
+    r = _pd.Series(raw).astype(float)
+    lvl.index = r.index
+    keep = (lvl == 0) | ((lvl == int(short_level)) & np.isfinite(r.to_numpy()))
+    return r.where(keep, fallback_mean)
