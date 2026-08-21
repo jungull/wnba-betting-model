@@ -1,7 +1,8 @@
 {
-  "schema": "v15_module_tests/1",
-  "n_checks": 32,
-  "n_passed": 32,
+  "schema": "v15_module_tests/2",
+  "n_checks": 40,
+  "n_passed": 40,
+  "fork_layer_asserted": "cbs_v14._run",
   "all_passed": true,
   "scope": "object identity, source diffs, tier rules, refusals and row counts; nothing is scored",
   "frame_fork": {
@@ -72,22 +73,32 @@
   },
   "runner_fork": {
     "runner": "cbs_player_runner/15",
-    "forked_from": "cbs_player_runner_v14.run_player_fold",
+    "forked_from": "cbs_v14._run",
+    "inner_core_unforked": "cbs_player_runner_v14.run_player_fold",
+    "why_this_layer": "cbs_v14._run is the ARM: it calls the inner core in synthetic mode behind a legacy identity shim, restamps identity, recomputes source_provenance at /2 and provenance_history at /4, re-runs the strict prediction validator, and refuses on any inherited receipt. Forking the inner core instead loses all of that.",
     "generated_at_import_from_inspect_getsource": true,
     "n_permitted_seams": 1,
     "seam": {
       "old": "identity = require_registered_identity(",
       "new": "identity = require_registered_identity_v15(",
-      "reason": "contract identity: bind to cbs_v15_player_oof_v5/2 instead of v14's registration"
+      "reason": "contract identity: bind to the v15 registration instead of v14's"
     },
-    "n_changed_lines": 2,
-    "n_changed_lines_expected": 2,
+    "namespace_overrides": [
+      "require_registered_identity_v15",
+      "ARM_ID",
+      "_restamp",
+      "validate_provenance_sidecar"
+    ],
+    "why_arm_id_is_overridden": "_restamp writes ARM_ID onto every emitted row and the prediction validator checks it; both must say v15. _restamp itself must ALSO be overridden: a namespace override only reaches names the forked source reads directly, and _restamp keeps cbs_v14's own globals.",
+    "n_changed_lines": 4,
+    "n_changed_lines_expected": 4,
     "changed_lines": [
+      "-def _run(which: str, train, test, fold_id, *, config_hash, snapshot_hash,",
+      "+def _run_v15(which: str, train, test, fold_id, *, config_hash, snapshot_hash,",
       "-    identity = require_registered_identity(",
       "+    identity = require_registered_identity_v15("
     ],
-    "unchanged": "every estimator, standardizer, mask, tuning rule, lambda and alpha selection, calibration, dispersion, availability gate, conditional history and grouping rule \u2014 none is inside the diff",
-    "name_resolution": "executes in cbs_player_runner_v14's namespace, so every name it does not redefine is the SAME OBJECT /14 uses"
+    "unchanged": "every estimator, standardizer, mask, tuning rule, lambda and alpha selection, calibration, dispersion, availability gate, conditional history and grouping rule \u2014 none is inside the diff, and the modelling core is not forked at all"
   },
   "checks": [
     {
@@ -121,9 +132,14 @@
       "detail": ""
     },
     {
-      "check": "exactly two changed lines (one removed, one added)",
+      "check": "the fork is still at the ARM layer this suite was written against",
       "ok": true,
-      "detail": "2"
+      "detail": "cbs_v14._run (expected cbs_v14._run)"
+    },
+    {
+      "check": "exactly four changed lines (the def rename and the one seam)",
+      "ok": true,
+      "detail": "4"
     },
     {
       "check": "no estimator formula in the runner diff",
@@ -136,14 +152,49 @@
       "detail": ""
     },
     {
-      "check": "every estimator name resolves to v14's own object",
+      "check": "v15's namespace carries every one of the arm's names",
       "ok": true,
-      "detail": "differ: []"
+      "detail": "missing: []"
+    },
+    {
+      "check": "only the declared ARM_ID rebindings differ",
+      "ok": true,
+      "detail": "differ: ['ARM_ID', '_restamp', 'validate_provenance_sidecar']"
+    },
+    {
+      "check": "the arm id really is the one that differs",
+      "ok": true,
+      "detail": "cbs_v15_player_oof_v5"
+    },
+    {
+      "check": "and the rebound callee is BYTE-IDENTICAL to v14's, only its ARM_ID binding differs",
+      "ok": true,
+      "detail": "{'rebound': 'cbs_v14.validate_provenance_sidecar', 'source_changes': 0, 'namespace_overrides': ['ARM_ID'], 'why': 'the validator checks arm_id against ARM_ID read from its own globals and takes no parameter for it; the logic is correct and is not touched'}"
     },
     {
       "check": "a meaningful number were checked",
       "ok": true,
-      "detail": "14 objects"
+      "detail": "75 objects"
+    },
+    {
+      "check": "exactly two names are added, both belonging to the seam",
+      "ok": true,
+      "detail": "added: ['_run_v15', 'require_registered_identity_v15']"
+    },
+    {
+      "check": "the inner modelling core is reached as v14's own module",
+      "ok": true,
+      "detail": "<module 'cbs_player_runner_v14' from 'C:\\\\Users\\\\jgallagher\\\\wnba-betting-model\\\\.claude\\\\worktrees\\\\player-model-program\\\\cbs_player_runner_v14.py'>"
+    },
+    {
+      "check": "and its run_player_fold is v14's own unforked object",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "check": "no estimator formula appears anywhere in the generated arm source",
+      "ok": true,
+      "detail": "[]"
     },
     {
       "check": "v15 inherits the fit boundary objects from v14",

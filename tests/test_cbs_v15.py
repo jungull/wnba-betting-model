@@ -53,6 +53,15 @@ FORMULA_TOKENS = ("logistic_fit", "logistic_predict", "Standardizer", "select_al
                   "stage_a_features_v8", "player_fallback_level", "QUANTILE_Z", "DECLARED",
                   "EWMA_ALPHA", "min_ewma", "start_share_l5")
 
+#: The layer `/15` forks. Commit 0108ef86 moved this from the inner modelling core to the ARM,
+#: because forking the core lost identity restamping, provenance recomputation and the strict
+#: validator re-run, and 2021 failed as a result. THIS SUITE WAS NOT UPDATED AT THE TIME: it kept
+#: asserting the core layer's properties, went red against a healthy arm, and the committed
+#: receipt kept claiming 32/32. The layer is pinned here so that a future move cannot silently
+#: invalidate these checks again -- if it changes, section 2 fails loudly and says so.
+EXPECTED_FORK_LAYER = "cbs_v14._run"
+EXPECTED_RUNNER_DIFF_LINES = 4          # the def rename and the one seam, each as a - and a +
+
 
 def s1_frame_fork() -> None:
     print("\n1 — the frame fork")
@@ -73,8 +82,11 @@ def s2_runner_fork() -> None:
     print("\n2 — the runner fork")
     d = r15.assert_minimal_fork()
     check("exactly one permitted seam", d["n_permitted_seams"] == 1)
-    check("exactly two changed lines (one removed, one added)", d["n_changed_lines"] == 2,
-          str(d["n_changed_lines"]))
+    check("the fork is still at the ARM layer this suite was written against",
+          d["forked_from"] == EXPECTED_FORK_LAYER,
+          f"{d['forked_from']} (expected {EXPECTED_FORK_LAYER})")
+    check("exactly four changed lines (the def rename and the one seam)",
+          d["n_changed_lines"] == EXPECTED_RUNNER_DIFF_LINES, str(d["n_changed_lines"]))
     body = "\n".join(d["changed_lines"])
     hit = [t for t in FORMULA_TOKENS if t in body]
     check("no estimator formula in the runner diff", not hit, str(hit))
@@ -84,15 +96,45 @@ def s2_runner_fork() -> None:
 
 def s3_object_identity() -> None:
     print("\n3 — the estimator objects are the SAME OBJECTS")
+    # The original form compared `cbs_player_runner_v14`'s module namespace against `r15._NS`.
+    # That was correct while `/15` forked the inner core. Since 0108ef86 it forks the ARM, whose
+    # namespace is `cbs_v14`'s and does not contain runner-level estimator names -- so the
+    # comparison resolved ZERO objects and reported all fourteen as differing. It was measuring
+    # the wrong pair, not a drifted model.
+    #
+    # The invariant that holds now is STRONGER and is what is asserted here: `/15` does not fork
+    # the estimator layer at all. It calls `cbs_player_runner_v14.run_player_fold`, the same
+    # object `cbs_v14._run` calls, unchanged.
     ns15 = r15._NS
-    same, diff = [], []
-    for n in FORMULA_TOKENS:
-        a, b = getattr(r14, n, None), ns15.get(n)
-        if a is None:
-            continue
-        (same if a is b else diff).append(n)
-    check("every estimator name resolves to v14's own object", not diff, f"differ: {diff}")
-    check("a meaningful number were checked", len(same) >= 10, f"{len(same)} objects")
+    missing = [k for k in v14.__dict__ if k not in ns15]
+    differ = [k for k in v14.__dict__ if k in ns15 and ns15[k] is not v14.__dict__[k]]
+    check("v15's namespace carries every one of the arm's names", not missing,
+          f"missing: {missing[:6]}")
+    # Three names legitimately differ, and the reason is the same for all three: `ARM_ID` is
+    # read from module globals by callees that take no parameter for it, so v15 re-executes
+    # those callees VERBATIM in a namespace where `ARM_ID` is v15's. That is a rebinding, not a
+    # rewrite -- which is a stronger guarantee than an override, and is asserted as such below.
+    # These were the "callee-globals defects" 0108ef86 found by running the arm.
+    ARM_ID_REBOUND = ["ARM_ID", "_restamp", "validate_provenance_sidecar"]
+    check("only the declared ARM_ID rebindings differ", sorted(differ) == sorted(ARM_ID_REBOUND),
+          f"differ: {sorted(differ)}")
+    check("the arm id really is the one that differs", ns15["ARM_ID"] == v15.ARM_ID
+          and ns15["ARM_ID"] != v14.ARM_ID, f"{ns15['ARM_ID']}")
+    _reb = r15.assert_no_source_change()
+    check("and the rebound callee is BYTE-IDENTICAL to v14's, only its ARM_ID binding differs",
+          _reb["source_changes"] == 0 and _reb["namespace_overrides"] == ["ARM_ID"], str(_reb))
+    check("a meaningful number were checked", len(v14.__dict__) >= 50,
+          f"{len(v14.__dict__)} objects")
+    extra = sorted(k for k in ns15 if k not in v14.__dict__)
+    check("exactly two names are added, both belonging to the seam",
+          extra == ["_run_v15", "require_registered_identity_v15"], f"added: {extra}")
+    core = ns15.get("_player")
+    check("the inner modelling core is reached as v14's own module", core is r14, str(core))
+    check("and its run_player_fold is v14's own unforked object",
+          getattr(core, "run_player_fold", None) is r14.run_player_fold)
+    _in_src = [t for t in FORMULA_TOKENS if t in r15._SRC]
+    check("no estimator formula appears anywhere in the generated arm source",
+          not _in_src, str(_in_src))
     check("v15 inherits the fit boundary objects from v14",
           v15.snapshot_identity is v14.snapshot_identity
           and v15.build_fold_manifest is v14.build_fold_manifest
@@ -192,7 +234,8 @@ def main() -> int:
     print("\n" + "=" * 78)
     print(f"{ok}/{n} checks {'PASS' if ok == n else 'FAIL'}")
     (REPO / "experiments" / "player_program" / "V15_MODULE_TEST_RECEIPT.json").write_text(
-        json.dumps({"schema": "v15_module_tests/1", "n_checks": n, "n_passed": ok,
+        json.dumps({"schema": "v15_module_tests/2", "n_checks": n, "n_passed": ok,
+                    "fork_layer_asserted": EXPECTED_FORK_LAYER,
                     "all_passed": ok == n,
                     "scope": "object identity, source diffs, tier rules, refusals and row counts; "
                              "nothing is scored",
