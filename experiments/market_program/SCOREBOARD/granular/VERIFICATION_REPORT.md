@@ -1,6 +1,6 @@
 # VERIFICATION_REPORT.md -- legacy player-model verification (D037)
 
-Date: 2026-08-06T21:01:49.633112+00:00. Verification node for the checklist in PROBE_LEGACY.md, executed against bytes at `experiments/cbs_v15_player_oof_v5/attempt_001/`.
+Date: 2026-08-21T15:33:44.985432+00:00. Verification node for the checklist in PROBE_LEGACY.md, executed against bytes at `experiments/cbs_v15_player_oof_v5/attempt_002/`.
 Producer run: `cbs_v15_player_oof_v5/1`; verifier: `verify_legacy_player_model.py` (this directory).
 
 ## OVERALL VERDICT: RECEIPTED
@@ -19,7 +19,7 @@ Producer run: `cbs_v15_player_oof_v5/1`; verifier: `verify_legacy_player_model.p
 37/37 manifests re-verified (expected 37: 6 folds x (4 prediction parquets + sidecar + fold receipt) + run_index). Recomputed sha256 and byte counts equal `content_sha256`/`content_bytes` in every `*.manifest.json`. Failures: none.
 
 ### Check 2 -- producer source-set digest: PASS
-Recomputed digest over the 31-file `PRODUCER_SOURCES` set of `run_player_oof_v15.py` = `768f8139d72439adcae59b2dcf57390356b435ce8082f9a0aa0acdcb4925b7b9`; expected `768f8139d72439adcae59b2dcf57390356b435ce8082f9a0aa0acdcb4925b7b9` -- match: True. All 25 artifact manifests and all 6 fold receipts carry the expected digest. Producer source files drifted since the run: none.
+Recomputed digest over the 31-file `PRODUCER_SOURCES` set of `run_player_oof_v15.py` = `f3945feb9a15bf0a6476c9c8a781757590e651a4722e91dab078230d74a56891`; expected `f3945feb9a15bf0a6476c9c8a781757590e651a4722e91dab078230d74a56891` -- match: True. All 25 artifact manifests and all 6 fold receipts carry the expected digest. Producer source files drifted since the run: none.
 
 ### Check 3 -- cutoff discipline: PASS
 Per-row violations across all 24 prediction parquets (forecast_cutoff >= game datetime, feature_asof >= game datetime, or feature_asof > forecast_cutoff): **0**. The game datetime is the contract's OBSERVED scheduled tip where captured (all 12,608 `exact_tip_T-90m` rows of 2025-2026), else midnight UTC of the game date, a lower bound on any same-day tip. Per fold: `max(train_seasons) < S` holds for every fitted fold (2021 is degenerate: no train seasons, fallback-only, `model_was_fitted=false`). Every row's forecast_cutoff is byte-equal to the contract's cutoff for its row_uid.
@@ -67,21 +67,21 @@ Computed by this node from `pred_point` vs owned-gamelog outcomes (sources + sha
 | tier | season | N | MAE | MAE 95% CI | RMSE | bias |
 |------|--------|---|-----|------------|------|------|
 | A_primary | 2021 | 3407 | 5.8120 | [5.6846, 5.9515] | 7.2533 | -0.5335 |
-| A_primary | 2022 | 3939 | 4.1386 | [4.0142, 4.2547] | 5.4070 | -0.0125 |
-| A_primary | 2023 | 4394 | 4.2199 | [4.0937, 4.3601] | 5.6080 | -0.1681 |
-| A_primary | 2024 | 4371 | 4.2499 | [4.0984, 4.4211] | 5.5764 | -0.0188 |
-| A_primary | 2025 | 5213 | 4.3317 | [4.2095, 4.4576] | 5.6105 | -0.0418 |
-| A_primary | 2026 | 4053 | 4.3785 | [4.1977, 4.5396] | 5.7389 | -0.1159 |
-| A_primary | **pooled_2022_2026** | 21970 | **4.2671** | [4.2044, 4.3320] | 5.5914 | -0.0709 |
-| A_primary | pooled_2021_2026 | 25377 | 4.4745 | [4.4017, 4.5519] | 5.8420 | -0.1330 |
+| A_primary | 2022 | 3939 | 4.0380 | [3.9243, 4.1410] | 5.3409 | -0.0591 |
+| A_primary | 2023 | 4394 | 4.0784 | [3.9934, 4.1725] | 5.4574 | -0.2753 |
+| A_primary | 2024 | 4371 | 4.0800 | [3.9599, 4.2081] | 5.3703 | -0.1079 |
+| A_primary | 2025 | 5213 | 4.1986 | [4.1037, 4.2968] | 5.4918 | -0.1502 |
+| A_primary | 2026 | 4053 | 4.2451 | [4.1035, 4.3784] | 5.6118 | -0.2338 |
+| A_primary | **pooled_2022_2026** | 21970 | **4.1308** | [4.0830, 4.1822] | 5.4566 | -0.1659 |
+| A_primary | pooled_2021_2026 | 25377 | 4.3565 | [4.2876, 4.4298] | 5.7307 | -0.2152 |
 | all_tiers | 2021 | 3479 | 5.7938 | [5.6730, 5.9274] | 7.2282 | -0.4919 |
-| all_tiers | 2022 | 4065 | 4.1875 | [4.0546, 4.3176] | 5.4604 | -0.0158 |
-| all_tiers | 2023 | 4520 | 4.2642 | [4.1236, 4.4154] | 5.6427 | -0.1255 |
-| all_tiers | 2024 | 4502 | 4.3075 | [4.1447, 4.4775] | 5.6375 | -0.0066 |
-| all_tiers | 2025 | 5357 | 4.3788 | [4.2390, 4.5148] | 5.6632 | -0.0089 |
-| all_tiers | 2026 | 4221 | 4.4545 | [4.2861, 4.6446] | 5.8161 | -0.0820 |
-| all_tiers | pooled_2022_2026 | 22665 | 4.3215 | [4.2492, 4.3948] | 5.6471 | -0.0466 |
-| all_tiers | pooled_2021_2026 | 26144 | 4.5175 | [4.4436, 4.5913] | 5.8821 | -0.1058 |
+| all_tiers | 2022 | 4065 | 4.0924 | [3.9690, 4.2095] | 5.4023 | -0.0630 |
+| all_tiers | 2023 | 4520 | 4.1251 | [4.0238, 4.2474] | 5.4964 | -0.2312 |
+| all_tiers | 2024 | 4502 | 4.1425 | [3.9987, 4.2914] | 5.4397 | -0.0930 |
+| all_tiers | 2025 | 5357 | 4.2493 | [4.1399, 4.3629] | 5.5488 | -0.1158 |
+| all_tiers | 2026 | 4221 | 4.3244 | [4.1824, 4.4861] | 5.6942 | -0.1972 |
+| all_tiers | pooled_2022_2026 | 22665 | 4.1892 | [4.1322, 4.2504] | 5.5183 | -0.1400 |
+| all_tiers | pooled_2021_2026 | 26144 | 4.4027 | [4.3349, 4.4732] | 5.7752 | -0.1868 |
 | B_s2_weak_fallback | 2021 | 0 | -- | -- | -- | -- |
 | B_s2_weak_fallback | 2022 | 24 | 6.9915 | [5.9134, 8.6284] | 8.4658 | -3.2162 |
 | B_s2_weak_fallback | 2023 | 9 | 7.2141 | [3.6909, 9.1545] | 8.4226 | -2.7535 |
@@ -91,13 +91,13 @@ Computed by this node from `pred_point` vs owned-gamelog outcomes (sources + sha
 | B_s2_weak_fallback | pooled_2022_2026 | 44 | 7.0832 | [6.4093, 8.0502] | 8.2975 | -2.2230 |
 | B_s2_weak_fallback | pooled_2021_2026 | 44 | 7.0832 | [6.4093, 8.0502] | 8.2975 | -2.2230 |
 | B_transaction_sensitivity | 2021 | 72 | 4.9333 | [3.1371, 5.3613] | 5.9227 | +1.4778 |
-| B_transaction_sensitivity | 2022 | 102 | 5.4176 | [5.0655, 6.3995] | 6.5102 | +0.6085 |
-| B_transaction_sensitivity | 2023 | 117 | 5.6990 | [4.0646, 6.3315] | 6.5943 | +1.6762 |
+| B_transaction_sensitivity | 2022 | 102 | 5.5105 | [5.1176, 6.8063] | 6.6830 | +0.5308 |
+| B_transaction_sensitivity | 2023 | 117 | 5.6418 | [3.5259, 6.2675] | 6.5652 | +1.6190 |
 | B_transaction_sensitivity | 2024 | 125 | 6.1588 | [3.7847, 6.3910] | 7.3345 | +0.6499 |
-| B_transaction_sensitivity | 2025 | 141 | 6.0727 | [4.7119, 6.3415] | 7.3301 | +1.0731 |
-| B_transaction_sensitivity | 2026 | 166 | 6.2828 | [5.8866, 6.9407] | 7.4433 | +0.6631 |
-| B_transaction_sensitivity | pooled_2022_2026 | 651 | 5.9730 | [5.6542, 6.2024] | 7.1098 | +0.9229 |
-| B_transaction_sensitivity | pooled_2021_2026 | 723 | 5.8695 | [5.5510, 6.0973] | 7.0007 | +0.9782 |
+| B_transaction_sensitivity | 2025 | 141 | 6.0753 | [4.7209, 6.3434] | 7.3315 | +1.0170 |
+| B_transaction_sensitivity | 2026 | 166 | 6.2313 | [5.6492, 6.6635] | 7.4123 | +0.6117 |
+| B_transaction_sensitivity | pooled_2022_2026 | 651 | 5.9647 | [5.6625, 6.1992] | 7.1221 | +0.8752 |
+| B_transaction_sensitivity | pooled_2021_2026 | 723 | 5.8620 | [5.5464, 6.0925] | 7.0119 | +0.9352 |
 
 Join audit (points): 44851 obligation rows; 18444 without a gamelog outcome row (candidate did not appear, or outcome outside the owned regular-season universe); 231 where the outcome's team differs from the obligation's team (dual obligations of traded players -- the other team's row scores); 32 zero-minute rows excluded (conditional target); 26144 scored.
 
@@ -106,21 +106,21 @@ Join audit (points): 44851 obligation rows; 18444 without a gamelog outcome row 
 | tier | season | N | MAE | MAE 95% CI | RMSE | bias |
 |------|--------|---|-----|------------|------|------|
 | A_primary | 2021 | 3407 | 8.7658 | [8.5175, 9.0257] | 10.2943 | -1.8231 |
-| A_primary | 2022 | 3939 | 5.0822 | [4.8445, 5.3095] | 6.5660 | +0.4114 |
-| A_primary | 2023 | 4394 | 5.0638 | [4.8300, 5.3263] | 6.6184 | +0.1202 |
-| A_primary | 2024 | 4371 | 5.1815 | [4.9090, 5.4956] | 6.8885 | +0.2319 |
-| A_primary | 2025 | 5213 | 5.1044 | [4.9051, 5.3157] | 6.6226 | +0.1913 |
-| A_primary | 2026 | 4053 | 4.9124 | [4.6264, 5.2050] | 6.4608 | +0.4680 |
-| A_primary | **pooled_2022_2026** | 21970 | **5.0722** | [4.9646, 5.2006] | 6.6361 | +0.2757 |
-| A_primary | pooled_2021_2026 | 25377 | 5.5681 | [5.4123, 5.7186] | 7.2355 | -0.0061 |
+| A_primary | 2022 | 3939 | 4.8215 | [4.6437, 4.9959] | 6.1946 | +0.2783 |
+| A_primary | 2023 | 4394 | 4.7349 | [4.5618, 4.8923] | 6.1824 | -0.0835 |
+| A_primary | 2024 | 4371 | 4.7611 | [4.5746, 4.9931] | 6.2901 | +0.0322 |
+| A_primary | 2025 | 5213 | 4.8123 | [4.6814, 4.9432] | 6.2161 | -0.0366 |
+| A_primary | 2026 | 4053 | 4.4863 | [4.3021, 4.6600] | 5.8671 | +0.1245 |
+| A_primary | **pooled_2022_2026** | 21970 | **4.7281** | [4.6544, 4.8127] | 6.1575 | +0.0539 |
+| A_primary | pooled_2021_2026 | 25377 | 5.2702 | [5.1206, 5.4132] | 6.8594 | -0.1981 |
 | all_tiers | 2021 | 3479 | 8.7600 | [8.5053, 8.9923] | 10.2841 | -1.7578 |
-| all_tiers | 2022 | 4065 | 5.1854 | [4.9592, 5.4544] | 6.7017 | +0.4023 |
-| all_tiers | 2023 | 4520 | 5.1671 | [4.9229, 5.4645] | 6.7543 | +0.1824 |
-| all_tiers | 2024 | 4502 | 5.3029 | [4.9716, 5.6217] | 7.0310 | +0.2637 |
-| all_tiers | 2025 | 5357 | 5.2048 | [4.9841, 5.4361] | 6.7574 | +0.2529 |
-| all_tiers | 2026 | 4221 | 5.0416 | [4.7449, 5.3780] | 6.6250 | +0.5557 |
-| all_tiers | pooled_2022_2026 | 22665 | 5.1829 | [5.0557, 5.3199] | 6.7779 | +0.3242 |
-| all_tiers | pooled_2021_2026 | 26144 | 5.6589 | [5.5145, 5.8061] | 7.3417 | +0.0471 |
+| all_tiers | 2022 | 4065 | 4.9367 | [4.7464, 5.1429] | 6.3653 | +0.2679 |
+| all_tiers | 2023 | 4520 | 4.8450 | [4.6544, 5.0695] | 6.3366 | -0.0196 |
+| all_tiers | 2024 | 4502 | 4.8947 | [4.6630, 5.1673] | 6.4636 | +0.0698 |
+| all_tiers | 2025 | 5357 | 4.9225 | [4.7517, 5.1160] | 6.3734 | +0.0277 |
+| all_tiers | 2026 | 4221 | 4.6320 | [4.4196, 4.8961] | 6.0707 | +0.2214 |
+| all_tiers | pooled_2022_2026 | 22665 | 4.8500 | [4.7516, 4.9518] | 6.3275 | +0.1058 |
+| all_tiers | pooled_2021_2026 | 26144 | 5.3703 | [5.2316, 5.5229] | 6.9845 | -0.1422 |
 | B_s2_weak_fallback | 2021 | 0 | -- | -- | -- | -- |
 | B_s2_weak_fallback | 2022 | 24 | 8.5525 | [7.4542, 12.5460] | 9.9652 | -2.9061 |
 | B_s2_weak_fallback | 2023 | 9 | 9.7894 | [7.0958, 10.7480] | 10.5359 | -0.9635 |
@@ -130,13 +130,13 @@ Join audit (points): 44851 obligation rows; 18444 without a gamelog outcome row 
 | B_s2_weak_fallback | pooled_2022_2026 | 44 | 9.4891 | [8.4620, 11.5741] | 10.7095 | -1.1368 |
 | B_s2_weak_fallback | pooled_2021_2026 | 44 | 9.4891 | [8.4620, 11.5741] | 10.7095 | -1.1368 |
 | B_transaction_sensitivity | 2021 | 72 | 8.4877 | [7.1720, 9.9716] | 9.7923 | +1.3317 |
-| B_transaction_sensitivity | 2022 | 102 | 8.3796 | [7.5084, 10.9711] | 10.0813 | +0.8292 |
-| B_transaction_sensitivity | 2023 | 117 | 8.6920 | [8.0625, 10.9555] | 10.4347 | +2.6064 |
+| B_transaction_sensitivity | 2022 | 102 | 8.5347 | [7.5235, 11.7413] | 10.4626 | +0.6114 |
+| B_transaction_sensitivity | 2023 | 117 | 8.5996 | [7.8428, 9.9862] | 10.3541 | +2.4516 |
 | B_transaction_sensitivity | 2024 | 125 | 9.2608 | [6.8389, 9.9200] | 10.6607 | +1.6140 |
-| B_transaction_sensitivity | 2025 | 141 | 8.7791 | [7.9255, 9.6788] | 10.4983 | +2.2903 |
-| B_transaction_sensitivity | 2026 | 166 | 8.1259 | [7.1425, 11.6335] | 9.7563 | +2.5707 |
-| B_transaction_sensitivity | pooled_2022_2026 | 651 | 8.6268 | [8.1403, 9.1988] | 10.2693 | +2.0598 |
-| B_transaction_sensitivity | pooled_2021_2026 | 723 | 8.6129 | [8.1576, 9.0649] | 10.2228 | +1.9873 |
+| B_transaction_sensitivity | 2025 | 141 | 8.8559 | [8.0675, 9.8616] | 10.5634 | +2.1635 |
+| B_transaction_sensitivity | 2026 | 166 | 8.1134 | [7.1258, 11.5671] | 9.7442 | +2.4565 |
+| B_transaction_sensitivity | pooled_2022_2026 | 651 | 8.6479 | [8.1636, 9.2473] | 10.3258 | +1.9413 |
+| B_transaction_sensitivity | pooled_2021_2026 | 723 | 8.6320 | [8.1796, 9.1147] | 10.2739 | +1.8806 |
 
 Join audit (minutes): 44851 obligation rows; 18444 without a gamelog outcome row (candidate did not appear, or outcome outside the owned regular-season universe); 231 where the outcome's team differs from the obligation's team (dual obligations of traded players -- the other team's row scores); 32 zero-minute rows excluded (conditional target); 26144 scored.
 

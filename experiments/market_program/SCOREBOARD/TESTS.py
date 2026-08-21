@@ -25,6 +25,7 @@ Run: python TESTS.py
 """
 import copy
 import hashlib
+import io
 import json
 import os
 import re
@@ -676,8 +677,20 @@ def run_real_input_tests(tmp):
           dict(scores)["player_points"] == "")
     check("real/legacy row: PRELIMINARY evidence badge on player_points",
           'data-evidence="2"' in pp_block and ">PRELIMINARY<" in pp_block)
+    # The pin moved from 4.3 to 4.1 when the cold-start repair was bound as arm revision 9
+    # (D167/D168): pooled_2022_2026 A_primary points MAE went 4.2671 -> 4.1308. It is still
+    # pinned, because this check exists to assert what the PAGE renders -- but the pin is now
+    # cross-checked against the source metric, so a future drift fails saying which of the two
+    # moved instead of just that they disagree.
+    _lvm = json.loads(io.open(os.path.join(HERE, "granular", "legacy_verified_metrics.json"),
+                              encoding="utf-8").read())
+    _src_mae = _lvm["our_model"]["points"]["tiers"]["A_primary"]["pooled_2022_2026"]["mae"]
+    _pin = "4.1 points"
+    check("real/legacy row: the pinned Typical Miss is 1dp of the source metric",
+          _pin == f"{round(_src_mae, 1)} points",
+          f"pin {_pin!r} vs source {_src_mae:.4f}")
     check("real/legacy row: Typical Miss shown as 1dp MAE from legacy_verified_metrics (pooled_2022_2026, A_primary)",
-          "4.3 points" in pp_block)
+          _pin in pp_block)
     check("real/legacy row: Improvement vs Basic Model is pending-matched-universe, never faked from unmatched numbers",
           "Pending — matched universe" in pp_block and "paired legacy-vs-baseline run" in pp_block)
     check("real/legacy row: Market Advantage = Market currently better, -3.3 O/U accuracy points",

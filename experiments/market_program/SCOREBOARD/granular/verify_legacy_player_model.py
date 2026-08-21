@@ -3,7 +3,7 @@
 
 Executes, against bytes on disk, the 7-check checklist registered in
 PROBE_LEGACY.md (this directory) for the legacy generation-only OOF artifact
-set at experiments/cbs_v15_player_oof_v5/attempt_001/:
+set at experiments/cbs_v15_player_oof_v5/attempt_002/ (arm revision 9):
 
   1. byte integrity          sha256 of every artifact vs its *.manifest.json
   2. producer digest         recompute the PRODUCER_SOURCES set digest
@@ -51,7 +51,13 @@ import asof_invariant as aso            # noqa: E402
 import cbs_obligation_key as obk        # noqa: E402
 import prediction_contract_v5 as pc5    # noqa: E402
 
-ATT = WORKTREE / "experiments" / "cbs_v15_player_oof_v5" / "attempt_001"
+#: The attempt this node verifies. Named ONCE: it was previously written out in three
+#: separate places, which is how a node can end up verifying one attempt and reporting
+#: another. attempt_002 is arm revision 9, which binds the cold-start repair (D167);
+#: attempt_001 was revision 8 and is preserved untouched.
+ATTEMPT = "attempt_002"
+ATT = WORKTREE / "experiments" / "cbs_v15_player_oof_v5" / ATTEMPT
+ATT_REL = f"experiments/cbs_v15_player_oof_v5/{ATTEMPT}"
 ENRICHED = WORKTREE / "experiments" / "prediction_contract_v5" / "player_game_enriched.parquet"
 
 SEED = 20260806          # same seed + method as compute_player_granular.py
@@ -62,7 +68,11 @@ TARGETS = ["attempts_usage", "e_minutes_given_active", "p_active",
 SCORED = {"points": "player_scoring_distribution",
           "minutes": "e_minutes_given_active"}
 
-EXPECTED_DIGEST = "768f8139d72439adcae59b2dcf57390356b435ce8082f9a0aa0acdcb4925b7b9"
+#: revision 8 pinned 768f8139...; revision 9 adds five files to the producing set, so
+#: the set digest necessarily moves. This node RECOMPUTES it independently from its own
+#: PRODUCER_SOURCES list above and compares against this pin AND against every manifest
+#: and fold receipt in the attempt -- so a stale pin fails rather than passing quietly.
+EXPECTED_DIGEST = "f3945feb9a15bf0a6476c9c8a781757590e651a4722e91dab078230d74a56891"
 
 #: The PRODUCER_SOURCES tuple named in run_player_oof_v15.py: v14's 25-file
 #: producing set (run_player_oof_v14.PRODUCER_SOURCES) plus v15's 6 additions.
@@ -79,6 +89,10 @@ PRODUCER_SOURCES = [
     "run_player_oof_v15.py", "cbs_v15.py", "cbs_player_runner_v15.py",
     "cbs_real_frames_v5.py", "prediction_contract_v5.py",
     "prediction_contract_v5_enrich.py",
+    # revision 9 added the cold-start repair chain to the producing set (D167).
+    "cbs_player_runner_v18.py", "cbs_player_runner_v17.py",
+    "cbs_player_runner_v16.py", "cbs_player_coldstart_v16.py",
+    "cbs_player_dispersion_v16.py",
 ]
 
 FORBIDDEN_SCORE_COLS = {
@@ -704,7 +718,7 @@ def compute_metrics(frames: dict, audits: dict, outcome_audit: dict) -> dict:
 def write_report(checks: dict, overall: str, metrics: dict | None,
                  outcome_audit: dict | None, ts: str) -> None:
     L = []
-    ap = "experiments/cbs_v15_player_oof_v5/attempt_001"
+    ap = ATT_REL
     L.append("# VERIFICATION_REPORT.md -- legacy player-model verification (D037)")
     L.append("")
     L.append(f"Date: {ts}. Verification node for the checklist in PROBE_LEGACY.md, "
@@ -980,7 +994,7 @@ def main() -> int:
             "run_id": run_index["run_id"],
             "arm_id": run_index["arm_id"],
             "arm_revision": run_index["arm_revision"],
-            "artifact_dir": "experiments/cbs_v15_player_oof_v5/attempt_001",
+            "artifact_dir": ATT_REL,
             "row_universe": run_index["row_universe"],
             "history_policy": run_index["history_policy"],
             "config_hash": run_index["config_hash"],
