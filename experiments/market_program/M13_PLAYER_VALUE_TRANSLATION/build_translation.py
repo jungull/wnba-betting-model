@@ -14,7 +14,8 @@ versioned model snapshots from the forecast log; it never reads sealed possessio
 reaches into a model's internals."
 
 INPUTS (read-only; nothing here is modified):
-  * experiments/cbs_v15_player_oof_v5/attempt_001/  -- RECEIPTED legacy points model, forecast log
+  * experiments/cbs_v15_player_oof_v5/attempt_002/  -- RECEIPTED legacy points model (arm
+    revision 9, which binds the cold-start repair), forecast log
     SCHEMA/2, generation-only, verified 7/7 in SCOREBOARD/granular/VERIFICATION_REPORT.md (D037).
   * data/props_capture/historical/master_props_historical.csv -- T1_VENDOR_ASSERTED props archive
     (D027 extension of M00-U2). Reused via M11_CONSENSUS_MODEL/consensus.py (vig math DELEGATED,
@@ -530,7 +531,12 @@ def main() -> None:
                 "p_over_market_devig", "diff_normal_minus_market", "n_books_at_consensus_line",
                 "snap_ret_utc"]
     rows_out = ev[out_cols].copy()
-    rows_out["model_version"] = "cbs_v15_player_oof_v5/1 (arm cbs_v15_player_oof_v5, rev 8)"
+    # Derived from the attempt this node actually consumed, via the MODEL_VS_MARKET machinery
+    # it reuses, rather than hard-coded. It read "rev 8" while the arm shipped rev 9 -- a row
+    # column misstating which model produced it. D170.
+    rows_out["model_version"] = (f"{mvm._RUN_INDEX['run_id']} "
+                                 f"(arm {mvm._RUN_INDEX['arm_id']}, "
+                                 f"rev {mvm._RUN_INDEX['arm_revision']})")
     rows_out["translation_schema_version"] = TRANSLATION_SCHEMA_VERSION
     rows_out["forecast_cutoff"] = rows_out["forecast_cutoff"].astype(str)
     rows_out.to_parquet(HERE / "translation_rows.parquet", index=False)
@@ -567,7 +573,7 @@ def main() -> None:
 
         "inventory": {
             "legacy_model": {
-                "path": "experiments/cbs_v15_player_oof_v5/attempt_001/",
+                "path": mvm.ATT_REL + "/",
                 "run_id": "cbs_v15_player_oof_v5/1", "target": "player_scoring_distribution (points)",
                 "verification": "SCOREBOARD/granular/VERIFICATION_REPORT.md -- 7/7 RECEIPTED",
                 "n_scored_points_rows_all_tiers_all_seasons": int(len(scored)),
