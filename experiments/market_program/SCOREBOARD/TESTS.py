@@ -695,12 +695,21 @@ def run_real_input_tests(tmp):
           "Pending — matched universe" in pp_block and "paired legacy-vs-baseline run" in pp_block)
     check("real/legacy row: Market Advantage = Market currently better, -3.3 O/U accuracy points",
           "Market currently better" in pp_block and "-3.3 O/U accuracy points" in pp_block)
-    check("real/legacy row: Market Advantage CI matches model_vs_market.json headline verbatim ([-4.95, -1.76] pts)",
-          "[-4.95, -1.76] pts" in pp_block)
+    # Derived from the source rather than hard-pinned. It was [-4.95, -1.76] under arm
+    # revision 8 and is [-4.92, -1.72] under revision 9 (D169): repointing the node at
+    # attempt_002 moved the paired difference from -0.03294 to -0.03277. A hard pin here would
+    # have gone stale silently the moment the arm was rebound, which is what it just did.
+    _mvm = json.loads(io.open(os.path.join(HERE, "..", "MODEL_VS_MARKET", "model_vs_market.json"),
+                              encoding="utf-8").read())
+    _lo, _hi = _mvm["headline"]["paired_diff_ci95"]
+    _ci_txt = f"[{_lo * 100:.2f}, {_hi * 100:.2f}] pts"
+    check("real/legacy row: Market Advantage CI matches model_vs_market.json headline verbatim",
+          _ci_txt in pp_block, f"expected {_ci_txt!r}")
     check("real/legacy row: Market Advantage N=5,737 shown",
           "n=5,737" in pp_block)
     check("real/legacy row: hover carries the raw model-vs-market comparison and its provenance",
-          "raw comparison: model 0.4938" in pp_block and "market 0.5268" in pp_block
+          (f"raw comparison: model {_mvm['headline']['model_ou_accuracy']:.4f}" in pp_block
+           and f"market {_mvm['headline']['market_ou_accuracy']:.4f}" in pp_block)
           and "model_vs_market.json" in pp_block and "sha256=" in pp_block)
     check("real/legacy row: Betting Edge is never substituted for this predictive-accuracy row",
           "Betting Edge" in h1)

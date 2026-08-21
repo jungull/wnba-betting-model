@@ -64,7 +64,12 @@ LIVE_ROOT = WORKTREE.parents[2]               # .../wnba-betting-model (live wor
 sys.path.insert(0, str(WORKTREE / "experiments" / "market_program" / "M11_CONSENSUS_MODEL"))
 import consensus  # noqa: E402  -- vig math is DELEGATED to this module
 
-ATT = WORKTREE / "experiments" / "cbs_v15_player_oof_v5" / "attempt_001"
+#: The attempt this node scores. Named ONCE. attempt_002 is arm revision 9, which binds
+#: the cold-start repair (D167); attempt_001 was revision 8 and is preserved untouched.
+ATTEMPT = "attempt_002"
+ATT = WORKTREE / "experiments" / "cbs_v15_player_oof_v5" / ATTEMPT
+ATT_REL = f"experiments/cbs_v15_player_oof_v5/{ATTEMPT}"
+_RUN_INDEX = json.loads((ATT / "run_index.json").read_text(encoding="utf-8"))
 ENRICHED = WORKTREE / "experiments" / "prediction_contract_v5" / "player_game_enriched.parquet"
 PROPS_CSV = LIVE_ROOT / "data" / "props_capture" / "historical" / "master_props_historical.csv"
 TAXONOMY = WORKTREE / "experiments" / "market_program" / "M00_MARKET_PROGRAM_CONTRACT" / "TAXONOMY.json"
@@ -663,7 +668,11 @@ def main() -> None:
                        "are the verified anchors"),
         "seed": SEED, "n_boot": N_BOOT,
         "model": {
-            "model_version": "cbs_v15_player_oof_v5/1 (arm cbs_v15_player_oof_v5, rev 8)",
+            # Read from the attempt's own run_index rather than hard-coded. It said "rev 8"
+            # while scoring attempt_002, which is rev 9 -- a published figure misstating
+            # which model produced it. Derived now, so it cannot drift from the artifact.
+            "model_version": (f"{_RUN_INDEX['run_id']} (arm {_RUN_INDEX['arm_id']}, "
+                              f"rev {_RUN_INDEX['arm_revision']})"),
             "target": "points (player_scoring_distribution pred_point)",
             "cutoff": ("per-row forecast_cutoff inherited from "
                        "prediction_contract_v5; every used row re-asserted "
@@ -792,7 +801,7 @@ def write_report(r: dict) -> None:
         "| model | `pred_point` of `player_scoring_distribution`, RECEIPTED legacy run "
         "`cbs_v15_player_oof_v5/1` (7/7 verification, VERIFICATION_REPORT.md); "
         "generation-consistent rows only (per-row forecast_cutoff byte-equal to the "
-        "contract) | `experiments/cbs_v15_player_oof_v5/attempt_001/` |",
+        f"contract) | `{ATT_REL}/` |",
         "| market | de-vigged consensus threshold probability P(points > line) at the "
         "consensus line; vig removal DELEGATED to M11 `consensus.py` (preregistered "
         "multiplicative method, uniform weights) | `master_props_historical.csv` (T1) |",
