@@ -83,11 +83,8 @@ programme already owns.
 - **This does not re-point M13.** `translation_rows.parquet` is untouched and no receipted node
   cites `master_props.csv`. Crossing the seam means citing a source **D027 does not govern** —
   an authorisation decision, not a code change, and not one a feasibility check may make.
-- **The staleness semantics differ.** The historical archive carries
-  `snapshot_requested_utc`/`snapshot_returned_utc`, a *pair* that bounds staleness. The live
-  file carries a single `snapshot_utc`. For self-captured data that instant is arguably cleaner,
-  but it is a **different definition**, and it matters precisely because the open question is a
-  cutoff question. Reconciling it is prerequisite work, not a footnote.
+- **The staleness semantics differ — now measured, see s02 below.** Settled, with zero
+  exposure on this window.
 - **Median 5 snapshots per event is coarse**, and one event has a single snapshot. Adequate for
   "was a quote standing at T−90m"; **not** adequate for any persistence or lead-lag question.
 - **Splicing two sources at a date boundary creates a discontinuity** at 2026-07-30/07-31.
@@ -97,3 +94,65 @@ programme already owns.
   against the arm is the entire point of crossing the seam, and it has not been done.
 - **It does not touch M33's market gap.** That deficit is minutes among players who play.
   Availability is a different target.
+
+
+---
+
+# s02 — the staleness semantics, settled
+
+s01 named the single-timestamp difference as prerequisite work. It is now measured.
+
+## What `snapshot_utc` means
+
+Read from the capture source, not assumed: `props_capture_daily.py:197` takes the stamp **once
+at the top of `main()`**, before the events list is fetched and before any event request is
+issued, then writes it identically to every row of the cycle. So
+
+    snapshot_utc  <=  true retrieval time of every row stamped with it
+
+**The direction is the problem.** A cutoff question asks whether a quote was *held* by an
+instant. Because the stamp is at or earlier than true retrieval, using it makes a quote look
+available **earlier** than it truly was — the optimistic direction, which can admit a quote whose
+true retrieval fell after the cutoff. The archive's `returned` stamp is fail-closed; this is not.
+
+## How far it understates, per cycle
+
+Each event response is written to `raw/props_<event>_<stamp>.json` during its cycle, so
+stamp → last write is a direct per-cycle upper bound.
+
+| | minutes |
+|---|---|
+| median | **0.06** |
+| p95 | 0.40 |
+| max, excluding two outliers | **1.29** |
+| max, all cycles | 378.97 |
+
+Two cycles exceed 5 minutes (379.0 and 97.6 min) and **both are day-one, 2026-07-31**. They were
+**kept and charged to their own rows**, not dropped and not spread across every row — applying a
+global worst case would have manufactured a false 28% exposure.
+
+## Does it leak?
+
+| | |
+|---|---|
+| player_points rows | 11,307 |
+| rows with no raw JSON to bound | **0** |
+| admitted at T−90m using `snapshot_utc` | 10,285 |
+| admitted using the fail-closed bound | **10,285** |
+| **wrongly admitted** | **0 (0.000%)** |
+
+**Why zero:** the capture cadence is coarse, so nothing lands near the boundary — 0 quotes have
+a lead in [90, 105) minutes; the nearest admitted quote has ≥120 minutes.
+
+## What this does and does not clear
+
+It **clears** the staleness item as a blocker for a T−90m question on this window.
+
+It **does not generalise.** A finer capture cadence, or a cutoff nearer tip, would put quotes
+next to the boundary and the bound would have to be re-measured. The defect is dormant here, not
+absent — and the correct long-run fix is to stamp retrieval per response rather than per cycle.
+
+It also leaves the remaining s01 caveats untouched: the seam discontinuity at 2026-07-30/07-31
+still needs a level-shift test, 5 snapshots per event is still too coarse for any persistence
+question, crossing the seam still cites a source D027 does not govern, and the +15.2% is still
+M35's figure against a base rate rather than against the shipped `p_active`.
