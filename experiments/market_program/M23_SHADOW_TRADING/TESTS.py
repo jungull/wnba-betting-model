@@ -163,6 +163,68 @@ def test_append_only():
           all("stake_unadjusted_usd" in r["execution"] for r in recs))
 
 
+def test_scoring():
+    """The scorer must be proven on a game that ACTUALLY settled.
+
+    A scorer whose only observed output is "nothing scoreable yet" is untested. These use
+    real 2026-08-21 results: WAS 84 - MIN 94, CHI 73 - GSV 70, TOR 82 - PDX 79.
+    """
+    print("")
+    print("F. THE SCORER, PROVEN ON SETTLED GAMES")
+    import s02_score as sc
+    oc = sc.load_outcomes()
+    key = (dt.date(2026, 8, 21), "WAS", "MIN")
+    check("real outcomes load and contain a known game", key in oc)
+    if key not in oc:
+        return
+    check("the known game's score is right",
+          oc[key]["home_pts"] == 84.0 and oc[key]["away_pts"] == 94.0)
+
+    def rec(side, point, price, stake, home="Washington Mystics", away="Minnesota Lynx"):
+        return {"opp_id": "T", "class_id": "STALE_LINE_DELAYED_REACTION",
+                "matchup": "%s @ %s" % (away, home),
+                "commence_time": "2026-08-22T02:00:00Z",   # 22:00 ET on 08-21
+                "market": "Moneyline", "legs": [
+                    {"book": "b", "outcome": side, "point": point, "price": price,
+                     "stake": stake}]}
+
+    # MIN won by 10 on the road.
+    r = rec("Minnesota Lynx", None, 150.0, 100.0)
+    p = sc.settle_leg(r["legs"][0], r, oc[key])
+    check("a winning moneyline pays American odds", abs(p - 150.0) < 1e-6, "got %s" % p)
+
+    r = rec("Washington Mystics", None, -110.0, 100.0)
+    p = sc.settle_leg(r["legs"][0], r, oc[key])
+    check("a losing moneyline loses exactly the stake", p == -100.0, "got %s" % p)
+
+    # WAS lost by 10; +10.5 covers, +9.5 does not, +10 is a push.
+    r = rec("Washington Mystics", 10.5, -110.0, 100.0)
+    check("a covering spread wins", sc.settle_leg(r["legs"][0], r, oc[key]) > 0)
+    r = rec("Washington Mystics", 9.5, -110.0, 100.0)
+    check("a non-covering spread loses", sc.settle_leg(r["legs"][0], r, oc[key]) == -100.0)
+    r = rec("Washington Mystics", 10.0, -110.0, 100.0)
+    check("an exact-number spread is a PUSH, not a win",
+          sc.settle_leg(r["legs"][0], r, oc[key]) == 0.0)
+
+    # favourite side of the same game
+    r = rec("Minnesota Lynx", -9.5, -110.0, 100.0)
+    check("the favourite covering -9.5 by 10 wins",
+          sc.settle_leg(r["legs"][0], r, oc[key]) > 0)
+
+    # a game with no outcome must not be invented
+    r2 = rec("Minnesota Lynx", None, 150.0, 100.0)
+    r2["commence_time"] = "2026-09-30T23:00:00Z"
+    check("a game with no observed outcome yields no key in outcomes",
+          sc.game_key(r2) not in oc)
+
+    check("line shopping is classified NOT a bet",
+          "PURE_MICROSTRUCTURE" in sc.NOT_A_BET)
+    check("the refusal reason names the category error",
+          "invent a position" in sc.NOT_A_BET["PURE_MICROSTRUCTURE"])
+    check("middles and stale lines ARE scoreable",
+          sc.SCOREABLE == {"MIDDLES_AND_DISLOCATIONS", "STALE_LINE_DELAYED_REACTION"})
+
+
 def main():
     print("=" * 78)
     print("M23_SHADOW_TRADING -- tests")
@@ -172,6 +234,7 @@ def main():
     test_execution_assumptions()
     test_no_money_and_s42()
     test_append_only()
+    test_scoring()
     print("\n" + "=" * 78)
     print("%d passed, %d failed" % (len(PASS), len(FAIL)))
     if FAIL:
