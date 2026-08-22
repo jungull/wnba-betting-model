@@ -217,3 +217,50 @@ Using the live ladder **after** the seam, on its own terms, is unaffected.
 What is blocked is treating the two archives as **one continuous series** without carrying the
 depth difference — and, because the archives do not overlap, nothing here can rule out a further
 shift confounded with the date.
+
+
+---
+
+# s04 — who is exposed to the depth shift?
+
+s03 found a depth shift that matters only for **peer-consensus estimators**. The programme has
+three: M30, M31, M32. So: has it already bitten a receipted result, or is it about to bite one?
+
+## Retrospective — nothing existing is contaminated
+
+| node | source | crosses the props seam? |
+|---|---|---|
+| M30_PRICE_LEADERSHIP | `odds_capture` (game-level) | no — different archive |
+| M31_DISLOCATION_PERSISTENCE | `odds_capture` via M30's panel | no — different archive |
+| M32_DOES_IT_ACTUALLY_WIN | `master_props_historical.csv` **only** | **no** |
+
+M32's source has its last tip at **2026-07-31 02:10 UTC**, which is a **22:10 ET game on
+2026-07-30**. Rows with an ET game-date at or after the seam: **0**.
+
+**A unit bug caught here, worth recording.** The first version of this check compared that raw
+UTC timestamp against UTC midnight and returned **"spans the seam: YES"** — while the verdict
+below it printed the opposite, because the narrative was hardcoded rather than driven by the
+computed flag. Two defects in one: the seam is defined on **ET game-date** everywhere else in
+M36, and *a verdict that cannot contradict its own computation cannot catch anything*. Both are
+fixed; the verdict now branches on the flag.
+
+## Prospective — the more dangerous case, and it is clear
+
+M31 has **not yet produced its primary statistic** (gate closed, expected ~2026-08-27). A drift
+in *its own* peer set would corrupt a number that does not exist yet — with no published figure
+to audit afterwards. So its peer set was measured directly rather than assumed:
+
+| | |
+|---|---|
+| rows in panel | 166,602 |
+| capture times | 523 (2026-07-30T15:01Z → 2026-08-22T16:30Z) |
+| books per capture | min 10, median 11, **max 11** |
+| lowest single-book presence | **99.8%** (bovada, mybookieag, williamhill_us; the other 8 at 100%) |
+
+**Stable.** The statistic M31 produces when its gate opens is not exposed to this defect.
+
+## Scope
+
+This clears the three existing constructions. It says **nothing** about a future node that
+splices the props archives — that remains blocked on carrying the 4 → 5 depth difference (s03),
+and on the authorisation question (s01).
