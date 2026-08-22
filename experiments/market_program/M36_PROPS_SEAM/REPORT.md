@@ -87,8 +87,7 @@ programme already owns.
   exposure on this window.
 - **Median 5 snapshots per event is coarse**, and one event has a single snapshot. Adequate for
   "was a quote standing at T−90m"; **not** adequate for any persistence or lead-lag question.
-- **Splicing two sources at a date boundary creates a discontinuity** at 2026-07-30/07-31.
-  Anything measured across it must test for a level shift at the seam rather than assume none.
+- **The seam discontinuity — now tested, see s03 below.** No roster shift; a real depth shift.
 - **Nothing here re-measures the +15.2%.** That figure is still M35's, on 701 rows over ten
   dates, against a walk-forward base rate — **not** against the shipped `p_active`. Measuring it
   against the arm is the entire point of crossing the seam, and it has not been done.
@@ -156,3 +155,65 @@ It also leaves the remaining s01 caveats untouched: the seam discontinuity at 20
 still needs a level-shift test, 5 snapshots per event is still too coarse for any persistence
 question, crossing the seam still cites a source D027 does not govern, and the +15.2% is still
 M35's figure against a base rate rather than against the shipped `p_active`.
+
+
+---
+
+# s03 — the seam discontinuity, tested
+
+## The design limit, stated before the result
+
+The archives **do not overlap**: historical ends 2026-07-30, live begins 2026-07-31. Source and
+date are therefore **confounded**, and no statistic fixes that. A seam step inside the normal
+day-to-day churn is *absence of evidence for a shift*, not evidence of its absence.
+
+Book composition is the exception — it is a property of the capture configuration, not of the
+games, so a change in it across the seam is a source effect by construction.
+
+## Roster: no shift
+
+| | books |
+|---|---|
+| historical, **2026 season** | 5 — betonlineag, betrivers, draftkings, fanduel, williamhill_us |
+| live | 5 — **identical set** |
+
+**A correction worth recording.** Comparing the *whole* historical file (2024–2026) shows 9 books
+and implies four were lost at the seam (betmgm, bovada, fanatics, unibet_us). That comparison is
+wrong: those books left earlier in history, not at the seam. **The season-matched comparison is
+the correct one, and it shows no roster change.**
+
+## Seam step vs ordinary day-to-day step
+
+Ordinary steps computed *within* each source only, never across the seam:
+
+| quantity | last hist | first live | seam step | percentile of within-source steps |
+|---|---|---|---|---|
+| books | 5.000 | 5.000 | 0.000 | 0.0% |
+| overround | 0.066 | 0.069 | +0.002 | 83.1% |
+| line | 12.500 | 14.500 | +2.000 | 66.3% |
+
+Nothing here is extreme. The overround step sits high-ish but inside the churn.
+
+## Depth: there *is* a shift
+
+| pooled median | hist 2026 | live | delta |
+|---|---|---|---|
+| overround | 0.0688 | 0.0664 | −0.0024 |
+| line | 13.5 | 14.5 | +1.0 |
+| **books per quoted player** | **4.0** | **5.0** | **+1.0** |
+
+Same roster, **different completeness**: the live ladder gets all five books on a typical
+player-line where the historical archive typically had four.
+
+**This matters for exactly one reason.** A de-vigged peer consensus over 5 books is not the same
+estimator as one over 4 — the leave-one-out peer set changes size, which changes both its
+variance and its bias. M30, M31 and M32 are all peer-consensus constructions. Any of them spliced
+across this seam would change definition at the seam while appearing continuous.
+
+## Verdict
+
+Using the live ladder **after** the seam, on its own terms, is unaffected.
+
+What is blocked is treating the two archives as **one continuous series** without carrying the
+depth difference — and, because the archives do not overlap, nothing here can rule out a further
+shift confounded with the date.
