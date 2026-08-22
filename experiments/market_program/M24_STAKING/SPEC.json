@@ -1,0 +1,89 @@
+{
+ "spec_id": "M24_STAKING_POLICY",
+ "version": 1,
+ "frozen_before_evaluation": true,
+ "epistemic_status": "DECISION-SYSTEM SPECIFICATION. A staking policy is a frozen rule set evaluated in shadow before any real-money question is even well-posed. This node specifies and backtests-in-shadow; activating any policy with money is USER_REQUIRED and is not this node's decision.",
+ "authority": "M00 contract evidence_ladder and execution_mode_ladder; D024 SHADOW default; S42 CLOSED",
+
+ "real_money_activation": {
+  "status": "USER_REQUIRED",
+  "statement": "No rule in this specification authorises a real-money stake. Activating any policy with money is a mode transition, is never self-grantable by this lane, and is outside this node entirely. Every figure below is notional.",
+  "authority": "M00 user_required_boundary; execution_mode_ladder transition_rule"
+ },
+
+ "eligibility_gate": {
+  "rule": "A class may receive a NON-ZERO real-money stake only while it holds M00 evidence-ladder rank 7 (PRODUCTION_ELIGIBLE), which by the contract's own definition requires all six lower labels held simultaneously, hard risk controls verified, and the mode transition granted.",
+  "shadow_rule": "In SHADOW any class may be SIZED for evaluation, but the size is notional and carries no authorisation.",
+  "ladder_status_source": "NONE EXISTS. The M00 taxonomy records no evidence labels per class, so there is no machine-readable ladder status for this gate to read. Until one exists the gate must FAIL CLOSED: every class is treated as holding rank 0.",
+  "fail_closed": true
+ },
+
+ "sizing": {
+  "method": "fractional Kelly on the LOWER CONFIDENCE BOUND of the edge, never on the point estimate",
+  "uncertainty_propagation": "The edge input is an estimate with an interval. Kelly evaluated at a point estimate treats an uncertain edge as certain and systematically oversizes. This policy therefore evaluates Kelly at the 95% lower confidence bound. If the interval includes zero, the lower bound is <= 0, the Kelly fraction is <= 0, and the stake is ZERO by arithmetic rather than by judgement.",
+  "kelly_fraction_cap": 0.25,
+  "kelly_fraction_cap_rationale": "Quarter-Kelly. A judgement, recorded as one: it is not derived from anything measured in this programme.",
+  "min_edge_after_uncertainty": 0.0,
+  "min_edge_rule": "strictly greater than zero; an edge whose lower bound is exactly zero stakes nothing"
+ },
+
+ "exposure_caps_pct_of_bankroll": {
+  "per_single_decision": 1.0,
+  "per_game": 2.0,
+  "per_market": 1.0,
+  "per_book": 5.0,
+  "per_day": 6.0,
+  "note": "Caps bind in the order listed; the binding cap is recorded on every sized decision so a stake can always be traced to the rule that limited it."
+ },
+
+ "liquidity_and_quote_rules": {
+  "max_quote_age_seconds": 300,
+  "max_quote_age_rationale": "The capture cadence is 5 minutes (M03). A quote older than one full cadence cannot be shown to have been standing.",
+  "min_liquidity_usd": 49.01,
+  "min_liquidity_source": "M21 measured median depth at best price on real resting orders",
+  "never_size_above_measured_depth": true,
+  "book_side_limits": "ABSENT. M21 marked sportsbook maximum-stake UNMEASURED rather than estimating it. This policy does not supply a number M21 refused to invent, and treats exchange depth as the only evidenced liquidity bound."
+ },
+
+ "drawdown_and_stop_rules": {
+  "frozen_before_evaluation": true,
+  "daily_loss_cap_pct": 3.0,
+  "trailing_drawdown_stop_pct": 10.0,
+  "consecutive_losing_days_stop": 5,
+  "on_stop": "All sizing returns zero. Re-enabling is USER_REQUIRED and is not self-grantable.",
+  "global_kill_switch": "Manual, always available, and re-enabling it is USER_REQUIRED."
+ },
+
+ "measured_expectations_at_freeze": {
+  "note": "What this programme has actually measured for each class, with its source. These are the inputs the sizing rule consumes. None is a positive lower bound.",
+  "MIDDLES_AND_DISLOCATIONS": {"expectation": "NEGATIVE", "source": "D152", "lcb_positive": false},
+  "PURE_MICROSTRUCTURE": {"expectation": "ZERO as income; it is a cost reduction on money already staked", "source": "M22", "lcb_positive": false},
+  "STALE_LINE_DELAYED_REACTION": {"expectation": "UNPROVEN", "source": "M08: 52% of episodes sit at the capture resolution floor", "lcb_positive": false},
+  "TRUE_CROSS_BOOK_ARBITRAGE": {"expectation": "POSITIVE BUT IMMATERIAL, 0.20-0.83 USD per occurrence", "source": "M22", "lcb_positive": false},
+  "MODEL_VS_MARKET_VALUE": {"expectation": "NO EDGE, and forbidden here regardless", "source": "D141/D150; S42 CLOSED", "lcb_positive": false},
+  "CONSENSUS_DISLOCATION": {"expectation": "NEGATIVE, -7.2% against realised outcomes", "source": "D172", "lcb_positive": false},
+  "PROMOTIONAL_VALUE": {"expectation": "LARGEST PER-UNIT VALUE MEASURED, but no real offer has ever been entered", "source": "M22", "lcb_positive": false}
+ },
+
+ "hard_risk_controls_coverage": {
+  "note": "Mapping onto the eleven controls M00 requires before any non-SHADOW order.",
+  "approved_event_source": "covered -- odds_capture only",
+  "minimum_confidence": "covered -- eligibility_gate ladder rank 7",
+  "minimum_edge": "covered -- sizing.min_edge_after_uncertainty on the lower bound",
+  "maximum_quote_age": "covered -- 300 s",
+  "maximum_stake": "covered -- exposure_caps per_single_decision",
+  "per_game_and_per_player_exposure_caps": "PARTIAL -- per-game covered; PER-PLAYER IS NOT, because the board's classes are game-level and no per-player exposure is currently computed",
+  "minimum_liquidity": "covered -- M21 median depth",
+  "no_duplicate_or_correlated_order_conflict": "NOT COVERED -- correlation between legs across markets on the same game is not modelled here",
+  "no_trading_through_a_suspension": "NOT COVERED -- M17 suspension microstructure is not built",
+  "daily_loss_and_volume_caps": "covered -- drawdown_and_stop_rules",
+  "global_kill_switch": "covered -- manual"
+ },
+
+ "known_gaps": [
+  "No machine-readable per-class evidence-ladder status exists, so the eligibility gate fails closed on every class.",
+  "Three of the eleven M00 hard risk controls are not covered by this specification and are named above rather than glossed.",
+  "The Kelly cap of 0.25 is a judgement and is not derived from anything this programme measured.",
+  "Correlated exposure across markets within one game is not modelled; caps are per-market and per-game but assume independence between them."
+ ]
+}

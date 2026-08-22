@@ -6,10 +6,10 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 | | |
 |---|---|
 | branch | `player-model-program` |
-| HEAD | `5fdcfff921a217ca587fa9c2d744a439955910a7` |
+| HEAD | `978dd32751ffbd5b9ec6237f799148dca1f57611` |
 | working tree | DIRTY |
 | nodes | 108 |
-| events | 572 |
+| events | 575 |
 
 ## Counts by status
 
@@ -17,8 +17,8 @@ append-only `GRAPH_EVENTS.jsonl`. Not hand-maintained.
 |---|---|
 | BLOCKED | 4 |
 | HALTED | 1 |
-| PASSED | 91 |
-| READY | 3 |
+| PASSED | 92 |
+| READY | 2 |
 | SUPERSEDED | 6 |
 | USER_REQUIRED | 3 |
 
@@ -33,7 +33,6 @@ None.
 ## Ready — next automatically scheduled
 
 * `M08_STALE_WINDOW` (market_intelligence) — Stale-line window measurement conditional on demonstrated lead-lag structure
-* `M24_STAKING` (market_intelligence) — Staking policy specification: sizing, exposure and drawdown rules
 * `M31_DISLOCATION_PERSISTENCE` (market_intelligence) — Dislocation persistence: how long does a cross-book dislocation stay on the screen, and is a ten-minute board refresh fast enough to ever catch one?
 
 ## Passed
@@ -65,6 +64,7 @@ None.
 * `M21_EXECUTION_REALISM` — Execution realism: limits, slippage and decision-to-executable latency, measured
 * `M22_CAPACITY` — Capacity analysis: how much money the measured opportunity classes can absorb
 * `M23_SHADOW_TRADING` — Shadow trading: paper decisions logged against capturable prices, append-only
+* `M24_STAKING` — Staking policy specification: sizing, exposure and drawdown rules
 * `M25_MARKET_UI_FIXTURES` — Market screen shell against fixtures, extending the existing U11/U13 pattern
 * `M26_CAPTURE_MICROSTRUCTURE_REMEDIATION` — Remediate the capture topology: game lines, per-book independence, witnessed absence
 * `M27_PER_BOOK_POLLING` — Bounded per-book polling: make the cross-book synchronization window measurable
@@ -143,7 +143,7 @@ None.
 | data | 0 | 0 | 5 | 0 | 1 | 0 |
 | future_research | 0 | 0 | 7 | 0 | 0 | 0 |
 | governance | 0 | 0 | 5 | 0 | 1 | 0 |
-| market_intelligence | 0 | 0 | 24 | 3 | 0 | 1 |
+| market_intelligence | 0 | 0 | 25 | 2 | 0 | 1 |
 | operations | 0 | 0 | 12 | 0 | 2 | 0 |
 | possession | 0 | 0 | 25 | 0 | 2 | 1 |
 | product | 0 | 0 | 4 | 0 | 0 | 0 |
