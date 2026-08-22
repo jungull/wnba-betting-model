@@ -49,17 +49,31 @@ The measured inputs, frozen in `SPEC.json` before this ran:
 | MODEL_VS_MARKET_VALUE | no edge — and forbidden regardless | D141/D150, S42 | no |
 | PROMOTIONAL_VALUE | largest per-unit value measured, no real offer ever entered | M22 | no |
 
-## An unplanned finding: the freshness rule rejects the board's own decisions
+## An unplanned finding: the freshness rule assumes one cadence, but there are two
 
-The 300-second maximum quote age was set from the measured 5-minute capture cadence (M03) —
-a quote older than one full cadence cannot be shown to have been standing. M23's decisions were
-made on a quote **406 seconds old**, so **the policy rejects the board's own output on freshness
-alone.**
+The 300-second maximum quote age was set from "the measured 5-minute capture cadence". M23's
+decisions were made on a quote **406 seconds old**, so the policy rejects the board's own output
+on freshness alone.
 
-That was not designed; it fell out of applying the rule. It means the gap between capture and
-decision currently exceeds one cadence, so either the cap is too tight or the decision path is
-too slow. It is recorded here rather than resolved, because tuning a freshness cap to admit the
-decisions you already have is exactly how a rule stops being a rule.
+**My first reading of that was wrong, and the correction is the actual finding.** I took it to
+mean the decision path was too slow. It is not. `WNBA_OddsCapture` carries **two triggers**:
+
+| window (UTC) | interval |
+|---|---|
+| 14:00 - 19:00 | **900 s (15 min)** |
+| 19:00 - 03:00 (the game window) | **300 s (5 min)** |
+
+The M23 board was built at 17:15 UTC -- inside the **15-minute** tier -- so a 406-second quote
+age is entirely normal and well within one cadence. Nothing is slow.
+
+The real defect is in **this policy**: a single `max_quote_age_seconds` assumes a single cadence.
+At 300 s it is correct inside the game window and **rejects everything by construction outside
+it**. The rule needs to be cadence-relative -- one interval of whichever tier applies -- not an
+absolute constant.
+
+Recorded, not repaired: `SPEC.json` is declared frozen before evaluation and is not edited here.
+Note the correct fix would **not** change today's result -- every decision is independently
+zeroed by two other rules.
 
 ## Exposure, drawdown and the risk-control map (criteria 2 and 3)
 

@@ -22,6 +22,26 @@ Odds capture, 2026-07-30 → 2026-08-22, **524 captures over 23.1 days**:
 The two eras are reported separately on purpose. Averaged together they would produce a single
 figure describing neither.
 
+### Correction (same day): the "five-minute era" is itself two tiers, not one
+
+**The p90 of 15.0 min in the table above is not noise — it is a second cadence tier, and I read
+it as noise when I first wrote this.** `WNBA_OddsCapture` carries two triggers:
+
+| window (UTC) | interval | what it covers |
+|---|---|---|
+| 14:00 - 19:00 | **900 s (15 min)** | daytime, no games |
+| 19:00 - 03:00 | **300 s (5 min)** | the game window |
+
+Confirmed from the task XML (`PT15M` / `PT5M`) and from the tape: every gap between 14:00 and
+19:00 UTC on 2026-08-20, 08-21 and 08-22 is exactly 900 s, and every gap in the evening window is
+exactly 300 s. This is **deliberate event-adaptive capture, not a fault** — and it is a partial
+implementation of this node's own criterion 2 that already existed before the node was written.
+
+The median of 5.0 min is therefore a pooled figure over a **bimodal** distribution. It is not
+wrong, but on a node whose entire subject is cadence it was incomplete, and the quota arithmetic
+in section 4 is conservative because of it: the observed credit spend already reflects the
+tiering.
+
 ## 2. Coverage against the T−24h → final requirement
 
 Per game, keyed on (home, away, ET game-date), scored against each game's latest observed tip:
