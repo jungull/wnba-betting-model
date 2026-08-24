@@ -35,6 +35,25 @@ market does not compete." The cold-start rows it fixed are largely unpriced.
 **These 519 rows are priced.** A repair here lands where the market actually competes, which is
 precisely what the earlier one did not.
 
+## s02 CORRECTS THIS: the realistic repair is worth ~7%, not 37%
+
+Read the ceiling below with the correction that follows it. **A one-number repair delivers about
+7% of the model-market gap, not 37%**, and the two fallback levels are different problems:
+
+* **Level 3 (168 rows) is a genuine constant** — 3 distinct values, sd 0.007.
+* **Level 2 (351 rows) is not** — 339 distinct values, sd 5.50, spanning 4.35 to 39.90. The
+  model uses per-row information there and a single constant would be **worse**. So "519 rows
+  take a prefix mean" was too broad; only 168 do.
+
+**Why the constant is wrong is now diagnosed:** 21.51 is a prefix mean over a population
+including bench players, applied to priced rows that are **74% starters** averaging 27.6 minutes.
+A selection effect, not a modelling failure.
+
+Replacing it with a **walk-forward** constant (prior-season priced mean, 30.09 — knowable before
+any of these games, available for 127 of 168 rows) takes minutes MAE on those rows from 7.460 to
+**5.405**, and moves the overall competitive response from −0.3093 to **−0.2872: 7% of the gap**.
+The oracle constant does no better, so nothing is lost by staying walk-forward.
+
 ## What it would be worth, as a bound
 
 If fallback rows scored like non-fallback rows, points MAE improves **0.1150**, 95% CI
