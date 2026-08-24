@@ -168,3 +168,55 @@ appeal to luck is required, and none is made.
 
 **The direction is solid; the magnitude is wide.** It could be as small as 6%. Quote the interval,
 not the point estimate — and note that even the top of the interval leaves the model losing.
+
+
+---
+
+# s04 — level-0 error is game script, and the obvious fix is contract-blocked
+
+Level 0 is **91% of priced rows**, and s03 showed oracle minutes there takes the model from
+−0.196 to **+0.408** — correct minutes and it *beats* the market. So what drives its error?
+
+## Game script, cleanly
+
+| final margin | n | minutes bias |
+|---|---|---|
+| 0–5 | 1,424 | **−1.177** — starters stay on |
+| 6–10 | 1,540 | −0.719 |
+| 11–15 | 1,011 | +0.091 |
+| 16–20 | 710 | +1.507 |
+| **21+** | 685 | **+3.581** — starters sit |
+
+Correlation of minutes error with final margin: **0.2975**. The model does not anticipate how
+competitive a game will be.
+
+## The ceiling is modest
+
+Removing the margin-conditional bias entirely: level-0 minutes MAE **4.0651 → 3.8249**, response
+**−0.1957 → −0.1502** — about **23% of level-0's deficit**. This uses the **final margin**, so it
+is pure oracle and bounds the prize rather than describing a plan. The margin comes from the
+outcome masters, **not** from any odds archive.
+
+## HALT — the pre-game-spread test cannot be run
+
+The natural next step is to ask whether the pre-game spread anticipates the margin well enough
+to fix this. It is prohibited:
+
+- `data/drive_masters/master_odds.csv` carries `odds_spread` over the right seasons, but M00's
+  final-state archive ruling enumerates six permitted uses, and **M00-U4 states the archive is
+  for coarse descriptive context — "never a feature, never a benchmark."** This lane's stop
+  condition says HALT and raise rather than stretch the enumeration.
+- The cutoff-valid source, `data/odds_capture`, begins **2026-07-30 — the day the priced frame
+  ends.** There is no legal pre-game spread for this window at all.
+
+Amending the enumeration is a contract change and not a coordinator's to make silently.
+
+## The point that outlives the block
+
+**Even with permission, this route cannot produce edge.** Closing the gap by feeding the model
+the market's own spread imports market information — it moves the model *toward* the market
+asymptotically, never past it.
+
+That distinction matters more than the block itself, because a future coordinator granted the
+permission could close the gap substantially and mistake it for progress toward profitability.
+It would not be.
