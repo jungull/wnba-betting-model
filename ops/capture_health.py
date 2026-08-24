@@ -41,6 +41,9 @@ VBS = os.path.join(ROOT, ".claude", "worktrees", "player-model-program",
                    "scripts", "run_hidden.vbs")
 ODDS_LOG = os.path.join(ROOT, "data", "odds_capture", "capture_log.csv")
 
+#: This watchdog's own scheduled task. Excluded from the task scan -- see check_tasks.
+SELF_TASK = "WNBA_CaptureHealth"
+
 #: UTC hour ranges -> expected interval in minutes. Outside these the capture is idle.
 TIERS = [((14, 19), 15), ((19, 24), 5), ((0, 3), 5)]
 TOLERANCE = 3.0          # allow three missed ticks before calling it dead
@@ -82,6 +85,12 @@ def check_tasks():
     seen = 0
     for line in out.splitlines():
         if "|" not in line:
+            continue
+        # THIS TASK EXCLUDES ITSELF. It exits non-zero BY DESIGN when the tape is
+        # unhealthy, so scanning its own LastTaskResult makes it flag itself forever:
+        # one unhealthy run and it can never report healthy again. A check that cries
+        # wolf permanently is a check that gets ignored.
+        if line.split("|", 1)[0].strip() == SELF_TASK:
             continue
         parts = [x.strip() for x in line.split("|", 3)]
         name, state, result = parts[0], parts[1], parts[2]
