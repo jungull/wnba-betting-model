@@ -31,6 +31,7 @@ import csv
 import datetime as dt
 import glob
 import gzip
+import hashlib
 import os
 import re
 import sys
@@ -41,6 +42,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTDIR = os.path.join(ROOT, "data", "lineup_capture")
 OUT = os.path.join(OUTDIR, "lineups.csv")
 RAWDIR = os.path.join(OUTDIR, "raw")
+LOG = os.path.join(OUTDIR, "capture_log.csv")
 URL = "https://www.rotowire.com/wnba/lineups.php"
 UA = "wnba-research/1.0 (personal research project)"
 
@@ -102,6 +104,31 @@ def parse(html, stamp):
     return rows
 
 
+def content_hash(rows):
+    """Fingerprint of WHAT WAS SAID, ignoring when we heard it."""
+    body = [tuple(str(r[c]) for c in COLUMNS if c != "retrieval_ts_utc") for r in rows]
+    return hashlib.sha256(repr(sorted(body)).encode("utf-8")).hexdigest()[:16]
+
+
+def last_hash():
+    if not os.path.exists(LOG):
+        return None
+    with open(LOG, encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    return rows[-1]["content_sha"] if rows else None
+
+
+def log_tick(stamp, digest, changed, n):
+    new = not os.path.exists(LOG)
+    with open(LOG, "a", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["retrieval_ts_utc", "content_sha",
+                                          "changed", "n_rows"])
+        if new:
+            w.writeheader()
+        w.writerow({"retrieval_ts_utc": stamp, "content_sha": digest,
+                    "changed": int(changed), "n_rows": n})
+
+
 def raw_pages():
     """Every retained page, gzipped or not -- early captures predate compression."""
     return (glob.glob(os.path.join(RAWDIR, "lineups_*.html"))
@@ -140,7 +167,7 @@ def reparse():
     hole. Timestamps come from the filenames, so they are second-precision here where a live
     capture records microseconds.
     """
-    rows = []
+    rows, seen = [], set()
     for f in sorted(raw_pages()):
         m = re.search(r"lineups_(\d{8}T\d{6})Z\.html", os.path.basename(f))
         if not m:
@@ -150,7 +177,15 @@ def reparse():
         op = gzip.open if f.endswith(".gz") else open
         with op(f, "rt", encoding="utf-8") as fh:
             got = parse(fh.read(), stamp)
-        print("  %s -> %d rows" % (os.path.basename(f), len(got)))
+        # Same invariant the live gate enforces: one row-set per DISTINCT state. Pages
+        # captured before the gate existed are all identical, and replaying them
+        # verbatim would reintroduce exactly the duplication the gate prevents.
+        d = content_hash(got)
+        if d in seen:
+            print("  %s -> unchanged (%s), skipped" % (os.path.basename(f), d))
+            continue
+        seen.add(d)
+        print("  %s -> %d rows (%s)" % (os.path.basename(f), len(got), d))
         rows += got
     if not rows:
         print("no raw pages parsed; refusing to write an empty table")
@@ -174,15 +209,10 @@ def main():
         print("HTTP %d -- nothing captured" % r.status_code)
         sys.exit(1)
 
-    # Keep the raw page: a parser change must be re-runnable against what was actually
-    # served, and this file has already been repaired twice that way. Gzipped (~10x) and
-    # kept LOCAL ONLY -- at ~325KB a page it would add tens of MB a month to the repo.
-    # A clone therefore inherits the derived table but cannot re-derive it; the raw archive
-    # lives in the working folder, which the handoff already treats as part of the state.
-    with gzip.open(os.path.join(RAWDIR, "lineups_%s.html.gz" % now.strftime("%Y%m%dT%H%M%SZ")),
-                   "wt", encoding="utf-8") as f:
-        f.write(r.text)
-
+    # The raw page is kept ONLY when the content changed -- see the hash gate below.
+    # It is what made both parser fixes recoverable, so it is not optional; it is
+    # merely deduplicated. Gzipped (~5x) and gitignored: at ~65KB a page and 96 ticks
+    # a day, storing every tick would add gigabytes a season for no extra information.
     rows = parse(r.text, stamp)
     if not rows:
         # a silent zero is how a broken parser masquerades as an empty slate
@@ -190,7 +220,24 @@ def main():
               "The raw page was kept; fix the parser against it." % len(r.text))
         sys.exit(1)
 
-    write(rows, "a")
+    # ---- only RECORD A CHANGE -------------------------------------------------
+    # At a 15-minute cadence most ticks see the identical lineup, and appending it
+    # again would bloat the table without adding an observation. The hash is over the
+    # PARSED CONTENT, not the HTML: the page carries rotating ads and timestamps, so
+    # hashing the bytes would call every tick a change and defeat the purpose.
+    # Unchanged ticks still get a `capture_log` row -- "we looked and it was the same"
+    # is itself a point-in-time fact, and without it a gap in the tape would be
+    # ambiguous between a stable lineup and a capture outage.
+    digest = content_hash(rows)
+    prev = last_hash()
+    changed = digest != prev
+    if changed:
+        with gzip.open(os.path.join(RAWDIR, "lineups_%s.html.gz"
+                                    % now.strftime("%Y%m%dT%H%M%SZ")),
+                       "wt", encoding="utf-8") as f:
+            f.write(r.text)
+        write(rows, "a")
+    log_tick(stamp, digest, changed, len(rows))
 
     games = len({(x["away_abbr"], x["home_abbr"]) for x in rows})
     conf = sum(1 for x in rows if "confirm" in x["lineup_status"].lower())
@@ -198,6 +245,8 @@ def main():
     print("  lineup status: %s" % {s: sum(1 for x in rows if x["lineup_status"] == s)
                                    for s in {x["lineup_status"] for x in rows}})
     print("  rows on a CONFIRMED lineup: %d (the rest are projections)" % conf)
+    print("  content %s (%s)" % ("CHANGED -- appended" if changed else
+                                   "unchanged -- logged, not appended", digest))
     print("  -> %s" % OUT)
 
 

@@ -40,6 +40,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VBS = os.path.join(ROOT, ".claude", "worktrees", "player-model-program",
                    "scripts", "run_hidden.vbs")
 ODDS_LOG = os.path.join(ROOT, "data", "odds_capture", "capture_log.csv")
+LINEUP_LOG = os.path.join(ROOT, "data", "lineup_capture", "capture_log.csv")
+
+#: The lineup capture appends to its TABLE only when the lineup changes, so the table is
+#: not a heartbeat -- a stable slate and a dead scraper look identical there. Its
+#: capture_log gets a row every tick either way, which is what makes it monitorable.
+#: It runs on one flat 15-minute cadence with no idle tier, unlike the odds capture.
+LINEUP_INTERVAL_MIN = 15
 
 #: This watchdog's own scheduled task. Excluded from the task scan -- see check_tasks.
 SELF_TASK = "WNBA_CaptureHealth"
@@ -97,8 +104,14 @@ def check_tasks():
         lastrun = parts[3] if len(parts) > 3 else ""
         seen += 1
         if result not in ("0", ""):
-            # 267009/267014 are "already running", not failures
+            # 267009/267014 are "already running", not failures.
+            # 267011 is SCHED_S_TASK_HAS_NOT_RUN -- a task registered but not yet fired,
+            # which reports the 1999 sentinel as its last run. Calling that a failure
+            # means every newly registered task is born broken.
             if result in ("267009", "267014"):
+                continue
+            if result == "267011" and lastrun.startswith("11/30/1999"):
+                notes.append("%s registered, not yet fired (first run pending)" % name)
                 continue
             # A failure code is STALE if the task has not run since. Reporting a stale
             # failure exactly like a live one is how a repaired task keeps looking broken:
@@ -154,6 +167,46 @@ def check_freshness():
         notes.append("tape fresh: %.0f min old, %d-min tier" % (age_min, expected))
 
 
+def check_lineup_tape():
+    """Is the projected-lineup capture still ticking?"""
+    if not os.path.exists(LINEUP_LOG):
+        problems.append("MISSING: %s -- WNBA_LineupCapture has never logged a tick. "
+                        "Repair: schtasks /Query /TN WNBA_LineupCapture, then run "
+                        "logs\\task_wrappers\\WNBA_LineupCapture.cmd by hand." % LINEUP_LOG)
+        return
+    last = None
+    with open(LINEUP_LOG, encoding="utf-8", errors="ignore") as f:
+        head = f.readline().rstrip("\n").split(",")
+        try:
+            idx = head.index("retrieval_ts_utc")
+        except ValueError:
+            problems.append("lineup capture log has no retrieval_ts_utc column")
+            return
+        for line in f:
+            parts = line.split(",")
+            if len(parts) > idx and parts[idx].strip():
+                last = parts[idx].strip()
+    if not last:
+        problems.append("lineup capture log has no rows")
+        return
+    try:
+        t = dt.datetime.strptime(last, "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+            tzinfo=dt.timezone.utc)
+    except ValueError:
+        problems.append("unparseable last lineup stamp: %r" % last)
+        return
+    age_min = (dt.datetime.now(dt.timezone.utc) - t).total_seconds() / 60.0
+    limit = LINEUP_INTERVAL_MIN * TOLERANCE
+    if age_min > limit:
+        problems.append(
+            "LINEUP TAPE STALE: last tick %.0f min ago against a %d-min cadence "
+            "(limit %.0f). Check WNBA_LineupCapture, and check the PARSER -- the page "
+            "structure has already broken this scraper twice."
+            % (age_min, LINEUP_INTERVAL_MIN, limit))
+    else:
+        notes.append("lineup tape fresh: %.0f min old" % age_min)
+
+
 def main():
     print("=" * 78)
     print("CAPTURE HEALTH CHECK  %s" % dt.datetime.now(dt.timezone.utc).isoformat())
@@ -161,6 +214,7 @@ def main():
     check_vbs()
     check_tasks()
     check_freshness()
+    check_lineup_tape()
 
     for n in notes:
         print("  ok    %s" % n)

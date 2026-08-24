@@ -85,6 +85,7 @@ import json
 import math
 import re
 import sys
+import traceback
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -1519,5 +1520,53 @@ def main() -> int:
     return 1 if gaps.fatal() else 0
 
 
+class _Tee:
+    """Write to the console AND to a dated run log."""
+
+    def __init__(self, stream, fh):
+        self._s, self._f = stream, fh
+
+    def write(self, data):
+        self._s.write(data)
+        self._f.write(data)
+        self._f.flush()
+        return len(data)
+
+    def flush(self):
+        self._s.flush()
+        self._f.flush()
+
+
+def _run_logged():
+    """Run main() with stdout/stderr captured to logs/daily_forecast/.
+
+    WHY. This job runs unattended twice a day and writes the OFFICIAL regime-D
+    prospective chain under --live, but the scheduled wrapper discarded its output
+    entirely. When WNBA_DailyForecast_PM died on 2026-08-23 with ERROR_PROCESS_ABORTED
+    there was nothing at all to read -- no traceback, no partial output, no way to tell
+    a crashed model from a machine that went to sleep mid-run. A prospective record with
+    unexplained holes is worth much less than one whose gaps have known causes.
+
+    The log lives here rather than in the task wrapper because that wrapper is
+    regenerated from logs/wnba_task_actions_backup.json and would lose a hand edit.
+    A failure BEFORE the interpreter starts still leaves nothing; that shows up as a
+    task-level result code with no log file, which is itself the diagnosis.
+    """
+    d = REPO / "logs" / "daily_forecast"
+    d.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    path = d / ("run_%s_%s.log" % (stamp, "live" if "--live" in sys.argv else "scratch"))
+    out, err = sys.stdout, sys.stderr
+    with open(path, "w", encoding="utf-8", errors="replace") as fh:
+        sys.stdout, sys.stderr = _Tee(out, fh), _Tee(err, fh)
+        try:
+            return main()
+        except BaseException:            # noqa: BLE001 -- log it, then re-raise unchanged
+            traceback.print_exc()
+            raise
+        finally:
+            sys.stdout, sys.stderr = out, err
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(_run_logged())
