@@ -141,3 +141,30 @@ argues they generalise rather than over-fit.
   revision, not a diagnostic's business.
 - **Coverage is partial** — the level-3 constant is available for 127 of 168 rows and the level-2
   prior for 255 of 351. First-season rows have no prior by construction.
+
+
+## Robustness — two checks the 21.3% needed
+
+**Why did held-out beat in-sample?** That is backwards from the usual pattern and needed an
+explanation rather than a shrug. It is benign: **2026 simply contains more of the rows the repair
+touches.**
+
+| season | n | fallback share | level 2 | level 3 |
+|---|---|---|---|---|
+| 2024 | 1,726 | 7.9% | 5.6% | 2.4% |
+| 2025 | 2,158 | 8.2% | 5.3% | 2.9% |
+| **2026** | 2,005 | **10.3%** | 7.0% | 3.2% |
+
+A repair that only touches fallback rows naturally does more where there are more of them. No
+appeal to luck is required, and none is made.
+
+**How certain is the magnitude?** Game-clustered bootstrap on the held-out season, 2,000 draws:
+
+| | |
+|---|---|
+| gap closed | **21.3%** |
+| 95% CI | **[6.3, 35.2]** |
+| draws where the repair helps | **99.6%** |
+
+**The direction is solid; the magnitude is wide.** It could be as small as 6%. Quote the interval,
+not the point estimate — and note that even the top of the interval leaves the model losing.
