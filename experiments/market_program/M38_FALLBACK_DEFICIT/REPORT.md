@@ -87,3 +87,57 @@ Diagnosing a defect on a superseded attempt would have been worthless.
 - **n is small at the worst level** — 168 rows at level 3, 519 in total.
 - **No claim about wagering.** A smaller model-market gap is not an edge; M32 measured the one
   candidate strategy at −7.2%, and nothing here revisits that.
+
+
+---
+
+# s03 — two walk-forward repairs, chosen out-of-sample, worth 21% of the gap
+
+## Level 2 is a rate problem, not a minutes problem
+
+An oracle decomposition **within** fallback levels separates them cleanly:
+
+| level | n | as-is | +oracle minutes | reading |
+|---|---|---|---|---|
+| 0 | 5,370 | −0.196 | **+0.408** | correct minutes and the model **beats** the market |
+| **2** | **351** | −1.054 | **−0.592** | oracle minutes recovers **under half** — not mainly minutes |
+| 3 | 168 | −2.381 | −0.362 | 85% is minutes — the constant |
+
+Level 2's rate MAE is **0.1945** against level 0's **0.1601**, with a bias of **+0.0372**
+points per minute — about a point of systematic over-prediction across 29 minutes. That is
+textbook small-sample over-fitting: a player who scored well in one or two prior games gets an
+inflated rate.
+
+## The two repairs
+
+* **Level 3** — replace the prefix-mean constant with the **prior-season** priced-population mean
+  minutes.
+* **Level 2** — shrink the fitted rate toward the **prior-season** priced-population mean rate.
+
+Every constant comes from strictly earlier seasons, so all of it was knowable before the games.
+
+## The tuning is honest, and s02's was not
+
+s02 chose its shrinkage weight by maximising the response on the same rows it then reported —
+in-sample tuning, **the very error the level-2 rows themselves commit**. Here the weight is
+chosen on **2024–2025 alone** (w = 0.60) and evaluated on **2026**, which never informed it.
+
+| | fit seasons | **held-out 2026** |
+|---|---|---|
+| current model | −0.3084 | −0.3108 |
+| level-3 constant only | −0.2935 | −0.2751 |
+| level-2 shrinkage only | −0.2818 | −0.2805 |
+| **both repairs** | −0.2669 | **−0.2447** |
+
+**21.3% of the gap closed on 2,005 held-out rows.** The repairs touch disjoint row sets and are
+close to additive, and the held-out improvement *exceeds* the fit-season improvement — which
+argues they generalise rather than over-fit.
+
+## What this is not
+
+- **The model still loses.** −0.2447 is negative; the market remains better on the priced
+  population. **Closing part of a deficit is not an edge**, and nothing here revisits M32's −7.2%.
+- **Neither repair is implemented.** The arm is registered and byte-locked; changing it is a new
+  revision, not a diagnostic's business.
+- **Coverage is partial** — the level-3 constant is available for 127 of 168 rows and the level-2
+  prior for 255 of 351. First-season rows have no prior by construction.
