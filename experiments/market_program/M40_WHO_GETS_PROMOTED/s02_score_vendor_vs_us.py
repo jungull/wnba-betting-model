@@ -38,6 +38,7 @@ ROOT = r"C:\Users\jgallagher\wnba-betting-model"
 LINEUPS = os.path.join(ROOT, "data", "lineup_capture", "lineups.csv")
 MPLAYER = os.path.join(ROOT, "data", "masters", "master_player.parquet")
 MTEAM = os.path.join(ROOT, "data", "masters", "master_team.parquet")
+ALIASES = os.path.join(ROOT, "data", "lineup_capture", "TEAM_ALIASES.json")
 
 #: hours before tip. Mirrors daily_forecast.py CONTRACT_LABELS.
 CUTOFFS = [("T-24h", 24.0), ("T-8h", 8.0), ("T-90m", 1.5), ("T-30m", 0.5)]
@@ -73,9 +74,21 @@ def resolve_games(v):
     h["h"] = h["team_abbreviation"].replace({"PHO": "PHX"})
     h["a"] = h["opp_team_abbreviation"].replace({"PHO": "PHX"})
     key = h[["game_id", "gd", "h", "a", "team_id"]].rename(columns={"team_id": "home_team_id"})
+    # The two sources spell some teams differently -- RotoWire says PHO and POR where the
+    # masters say PHX and PDX. An unmapped spelling produces a silent non-match, and a game
+    # that fails to resolve is indistinguishable from a game with no capture. So the table
+    # is loaded from data/lineup_capture/TEAM_ALIASES.json and anything it does not cover
+    # is REPORTED rather than passed through to fail quietly.
+    with open(ALIASES, encoding="utf-8") as f:
+        alias = json.load(f)["aliases"]
     x = v.copy()
-    x["h"] = x["home_abbr"].replace({"PHO": "PHX"})
-    x["a"] = x["away_abbr"].replace({"PHO": "PHX"})
+    x["h"] = x["home_abbr"].map(lambda a: alias.get(a, a))
+    x["a"] = x["away_abbr"].map(lambda a: alias.get(a, a))
+    known = set(key["h"]) | set(key["a"])
+    unmapped = sorted((set(x["h"]) | set(x["a"])) - known)
+    if unmapped:
+        print("  UNMAPPED TEAM ABBREVIATIONS: %s -- these games cannot resolve and are "
+              "NOT missing captures. Add them to TEAM_ALIASES.json." % ", ".join(unmapped))
     m = x.merge(key, left_on=["et_date", "h", "a"], right_on=["gd", "h", "a"], how="left")
     return m
 
@@ -84,6 +97,21 @@ def truth_starters(mp, gid, abbr):
     s = mp[(mp["game_id"] == str(gid)) & (mp["team_abbreviation"] == abbr)]
     st = s[s["starter_flag"] == 1]
     return set(st["player_name"]), len(s)
+
+
+def prev_starters(mp, gid, abbr):
+    """The five this team started in its PREVIOUS game, for the changed/unchanged split."""
+    t = mp[mp["team_abbreviation"] == abbr].copy()
+    t["gd"] = pd.to_datetime(t["game_date"])
+    this = t[t["game_id"] == str(gid)]
+    if this.empty:
+        return set()
+    earlier = t[t["gd"] < this["gd"].iloc[0]]
+    if earlier.empty:
+        return set()
+    last_gid = earlier.sort_values("gd")["game_id"].iloc[-1]
+    p = earlier[(earlier["game_id"] == last_gid) & (earlier["starter_flag"] == 1)]
+    return set(p["player_name"])
 
 
 def selftest():
@@ -151,6 +179,12 @@ def main():
         if not truth:
             pending += 1
             continue
+        # AN UNCHANGED LINEUP IS A FREE POINT FOR EVERYBODY. If a team starts the same
+        # five as last game, naming them is not a forecast and both the vendor and we get
+        # it right for nothing. Pooling those with the genuine changes lets a headline
+        # accuracy be carried almost entirely by games that asked no question -- the same
+        # error as scoring a predictor against a chance level that ignores the pool.
+        changed = int(truth != prev_starters(mp, gid, abbr))
         for label, hrs in CUTOFFS:
             sub = g[g["lead_h"] >= hrs]
             if sub.empty:
@@ -163,7 +197,8 @@ def main():
             rows.append({"game_id": gid, "team": abbr, "cutoff": label,
                          "read_at": latest, "n_proj": len(proj),
                          "exact_five": int(proj == truth),
-                         "n_correct": len(proj & truth)})
+                         "n_correct": len(proj & truth),
+                         "lineup_changed": changed})
 
     print("\ngames PENDING (box score not landed) : %d" % pending)
     if not rows:
@@ -183,11 +218,22 @@ def main():
         s = d[d["cutoff"] == label]
         if s.empty:
             continue
-        print("   %-7s  exact five %5.1f%%   players right %4.2f/5   (n=%d team-games)"
-              % (label, 100 * s["exact_five"].mean(), s["n_correct"].mean(), len(s)))
+        ch = s[s["lineup_changed"] == 1]
+        unch = s[s["lineup_changed"] == 0]
+        print("   %-7s  ALL %5.1f%% (n=%d)   |  LINEUP CHANGED %s (n=%d)   |  unchanged "
+              "%s (n=%d)"
+              % (label, 100 * s["exact_five"].mean(), len(s),
+                 ("%5.1f%%" % (100 * ch["exact_five"].mean())) if len(ch) else "  n/a",
+                 len(ch),
+                 ("%5.1f%%" % (100 * unch["exact_five"].mean())) if len(unch) else "  n/a",
+                 len(unch)))
         tbl[label] = {"exact_five_pct": round(float(100 * s["exact_five"].mean()), 1),
                       "mean_correct_of_5": round(float(s["n_correct"].mean()), 2),
-                      "n": int(len(s))}
+                      "n": int(len(s)),
+                      "changed_pct": (round(float(100 * ch["exact_five"].mean()), 1)
+                                      if len(ch) else None),
+                      "n_changed": int(len(ch)),
+                      "n_unchanged": int(len(unch))}
     res["vendor_by_cutoff"] = tbl
     res["scorable"] = int(len(d))
     print("\nscorable team-games : %d" % len(d))
@@ -197,6 +243,9 @@ def main():
     print("  * The comparison that matters is against OUR ~40% (D201) at the SAME cutoff,")
     print("    and against contemporaneous market prices -- not against our earliest read.")
     print("  * n is team-games, and on a young tape it is very small.")
+    print("  * ONLY THE 'LINEUP CHANGED' COLUMN CARRIES INFORMATION. An unchanged five is")
+    print("    a free point for any method that names last game's starters, so a pooled")
+    print("    figure can look excellent while answering no question at all.")
 
     with open(os.path.join(HERE, "FINDINGS_s02.json"), "w", encoding="utf-8") as f:
         json.dump(res, f, indent=1)
