@@ -80,7 +80,8 @@ def check_tasks():
         "Get-ScheduledTask -TaskName 'WNBA_*' -ErrorAction SilentlyContinue | "
         "ForEach-Object { $i = Get-ScheduledTaskInfo -TaskName $_.TaskName "
         "-ErrorAction SilentlyContinue; "
-        "'{0}|{1}|{2}|{3}' -f $_.TaskName, $_.State, $i.LastTaskResult, $i.LastRunTime }"
+        "'{0}|{1}|{2}|{3}|{4}' -f $_.TaskName, $_.State, $i.LastTaskResult, "
+        "$i.LastRunTime, $i.NextRunTime }"
     )
     try:
         out = subprocess.run(["powershell", "-NoProfile", "-NonInteractive",
@@ -93,16 +94,34 @@ def check_tasks():
     for line in out.splitlines():
         if "|" not in line:
             continue
-        # THIS TASK EXCLUDES ITSELF. It exits non-zero BY DESIGN when the tape is
-        # unhealthy, so scanning its own LastTaskResult makes it flag itself forever:
-        # one unhealthy run and it can never report healthy again. A check that cries
-        # wolf permanently is a check that gets ignored.
-        if line.split("|", 1)[0].strip() == SELF_TASK:
-            continue
-        parts = [x.strip() for x in line.split("|", 3)]
+        parts = [x.strip() for x in line.split("|", 4)]
         name, state, result = parts[0], parts[1], parts[2]
         lastrun = parts[3] if len(parts) > 3 else ""
+        nextrun = parts[4] if len(parts) > 4 else ""
+        # A TASK WITH NO NEXT RUN TIME WILL NEVER FIRE AGAIN, and it reports state=Ready
+        # while doing so -- there is no failure code and nothing looks wrong. This is how
+        # WNBA_CaptureHealth itself died: its trigger carried Duration=PT13H with
+        # StopAtDurationEnd, so it repeated hourly for one day in August 2026 and then
+        # stopped forever. Nothing noticed for a day, and a 4.5-hour capture outage went
+        # unreported as a direct result. A watchdog that cannot detect its own silence is
+        # not a watchdog, so this check runs across every task INCLUDING this one.
+        if not nextrun:
+            problems.append(
+                "NEVER RUNS AGAIN: %-26s state=%s has NO next run time. A bounded "
+                "repetition (Duration + StopAtDurationEnd) expires silently and leaves the "
+                "task Ready forever. Repair: re-register with an unbounded repetition."
+                % (name, state))
+
+        # ONLY THE RESULT-CODE SCAN EXCLUDES THIS TASK, and only because it exits
+        # non-zero BY DESIGN when the tape is unhealthy -- scanning its own
+        # LastTaskResult would make it flag itself forever, and a check that cries wolf
+        # permanently is a check that gets ignored. The next-run check above deliberately
+        # sits BEFORE this skip, because a silently expired trigger is exactly the
+        # failure this task suffered and could not report.
+        if name == SELF_TASK:
+            continue
         seen += 1
+
         if result not in ("0", ""):
             # 267009/267014 are "already running", not failures.
             # 267011 is SCHED_S_TASK_HAS_NOT_RUN -- a task registered but not yet fired,
