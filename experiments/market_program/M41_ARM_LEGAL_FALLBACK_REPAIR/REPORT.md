@@ -86,3 +86,61 @@ ordering is recorded rather than asserted later.
 **The model still loses.** −0.2495 is closer to the market than −0.3108 and is still negative: the
 market remains better on the priced population. Closing part of a deficit is not an edge, and
 nothing here revisits M32's −7.2%.
+
+---
+
+# s02 — per-player history helps level 2 as well, and the legal repair overtakes the leaky one
+
+`python s02_level2_own_rate.py`
+
+s01 left one limb untested: level 2 still shrank the fitted rate toward a **global** prior-season
+rate. Asking the same question of it:
+
+| variant | selection (seasons < 2026) | held-out 2026 | gap closed |
+|---|---|---|---|
+| current model | −0.3084 | −0.3108 | — |
+| level 2 toward **global** prior rate | −0.2351 | −0.2495 | 19.7% |
+| level 2 toward **her own** prior rate | **−0.2221** | **−0.2230** | **28.3%** |
+
+95% of level-2 rows have a prior-season rate of their own. Selection on seasons < 2026 picks
+own-history independently, so the choice does not depend on the holdout.
+
+**The combined arm-legal repair — per-player prior-season minutes at level 3, per-player
+prior-season rate at level 2 — closes 28.3%, more than M38's non-legal 21.3%,** while reading
+nothing but the masters.
+
+The rate is computed as prior points ÷ prior minutes — a ratio of sums, not a mean of per-game
+ratios, so a two-minute appearance does not weigh as much as a thirty-five-minute one.
+
+## The result contradicted the prediction, and the file argued with itself
+
+A level-2 row *already carries* current-season evidence, so the shrinkage target could have
+mattered **less** here than at level 3. It matters **more**. One or two games of current-season
+EWMA is a worse estimate of a player's scoring rate than her whole previous season — which is what
+`cbs_v7` meant by "a fallback wearing a model's clothes", now measured.
+
+**A method defect, found and fixed in this file:** that explanation was pre-written for a null
+result and printed *unconditionally*, so it argued the target "matters less" directly beneath
+numbers showing it mattering more. A rationalisation that fires whatever the result is worthless.
+It is now confined to the branch it describes.
+
+## The holdout is being spent — stop selecting on 2026
+
+This is the binding constraint on any further work here, and it is easy to miss because each
+individual step looked disciplined.
+
+2026 has now been consulted by **M38 s03** (four variants), **s01** (four), and **s02** (three) —
+roughly a dozen evaluations. Every one was a legitimate *confirmation* of a choice made on earlier
+seasons, and that is the right procedure. But a holdout confirmed against a dozen times is no
+longer a clean holdout: the surviving variant is partly selected by which confirmations were run.
+
+Concretely, **`w = 0.60` should not now be re-tuned against the new targets on 2026**, even though
+selecting it on seasons < 2026 and confirming once would be procedurally correct. The frozen weight
+is the conservative choice and it stays frozen.
+
+The next honest test of this repair is **not another variant**. It is the 2026 games that have not
+been played yet — which arrive daily — or the implementation itself, scored prospectively.
+
+## Still not an edge
+
+−0.2230 is negative. The market remains better on the priced population. Nothing is implemented.
