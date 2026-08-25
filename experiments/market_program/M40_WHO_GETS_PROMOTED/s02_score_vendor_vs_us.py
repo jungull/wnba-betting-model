@@ -135,6 +135,7 @@ def main():
         print("\nNO CAPTURED GAME RESOLVES TO A game_id YET. This is expected while the")
         print("archive is young -- master_team carries a game only once the schedule row")
         print("exists. Nothing is scorable; refusing to report an empty sweep as a result.")
+        print("scorable team-games : 0")
         return
 
     mp = pd.read_parquet(MPLAYER, columns=["game_id", "team_abbreviation", "player_name",
@@ -169,6 +170,7 @@ def main():
         print("\nNOTHING SCORABLE YET. The archive holds captures but no matching settled")
         print("box score. This is the honest state on a young tape, not a null result.")
         res["scorable"] = 0
+        print("scorable team-games : 0")
         with open(os.path.join(HERE, "FINDINGS_s02.json"), "w", encoding="utf-8") as f:
             json.dump(res, f, indent=1)
         print("\nwrote FINDINGS_s02.json")
@@ -188,6 +190,7 @@ def main():
                       "n": int(len(s))}
     res["vendor_by_cutoff"] = tbl
     res["scorable"] = int(len(d))
+    print("\nscorable team-games : %d" % len(d))
 
     print("\nREAD THIS BEFORE QUOTING ANY OF IT")
     print("  * A later cutoff solves an easier problem. T-30m beating T-24h is not skill.")
