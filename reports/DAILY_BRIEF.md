@@ -1,19 +1,20 @@
-# Where the WNBA project stands — Monday 24 August 2026
+# Where the WNBA project stands — Tuesday 25 August 2026
 
 _Written automatically each morning. Everything below is measured, not estimated._
 
 ## Is the data still arriving?
 
-**Something needs attention.** 1 issue(s) found:
+**Something needs attention.** 2 issue(s) found:
 
 * `WNBA_DailyForecast_PM` failed the last time it ran. If it has not been due to run since a repair, this may just be an old error code.
+* `WNBA_LineupCapture` failed the last time it ran. If it has not been due to run since a repair, this may just be an old error code.
 
 ## The two studies waiting on more games
 
 Both were designed so they *cannot* be answered early — they refuse to produce a result until enough games have been observed. That is deliberate: recomputing every day and publishing when the answer looks best would be choosing the answer rather than measuring it.
 
-* **How long a mispriced line stays on the screen** — not yet. We have 18 of the games required and need 12 more. On the current rate of play that is roughly 3–6 more days.
-* **How long a book stays behind its competitors** — not yet. We have 15 of the games required and need 15 more. On the current rate of play that is roughly 4–7 more days.
+* **How long a mispriced line stays on the screen** — not yet. We have 20 of the games required and need 10 more. On the current rate of play that is roughly 2–5 more days.
+* **How long a book stays behind its competitors** — not yet. We have 16 of the games required and need 14 more. On the current rate of play that is roughly 3–7 more days.
 
 ## The paper bets
 
@@ -25,6 +26,12 @@ We record what the system *would* have bet, before each game starts, and settle 
 * 2 of them were **bets on a price one bookmaker was slow to move**: lost $200.00 (-100.00% of stake). Only 2 of them, so this tells us almost nothing yet — and these were longshots, where losing every one is the most likely single outcome.
 
 Still waiting on 8 whose games have not finished.
+
+## Who is actually starting tonight
+
+Knowing which five players start is worth real accuracy in our minutes forecast, and the league does not publish a confirmed lineup before tip. So we now record a sports-data site's *projection* every 15 minutes and keep every version, rather than just the last one. The versions are the point: on the first night the site changed its own mind about a replacement starter twice inside fifteen minutes.
+
+Nothing can be graded yet: we hold 4 different versions of tonight's projections, but the official box scores they will be checked against have not arrived. Grading starts once they do.
 
 ## Have we found a way to make money?
 

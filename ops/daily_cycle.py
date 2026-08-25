@@ -196,6 +196,43 @@ def main():
             hist.append("bets pending")
     lines.append("")
 
+    # ---- 3b. the lineup feed --------------------------------------------
+    d = os.path.join(MP, "M40_WHO_GETS_PROMOTED")
+    ok, out = run(os.path.join(d, "s02_score_vendor_vs_us.py"), d)
+    lines.append("## Who is actually starting tonight")
+    lines.append("")
+    lines.append("Knowing which five players start is worth real accuracy in our minutes "
+                 "forecast, and the league does not publish a confirmed lineup before tip. "
+                 "So we now record a sports-data site's *projection* every 15 minutes and "
+                 "keep every version, rather than just the last one. The versions are the "
+                 "point: on the first night the site changed its own mind about a "
+                 "replacement starter twice inside fifteen minutes.")
+    lines.append("")
+    if not ok:
+        lines.append("The lineup check could not run today.")
+        hist.append("lineup ERROR")
+    elif "SELF-TEST FAILED" in out:
+        # a broken join and an empty tape print the same thing; say which this is
+        lines.append("**The lineup check is broken, not merely empty** — its self-test "
+                     "failed, so today's 'nothing to score' cannot be believed.")
+        hist.append("lineup BROKEN")
+    else:
+        n = num(r"scorable\D*(\d+)", out, int)
+        states = num(r"over (\d+) distinct states", out, int, 0)
+        if not n:
+            lines.append("Nothing can be graded yet: we hold %d different versions of "
+                         "tonight's projections, but the official box scores they will be "
+                         "checked against have not arrived. Grading starts once they do."
+                         % (states or 0))
+            hist.append("lineup collecting")
+        else:
+            lines.append("**%d team-games graded.** Read the detail before drawing "
+                         "conclusions: a projection read closer to tip is solving an "
+                         "easier problem, so a later reading looking better is not "
+                         "evidence that the site is good." % n)
+            hist.append("lineup scored %d" % n)
+    lines.append("")
+
     # ---- 4. the standing answer -----------------------------------------
     lines.append("## Have we found a way to make money?")
     lines.append("")
