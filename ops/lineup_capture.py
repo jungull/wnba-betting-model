@@ -50,7 +50,13 @@ COLUMNS = ["retrieval_ts_utc", "game_date_et", "tip_time_et", "away_abbr", "home
            "side", "lineup_status", "section", "slot", "position", "player_name", "play_likelihood",
            "injury_tag"]
 
-GAME_RE = re.compile(r'<div class="lineup is-nba">(.*?)(?=<div class="lineup is-nba">|<footer)', re.S)
+#: The game container carries EXTRA CLASSES that appear and disappear during the day --
+#: `<div class="lineup is-nba has-started">` once a game tips. An earlier version required
+#: the class to end right after `is-nba` and so parsed zero rows the moment the first game
+#: started. `is-tools` is a control block, not a game, and is skipped by name.
+GAME_OPEN = '<div class="lineup is-nba'
+GAME_SPLIT_RE = re.compile(r'(?=<div class="lineup is-nba)')
+GAME_TAG_RE = re.compile(r'<div class="lineup is-nba([^"]*)"')
 TIME_RE = re.compile(r'lineup__time">([^<]+)<')
 ABBR_RE = re.compile(r'lineup__abbr">([A-Z]{2,4})<')
 LIST_RE = re.compile(r'lineup__list is-(visit|home)">(.*?)</ul>', re.S)
@@ -69,9 +75,22 @@ PLAYER_RE = re.compile(
 SECTION_RE = re.compile(r'<li class="lineup__title[^"]*">([^<]*)</li>')
 
 
+def game_blocks(html):
+    """Each game's markup, skipping the non-game `is-tools` container."""
+    out = []
+    for chunk in GAME_SPLIT_RE.split(html):
+        if not chunk.startswith(GAME_OPEN):
+            continue
+        tag = GAME_TAG_RE.match(chunk)
+        if tag and "is-tools" in tag.group(1):
+            continue
+        out.append(chunk.split("<footer")[0])
+    return out
+
+
 def parse(html, stamp):
     rows = []
-    for block in GAME_RE.findall(html):
+    for block in game_blocks(html):
         tip = (TIME_RE.search(block).group(1).strip() if TIME_RE.search(block) else "")
         abbrs = ABBR_RE.findall(block)
         away, home = (abbrs + ["", ""])[:2]
@@ -133,6 +152,16 @@ def raw_pages():
     """Every retained page, gzipped or not -- early captures predate compression."""
     return (glob.glob(os.path.join(RAWDIR, "lineups_*.html"))
             + glob.glob(os.path.join(RAWDIR, "lineups_*.html.gz")))
+
+
+def save_raw(text, now, why):
+    """Keep the page. Both parser fixes so far were recoverable only because of this."""
+    path = os.path.join(RAWDIR, "lineups_%s%s.html.gz"
+                        % (now.strftime("%Y%m%dT%H%M%SZ"),
+                           "" if why == "CHANGED" else "_" + why))
+    with gzip.open(path, "wt", encoding="utf-8") as f:
+        f.write(text)
+    return path
 
 
 def write(rows, mode):
@@ -215,9 +244,24 @@ def main():
     # a day, storing every tick would add gigabytes a season for no extra information.
     rows = parse(r.text, stamp)
     if not rows:
-        # a silent zero is how a broken parser masquerades as an empty slate
-        print("PARSED ZERO ROWS from %d bytes -- the page structure has probably changed. "
-              "The raw page was kept; fix the parser against it." % len(r.text))
+        # THE RAW PAGE IS SAVED HERE, BEFORE EXITING. An earlier version printed "the raw
+        # page was kept" and had already skipped saving it, because the save lived inside
+        # the content-changed branch below -- so the one failure that most needs evidence
+        # was the one that destroyed it. The parser broke on 2026-08-25 (the game container
+        # gained a `has-started` class) and there was nothing to debug against.
+        save_raw(r.text, now, "PARSE_FAILURE")
+        # An empty slate and a broken parser are DIFFERENT and must not print the same
+        # thing. Zero game containers means there is genuinely nothing on today's board;
+        # containers present with no players parsed means the markup moved under us.
+        blocks = len(game_blocks(r.text))
+        if blocks == 0:
+            print("no games on the board (0 containers in %d bytes) -- empty slate, "
+                  "not a failure. Raw page kept." % len(r.text))
+            log_tick(stamp, "EMPTY_SLATE", False, 0)
+            return
+        print("PARSER BROKEN: %d game containers found but ZERO players parsed from %d "
+              "bytes. The markup has changed. The raw page WAS kept -- fix the parser "
+              "against it, then run --reparse." % (blocks, len(r.text)))
         sys.exit(1)
 
     # ---- only RECORD A CHANGE -------------------------------------------------
@@ -232,10 +276,7 @@ def main():
     prev = last_hash()
     changed = digest != prev
     if changed:
-        with gzip.open(os.path.join(RAWDIR, "lineups_%s.html.gz"
-                                    % now.strftime("%Y%m%dT%H%M%SZ")),
-                       "wt", encoding="utf-8") as f:
-            f.write(r.text)
+        save_raw(r.text, now, "CHANGED")
         write(rows, "a")
     log_tick(stamp, digest, changed, len(rows))
 
