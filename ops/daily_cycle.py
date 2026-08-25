@@ -69,7 +69,19 @@ def num(pattern, text, cast=float, default=None):
 
 
 def main():
-    today = dt.datetime.now(dt.timezone.utc)
+    # THE HEADING IS A HUMAN'S DATE, NOT THE MACHINE'S. Timing everywhere else in this
+    # programme is UTC and must stay UTC, but a brief written at 22:19 Eastern was
+    # published under the NEXT DAY'S date because UTC had already rolled over. A daily
+    # report read over breakfast in Eastern time must carry the Eastern date or it is
+    # simply wrong to its only reader. ET is UTC-4 in this window and UTC-5 in winter;
+    # the fixed offset used elsewhere in this codebase is wrong in general, so the zone
+    # is resolved properly here rather than inherited.
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    try:
+        from zoneinfo import ZoneInfo
+        today = now_utc.astimezone(ZoneInfo("America/New_York"))
+    except Exception:                       # noqa: BLE001 -- tzdata absent; say so, do not guess
+        today = now_utc
     lines, hist = [], []
 
     lines.append("# Where the WNBA project stands — %s" % today.strftime("%A %d %B %Y"))
