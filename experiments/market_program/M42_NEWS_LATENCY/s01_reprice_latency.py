@@ -105,7 +105,15 @@ def line_series():
     d["h"] = d["home_team"].map(NAME2ABV)
     d["a"] = d["away_team"].map(NAME2ABV)
     d = d.dropna(subset=["h", "a"])
-    d["gd"] = pd.to_datetime(d["commence_time"], errors="coerce", utc=True)
+    d["tip"] = pd.to_datetime(d["commence_time"], errors="coerce", utc=True)
+    # STRICTLY PRE-TIP ONLY. The capture runs through games, so 6% of rows are IN-PLAY,
+    # where the total tracks the game actually being played and its dispersion is far
+    # wider (std 14.7 against 9.1). Out news usually breaks inside 90 minutes of tip, so a
+    # forward window lands in live prices and reads the game's own scoring as though it
+    # were the market repricing an absence. That confound produced a mean absolute "move"
+    # of 4.36 points -- impossible pre-game -- and reversed the sign of every slope.
+    d = d.dropna(subset=["tip"])
+    d = d[d["snap"] < d["tip"]]
     # one consensus number per (game, snapshot): median over books and over/under rows
     g = (d.groupby(["a", "h", "snap"])["point"].median().rename("total").reset_index())
     return g.sort_values("snap")
