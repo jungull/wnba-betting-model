@@ -7,14 +7,14 @@ _Written automatically each morning. Everything below is measured, not estimated
 **Something needs attention.** 2 issue(s) found:
 
 * `WNBA_DailyForecast_PM` failed the last time it ran. If it has not been due to run since a repair, this may just be an old error code.
-* `WNBA_LineupCapture` failed the last time it ran. If it has not been due to run since a repair, this may just be an old error code.
+* The odds feed has stopped updating. Nothing new is being recorded, and any game starting soon will have no price history.
 
 ## The two studies waiting on more games
 
 Both were designed so they *cannot* be answered early — they refuse to produce a result until enough games have been observed. That is deliberate: recomputing every day and publishing when the answer looks best would be choosing the answer rather than measuring it.
 
 * **How long a mispriced line stays on the screen** — not yet. We have 20 of the games required and need 10 more. On the current rate of play that is roughly 2–5 more days.
-* **How long a book stays behind its competitors** — not yet. We have 16 of the games required and need 14 more. On the current rate of play that is roughly 3–7 more days.
+* **How long a book stays behind its competitors** — not yet. We have 17 of the games required and need 13 more. On the current rate of play that is roughly 3–6 more days.
 
 ## The paper bets
 
@@ -31,7 +31,12 @@ Still waiting on 8 whose games have not finished.
 
 Knowing which five players start is worth real accuracy in our minutes forecast, and the league does not publish a confirmed lineup before tip. So we now record a sports-data site's *projection* every 15 minutes and keep every version, rather than just the last one. The versions are the point: on the first night the site changed its own mind about a replacement starter twice inside fifteen minutes.
 
-Nothing can be graded yet: we hold 4 different versions of tonight's projections, but the official box scores they will be checked against have not arrived. Grading starts once they do.
+So far **2 team-game(s) where the five actually changed** — the only ones that ask a real question:
+
+* Read **90 minutes before tip**: 50.0% right on the 2 changed lineup(s). (Across all 4 teams including unchanged ones: 75.0%.)
+* Read **30 minutes before tip**: 100.0% right on the 2 changed lineup(s). (Across all 4 teams including unchanged ones: 100.0%.)
+
+**Do not read a trend into this.** The numbers are on a handful of games, and a projection read closer to tip is solving an easier problem — a later reading looking better is not evidence the site is good.
 
 ## Have we found a way to make money?
 

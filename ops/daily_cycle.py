@@ -238,11 +238,35 @@ def main():
                          % (states or 0))
             hist.append("lineup collecting")
         else:
-            lines.append("**%d team-games graded.** Read the detail before drawing "
-                         "conclusions: a projection read closer to tip is solving an "
-                         "easier problem, so a later reading looking better is not "
-                         "evidence that the site is good." % n)
-            hist.append("lineup scored %d" % n)
+            # Report ONLY the informative subset. A team that starts the same five as
+            # last game is a free point for anybody, so the pooled figure flatters every
+            # method equally and can read as excellent while answering nothing.
+            got = re.findall(
+                r"(T-\S+)\s+ALL\s+([0-9.]+)% \(n=(\d+)\)\s+\|\s+LINEUP CHANGED\s+"
+                r"([0-9.]+|\s*n/a)%?\s+\(n=(\d+)\)", out)
+            informative = sum(int(g[4]) for g in got[:1])
+            if not got or not informative:
+                lines.append("Versions are being graded, but no team has actually changed "
+                             "its starting five yet — and an unchanged five is a free "
+                             "point for any method that simply names last game's starters. "
+                             "Until a lineup changes there is nothing to learn.")
+                hist.append("lineup no-change")
+            else:
+                lines.append("So far **%d team-game(s) where the five actually changed** — "
+                             "the only ones that ask a real question:" % informative)
+                lines.append("")
+                for lbl, allp, alln, chp, chn in got:
+                    ch = "no such case yet" if "n/a" in chp else ("%s%% right" % chp)
+                    lines.append("* Read **%s before tip**: %s on the %s changed lineup(s). "
+                                 "(Across all %s teams including unchanged ones: %s%%.)"
+                                 % (lbl.replace("T-", "").replace("m", " minutes")
+                                    .replace("h", " hours"), ch, chn, alln, allp))
+                lines.append("")
+                lines.append("**Do not read a trend into this.** The numbers are on a "
+                             "handful of games, and a projection read closer to tip is "
+                             "solving an easier problem — a later reading looking better "
+                             "is not evidence the site is good.")
+                hist.append("lineup scored %d chg" % informative)
     lines.append("")
 
     # ---- 4. the standing answer -----------------------------------------
